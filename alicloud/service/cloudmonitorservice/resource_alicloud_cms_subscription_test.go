@@ -203,42 +203,75 @@ func testAccCheckCmsSubscriptionDependenciesDestroy(s *terraform.State) error {
 	cmsV2 := cloudmonitorservice.NewCmsServiceV2(client)
 	slsService := sls.NewService(client)
 	for _, rs := range s.RootModule().Resources {
+		var check func() (bool, error)
 		switch rs.Type {
 		case "alicloud_cms_subscription":
-			_, err := cloudmonitorservice.NewCmsService(client).DescribeSubscription(context.Background(), rs.Primary.ID, rs.Primary.Attributes["workspace"])
-			if err == nil {
-				return fmt.Errorf("cms subscription %s still exists", rs.Primary.ID)
-			}
-			if !cloudmonitorservice.IsSubscriptionNotFound(err) && !errs.NotFoundError(err) {
-				return fmt.Errorf("describing cms subscription %s failed: %s", rs.Primary.ID, err)
+			check = func() (bool, error) {
+				_, err := cloudmonitorservice.NewCmsService(client).DescribeSubscription(context.Background(), rs.Primary.ID, rs.Primary.Attributes["workspace"])
+				if cloudmonitorservice.IsSubscriptionNotFound(err) || errs.NotFoundError(err) {
+					return true, nil
+				}
+				return dependencyDeleted(err)
 			}
 		case "alicloud_cms_workspace":
-			_, err := cmsV2.DescribeCmsWorkspace(rs.Primary.ID)
-			if err == nil {
-				return fmt.Errorf("cms workspace %s still exists", rs.Primary.ID)
-			}
-			if !errs.NotFoundError(err) {
-				return fmt.Errorf("describing cms workspace %s failed: %s", rs.Primary.ID, err)
+			check = func() (bool, error) {
+				_, err := cmsV2.DescribeCmsWorkspace(rs.Primary.ID)
+				return dependencyDeleted(err)
 			}
 		case "alicloud_cms_event_notify_policy":
-			_, err := cmsV2.DescribeCmsEventNotifyPolicy(rs.Primary.ID)
-			if err == nil {
-				return fmt.Errorf("cms event notify policy %s still exists", rs.Primary.ID)
-			}
-			if !errs.NotFoundError(err) {
-				return fmt.Errorf("describing cms event notify policy %s failed: %s", rs.Primary.ID, err)
+			check = func() (bool, error) {
+				_, err := cmsV2.DescribeCmsEventNotifyPolicy(rs.Primary.ID)
+				return dependencyDeleted(err)
 			}
 		case "alicloud_log_project":
-			_, err := slsService.DescribeSlsProject(rs.Primary.ID)
-			if err == nil {
-				return fmt.Errorf("log project %s still exists", rs.Primary.ID)
+			check = func() (bool, error) {
+				_, err := slsService.DescribeSlsProject(rs.Primary.ID)
+				return dependencyDeleted(err)
 			}
-			if !errs.NotFoundError(err) {
-				return fmt.Errorf("describing log project %s failed: %s", rs.Primary.ID, err)
-			}
+		default:
+			continue
+		}
+		if err := waitForCmsDependencyDestroy(check); err != nil {
+			return fmt.Errorf("%s %s is not confirmed deleted: %s", rs.Type, rs.Primary.ID, err)
 		}
 	}
 	return nil
+}
+
+func dependencyDeleted(err error) (bool, error) {
+	if err == nil {
+		return false, nil
+	}
+	if errs.NotFoundError(err) {
+		return true, nil
+	}
+	message := strings.ToLower(err.Error())
+	if strings.Contains(message, "not exist") || strings.Contains(message, "not found") || strings.Contains(message, "resourcenotfound") {
+		return true, nil
+	}
+	return false, err
+}
+
+// waitForCmsDependencyDestroy polls because Cms and SLS delete asynchronously:
+// a workspace that is still being deleted reports its own transient error
+// instead of the documented not-found signal.
+func waitForCmsDependencyDestroy(check func() (bool, error)) error {
+	deadline := time.Now().Add(5 * time.Minute)
+	var lastErr error
+	for {
+		gone, err := check()
+		if gone {
+			return nil
+		}
+		lastErr = err
+		if time.Now().After(deadline) {
+			if lastErr != nil {
+				return lastErr
+			}
+			return fmt.Errorf("the object still exists after the destroy wait")
+		}
+		time.Sleep(5 * time.Second)
+	}
 }
 
 func testAccCmsSubscriptionDependence(name string) string {

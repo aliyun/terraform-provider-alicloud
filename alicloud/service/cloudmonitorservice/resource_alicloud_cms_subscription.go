@@ -397,7 +397,7 @@ func (r *subscriptionResource) Create(ctx context.Context, req resource.CreateRe
 		}
 	}
 
-	state, err := subscriptionState(object, identity, r.Meta().RegionId)
+	state, err := subscriptionState(object, identity, identity, r.Meta().RegionId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetSubscription", subscriptionTypeName),
@@ -430,7 +430,7 @@ func (r *subscriptionResource) Read(ctx context.Context, req resource.ReadReques
 		)
 		return
 	}
-	next, err := subscriptionState(object, state, r.Meta().RegionId)
+	next, err := subscriptionState(object, state, state, r.Meta().RegionId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetSubscription", subscriptionTypeName),
@@ -495,7 +495,7 @@ func (r *subscriptionResource) Update(ctx context.Context, req resource.UpdateRe
 				return
 			}
 		}
-		next, err := subscriptionState(object, state, r.Meta().RegionId)
+		next, err := subscriptionState(object, subscriptionIntent(plan, state), state, r.Meta().RegionId)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Reading %s: calling GetSubscription", subscriptionTypeName),
@@ -526,7 +526,7 @@ func (r *subscriptionResource) Update(ctx context.Context, req resource.UpdateRe
 		)
 		return
 	}
-	next, err := subscriptionState(object, state, r.Meta().RegionId)
+	next, err := subscriptionState(object, subscriptionIntent(plan, state), state, r.Meta().RegionId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetSubscription", subscriptionTypeName),
@@ -912,18 +912,23 @@ func subscriptionPathCleared(object map[string]interface{}, fieldPath subscripti
 	return subscriptionValueEmpty(current), nil
 }
 
-// subscriptionRequestForConfig expands the plan, falling back to the prior
-// state for the computed relation: when the configuration omits it, the
-// planned value is unknown and must not look like a body change.
-func subscriptionRequestForConfig(plan, state subscriptionResourceModel) map[string]interface{} {
+// subscriptionIntent resolves the plan for comparison and read-back: the
+// Service echoes a relation even when the configuration omits it, so an
+// unknown computed relation falls back to the value already in state and does
+// not look like a body change.
+func subscriptionIntent(plan, state subscriptionResourceModel) subscriptionResourceModel {
 	resolved := plan
 	if len(plan.FilterSetting) > 0 && len(state.FilterSetting) > 0 {
-		if plan.FilterSetting[0].Relation.IsNull() || plan.FilterSetting[0].Relation.IsUnknown() {
+		if plan.FilterSetting[0].Relation.IsUnknown() {
 			resolved.FilterSetting = append([]subscriptionFilterSettingModel(nil), plan.FilterSetting...)
 			resolved.FilterSetting[0].Relation = state.FilterSetting[0].Relation
 		}
 	}
-	return expandSubscriptionRequest(resolved)
+	return resolved
+}
+
+func subscriptionRequestForConfig(plan, state subscriptionResourceModel) map[string]interface{} {
+	return expandSubscriptionRequest(subscriptionIntent(plan, state))
 }
 
 // subscriptionRemovedPaths lists the request locations that were present in
@@ -1308,9 +1313,11 @@ func subscriptionKnownAgentConfig(blocks []subscriptionAgentConfigModel) []subsc
 // subscriptionState converts one GetSubscription response into state. The
 // confirmed identity is authoritative: a response that omits it keeps the
 // confirmed value, and a response that disagrees is an error rather than a
-// silent overwrite.
-func subscriptionState(object map[string]interface{}, previous subscriptionResourceModel, regionId string) (subscriptionResourceModel, error) {
-	expectedId := subscriptionValueString(previous.Id)
+// silent overwrite. intent carries the configuration that produced this
+// request, so an argument that was removed stays null instead of being turned
+// into an empty value.
+func subscriptionState(object map[string]interface{}, intent, identity subscriptionResourceModel, regionId string) (subscriptionResourceModel, error) {
+	expectedId := subscriptionValueString(identity.Id)
 	actualId := subscriptionJSONString(object["subscriptionId"])
 	if actualId == "" {
 		actualId = expectedId
@@ -1322,7 +1329,7 @@ func subscriptionState(object map[string]interface{}, previous subscriptionResou
 		return subscriptionResourceModel{}, fmt.Errorf("the response reports subscription id %q but %q was requested", actualId, expectedId)
 	}
 
-	expectedWorkspace := subscriptionValueString(previous.Workspace)
+	expectedWorkspace := subscriptionValueString(identity.Workspace)
 	actualWorkspace := subscriptionJSONString(object["workspace"])
 	if actualWorkspace == "" {
 		actualWorkspace = expectedWorkspace
@@ -1334,15 +1341,15 @@ func subscriptionState(object map[string]interface{}, previous subscriptionResou
 		return subscriptionResourceModel{}, fmt.Errorf("the response reports workspace %q but %q was requested", actualWorkspace, expectedWorkspace)
 	}
 
-	filterSetting, err := flattenSubscriptionFilterSetting(object["filterSetting"], previous.FilterSetting)
+	filterSetting, err := flattenSubscriptionFilterSetting(object["filterSetting"], intent.FilterSetting)
 	if err != nil {
 		return subscriptionResourceModel{}, err
 	}
-	pushingSetting, err := flattenSubscriptionPushingSetting(object["pushingSetting"], previous.PushingSetting)
+	pushingSetting, err := flattenSubscriptionPushingSetting(object["pushingSetting"], intent.PushingSetting)
 	if err != nil {
 		return subscriptionResourceModel{}, err
 	}
-	workspaceFilterSetting, err := flattenSubscriptionWorkspaceFilterSetting(object["workspaceFilterSetting"], previous.WorkspaceFilterSetting)
+	workspaceFilterSetting, err := flattenSubscriptionWorkspaceFilterSetting(object["workspaceFilterSetting"], intent.WorkspaceFilterSetting)
 	if err != nil {
 		return subscriptionResourceModel{}, err
 	}
@@ -1354,8 +1361,8 @@ func subscriptionState(object map[string]interface{}, previous subscriptionResou
 	return subscriptionResourceModel{
 		Id:                     types.StringValue(actualId),
 		SubscriptionName:       subscriptionJSONStringValue(object["subscriptionName"]),
-		Description:            subscriptionStringStateValue(object["description"], previous.Description),
-		NotifyStrategyId:       subscriptionStringStateValue(object["notifyStrategyId"], previous.NotifyStrategyId),
+		Description:            subscriptionStringStateValue(object["description"], intent.Description),
+		NotifyStrategyId:       subscriptionStringStateValue(object["notifyStrategyId"], intent.NotifyStrategyId),
 		Workspace:              types.StringValue(actualWorkspace),
 		Enable:                 subscriptionJSONBoolValue(object["enable"]),
 		SubscribeLegacyEvent:   subscriptionBoolStateValue(object["subscribeLegacyEvent"]),
