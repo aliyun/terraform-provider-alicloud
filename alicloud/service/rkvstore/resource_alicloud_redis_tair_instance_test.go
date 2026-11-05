@@ -5550,14 +5550,17 @@ func releasePrepaidTairInstanceWithClient(client *connectivity.AliyunClient, ins
 		return fmt.Errorf("delete %s: %s", instanceId, err)
 	}
 	goneConf := helper.BuildStateConf([]string{}, []string{"NotFound"}, 30*time.Minute, 10*time.Second, func() (interface{}, string, error) {
-		instance, err := service.DescribeRedisTairInstance(instanceId)
-		if err != nil {
+		// A direct RPC keeps the check free of the one-minute not-found retry of
+		// DescribeRedisTairInstance: the instance is only reported as released once the API
+		// answers NotFound.
+		request := map[string]interface{}{"InstanceId": instanceId, "RegionId": client.RegionId}
+		if _, err := client.RpcPost("R-kvstore", "2015-01-01", "DescribeInstanceAttribute", nil, request, true); err != nil {
 			if errs.NotFoundError(err) {
-				return nil, "NotFound", nil
+				return map[string]interface{}{}, "NotFound", nil
 			}
 			return nil, "", err
 		}
-		return instance, fmt.Sprint(instance["InstanceStatus"]), nil
+		return map[string]interface{}{}, "Exists", nil
 	})
 	if _, err := goneConf.WaitForState(); err != nil {
 		return fmt.Errorf("wait for %s to disappear: %s", instanceId, err)
