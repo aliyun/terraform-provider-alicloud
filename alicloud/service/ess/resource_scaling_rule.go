@@ -464,15 +464,18 @@ func resourceAliyunEssScalingRuleUpdate(d *schema.ResourceData, meta interface{}
 			request["HybridMonitorNamespace"] = d.Get("hybrid_monitor_namespace")
 		}
 		if d.HasChange("alarm_options") {
+			// AlarmOptions is write-only, so a removed block has to be reset
+			// explicitly; fall back to the schema default instead of dropping it.
+			period := 60
 			if v, ok := d.GetOk("alarm_options"); ok {
 				alarmOptionsList := v.([]interface{})
 				if len(alarmOptionsList) > 0 {
-					pack := alarmOptionsList[0].(map[string]interface{})
-					if period, ok := pack["period"]; ok {
-						request["AlarmOptions.Period"] = requests.NewInteger(period.(int))
+					if p, ok := alarmOptionsList[0].(map[string]interface{})["period"].(int); ok {
+						period = p
 					}
 				}
 			}
+			request["AlarmOptions.Period"] = requests.NewInteger(period)
 		}
 		if d.HasChange("hybrid_metrics") {
 			hybridMetrics := make([]map[string]interface{}, 0)

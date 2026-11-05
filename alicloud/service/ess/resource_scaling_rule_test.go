@@ -643,6 +643,12 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_options(t *testing
 					}),
 				),
 			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"alarm_options"},
+			},
 		},
 	})
 }

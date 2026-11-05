@@ -158,7 +158,7 @@ The following arguments are supported:
 * `hybrid_monitor_namespace` - (Optional, Available since v1.245.0) The ID of the Hybrid Cloud Monitoring metric repository.
 * `metric_type` - (Optional, Available since v1.245.0) The type of the metric. Valid values: system, custom, hybrid.
 * `hybrid_metrics` - (Optional, Available since v1.245.0) The Hybrid Cloud Monitoring metrics. See [`hybrid_metrics`](#hybrid_metrics) below.
-* `alarm_options` - (Optional, Available since v2.2.0) The alarm options of the target tracking scaling rule. This block is write-only: the value is sent on create and update but not read back from the server. See [`alarm_options`](#alarm_options) below.
+* `alarm_options` - (Optional, List, Available since v2.2.0) The alarm options of the target tracking scaling rule. This block is write-only: the value is sent on create and update but not read back from the server. See [`alarm_options`](#alarm_options) below.
 
 
 ### `step_adjustment`
@@ -198,7 +198,7 @@ The alarmDimension mapping supports the following:
 
 The alarmOptions mapping supports the following. It takes effect only when `scaling_rule_type` is `TargetTrackingScalingRule`.
 
-* `period` - (Optional) The period used to collect statistics for the metric of the target tracking scaling rule, in seconds. Valid values: `15`, `60`, `120`, `300`, `900`. Default to `60`.
+* `period` - (Optional, Int, Available since v2.2.0) The period used to collect statistics for the metric of the target tracking scaling rule, in seconds. Valid values: `15`, `60`, `120`, `300`, `900`. Defaults to `60`.
 
 
 ## Attributes Reference
