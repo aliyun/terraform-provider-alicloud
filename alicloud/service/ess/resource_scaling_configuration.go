@@ -2316,13 +2316,15 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	privatePoolId, _ := response["PrivatePoolOptions.Id"].(string)
 	// MatchCriteria=None is the service representation of "no private pool", so it
 	// must leave the block unset instead of surfacing a one-item block that the
-	// configuration cannot express.
+	// configuration cannot express. An absent pair of keys means the configuration
+	// never used a private pool and the block is left exactly as configured, which
+	// keeps an explicitly configured empty block from drifting.
 	if privatePoolId != "" || (privatePoolMatchCriteria != "" && !strings.EqualFold(privatePoolMatchCriteria, "None")) {
 		d.Set("private_pool_options", []map[string]interface{}{{
 			"match_criteria": privatePoolMatchCriteria,
 			"pool_id":        privatePoolId,
 		}})
-	} else {
+	} else if strings.EqualFold(privatePoolMatchCriteria, "None") {
 		d.Set("private_pool_options", []map[string]interface{}{})
 	}
 	if v := response["SchedulerOptions"]; v != nil {

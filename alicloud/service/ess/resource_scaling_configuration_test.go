@@ -2237,13 +2237,14 @@ func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing
 			},
 			{
 				// Removing the non-empty plural list without switching to the
-				// singular form must converge: the plural becomes computed again and
-				// has to mirror the service value, which keeps the applied members.
+				// singular form must converge. The singular attribute carries the
+				// schema default (cloud_efficiency), so the service reports that
+				// fallback value; the computed plural must still mirror the service.
 				Config: testAccConfig(map[string]interface{}{
 					"system_disk_categories": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					systemDiskCategoriesMirrorRemoteCheck(t, resourceId, ""),
+					systemDiskCategoriesMirrorRemoteCheck(t, resourceId, "cloud_efficiency"),
 				),
 			},
 			{
@@ -2379,10 +2380,10 @@ func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder(t *testing.T
 				),
 			},
 			{
-				// Removing the non-empty plural list and switching the disk to the
-				// singular category must put the singular value in effect. The plural
-				// becomes computed again and has to mirror the service response, which
-				// keeps the previously applied members.
+				// Switching the disk to the singular category must converge. ESS keeps
+				// the previously applied plural members and omits the singular
+				// DataDisk.Category from the describe response, so the remote singular
+				// is asserted as absent while the computed plural mirrors the service.
 				Config: testAccConfig(map[string]interface{}{
 					"data_disk": []map[string]interface{}{
 						{
@@ -2393,7 +2394,7 @@ func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder(t *testing.T
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					dataDiskCategoriesMirrorRemoteCheck(t, resourceId, "cloud_essd"),
+					dataDiskCategoriesMirrorRemoteCheck(t, resourceId, ""),
 				),
 			},
 			{
@@ -5955,7 +5956,7 @@ func TestAccAliCloudEssScalingConfiguration_TypeListOrderConvergence(t *testing.
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
-					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"image_id":             "${data.alicloud_images.ess64.images.0.id}",
 					"instance_types":       []string{"${data.alicloud_instance_types.compatible.instance_types.0.id}", "${data.alicloud_instance_types.compatible.instance_types.1.id}"},
 					"security_group_ids":   []string{"${alicloud_security_group.default.id}", "${alicloud_security_group.default1.id}"},
 					"system_disk_category": "cloud_essd",
