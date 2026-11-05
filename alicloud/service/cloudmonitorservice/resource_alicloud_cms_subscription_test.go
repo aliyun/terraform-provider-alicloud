@@ -17,7 +17,7 @@ import (
 func TestAccAliCloudCmsSubscription_basic(t *testing.T) {
 	resourceId := "alicloud_cms_subscription.default"
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAccCmsSubscription%d", rand)
+	name := fmt.Sprintf("tf-testacc-cmssubscription-%d", rand)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -89,7 +89,7 @@ func TestAccAliCloudCmsSubscription_basic(t *testing.T) {
 func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 	resourceId := "alicloud_cms_subscription.default"
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAccCmsSubscriptionFull%d", rand)
+	name := fmt.Sprintf("tf-testacc-cmssubscription-full-%d", rand)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },

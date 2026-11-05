@@ -12,6 +12,7 @@ import (
 
 	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -134,6 +135,9 @@ type cmsSubscriptionUnitUnknown struct{}
 
 func cmsSubscriptionUnitValue(t *testing.T, valueType tftypes.Type, raw interface{}) tftypes.Value {
 	t.Helper()
+	if prepared, ok := raw.(tftypes.Value); ok {
+		return prepared
+	}
 	if _, ok := raw.(cmsSubscriptionUnitUnknown); ok {
 		return tftypes.NewValue(valueType, tftypes.UnknownValue)
 	}
@@ -253,14 +257,6 @@ func TestUnitCmsSubscriptionCreateRequestShape(t *testing.T) {
 				},
 			},
 		},
-		"pushing_setting": []interface{}{
-			map[string]interface{}{
-				"alert_action_ids":   []interface{}{},
-				"restore_action_ids": []interface{}{},
-				"template_uuid":      "",
-				"response_plan_id":   "",
-			},
-		},
 	})
 	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
 	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
@@ -295,19 +291,6 @@ func TestUnitCmsSubscriptionCreateRequestShape(t *testing.T) {
 	condition := conditions[0].(map[string]interface{})
 	if condition["field"] != "labels.alertname" || condition["op"] != "EQ" || condition["value"] != "CPU" {
 		t.Fatalf("unexpected condition payload: %v", condition)
-	}
-	pushing, ok := body["pushingSetting"].(map[string]interface{})
-	if !ok {
-		t.Fatalf("pushingSetting missing from the request: %v", body)
-	}
-	for _, key := range []string{"alertActionIds", "restoreActionIds"} {
-		list, ok := pushing[key].([]interface{})
-		if !ok || len(list) != 0 {
-			t.Fatalf("%s must be sent as an explicit empty list, got %v", key, pushing[key])
-		}
-	}
-	if got, ok := pushing["templateUuid"]; !ok || got != "" {
-		t.Fatalf("templateUuid must be sent explicitly, got %v (present=%t)", got, ok)
 	}
 
 	if got := cmsSubscriptionUnitStateAttribute(t, resp.State, "id").ValueString(); got != cmsSubscriptionUnitServerId {
@@ -376,6 +359,72 @@ func TestUnitCmsSubscriptionUpdateRequiresRemovedValuesToClear(t *testing.T) {
 	cleared := map[string]interface{}{"subscriptionName": "name"}
 	if !cmsSubscriptionPathsEmpty(cleared, removed) {
 		t.Fatal("a response without the removed description must be accepted")
+	}
+}
+
+// TestUnitCmsSubscriptionExpandKeepsExplicitZeroValues proves that configured
+// empty strings, empty lists and false are sent instead of being dropped.
+func TestUnitCmsSubscriptionExpandKeepsExplicitZeroValues(t *testing.T) {
+	emptyList := types.ListValueMust(types.StringType, []attr.Value{})
+	plan := cmsSubscriptionResourceModel{
+		SubscriptionName:     types.StringValue("name"),
+		Description:          types.StringValue(""),
+		NotifyStrategyId:     types.StringValue(""),
+		SubscribeLegacyEvent: types.BoolValue(false),
+		PushingSetting: []cmsSubscriptionPushingSettingModel{{
+			AlertActionIds:   emptyList,
+			RestoreActionIds: emptyList,
+			TemplateUuid:     types.StringValue(""),
+			ResponsePlanId:   types.StringValue(""),
+		}},
+		WorkspaceFilterSetting: []cmsSubscriptionWorkspaceFilterModel{{
+			WorkspaceUuids: emptyList,
+		}},
+		AgentConfig: []cmsSubscriptionAgentConfigModel{{
+			AgentUuid: types.StringValue(""),
+			Routes: []cmsSubscriptionAgentRouteModel{{
+				Channels: []cmsSubscriptionAgentChannelModel{{
+					ChannelType:        types.StringValue("WEBHOOK"),
+					Receivers:          emptyList,
+					EnabledSubChannels: emptyList,
+				}},
+			}},
+		}},
+	}
+	request := expandCmsSubscriptionRequest(plan)
+	if got, ok := request["description"]; !ok || got != "" {
+		t.Fatalf("description must be sent explicitly, got %v (present=%t)", got, ok)
+	}
+	if got, ok := request["notifyStrategyId"]; !ok || got != "" {
+		t.Fatalf("notifyStrategyId must be sent explicitly, got %v (present=%t)", got, ok)
+	}
+	if got, ok := request["subscribeLegacyEvent"]; !ok || got != false {
+		t.Fatalf("subscribeLegacyEvent must be sent explicitly, got %v (present=%t)", got, ok)
+	}
+	pushing := request["pushingSetting"].(map[string]interface{})
+	for _, key := range []string{"alertActionIds", "restoreActionIds"} {
+		list, ok := pushing[key].([]string)
+		if !ok || len(list) != 0 {
+			t.Fatalf("%s must be an explicit empty list, got %v", key, pushing[key])
+		}
+	}
+	if pushing["templateUuid"] != "" || pushing["responsePlanId"] != "" {
+		t.Fatalf("pushing string members must be sent explicitly, got %v", pushing)
+	}
+	workspaceFilter := request["workspaceFilterSetting"].(map[string]interface{})
+	if list, ok := workspaceFilter["workspaceUuids"].([]string); !ok || len(list) != 0 {
+		t.Fatalf("workspaceUuids must be an explicit empty list, got %v", workspaceFilter["workspaceUuids"])
+	}
+	agent := request["agentConfig"].(map[string]interface{})
+	if agent["agentUuid"] != "" {
+		t.Fatalf("agentUuid must be sent explicitly, got %v", agent["agentUuid"])
+	}
+	channel := agent["routes"].([]map[string]interface{})[0]["channels"].([]map[string]interface{})[0]
+	if list, ok := channel["enabledSubChannels"].([]string); !ok || len(list) != 0 {
+		t.Fatalf("enabledSubChannels must be an explicit empty list, got %v", channel["enabledSubChannels"])
+	}
+	if channel["channelType"] != "WEBHOOK" {
+		t.Fatalf("channelType = %v, want WEBHOOK", channel["channelType"])
 	}
 }
 
