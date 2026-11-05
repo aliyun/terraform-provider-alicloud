@@ -169,6 +169,7 @@ func testSweepKVStoreInstances(region string) error {
 	}
 
 	kvstoreInstanceIds := make([]string, 0)
+	seenInstanceIds := make(map[string]struct{})
 	var response map[string]interface{}
 	for _, instanceType := range kvStoreSweeperInstanceTypes {
 		request["InstanceType"] = instanceType
@@ -191,7 +192,14 @@ func testSweepKVStoreInstances(region string) error {
 					log.Printf("[INFO] Skipping KVStore Instance: %v (%v)", item["InstanceName"], item["InstanceId"])
 					continue
 				}
-				kvstoreInstanceIds = append(kvstoreInstanceIds, fmt.Sprint(item["InstanceId"]))
+				// An instance can be returned by more than one instance type query; deleting
+				// the same ID twice would turn the second call into a sweep failure.
+				instanceId := fmt.Sprint(item["InstanceId"])
+				if _, ok := seenInstanceIds[instanceId]; ok {
+					continue
+				}
+				seenInstanceIds[instanceId] = struct{}{}
+				kvstoreInstanceIds = append(kvstoreInstanceIds, instanceId)
 			}
 			if len(result) < helper.PageSizeXLarge {
 				break

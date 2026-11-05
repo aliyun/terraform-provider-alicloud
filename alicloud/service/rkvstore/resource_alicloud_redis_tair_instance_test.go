@@ -4721,6 +4721,7 @@ func TestAccAliCloudRedisTairInstance_propertyCompleteness(t *testing.T) {
 					"coupon_no":                 "default",
 					"auto_use_coupon":           "false",
 					"instance_endpoint_type":    "AzIndependentEndpoint",
+					"tair_instance_name":        name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -5514,6 +5515,7 @@ func TestAccAliCloudRedisTairInstance_prepaidDowngrade(t *testing.T) {
 					"slave_replica_count": "1",
 					"vswitch_id":          "${alicloud_vswitch.default.id}",
 					"vpc_id":              "${alicloud_vpc.default.id}",
+					"tair_instance_name":  name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
