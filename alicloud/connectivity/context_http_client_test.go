@@ -150,7 +150,7 @@ func TestUnitContextRpcFastDialDelayedHeader(t *testing.T) {
 	result, err := client.RpcPostWithContext(ctx, "Slb", "2014-05-15", "DescribeLoadBalancerHTTPListenerAttribute", nil, map[string]interface{}{
 		"LoadBalancerId": "lb-unit-test",
 		"ListenerPort":   80,
-	}, false)
+	})
 	elapsed := time.Since(start)
 	if err != nil {
 		t.Fatalf("a delayed header inside the budget must succeed: %s", err)
@@ -205,7 +205,7 @@ func TestUnitContextRpcCancellationStopsInFlightWrite(t *testing.T) {
 				"AclStatus":      "on",
 				"AclId":          "acl-unit-test",
 				"AclType":        "white",
-			}, false)
+			})
 			if err == nil {
 				t.Fatal("expected the cancelled request to fail")
 			}
@@ -243,7 +243,7 @@ func TestUnitContextRpcMalformedEndpointIsRedacted(t *testing.T) {
 		"AclStatus":      "on",
 		"AclId":          "acl-unit-test",
 		"AclType":        "white",
-	}, false)
+	})
 	if err == nil {
 		t.Fatal("expected the malformed endpoint to fail")
 	}
@@ -389,7 +389,7 @@ func runSignedRpcDebugChild(t *testing.T) {
 		}},
 	}
 	for _, item := range requests {
-		if _, err := client.RpcPostWithContext(ctx, "Slb", "2014-05-15", item.action, nil, item.request, false); err != nil {
+		if _, err := client.RpcPostWithContext(ctx, "Slb", "2014-05-15", item.action, nil, item.request); err != nil {
 			t.Fatalf("%s failed: %s", item.action, err)
 		}
 	}

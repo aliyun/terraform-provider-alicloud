@@ -2667,7 +2667,9 @@ func (client *AliyunClient) RpcPostWithEndpoint(apiProductCode string, apiVersio
 // RpcPostWithContext invokes an RPC POST request whose HTTP round trip carries
 // the caller's lifecycle context, so a cancelled Terraform operation aborts the
 // request instead of leaving it running in the background. The request is bound
-// to the remaining deadline of ctx through a single client timeout.
+// to the remaining deadline of ctx through a single client timeout. Retry is
+// owned by the caller (the SLB attachment service uses helper.RetryRpcPost), so
+// the transport issues exactly one attempt per call.
 // parameters:
 //
 //	ctx - lifecycle context; cancellation aborts the HTTP request
@@ -2676,9 +2678,8 @@ func (client *AliyunClient) RpcPostWithEndpoint(apiProductCode string, apiVersio
 //	apiName - API Name
 //	query - API parameters in query
 //	body - API parameters in body
-//	autoRetry - whether the SDK should retry a 5xx response
-func (client *AliyunClient) RpcPostWithContext(ctx context.Context, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
-	return client.rpcRequestWithContext(ctx, "POST", apiProductCode, apiVersion, apiName, query, body, autoRetry)
+func (client *AliyunClient) RpcPostWithContext(ctx context.Context, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}) (map[string]interface{}, error) {
+	return client.rpcRequestWithContext(ctx, "POST", apiProductCode, apiVersion, apiName, query, body)
 }
 
 // contextHTTPClient is the tea HttpClient used by RpcPostWithContext. tea builds
@@ -2894,7 +2895,7 @@ func undecodableRpcResponseError(response *tea.Response, cause error) error {
 // rpcRequestWithContext mirrors the tea-rpc request construction (query
 // flattening, signing and error decoding) but executes the request through a
 // context aware HTTP client.
-func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
+func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}) (map[string]interface{}, error) {
 	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
 	endpoint, err := client.loadApiEndpoint(apiProductCode)
 	if err != nil {

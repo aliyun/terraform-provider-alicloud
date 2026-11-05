@@ -43,7 +43,7 @@ var listenerTransientErrors = append(append([]string{}, errs.SlbIsBusy...), "TLS
 // context and the SDK level retry is disabled, so a cancelled operation aborts
 // the round trip instead of leaving it running in the background.
 var listenerAclAttachmentRpcPost = func(ctx context.Context, client *connectivity.AliyunClient, action string, request map[string]interface{}) (map[string]interface{}, error) {
-	return client.RpcPostWithContext(ctx, "Slb", string(connectivity.ApiVersion20140515), action, nil, request, false)
+	return client.RpcPostWithContext(ctx, "Slb", string(connectivity.ApiVersion20140515), action, nil, request)
 }
 
 // listenerAclAttachmentApi is the SLB surface of the attachment lifecycle. The

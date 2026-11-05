@@ -445,6 +445,18 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 		return state, true, nil
 	}
 
+	// While access control is on the Describe contract reports AclType. An import
+	// has no configured type to fall back on, so a response without one cannot
+	// prove the imported binding and must not seed a null acl_type.
+	if importing {
+		if value, ok := object["AclType"].(string); !ok || strings.TrimSpace(value) == "" {
+			return listenerAclAttachmentResourceModel{}, false, fmt.Errorf(
+				"cannot confirm the imported binding of listener %s: the describe response did not report a usable AclType while access control is on",
+				listenerId,
+			)
+		}
+	}
+
 	if targetAclId == "" {
 		// Imported without the ACL part. A single bound policy group is
 		// unambiguous; several groups need the four segment import form so the
