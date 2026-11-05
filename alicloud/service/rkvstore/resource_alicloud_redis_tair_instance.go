@@ -935,7 +935,11 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		if err := waitTairInstanceSpecApplied(d, RedisServiceV2{client}, request); err != nil {
+		specOrderId := ""
+		if v, ok := response["OrderId"]; ok && v != nil {
+			specOrderId = fmt.Sprint(v)
+		}
+		if err := waitTairInstanceSpecApplied(d, RedisServiceV2{client}, request, specOrderId); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
@@ -1716,8 +1720,9 @@ func optionalTairInstanceUpdateOption(d *schema.ResourceData, key string) interf
 
 // redisTairInstanceOrderRetryable reports whether an order-style RPC should be retried:
 // transient errors plus the order code returned while the previous order is still being
-// processed. Every ModifyInstanceSpec and TransformInstanceChargeType retry uses it so the
-// same in-progress condition is handled consistently.
+// processed. It is consumed by the TransformInstanceChargeType retry; ModifyInstanceSpec keeps
+// its expected error codes inline because the compatibility check reads them from that call
+// site.
 func redisTairInstanceOrderRetryable(err error) bool {
 	return helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"Order.LatestOrderIsHanding", "MissingRedisUsedmemoryUnsupportPerfItem", "Task.Conflict"})
 }
@@ -1785,26 +1790,35 @@ func tairInstanceAttributesApplied(object map[string]interface{}, expected map[s
 	return true
 }
 
-// waitTairInstanceSpecApplied waits until the order submitted by ModifyInstanceSpec is applied.
-// Waiting on IsOrderCompleted alone has an early-release window: the flag remains true from the
+// waitTairInstanceSpecApplied waits until the change submitted by ModifyInstanceSpec is applied.
+// Waiting on IsOrderCompleted alone has an early-release window: the flag stays true from the
 // previous order until the new one is registered, so a poll taken right after the request can
-// release the update before the change happens. A specification change therefore also requires
-// the applied values to be visible. Only a change deferred to the maintenance window
-// (EffectiveTime=MaintainTime) is not observable right away and waits for the order status
-// alone; ForceUpgrade only controls whether the change may be forced, not when it runs.
-func waitTairInstanceSpecApplied(d *schema.ResourceData, service RedisServiceV2, request map[string]interface{}) error {
+// release the update before the change happens. An immediate change therefore also requires the
+// applied values to be visible (ForceUpgrade only controls whether the change may be forced, not
+// when it runs).
+//
+// A change deferred to the maintenance window (EffectiveTime=MaintainTime) cannot be observed
+// right away. When the API returns the id of the new order, that id is the proof that this
+// request was accepted and scheduled, so the previous order's completed flag is not used as
+// completion evidence. Without an order id the waiter requires an observed transition instead of
+// trusting a flag that may still describe the previous order.
+func waitTairInstanceSpecApplied(d *schema.ResourceData, service RedisServiceV2, request map[string]interface{}, orderId string) error {
 	expected := tairInstanceSpecAppliedAttributes(d, request)
-	// Only EffectiveTime=MaintainTime moves the change to the maintenance window. ForceUpgrade
-	// only controls whether the change may be forced, so an immediate change must still be
-	// verified against the instance attributes when the user disabled the forced upgrade.
 	deferred := false
 	if v, ok := request["EffectiveTime"].(string); ok && v == "MaintainTime" {
 		deferred = true
 	}
-	if deferred || len(expected) == 0 {
-		stateConf := helper.BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, service.RedisTairInstanceStateRefreshFunc(d.Id(), "$.IsOrderCompleted", []string{}))
-		_, err := stateConf.WaitForState()
-		return err
+	if deferred {
+		if orderId != "" {
+			return nil
+		}
+		return waitTairInstanceOrderTransition(d, service)
+	}
+	if len(expected) == 0 {
+		// No compared attribute changed, so the flag alone would have to prove completion; an
+		// initial true may still describe the previous order, so a transition is required here
+		// as well.
+		return waitTairInstanceOrderTransition(d, service)
 	}
 	refresh := func() (interface{}, string, error) {
 		object, err := service.DescribeRedisTairInstance(d.Id())
@@ -1815,6 +1829,33 @@ func waitTairInstanceSpecApplied(d *schema.ResourceData, service RedisServiceV2,
 			return nil, "", errs.WrapError(err)
 		}
 		if fmt.Sprint(object["IsOrderCompleted"]) != "true" || !tairInstanceAttributesApplied(object, expected) {
+			return object, "pending", nil
+		}
+		return object, "true", nil
+	}
+	stateConf := helper.BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, refresh)
+	_, err := stateConf.WaitForState()
+	return err
+}
+
+// waitTairInstanceOrderTransition waits until the order submitted by this request is observed in
+// progress and then completed. An initial completed flag is not accepted as proof: while the new
+// order is not registered yet it still describes the previous order.
+func waitTairInstanceOrderTransition(d *schema.ResourceData, service RedisServiceV2) error {
+	observedInProgress := false
+	refresh := func() (interface{}, string, error) {
+		object, err := service.DescribeRedisTairInstance(d.Id())
+		if err != nil {
+			if errs.NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+		if fmt.Sprint(object["IsOrderCompleted"]) != "true" {
+			observedInProgress = true
+			return object, "pending", nil
+		}
+		if !observedInProgress {
 			return object, "pending", nil
 		}
 		return object, "true", nil

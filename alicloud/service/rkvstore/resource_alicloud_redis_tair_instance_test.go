@@ -5184,6 +5184,94 @@ func TestUnitRedisTairInstanceWaitsForNodeTypeAndReadOnlyCount(t *testing.T) {
 	}
 }
 
+// tairInstanceDeferredFixtureClient serves a deferred ModifyInstanceSpec. The describe sequence is
+// controlled by completed(describe) and the ModifyInstanceSpec response carries orderId when it
+// is not empty.
+func tairInstanceDeferredFixtureClient(t *testing.T, requests *[]map[string]string, describes *int, orderId string, completed func(int) bool) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstanceAttribute":
+			*describes++
+			orderCompleted := "false"
+			if completed(*describes) {
+				orderCompleted = "true"
+			}
+			fmt.Fprintf(w, `{"RequestId":"mock","Instances":{"DBInstanceAttribute":[{"InstanceId":"r-tftest","InstanceStatus":"Normal","IsOrderCompleted":%s,"ReplicaCount":2}]}}`, orderCompleted)
+		case "ModifyInstanceSpec":
+			captured := map[string]string{}
+			for _, key := range []string{"ReplicaCount", "EffectiveTime", "ForceUpgrade"} {
+				if values, ok := r.Form[key]; ok && len(values) > 0 {
+					captured[key] = values[0]
+				}
+			}
+			*requests = append(*requests, captured)
+			if orderId != "" {
+				fmt.Fprintf(w, `{"RequestId":"mock","OrderId":%q}`, orderId)
+				return
+			}
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	return newTairInstanceFixtureClient(t, server)
+}
+
+func tairInstanceDeferredFixtureData(t *testing.T) *sdkv2schema.ResourceData {
+	t.Helper()
+	return tairInstanceUpdateFixtureData(t,
+		map[string][2]string{"replica_count": {"1", "2"}},
+		map[string]cty.Value{
+			"config":         cty.NullVal(cty.Map(cty.String)),
+			"instance_class": cty.StringVal("tair.rdb.2g"),
+			"replica_count":  cty.NumberIntVal(2),
+			"effective_time": cty.StringVal("MaintainTime"),
+		},
+		nil)
+}
+
+// TestUnitRedisTairInstanceWaitsForDeferredOrderTransition covers a deferred change whose
+// ModifyInstanceSpec response carries no order id: the completed flag is already true from the
+// previous order, so the waiter must observe the new order in progress before it can complete.
+func TestUnitRedisTairInstanceWaitsForDeferredOrderTransition(t *testing.T) {
+	var requests []map[string]string
+	describes := 0
+	// First poll: the previous order still reports completed. Second poll: the new order runs.
+	// Afterwards the new order completes.
+	client := tairInstanceDeferredFixtureClient(t, &requests, &describes, "", func(describe int) bool {
+		return describe != 2
+	})
+
+	if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(tairInstanceDeferredFixtureData(t), client); err != nil {
+		t.Fatalf("update failed: %v", err)
+	}
+	assert.Len(t, requests, 1)
+	assert.Equal(t, "MaintainTime", requests[0]["EffectiveTime"])
+	assert.GreaterOrEqual(t, describes, 3, "a deferred change must not be released by the previous order's completed flag")
+}
+
+// TestUnitRedisTairInstanceDeferredOrderAcceptedByIdentity covers a deferred change whose
+// response returns the new order id: that id is the proof of the accepted order, so the waiter
+// does not depend on the previous order's completed flag at all.
+func TestUnitRedisTairInstanceDeferredOrderAcceptedByIdentity(t *testing.T) {
+	var requests []map[string]string
+	describes := 0
+	client := tairInstanceDeferredFixtureClient(t, &requests, &describes, "20722623431", func(int) bool { return true })
+
+	if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(tairInstanceDeferredFixtureData(t), client); err != nil {
+		t.Fatalf("update failed: %v", err)
+	}
+	assert.Len(t, requests, 1)
+	assert.Equal(t, "MaintainTime", requests[0]["EffectiveTime"])
+	assert.LessOrEqual(t, describes, 1, "the accepted order id is the proof; the stale completed flag is not polled")
+}
+
 // tairInstanceTransformRetryFixtureClient fails the first TransformInstanceChargeType call
 // with the in-progress order code and succeeds afterwards, so the retry predicate of the
 // production update path is exercised end to end.
@@ -5474,28 +5562,48 @@ func captureTairInstanceId(target *string, object *map[string]interface{}) resou
 }
 
 // findTairInstanceIdByName returns the ID of the instance whose name matches exactly, or an
-// empty string when the account has no such instance. The exact match keeps the fallback from
-// widening the deletion scope to instances that merely share a prefix.
+// empty string when the account has no such instance. DescribeInstances only offers the fuzzy
+// SearchKey filter, so every result page is scanned and the exact name is matched on the client;
+// two different instances with the exact same name are reported instead of deleting an arbitrary
+// one.
 func findTairInstanceIdByName(client *connectivity.AliyunClient, name string) (string, error) {
-	request := map[string]interface{}{
-		"RegionId":     client.RegionId,
-		"PageSize":     100,
-		"PageNumber":   1,
-		"InstanceName": name,
-	}
-	response, err := client.RpcPost("R-kvstore", "2015-01-01", "DescribeInstances", nil, request, true)
-	if err != nil {
-		return "", fmt.Errorf("describe instances named %q: %s", name, err)
-	}
-	instances, _ := response["Instances"].(map[string]interface{})
-	items, _ := instances["KVStoreInstance"].([]interface{})
-	for _, item := range items {
-		instance, _ := item.(map[string]interface{})
-		if fmt.Sprint(instance["InstanceName"]) == name {
-			return fmt.Sprint(instance["InstanceId"]), nil
+	const pageSize = 50
+	found := ""
+	collected := 0
+	for page := 1; page <= 50; page++ {
+		request := map[string]interface{}{
+			"RegionId":   client.RegionId,
+			"PageSize":   pageSize,
+			"PageNumber": page,
+			"SearchKey":  name,
+		}
+		response, err := client.RpcPost("R-kvstore", "2015-01-01", "DescribeInstances", nil, request, true)
+		if err != nil {
+			return "", fmt.Errorf("describe instances matching %q: %s", name, err)
+		}
+		instances, _ := response["Instances"].(map[string]interface{})
+		items, _ := instances["KVStoreInstance"].([]interface{})
+		for _, item := range items {
+			instance, _ := item.(map[string]interface{})
+			if fmt.Sprint(instance["InstanceName"]) != name {
+				continue
+			}
+			id := fmt.Sprint(instance["InstanceId"])
+			if found != "" && found != id {
+				return "", fmt.Errorf("multiple instances are named %q (%s, %s)", name, found, id)
+			}
+			found = id
+		}
+		collected += len(items)
+		if len(items) == 0 {
+			break
+		}
+		total, err := strconv.Atoi(fmt.Sprint(response["TotalCount"]))
+		if err != nil || collected >= total {
+			break
 		}
 	}
-	return "", nil
+	return found, nil
 }
 
 // releasePrepaidTairInstance releases an instance left behind by a failed step and reports a
@@ -5574,10 +5682,14 @@ func releasePrepaidTairInstanceWithClient(client *connectivity.AliyunClient, ins
 }
 
 // TestUnitRedisTairInstancePrepaidCleanupByName covers a failure before the first Check captured
-// the instance ID: the leftover is found by its exact name and released, while an instance that
-// only shares a prefix is left alone.
+// the instance ID: the leftover is found through the fuzzy SearchKey filter, every page is
+// scanned, and only the exactly named instance is released. A prefix-similar instance on the
+// first page must be left alone, and the request must not use the unsupported InstanceName
+// filter.
 func TestUnitRedisTairInstancePrepaidCleanupByName(t *testing.T) {
 	var deletes []string
+	var searchKeys []string
+	instanceNameFilterUsed := false
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			t.Errorf("parse request: %v", err)
@@ -5586,7 +5698,15 @@ func TestUnitRedisTairInstancePrepaidCleanupByName(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.Form.Get("Action") {
 		case "DescribeInstances":
-			fmt.Fprint(w, `{"RequestId":"mock","Instances":{"KVStoreInstance":[{"InstanceId":"r-prefix","InstanceName":"tf-testaccexact-10"},{"InstanceId":"r-exact","InstanceName":"tf-testaccexact-1"}]}}`)
+			searchKeys = append(searchKeys, r.Form.Get("SearchKey"))
+			if _, ok := r.Form["InstanceName"]; ok {
+				instanceNameFilterUsed = true
+			}
+			if r.Form.Get("PageNumber") == "1" {
+				fmt.Fprint(w, `{"RequestId":"mock","TotalCount":2,"Instances":{"KVStoreInstance":[{"InstanceId":"r-prefix","InstanceName":"tf-testaccexact-10"}]}}`)
+				return
+			}
+			fmt.Fprint(w, `{"RequestId":"mock","TotalCount":2,"Instances":{"KVStoreInstance":[{"InstanceId":"r-exact","InstanceName":"tf-testaccexact-1"}]}}`)
 		case "DescribeInstanceAttribute":
 			if len(deletes) > 0 {
 				w.WriteHeader(http.StatusNotFound)
@@ -5607,6 +5727,30 @@ func TestUnitRedisTairInstancePrepaidCleanupByName(t *testing.T) {
 		t.Fatalf("cleanup failed: %v", err)
 	}
 	assert.Equal(t, []string{"r-exact"}, deletes, "only the instance with the exact name is released")
+	assert.Equal(t, []string{"tf-testaccexact-1", "tf-testaccexact-1"}, searchKeys, "every page is queried through SearchKey")
+	assert.False(t, instanceNameFilterUsed, "DescribeInstances has no InstanceName request parameter")
+}
+
+// TestUnitRedisTairInstancePrepaidCleanupAmbiguousName covers two instances that carry the exact
+// same name: the lookup reports the ambiguity instead of deleting an arbitrary one.
+func TestUnitRedisTairInstancePrepaidCleanupAmbiguousName(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstances":
+			fmt.Fprint(w, `{"RequestId":"mock","TotalCount":2,"Instances":{"KVStoreInstance":[{"InstanceId":"r-dup1","InstanceName":"tf-testaccexact-1"},{"InstanceId":"r-dup2","InstanceName":"tf-testaccexact-1"}]}}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	client := newTairInstanceFixtureClient(t, server)
+
+	err := releasePrepaidTairInstanceWithClient(client, "", "tf-testaccexact-1")
+	assert.Error(t, err, "two instances with the same exact name must be reported instead of deleted")
 }
 
 // TestUnitRedisTairInstancePrepaidCleanupFailureIsReported covers a cleanup that cannot delete the
