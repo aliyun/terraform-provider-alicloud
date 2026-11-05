@@ -78,10 +78,12 @@ func ResourceCluster() *schema.Resource {
 				}
 			}
 			// is_switch_over_for_disaster is an option of the standby-zone
-			// change. Accepting its own change would apply without any API call
-			// and store a value that never took effect.
-			if d.HasChange("is_switch_over_for_disaster") && !d.HasChange("standby_az") {
-				return fmt.Errorf("is_switch_over_for_disaster only takes effect together with a standby_az change")
+			// change. Accepting a new value on its own would apply without any
+			// API call and store a value that never took effect; removing the
+			// attribute is allowed and simply stops sending it.
+			if v, ok := d.GetOk("is_switch_over_for_disaster"); ok && v.(string) != "" &&
+				d.HasChange("is_switch_over_for_disaster") && !d.HasChange("standby_az") {
+				return fmt.Errorf("is_switch_over_for_disaster must be changed together with standby_az")
 			}
 			return nil
 		},
