@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/go-cty/cty"
 	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -66,7 +67,13 @@ func (s *scalingConfigurationUnitTestServer) captured(action string) []map[strin
 	return append([]map[string]string(nil), s.requests[action]...)
 }
 
-func applyScalingConfigurationUnitTest(t *testing.T, server *scalingConfigurationUnitTestServer, previous *sdktf.InstanceState, raw map[string]interface{}) {
+// applyScalingConfigurationUnitTest drives the public resource Diff/Apply entry
+// and reproduces the raw configuration the gRPC plan path attaches to the diff
+// (helper/schema/grpc_provider.go sets diff.RawConfig from the protocol config).
+// The legacy Resource.Diff helper only copies RawConfig from the prior state, so
+// without this step GetRawConfig inside Create/Update would always be null and
+// the test would not exercise the real Optional+Computed behavior.
+func applyScalingConfigurationUnitTest(t *testing.T, server *scalingConfigurationUnitTestServer, previous *sdktf.InstanceState, raw map[string]interface{}, rawConfig cty.Value) {
 	t.Helper()
 	client := essScalingConfigurationUnitTestClient(t, server.handler(t))
 	scalingConfigurationResource := resourceAlicloudEssScalingConfiguration()
@@ -78,6 +85,7 @@ func applyScalingConfigurationUnitTest(t *testing.T, server *scalingConfiguratio
 	if diff == nil {
 		t.Fatal("expected a diff for the unit test configuration")
 	}
+	diff.RawConfig = rawConfig
 	if _, diags := scalingConfigurationResource.Apply(context.Background(), previous, diff, client); diags.HasError() {
 		t.Fatalf("apply reported errors: %v", diags)
 	}
@@ -103,7 +111,7 @@ func TestUnitEssScalingConfigurationCreateRequestMatrix(t *testing.T) {
 			"scaling_group_id":  "asg-unit-test",
 			"instance_type":     "ecs.g6.large",
 			"security_group_id": "sg-unit-test",
-		})
+		}, cty.EmptyObjectVal)
 		creates := server.captured("CreateScalingConfiguration")
 		if len(creates) != 1 {
 			t.Fatalf("expected one CreateScalingConfiguration request, got %d", len(creates))
@@ -118,7 +126,6 @@ func TestUnitEssScalingConfigurationCreateRequestMatrix(t *testing.T) {
 		server := newScalingConfigurationUnitTestServer(t)
 		applyScalingConfigurationUnitTest(t, server, &sdktf.InstanceState{}, map[string]interface{}{
 			"scaling_group_id":             "asg-unit-test",
-			"instance_type":                "ecs.g6.large",
 			"security_group_id":            "sg-unit-test",
 			"cpu":                          2,
 			"memory":                       4,
@@ -126,7 +133,14 @@ func TestUnitEssScalingConfigurationCreateRequestMatrix(t *testing.T) {
 			"system_disk_bursting_enabled": false,
 			"private_pool_options":         []interface{}{map[string]interface{}{}},
 			"scheduler_options":            []interface{}{map[string]interface{}{}},
-		})
+		}, cty.ObjectVal(map[string]cty.Value{
+			"cpu":                          cty.NumberIntVal(2),
+			"memory":                       cty.NumberIntVal(4),
+			"load_balancer_weight":         cty.NumberIntVal(50),
+			"system_disk_bursting_enabled": cty.False,
+			"private_pool_options":         cty.ListValEmpty(cty.EmptyObject),
+			"scheduler_options":            cty.ListValEmpty(cty.EmptyObject),
+		}))
 		creates := server.captured("CreateScalingConfiguration")
 		if len(creates) != 1 {
 			t.Fatalf("expected one CreateScalingConfiguration request, got %d", len(creates))
@@ -175,7 +189,9 @@ func TestUnitEssScalingConfigurationUpdateRequestMatrix(t *testing.T) {
 			"instance_type":              "ecs.g6.large",
 			"security_group_id":          "sg-unit-test",
 			"scaling_configuration_name": "new-name",
-		})
+		}, cty.ObjectVal(map[string]cty.Value{
+			"scaling_configuration_name": cty.StringVal("new-name"),
+		}))
 		modifies := server.captured("ModifyScalingConfiguration")
 		if len(modifies) != 1 {
 			t.Fatalf("expected one ModifyScalingConfiguration request, got %d", len(modifies))
@@ -195,7 +211,9 @@ func TestUnitEssScalingConfigurationUpdateRequestMatrix(t *testing.T) {
 			"instance_type":                "ecs.g6.large",
 			"security_group_id":            "sg-unit-test",
 			"system_disk_bursting_enabled": false,
-		})
+		}, cty.ObjectVal(map[string]cty.Value{
+			"system_disk_bursting_enabled": cty.False,
+		}))
 		modifies := server.captured("ModifyScalingConfiguration")
 		if len(modifies) != 1 {
 			t.Fatalf("expected one ModifyScalingConfiguration request, got %d", len(modifies))
