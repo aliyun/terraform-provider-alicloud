@@ -400,6 +400,18 @@ func TestAccAliCloudOtsSearchIndex_invalidSchema(t *testing.T) {
 			{
 				Config: resourceOtsSearchIndexInvalidConfig(`
     field_schema {
+      field_name = "col1"
+      field_type = "Vector"
+      vector_options {
+        dimension   = 4
+        metric_type = "cosine"
+      }
+    }`),
+				ExpectError: regexp.MustCompile("vector_options requires data_type"),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
       field_name          = "col1"
       field_type          = "Text"
       enable_sort_and_agg = true

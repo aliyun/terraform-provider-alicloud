@@ -15,6 +15,138 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+// maxSearchIndexFieldNestingDepth limits how many sub_field_schemas levels the
+// static Terraform schema exposes. Terraform requires a finite schema tree, so
+// arbitrarily deep Nested fields cannot be represented recursively.
+const maxSearchIndexFieldNestingDepth = 1
+
+func otsSearchIndexFieldSchema(remainingNestingDepth int) *schema.Resource {
+	fieldTypes := []string{
+		string(OtsSearchTypeLong),
+		string(OtsSearchTypeDouble),
+		string(OtsSearchTypeBoolean),
+		string(OtsSearchTypeKeyword),
+		string(OtsSearchTypeText),
+		string(OtsSearchTypeDate),
+		string(OtsSearchTypeGeoPoint),
+		string(OtsSearchTypeVector),
+		string(OtsSearchTypeFuzzyKeyword),
+	}
+	if remainingNestingDepth > 0 {
+		fieldTypes = append(fieldTypes, string(OtsSearchTypeNested))
+	}
+
+	fieldSchema := &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"field_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"field_type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice(fieldTypes, false),
+			},
+			"is_array": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"index": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+				ForceNew: true,
+			},
+			"analyzer": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(OtsSearchSingleWord),
+					string(OtsSearchSplit),
+					string(OtsSearchMinWord),
+					string(OtsSearchMaxWord),
+					string(OtsSearchFuzzy)},
+					false),
+			},
+			"enable_sort_and_agg": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"store": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"date_format_list": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"is_virtual_field": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"source_field_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vector_options": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"data_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								string(OtsSearchVectorDataTypeFloat32)}, false),
+						},
+						"dimension": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: validation.IntBetween(1, 4096),
+						},
+						"metric_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								string(OtsSearchVectorMetricEuclidean),
+								string(OtsSearchVectorMetricCosine),
+								string(OtsSearchVectorMetricDotProduct)}, false),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if remainingNestingDepth > 0 {
+		fieldSchema.Schema["sub_field_schemas"] = &schema.Schema{
+			Type:     schema.TypeSet,
+			Optional: true,
+			ForceNew: true,
+			Elem:     otsSearchIndexFieldSchema(remainingNestingDepth - 1),
+		}
+	}
+
+	return fieldSchema
+}
+
 func ResourceOtsSearchIndex() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunOtsSearchIndexCreate,
@@ -156,138 +288,6 @@ func ResourceOtsSearchIndex() *schema.Resource {
 			},
 		},
 	}
-}
-
-// maxSearchIndexFieldNestingDepth limits how many sub_field_schemas levels the
-// static Terraform schema exposes. Terraform requires a finite schema tree, so
-// arbitrarily deep Nested fields cannot be represented recursively.
-const maxSearchIndexFieldNestingDepth = 1
-
-func otsSearchIndexFieldSchema(remainingNestingDepth int) *schema.Resource {
-	fieldTypes := []string{
-		string(OtsSearchTypeLong),
-		string(OtsSearchTypeDouble),
-		string(OtsSearchTypeBoolean),
-		string(OtsSearchTypeKeyword),
-		string(OtsSearchTypeText),
-		string(OtsSearchTypeDate),
-		string(OtsSearchTypeGeoPoint),
-		string(OtsSearchTypeVector),
-		string(OtsSearchTypeFuzzyKeyword),
-	}
-	if remainingNestingDepth > 0 {
-		fieldTypes = append(fieldTypes, string(OtsSearchTypeNested))
-	}
-
-	fieldSchema := &schema.Resource{
-		Schema: map[string]*schema.Schema{
-			"field_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-			"field_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice(fieldTypes, false),
-			},
-			"is_array": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
-			},
-			"index": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  true,
-				ForceNew: true,
-			},
-			"analyzer": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(OtsSearchSingleWord),
-					string(OtsSearchSplit),
-					string(OtsSearchMinWord),
-					string(OtsSearchMaxWord),
-					string(OtsSearchFuzzy)},
-					false),
-			},
-			"enable_sort_and_agg": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
-			},
-			"store": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
-			},
-			"date_format_list": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-			},
-			"is_virtual_field": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
-			},
-			"source_field_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"vector_options": {
-				Type:     schema.TypeList,
-				Optional: true,
-				ForceNew: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"data_type": {
-							Type:     schema.TypeString,
-							Required: true,
-							ForceNew: true,
-							ValidateFunc: validation.StringInSlice([]string{
-								string(OtsSearchVectorDataTypeFloat32)}, false),
-						},
-						"dimension": {
-							Type:         schema.TypeInt,
-							Required:     true,
-							ForceNew:     true,
-							ValidateFunc: validation.IntBetween(1, 4096),
-						},
-						"metric_type": {
-							Type:     schema.TypeString,
-							Required: true,
-							ForceNew: true,
-							ValidateFunc: validation.StringInSlice([]string{
-								string(OtsSearchVectorMetricEuclidean),
-								string(OtsSearchVectorMetricCosine),
-								string(OtsSearchVectorMetricDotProduct)}, false),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	if remainingNestingDepth > 0 {
-		fieldSchema.Schema["sub_field_schemas"] = &schema.Schema{
-			Type:     schema.TypeSet,
-			Optional: true,
-			ForceNew: true,
-			Elem:     otsSearchIndexFieldSchema(remainingNestingDepth - 1),
-		}
-	}
-
-	return fieldSchema
 }
 
 func parseSearchIndexResourceArgs(d *schema.ResourceData) (*SearchIndexResourceArgs, error) {
@@ -515,15 +515,27 @@ func parseFieldSchema(fsMap map[string]interface{}) (*tablestore.FieldSchema, er
 }
 
 func parseVectorOptions(vectorOptionsArg map[string]interface{}) (*tablestore.VectorOptions, error) {
-	dataType, err := ConvertSearchIndexVectorDataTypeString(SearchIndexVectorDataTypeString(vectorOptionsArg["data_type"].(string)))
+	dataTypeValue := vectorOptionsArg["data_type"].(string)
+	if dataTypeValue == "" {
+		return nil, errs.WrapError(fmt.Errorf("vector_options requires data_type"))
+	}
+	dataType, err := ConvertSearchIndexVectorDataTypeString(SearchIndexVectorDataTypeString(dataTypeValue))
 	if err != nil {
 		return nil, errs.WrapError(err)
 	}
-	metricType, err := ConvertSearchIndexVectorMetricTypeString(SearchIndexVectorMetricTypeString(vectorOptionsArg["metric_type"].(string)))
+	metricTypeValue := vectorOptionsArg["metric_type"].(string)
+	if metricTypeValue == "" {
+		return nil, errs.WrapError(fmt.Errorf("vector_options requires metric_type"))
+	}
+	metricType, err := ConvertSearchIndexVectorMetricTypeString(SearchIndexVectorMetricTypeString(metricTypeValue))
 	if err != nil {
 		return nil, errs.WrapError(err)
 	}
-	dimension := int32(vectorOptionsArg["dimension"].(int))
+	dimensionValue := vectorOptionsArg["dimension"].(int)
+	if dimensionValue == 0 {
+		return nil, errs.WrapError(fmt.Errorf("vector_options requires dimension"))
+	}
+	dimension := int32(dimensionValue)
 
 	return &tablestore.VectorOptions{
 		VectorDataType:   &dataType,

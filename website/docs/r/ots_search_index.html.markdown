@@ -254,9 +254,9 @@ The field_schema supports the following:
 ### `schema-field_schema-vector_options`
 
 The vector_options supports the following:
-* `data_type` - (Required, ForceNew, String) Specifies the vector data type. Valid values: `float32`. Available since v2.3.0.
-* `dimension` - (Required, ForceNew, Int) Specifies the vector dimension. Valid values: 1-4096. Available since v2.3.0.
-* `metric_type` - (Required, ForceNew, String) Specifies the distance metric that is used between vectors. Valid values: `euclidean`, `cosine`, `dot_product`. Available since v2.3.0.
+* `data_type` - (Optional, ForceNew, String) Specifies the vector data type. This parameter is required when `vector_options` is configured. Valid values: `float32`. Available since v2.3.0.
+* `dimension` - (Optional, ForceNew, Int) Specifies the vector dimension. This parameter is required when `vector_options` is configured. Valid values: 1-4096. Available since v2.3.0.
+* `metric_type` - (Optional, ForceNew, String) Specifies the distance metric that is used between vectors. This parameter is required when `vector_options` is configured. Valid values: `euclidean`, `cosine`, `dot_product`. Available since v2.3.0.
 
 ### `schema-field_schema-sub_field_schemas`
 
@@ -276,9 +276,9 @@ The sub_field_schemas supports the following:
 ### `schema-field_schema-sub_field_schemas-vector_options`
 
 The vector_options supports the following:
-* `data_type` - (Required, ForceNew, String) Specifies the vector data type. Valid values: `float32`. Available since v2.3.0.
-* `dimension` - (Required, ForceNew, Int) Specifies the vector dimension. Valid values: 1-4096. Available since v2.3.0.
-* `metric_type` - (Required, ForceNew, String) Specifies the distance metric that is used between vectors. Valid values: `euclidean`, `cosine`, `dot_product`. Available since v2.3.0.
+* `data_type` - (Optional, ForceNew, String) Specifies the vector data type. This parameter is required when `vector_options` is configured. Valid values: `float32`. Available since v2.3.0.
+* `dimension` - (Optional, ForceNew, Int) Specifies the vector dimension. This parameter is required when `vector_options` is configured. Valid values: 1-4096. Available since v2.3.0.
+* `metric_type` - (Optional, ForceNew, String) Specifies the distance metric that is used between vectors. This parameter is required when `vector_options` is configured. Valid values: `euclidean`, `cosine`, `dot_product`. Available since v2.3.0.
 
 ### `schema-index_setting`
 
