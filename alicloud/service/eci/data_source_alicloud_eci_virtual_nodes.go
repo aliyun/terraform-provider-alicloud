@@ -1,0 +1,363 @@
+package eci
+
+import (
+	"fmt"
+	"regexp"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func DataSourceEciVirtualNodes() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceAlicloudEciVirtualNodesRead,
+		Schema: map[string]*schema.Schema{
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"security_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Cleaned", "Failed", "Pending", "Ready"}, false),
+			},
+			"tags": tags.TagsSchema(),
+			"vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"virtual_node_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"nodes": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cpu": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"create_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"eni_instance_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"events": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"count": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"first_timestamp": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"last_timestamp": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"message": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"reason": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"internet_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"intranet_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"memory": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"ram_role_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"security_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"virtual_node_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"virtual_node_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"zone_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceAlicloudEciVirtualNodesRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "DescribeVirtualNodes"
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if v, ok := d.GetOk("security_group_id"); ok {
+		request["SecurityGroupId"] = v
+	}
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["VSwitchId"] = v
+	}
+	if v, ok := d.GetOk("virtual_node_name"); ok {
+		request["VirtualNodeName"] = v
+	}
+	if v, ok := d.GetOk("status"); ok {
+		request["Status"] = v
+	}
+	var objects []map[string]interface{}
+	var virtualNodeNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		virtualNodeNameRegex = r
+	}
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		index := 1
+		for key, value := range v.(map[string]interface{}) {
+			request[fmt.Sprintf("Tag.%d.Key", index)] = key
+			request[fmt.Sprintf("Tag.%d.Value", index)] = value.(string)
+			index = index + 1
+		}
+	}
+	var response map[string]interface{}
+	var err error
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_eci_virtual_nodes", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.VirtualNodes", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.VirtualNodes", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if virtualNodeNameRegex != nil && !virtualNodeNameRegex.MatchString(fmt.Sprint(item["VirtualNodeName"])) {
+				continue
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["VirtualNodeId"])]; !ok {
+					continue
+				}
+			}
+			objects = append(objects, item)
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+
+		cpuVal, err := convert.FormatInt(object["Cpu"])
+		if err != nil {
+			return err
+		}
+
+		memoryVal, err := convert.FormatInt(object["Memory"])
+		if err != nil {
+			return err
+		}
+		mapping := map[string]interface{}{
+			"cpu":               cpuVal,
+			"create_time":       object["CreationTime"],
+			"eni_instance_id":   object["EniInstanceId"],
+			"internet_ip":       object["InternetIp"],
+			"intranet_ip":       object["IntranetIp"],
+			"memory":            memoryVal,
+			"ram_role_name":     object["RamRoleName"],
+			"resource_group_id": object["ResourceGroupId"],
+			"security_group_id": object["SecurityGroupId"],
+			"status":            object["Status"],
+			"vswitch_id":        object["VSwitchId"],
+			"id":                fmt.Sprint(object["VirtualNodeId"]),
+			"virtual_node_id":   fmt.Sprint(object["VirtualNodeId"]),
+			"virtual_node_name": object["VirtualNodeName"],
+			"vpc_id":            object["VpcId"],
+			"zone_id":           object["ZoneId"],
+		}
+
+		events := make([]map[string]interface{}, 0)
+		if eventsList, ok := object["Events"].([]interface{}); ok {
+			for _, v := range eventsList {
+				if m1, ok := v.(map[string]interface{}); ok {
+
+					countVal, err := convert.FormatInt(m1["Count"])
+					if err != nil {
+						return err
+					}
+					temp1 := map[string]interface{}{
+						"count":           countVal,
+						"first_timestamp": m1["FirstTimestamp"],
+						"last_timestamp":  m1["LastTimestamp"],
+						"message":         m1["Message"],
+						"name":            m1["Name"],
+						"reason":          m1["Reason"],
+						"type":            m1["Type"],
+					}
+					events = append(events, temp1)
+				}
+			}
+		}
+		mapping["events"] = events
+
+		tagMap := make(map[string]interface{})
+		t, _ := jsonpath.Get("$.Tags", object)
+		if t != nil {
+			for _, t := range t.([]interface{}) {
+				key := t.(map[string]interface{})["Key"].(string)
+				value := t.(map[string]interface{})["Value"].(string)
+				if !tags.IgnoredTags(key, value) {
+					tagMap[key] = value
+				}
+			}
+		}
+		mapping["tags"] = tagMap
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["VirtualNodeName"])
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("nodes", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

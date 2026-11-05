@@ -8,5 +8,8 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "RdsAi",
+		SDKResources: []conns.SDKResource{
+			{TypeName: "alicloud_rds_ai_instance", Factory: ResourceRdsAiInstance},
+		},
 	}
 }

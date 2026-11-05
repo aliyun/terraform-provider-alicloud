@@ -18,15 +18,38 @@ This data source provides Container Service cluster credential on Alibaba Cloud.
 ## Example Usage
 
 ```terraform
-# Declare the data source
-data "alicloud_cs_managed_kubernetes_clusters" "k8s" {
-  name_regex     = "my-cluster"
-  enable_details = false
+variable "name" {
+  default = "terraform-example"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_cs_managed_kubernetes" "default" {
+  name                 = var.name
+  cluster_spec         = "ack.pro.small"
+  vswitch_ids          = [alicloud_vswitch.default.id]
+  new_nat_gateway      = false
+  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 37)
+  service_cidr         = cidrsubnet("172.18.0.0/16", 4, 7)
+  slb_internet_enabled = true
 }
 
 data "alicloud_cs_cluster_credential" "auth" {
-  for_each                   = toset(data.alicloud_cs_managed_kubernetes_clusters.k8s.ids)
-  cluster_id                 = each.key
+  cluster_id                 = alicloud_cs_managed_kubernetes.default.id
   temporary_duration_minutes = 60
   output_file                = "my-auth-json"
 }

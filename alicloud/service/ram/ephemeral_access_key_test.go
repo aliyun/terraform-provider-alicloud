@@ -116,3 +116,7 @@ func testAccCheckRamAccessKeyRevoked(userName string) resource.TestCheckFunc {
 		return nil
 	}
 }
+
+func TestMain(m *testing.M) {
+	resource.TestMain(m)
+}

@@ -233,6 +233,128 @@ test_no_common_ancestor_fails_closed() {
 	fi
 }
 
+test_blobless_fork_keeps_graph_and_lazy_base_blobs() {
+	local temp_dir="$1"
+	local source_repo="$temp_dir/partial-source"
+	local base_repo="$temp_dir/partial-base.git"
+	local fork_repo="$temp_dir/partial-fork.git"
+	local checkout_repo="$temp_dir/partial-checkout"
+	local shallow_repo="$temp_dir/partial-shallow"
+
+	git init -q -b master "$source_repo"
+	git -C "$source_repo" config core.hooksPath /dev/null
+	git -C "$source_repo" config user.name "CI Range Test"
+	git -C "$source_repo" config user.email "ci-range-test@example.invalid"
+	commit_file "$source_repo" common.txt common common
+	local common_sha
+	common_sha="$(git -C "$source_repo" rev-parse HEAD)"
+	git -C "$source_repo" switch -q -c feature
+	commit_file "$source_repo" head.txt fork-one fork-one
+	local fork_one_sha
+	fork_one_sha="$(git -C "$source_repo" rev-parse HEAD)"
+	commit_file "$source_repo" head.txt fork-two fork-two
+	local head_sha
+	head_sha="$(git -C "$source_repo" rev-parse HEAD)"
+	git -C "$source_repo" switch -q master
+	commit_file "$source_repo" scripts/ci/base-helper.txt \
+		'trusted base helper absent from the fork' base-helper
+	commit_file "$source_repo" scripts/title/title_check.go \
+		'package main // trusted base checker' base-checker
+	local base_sha base_blob fork_blob title_blob
+	base_sha="$(git -C "$source_repo" rev-parse HEAD)"
+	base_blob="$(git -C "$source_repo" rev-parse "$base_sha:scripts/ci/base-helper.txt")"
+	fork_blob="$(git -C "$source_repo" rev-parse "$fork_one_sha:head.txt")"
+	title_blob="$(git -C "$source_repo" rev-parse "$base_sha:scripts/title/title_check.go")"
+	commit_file "$source_repo" after-event.txt advanced advanced-base
+
+	# Separate upload-pack servers: the fork cannot supply base-only blobs,
+	# and the base cannot supply the fork's earlier, replaced head.txt blob.
+	git -c core.hooksPath=/dev/null clone -q --bare --single-branch \
+		--branch master "file://$source_repo" "$base_repo"
+	git -c core.hooksPath=/dev/null clone -q --bare --single-branch \
+		--branch feature "file://$source_repo" "$fork_repo"
+	local remote
+	for remote in "$base_repo" "$fork_repo"; do
+		git -C "$remote" config uploadpack.allowFilter true
+		git -C "$remote" config uploadpack.allowAnySHA1InWant true
+	done
+	git -c protocol.file.allow=always -c core.hooksPath=/dev/null clone \
+		-q --filter=blob:none --no-checkout --single-branch --branch feature \
+		"file://$fork_repo" "$checkout_repo"
+	git -C "$checkout_repo" config protocol.file.allow always
+	git -C "$checkout_repo" config core.hooksPath /dev/null
+	git -C "$checkout_repo" checkout -q --detach "$head_sha"
+	assert_eq false "$(git -C "$checkout_repo" rev-parse --is-shallow-repository)" \
+		"blobless checkout must retain complete commit ancestry"
+	assert_eq 3 "$(git -C "$checkout_repo" rev-list --count HEAD)" \
+		"blobless checkout must retain both fork commits and their ancestor"
+	assert_eq true "$(git -C "$checkout_repo" config remote.origin.promisor)" \
+		"fixture must exercise an actual partial clone"
+
+	local output diff_base present
+	output="$(
+		cd "$checkout_repo"
+		GITHUB_EVENT_NAME=pull_request PR_BASE_SHA="$base_sha" \
+			PR_BASE_REF=master CI_BASE_REPOSITORY_URL="file://$base_repo" "$helper"
+	)"
+	diff_base="$(output_value diff_base "$output")"
+	assert_eq "$common_sha" "$diff_base" "partial fork must resolve its real merge base"
+	assert_eq "$head_sha" "$(output_value diff_head "$output")" \
+		"partial fork must preserve the checked-out head"
+	assert_eq "file://$base_repo" "$(git -C "$checkout_repo" config remote.ci-base.url)" \
+		"base promisor must use the supplied trusted base URL"
+	assert_eq true "$(git -C "$checkout_repo" config remote.ci-base.promisor)" \
+		"base must be registered for lazy blob retrieval"
+	assert_eq blob:none "$(git -C "$checkout_repo" config remote.ci-base.partialclonefilter)" \
+		"base fetch must retain its blobless filter"
+	present="$(git -C "$checkout_repo" cat-file --batch-all-objects --batch-check='%(objectname)')"
+	! grep -qxF "$base_blob" <<<"$present" || die "base fetch unexpectedly downloaded base-only helper blob"
+	! grep -qxF "$fork_blob" <<<"$present" || die "checkout unexpectedly downloaded replaced fork blob"
+	! grep -qxF "$title_blob" <<<"$present" || die "base fetch unexpectedly downloaded title checker blob"
+	assert_eq 'trusted base helper absent from the fork' \
+		"$(git -C "$checkout_repo" show "$base_sha:scripts/ci/base-helper.txt" 2>"$temp_dir/base-lazy-fetch.err")" \
+		"base-only helper must lazy-load from the base promisor"
+	assert_eq fork-one "$(git -C "$checkout_repo" show "$fork_one_sha:head.txt" 2>"$temp_dir/fork-lazy-fetch.err")" \
+		"fork-only historical blob must still lazy-load from origin"
+	git -C "$checkout_repo" checkout "$base_sha" -- scripts/title/title_check.go \
+		2>"$temp_dir/base-checkout-lazy-fetch.err"
+	assert_eq 'package main // trusted base checker' \
+		"$(cat "$checkout_repo/scripts/title/title_check.go")" \
+		"base checker checkout must lazy-load its missing blob without moving HEAD"
+	assert_eq "$head_sha" "$(git -C "$checkout_repo" rev-parse HEAD)" \
+		"restoring base checker files must not replace the event head"
+	assert_eq head.txt "$(git -C "$checkout_repo" diff --name-only "$diff_base" "$head_sha")" \
+		"partial PR diff must exclude base-only changes"
+	git -C "$checkout_repo" merge-base --is-ancestor "$base_sha" refs/remotes/ci-base/base ||
+		die "event base SHA must remain an ancestor of the fetched base branch"
+
+	local invalid_output invalid_status
+	set +e
+	invalid_output="$(
+		cd "$checkout_repo"
+		GITHUB_EVENT_NAME=pull_request PR_BASE_SHA="$fork_one_sha" \
+			PR_BASE_REF=master CI_BASE_REPOSITORY_URL="file://$base_repo" "$helper" 2>&1
+	)"
+	invalid_status=$?
+	set -e
+	[[ "$invalid_status" -ne 0 && "$invalid_output" == *"not part of the fetched base branch"* ]] ||
+		die "partial checkout must reject an event base outside the trusted base branch"
+
+	git -c protocol.file.allow=always -c core.hooksPath=/dev/null clone \
+		-q --depth=1 --filter=blob:none --single-branch --branch feature \
+		"file://$fork_repo" "$shallow_repo"
+	set +e
+	invalid_output="$(
+		cd "$shallow_repo"
+		GITHUB_EVENT_NAME=pull_request PR_BASE_SHA="$base_sha" \
+			PR_BASE_REF=master CI_BASE_REPOSITORY_URL="file://$base_repo" "$helper" 2>&1
+	)"
+	invalid_status=$?
+	set -e
+	[[ "$invalid_status" -ne 0 && "$invalid_output" == *"checkout is shallow"* ]] ||
+		die "blobless support must not accept shallow checkouts"
+}
+
 main() {
 	[[ -x "$helper" ]] || die "missing executable helper: $helper"
 
@@ -243,6 +365,7 @@ main() {
 
 	test_diverged_multi_commit_pr "$temp_dir"
 	test_no_common_ancestor_fails_closed "$temp_dir"
+	test_blobless_fork_keeps_graph_and_lazy_base_blobs "$temp_dir"
 	echo "PASS: change-range regression tests"
 }
 

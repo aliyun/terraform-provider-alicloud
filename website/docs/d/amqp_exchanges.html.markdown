@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Amqp Exchanges of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.128.0+.
+-> **NOTE:** Available since v1.128.0.
 
 ## Example Usage
 
@@ -48,17 +48,17 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `virtual_host_name` - (Required, ForceNew) The name of virtual host where an exchange resides.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Exchange names.
 * `exchanges` - A list of Amqp Exchanges. Each element contains the following attributes:
-	* `attributes` - The attributes.
-	* `auto_delete_state` - Indicates whether the Auto Delete attribute is configured.
-	* `create_time` - The creation time.
-	* `exchange_name` - The name of the exchange.
-	* `exchange_type` - The type of the exchange.
-	* `id` - The ID of the Exchange. Its value is same as Queue Name.
-	* `instance_id` - The ID of the instance.
-	* `virtual_host_name` - The name of virtual host where an exchange resides.
+  * `attributes` - The attributes.
+  * `auto_delete_state` - Indicates whether the Auto Delete attribute is configured.
+  * `create_time` - The creation time.
+  * `exchange_name` - The name of the exchange.
+  * `exchange_type` - The type of the exchange.
+  * `id` - The ID of the Exchange. Its value is same as Queue Name.
+  * `instance_id` - The ID of the instance.
+  * `virtual_host_name` - The name of virtual host where an exchange resides.

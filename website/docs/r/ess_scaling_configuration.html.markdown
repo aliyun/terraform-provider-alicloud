@@ -148,7 +148,9 @@ The following arguments are supported:
 * `enable` - (Optional) Whether enable the specified scaling group(make it active) to which the current scaling configuration belongs.
 * `active` - (Optional) Whether active current scaling configuration in the specified scaling group. Default to `false`.
 * `substitute` - (Optional) The another scaling configuration which will be active automatically and replace current configuration when setting `active` to 'false'. It is invalid when `active` is 'true'.
-* `user_data` - (Optional) User-defined data to customize the startup behaviors of the ECS instance and to pass data into the ECS instance.
+* `user_data` - (Optional, Computed, String) User-defined data to customize the startup behaviors of the ECS instance and to pass data into the ECS instance.
+
+  -> **NOTE:** When `user_data` is not set in the configuration, the provider keeps the value returned by the API, so user data written out of band (for example by the ACK cluster autoscaler) does not produce a diff. An empty `user_data` is treated as unset, so the provider does not send a clear request; sending an empty `UserData` value directly to the API does not clear the stored value either.
 * `key_name` - (Optional) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid.
 * `role_name` - (Optional) Instance RAM role name. The name is provided and maintained by RAM. You can use `alicloud_ram_role` to create a new one.
 * `force_delete` - (Optional) The last scaling configuration will be deleted forcibly with deleting its scaling group. Default to false.
@@ -158,9 +160,11 @@ The following arguments are supported:
 * `custom_priorities` - (Optional, Available since v1.238.0) You can use CustomPriorities to specify the priority of a custom ECS instance type + vSwitch combination. See [`custom_priorities`](#custom_priorities) below for details.
 * `instance_type_override` - (Optional, Available since v1.216.0) specify the weight of instance type.  See [`instance_type_override`](#instance_type_override) below for details.
 * `instance_ids` - (Deprecated) It has been deprecated from version 1.6.0. New resource `alicloud_ess_attachment` replaces it.
-* `tags` - (Optional) A mapping of tags to assign to the resource. It will be applied for ECS instances finally.
-    - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot be a null string.
-    - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be a null string.
+* `tags` - (Optional, Computed, Map) A mapping of tags to assign to the resource. It will be applied for ECS instances finally.
+  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot be a null string.
+  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be a null string.
+
+  -> **NOTE:** When `tags` is not set in the configuration, the provider keeps the tags returned by the API, so tags written out of band (for example by the ACK cluster autoscaler) do not produce a diff. Setting `tags = {}` sends an empty tag set to the API, but the Auto Scaling service keeps the existing instance tags, so the diff remains. Tags removed out of band (a non-empty tag document replaces the whole set) are refreshed into the state: a configuration that does not set `tags` does not recreate them, while one that sets `tags` converges back to the declared set.
 * `override` - (Optional, Available since v1.46.0) Indicates whether to overwrite the existing data. Default to false.
 * `password_inherit` - (Optional, Available since v1.62.0) Specifies whether to use the password that is predefined in the image. If the PasswordInherit parameter is set to true, the `password` and `kms_encrypted_password` will be ignored. You must ensure that the selected image has a password configured.
 * `password` - (Optional, ForceNew, Available since v1.60.0) The password of the ECS instance. The password must be 8 to 30 characters in length. It must contains at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. Special characters include `() ~!@#$%^&*-_+=\|{}[]:;'<>,.?/`, The password of Windows-based instances cannot start with a forward slash (/).
@@ -186,11 +190,11 @@ The following arguments are supported:
 
   -> **NOTE:** Restrictions on attaching ECS instances:
 
-   - The attached ECS instances and the scaling group must have the same region and network type(`Classic` or `VPC`).
-   - The attached ECS instances and the instance with active scaling configurations must have the same instance type.
-   - The attached ECS instances must in the running state.
-   - The attached ECS instances has not been attached to other scaling groups.
-   - The attached ECS instances supports Subscription and Pay-As-You-Go payment methods.
+  - The attached ECS instances and the scaling group must have the same region and network type(`Classic` or `VPC`).
+  - The attached ECS instances and the instance with active scaling configurations must have the same instance type.
+  - The attached ECS instances must in the running state.
+  - The attached ECS instances has not been attached to other scaling groups.
+  - The attached ECS instances supports Subscription and Pay-As-You-Go payment methods.
 
   -> **NOTE:** The last scaling configuration can't be set to inactive and deleted alone.
 
@@ -218,7 +222,7 @@ The networkInterfaces mapping supports the following:
 
 * `instance_type` - (Optional, Available since v1.235.0) The ENI type. If you specify NetworkInterfaces.N, specify at least one primary ENI. You cannot specify SecurityGroupId or SecurityGroupIds.N. Valid values: Primary, Secondary.
 * `network_interface_traffic_mode` - (Optional, Available since v1.235.0) The communication mode of the ENI. Valid values: Standard, HighPerformance. 
-* `ipv6_address_count` - (Optional, Available since v1.235.0) The number of randomly generated IPv6 addresses that you want to assign to primary ENI N.
+* `ipv6_address_count` - (Optional, Int, Available since v1.235.0) The number of randomly generated IPv6 addresses that you want to assign to primary ENI N. Setting it to `0` or removing it from the configuration stops requesting IPv6 addresses: the parameter is left out of the request and the Auto Scaling service drops the previously requested count.
 * `security_group_ids` - (Optional, Available since v1.235.0) The ID of security group N to which ENI N belongs.
 
 ### `custom_priorities`

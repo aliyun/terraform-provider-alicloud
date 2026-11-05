@@ -27,6 +27,14 @@ you should use resource alicloud_ots_table's new field 'instance_name' and 'tabl
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example"
 }
@@ -84,6 +92,14 @@ resource "alicloud_ots_table" "default" {
 ### Example Usage - Auto increment primary key
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example"
 }
@@ -120,7 +136,7 @@ The following arguments are supported:
 * `instance_name` - (Required, ForceNew) The name of the OTS instance in which table will located.
 * `table_name` - (Required, ForceNew) The table name of the OTS instance. If changed, a new table would be created.
 * `primary_key` - (Required, ForceNew) The property of `TableMeta` which indicates the structure information of a table. It describes the attribute value of primary key. The number of `primary_key` should not be less than one and not be more than four. See [`primary_key`](#primary_key) below.
-* `enable_local_txn` - (Bool, Optional, ForceNew, Available since v2.2.0) Whether to enable local transaction for the table. Defaults to `false`. Local transaction and auto-increment primary key (`primary_key.auto_increment`) are mutually exclusive. Modifying this field forces a new resource; local transaction cannot be enabled on an existing table via Terraform.
+* `enable_local_txn` - (Bool, Optional, ForceNew, Available since v2.3.0) Whether to enable local transaction for the table. Defaults to `false`. Local transaction and auto-increment primary key (`primary_key.auto_increment`) are mutually exclusive. Modifying this field forces a new resource; local transaction cannot be enabled on an existing table via Terraform.
 * `defined_column` - (Optional, Available since v1.187.0) The property of `TableMeta` which indicates the structure information of a table. It describes the attribute value of defined column. The number of `defined_column` should not be more than 32. See [`defined_column`](#defined_column) below.
 * `time_to_live` - (Required) The retention time of data stored in this table (unit: second). The value maximum is 2147483647 and -1 means never expired.
 * `max_version` - (Required) The maximum number of versions stored in this table. The valid value is 1-2147483647.
@@ -142,7 +158,7 @@ The defined_column supports the following:
 The primary_key supports the following:
 * `name` - (Required, ForceNew) Name for primary key.
 * `type` - (Required, ForceNew) Type for primary key. Only `Integer`, `String` or `Binary` is allowed.
-* `auto_increment` - (Bool, Optional, ForceNew, Available since v2.2.0) Whether to enable auto increment for this primary key. Defaults to `false`. When set to `true`, `type` must be `Integer` and this primary key must not be the partition key (the first one). At most one primary key can be set to `auto_increment = true`. Auto-increment primary key and local transaction (`enable_local_txn`) are mutually exclusive.
+* `auto_increment` - (Bool, Optional, ForceNew, Available since v2.3.0) Whether to enable auto increment for this primary key. Defaults to `false`. When set to `true`, `type` must be `Integer` and this primary key must not be the partition key (the first one). At most one primary key can be set to `auto_increment = true`. Auto-increment primary key and local transaction (`enable_local_txn`) are mutually exclusive.
 
 ## Attributes Reference
 

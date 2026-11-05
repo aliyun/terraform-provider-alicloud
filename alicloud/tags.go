@@ -8,7 +8,6 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
@@ -57,7 +56,6 @@ func setCdnTags(client *connectivity.AliyunClient, resourceType TagResourceType,
 }
 
 func setVolumeTags(client *connectivity.AliyunClient, resourceType TagResourceType, d *schema.ResourceData) error {
-	ecsService := EcsService{client}
 	if d.HasChange("volume_tags") {
 		request := ecs.CreateDescribeDisksRequest()
 		request.InstanceId = d.Id()
@@ -93,7 +91,7 @@ func setVolumeTags(client *connectivity.AliyunClient, resourceType TagResourceTy
 			ids = append(ids, disk.DiskId)
 			if disk.Type == "system" {
 				for _, t := range disk.Tags.Tag {
-					if !ecsService.ecsTagIgnored(t) {
+					if !ecsTagIgnored(t) {
 						systemDiskTag[t.TagKey] = t.TagValue
 					}
 				}
@@ -205,17 +203,6 @@ func ecsTagsToMap(tags []ecs.Tag) map[string]string {
 	return result
 }
 
-func elasticsearchTagsToMap(tags []elasticsearch.Tag) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		if !elasticsearchTagIgnored(t.TagKey, t.TagValue) {
-			result[t.TagKey] = t.TagValue
-		}
-	}
-
-	return result
-}
-
 func vpcTagsToMap(tags []vpc.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
@@ -263,15 +250,6 @@ func otsTagsToMap(tags []ots.TagInfo) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
 		result[t.TagKey] = t.TagValue
-	}
-
-	return result
-}
-
-func otsRestTagsToMap(tags []RestOtsTagInfo) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		result[t.Key] = t.Value
 	}
 
 	return result
@@ -383,19 +361,6 @@ func slbTagIgnored(t slb.TagResource) bool {
 
 func albTagIgnored(tagKey string, tagValue interface{}) bool {
 	filter := []string{"^aliyun", "^acs:", "^http://", "^https://", "^ack", "^ingress"}
-	for _, v := range filter {
-		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, tagKey)
-		ok, _ := regexp.MatchString(v, tagKey)
-		if ok {
-			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", tagKey, tagValue)
-			return true
-		}
-	}
-	return false
-}
-
-func elasticsearchTagIgnored(tagKey, tagValue string) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, tagKey)
 		ok, _ := regexp.MatchString(v, tagKey)

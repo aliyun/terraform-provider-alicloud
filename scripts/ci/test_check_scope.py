@@ -75,6 +75,9 @@ class ScopeTest(unittest.TestCase):
         self.assertIn(path, check_scope.changed_paths())
         docs = load('run-document-checks').scoped_commands([path])
         with mock.patch.dict(os.environ, {'HOME': str(Path.cwd())}):
+            # Exercise the HOME default even when a workflow's cache bootstrap
+            # has published an explicit tool directory for the real runner.
+            os.environ.pop('TF_DOC_TOOLS_DIR', None)
             self.write('.cache/terraform-doc-tools/misspell', '#!/bin/sh\nprintf "%s\\n" "$@" > args\n')
             Path('.cache/terraform-doc-tools/misspell').chmod(0o755)
             subprocess.run(['bash', '-e', '-c', docs['misspell']], check=True)

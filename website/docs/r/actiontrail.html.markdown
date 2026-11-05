@@ -4,56 +4,112 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_actiontrail"
 sidebar_current: "docs-alicloud-resource-actiontrail"
 description: |-
-  Provides Alibaba Cloud ActionTrail Resource
+  Provides a Alicloud Actiontrail Trail resource.
 ---
 
-# alicloud\_actiontrail
+# alicloud_actiontrail
 
 -> **DEPRECATED:**  This resource has been renamed to [alicloud_actiontrail_trail](https://www.terraform.io/docs/providers/alicloud/r/actiontrail_trail) from version 1.95.0.
 
-Provides a new resource to manage [Action Trail](https://www.alibabacloud.com/help/doc-detail/28804.htm).
+Provides a Actiontrail Trail resource.
 
--> **NOTE:** Available in 1.35.0+
+Trail of ActionTrail. After creating a trail, you need to enable the trail through StartLogging.
+
+For information about Actiontrail Trail and how to use it, see [What is Trail](https://www.alibabacloud.com/help/en/actiontrail/latest/api-actiontrail-2020-07-06-createtrail).
+
+-> **NOTE:** Available since v1.95.0.
 
 ## Example Usage
 
+Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_actiontrail_trail&exampleId=d2a88cfe-eebd-1ea8-4f3f-d2bf3fe500bd248a0ebd&activeTab=example&spm=docs.r.actiontrail_trail.0.d2a88cfeee&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
-# Create a new action trail.
-resource "alicloud_actiontrail" "foo" {
-  name            = "action-trail"
-  event_rw        = "Write-test"
-  oss_bucket_name = alicloud_oss_bucket.bucket.id
-  role_name       = alicloud_ram_role_policy_attachment.attach.role_name
-  oss_key_prefix  = "at-product-account-audit-B"
+variable "name" {
+  default = "terraform-example"
+}
+
+data "alicloud_regions" "default" {
+  current = true
+}
+
+data "alicloud_account" "default" {
+}
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
+resource "alicloud_log_project" "default" {
+  project_name = "${var.name}-${random_integer.default.result}"
+  description  = "tf actiontrail example"
+}
+
+data "alicloud_ram_roles" "default" {
+  name_regex = "AliyunServiceRoleForActionTrail"
+}
+
+resource "alicloud_actiontrail_trail" "default" {
+  trail_name         = var.name
+  sls_write_role_arn = data.alicloud_ram_roles.default.roles.0.arn
+  sls_project_arn    = "acs:log:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:project/${alicloud_log_project.default.project_name}"
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_actiontrail&spm=docs.r.actiontrail.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_actiontrail_trail&spm=docs.r.actiontrail_trail.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `name` - (Required, ForceNew) The name of the trail to be created, which must be unique for an account.
-* `event_rw` - (Optional) Indicates whether the event is a read or a write event. Valid values: Read, Write, and All. Default value: Write.
-* `oss_bucket_name` - (Required) The OSS bucket to which the trail delivers logs. Ensure that this is an existing OSS bucket.
-* `role_name` - (Required) The RAM role in ActionTrail permitted by the user.
-* `oss_key_prefix` - (Optional) The prefix of the specified OSS bucket name. This parameter can be left empty.
-* `sls_project_arn` - (Optional) The unique ARN of the Log Service project.
-* `sls_write_role_arn` - (Optional) The unique ARN of the Log Service role.
+-> **NOTE:** At least one of `oss_bucket_name`, `sls_project_arn`, and `max_compute_project_arn` must be specified to define the delivery target of the trail. Omitting all three is rejected by the ActionTrail `CreateTrail`/`UpdateTrail` API at apply time, so set one of them to avoid an apply-time error.
 
-  -> **NOTE:** `sls_project_arn` and `sls_write_role_arn` should be set or not set at the same time when actiontrail delivers logs.
+* `data_event_trail_region` - (Optional, Available since v1.264.0) The regions where the trail tracks data events. The value is a comma-separated list of region IDs.
+* `event_rw` - (Optional) The read/write type of the events to be delivered. Default value: `All`. Valid values: `Read`, `Write`, `All`.
+* `event_selectors` - (Optional, Available since v1.264.0) The configuration of the data event selector. This parameter is a JSON array that can contain a maximum of 20 elements.
+* `is_organization_trail` - (Optional, ForceNew, Bool) Specifies whether to create a multi-account trail. Default value: `false`. Valid values:
+  - `true`: Creates a multi-account trail.
+  - `false`: Creates a single-account trail.
+* `max_compute_project_arn` - (Optional, Available since v1.256.0) The ARN of the MaxCompute project to which you want to deliver events.
+* `max_compute_write_role_arn` - (Optional, Available since v1.256.0) The ARN of the role that is assumed by ActionTrail to deliver events to the MaxCompute project.
+* `oss_bucket_name` - (Optional) The OSS bucket to which the trail delivers logs.
+* `oss_key_prefix` - (Optional) The prefix of the file name in the OSS bucket to which the trail delivers logs.
+* `oss_write_role_arn` - (Optional) The name of the RAM role that the user allows ActionTrail to access OSS service.
+* `sls_project_arn` - (Optional) The ARN of the Simple Log Service project to which the trail delivers logs.
+* `sls_write_role_arn` - (Optional) The ARN of the role that ActionTrail assumes to deliver operation events to the Simple Log Service project.
+* `status` - (Optional) The status of the trail. Default value: `Enable`. Valid values: `Enable`, `Disable`.
+* `trail_name` - (Optional, ForceNew, Available since v1.95.0) The name of the trail to be created.
+* `trail_region` - (Optional) The region of the trail.
+* `name` - (Optional, ForceNew, Deprecated since v1.95.0) Field `name` has been deprecated from provider version 1.95.0. New field `trail_name` instead.
+* `role_name` - (Deprecated since v1.118.0) Field `role_name` has been deprecated from provider version 1.118.0.
+* `mns_topic_arn` - (Deprecated since v1.118.0) Field `mns_topic_arn` has been deprecated from provider version 1.118.0.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `create_time` - (Available since v1.256.0) The time when the trail was created.
+* `region_id` - (Available since v1.256.0) The home region of the trail.
 
-* `id` - The action trail id. The value is same as its name.
+## Timeouts
+
+-> **NOTE:** Available since v1.256.0.
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Trail.
+* `delete` - (Defaults to 5 mins) Used when delete the Trail.
+* `update` - (Defaults to 5 mins) Used when update the Trail.
 
 ## Import
 
-Action trail can be imported using the id, e.g.
+Actiontrail Trail can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_actiontrail.foo abc12345678
+$ terraform import alicloud_actiontrail.example <id>
 ```

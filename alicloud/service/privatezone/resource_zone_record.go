@@ -1,0 +1,380 @@
+package privatezone
+
+import (
+	"fmt"
+	"log"
+	"strings"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func ResourceZoneRecord() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceZoneRecordCreate,
+		Read:   resourceZoneRecordRead,
+		Update: resourceZoneRecordUpdate,
+		Delete: resourceZoneRecordDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(1 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Update: schema.DefaultTimeout(1 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"lang": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"priority": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(1, 99),
+				Default:      1,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("type").(string) != "MX"
+				},
+			},
+			"record_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"remark": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"rr": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"resource_record"},
+			},
+			"resource_record": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				Deprecated:    "Field 'resource_record' has been deprecated from version 1.109.0. Use 'rr' instead.",
+				ConflictsWith: []string{"rr"},
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"DISABLE", "ENABLE"}, false),
+				Default:      "ENABLE",
+			},
+			"ttl": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  60,
+			},
+			"type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringInSlice([]string{"A", "AAAA", "CNAME", "MX", "PTR", "SRV", "TXT"}, false),
+			},
+			"user_client_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"value": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"zone_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+		},
+	}
+}
+
+func resourceZoneRecordCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "AddZoneRecord"
+	request := make(map[string]interface{})
+	var err error
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
+
+	if v, ok := d.GetOk("priority"); ok {
+		request["Priority"] = v
+	}
+
+	if v, ok := d.GetOk("rr"); ok {
+		request["Rr"] = v
+	} else if v, ok := d.GetOk("resource_record"); ok {
+		request["Rr"] = v
+	} else {
+		return errs.WrapError(errs.Error(`[ERROR] Argument "resource_record" or "rr" must be set one!`))
+	}
+
+	if v, ok := d.GetOk("ttl"); ok {
+		request["Ttl"] = v
+	}
+
+	request["Type"] = d.Get("type")
+	if v, ok := d.GetOk("user_client_ip"); ok {
+		request["UserClientIp"] = v
+	}
+
+	request["Value"] = d.Get("value")
+	request["ZoneId"] = d.Get("zone_id")
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_pvtz_zone_record", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["RecordId"], ":", request["ZoneId"]))
+
+	return resourceZoneRecordUpdate(d, meta)
+}
+func resourceZoneRecordRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	pvtzService := Service{client}
+	object, err := pvtzService.DescribeZoneRecord(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_private_zone_zone_record pvtzService.DescribeZoneRecord Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	if strings.Split(d.Id(), ":")[0] != fmt.Sprint(object["RecordId"]) {
+		d.SetId(fmt.Sprintf("%v:%v", fmt.Sprint(object["RecordId"]), fmt.Sprint(object["ZoneId"])))
+	}
+	parts, err := helper.ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	d.Set("record_id", fmt.Sprint(parts[0]))
+	d.Set("zone_id", parts[1])
+	priorityVal, err := convert.FormatInt(object["Priority"])
+	if err != nil {
+		return err
+	}
+	d.Set("priority", priorityVal)
+	d.Set("remark", object["Remark"])
+	d.Set("rr", object["Rr"])
+	d.Set("resource_record", object["Rr"])
+	d.Set("status", object["Status"])
+	ttlVal, err := convert.FormatInt(object["Ttl"])
+	if err != nil {
+		return err
+	}
+	d.Set("ttl", ttlVal)
+	d.Set("type", object["Type"])
+	d.Set("value", object["Value"])
+	return nil
+}
+func resourceZoneRecordUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	pvtzService := Service{client}
+	object, err := pvtzService.DescribeZoneRecord(d.Id())
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	if strings.Split(d.Id(), ":")[0] != fmt.Sprint(object["RecordId"]) {
+		d.SetId(fmt.Sprintf("%v:%v", fmt.Sprint(object["RecordId"]), fmt.Sprint(object["ZoneId"])))
+	}
+	parts, err := helper.ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	d.Partial(true)
+
+	update := false
+	request := map[string]interface{}{
+		"RecordId": parts[0],
+	}
+	if d.HasChange("remark") {
+		update = true
+		request["Remark"] = d.Get("remark")
+	}
+	if update {
+		if _, ok := d.GetOk("lang"); ok {
+			request["Lang"] = d.Get("lang")
+		}
+		action := "UpdateRecordRemark"
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	setZoneRecordStatusReq := map[string]interface{}{
+		"RecordId": parts[0],
+	}
+	if d.HasChange("status") {
+		update = true
+	}
+	setZoneRecordStatusReq["Status"] = d.Get("status")
+	if update {
+		if _, ok := d.GetOk("lang"); ok {
+			setZoneRecordStatusReq["Lang"] = d.Get("lang")
+		}
+		if _, ok := d.GetOk("user_client_ip"); ok {
+			setZoneRecordStatusReq["UserClientIp"] = d.Get("user_client_ip")
+		}
+		action := "SetZoneRecordStatus"
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, setZoneRecordStatusReq, false)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	updateZoneRecordReq := map[string]interface{}{
+		"RecordId": parts[0],
+	}
+	if !d.IsNewResource() && d.HasChange("rr") {
+		update = true
+		updateZoneRecordReq["Rr"] = d.Get("rr")
+	}
+	if !d.IsNewResource() && d.HasChange("resource_record") {
+		update = true
+		updateZoneRecordReq["Rr"] = d.Get("resource_record")
+	}
+	if updateZoneRecordReq["Rr"] == nil {
+		updateZoneRecordReq["Rr"] = d.Get("rr")
+	}
+	if !d.IsNewResource() && d.HasChange("type") {
+		update = true
+	}
+	updateZoneRecordReq["Type"] = d.Get("type")
+	if !d.IsNewResource() && d.HasChange("value") {
+		update = true
+	}
+	updateZoneRecordReq["Value"] = d.Get("value")
+	if !d.IsNewResource() && d.HasChange("priority") {
+		update = true
+		updateZoneRecordReq["Priority"] = d.Get("priority")
+	}
+	if !d.IsNewResource() && d.HasChange("ttl") {
+		update = true
+		updateZoneRecordReq["Ttl"] = d.Get("ttl")
+	}
+	if update {
+		if _, ok := d.GetOk("lang"); ok {
+			updateZoneRecordReq["Lang"] = d.Get("lang")
+		}
+		if _, ok := d.GetOk("user_client_ip"); ok {
+			updateZoneRecordReq["UserClientIp"] = d.Get("user_client_ip")
+		}
+		action := "UpdateZoneRecord"
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, updateZoneRecordReq, false)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+	d.Partial(false)
+	return resourceZoneRecordRead(d, meta)
+}
+func resourceZoneRecordDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	pvtzService := Service{client}
+	object, err := pvtzService.DescribeZoneRecord(d.Id())
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	if strings.Split(d.Id(), ":")[0] != fmt.Sprint(object["RecordId"]) {
+		d.SetId(fmt.Sprintf("%v:%v", fmt.Sprint(object["RecordId"]), fmt.Sprint(object["ZoneId"])))
+	}
+	parts, err := helper.ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	action := "DeleteZoneRecord"
+	var response map[string]interface{}
+	request := map[string]interface{}{
+		"RecordId": parts[0],
+	}
+
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
+	if v, ok := d.GetOk("user_client_ip"); ok {
+		request["UserClientIp"] = v
+	}
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"System.Busy", "Throttling.User"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"Zone.Invalid.Id", "Zone.Invalid.UserId", "Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}

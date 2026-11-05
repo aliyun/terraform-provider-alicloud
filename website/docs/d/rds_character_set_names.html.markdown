@@ -11,14 +11,14 @@ description: |-
 
 This data source is the character set supported by querying RDS instances.
 
--> **NOTE:** Available in v1.198.0+.
+-> **NOTE:** Available since v1.198.0+.
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_rds_character_set_names" "names" {
-    engine = "MySQL"
+  engine = "MySQL"
 }
 
 output "first_rds_character_set_names" {
@@ -31,8 +31,9 @@ output "first_rds_character_set_names" {
 The following arguments are supported:
 
 * `engine` - (Required, ForceNew) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL`, `MariaDB`.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform apply`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

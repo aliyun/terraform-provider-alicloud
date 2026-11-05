@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ecd available zones to the user.
 ---
 
-# alicloud\_ecd\_zones
+# alicloud_ecd_zones
 
 This data source provides the available zones with the Elastic Desktop Service (ECD) of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.174.0+.
+-> **NOTE:** Available since v1.174.0.
 
 ## Example Usage
 
@@ -31,9 +31,10 @@ The following arguments are supported:
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of Zone IDs.
 * `zones` - A list of availability zone information collection.
-	* `zone_id` - String to filter results by zone id.
+  * `zone_id` - String to filter results by zone id.

@@ -149,7 +149,26 @@ func run(base, head, resourceName string) error {
 			failed = true
 			continue
 		}
-		issues := coverage.Check(path, src, name, r, aliases...)
+		// The suppressor unit net for a split-package resource may live in a
+		// sibling *_unit_test.go file in the same package directory rather
+		// than the main *_test.go file that carries the TestAcc steps. Gather
+		// every Go test file in the same directory so resolveSuppressNet can
+		// span them; the main file itself is parsed by Check and is excluded.
+		testSources := map[string][]byte{}
+		testFiles, terr := filepath.Glob(filepath.Join(filepath.Dir(path), "*_test.go"))
+		if terr == nil {
+			for _, tf := range testFiles {
+				if tf == path {
+					continue
+				}
+				ts, terr := os.ReadFile(tf)
+				if terr != nil {
+					continue
+				}
+				testSources[tf] = ts
+			}
+		}
+		issues := coverage.Check(path, src, testSources, name, r, aliases...)
 		for _, issue := range issues {
 			fmt.Fprintf(os.Stderr, "%s (%s): %s\n", name, path, issue)
 		}

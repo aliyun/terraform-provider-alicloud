@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 )
 
 // flatFile builds a flat titleFile with explicit entities, the way
@@ -18,6 +21,21 @@ func flatFile(name string, added bool, entities ...entity) titleFile {
 // resolveEntities produces them from the register.go join.
 func serviceFile(name string, entities ...entity) titleFile {
 	return titleFile{name: name, service: true, entities: entities}
+}
+
+// ent builds one entity carrying the kind, existing state and product the
+// kind-aware serviceEntities derivation would produce. The aggregate waiver
+// tests use it to exercise parseAggregate/checkTitle logic; the kind-collision
+// e2e tests below drive the real base index instead of hand-setting existing.
+func ent(name string, dataSource, existing bool, product string) entity {
+	return entity{typeName: name, dataSource: dataSource, existing: existing, product: product}
+}
+
+// svcEntities builds one service titleFile whose entities carry an explicit
+// product, the way serviceEntities derives them after a real register.go join
+// against a base index.
+func svcEntities(product string, es ...entity) titleFile {
+	return titleFile{name: "alicloud/service/" + product + "/resource.go", service: true, entities: es}
 }
 
 func TestCheckTitleRequiresModifiedEntityInTitle(t *testing.T) {
@@ -132,7 +150,7 @@ func TestCheckTitleMigrationAnnouncesTheModifiedForm(t *testing.T) {
 	// already existed at the base — the title announces the move with the
 	// modified form, never with the new-entity one.
 	files := []titleFile{serviceFile("alicloud/service/cloudauth/resource_face_config.go",
-		entity{typeName: "alicloud_cloudauth_face_config", existing: true})}
+		entity{typeName: "alicloud_cloudauth_face_config", existing: true, product: "cloudauth"})}
 	if checkTitle("New Resource: alicloud_cloudauth_face_config migrate to split layout", files) {
 		t.Error("checkTitle(migration under the new-entity form) passed, want fail")
 	}
@@ -295,22 +313,22 @@ func chdir(t *testing.T, dir string) {
 	})
 }
 
-func TestServiceEntitiesJoinsTheRegister(t *testing.T) {
+func TestUnitServiceEntitiesJoinsTheRegister(t *testing.T) {
 	root := writeFixture(t)
 	chdir(t, root)
-	empty := &baseIndex{names: map[string]bool{}}
+	empty := &baseIndex{resources: map[string]bool{}, dataSources: map[string]bool{}}
 	cases := map[string][]entity{
 		"alicloud/service/sdkp/resource_thing.go": {
-			{typeName: "alicloud_sdkp_thing"},
+			{typeName: "alicloud_sdkp_thing", product: "sdkp"},
 		},
 		"alicloud/service/sdkp/data_source_things.go": {
-			{typeName: "alicloud_sdkp_things", dataSource: true},
+			{typeName: "alicloud_sdkp_things", dataSource: true, product: "sdkp"},
 		},
 		"alicloud/service/fwp/resource_user.go": {
-			{typeName: "alicloud_fwp_user"},
+			{typeName: "alicloud_fwp_user", product: "fwp"},
 		},
 		"alicloud/service/fwp/data_source_users.go": {
-			{typeName: "alicloud_fwp_users", dataSource: true},
+			{typeName: "alicloud_fwp_users", dataSource: true, product: "fwp"},
 		},
 	}
 	for path, want := range cases {
@@ -325,7 +343,7 @@ func TestServiceEntitiesJoinsTheRegister(t *testing.T) {
 	}
 }
 
-func TestServiceEntitiesMarksExistingEntities(t *testing.T) {
+func TestUnitServiceEntitiesMarksExistingEntities(t *testing.T) {
 	root := writeFixture(t)
 	chdir(t, root)
 	index := baseIndexFromSources(nil, map[string][]byte{
@@ -337,15 +355,15 @@ var ServicePackage = c.ServicePackage{
 	},
 }
 `),
-	})
+	}, nil)
 	got := serviceEntities("alicloud/service/sdkp/resource_thing.go", index)
-	want := []entity{{typeName: "alicloud_sdkp_thing", existing: true}}
+	want := []entity{{typeName: "alicloud_sdkp_thing", existing: true, product: "sdkp"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("serviceEntities with a base index = %+v, want %+v", got, want)
 	}
 }
 
-func TestServiceEntitiesSkipsNonEntityServiceFiles(t *testing.T) {
+func TestUnitServiceEntitiesSkipsNonEntityServiceFiles(t *testing.T) {
 	root := writeFixture(t)
 	chdir(t, root)
 	for _, path := range []string{
@@ -373,7 +391,21 @@ func TestResolveLines(t *testing.T) {
 	}
 }
 
-func TestBaseIndexFromSources(t *testing.T) {
+// quotasProviderSrc returns a root alicloud/provider.go source that registers
+// the public Quotas alias alicloud_quotas_application_info in DataSourcesMap
+// (Quotas #11288), the form splitlayout.ProviderRegisteredNames reads.
+func quotasProviderSrc() []byte {
+	return []byte(`package main
+
+var Provider = schema.Provider{
+	DataSourcesMap: map[string]*schema.Resource{
+		"alicloud_quotas_application_info": QuotasApplicationInfo(),
+	},
+}
+`)
+}
+
+func TestUnitBaseIndexFromSources(t *testing.T) {
 	index := baseIndexFromSources(
 		[]string{
 			"alicloud/resource_alicloud_vpc.go",
@@ -402,13 +434,41 @@ var ServicePackage = c.ServicePackage{
 }
 `),
 		},
+		quotasProviderSrc(),
 	)
-	for _, name := range []string{"alicloud_vpc", "alicloud_vpcs", "alicloud_sdkp_thing", "alicloud_fwp_user", "alicloud_fwp_token"} {
-		if !index.has(name) {
-			t.Errorf("baseIndexFromSources lost %s", name)
+	cases := []struct {
+		name string
+		ds   bool
+	}{
+		{"alicloud_vpc", false},
+		{"alicloud_vpcs", true},
+		{"alicloud_sdkp_thing", false},
+		{"alicloud_fwp_user", false},
+		{"alicloud_quotas_application_info", true},
+	}
+	for _, c := range cases {
+		if !index.has(c.name, c.ds) {
+			t.Errorf("baseIndexFromSources lost %s (dataSource=%v)", c.name, c.ds)
 		}
 	}
-	if index.has("alicloud_missing") {
+	// Kind-aware: the root Quotas alias is a DataSource, so it must not
+	// satisfy a same-named Resource lookup — the collision the fix targets.
+	if index.has("alicloud_quotas_application_info", false) {
+		t.Error("baseIndexFromSources filed the Quotas DataSource alias as a resource")
+	}
+	// Ephemeral registrations are no longer folded into resources: they
+	// live in the others map, so they neither satisfy a resource lookup
+	// nor a data-source one, and a same-named head Resource is new.
+	if index.has("alicloud_fwp_token", false) {
+		t.Error("baseIndexFromSources filed the ephemeral alicloud_fwp_token as a resource")
+	}
+	if index.has("alicloud_fwp_token", true) {
+		t.Error("baseIndexFromSources filed the ephemeral alicloud_fwp_token as a data source")
+	}
+	if !index.others["alicloud_fwp_token"] {
+		t.Error("baseIndexFromSources lost the ephemeral alicloud_fwp_token from others")
+	}
+	if index.has("alicloud_missing", false) {
 		t.Error("baseIndexFromSources invented alicloud_missing")
 	}
 }
@@ -434,7 +494,7 @@ func ServicePackage() conns.ServicePackage { return conns.ServicePackage{
 	if !split || flat {
 		t.Fatal("core implementation bypassed entity title checks")
 	}
-	index := baseIndexFromSources(nil, map[string][]byte{dir + "/register.go": register})
+	index := baseIndexFromSources(nil, map[string][]byte{dir + "/register.go": register}, nil)
 	entities := serviceEntities(path, index)
 	if len(entities) != 1 || entities[0].typeName != "alicloud_account" || !entities[0].dataSource || !entities[0].existing {
 		t.Fatalf("core entity classified incorrectly: %+v", entities)
@@ -448,5 +508,480 @@ func ServicePackage() conns.ServicePackage { return conns.ServicePackage{
 	}
 	if got := resolveLines(path); len(got) != 1 || got[0] != path+"\talicloud_account\tdata_source" {
 		t.Fatalf("core documentation mapping missing: %v", got)
+	}
+}
+
+func TestUnitCheckTitleAggregateWholeProductMigration(t *testing.T) {
+	// A whole-product migration names too many entities for one title; the
+	// concise migrate/<product>: waives every per-entity fragment when all
+	// are existing entities of that one product.
+	var es []entity
+	for i := 0; i < 47; i++ {
+		es = append(es, ent(fmt.Sprintf("alicloud_ram_entity_%d", i), false, true, "ram"))
+	}
+	files := []titleFile{svcEntities("ram", es...)}
+	if !checkTitle("migrate/ram: move the whole RAM package to split layout", files) {
+		t.Error("checkTitle(whole-product migration) failed, want pass")
+	}
+}
+
+func TestUnitCheckTitleAggregateWaivesResourceAndDataSource(t *testing.T) {
+	files := []titleFile{svcEntities("cbn",
+		ent("alicloud_cbn_resource", false, true, "cbn"),
+		ent("alicloud_cbn_data", true, true, "cbn"))}
+	if !checkTitle("migrate/cbn: move the resource and data source", files) {
+		t.Error("checkTitle(resource+datasource migration) failed, want pass")
+	}
+	// Without the marker both fragments are demanded.
+	if checkTitle("refactor: move the resource and data source", files) {
+		t.Error("checkTitle(no marker, missing fragments) passed, want fail")
+	}
+	if !checkTitle("refactor: resource/alicloud_cbn_resource: x and data-source/alicloud_cbn_data: y", files) {
+		t.Error("checkTitle(both fragments without marker) failed, want pass")
+	}
+}
+
+func TestUnitCheckTitleAggregateRootAliasesMigration(t *testing.T) {
+	// A root alias (Quotas #11288) moved into a service register is an
+	// existing entity of its product, so migrate/<product>: waives it.
+	files := []titleFile{svcEntities("quotas",
+		ent("alicloud_quotas_application_info", true, true, "quotas"))}
+	if !checkTitle("migrate/quotas: move the root alias into a service register", files) {
+		t.Error("checkTitle(root alias migration) failed, want pass")
+	}
+}
+
+func TestUnitCheckTitleAggregateRejectsNewEntity(t *testing.T) {
+	// A new entity is never waived: the marker cannot hide an undeclared
+	// addition, so the title must still announce New Resource:.
+	files := []titleFile{svcEntities("ram",
+		ent("alicloud_ram_new", false, false, "ram"))}
+	if checkTitle("migrate/ram: move the package", files) {
+		t.Error("checkTitle(marker hiding a new entity) passed, want fail")
+	}
+	if !checkTitle("migrate/ram: move the package New Resource: alicloud_ram_new", files) {
+		t.Error("checkTitle(new entity announced beside the marker) failed, want pass")
+	}
+}
+
+func TestUnitCheckTitleAggregateRejectsCrossProduct(t *testing.T) {
+	// A cross-product mix is not one product's migration, so the waiver does
+	// not apply and every entity keeps demanding its own fragment — the
+	// outsider the marker would have hidden stays declared.
+	files := []titleFile{
+		svcEntities("ram", ent("alicloud_ram_thing", false, true, "ram")),
+		svcEntities("cbn", ent("alicloud_cbn_thing", false, true, "cbn")),
+	}
+	if checkTitle("migrate/ram: move things", files) {
+		t.Error("checkTitle(cross-product behind one marker) passed, want fail")
+	}
+	if checkTitle("migrate/ram: move things resource/alicloud_cbn_thing: x", files) {
+		t.Error("checkTitle(cross-product with only the outsider fragment) passed, want fail")
+	}
+	if !checkTitle("migrate/ram: move things resource/alicloud_ram_thing: x resource/alicloud_cbn_thing: y", files) {
+		t.Error("checkTitle(cross-product with every fragment) failed, want pass")
+	}
+}
+
+func TestUnitCheckTitleAggregateRejectsWrongProduct(t *testing.T) {
+	files := []titleFile{svcEntities("ram", ent("alicloud_ram_thing", false, true, "ram"))}
+	if checkTitle("migrate/cbn: wrong product", files) {
+		t.Error("checkTitle(wrong product marker) passed, want fail")
+	}
+	if !checkTitle("migrate/cbn: wrong product resource/alicloud_ram_thing: x", files) {
+		t.Error("checkTitle(wrong product with the fragment) failed, want pass")
+	}
+}
+
+func TestUnitCheckTitleAggregateDoesNotWaiveFlatEntities(t *testing.T) {
+	// Flat entities carry no product, so the marker never waives them.
+	files := []titleFile{
+		svcEntities("ram", ent("alicloud_ram_thing", false, true, "ram")),
+		flatFile("alicloud/resource_alicloud_flat.go", false,
+			entity{typeName: "alicloud_flat", existing: true}),
+	}
+	if checkTitle("migrate/ram: move things", files) {
+		t.Error("checkTitle(flat entity hidden behind the marker) passed, want fail")
+	}
+	if !checkTitle("migrate/ram: move things resource/alicloud_flat: x", files) {
+		t.Error("checkTitle(flat entity announced beside the marker) failed, want pass")
+	}
+}
+
+func TestUnitCheckTitleMigrateWordIsNotABypass(t *testing.T) {
+	// The bare word "migrate" without the /<product>: marker is ordinary
+	// text; the per-entity rules keep applying.
+	files := []titleFile{svcEntities("ram", ent("alicloud_ram_thing", false, true, "ram"))}
+	if checkTitle("migrate ram: move things", files) {
+		t.Error("checkTitle(bare migrate word bypass) passed, want fail")
+	}
+	if !checkTitle("migrate ram: move things resource/alicloud_ram_thing: x", files) {
+		t.Error("checkTitle(bare migrate word with fragment) failed, want pass")
+	}
+}
+
+func TestUnitAggregateMarkerParsing(t *testing.T) {
+	cases := map[string]string{
+		"migrate/ram: x":           "ram",
+		"migrate/ram-resource: x":  "ram-resource",
+		"feat: migrate/cbn: move":  "cbn",
+		"migrate ram: x":           "", // space, not a marker
+		"resource/alicloud_ram: x": "", // not the migrate form
+		"":                         "",
+		"migrate/: x":              "", // empty product segment
+	}
+	for title, want := range cases {
+		if got := aggregateMarker(title); got != want {
+			t.Errorf("aggregateMarker(%q) = %q, want %q", title, got, want)
+		}
+	}
+}
+
+// writeDemoFixture builds a one-entity demo split-layout tree. When
+// headResource is true the head registers alicloud_demo_thing as an SDK
+// Resource (resource_thing.go + ResourceThing); otherwise as a Data Source
+// (data_source_thing.go + DataSourceThing). The base commit owned no demo
+// register, so the base index is built separately from the root provider.go
+// alias the caller supplies — the e2e tests drive the real baseIndexFromSources
+// + serviceEntities + resolveLines + checkTitle, never hand-setting existing.
+// writeDemoTypeFixture builds a one-entity demo split-layout tree that
+// registers typeName. When headResource is true the head registers typeName as
+// an SDK Resource (resource_thing.go + ResourceThing); otherwise as a Data
+// Source (data_source_thing.go + DataSourceThing). The base commit owned no
+// demo register, so the base index is built separately from the flat files
+// and root provider.go alias the caller supplies — the e2e tests drive the real
+// baseIndexFromSources + serviceEntities + resolveLines + checkTitle, never
+// hand-setting existing.
+func writeDemoTypeFixture(t *testing.T, typeName string, headResource bool) string {
+	t.Helper()
+	root := t.TempDir()
+	var reg, impl, implPath string
+	if headResource {
+		reg = fmt.Sprintf(`package demo
+
+var ServicePackage = c.ServicePackage{
+	SDKResources: []c.SDKResource{
+		{TypeName: %q, Factory: ResourceThing},
+	},
+}
+`, typeName)
+		impl = "package demo\n\nfunc ResourceThing() *r.Resource { return nil }\n"
+		implPath = "alicloud/service/demo/resource_thing.go"
+	} else {
+		reg = fmt.Sprintf(`package demo
+
+var ServicePackage = c.ServicePackage{
+	SDKDataSources: []c.SDKResource{
+		{TypeName: %q, Factory: DataSourceThing},
+	},
+}
+`, typeName)
+		impl = "package demo\n\nfunc DataSourceThing() *s.DataSource { return nil }\n"
+		implPath = "alicloud/service/demo/data_source_thing.go"
+	}
+	files := map[string]string{
+		"alicloud/service/demo/register.go": reg,
+		implPath:                            impl,
+	}
+	for path, src := range files {
+		full := filepath.Join(root, filepath.FromSlash(path))
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(src), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return root
+}
+
+func writeDemoFixture(t *testing.T, headResource bool) string {
+	return writeDemoTypeFixture(t, "alicloud_demo_thing", headResource)
+}
+
+// demoProviderSrc returns a root alicloud/provider.go source that registers
+// alicloud_demo_thing in DataSourcesMap (dataSource=true) or ResourcesMap,
+// the public alias form splitlayout.ProviderRegisteredNames reads.
+func demoProviderSrc(dataSource bool) []byte {
+	field := "ResourcesMap"
+	if dataSource {
+		field = "DataSourcesMap"
+	}
+	return []byte(fmt.Sprintf(`package main
+
+var Provider = schema.Provider{
+	%s: map[string]*schema.Resource{
+		"alicloud_demo_thing": Thing(),
+	},
+}
+`, field))
+}
+
+// TestUnitCheckTitleKindCollisionForward is the regression the fix targets: the
+// base root provider.go registers alicloud_demo_thing as a DataSource, and the
+// head adds a same-named demo Resource. A name-only index would mark the new
+// Resource existing and let migrate/demo: waive it; the kind-aware index keeps
+// the base DataSource from satisfying the Resource, so migrate/demo: fails and
+// New Resource: is demanded.
+func TestUnitCheckTitleKindCollisionForward(t *testing.T) {
+	root := writeDemoFixture(t, true)
+	chdir(t, root)
+	base := baseIndexFromSources(nil, map[string][]byte{}, demoProviderSrc(true))
+	path := "alicloud/service/demo/resource_thing.go"
+	entities := serviceEntities(path, base)
+	want := []entity{{typeName: "alicloud_demo_thing", existing: false, product: "demo"}}
+	if !reflect.DeepEqual(entities, want) {
+		t.Fatalf("serviceEntities = %+v, want %+v (base DataSource must not satisfy the new Resource)", entities, want)
+	}
+	files := []titleFile{serviceFile(path, entities...)}
+	if checkTitle("migrate/demo: move the demo thing to split layout", files) {
+		t.Error("checkTitle(migrate/demo hiding a new same-named Resource) passed, want fail")
+	}
+	if !checkTitle("feat: New Resource: alicloud_demo_thing", files) {
+		t.Error("checkTitle(New Resource for the kind collision) failed, want pass")
+	}
+	if got := resolveLines(path); len(got) != 1 || got[0] != path+"\talicloud_demo_thing\tresource" {
+		t.Errorf("resolveLines = %v, want the resource mapping", got)
+	}
+}
+
+// TestUnitCheckTitleKindCollisionReverse is the mirror: the base root
+// provider.go registers alicloud_demo_thing as a Resource, and the head adds a
+// same-named demo Data Source. migrate/demo: fails and New Data Source: is
+// demanded.
+func TestUnitCheckTitleKindCollisionReverse(t *testing.T) {
+	root := writeDemoFixture(t, false)
+	chdir(t, root)
+	base := baseIndexFromSources(nil, map[string][]byte{}, demoProviderSrc(false))
+	path := "alicloud/service/demo/data_source_thing.go"
+	entities := serviceEntities(path, base)
+	want := []entity{{typeName: "alicloud_demo_thing", dataSource: true, existing: false, product: "demo"}}
+	if !reflect.DeepEqual(entities, want) {
+		t.Fatalf("serviceEntities = %+v, want %+v (base Resource must not satisfy the new Data Source)", entities, want)
+	}
+	files := []titleFile{serviceFile(path, entities...)}
+	if checkTitle("migrate/demo: move the demo thing to split layout", files) {
+		t.Error("checkTitle(migrate/demo hiding a new same-named Data Source) passed, want fail")
+	}
+	if !checkTitle("feat: New Data Source: alicloud_demo_thing", files) {
+		t.Error("checkTitle(New Data Source for the kind collision) failed, want pass")
+	}
+}
+
+// TestUnitCheckTitleSameKindAliasMigrationIsWaived proves the fix does not
+// over-block: when the base DataSource alias moves into the demo register as
+// the same kind, the entity is existing and migrate/demo: waives it.
+func TestUnitCheckTitleSameKindAliasMigrationIsWaived(t *testing.T) {
+	root := writeDemoFixture(t, false)
+	chdir(t, root)
+	base := baseIndexFromSources(nil, map[string][]byte{}, demoProviderSrc(true))
+	path := "alicloud/service/demo/data_source_thing.go"
+	entities := serviceEntities(path, base)
+	want := []entity{{typeName: "alicloud_demo_thing", dataSource: true, existing: true, product: "demo"}}
+	if !reflect.DeepEqual(entities, want) {
+		t.Fatalf("serviceEntities = %+v, want %+v (same-kind alias must be existing)", entities, want)
+	}
+	files := []titleFile{serviceFile(path, entities...)}
+	if !checkTitle("migrate/demo: move the demo data source alias into the service register", files) {
+		t.Error("checkTitle(same-kind alias migration) failed, want pass")
+	}
+}
+
+// demoBaseRegisterSrc returns a base demo register.go source that registers
+// alicloud_demo_thing as the given framework-native kind — ephemeral, list
+// or action — so the kind-collision fixture can drive a base registration
+// that has no house title form through the real baseIndexFromSources path.
+func demoBaseRegisterSrc(kind splitlayout.Kind) []byte {
+	var field, elem string
+	switch kind {
+	case splitlayout.KindEphemeral:
+		field, elem = "EphemeralResources", "c.EphemeralResource"
+	case splitlayout.KindListResource:
+		field, elem = "ListResources", "c.ListResource"
+	case splitlayout.KindAction:
+		field, elem = "Actions", "c.Action"
+	default:
+		panic(fmt.Sprintf("demoBaseRegisterSrc: unsupported kind %s", kind))
+	}
+	return []byte(fmt.Sprintf(`package demo
+
+var ServicePackage = c.ServicePackage{
+	%s: []%s{
+		{TypeName: "alicloud_demo_thing", Factory: DemoThing},
+	},
+}
+`, field, elem))
+}
+
+// TestUnitCheckTitleNonTitleKindBaseDoesNotSatisfyResource is the regression the
+// kind-aware others map targets: the base register.go registers
+// alicloud_demo_thing only as an ephemeral, list resource or action — kinds
+// with no house title form — and the head adds a same-named SDK Resource. A
+// name-only (or resource-folding) index would mark the new Resource existing
+// and let migrate/demo: waive it; the kind-aware index keeps the base entity
+// in others, so it never satisfies the Resource lookup, migrate/demo: fails
+// and New Resource: is demanded. The entities are derived through the real
+// baseIndexFromSources + serviceEntities + resolveLines + checkTitle path,
+// never hand-setting existing.
+func TestUnitCheckTitleNonTitleKindBaseDoesNotSatisfyResource(t *testing.T) {
+	for _, kind := range []splitlayout.Kind{splitlayout.KindEphemeral, splitlayout.KindListResource, splitlayout.KindAction} {
+		t.Run(string(kind), func(t *testing.T) {
+			root := writeDemoFixture(t, true)
+			chdir(t, root)
+			base := baseIndexFromSources(nil, map[string][]byte{
+				"alicloud/service/demo/register.go": demoBaseRegisterSrc(kind),
+			}, nil)
+			if base.has("alicloud_demo_thing", false) {
+				t.Fatalf("base %s alicloud_demo_thing satisfies a resource lookup", kind)
+			}
+			if !base.others["alicloud_demo_thing"] {
+				t.Fatalf("base %s alicloud_demo_thing not retained in others", kind)
+			}
+			path := "alicloud/service/demo/resource_thing.go"
+			entities := serviceEntities(path, base)
+			want := []entity{{typeName: "alicloud_demo_thing", existing: false, product: "demo"}}
+			if !reflect.DeepEqual(entities, want) {
+				t.Fatalf("kind=%s: serviceEntities = %+v, want %+v (base non-title kind must not satisfy the new Resource)", kind, entities, want)
+			}
+			files := []titleFile{serviceFile(path, entities...)}
+			if checkTitle("migrate/demo: move the demo thing to split layout", files) {
+				t.Errorf("kind=%s: migrate/demo waived a new same-named Resource", kind)
+			}
+			if !checkTitle("feat: New Resource: alicloud_demo_thing", files) {
+				t.Errorf("kind=%s: New Resource for the non-title-kind collision rejected", kind)
+			}
+			if got := resolveLines(path); len(got) != 1 || got[0] != path+"\talicloud_demo_thing\tresource" {
+				t.Errorf("kind=%s: resolveLines = %v, want the resource mapping", kind, got)
+			}
+		})
+	}
+}
+
+// TestUnitCheckTitleFlatTestFileDoesNotSatisfyResource is the regression the
+// flat _test.go filter targets: the base flat tree lists
+// resource_alicloud_demo_test.go, a test file that names no provider entity,
+// and the head registers alicloud_demo_test (a legitimate _test-suffixed type
+// name) as a demo Resource. A stem-filing index would record
+// alicloud_demo_test as a base resource and let migrate/demo: waive the new
+// entity; the fix skips _test.go stems, so the base knows nothing, the entity
+// is new, migrate/demo: fails and New Resource: is demanded. The entities are
+// derived through the real baseIndexFromSources + serviceEntities +
+// resolveLines + checkTitle path, never hand-setting existing.
+func TestUnitCheckTitleFlatTestFileDoesNotSatisfyResource(t *testing.T) {
+	root := writeDemoTypeFixture(t, "alicloud_demo_test", true)
+	chdir(t, root)
+	base := baseIndexFromSources(
+		[]string{"alicloud/resource_alicloud_demo_test.go"},
+		map[string][]byte{}, nil)
+	if base.has("alicloud_demo_test", false) {
+		t.Fatal("base flat _test.go satisfied a resource lookup")
+	}
+	path := "alicloud/service/demo/resource_thing.go"
+	entities := serviceEntities(path, base)
+	want := []entity{{typeName: "alicloud_demo_test", existing: false, product: "demo"}}
+	if !reflect.DeepEqual(entities, want) {
+		t.Fatalf("serviceEntities = %+v, want %+v (base _test.go must not satisfy the new Resource)", entities, want)
+	}
+	files := []titleFile{serviceFile(path, entities...)}
+	if checkTitle("migrate/demo: move the demo thing to split layout", files) {
+		t.Error("checkTitle(migrate/demo hiding a new Resource behind a base _test.go) passed, want fail")
+	}
+	if !checkTitle("feat: New Resource: alicloud_demo_test", files) {
+		t.Error("checkTitle(New Resource for the base _test.go collision) failed, want pass")
+	}
+	if got := resolveLines(path); len(got) != 1 || got[0] != path+"\talicloud_demo_test\tresource" {
+		t.Errorf("resolveLines = %v, want the resource mapping", got)
+	}
+}
+
+// TestUnitCheckTitleFlatTestFileDoesNotSatisfyDataSource is the data-source
+// mirror: the base flat tree lists data_source_alicloud_demo_test.go and the
+// head registers alicloud_demo_test as a demo Data Source. A stem-filing index
+// would record it as a base data source and waive it; the fix skips _test.go,
+// so the entity is new, migrate/demo: fails and New Data Source: is demanded.
+func TestUnitCheckTitleFlatTestFileDoesNotSatisfyDataSource(t *testing.T) {
+	root := writeDemoTypeFixture(t, "alicloud_demo_test", false)
+	chdir(t, root)
+	base := baseIndexFromSources(
+		[]string{"alicloud/data_source_alicloud_demo_test.go"},
+		map[string][]byte{}, nil)
+	if base.has("alicloud_demo_test", true) {
+		t.Fatal("base flat _test.go satisfied a data-source lookup")
+	}
+	path := "alicloud/service/demo/data_source_thing.go"
+	entities := serviceEntities(path, base)
+	want := []entity{{typeName: "alicloud_demo_test", dataSource: true, existing: false, product: "demo"}}
+	if !reflect.DeepEqual(entities, want) {
+		t.Fatalf("serviceEntities = %+v, want %+v (base _test.go must not satisfy the new Data Source)", entities, want)
+	}
+	files := []titleFile{serviceFile(path, entities...)}
+	if checkTitle("migrate/demo: move the demo thing to split layout", files) {
+		t.Error("checkTitle(migrate/demo hiding a new Data Source behind a base _test.go) passed, want fail")
+	}
+	if !checkTitle("feat: New Data Source: alicloud_demo_test", files) {
+		t.Error("checkTitle(New Data Source for the base _test.go collision) failed, want pass")
+	}
+}
+
+// TestUnitCheckTitleFlatHelperDoesNotSatisfyResource is the regression the
+// non-implementation stem filter targets: the base flat tree lists
+// alicloud_demo_thing.go, a shared helper with no resource_/data_source_
+// prefix that names no provider entity, and the head registers
+// alicloud_demo_thing as a demo Resource. A stem-filing index would record
+// alicloud_demo_thing as a base resource and let migrate/demo: waive the new
+// entity; the fix skips non-implementation stems, so the entity is new,
+// migrate/demo: fails and New Resource: is demanded.
+func TestUnitCheckTitleFlatHelperDoesNotSatisfyResource(t *testing.T) {
+	root := writeDemoTypeFixture(t, "alicloud_demo_thing", true)
+	chdir(t, root)
+	base := baseIndexFromSources(
+		[]string{"alicloud/alicloud_demo_thing.go"},
+		map[string][]byte{}, nil)
+	if base.has("alicloud_demo_thing", false) {
+		t.Fatal("base flat helper satisfied a resource lookup")
+	}
+	path := "alicloud/service/demo/resource_thing.go"
+	entities := serviceEntities(path, base)
+	want := []entity{{typeName: "alicloud_demo_thing", existing: false, product: "demo"}}
+	if !reflect.DeepEqual(entities, want) {
+		t.Fatalf("serviceEntities = %+v, want %+v (base helper must not satisfy the new Resource)", entities, want)
+	}
+	files := []titleFile{serviceFile(path, entities...)}
+	if checkTitle("migrate/demo: move the demo thing to split layout", files) {
+		t.Error("checkTitle(migrate/demo hiding a new Resource behind a base helper) passed, want fail")
+	}
+	if !checkTitle("feat: New Resource: alicloud_demo_thing", files) {
+		t.Error("checkTitle(New Resource for the base helper collision) failed, want pass")
+	}
+}
+
+// TestUnitCheckTitleFlatImplementationStillSatisfies proves the fix does not
+// over-block: a real flat implementation file resource_alicloud_demo_thing.go
+// keeps filing alicloud_demo_thing as a base resource, so when the head moves
+// it into the demo register as the same kind, the entity is existing and
+// migrate/demo: waives the per-entity fragment. The flat implementation prefix
+// is admitted exactly as before; only _test.go and non-implementation stems
+// are dropped.
+func TestUnitCheckTitleFlatImplementationStillSatisfies(t *testing.T) {
+	root := writeDemoTypeFixture(t, "alicloud_demo_thing", true)
+	chdir(t, root)
+	base := baseIndexFromSources(
+		[]string{"alicloud/resource_alicloud_demo_thing.go"},
+		map[string][]byte{}, nil)
+	if !base.has("alicloud_demo_thing", false) {
+		t.Fatal("base flat implementation lost the real resource")
+	}
+	path := "alicloud/service/demo/resource_thing.go"
+	entities := serviceEntities(path, base)
+	want := []entity{{typeName: "alicloud_demo_thing", existing: true, product: "demo"}}
+	if !reflect.DeepEqual(entities, want) {
+		t.Fatalf("serviceEntities = %+v, want %+v (real flat implementation must satisfy the migration)", entities, want)
+	}
+	files := []titleFile{serviceFile(path, entities...)}
+	if !checkTitle("migrate/demo: move the demo thing into the service register", files) {
+		t.Error("checkTitle(real flat implementation migration) failed, want pass")
+	}
+	if checkTitle("feat: New Resource: alicloud_demo_thing", files) {
+		t.Error("checkTitle(existing flat implementation demanded New Resource) passed, want fail")
 	}
 }

@@ -1,0 +1,66 @@
+---
+subcategory: "Application Real-Time Monitoring Service (ARMS)"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_arms_webhook_contact"
+description: |-
+  Provides a Alicloud Application Real-Time Monitoring Service (ARMS) Webhook Contact resource.
+---
+
+# alicloud_arms_webhook_contact
+
+Provides a Application Real-Time Monitoring Service (ARMS) Webhook Contact resource.
+
+
+
+For information about Application Real-Time Monitoring Service (ARMS) Webhook Contact and how to use it, see [What is Webhook Contact](https://next.api.alibabacloud.com/document/ARMS/2019-08-08/CreateOrUpdateWebhookContact).
+
+-> **NOTE:** Available since v2.2.0.
+
+## Example Usage
+
+Basic Usage
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+resource "alicloud_arms_webhook_contact" "default" {
+  webhook_contact_name = var.name
+  method               = "Post"
+  url                  = "https://example.com/webhook"
+  body                 = jsonencode({ "message" : "alert fired" })
+  recover_body         = jsonencode({ "message" : "alert recovered" })
+  biz_headers = {
+    "Content-Type" = "application/json"
+  }
+  biz_params = {
+    "foo" = "bar"
+  }
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+* `biz_headers` - (Optional, ForceNew, Map) The HTTP request headers. Each value must be a string.
+* `biz_params` - (Optional, ForceNew, Map) The HTTP request parameters. Each value must be a string.
+* `body` - (Optional, ForceNew, String) The alert notification template. **Note: This parameter is required when `method` is set to `Post`.**
+* `method` - (Required, ForceNew, String) The HTTP request method. Valid values: `Get`, `Post`. **Note: The parameter is immutable after resource creation.**
+* `recover_body` - (Optional, ForceNew, String) The alert recover template. **Note: This parameter is required when `method` is set to `Post`.**
+* `url` - (Required, ForceNew, String) The webhook URL.
+* `webhook_contact_name` - (Required, ForceNew, String) The name of the webhook contact.
+
+## Attributes Reference
+
+The following attributes are exported:
+* `id` - (Computed, String) The ID of the resource supplied above.
+* `webhook_contact_id` - (Computed, String) The ID of the webhook contact.
+
+## Import
+
+Application Real-Time Monitoring Service (ARMS) Webhook Contact can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_arms_webhook_contact.example <webhook_contact_id>
+```

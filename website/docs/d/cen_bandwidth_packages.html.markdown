@@ -7,9 +7,11 @@ description: |-
     Provides a list of CEN Bandwidth Packages owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_cen\_bandwidth\_packages
+# alicloud_cen_bandwidth_packages
 
 This data source provides CEN Bandwidth Packages available to the user.
+
+-> **NOTE:** Available since v1.18.0+
 
 ## Example Usage
 
@@ -64,3 +66,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `reservation_bandwidth` - The restored bandwidth after the temporary upgrade.
   * `reservation_internet_charge_type` - The billing method after the configuration change.
   * `reservation_order_type` - The type of the configuration change.
+  * `expired_time` - The expiration time of the CEN Bandwidth Package.

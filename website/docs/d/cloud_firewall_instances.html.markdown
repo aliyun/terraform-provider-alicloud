@@ -32,7 +32,7 @@ The following arguments are supported:
 * `payment_type` - (Optional, ForceNew) The payment type of the cloud firewall instance. Valid values: `PayAsYouGo`,`Subscription`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

@@ -152,6 +152,33 @@ fmt:
 	gofmt -w $(GOFMT_FILES)
 	goimports -w $(GOFMT_FILES)
 
+# Real production build of the root provider main, covering the root main
+# package and every transitive production dependency it links — including the
+# split alicloud/service/* subpackages. This is a genuine `go build`/link, not a
+# renamed `vet`. It is the entry that proves the root main links; the cloudauth
+# init probe (probe_init) compiles+inits a single service package via a
+# no-such-test-case run and does NOT compile or link the root main.
+provider-build:
+	@echo "==> building root provider main (production)..."
+	go build -o /dev/null .
+
+# Assert the root alicloud production dependency graph (root main, non-test)
+# does not depend — directly or transitively — on
+# github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource. Unlike
+# test-framework-guard.sh (a diff-level scan of newly added import lines),
+# this queries the COMPLETE production dependency graph with `go list -deps`,
+# so already-migrated and not-yet-migrated files are both covered.
+check-production-deps:
+	@"$(CURDIR)/scripts/ci/check-production-deps.sh"
+
+# Compile, link and initialize the standard alicloud/service/cloudauth test
+# binary without running any acceptance test (go test -run '^$' -count=1 -v).
+# INITIALIZATION_ONLY / countsAsAccTest=false: proves ONE service test binary
+# builds+inits, not the root main build and not a real ACC. Run unconditionally
+# inside `ci-check-quick`; see scripts/ci/initialization-check.sh.
+check-initialization:
+	@"$(CURDIR)/scripts/ci/initialization-check.sh"
+
 fmtcheck:
 	"$(CURDIR)/scripts/gofmtcheck.sh"
 
@@ -253,6 +280,8 @@ minimal-test-set:
 # the same account and you only want to clean up stale leftovers.
 # SWEEP_ALL traverses a whole dependency graph and may exceed Go's default 10m.
 # SWEEP_TIMEOUT overrides this inner Go deadline; remote runner deadlines still apply.
+# Resolve the owning test binary after product tests and sweepers move out of the root.
+# SWEEP_PACKAGE may disambiguate a resource registered in multiple test binaries.
 SWEEP_TIMEOUT ?= $(if $(filter 1,$(SWEEP_ALL)),3h,10m)
 sweep:
 	@if [ -z "$(REGION)" ]; then \
@@ -263,15 +292,16 @@ sweep:
 		echo "Error: RESOURCE is required. Usage: make sweep REGION=cn-hangzhou RESOURCE=alicloud_instance"; \
 		exit 1; \
 	fi
-	@if [ "$(SWEEP_ALL)" = "1" ]; then \
+	@package=$$(go run ./scripts/testing/sweeppackage -resource "$(RESOURCE)" -package "$(SWEEP_PACKAGE)") || exit $$?; \
+	if [ "$(SWEEP_ALL)" = "1" ]; then \
 		echo "Sweeping ALL $(RESOURCE) resources in region $(REGION) (skipping prefix check)$(if $(OLDER_THAN), protecting resources newer than $(OLDER_THAN))..."; \
-		ALICLOUD_SWEEP_ALL_RESOURCES=true ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test ./alicloud -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
+		ALICLOUD_SWEEP_ALL_RESOURCES=true ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test "$$package" -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
 	else \
 		echo "Sweeping $(RESOURCE) in region $(REGION)$(if $(OLDER_THAN), protecting resources newer than $(OLDER_THAN))..."; \
-		ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test ./alicloud -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
+		ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test "$$package" -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
 	fi
 
-.PHONY: build test testacc test-resource-debug vet fmt fmtcheck importscheck goimports errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep tools native
+.PHONY: build test testacc test-resource-debug vet fmt fmtcheck importscheck goimports errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep tools native provider-build check-production-deps
 
 all: mac windows linux
 

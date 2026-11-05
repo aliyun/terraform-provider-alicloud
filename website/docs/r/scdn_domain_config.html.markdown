@@ -1,7 +1,7 @@
 ---
 subcategory: "SCDN"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_scdn_doamin_config"
+page_title: "Alicloud: alicloud_scdn_domain_config"
 sidebar_current: "docs-alicloud-resource-scdn-domain-config"
 description: |-
   Provides a Alicloud Scdn domain config Resource.
@@ -11,9 +11,9 @@ description: |-
 
 Provides a SCDN Accelerated Domain resource.
 
-For information about domain config and how to use it, see [Batch set config](https://help.aliyun.com/document_detail/92912.html)
+For information about domain config and how to use it, see [Batch set config](https://www.alibabacloud.com/help/doc-detail/92912.html)
 
--> **NOTE:** Available in v1.131.0+.
+-> **NOTE:** Available since v1.131.0.
 
 -> **NOTE:** Alibaba Cloud SCDN has stopped new customer purchases from January 26, 2023, and you can choose to buy Alibaba Cloud DCDN products with more comprehensive acceleration and protection capabilities. If you are already a SCDN customer, you can submit a work order at any time to apply for a smooth migration to Alibaba Cloud DCDN products. In the future, we will provide better acceleration and security protection services in Alibaba Cloud DCDN, thank you for your understanding and cooperation.
 
@@ -56,9 +56,9 @@ The following arguments are supported:
 
 * `domain_name` - (Required, ForceNew) Name of the accelerated domain. This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix `.sh` and `.tel` are not supported.
 * `function_name` - (Required, ForceNew) The name of the domain config.
-* `function_args` - (Required, Type: list) The args of the domain config.
+* `function_args` - (Required, List) The args of the domain config. See [`function_args`](#function_args) below for details.
 
-### Block function_args
+### `function_args`
 
 The `function_args` block supports the following:
 
@@ -77,6 +77,6 @@ The following attributes are exported:
 
 SCDN domain config can be imported using the id, e.g.
 
-```
+```shell
 terraform import alicloud_scdn_domain_config.example <domain_name>:<function_name>:<config_id>
 ```
