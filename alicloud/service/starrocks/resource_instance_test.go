@@ -1260,8 +1260,9 @@ func applyStarRocksInstance(t *testing.T, client *connectivity.AliyunClient, att
 	}
 	if updateTimeout > 0 {
 		// Apply reads the resource timeouts from the diff or state meta, which is how a
-		// real plan carries the practitioner's timeouts block.
-		diff.Meta = map[string]interface{}{schema.TimeoutKey: map[string]interface{}{"update": updateTimeout.String()}}
+		// real plan carries the practitioner's timeouts block. The SDK decodes a
+		// time.Duration here; a string would silently become a zero timeout.
+		diff.Meta = map[string]interface{}{schema.TimeoutKey: map[string]interface{}{"update": updateTimeout}}
 	}
 	_, diags := resource.Apply(context.Background(), state, diff, client)
 	if diags.HasError() {
