@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -396,6 +397,33 @@ resource "alicloud_fcv3_function" "function" {
 
 
 `, name)
+}
+
+// TestAccAliCloudFcv3ProvisionConfig_createWithoutTarget records the write
+// contract behind the Optional+Computed schema of target: PutProvisionConfig
+// declares target as required, so creating the resource without it must fail
+// instead of silently writing the zero value. target may only be omitted for a
+// resource that already exists (import or a removed argument), where the state
+// value is reused on the next update.
+func TestAccAliCloudFcv3ProvisionConfig_createWithoutTarget(t *testing.T) {
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sfcv3provisionnotarget%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig("alicloud_fcv3_provision_config.default", name, AlicloudFcv3ProvisionConfigBasicDependence7183)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_name": "${alicloud_fcv3_function.function.function_name}",
+				}),
+				ExpectError: regexp.MustCompile("alicloud_fcv3_provision_config"),
+			},
+		},
+	})
 }
 
 // TestAccAliCloudFcv3ProvisionConfig_memberOrder covers convergent reordering of
@@ -860,6 +888,19 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 	assertValue(body, "target", float64(1))
 	assertMissing(body, "alwaysAllocateCPU")
 	assertMissing(body, "alwaysAllocateGPU")
+
+	// Create with target omitted: the client must not substitute the zero
+	// value. PutProvisionConfig declares target as required, so the real
+	// service rejects this request; the request shape is what this unit test
+	// can pin down.
+	createData = schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{
+		"function_name": "unit-provision",
+	})
+	if err := r.Create(createData, client); err != nil {
+		t.Fatalf("create without target: %v", err)
+	}
+	body = lastPut()
+	assertMissing(body, "target")
 
 	// Boolean-only update from a real prior state: target is unchanged, so the
 	// old implementation omitted it; it must still be present.
