@@ -350,6 +350,14 @@ func (r *cmsSubscriptionResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
+	object, err := r.waitCmsSubscriptionReadable(id, plan.Workspace)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Reading %s: calling GetSubscription", cmsSubscriptionTypeName),
+			errs.WrapErrorf(err, errs.DefaultErrorMsg, cmsSubscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
+		)
+		return
+	}
 	if !plan.Enable.IsNull() && !plan.Enable.IsUnknown() && !plan.Enable.ValueBool() {
 		if err := r.setCmsSubscriptionEnable(id, plan.Workspace, false); err != nil {
 			resp.Diagnostics.AddError(
@@ -361,6 +369,13 @@ func (r *cmsSubscriptionResource) Create(ctx context.Context, req resource.Creat
 		if err := r.waitCmsSubscriptionEnable(id, plan.Workspace, false); err != nil {
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Creating %s: waiting for DisableSubscription", cmsSubscriptionTypeName),
+				errs.WrapErrorf(err, errs.DefaultErrorMsg, cmsSubscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
+			)
+			return
+		}
+		if object, err = NewCmsService(r.Meta()).DescribeCmsSubscription(id, plan.Workspace.ValueString()); err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Reading %s: calling GetSubscription", cmsSubscriptionTypeName),
 				errs.WrapErrorf(err, errs.DefaultErrorMsg, cmsSubscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
 			)
 			return
@@ -564,6 +579,23 @@ func (r *cmsSubscriptionResource) waitCmsSubscriptionEnable(id string, workspace
 	}
 }
 
+// waitCmsSubscriptionReadable polls GetSubscription until the freshly created
+// subscription is visible on the read path. Creation is asynchronous, so an
+// immediate read can still report the subscription as not found.
+func (r *cmsSubscriptionResource) waitCmsSubscriptionReadable(id string, workspace types.String) (map[string]interface{}, error) {
+	deadline := time.Now().Add(cmsSubscriptionTimeout)
+	for {
+		object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(id, workspace.ValueString())
+		if err == nil {
+			return object, nil
+		}
+		if !errs.NotFoundError(err) || time.Now().After(deadline) {
+			return nil, err
+		}
+		time.Sleep(3 * time.Second)
+	}
+}
+
 // waitCmsSubscriptionUpdate polls GetSubscription until the configuration sent
 // to UpdateSubscription is visible on the read path. The Cms event subscription
 // reads are eventually consistent, so an immediate read can return the values
@@ -573,6 +605,10 @@ func (r *cmsSubscriptionResource) waitCmsSubscriptionUpdate(id string, workspace
 	for {
 		object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(id, workspace.ValueString())
 		if err != nil {
+			if errs.NotFoundError(err) && time.Now().Before(deadline) {
+				time.Sleep(3 * time.Second)
+				continue
+			}
 			return nil, err
 		}
 		if cmsSubscriptionUpdateApplied(object, request) {
