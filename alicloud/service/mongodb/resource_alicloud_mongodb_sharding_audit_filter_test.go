@@ -156,19 +156,21 @@ func TestAccAliCloudMongodbShardingAuditFilter_basic0(t *testing.T) {
 			{
 				// Changing a real attribute stays an in-place update (the only ForceNew field,
 				// db_instance_id, is unchanged), and the framework then requires the follow-up plan to
-				// be empty. The filter set and role type mirror step 2, a combination the API accepts
-				// on this instance.
+				// be empty. The update sets the mongos filter to the value the db role already carries
+				// from step 2, so both roles end up with the same filter: import has no role_type and
+				// can therefore only restore the merged view, which equals the per-role value only when
+				// every role shares it.
 				Config: testAccConfig(map[string]interface{}{
 					"audit_status": "enable",
 					"filter":       "update,insert,delete",
-					"role_type":    "db",
+					"role_type":    "mongos",
 					"service_type": "V2_Standard",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"audit_status": "enable",
 						"filter":       "update,insert,delete",
-						"role_type":    "db",
+						"role_type":    "mongos",
 					}),
 				),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -843,16 +845,18 @@ func TestUnitShardingAuditFilterStorageRetention(t *testing.T) {
 			logConfig:     `{"RequestId":"mock","ServiceType":"Standard","TtlForStandard":180,"TtlForV2Standard":30}`,
 			auditStatus:   "Enable",
 			declared:      "Standard",
+			priorHot:      5,
 			storagePeriod: 180,
-			hotPeriod:     0,
+			hotPeriod:     5,
 		},
 		{
 			name:          "reported edition wins over the declared one",
 			logConfig:     `{"RequestId":"mock","ServiceType":"Standard","TtlForStandard":30,"TtlForV2Standard":180,"HotTtlForV2Standard":5}`,
 			auditStatus:   "Enable",
 			declared:      "V2_Standard",
+			priorHot:      7,
 			storagePeriod: 30,
-			hotPeriod:     0,
+			hotPeriod:     7,
 		},
 		{
 			name:          "disabled audit log reports trial so the declared edition decides",
