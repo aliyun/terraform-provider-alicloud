@@ -15,7 +15,7 @@ For information about the API and its fields, see [DescribeAutoProvisioningGroup
 
 -> **NOTE:** Available since v2.3.0.
 
--> **NOTE:** The data source reads every page returned by `DescribeAutoProvisioningGroups`, so the result is complete regardless of the number of groups. It starts at `page_number` and stops when the rows read reach the `TotalCount` the API reports or when the read has run for 30 minutes. The read fails instead of writing an incomplete result to state when a page ends early while the reported total still expects rows, when a group ID repeats across pages, when the reported total changes between pages or disagrees with the rows read, when the API keeps returning full pages for 1,000 requests, or when the time budget is exhausted.
+-> **NOTE:** The data source reads every page returned by `DescribeAutoProvisioningGroups`, so the result is complete regardless of the number of groups. It starts at `page_number` and stops when the rows read reach the rows that are readable from that page or when the read has run for 30 minutes. The read fails instead of writing an incomplete result to state when a page ends early while rows that are readable from `page_number` are still missing, when a group ID repeats across pages, when the reported total changes between pages or disagrees with the rows read, when the API keeps returning full pages for 1,000 requests, or when the time budget is exhausted.
 
 ## Example Usage
 
@@ -48,8 +48,8 @@ The following arguments are supported:
 * `status` - (Optional, List of String) A list of statuses to filter by. A maximum of 10 entries is allowed. Valid values: `submitted`, `active`, `deleted`, `delete-running` and `modifying`.
 * `types` - (Optional, List of String) A list of auto provisioning group types to filter by. A maximum of 10 entries is allowed. Valid values: `request`, `maintain` and `candidate`.
 * `tags` - (Optional, Map of String) A mapping of tags to filter by. A maximum of 20 entries is allowed. A key must be 1 to 128 characters, must not start with `aliyun` or `acs:`, and must not contain `http://` or `https://`. A value may be empty, is limited to 128 characters and must not contain `http://` or `https://`. A null value is rejected: omit the entry to leave the tag out of the request, or use an empty string to send an empty value.
-* `page_number` - (Optional, Int) The number of the first page to read. Valid values: `1` or greater. Defaults to `1`. The data source continues with the following pages until the server total is reached or the read budget is exhausted.
-* `page_size` - (Optional, Int) The number of entries per page. Valid values: `1` to `100`. Defaults to `100`. A page with fewer entries than this value ends the read only when it accounts for every row the server total promised; otherwise the read is reported as incomplete.
+* `page_number` - (Optional, Int) The number of the first page to read. Valid values: `1` or greater. Defaults to `1`. The rows of the pages before `page_number` are not read and are not part of the result; `total_count` still reports them. The data source continues with the following pages until the rows that are readable from `page_number` have been read, or the read budget is exhausted.
+* `page_size` - (Optional, Int) The number of entries per page. Valid values: `1` to `100`. Defaults to `100`. A page with fewer entries than this value ends the read only when the rows read account for every row that is readable from `page_number`; otherwise the read is reported as incomplete.
 
 ## Attributes Reference
 

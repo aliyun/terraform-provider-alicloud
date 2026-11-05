@@ -178,22 +178,22 @@ func (d *reservedInstancesDataSource) Schema(ctx context.Context, req datasource
 			"tags": schema.MapAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
-				Description: "A mapping of tags to filter by. Each entry is sent as a `Tag` filter. A maximum of 20 entries is allowed. A key and a value must be 1 to 128 characters; a key must not start with `aliyun` or `acs:`, a value must not start with `acs:`, and neither may contain a URL. A tag filter returns at most 1,000 reserved instances; when more may match, query `ListTagResources` instead.",
+				Description: "A mapping of tags to filter by. Each entry is sent as a `Tag` filter. A maximum of 20 entries is allowed. A key and a value must be 1 to 128 characters, so an empty value is rejected; a key must not start with `aliyun` or `acs:`, a value must not start with `acs:`, and neither may contain a URL. A null value is rejected as well: omit the entry to leave the tag out of the request. A tag filter returns at most 1,000 reserved instances; when more may match, query `ListTagResources` instead.",
 				Validators: []validator.Map{
 					mapvalidator.SizeAtMost(20),
-					ecsFwTagMapValidator{valueForbiddenPrefixes: []string{"acs:"}},
+					fwTagMapValidator{valueForbiddenPrefixes: []string{"acs:"}},
 				},
 			},
 			"page_number": schema.Int64Attribute{
 				Optional:    true,
-				Description: "The number of the first page to read. Valid values: 1 or greater. Defaults to 1. The data source continues with the following pages until the server total is reached or the read budget is exhausted.",
+				Description: "The number of the first page to read. Valid values: 1 or greater. Defaults to 1. The rows of the pages before `page_number` are not read and are not part of the result; `total_count` still reports them. The data source continues with the following pages until the rows that are readable from `page_number` have been read, or the read budget is exhausted.",
 				Validators: []validator.Int64{
 					int64validator.AtLeast(1),
 				},
 			},
 			"page_size": schema.Int64Attribute{
 				Optional:    true,
-				Description: "The number of entries per page. Valid values: 1 to 100. Defaults to 100. A page shorter than this value ends the read only when it accounts for every row the server total promised; otherwise the read is reported as incomplete.",
+				Description: "The number of entries per page. Valid values: 1 to 100. Defaults to 100. A page shorter than this value ends the read only when the rows read account for every row that is readable from `page_number`; otherwise the read is reported as incomplete.",
 				Validators: []validator.Int64{
 					int64validator.Between(1, 100),
 				},
@@ -281,15 +281,15 @@ func (d *reservedInstancesDataSource) load(ctx context.Context, client *connecti
 
 	sorted := append([]map[string]interface{}(nil), objects...)
 	sort.Slice(sorted, func(i, j int) bool {
-		return ecsFwString(sorted[i]["ReservedInstanceId"]).ValueString() < ecsFwString(sorted[j]["ReservedInstanceId"]).ValueString()
+		return fwString(sorted[i]["ReservedInstanceId"]).ValueString() < fwString(sorted[j]["ReservedInstanceId"]).ValueString()
 	})
 
 	ids := make([]string, 0, len(sorted))
 	names := make([]string, 0, len(sorted))
 	elements := make([]attr.Value, 0, len(sorted))
 	for _, object := range sorted {
-		ids = append(ids, ecsFwString(object["ReservedInstanceId"]).ValueString())
-		names = append(names, ecsFwString(object["ReservedInstanceName"]).ValueString())
+		ids = append(ids, fwString(object["ReservedInstanceId"]).ValueString())
+		names = append(names, fwString(object["ReservedInstanceName"]).ValueString())
 		element, err := reservedInstanceObject(object)
 		if err != nil {
 			return model, err
@@ -303,8 +303,8 @@ func (d *reservedInstancesDataSource) load(ctx context.Context, client *connecti
 	}
 
 	model.Id = types.StringValue(helper.DataResourceIdHash(ids))
-	model.Ids = ecsFwStringListValue(ids)
-	model.Names = ecsFwStringListValue(names)
+	model.Ids = fwStringListValue(ids)
+	model.Names = fwStringListValue(names)
 	model.TotalCount = types.Int64Value(totalCount)
 	model.Instances = types.ListValueMust(reservedInstanceObjectType, elements)
 	return model, nil
@@ -319,74 +319,74 @@ func reservedInstancesRequest(model reservedInstancesModel, regionId, scope stri
 		"PageNumber": int(pageNumber),
 		"PageSize":   int(pageSize),
 	}
-	ecsFwSetRequestString(request, "ReservedInstanceName", model.ReservedInstanceName)
-	ecsFwSetRequestString(request, "ZoneId", model.ZoneId)
-	ecsFwSetRequestString(request, "LockReason", model.LockReason)
-	ecsFwSetRequestString(request, "InstanceType", model.InstanceType)
-	ecsFwSetRequestString(request, "InstanceTypeFamily", model.InstanceTypeFamily)
-	ecsFwSetRequestString(request, "Scope", types.StringValue(scope))
-	ecsFwSetRequestString(request, "OfferingType", model.OfferingType)
-	ecsFwSetRequestString(request, "AllocationType", model.AllocationType)
-	ecsFwApplyRepeatList(request, "ReservedInstanceId", ecsFwElementsAsStrings(model.Ids))
-	ecsFwApplyRepeatList(request, "Status", ecsFwElementsAsStrings(model.Status))
-	ecsFwApplyTags(request, model.Tags)
+	fwSetRequestString(request, "ReservedInstanceName", model.ReservedInstanceName)
+	fwSetRequestString(request, "ZoneId", model.ZoneId)
+	fwSetRequestString(request, "LockReason", model.LockReason)
+	fwSetRequestString(request, "InstanceType", model.InstanceType)
+	fwSetRequestString(request, "InstanceTypeFamily", model.InstanceTypeFamily)
+	fwSetRequestString(request, "Scope", types.StringValue(scope))
+	fwSetRequestString(request, "OfferingType", model.OfferingType)
+	fwSetRequestString(request, "AllocationType", model.AllocationType)
+	fwApplyRepeatList(request, "ReservedInstanceId", fwElementsAsStrings(model.Ids))
+	fwApplyRepeatList(request, "Status", fwElementsAsStrings(model.Status))
+	fwApplyTags(request, model.Tags)
 	return request
 }
 
 func (d *reservedInstancesDataSource) reservedInstancesDescribeAll(ctx context.Context, client *connectivity.AliyunClient, request map[string]interface{}, startPage, pageSize int64) ([]map[string]interface{}, int64, error) {
-	return ecsFwCollectNumberedPages(ctx, reservedInstancesMaxPages, startPage, pageSize, reservedInstancesAction, "ReservedInstanceId", func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+	return fwCollectNumberedPages(ctx, reservedInstancesMaxPages, startPage, pageSize, reservedInstancesAction, "ReservedInstanceId", func(pageNumber int64) (fwNumberedPage, error) {
 		request["PageNumber"] = int(pageNumber)
 		request["PageSize"] = int(pageSize)
-		response, err := ecsFwRpcPost(ctx, client, reservedInstancesTypeName, reservedInstancesAction, request)
+		response, err := fwRpcPost(ctx, client, reservedInstancesTypeName, reservedInstancesAction, request)
 		if err != nil {
-			return nil, 0, err
+			return fwNumberedPage{}, err
 		}
-		items, err := ecsFwDecodeRecordList(response, "ReservedInstances", "ReservedInstance", reservedInstancesAction)
+		items, err := fwDecodeRecordList(response, "ReservedInstances", "ReservedInstance", reservedInstancesAction)
 		if err != nil {
-			return nil, 0, err
+			return fwNumberedPage{}, err
 		}
-		totalCount, _, err := ecsFwDecodeCount(response, "TotalCount", reservedInstancesAction)
+		totalCount, totalKnown, err := fwDecodeCount(response, "TotalCount", reservedInstancesAction)
 		if err != nil {
-			return nil, 0, err
+			return fwNumberedPage{}, err
 		}
-		return items, totalCount, nil
+		return fwNumberedPage{items: items, total: totalCount, totalKnown: totalKnown}, nil
 	})
 }
 
 func reservedInstanceObject(object map[string]interface{}) (types.Object, error) {
-	identity, err := ecsFwRecordIdentity(object, "ReservedInstanceId", reservedInstancesAction)
+	identity, err := fwRecordIdentity(object, "ReservedInstanceId", reservedInstancesAction)
 	if err != nil {
 		return types.ObjectNull(reservedInstanceAttrTypes), err
 	}
-	tags, err := ecsFwDecodeTags(object["Tags"])
+	tags, err := fwDecodeTags(object["Tags"])
 	if err != nil {
 		return types.ObjectNull(reservedInstanceAttrTypes), fmt.Errorf("%s: %w", identity, err)
 	}
-	operationLocks, err := ecsFwOptionalObjectListMember("OperationLocks", "OperationLock", object["OperationLocks"], reservedInstanceOperationLockObjectType, func(lock map[string]interface{}) (attr.Value, error) {
+	operationLocks, err := fwOptionalObjectListMember("OperationLocks", "OperationLock", object["OperationLocks"], reservedInstanceOperationLockObjectType, func(lock map[string]interface{}) (attr.Value, error) {
 		return types.ObjectValueMust(reservedInstanceOperationLockAttrTypes, map[string]attr.Value{
-			"lock_reason": ecsFwString(lock["LockReason"]),
+			"lock_reason": fwString(lock["LockReason"]),
 		}), nil
 	})
 	if err != nil {
 		return types.ObjectNull(reservedInstanceAttrTypes), fmt.Errorf("%s: %w", identity, err)
 	}
 	return types.ObjectValueMust(reservedInstanceAttrTypes, map[string]attr.Value{
-		"reserved_instance_id":   ecsFwString(object["ReservedInstanceId"]),
-		"reserved_instance_name": ecsFwString(object["ReservedInstanceName"]),
-		"status":                 ecsFwString(object["Status"]),
-		"creation_time":          ecsFwString(object["CreationTime"]),
-		"start_time":             ecsFwString(object["StartTime"]),
-		"expired_time":           ecsFwString(object["ExpiredTime"]),
-		"instance_type":          ecsFwString(object["InstanceType"]),
-		"instance_amount":        ecsFwInt64(object["InstanceAmount"]),
-		"region_id":              ecsFwString(object["RegionId"]),
-		"zone_id":                ecsFwString(object["ZoneId"]),
-		"scope":                  ecsFwString(object["Scope"]),
-		"platform":               ecsFwString(object["Platform"]),
-		"offering_type":          ecsFwString(object["OfferingType"]),
-		"allocation_status":      ecsFwString(object["AllocationStatus"]),
-		"description":            ecsFwString(object["Description"]),
-		"resource_group_id":      ecsFwString(object["ResourceGroupId"]),
+		"reserved_instance_id":   fwString(object["ReservedInstanceId"]),
+		"reserved_instance_name": fwString(object["ReservedInstanceName"]),
+		"status":                 fwString(object["Status"]),
+		"creation_time":          fwString(object["CreationTime"]),
+		"start_time":             fwString(object["StartTime"]),
+		"expired_time":           fwString(object["ExpiredTime"]),
+		"instance_type":          fwString(object["InstanceType"]),
+		"instance_amount":        fwInt64(object["InstanceAmount"]),
+		"region_id":              fwString(object["RegionId"]),
+		"zone_id":                fwString(object["ZoneId"]),
+		"scope":                  fwString(object["Scope"]),
+		"platform":               fwString(object["Platform"]),
+		"offering_type":          fwString(object["OfferingType"]),
+		"allocation_status":      fwString(object["AllocationStatus"]),
+		"description":            fwString(object["Description"]),
+		"resource_group_id":      fwString(object["ResourceGroupId"]),
 		"operation_locks":        operationLocks,
 		"tags":                   tags,
 	}), nil

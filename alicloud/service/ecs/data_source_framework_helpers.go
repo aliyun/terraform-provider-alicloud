@@ -3,6 +3,7 @@ package ecs
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -10,7 +11,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
+	utilV2 "github.com/alibabacloud-go/tea-utils/v2/service"
+	"github.com/alibabacloud-go/tea/dara"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
@@ -18,10 +20,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	sdkretry "github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-const ecsFwRetryTimeout = 5 * time.Minute
+const fwRetryTimeout = 5 * time.Minute
+
+// fwRetryBackoff is the first wait between two attempts of one read; it grows
+// by the same step up to 30 seconds. It is a variable so tests can drive the
+// retry loop without waiting.
+var fwRetryBackoff = 3 * time.Second
 
 // Shared conversions, request helpers and remote-call plumbing for the
 // Framework data sources in this package. They keep response decoding tolerant
@@ -29,7 +35,7 @@ const ecsFwRetryTimeout = 5 * time.Minute
 // decimal string) without panicking on a missing key, and keep the query,
 // pagination and retry behavior identical across the data sources.
 
-func ecsFwString(value interface{}) types.String {
+func fwString(value interface{}) types.String {
 	if value == nil {
 		return types.StringValue("")
 	}
@@ -39,10 +45,10 @@ func ecsFwString(value interface{}) types.String {
 	return types.StringValue(fmt.Sprint(value))
 }
 
-// ecsFwParseInt64 converts the numeric shapes the ECS RPC returns. The boolean
+// fwParseInt64 converts the numeric shapes the ECS RPC returns. The boolean
 // reports whether the value really was a number, so a caller that must not
 // mistake a malformed value for 0 can tell the two apart.
-func ecsFwParseInt64(value interface{}) (int64, bool) {
+func fwParseInt64(value interface{}) (int64, bool) {
 	switch v := value.(type) {
 	case int:
 		return int64(v), true
@@ -75,14 +81,14 @@ func ecsFwParseInt64(value interface{}) (int64, bool) {
 	return 0, false
 }
 
-func ecsFwInt64(value interface{}) types.Int64 {
-	if n, ok := ecsFwParseInt64(value); ok {
+func fwInt64(value interface{}) types.Int64 {
+	if n, ok := fwParseInt64(value); ok {
 		return types.Int64Value(n)
 	}
 	return types.Int64Value(0)
 }
 
-func ecsFwBool(value interface{}) types.Bool {
+func fwBool(value interface{}) types.Bool {
 	switch v := value.(type) {
 	case bool:
 		return types.BoolValue(v)
@@ -94,7 +100,7 @@ func ecsFwBool(value interface{}) types.Bool {
 	return types.BoolValue(false)
 }
 
-func ecsFwStringMapValue(values map[string]string) types.Map {
+func fwStringMapValue(values map[string]string) types.Map {
 	elements := make(map[string]attr.Value, len(values))
 	for k, v := range values {
 		elements[k] = types.StringValue(v)
@@ -102,12 +108,12 @@ func ecsFwStringMapValue(values map[string]string) types.Map {
 	return types.MapValueMust(types.StringType, elements)
 }
 
-// ecsFwReservedTagPrefixes mirrors the reserved tag namespaces that the shared
+// fwReservedTagPrefixes mirrors the reserved tag namespaces that the shared
 // tags helper drops from data source state.
-var ecsFwReservedTagPrefixes = []string{"aliyun", "acs:", "http://", "https://", "sae.do.not.delete"}
+var fwReservedTagPrefixes = []string{"aliyun", "acs:", "http://", "https://", "sae.do.not.delete"}
 
-func ecsFwTagKeyReserved(key string) bool {
-	for _, prefix := range ecsFwReservedTagPrefixes {
+func fwTagKeyReserved(key string) bool {
+	for _, prefix := range fwReservedTagPrefixes {
 		if strings.HasPrefix(key, prefix) {
 			return true
 		}
@@ -115,15 +121,15 @@ func ecsFwTagKeyReserved(key string) bool {
 	return false
 }
 
-// ecsFwDecodeTags decodes the `Tags` member of an ECS record. An absent member
+// fwDecodeTags decodes the `Tags` member of an ECS record. An absent member
 // is a valid empty map, because the RPC omits it when the record has no tags. A
 // member of the wrong shape, or an entry without a string key, is a malformed
 // record: it is reported as an error instead of being dropped or panicking on a
 // bare type assertion.
-func ecsFwDecodeTags(tags interface{}) (types.Map, error) {
+func fwDecodeTags(tags interface{}) (types.Map, error) {
 	values := map[string]string{}
 	if tags == nil {
-		return ecsFwStringMapValue(values), nil
+		return fwStringMapValue(values), nil
 	}
 	tagsMap, ok := tags.(map[string]interface{})
 	if !ok {
@@ -131,7 +137,7 @@ func ecsFwDecodeTags(tags interface{}) (types.Map, error) {
 	}
 	rawList, ok := tagsMap["Tag"]
 	if !ok || rawList == nil {
-		return ecsFwStringMapValue(values), nil
+		return fwStringMapValue(values), nil
 	}
 	list, ok := rawList.([]interface{})
 	if !ok {
@@ -162,15 +168,15 @@ func ecsFwDecodeTags(tags interface{}) (types.Map, error) {
 			}
 			value = text
 		}
-		if ecsFwTagKeyReserved(key) {
+		if fwTagKeyReserved(key) {
 			continue
 		}
 		values[key] = value
 	}
-	return ecsFwStringMapValue(values), nil
+	return fwStringMapValue(values), nil
 }
 
-func ecsFwStringListValue(values []string) types.List {
+func fwStringListValue(values []string) types.List {
 	elements := make([]attr.Value, 0, len(values))
 	for _, v := range values {
 		elements = append(elements, types.StringValue(v))
@@ -178,7 +184,7 @@ func ecsFwStringListValue(values []string) types.List {
 	return types.ListValueMust(types.StringType, elements)
 }
 
-func ecsFwElementsAsStrings(value types.List) []string {
+func fwElementsAsStrings(value types.List) []string {
 	if value.IsNull() || value.IsUnknown() {
 		return nil
 	}
@@ -193,19 +199,19 @@ func ecsFwElementsAsStrings(value types.List) []string {
 	return out
 }
 
-func ecsFwSetRequestString(request map[string]interface{}, key string, value types.String) {
+func fwSetRequestString(request map[string]interface{}, key string, value types.String) {
 	if value.IsNull() || value.IsUnknown() || value.ValueString() == "" {
 		return
 	}
 	request[key] = value.ValueString()
 }
 
-// ecsFwApplyRepeatList writes a repeat-list filter in the 1-based
+// fwApplyRepeatList writes a repeat-list filter in the 1-based
 // `Parameter.N` form using the shared convert helper. Blank and repeated values
 // are sent once, so a duplicated input does not change the request or make the
 // result count depend on the server's duplicate handling.
-func ecsFwApplyRepeatList(request map[string]interface{}, parameter string, values []string) {
-	unique := ecsFwUniqueStrings(values)
+func fwApplyRepeatList(request map[string]interface{}, parameter string, values []string) {
+	unique := fwUniqueStrings(values)
 	raw := make([]interface{}, 0, len(unique))
 	for _, value := range unique {
 		raw = append(raw, value)
@@ -213,10 +219,10 @@ func ecsFwApplyRepeatList(request map[string]interface{}, parameter string, valu
 	expandArrayToMap(request, raw, parameter)
 }
 
-// ecsFwApplyTags maps the Terraform tag map onto the `Tag.N.Key/Value` filter
+// fwApplyTags maps the Terraform tag map onto the `Tag.N.Key/Value` filter
 // using the shared tags helper. A null or unknown value is left out: an empty
 // string is a value the caller asked to send, while a null is not.
-func ecsFwApplyTags(request map[string]interface{}, tags types.Map) {
+func fwApplyTags(request map[string]interface{}, tags types.Map) {
 	if tags.IsNull() || tags.IsUnknown() {
 		return
 	}
@@ -234,22 +240,22 @@ func ecsFwApplyTags(request map[string]interface{}, tags types.Map) {
 	expandTagsToMap(request, list)
 }
 
-const ecsFwTagMaxLength = 128
+const fwTagMaxLength = 128
 
-// ecsFwTagMapValidator enforces the key and value limits that the ECS tag
+// fwTagMapValidator enforces the key and value limits that the ECS tag
 // filters document: the key must be present and must not use the reserved
 // aliyun/acs: prefixes, the value length is capped, and neither side may carry
 // a URL. The value emptiness rule differs per API, so it is configurable.
-type ecsFwTagMapValidator struct {
+type fwTagMapValidator struct {
 	allowEmptyValue        bool
 	valueForbiddenPrefixes []string
 }
 
-func (v ecsFwTagMapValidator) Description(context.Context) string {
+func (v fwTagMapValidator) Description(context.Context) string {
 	return "Each tag key and value must satisfy the tag limits documented for the API."
 }
 
-func (v ecsFwTagMapValidator) MarkdownDescription(ctx context.Context) string {
+func (v fwTagMapValidator) MarkdownDescription(ctx context.Context) string {
 	return v.Description(ctx)
 }
 
@@ -257,12 +263,12 @@ func (v ecsFwTagMapValidator) MarkdownDescription(ctx context.Context) string {
 // unknown. A null value is rejected rather than serialized as an empty string:
 // the two are different requests, and only an explicit empty string asks the
 // API for an empty value.
-func (v ecsFwTagMapValidator) ValidateMap(ctx context.Context, req validator.MapRequest, resp *validator.MapResponse) {
+func (v fwTagMapValidator) ValidateMap(ctx context.Context, req validator.MapRequest, resp *validator.MapResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
 	for key, element := range req.ConfigValue.Elements() {
-		if message := validateEcsFwTagKey(key); message != "" {
+		if message := validateFwTagKey(key); message != "" {
 			resp.Diagnostics.AddAttributeError(req.Path, "Invalid Tag Key", message)
 			return
 		}
@@ -280,19 +286,19 @@ func (v ecsFwTagMapValidator) ValidateMap(ctx context.Context, req validator.Map
 			resp.Diagnostics.AddAttributeError(req.Path, "Invalid Tag Value", fmt.Sprintf("The value of tag key %q must be set; use an empty string to send an empty value.", key))
 			return
 		}
-		if message := validateEcsFwTagValue(v, value.ValueString()); message != "" {
+		if message := validateFwTagValue(v, value.ValueString()); message != "" {
 			resp.Diagnostics.AddAttributeError(req.Path, "Invalid Tag Value", message)
 			return
 		}
 	}
 }
 
-func validateEcsFwTagKey(key string) string {
+func validateFwTagKey(key string) string {
 	if key == "" {
 		return "A tag key must not be empty."
 	}
-	if utf8.RuneCountInString(key) > ecsFwTagMaxLength {
-		return fmt.Sprintf("A tag key must be at most %d characters.", ecsFwTagMaxLength)
+	if utf8.RuneCountInString(key) > fwTagMaxLength {
+		return fmt.Sprintf("A tag key must be at most %d characters.", fwTagMaxLength)
 	}
 	for _, prefix := range []string{"aliyun", "acs:"} {
 		if strings.HasPrefix(key, prefix) {
@@ -305,12 +311,12 @@ func validateEcsFwTagKey(key string) string {
 	return ""
 }
 
-func validateEcsFwTagValue(v ecsFwTagMapValidator, value string) string {
+func validateFwTagValue(v fwTagMapValidator, value string) string {
 	if value == "" && !v.allowEmptyValue {
 		return "A tag value must not be empty."
 	}
-	if utf8.RuneCountInString(value) > ecsFwTagMaxLength {
-		return fmt.Sprintf("A tag value must be at most %d characters.", ecsFwTagMaxLength)
+	if utf8.RuneCountInString(value) > fwTagMaxLength {
+		return fmt.Sprintf("A tag value must be at most %d characters.", fwTagMaxLength)
 	}
 	for _, prefix := range v.valueForbiddenPrefixes {
 		if strings.HasPrefix(value, prefix) {
@@ -323,10 +329,10 @@ func validateEcsFwTagValue(v ecsFwTagMapValidator, value string) string {
 	return ""
 }
 
-// ecsFwSleepBackoff waits for the retry backoff and returns as soon as the read
+// fwSleepBackoff waits for the retry backoff and returns as soon as the read
 // context is cancelled, so a cancelled read stops instead of sleeping through
 // the remaining backoff.
-func ecsFwSleepBackoff(ctx context.Context, duration time.Duration) error {
+func fwSleepBackoff(ctx context.Context, duration time.Duration) error {
 	timer := time.NewTimer(duration)
 	defer timer.Stop()
 	select {
@@ -337,17 +343,18 @@ func ecsFwSleepBackoff(ctx context.Context, duration time.Duration) error {
 	}
 }
 
-// ecsFwRpcCall performs the single transport call. It is a variable so tests
-// can assert the runtime options and simulate a request that is still in flight
-// when the read is cancelled.
-var ecsFwRpcCall = func(client *connectivity.AliyunClient, action string, request map[string]interface{}, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
-	return client.RpcPostWithRuntimeOptions("Ecs", "2014-05-26", action, request, runtime)
+// fwRpcCall performs the single transport call. It is a variable so tests can
+// assert the runtime options and simulate a request that is still in flight
+// when the read is cancelled. The request is built from ctx, so cancelling the
+// read aborts the call that is already on the wire.
+var fwRpcCall = func(ctx context.Context, client *connectivity.AliyunClient, action string, request map[string]interface{}, runtime *utilV2.RuntimeOptions) (map[string]interface{}, error) {
+	return client.DoWithContext(ctx, "Ecs", helper.RpcParam("POST", "2014-05-26", action), nil, request, nil, nil, runtime)
 }
 
-// ecsFwRemainingBudgetMillis converts the read deadline into the millisecond
+// fwRemainingBudgetMillis converts the read deadline into the millisecond
 // transport timeouts the SDK expects. Without a deadline it returns 0, which
 // leaves the SDK defaults in place.
-func ecsFwRemainingBudgetMillis(ctx context.Context) int {
+func fwRemainingBudgetMillis(ctx context.Context) int {
 	deadline, ok := ctx.Deadline()
 	if !ok {
 		return 0
@@ -366,60 +373,87 @@ func ecsFwRemainingBudgetMillis(ctx context.Context) int {
 	return int(millis)
 }
 
-// ecsFwRequestRuntime bounds one request with the remaining read budget and
+// fwRequestRuntime bounds one request with the remaining read budget and
 // switches off the SDK internal retry loop: every retry is owned by the loop
 // below, which stops on the same deadline and cancellation signal.
-func ecsFwRequestRuntime(ctx context.Context) *util.RuntimeOptions {
-	runtime := &util.RuntimeOptions{}
+func fwRequestRuntime(ctx context.Context) *utilV2.RuntimeOptions {
+	runtime := &utilV2.RuntimeOptions{}
 	runtime.SetAutoretry(false)
-	if millis := ecsFwRemainingBudgetMillis(ctx); millis > 0 {
+	if millis := fwRemainingBudgetMillis(ctx); millis > 0 {
 		runtime.ConnectTimeout = &millis
 		runtime.ReadTimeout = &millis
 	}
 	return runtime
 }
 
-// ecsFwRpcPost sends one read-only ECS query with the shared retry policy:
-// transient failures are retried inside the bounded window, everything else
-// fails on the first response. The context carries the read budget: it gates
-// every attempt and the backoff, and the same remaining budget is handed to the
-// transport as connect/read timeouts, so an in-flight request cannot outlive it.
-func ecsFwRpcPost(ctx context.Context, client *connectivity.AliyunClient, typeName, action string, request map[string]interface{}) (map[string]interface{}, error) {
-	var response map[string]interface{}
-	backoff := 3 * time.Second
-	err := sdkretry.RetryContext(ctx, ecsFwRetryTimeout, func() *sdkretry.RetryError {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return sdkretry.NonRetryableError(ctxErr)
-		}
-		result, rpcErr := ecsFwRpcCall(client, action, request, ecsFwRequestRuntime(ctx))
-		if rpcErr != nil {
-			if helper.NeedRetry(rpcErr) {
-				if waitErr := ecsFwSleepBackoff(ctx, backoff); waitErr != nil {
-					return sdkretry.NonRetryableError(waitErr)
-				}
-				if backoff < 30*time.Second {
-					backoff += 3 * time.Second
-				}
-				return sdkretry.RetryableError(rpcErr)
-			}
-			return sdkretry.NonRetryableError(rpcErr)
-		}
-		response = result
-		return nil
-	})
-	logs.AddDebug(action, response, request)
-	if err != nil {
-		return nil, errs.WrapErrorf(err, errs.DataDefaultErrorMsg, typeName, action, errs.AlibabaCloudSdkGoERROR)
+// fwNeedRetry reports whether a failed read is worth retrying inside the read
+// budget. The shared helper recognises the error shapes of the older SDK path;
+// the context bound path reports throttling and timeouts as SDK v2 errors, so
+// they are classified here as well. A cancelled or expired read is never
+// retried: its budget is gone.
+func fwNeedRetry(err error) bool {
+	if err == nil {
+		return false
 	}
-	return response, nil
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
+	var sdkErr *dara.SDKError
+	if errors.As(err, &sdkErr) {
+		code := dara.StringValue(sdkErr.Code)
+		message := dara.StringValue(sdkErr.Message)
+		if code == "ServiceUnavailable" || code == "Rejected.Throttling" || strings.Contains(code, "Throttling") {
+			return true
+		}
+		if dara.IntValue(sdkErr.StatusCode) >= 500 {
+			return true
+		}
+		return strings.Contains(message, "Client.Timeout")
+	}
+	return helper.NeedRetry(err)
 }
 
-// ecsFwDecodeRecordList decodes a list of records nested under
+// fwRpcPost sends one read-only ECS query with the shared retry policy:
+// transient failures are retried inside the bounded window, everything else
+// fails on the first response. The context carries the read budget: it gates
+// every attempt and the backoff, the same remaining budget is handed to the
+// transport as connect/read timeouts, and the request itself is built from it,
+// so an in-flight call is aborted instead of running on after the read returns.
+// The loop runs inline, so no retry callback can write a response after the
+// caller has stopped waiting.
+func fwRpcPost(ctx context.Context, client *connectivity.AliyunClient, typeName, action string, request map[string]interface{}) (map[string]interface{}, error) {
+	backoff := fwRetryBackoff
+	retryDeadline := time.Now().Add(fwRetryTimeout)
+	for {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, errs.WrapErrorf(fmt.Errorf("%s was not sent: %v", action, ctxErr), errs.DataDefaultErrorMsg, typeName, action, errs.AlibabaCloudSdkGoERROR)
+		}
+		response, rpcErr := fwRpcCall(ctx, client, action, request, fwRequestRuntime(ctx))
+		if rpcErr == nil {
+			logs.AddDebug(action, response, request)
+			return response, nil
+		}
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, errs.WrapErrorf(fmt.Errorf("%s was cancelled while the request was in flight: %v", action, ctxErr), errs.DataDefaultErrorMsg, typeName, action, errs.AlibabaCloudSdkGoERROR)
+		}
+		if !fwNeedRetry(rpcErr) || !time.Now().Add(backoff).Before(retryDeadline) {
+			return nil, errs.WrapErrorf(rpcErr, errs.DataDefaultErrorMsg, typeName, action, errs.AlibabaCloudSdkGoERROR)
+		}
+		if waitErr := fwSleepBackoff(ctx, backoff); waitErr != nil {
+			return nil, errs.WrapErrorf(waitErr, errs.DataDefaultErrorMsg, typeName, action, errs.AlibabaCloudSdkGoERROR)
+		}
+		if backoff < 30*time.Second {
+			backoff += 3 * time.Second
+		}
+	}
+}
+
+// fwDecodeRecordList decodes a list of records nested under
 // `container.member`. A missing container or member is a valid empty result:
 // the ECS RPC omits them when nothing matches. A member of the wrong shape, or
 // an entry that is not an object, is a malformed response and is reported as an
 // error instead of being returned as an empty or partial result.
-func ecsFwDecodeRecordList(response map[string]interface{}, container, member, action string) ([]map[string]interface{}, error) {
+func fwDecodeRecordList(response map[string]interface{}, container, member, action string) ([]map[string]interface{}, error) {
 	items := make([]map[string]interface{}, 0)
 	if response == nil {
 		return nil, fmt.Errorf("%s returned an empty response body", action)
@@ -450,10 +484,10 @@ func ecsFwDecodeRecordList(response map[string]interface{}, container, member, a
 	return items, nil
 }
 
-// ecsFwParseCount parses a response count. Only a non-negative whole number is
+// fwParseCount parses a response count. Only a non-negative whole number is
 // a valid count: a fractional value would be silently truncated, and a negative
 // value is never a count.
-func ecsFwParseCount(value interface{}) (int64, bool) {
+func fwParseCount(value interface{}) (int64, bool) {
 	switch v := value.(type) {
 	case json.Number:
 		n, err := v.Int64()
@@ -496,25 +530,26 @@ func ecsFwParseCount(value interface{}) (int64, bool) {
 	return 0, false
 }
 
-// ecsFwDecodeCount reads an integer response member. A missing member is
+// fwDecodeCount reads an integer response member. A missing member is
 // reported as unknown so the caller can fall back; a member that is present but
 // is not a non-negative whole number is a malformed response, not a count of 0.
-func ecsFwDecodeCount(response map[string]interface{}, key, action string) (int64, bool, error) {
+func fwDecodeCount(response map[string]interface{}, key, action string) (int64, bool, error) {
 	raw, ok := response[key]
 	if !ok || raw == nil {
 		return 0, false, nil
 	}
-	value, ok := ecsFwParseCount(raw)
+	value, ok := fwParseCount(raw)
 	if !ok {
 		return 0, false, fmt.Errorf("%s returned %s as %T instead of a non-negative integer", action, key, raw)
 	}
 	return value, true, nil
 }
 
-// ecsFwDecodeToken reads a string pagination token. A missing member means the
-// server has no further page; a member of the wrong type is a malformed
-// response and must not be treated as the end of the result.
-func ecsFwDecodeToken(response map[string]interface{}, key, action string) (string, error) {
+// fwDecodeToken reads a string pagination token. A missing member means the
+// server has no further page; a member of the wrong type, or a blank value, is a
+// malformed response and must not be treated as the end of the result or as a
+// cursor that can be followed.
+func fwDecodeToken(response map[string]interface{}, key, action string) (string, error) {
 	raw, ok := response[key]
 	if !ok || raw == nil {
 		return "", nil
@@ -523,13 +558,16 @@ func ecsFwDecodeToken(response map[string]interface{}, key, action string) (stri
 	if !ok {
 		return "", fmt.Errorf("%s returned %s as %T instead of a string", action, key, raw)
 	}
+	if token != "" && strings.TrimSpace(token) == "" {
+		return "", fmt.Errorf("%s returned %s as a blank string instead of a cursor", action, key)
+	}
 	return token, nil
 }
 
-// ecsFwOptionalObjectList decodes a single nested object into a one element
+// fwOptionalObjectList decodes a single nested object into a one element
 // list. An absent member is an empty list; a member of the wrong type is a
 // malformed record and is reported instead of being treated as absent.
-func ecsFwOptionalObjectList(name string, value interface{}, objectType types.ObjectType, build func(object map[string]interface{}) map[string]attr.Value) (types.List, error) {
+func fwOptionalObjectList(name string, value interface{}, objectType types.ObjectType, build func(object map[string]interface{}) map[string]attr.Value) (types.List, error) {
 	if value == nil {
 		return types.ListValueMust(objectType, []attr.Value{}), nil
 	}
@@ -540,11 +578,11 @@ func ecsFwOptionalObjectList(name string, value interface{}, objectType types.Ob
 	return types.ListValueMust(objectType, []attr.Value{types.ObjectValueMust(objectType.AttrTypes, build(object))}), nil
 }
 
-// ecsFwOptionalObjectListMember decodes a nested list member into a list of
+// fwOptionalObjectListMember decodes a nested list member into a list of
 // objects. An absent container or member is an empty list; a container, member
 // or entry of the wrong type is a malformed record and is reported instead of
 // being dropped, so a partial result cannot be written to state.
-func ecsFwOptionalObjectListMember(name, member string, value interface{}, objectType types.ObjectType, build func(item map[string]interface{}) (attr.Value, error)) (types.List, error) {
+func fwOptionalObjectListMember(name, member string, value interface{}, objectType types.ObjectType, build func(item map[string]interface{}) (attr.Value, error)) (types.List, error) {
 	if value == nil {
 		return types.ListValueMust(objectType, []attr.Value{}), nil
 	}
@@ -575,10 +613,10 @@ func ecsFwOptionalObjectListMember(name, member string, value interface{}, objec
 	return types.ListValueMust(objectType, elements), nil
 }
 
-// ecsFwOptionalStringList decodes a nested list of strings. An absent container
+// fwOptionalStringList decodes a nested list of strings. An absent container
 // or member is an empty list; a container, member or entry of the wrong type is
 // a malformed record and is reported.
-func ecsFwOptionalStringList(name, member string, value interface{}) (types.List, error) {
+func fwOptionalStringList(name, member string, value interface{}) (types.List, error) {
 	if value == nil {
 		return types.ListValueMust(types.StringType, []attr.Value{}), nil
 	}
@@ -605,19 +643,29 @@ func ecsFwOptionalStringList(name, member string, value interface{}) (types.List
 	return types.ListValueMust(types.StringType, elements), nil
 }
 
-// ecsFwRecordIdentity returns the stable identity of a record. A record without
-// an identity cannot be deduplicated or addressed, so it is a malformed result.
-func ecsFwRecordIdentity(object map[string]interface{}, key, action string) (string, error) {
-	identity := strings.TrimSpace(ecsFwString(object[key]).ValueString())
-	if identity == "" {
+// fwRecordIdentity returns the stable identity of a record. The identity must be
+// a non-empty string: a value of another type cannot be deduplicated or
+// addressed, so it is reported as a malformed result instead of being turned
+// into an identity by formatting whatever the server sent.
+func fwRecordIdentity(object map[string]interface{}, key, action string) (string, error) {
+	raw, ok := object[key]
+	if !ok || raw == nil {
 		return "", fmt.Errorf("%s returned a record without %s; the result was not returned because the record cannot be identified", action, key)
+	}
+	identity, ok := raw.(string)
+	if !ok {
+		return "", fmt.Errorf("%s returned %s as %T instead of a string; the result was not returned because the record cannot be identified", action, key, raw)
+	}
+	identity = strings.TrimSpace(identity)
+	if identity == "" {
+		return "", fmt.Errorf("%s returned an empty %s; the result was not returned because the record cannot be identified", action, key)
 	}
 	return identity, nil
 }
 
-// ecsFwUniqueStrings drops blank and repeated values while preserving order, so
+// fwUniqueStrings drops blank and repeated values while preserving order, so
 // a repeated filter value is sent once.
-func ecsFwUniqueStrings(values []string) []string {
+func fwUniqueStrings(values []string) []string {
 	seen := make(map[string]struct{}, len(values))
 	unique := make([]string, 0, len(values))
 	for _, value := range values {
@@ -634,37 +682,57 @@ func ecsFwUniqueStrings(values []string) []string {
 	return unique
 }
 
-// ecsFwCollectNumberedPages reads numbered pages until a short or empty page,
-// the server total is reached, or the page budget is exhausted. The context
-// carries the read deadline and cancellation signal, so the loop stops at the
-// same point as the requests it issues. Integrity is enforced before anything
-// is returned: every record must carry a unique, non-empty identity, the server
-// total must stay consistent, a short or empty page is only accepted when it
-// accounts for every row the total promised, and a full page for the whole
-// budget means the endpoint ignored the page parameters.
-func ecsFwCollectNumberedPages(ctx context.Context, maxPages int, startPage, pageSize int64, action, identityKey string, fetch func(pageNumber int64) ([]map[string]interface{}, int64, error)) ([]map[string]interface{}, int64, error) {
+// fwNumberedPage is one page of a numbered query. totalKnown distinguishes an
+// explicit TotalCount of 0 from a response that does not report the total.
+type fwNumberedPage struct {
+	items      []map[string]interface{}
+	total      int64
+	totalKnown bool
+}
+
+// fwCollectNumberedPages reads numbered pages until a short or empty page, the
+// server total is reached, or the page budget is exhausted. The context carries
+// the read deadline and cancellation signal, so the loop stops at the same point
+// as the requests it issues. Integrity is enforced before anything is returned:
+// every record must carry a unique, non-empty string identity, the server total
+// must stay consistent, a short or empty page is only accepted when it accounts
+// for every row that is readable from the start page, and a full page for the
+// whole budget means the endpoint ignored the page parameters.
+//
+// A read that starts after the first page cannot see the rows of the earlier
+// pages, so completeness is measured against the readable suffix of the total
+// (TotalCount minus the rows the start page skips), not against the whole total.
+func fwCollectNumberedPages(ctx context.Context, maxPages int, startPage, pageSize int64, action, identityKey string, fetch func(pageNumber int64) (fwNumberedPage, error)) ([]map[string]interface{}, int64, error) {
 	objects := make([]map[string]interface{}, 0)
 	totalCount := int64(0)
 	totalKnown := false
+	skipped := (startPage - 1) * pageSize
+	if skipped < 0 {
+		skipped = 0
+	}
 	pageNumber := startPage
 	seen := make(map[string]struct{})
 	for page := 0; page < maxPages; page++ {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return nil, 0, fmt.Errorf("%s read stopped before page %d was requested: %v; the result was not returned because it would be incomplete", action, pageNumber, ctxErr)
 		}
-		pageItems, pageTotal, err := fetch(pageNumber)
+		result, err := fetch(pageNumber)
 		if err != nil {
 			return nil, 0, err
 		}
-		if pageTotal > 0 {
-			if totalKnown && pageTotal != totalCount {
-				return nil, 0, fmt.Errorf("%s reported TotalCount %d on page %d after %d on an earlier page; the result was not returned because the server total is inconsistent", action, pageTotal, pageNumber, totalCount)
+		if result.totalKnown {
+			if totalKnown && result.total != totalCount {
+				return nil, 0, fmt.Errorf("%s reported TotalCount %d on page %d after %d on an earlier page; the result was not returned because the server total is inconsistent", action, result.total, pageNumber, totalCount)
 			}
-			totalCount = pageTotal
+			totalCount = result.total
 			totalKnown = true
 		}
-		for _, item := range pageItems {
-			identity, err := ecsFwRecordIdentity(item, identityKey, action)
+		readableTotal := int64(0)
+		if totalKnown && totalCount > skipped {
+			readableTotal = totalCount - skipped
+		}
+		for _, item := range result.items {
+			identity, err := fwRecordIdentity(item, identityKey, action)
 			if err != nil {
 				return nil, 0, err
 			}
@@ -673,23 +741,23 @@ func ecsFwCollectNumberedPages(ctx context.Context, maxPages int, startPage, pag
 			}
 			seen[identity] = struct{}{}
 		}
-		objects = append(objects, pageItems...)
-		if totalKnown && int64(len(objects)) > totalCount {
-			return nil, 0, fmt.Errorf("%s returned %d rows while reporting TotalCount %d; the result was not returned because the response is inconsistent", action, len(objects), totalCount)
+		objects = append(objects, result.items...)
+		if totalKnown && int64(len(objects)) > readableTotal {
+			return nil, 0, fmt.Errorf("%s returned %d rows from page %d while TotalCount %d leaves %d readable rows; the result was not returned because the response is inconsistent", action, len(objects), startPage, totalCount, readableTotal)
 		}
-		if len(pageItems) == 0 {
-			if totalKnown && int64(len(objects)) < totalCount {
-				return nil, 0, fmt.Errorf("%s returned an empty page at page %d while TotalCount %d still expects %d more rows; the result was not returned because it would be incomplete", action, pageNumber, totalCount, totalCount-int64(len(objects)))
+		if len(result.items) == 0 {
+			if totalKnown && int64(len(objects)) < readableTotal {
+				return nil, 0, fmt.Errorf("%s returned an empty page at page %d while TotalCount %d still expects %d more readable rows; the result was not returned because it would be incomplete", action, pageNumber, totalCount, readableTotal-int64(len(objects)))
 			}
 			break
 		}
-		if int64(len(pageItems)) < pageSize {
-			if totalKnown && int64(len(objects)) < totalCount {
-				return nil, 0, fmt.Errorf("%s returned a short page at page %d while TotalCount %d still expects %d more rows; the result was not returned because it would be incomplete", action, pageNumber, totalCount, totalCount-int64(len(objects)))
+		if int64(len(result.items)) < pageSize {
+			if totalKnown && int64(len(objects)) < readableTotal {
+				return nil, 0, fmt.Errorf("%s returned a short page at page %d while TotalCount %d still expects %d more readable rows; the result was not returned because it would be incomplete", action, pageNumber, totalCount, readableTotal-int64(len(objects)))
 			}
 			break
 		}
-		if totalKnown && int64(len(objects)) >= totalCount {
+		if totalKnown && int64(len(objects)) >= readableTotal {
 			break
 		}
 		pageNumber++
@@ -703,12 +771,12 @@ func ecsFwCollectNumberedPages(ctx context.Context, maxPages int, startPage, pag
 	return objects, totalCount, nil
 }
 
-// ecsFwCollectTokenPages follows a continuation token until the server returns
+// fwCollectTokenPages follows a continuation token until the server returns
 // none. Every record must carry a unique, non-empty identity, so partially
 // overlapping pages are rejected as well. A repeated token or a token for the
 // whole page budget means the cursor never terminates; the accumulated rows are
 // discarded instead of being returned as a partial result.
-func ecsFwCollectTokenPages(ctx context.Context, maxPages int, initialToken, action, identityKey string, fetch func(token string) ([]map[string]interface{}, string, error)) ([]map[string]interface{}, string, error) {
+func fwCollectTokenPages(ctx context.Context, maxPages int, initialToken, action, identityKey string, fetch func(token string) ([]map[string]interface{}, string, error)) ([]map[string]interface{}, string, error) {
 	objects := make([]map[string]interface{}, 0)
 	seenTokens := map[string]struct{}{}
 	seenRecords := map[string]struct{}{}
@@ -722,7 +790,7 @@ func ecsFwCollectTokenPages(ctx context.Context, maxPages int, initialToken, act
 			return nil, "", err
 		}
 		for _, item := range pageItems {
-			identity, err := ecsFwRecordIdentity(item, identityKey, action)
+			identity, err := fwRecordIdentity(item, identityKey, action)
 			if err != nil {
 				return nil, "", err
 			}

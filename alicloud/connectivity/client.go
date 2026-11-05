@@ -2672,24 +2672,6 @@ func (client *AliyunClient) RpcGet(apiProductCode string, apiVersion string, api
 }
 
 func (client *AliyunClient) rpcRequest(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
-	runtime := &util.RuntimeOptions{}
-	runtime.SetAutoretry(autoRetry)
-	return client.rpcRequestWithRuntimeOptions(method, apiProductCode, apiVersion, apiName, query, body, runtime, endpoint)
-}
-
-// RpcPostWithRuntimeOptions invokes an RPC API with POST and caller supplied
-// runtime options. A read-only caller uses it to bound the transport with the
-// remaining read budget (the SDK reads the timeouts in milliseconds) and to
-// switch off the SDK internal retry loop, so retries stay under the caller's
-// own deadline and cancellation control.
-func (client *AliyunClient) RpcPostWithRuntimeOptions(apiProductCode string, apiVersion string, apiName string, body map[string]interface{}, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
-	if runtime == nil {
-		runtime = &util.RuntimeOptions{}
-	}
-	return client.rpcRequestWithRuntimeOptions("POST", apiProductCode, apiVersion, apiName, nil, body, runtime, "")
-}
-
-func (client *AliyunClient) rpcRequestWithRuntimeOptions(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, runtime *util.RuntimeOptions, endpoint string) (map[string]interface{}, error) {
 	var err error
 	if endpoint == "" {
 		apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
@@ -2711,6 +2693,8 @@ func (client *AliyunClient) rpcRequestWithRuntimeOptions(method string, apiProdu
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
 	}
+	runtime := &util.RuntimeOptions{}
+	runtime.SetAutoretry(autoRetry)
 	response, err := conn.DoRequest(tea.String(apiName), nil, tea.String(method), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
 	return response, formatError(response, err)
 }
@@ -2916,6 +2900,38 @@ func normalizeOssOpenAPIResponse(response map[string]interface{}) (map[string]in
 //	hostMap - API parameters in hostMap
 //	autoRetry - whether to auto retry while the runtime has a 5xx error
 func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params, query map[string]*string, body interface{}, headers map[string]*string, hostMap map[string]*string, autoRetry bool) (map[string]interface{}, error) {
+	runtime := &utilV2.RuntimeOptions{}
+	runtime.SetAutoretry(autoRetry)
+	return client.do(nil, apiProductCode, apiParams, query, body, headers, hostMap, runtime)
+}
+
+// DoWithContext is Do bound to ctx. The SDK builds the HTTP request from that
+// context, so cancelling ctx or reaching its deadline aborts the request that is
+// already in flight instead of only bounding it with a numeric timeout. runtime
+// carries the caller's retry and timeout policy, exactly as in Do.
+// parameters:
+//
+//	ctx - context that bounds and cancels the whole request
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiParams - API params
+//	query - API parameters in query
+//	body - API parameters in body
+//	headers - API parameters in headers
+//	hostMap - API parameters in hostMap
+//	runtime - runtime options; a nil value leaves the SDK defaults in place
+func (client *AliyunClient) DoWithContext(ctx context.Context, apiProductCode string, apiParams *openapi.Params, query map[string]*string, body interface{}, headers map[string]*string, hostMap map[string]*string, runtime *utilV2.RuntimeOptions) (map[string]interface{}, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if runtime == nil {
+		runtime = &utilV2.RuntimeOptions{}
+	}
+	return client.do(ctx, apiProductCode, apiParams, query, body, headers, hostMap, runtime)
+}
+
+// do calls the API with SDK v2. A nil ctx keeps the historical call path so Do
+// is unchanged for every existing caller.
+func (client *AliyunClient) do(ctx context.Context, apiProductCode string, apiParams *openapi.Params, query map[string]*string, body interface{}, headers map[string]*string, hostMap map[string]*string, runtime *utilV2.RuntimeOptions) (map[string]interface{}, error) {
 	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
 	endpoint, err := client.loadApiEndpoint(apiProductCode)
 	if err != nil {
@@ -2968,12 +2984,18 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 		applyOpenapiSignVersion(openapiClient, client.config.SignVersion, "sls")
 	}
 	var response map[string]interface{}
-	runtime := &utilV2.RuntimeOptions{}
-	runtime.SetAutoretry(autoRetry)
 	if apiParams.Style != nil && *apiParams.Style == "RPC" {
-		response, err = openapiClient.CallApi(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+		if ctx != nil {
+			response, err = openapiClient.CallApiWithCtx(ctx, apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+		} else {
+			response, err = openapiClient.CallApi(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+		}
 	} else {
-		response, err = openapiClient.Execute(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+		if ctx != nil {
+			response, err = openapiClient.ExecuteWithCtx(ctx, apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+		} else {
+			response, err = openapiClient.Execute(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+		}
 	}
 	if apiProductCode == "oss" && response != nil {
 		// Normalizing only reshapes the response map, so it must not assign to err:

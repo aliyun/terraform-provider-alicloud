@@ -182,7 +182,7 @@ func (d *imagePipelineExecutionsDataSource) Schema(ctx context.Context, req data
 				Description: "A mapping of tags to filter by. Each entry is sent as a `Tag` filter. A maximum of 20 entries is allowed. A key must be 1 to 128 characters, must not start with `aliyun` or `acs:`, and must not contain a URL. A value may be empty, is limited to 128 characters and must not contain a URL. A null value is rejected: omit the entry to leave the tag out of the request, or use an empty string to send an empty value.",
 				Validators: []validator.Map{
 					mapvalidator.SizeAtMost(20),
-					ecsFwTagMapValidator{allowEmptyValue: true},
+					fwTagMapValidator{allowEmptyValue: true},
 				},
 			},
 			"ids": schema.ListAttribute{
@@ -193,7 +193,7 @@ func (d *imagePipelineExecutionsDataSource) Schema(ctx context.Context, req data
 			},
 			"max_results": schema.Int64Attribute{
 				Optional:    true,
-				Description: "The number of entries per page. Valid values: 1 to 500. Defaults to 50. Only the server decides when the result ends: a page shorter than this value is still followed when it returns a continuation token.",
+				Description: "The number of entries per page. Valid values: 1 to 500. Defaults to 50. Only the server decides when the result ends: a page shorter than this value is still followed when it returns a continuation token, and no short-page completeness check applies.",
 				Validators: []validator.Int64{
 					int64validator.Between(1, 500),
 				},
@@ -201,7 +201,7 @@ func (d *imagePipelineExecutionsDataSource) Schema(ctx context.Context, req data
 			"next_token": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "The pagination token to start reading from. The first request omits it; each following request sends the token of the previous response, and the read stops when the server returns none. A token that repeats, or 1,000 consecutive requests that each still return a token, aborts the read with an error instead of returning a partial result. The value stored afterwards is the last token the server returned, and it is empty when every page has been read.",
+				Description: "The pagination token to start reading from. When it is configured, the first request sends it and the read starts at that position; when it is not configured, the first request omits it and the read starts at the beginning. Each following request sends the token of the previous response, and the read stops when the server returns none. A token that repeats, a blank token, or 1,000 consecutive requests that each still return a token aborts the read with an error instead of returning a partial result. The value stored afterwards is the last token the server returned, and it is empty when every page has been read.",
 			},
 			"total_count": schema.Int64Attribute{
 				Computed:    true,
@@ -281,13 +281,13 @@ func (d *imagePipelineExecutionsDataSource) load(ctx context.Context, client *co
 	}
 
 	idsFilter := make(map[string]struct{}, len(model.Ids.Elements()))
-	for _, id := range ecsFwElementsAsStrings(model.Ids) {
+	for _, id := range fwElementsAsStrings(model.Ids) {
 		idsFilter[id] = struct{}{}
 	}
 
 	matched := make([]map[string]interface{}, 0, len(objects))
 	for _, object := range objects {
-		executionId := ecsFwString(object["ExecutionId"]).ValueString()
+		executionId := fwString(object["ExecutionId"]).ValueString()
 		if len(idsFilter) > 0 {
 			if _, ok := idsFilter[executionId]; !ok {
 				continue
@@ -298,13 +298,13 @@ func (d *imagePipelineExecutionsDataSource) load(ctx context.Context, client *co
 	// Sort the objects themselves so ids, executions and every other
 	// index-aligned view describe the same element.
 	sort.Slice(matched, func(i, j int) bool {
-		return ecsFwString(matched[i]["ExecutionId"]).ValueString() < ecsFwString(matched[j]["ExecutionId"]).ValueString()
+		return fwString(matched[i]["ExecutionId"]).ValueString() < fwString(matched[j]["ExecutionId"]).ValueString()
 	})
 
 	ids := make([]string, 0, len(matched))
 	elements := make([]attr.Value, 0, len(matched))
 	for _, object := range matched {
-		ids = append(ids, ecsFwString(object["ExecutionId"]).ValueString())
+		ids = append(ids, fwString(object["ExecutionId"]).ValueString())
 		element, err := imagePipelineExecutionObject(object)
 		if err != nil {
 			return model, err
@@ -318,7 +318,7 @@ func (d *imagePipelineExecutionsDataSource) load(ctx context.Context, client *co
 	}
 
 	model.Id = types.StringValue(helper.DataResourceIdHash(ids))
-	model.Ids = ecsFwStringListValue(ids)
+	model.Ids = fwStringListValue(ids)
 	model.TotalCount = types.Int64Value(int64(len(elements)))
 	model.NextToken = types.StringValue(lastToken)
 	model.Executions = types.ListValueMust(imagePipelineExecutionObjectType, elements)
@@ -333,13 +333,13 @@ func imagePipelineExecutionsRequest(model imagePipelineExecutionsModel, regionId
 		"RegionId":   regionId,
 		"MaxResults": int(imagePipelineExecutionsDefaultMaxResults),
 	}
-	ecsFwSetRequestString(request, "ImagePipelineId", model.ImagePipelineId)
-	ecsFwSetRequestString(request, "ExecutionId", model.ExecutionId)
-	ecsFwSetRequestString(request, "Status", imagePipelineExecutionsNormalizedStatus(model.Status))
+	fwSetRequestString(request, "ImagePipelineId", model.ImagePipelineId)
+	fwSetRequestString(request, "ExecutionId", model.ExecutionId)
+	fwSetRequestString(request, "Status", imagePipelineExecutionsNormalizedStatus(model.Status))
 	if !model.MaxResults.IsNull() && !model.MaxResults.IsUnknown() {
 		request["MaxResults"] = int(model.MaxResults.ValueInt64())
 	}
-	ecsFwApplyTags(request, model.Tags)
+	fwApplyTags(request, model.Tags)
 	if !model.NextToken.IsNull() && !model.NextToken.IsUnknown() && model.NextToken.ValueString() != "" {
 		request["NextToken"] = model.NextToken.ValueString()
 	}
@@ -366,21 +366,21 @@ func (d *imagePipelineExecutionsDataSource) imagePipelineExecutionsDescribeAll(c
 	if v, ok := request["NextToken"].(string); ok {
 		initialToken = v
 	}
-	return ecsFwCollectTokenPages(ctx, imagePipelineExecutionsMaxPages, initialToken, imagePipelineExecutionsAction, "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
+	return fwCollectTokenPages(ctx, imagePipelineExecutionsMaxPages, initialToken, imagePipelineExecutionsAction, "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
 		if token == "" {
 			delete(request, "NextToken")
 		} else {
 			request["NextToken"] = token
 		}
-		response, err := ecsFwRpcPost(ctx, client, imagePipelineExecutionsTypeName, imagePipelineExecutionsAction, request)
+		response, err := fwRpcPost(ctx, client, imagePipelineExecutionsTypeName, imagePipelineExecutionsAction, request)
 		if err != nil {
 			return nil, "", err
 		}
-		items, err := ecsFwDecodeRecordList(response, "ImagePipelineExecution", "ImagePipelineExecutionSet", imagePipelineExecutionsAction)
+		items, err := fwDecodeRecordList(response, "ImagePipelineExecution", "ImagePipelineExecutionSet", imagePipelineExecutionsAction)
 		if err != nil {
 			return nil, "", err
 		}
-		nextToken, err := ecsFwDecodeToken(response, "NextToken", imagePipelineExecutionsAction)
+		nextToken, err := fwDecodeToken(response, "NextToken", imagePipelineExecutionsAction)
 		if err != nil {
 			return nil, "", err
 		}
@@ -389,25 +389,25 @@ func (d *imagePipelineExecutionsDataSource) imagePipelineExecutionsDescribeAll(c
 }
 
 func imagePipelineExecutionObject(object map[string]interface{}) (types.Object, error) {
-	identity, err := ecsFwRecordIdentity(object, "ExecutionId", imagePipelineExecutionsAction)
+	identity, err := fwRecordIdentity(object, "ExecutionId", imagePipelineExecutionsAction)
 	if err != nil {
 		return types.ObjectNull(imagePipelineExecutionAttrTypes), err
 	}
-	tags, err := ecsFwDecodeTags(object["Tags"])
+	tags, err := fwDecodeTags(object["Tags"])
 	if err != nil {
 		return types.ObjectNull(imagePipelineExecutionAttrTypes), fmt.Errorf("%s: %w", identity, err)
 	}
 	return types.ObjectValueMust(imagePipelineExecutionAttrTypes, map[string]attr.Value{
-		"execution_id":      ecsFwString(object["ExecutionId"]),
-		"image_pipeline_id": ecsFwString(object["ImagePipelineId"]),
-		"status":            ecsFwString(object["Status"]),
-		"creation_time":     ecsFwString(object["CreationTime"]),
-		"modified_time":     ecsFwString(object["ModifiedTime"]),
-		"resource_group_id": ecsFwString(object["ResourceGroupId"]),
-		"message":           ecsFwString(object["Message"]),
-		"image_id":          ecsFwString(object["ImageId"]),
-		"error_code":        ecsFwString(object["ErrorCode"]),
-		"error_info":        ecsFwString(object["ErrorInfo"]),
+		"execution_id":      fwString(object["ExecutionId"]),
+		"image_pipeline_id": fwString(object["ImagePipelineId"]),
+		"status":            fwString(object["Status"]),
+		"creation_time":     fwString(object["CreationTime"]),
+		"modified_time":     fwString(object["ModifiedTime"]),
+		"resource_group_id": fwString(object["ResourceGroupId"]),
+		"message":           fwString(object["Message"]),
+		"image_id":          fwString(object["ImageId"]),
+		"error_code":        fwString(object["ErrorCode"]),
+		"error_info":        fwString(object["ErrorInfo"]),
 		"tags":              tags,
 	}), nil
 }

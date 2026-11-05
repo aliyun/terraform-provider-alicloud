@@ -15,7 +15,7 @@ For information about the API and its fields, see [DescribeImagePipelineExecutio
 
 -> **NOTE:** Available since v2.3.0.
 
--> **NOTE:** At least one of `image_pipeline_id` and `execution_id` must be set. The data source reads every page returned by `DescribeImagePipelineExecutions` before applying `ids`, so the result is complete regardless of the number of executions. It starts from `next_token`, follows each token the server returns until none is left, and fails instead of writing a partial result when a token repeats, when 1,000 consecutive requests each still return a token, or when the read has run for 30 minutes.
+-> **NOTE:** At least one of `image_pipeline_id` and `execution_id` must be set. The data source reads every page returned by `DescribeImagePipelineExecutions` before applying `ids`, so the result is complete regardless of the number of executions. When `next_token` is configured, the first request sends it and the read starts at that position; otherwise the first request omits it and the read starts at the beginning. Each following request sends the token of the previous response, and the read stops when the server returns none. The read fails instead of writing a partial result when a token repeats, when a token is blank, when 1,000 consecutive requests each still return a token, or when the read has run for 30 minutes.
 
 ## Example Usage
 
@@ -79,8 +79,8 @@ The following arguments are supported:
 * `status` - (Optional, String) The execution status to filter by. Multiple statuses can be separated by commas. Valid values: `PREPARING`, `REPAIRING`, `BUILDING`, `TESTING`, `DISTRIBUTING`, `RELEASING`, `SUCCESS`, `PARTITION_SUCCESS`, `FAILED`, `TEST_FAILED`, `CANCELLING` and `CANCELLED`. `CANCELLING` and `CANCELLED` are the exact status literals published by `DescribeImagePipelineExecutions`. Omit the attribute to query every status; a comma separated value must not contain empty entries.
 * `tags` - (Optional, Map of String) A mapping of tags to filter by. A maximum of 20 entries is allowed. A null value is rejected: omit the entry to leave the tag out of the request, or use an empty string to send an empty value.
 * `ids` - (Optional, Computed, List of String) A list of execution IDs to filter by. The filter is applied on the provider side after all pages are read; blank and repeated IDs are applied once.
-* `max_results` - (Optional, Int) The number of entries per page. Valid values: `1` to `500`. Defaults to `50`. A page with fewer entries than this value is still followed when the server returns a token, because only the server decides when the result ends.
-* `next_token` - (Optional, Computed, String) The pagination token to start reading from. The first request omits it; the value stored afterwards is the last token the server returned, and it is empty when every page has been read.
+* `max_results` - (Optional, Int) The number of entries per page. Valid values: `1` to `500`. Defaults to `50`. Only the server decides when the result ends: a page with fewer entries than this value is still followed when the server returns a continuation token, and no short-page completeness check applies.
+* `next_token` - (Optional, Computed, String) The pagination token to start reading from. When it is configured, the first request sends it and the read starts at that position; when it is not configured, the first request omits it and the read starts at the beginning. Each following request sends the token of the previous response, and the read stops when the server returns none. A token that repeats, or 1,000 consecutive requests that each still return a token, aborts the read with an error instead of returning a partial result. The value stored afterwards is the last token the server returned, and it is empty when every page has been read.
 
 ## Attributes Reference
 

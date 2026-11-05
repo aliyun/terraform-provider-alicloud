@@ -9,6 +9,7 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // The query is exercised against the auto provisioning groups that already
@@ -99,11 +100,32 @@ func TestAccAliCloudECSAutoProvisioningGroupsDataSource(t *testing.T) {
 				ExpectError: regexp.MustCompile(`Invalid Attribute Value Size|at most 20`),
 			},
 			{
-				// The status filter must narrow the result: the total the API
-				// reports for the filter has to match the rows that were read.
-				Config: autoProvisioningGroupsConfig("  status = [\"active\"]\n"),
+				// The name filter has to narrow the result to the known target:
+				// every returned group must carry that name, and the count must
+				// stay below the unfiltered count when the account holds more
+				// than one group. A filter the server ignored, or one the
+				// provider dropped, fails these assertions.
+				Config: autoProvisioningGroupsConfig("  auto_provisioning_group_name = data.alicloud_ecs_auto_provisioning_groups.all.groups.0.auto_provisioning_group_name\n"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrPair(resourceId, "groups.#", resourceId, "total_count"),
+					resource.TestCheckResourceAttrPair(resourceId, "ids.0", allResourceId, "groups.0.auto_provisioning_group_id"),
+					checkAutoProvisioningGroupsNameFilter(resourceId, allResourceId),
+				),
+			},
+			{
+				// A name that cannot match must not return the groups that do.
+				Config: autoProvisioningGroupsConfig("  auto_provisioning_group_name = \"apg-does-not-exist\"\n"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "groups.#", "0"),
+					resource.TestCheckResourceAttr(resourceId, "total_count", "0"),
+				),
+			},
+			{
+				// Reading from the second page must return the rows that follow
+				// the first page, measured against the readable suffix of the
+				// total: total-1 rows, starting at the second smallest group ID.
+				Config: autoProvisioningGroupsPagedConfig(),
+				Check: resource.ComposeTestCheckFunc(
+					checkAutoProvisioningGroupsLaterPage(allResourceId, "data.alicloud_ecs_auto_provisioning_groups.second"),
 				),
 			},
 			{
@@ -155,4 +177,133 @@ data "alicloud_ecs_auto_provisioning_groups" "all" {
 data "alicloud_ecs_auto_provisioning_groups" "default" {
 %s}
 `, dataArguments)
+}
+
+// autoProvisioningGroupsPagedConfig declares the unfiltered read together with
+// two reads that start at page 1 and page 2 with a page size of one, so the
+// later-page result can be compared against the complete result.
+func autoProvisioningGroupsPagedConfig() string {
+	return `
+data "alicloud_ecs_auto_provisioning_groups" "all" {
+}
+
+data "alicloud_ecs_auto_provisioning_groups" "first" {
+  page_number = 1
+  page_size   = 1
+}
+
+data "alicloud_ecs_auto_provisioning_groups" "second" {
+  page_number = 2
+  page_size   = 1
+}
+`
+}
+
+func autoProvisioningGroupsStateAttribute(state *terraform.State, resourceId, key string) (string, error) {
+	instance, ok := state.RootModule().Resources[resourceId]
+	if !ok || instance.Primary == nil {
+		return "", fmt.Errorf("%s is missing from the state", resourceId)
+	}
+	value, ok := instance.Primary.Attributes[key]
+	if !ok {
+		return "", fmt.Errorf("%s.%s is missing from the state", resourceId, key)
+	}
+	return value, nil
+}
+
+func autoProvisioningGroupsStateCount(state *terraform.State, resourceId, key string) (int, error) {
+	value, err := autoProvisioningGroupsStateAttribute(state, resourceId, key)
+	if err != nil {
+		return 0, err
+	}
+	count, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, fmt.Errorf("%s.%s is not a count: %w", resourceId, key, err)
+	}
+	return count, nil
+}
+
+// checkAutoProvisioningGroupsNameFilter proves the name filter actually narrows
+// the result: every row carries the target name, and when the account holds more
+// than one group the filtered count stays below the unfiltered one.
+func checkAutoProvisioningGroupsNameFilter(resourceId, allResourceId string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		allCount, err := autoProvisioningGroupsStateCount(state, allResourceId, "groups.#")
+		if err != nil {
+			return err
+		}
+		target, err := autoProvisioningGroupsStateAttribute(state, allResourceId, "groups.0.auto_provisioning_group_name")
+		if err != nil {
+			return err
+		}
+		if target == "" {
+			return fmt.Errorf("%s did not return a group to filter by", allResourceId)
+		}
+		count, err := autoProvisioningGroupsStateCount(state, resourceId, "groups.#")
+		if err != nil {
+			return err
+		}
+		if count < 1 {
+			return fmt.Errorf("the name filter %q matched no group", target)
+		}
+		if count > allCount {
+			return fmt.Errorf("the name filter returned %d groups while only %d exist", count, allCount)
+		}
+		if allCount > 1 && count >= allCount {
+			return fmt.Errorf("the name filter did not narrow %d groups down", allCount)
+		}
+		for index := 0; index < count; index++ {
+			name, err := autoProvisioningGroupsStateAttribute(state, resourceId, fmt.Sprintf("groups.%d.auto_provisioning_group_name", index))
+			if err != nil {
+				return err
+			}
+			if name != target {
+				return fmt.Errorf("group %d is %q, want the filtered name %q", index, name, target)
+			}
+		}
+		return nil
+	}
+}
+
+// checkAutoProvisioningGroupsLaterPage proves the read starts at the configured
+// page and measures completeness against the readable suffix of the total.
+func checkAutoProvisioningGroupsLaterPage(allResourceId, pageTwoId string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		total, err := autoProvisioningGroupsStateCount(state, allResourceId, "groups.#")
+		if err != nil {
+			return err
+		}
+		reported, err := autoProvisioningGroupsStateCount(state, pageTwoId, "total_count")
+		if err != nil {
+			return err
+		}
+		if reported != total {
+			return fmt.Errorf("the second page reports total_count %d, want %d", reported, total)
+		}
+		rows, err := autoProvisioningGroupsStateCount(state, pageTwoId, "groups.#")
+		if err != nil {
+			return err
+		}
+		if total <= 1 {
+			if rows != 0 {
+				return fmt.Errorf("page 2 of %d group(s) must be empty, got %d rows", total, rows)
+			}
+			return nil
+		}
+		if rows != total-1 {
+			return fmt.Errorf("page 2 read %d rows, want the %d rows that follow the first page", rows, total-1)
+		}
+		want, err := autoProvisioningGroupsStateAttribute(state, allResourceId, "ids.1")
+		if err != nil {
+			return err
+		}
+		got, err := autoProvisioningGroupsStateAttribute(state, pageTwoId, "ids.0")
+		if err != nil {
+			return err
+		}
+		if got != want {
+			return fmt.Errorf("page 2 starts at %q, want the second group %q", got, want)
+		}
+		return nil
+	}
 }

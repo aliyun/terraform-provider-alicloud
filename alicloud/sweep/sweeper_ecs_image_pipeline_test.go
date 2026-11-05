@@ -40,11 +40,12 @@ func testSweepEcsImagePipeline(region string) error {
 	request["MaxResults"] = tfhelper.PageSizeLarge
 
 	deleteErrors := make([]string, 0)
+	listErrors := make([]string, 0)
 
-	var response map[string]interface{}
 	for {
+		var response map[string]interface{}
 		wait := tfhelper.IncrementalWait(3*time.Second, 3*time.Second)
-		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		listErr := retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = aliyunClient.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 			if err != nil {
 				if tfhelper.NeedRetry(err) {
@@ -56,24 +57,21 @@ func testSweepEcsImagePipeline(region string) error {
 			return nil
 		})
 		tflogs.AddDebug(action, response, request)
-		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", action, err)
-			return fmt.Errorf("%s failed to list image pipelines in %s: %s", action, region, err)
+		if listErr != nil {
+			log.Printf("[ERROR] %s get an error: %#v", action, listErr)
+			// The pipelines of the pages already read are still deleted below;
+			// a listing failure must not hide those deletion results.
+			listErrors = append(listErrors, fmt.Sprintf("%s failed to list image pipelines: %s", action, listErr))
+			break
 		}
 
-		resp, err := jsonpath.Get("$.ImagePipeline.ImagePipelineSet", response)
+		result, err := imagePipelineRecords(response)
 		if err != nil {
-			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.ImagePipeline.ImagePipelineSet", action, err)
-			return fmt.Errorf("%s returned an unexpected image pipeline list in %s: %s", action, region, err)
+			log.Printf("[ERROR] Reading the image pipeline list failed!!! Body: %v.", response)
+			listErrors = append(listErrors, fmt.Sprintf("%s returned an unexpected image pipeline list: %s", action, err))
+			break
 		}
-		result, _ := resp.([]interface{})
-		for _, v := range result {
-			item, ok := v.(map[string]interface{})
-			if !ok {
-				deleteErrors = append(deleteErrors, fmt.Sprintf("malformed pipeline record %T", v))
-				continue
-			}
-
+		for _, item := range result {
 			name, _ := item["Name"].(string)
 			if !shouldSweepEcsImagePipeline(name, imagePipelineTagMap(item["Tags"])) {
 				log.Printf("[INFO] Skipping Ecs Image Pipeline: %s", name)
@@ -99,10 +97,48 @@ func testSweepEcsImagePipeline(region string) error {
 			break
 		}
 	}
-	if len(deleteErrors) > 0 {
-		return fmt.Errorf("failed to delete %d Ecs Image Pipeline(s): %s", len(deleteErrors), strings.Join(deleteErrors, "; "))
+	return imagePipelineSweepError(region, deleteErrors, listErrors)
+}
+
+// imagePipelineRecords decodes the pipeline list of one page. A response that
+// does not carry the list is a malformed response, not an empty page, and a
+// member or entry of another shape is reported instead of being dropped, so a
+// broken response can never look like "nothing left to sweep".
+func imagePipelineRecords(response map[string]interface{}) ([]map[string]interface{}, error) {
+	resp, err := jsonpath.Get("$.ImagePipeline.ImagePipelineSet", response)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	entries, ok := resp.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("ImagePipelineSet is %T instead of a list", resp)
+	}
+	result := make([]map[string]interface{}, 0, len(entries))
+	for index, entry := range entries {
+		item, ok := entry.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("ImagePipelineSet[%d] is %T instead of an object", index, entry)
+		}
+		result = append(result, item)
+	}
+	return result, nil
+}
+
+// imagePipelineSweepError reports every problem the sweep met. Deletion failures
+// are always part of the message, so a listing error that stops later pages
+// cannot hide an object that was already left behind.
+func imagePipelineSweepError(region string, deleteErrors, listErrors []string) error {
+	parts := make([]string, 0, len(deleteErrors)+len(listErrors))
+	if len(deleteErrors) > 0 {
+		parts = append(parts, fmt.Sprintf("failed to delete %d Ecs Image Pipeline(s): %s", len(deleteErrors), strings.Join(deleteErrors, "; ")))
+	}
+	if len(listErrors) > 0 {
+		parts = append(parts, fmt.Sprintf("failed to list Ecs Image Pipelines in %s: %s", region, strings.Join(listErrors, "; ")))
+	}
+	if len(parts) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%s", strings.Join(parts, "; "))
 }
 
 // The documentation example deliberately uses a generic name, so the sweeper
@@ -199,5 +235,68 @@ func TestUnitImagePipelineTagMap(t *testing.T) {
 	}
 	if len(imagePipelineTagMap("not-an-object")) != 0 {
 		t.Fatal("expected an empty map for a malformed Tags member")
+	}
+}
+
+func TestUnitImagePipelineRecords(t *testing.T) {
+	records, err := imagePipelineRecords(map[string]interface{}{
+		"ImagePipeline": map[string]interface{}{
+			"ImagePipelineSet": []interface{}{
+				map[string]interface{}{"ImagePipelineId": "ip-1", "Name": "tf-testAcc-1"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("a well formed list must decode, got %v", err)
+	}
+	if len(records) != 1 || records[0]["ImagePipelineId"] != "ip-1" {
+		t.Fatalf("expected the pipeline record, got %v", records)
+	}
+
+	records, err = imagePipelineRecords(map[string]interface{}{
+		"ImagePipeline": map[string]interface{}{"ImagePipelineSet": []interface{}{}},
+	})
+	if err != nil || len(records) != 0 {
+		t.Fatalf("an explicit empty list is a valid empty page, got %v, %v", records, err)
+	}
+
+	for name, response := range map[string]map[string]interface{}{
+		"missing list":    {"ImagePipeline": map[string]interface{}{}},
+		"list wrong type": {"ImagePipeline": map[string]interface{}{"ImagePipelineSet": "not-a-list"}},
+		"entry wrong type": {"ImagePipeline": map[string]interface{}{
+			"ImagePipelineSet": []interface{}{"not-an-object"},
+		}},
+	} {
+		if _, err := imagePipelineRecords(response); err == nil {
+			t.Errorf("%s must be reported instead of being treated as an empty list", name)
+		}
+	}
+}
+
+// A listing error must never hide the objects that failed to delete earlier in
+// the sweep: both failures are reported together.
+func TestUnitImagePipelineSweepError(t *testing.T) {
+	if err := imagePipelineSweepError("cn-hangzhou", nil, nil); err != nil {
+		t.Fatalf("no failures must not produce an error, got %v", err)
+	}
+
+	deleteErrors := []string{"terraform-example (ip-1): Forbidden"}
+	if err := imagePipelineSweepError("cn-hangzhou", deleteErrors, nil); err == nil || !strings.Contains(err.Error(), "failed to delete 1") {
+		t.Fatalf("a deletion failure must be reported, got %v", err)
+	}
+
+	listErrors := []string{"DescribeImagePipelines failed to list image pipelines: timeout"}
+	if err := imagePipelineSweepError("cn-hangzhou", nil, listErrors); err == nil || !strings.Contains(err.Error(), "failed to list") {
+		t.Fatalf("a listing failure must be reported, got %v", err)
+	}
+
+	combined := imagePipelineSweepError("cn-hangzhou", deleteErrors, listErrors)
+	if combined == nil {
+		t.Fatal("a combined failure must produce an error")
+	}
+	for _, expected := range []string{"failed to delete 1", "terraform-example (ip-1): Forbidden", "failed to list"} {
+		if !strings.Contains(combined.Error(), expected) {
+			t.Fatalf("the combined error must keep %q, got %v", expected, combined)
+		}
 	}
 }

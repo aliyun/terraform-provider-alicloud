@@ -4,8 +4,14 @@
 
 MISSPELL_ENUM_DOC="website/docs/d/ecs_image_pipeline_executions.html.markdown"
 
+# DescribeImagePipelineExecutions publishes CANCELLING and CANCELLED as status
+# literals, and misspell flags them. Only the argument line that declares that
+# enum is accepted, and only in that one page: the same words in ordinary prose
+# on the same page, and every finding anywhere else, stay reported.
+MISSPELL_ENUM_LINE='^\* `status` - \(Optional, String\) The execution status to filter by\. .*`CANCELLING` and `CANCELLED`\.'
+
 run_misspell_scoped() {
-  local output status=0 remaining awk_status=0
+  local output status=0 remaining awk_status=0 enum_lines
   output=$(misspell -error -locale=US "$@" 2>&1) || status=$?
   if [ $status -eq 0 ]; then
     return 0
@@ -22,13 +28,27 @@ run_misspell_scoped() {
     echo "misspell exited with a finding status but printed nothing; the spelling check did not complete."
     return 1
   fi
-  remaining=$(printf '%s\n' "$output" | awk -v doc="$MISSPELL_ENUM_DOC" '
+  # Line numbers of the API enum declaration. The exemption is keyed on the
+  # source position, not on the file alone, so an ordinary uppercase sentence
+  # elsewhere on the same page is still reported.
+  enum_lines=$(grep -nE "$MISSPELL_ENUM_LINE" "$MISSPELL_ENUM_DOC" 2>/dev/null | cut -d: -f1 | sort -n | paste -sd, -)
+  remaining=$(printf '%s\n' "$output" | awk -v doc="$MISSPELL_ENUM_DOC" -v lines="$enum_lines" '
+    BEGIN {
+      count = split(lines, accepted, ",")
+      for (i = 1; i <= count; i++) exempt[accepted[i]] = 1
+    }
     {
       line = $0
       sub(/^\.\//, "", line)
       n = length(doc)
-      if (substr(line, 1, n) == doc && substr(line, n + 1) ~ /^:[0-9]+:[0-9]+: "(CANCELLING|CANCELLED)" is a misspelling of "(CANCELING|CANCELED)"$/) {
-        next
+      if (substr(line, 1, n) == doc) {
+        rest = substr(line, n + 1)
+        if (match(rest, /^:[0-9]+:[0-9]+: "(CANCELLING|CANCELLED)" is a misspelling of "(CANCELING|CANCELED)"$/)) {
+          split(substr(rest, 2), parts, ":")
+          if (parts[1] in exempt) {
+            next
+          }
+        }
       }
       print $0
     }') || awk_status=$?
@@ -39,7 +59,7 @@ run_misspell_scoped() {
   fi
   if [ -z "$remaining" ]; then
     printf '%s\n' "$output"
-    echo "Accepted the documented API status literals CANCELLING/CANCELLED."
+    echo "Accepted the documented API status literals CANCELLING/CANCELLED on the API enum line."
     return 0
   fi
   printf '%s\n' "$remaining"
