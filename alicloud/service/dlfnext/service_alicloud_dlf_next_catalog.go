@@ -162,8 +162,9 @@ func (s *Service) CatalogStateRefreshFuncWithApi(id string, field string, failSt
 
 // WaitForCatalogGone polls GetCatalog until the catalog returns 404.
 func (s *Service) WaitForCatalogGone(ctx context.Context, id string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
 	return s.WaitForCatalogGoneWithApi(ctx, id, timeout, func(id string) (map[string]interface{}, error) {
-		return s.DescribeCatalog(ctx, id)
+		return s.DescribeCatalogWithRetryTimeout(ctx, id, remainingUntil(deadline))
 	})
 }
 

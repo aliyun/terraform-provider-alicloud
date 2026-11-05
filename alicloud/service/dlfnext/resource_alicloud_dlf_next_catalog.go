@@ -299,7 +299,10 @@ func (r *catalogResource) Update(ctx context.Context, req resource.UpdateRequest
 			id := state.Id.ValueString()
 			action := catalogAction(id)
 			query := make(map[string]*string)
-			body := map[string]interface{}{"updates": updates}
+			body := map[string]interface{}{}
+			if len(updates) > 0 {
+				body["updates"] = updates
+			}
 			if len(removals) > 0 {
 				body["removals"] = removals
 			}

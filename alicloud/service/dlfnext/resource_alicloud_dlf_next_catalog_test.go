@@ -278,7 +278,13 @@ func testAccDlfNextCatalogBestEffortCleanup(t *testing.T, catalogName string) {
 			break
 		}
 		if strings.Contains(err.Error(), "is being created") || helper.NeedRetry(err) {
-			time.Sleep(3 * time.Second)
+			timer := time.NewTimer(3 * time.Second)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			case <-timer.C:
+			}
 			continue
 		}
 		t.Logf("cleanup: DropCatalog %s failed: %s", catalogName, err)

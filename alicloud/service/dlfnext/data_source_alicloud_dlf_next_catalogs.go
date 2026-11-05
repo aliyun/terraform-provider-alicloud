@@ -212,7 +212,10 @@ func (d *catalogsDataSource) Read(ctx context.Context, req datasource.ReadReques
 func listAllCatalogs(ctx context.Context, lister func(pattern, token string, max int) ([]interface{}, string, error), pattern string) ([]interface{}, error) {
 	var all []interface{}
 	token := ""
-	for {
+	for page := 0; ; page++ {
+		if page >= 1000 {
+			return nil, fmt.Errorf("ListCatalogs exceeded 1000 pages; refusing to keep paging")
+		}
 		objects, next, err := lister(pattern, token, 100)
 		if err != nil {
 			return nil, err
@@ -220,6 +223,9 @@ func listAllCatalogs(ctx context.Context, lister func(pattern, token string, max
 		all = append(all, objects...)
 		if next == "" {
 			return all, nil
+		}
+		if next == token {
+			return nil, fmt.Errorf("ListCatalogs returned the same page token twice; aborting to avoid a loop")
 		}
 		token = next
 	}
