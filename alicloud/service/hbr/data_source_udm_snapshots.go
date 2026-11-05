@@ -70,6 +70,10 @@ func DataSourceUdmSnapshots() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"snapshot_hash": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"source_type": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -178,6 +182,7 @@ func DataSourceUdmSnapshotsRead(d *schema.ResourceData, meta interface{}) error 
 		mapping["create_time"] = objectRaw["CreateTime"]
 		mapping["start_time"] = objectRaw["StartTime"]
 		mapping["udm_snapshot_id"] = objectRaw["SnapshotId"]
+		mapping["snapshot_hash"] = objectRaw["SnapshotHash"]
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, objectRaw[""])

@@ -39,6 +39,7 @@ var existHbrUdmSnapshotMapFunc = func(rand int) map[string]string {
 		"snapshots.0.instance_id":     acctest.CHECKSET,
 		"snapshots.0.source_type":     acctest.CHECKSET,
 		"snapshots.0.udm_snapshot_id": acctest.CHECKSET,
+		"snapshots.0.snapshot_hash":   acctest.CHECKSET,
 		"snapshots.0.job_id":          acctest.CHECKSET,
 	}
 }
