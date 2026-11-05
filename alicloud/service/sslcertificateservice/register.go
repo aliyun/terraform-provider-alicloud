@@ -38,5 +38,8 @@ func ServicePackage() conns.ServicePackage {
 		Actions: []conns.Action{
 			{TypeName: "alicloud_ssl_certificates_service_pca_cert_sync", Factory: NewPcaCertSyncAction},
 		},
+		Resources: []conns.Resource{
+			{TypeName: "alicloud_ssl_certificates_service_warehouse", Factory: NewSslCertificatesServiceWarehouseResource},
+		},
 	}
 }
