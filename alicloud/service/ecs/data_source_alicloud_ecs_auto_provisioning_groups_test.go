@@ -142,8 +142,8 @@ resource "alicloud_auto_provisioning_group" "default" {
   auto_provisioning_group_name  = var.name
   auto_provisioning_group_type  = "maintain"
   total_target_capacity         = "1"
-  spot_target_capacity          = "1"
-  default_target_capacity_type  = "Spot"
+  pay_as_you_go_target_capacity = "1"
+  default_target_capacity_type  = "PayAsYouGo"
 
   launch_template_config {
     vswitch_id        = alicloud_vswitch.default.id
