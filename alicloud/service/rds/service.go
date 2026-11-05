@@ -1306,6 +1306,12 @@ func deleteDBSecurityIpsGroup(instanceId, groupName, currentIps string, timeout 
 	// A malformed request was rejected without changing the group, so it must
 	// not wait for a disappearance that cannot happen. It falls through to the
 	// Delete fallback, which is verified by the read-back after the write.
+	// Every other Cover error ends the attempt with its original error: a
+	// fallback write cannot turn a rejected request into a successful removal,
+	// and sending one would hide the real cause.
+	if coverErr != nil && !IsExpectedErrors(coverErr, []string{"InvalidSecurityIps.MalFormed"}) {
+		return coverErr
+	}
 	if coverErr == nil {
 		// A removed group can stay visible for a short while, so poll for it
 		// inside the shared budget instead of deciding on a single read.

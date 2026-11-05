@@ -213,24 +213,33 @@ func TestUnitAliCloudDBInstanceDeleteSecurityIpsCoverPath(t *testing.T) {
 	assert.Equal(t, []string{""}, access.ips)
 }
 
-func TestUnitAliCloudDBInstanceDeleteSecurityIpsDeleteFallback(t *testing.T) {
+// A terminal Cover error must end the attempt with its original error and must
+// not be followed by a Delete write. The wrapped error reproduces the shape the
+// production service returns after the retry loop.
+func TestUnitAliCloudDBInstanceDeleteSecurityIpsNoFallbackOnTerminalCoverError(t *testing.T) {
 	fastAbsencePolling(t)
 	access := &fakeSecurityIpsGroupAccess{
-		present:       true,
-		coverErr:      sdkerrors.NewServerError(500, `{"Code":"InternalError","Message":"cover failed"}`, ""),
+		present: true,
+		coverErr: WrapErrorf(sdkerrors.NewServerError(400, `{"Code":"InvalidGroupName.DuplicatedWithTemplate","Message":"group is owned by a template"}`, ""),
+			DefaultErrorMsg, "rm-test", "ModifySecurityIps", AlibabaCloudSdkGoERROR),
 		deleteRemoves: true,
 	}
 	err := deleteDBSecurityIpsGroup("rm-test", "office", "10.0.0.1", time.Minute, access)
-	assert.NoError(t, err)
-	assert.Equal(t, []string{"Cover", "Delete"}, access.modes)
-	assert.Equal(t, []string{"", "10.0.0.1"}, access.ips)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "DuplicatedWithTemplate")
+	assert.Equal(t, []string{"Cover"}, access.modes, "a terminal Cover error must not send a Delete fallback")
+	assert.Equal(t, []string{""}, access.ips)
 }
 
+// The malformed request is the only Cover error that may fall back to Delete:
+// the request was rejected without changing the group, so a Delete write can
+// still remove it. The wrapped error reproduces the production shape.
 func TestUnitAliCloudDBInstanceDeleteSecurityIpsMalformedStillPresent(t *testing.T) {
 	fastAbsencePolling(t)
 	access := &fakeSecurityIpsGroupAccess{
-		present:       true,
-		coverErr:      sdkerrors.NewServerError(400, `{"Code":"InvalidSecurityIps.MalFormed","Message":"malformed"}`, ""),
+		present: true,
+		coverErr: WrapErrorf(sdkerrors.NewServerError(400, `{"Code":"InvalidSecurityIps.MalFormed","Message":"malformed"}`, ""),
+			DefaultErrorMsg, "rm-test", "ModifySecurityIps", AlibabaCloudSdkGoERROR),
 		deleteRemoves: true,
 	}
 	err := deleteDBSecurityIpsGroup("rm-test", "office", "10.0.0.1", time.Minute, access)
@@ -248,8 +257,9 @@ func TestUnitAliCloudDBInstanceDeleteSecurityIpsStillExists(t *testing.T) {
 
 func TestUnitAliCloudDBInstanceDeleteSecurityIpsDeleteError(t *testing.T) {
 	access := &fakeSecurityIpsGroupAccess{
-		present:   true,
-		coverErr:  sdkerrors.NewServerError(403, `{"Code":"IncorrectDBInstanceState","Message":"state"}`, ""),
+		present: true,
+		coverErr: WrapErrorf(sdkerrors.NewServerError(400, `{"Code":"InvalidSecurityIps.MalFormed","Message":"malformed"}`, ""),
+			DefaultErrorMsg, "rm-test", "ModifySecurityIps", AlibabaCloudSdkGoERROR),
 		deleteErr: sdkerrors.NewServerError(400, `{"Code":"InvalidParameter","Message":"bad request"}`, ""),
 	}
 	err := deleteDBSecurityIpsGroup("rm-test", "office", "10.0.0.1", time.Minute, access)
@@ -282,7 +292,7 @@ func TestUnitAliCloudDBInstanceDeleteSecurityIpsBudgetPassedDown(t *testing.T) {
 	}
 }
 
-func TestUnitAliCloudDBInstanceDeleteSecurityIpsNoFallbackAfterBudgetExhausted(t *testing.T) {
+func TestUnitAliCloudDBInstanceDeleteSecurityIpsNoFallbackAfterFailedCover(t *testing.T) {
 	access := &fakeSecurityIpsGroupAccess{
 		present:    true,
 		coverDelay: 400 * time.Millisecond,
@@ -290,7 +300,7 @@ func TestUnitAliCloudDBInstanceDeleteSecurityIpsNoFallbackAfterBudgetExhausted(t
 	}
 	err := deleteDBSecurityIpsGroup("rm-test", "office", "10.0.0.1", 200*time.Millisecond, access)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "budget is exhausted")
+	assert.Contains(t, err.Error(), "cover failed")
 	assert.Equal(t, []string{"Cover"}, access.modes)
 }
 
@@ -320,8 +330,9 @@ func TestUnitAliCloudDBInstanceDeleteSecurityIpsAbsenceErrorPropagates(t *testin
 func TestUnitAliCloudDBInstanceDeleteSecurityIpsDeleteFallbackDelayedVisibility(t *testing.T) {
 	fastAbsencePolling(t)
 	access := &fakeSecurityIpsGroupAccess{
-		present:                true,
-		coverErr:               sdkerrors.NewServerError(500, `{"Code":"InternalError","Message":"cover failed"}`, ""),
+		present: true,
+		coverErr: WrapErrorf(sdkerrors.NewServerError(400, `{"Code":"InvalidSecurityIps.MalFormed","Message":"malformed"}`, ""),
+			DefaultErrorMsg, "rm-test", "ModifySecurityIps", AlibabaCloudSdkGoERROR),
 		deleteRemoves:          true,
 		visibleReadsAfterWrite: 3,
 	}
@@ -357,8 +368,9 @@ func TestUnitAliCloudDBInstanceDeleteSecurityIpsPostCoverPollReadErrorPropagates
 func TestUnitAliCloudDBInstanceDeleteSecurityIpsPostDeletePollReadErrorPropagates(t *testing.T) {
 	fastAbsencePolling(t)
 	access := &fakeSecurityIpsGroupAccess{
-		present:                true,
-		coverErr:               sdkerrors.NewServerError(500, `{"Code":"InternalError","Message":"cover failed"}`, ""),
+		present: true,
+		coverErr: WrapErrorf(sdkerrors.NewServerError(400, `{"Code":"InvalidSecurityIps.MalFormed","Message":"malformed"}`, ""),
+			DefaultErrorMsg, "rm-test", "ModifySecurityIps", AlibabaCloudSdkGoERROR),
 		deleteRemoves:          true,
 		visibleReadsAfterWrite: 1,
 		absentErr:              sdkerrors.NewServerError(500, `{"Code":"InternalError","Message":"read failed"}`, ""),
