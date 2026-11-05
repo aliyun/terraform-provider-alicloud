@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -152,6 +153,13 @@ func TestAccAliCloudCmsSubscription_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
 				ImportStateVerify: true,
+			},
+			{
+				// A declared but empty optional block is rejected during plan,
+				// before any request is built.
+				Config:      testAccCmsSubscriptionConfigEmptyBlock(name),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile("Empty pushing_setting block"),
 			},
 		},
 	})
@@ -553,6 +561,17 @@ resource "alicloud_cms_subscription" "default" {
       value = "HighCPUUsage"
     }
   }
+}
+`, testAccCmsSubscriptionDependence(name))
+}
+
+func testAccCmsSubscriptionConfigEmptyBlock(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_cms_subscription" "default" {
+  subscription_name = var.name
+  workspace         = alicloud_cms_workspace.default.workspace_name
+
+  pushing_setting {}
 }
 `, testAccCmsSubscriptionDependence(name))
 }
