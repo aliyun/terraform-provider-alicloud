@@ -401,26 +401,59 @@ resource "alicloud_fcv3_function" "function" {
 
 // TestAccAliCloudFcv3ProvisionConfig_createWithoutTarget records the write
 // contract behind the Optional+Computed schema of target: PutProvisionConfig
-// declares target as required, so creating the resource without it must fail
-// instead of silently writing the zero value. target may only be omitted for a
-// resource that already exists (import or a removed argument), where the state
-// value is reused on the next update.
+// declares target as required, so creating the resource without it must be
+// rejected by the service instead of silently writing the zero value. target
+// may only be omitted for a resource that already exists (import or a removed
+// argument), where the state value is reused on the next update. The second
+// step creates the same resource with target set, which proves the fixture is
+// healthy and the first step failed only because target was missing.
 func TestAccAliCloudFcv3ProvisionConfig_createWithoutTarget(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_fcv3_provision_config.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ProvisionConfigMap7183)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeProvisionConfig")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sfcv3provisionnotarget%d", acctest.DefaultRegionToTest, rand)
-	testAccConfig := acctest.ResourceTestAccConfig("alicloud_fcv3_provision_config.default", name, AlicloudFcv3ProvisionConfigBasicDependence7183)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ProvisionConfigBasicDependence7183)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
 			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
+			// The service answers 400 InvalidArgument "Target is required but
+			// not provided"; match that exact message so an unrelated create
+			// failure cannot make this step pass.
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"function_name": "${alicloud_fcv3_function.function.function_name}",
 				}),
-				ExpectError: regexp.MustCompile("alicloud_fcv3_provision_config"),
+				ExpectError: regexp.MustCompile("Target is required but not provided"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_name": "${alicloud_fcv3_function.function.function_name}",
+					"target":        "1",
+					"qualifier":     "LATEST",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"target":    "1",
+						"qualifier": "LATEST",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"qualifier", "current", "current_error"},
 			},
 		},
 	})
