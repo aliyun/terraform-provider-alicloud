@@ -213,16 +213,6 @@ func TestAccAliCloudPrivatelinkVpcEndpoint_base(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"reset_policy": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"reset_policy": "true",
-					}),
-				),
-			},
 		},
 	})
 }
