@@ -760,6 +760,9 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_sameBackendDualZone(t *testing
 					resource.TestCheckResourceAttr(resourceId, "resource.#", "2"),
 					func(state *terraform.State) error {
 						rs := state.RootModule().Resources[resourceId]
+						if rs == nil || rs.Primary == nil {
+							return fmt.Errorf("missing resource state for %s", resourceId)
+						}
 						for key, value := range rs.Primary.Attributes {
 							if strings.HasPrefix(key, "tags.") && (key != "tags.%" || value != "0") {
 								return fmt.Errorf("unexpected tags state: %s=%s", key, value)
