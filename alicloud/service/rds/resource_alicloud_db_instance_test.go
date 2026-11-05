@@ -5094,6 +5094,7 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 					}),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				Config: testAccConfig(mergeStringInterfaceMap(testAccDBInstanceIpArraysMysqlConfig(), map[string]interface{}{
 					"db_instance_ip_arrays": []map[string]interface{}{
@@ -5119,6 +5120,7 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 					testAccCheckDBInstanceIpArrayExists(resourceId, "partner", "172.16.0.0/24,192.168.1.10"),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_ip_arrays": []map[string]interface{}{
@@ -5142,29 +5144,16 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 					}),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				// Second plan after the old state was upgraded to the new block:
 				// the configuration is unchanged, so the plan must be empty.
 				Config:   testAccConfig(map[string]interface{}{}),
 				PlanOnly: true,
 			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-				// Import does not adopt whitelist groups that the configuration
-				// does not manage yet.
-				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "parameters", "encryption_key", "security_group_id", "storage_auto_scale", "storage_threshold", "storage_upper_bound", "db_instance_ip_arrays"},
-				ImportStateCheck: func(states []*terraform.InstanceState) error {
-					if len(states) != 1 {
-						return fmt.Errorf("expected one imported state, got %d", len(states))
-					}
-					if got := states[0].Attributes["db_instance_ip_arrays.#"]; got != "" && got != "0" {
-						return fmt.Errorf("import must not adopt whitelist groups, got db_instance_ip_arrays.#=%q", got)
-					}
-					return nil
-				},
-			},
+			// Import does not adopt whitelist groups that the configuration does
+			// not manage yet.
+			importAfterConfigStep(resourceId),
 			{
 				// Removing a block deletes the group from the instance.
 				Config: testAccConfig(map[string]interface{}{
@@ -5186,6 +5175,7 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 					testAccCheckDBInstanceIpArrayExists(resourceId, "office", "10.10.10.0/24,10.10.12.0/24"),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				// Renaming a block deletes the old group and creates the new one.
 				Config: testAccConfig(map[string]interface{}{
@@ -5207,6 +5197,7 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 					testAccCheckDBInstanceIpArrayExists(resourceId, "officev2", "10.10.10.0/24,10.10.12.0/24"),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				// The legacy single group and the default group stay outside
 				// db_instance_ip_arrays and are not touched when managed groups
@@ -5230,6 +5221,7 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 					testAccCheckDBInstanceIpArrayExists(resourceId, "officev2", "10.10.10.0/24,10.10.12.0/24"),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				// Removing the last managed group keeps the legacy and default
 				// groups unchanged. The generated configuration is cumulative, so
@@ -5248,6 +5240,7 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 					testAccCheckDBInstanceIpArrayExists(resourceId, "default", "10.0.0.1"),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				// A hidden group is created through the legacy attributes; direct
 				// group management must not adopt or modify it.
@@ -5271,6 +5264,7 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 					testAccCheckDBInstanceIpArrayExists(resourceId, "officev2", "10.10.10.0/24,10.10.12.0/24"),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				// Create a second legacy group that will later fall outside the
 				// configuration, modelling a group that Terraform does not manage.
@@ -5293,6 +5287,7 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 					testAccCheckDBInstanceIpArrayExists(resourceId, "external", "10.0.0.6"),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				// Switching the legacy group leaves "external" behind; direct group
 				// deletion must not touch it or the hidden group.
@@ -5312,6 +5307,7 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 					testAccCheckDBInstanceIpArrayExists(resourceId, "legacygrp", "10.0.0.9"),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				// The default group stays managed by security_ips.
 				Config: testAccConfig(map[string]interface{}{
@@ -5391,6 +5387,7 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 					testAccCheckDBInstanceIpArrayExists(resourceId, "legacygrp", "10.0.0.9"),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				// Plannable import runs a real plan against the imported state.
 				// The imported state has no groups, so the plan must update the
@@ -5470,6 +5467,7 @@ func TestAccAliCloudDBInstance_ipArrayTemplateBoundary(t *testing.T) {
 					testAccCheckDBInstanceIpArrayAttribute(resourceId, templateGroupName, "template"),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				// Changing and deleting direct groups must not touch the template
 				// group or detach the template.
@@ -5488,6 +5486,7 @@ func TestAccAliCloudDBInstance_ipArrayTemplateBoundary(t *testing.T) {
 					testAccCheckDBInstanceIpArrayExists(resourceId, templateGroupName, "10.20.0.0/24"),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				// A direct group may not reuse the name of a group provided by an
 				// attached whitelist template. The update is rejected before any
@@ -5519,6 +5518,7 @@ func TestAccAliCloudDBInstance_ipArrayTemplateBoundary(t *testing.T) {
 					testAccCheckDBInstanceIpArrayAttribute(resourceId, templateGroupName, "template"),
 				),
 			},
+			importAfterConfigStep(resourceId),
 		},
 	})
 }
@@ -5582,6 +5582,7 @@ func TestAccAliCloudDBInstance_ipArraysPostgreSQL(t *testing.T) {
 					}),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_ip_arrays": []map[string]interface{}{
@@ -5605,6 +5606,7 @@ func TestAccAliCloudDBInstance_ipArraysPostgreSQL(t *testing.T) {
 					}),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				// Removing a block deletes the group on PostgreSQL as well.
 				Config: testAccConfig(map[string]interface{}{
@@ -5625,6 +5627,7 @@ func TestAccAliCloudDBInstance_ipArraysPostgreSQL(t *testing.T) {
 					testAccCheckDBInstanceIpArrayDeleted(resourceId, "partner"),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				// Renaming a block deletes the old group and creates the new one.
 				Config: testAccConfig(map[string]interface{}{
@@ -5646,6 +5649,7 @@ func TestAccAliCloudDBInstance_ipArraysPostgreSQL(t *testing.T) {
 					testAccCheckDBInstanceIpArrayExists(resourceId, "officepg", "10.10.10.0/24,10.10.12.0/24"),
 				),
 			},
+			importAfterConfigStep(resourceId),
 		},
 	})
 }
@@ -5683,6 +5687,7 @@ func TestAccAliCloudDBInstance_ipArraySingleGroup(t *testing.T) {
 					}),
 				),
 			},
+			importAfterConfigStep(resourceId),
 			{
 				// Re-applying the same single-group configuration must produce an
 				// empty plan even though the provider added the optional
@@ -5695,8 +5700,31 @@ func TestAccAliCloudDBInstance_ipArraySingleGroup(t *testing.T) {
 					}),
 				),
 			},
+			importAfterConfigStep(resourceId),
 		},
 	})
+}
+
+// importAfterConfigStep verifies that the instance can be imported from the
+// state produced by the successful configuration step before it. Import
+// intentionally does not adopt whitelist groups, so the new block is ignored
+// by the state comparison and asserted separately.
+func importAfterConfigStep(resourceId string) resource.TestStep {
+	return resource.TestStep{
+		ResourceName:            resourceId,
+		ImportState:             true,
+		ImportStateVerify:       true,
+		ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "parameters", "encryption_key", "security_group_id", "storage_auto_scale", "storage_threshold", "storage_upper_bound", "db_instance_ip_arrays"},
+		ImportStateCheck: func(states []*terraform.InstanceState) error {
+			if len(states) != 1 {
+				return fmt.Errorf("expected one imported state, got %d", len(states))
+			}
+			if got := states[0].Attributes["db_instance_ip_arrays.#"]; got != "" && got != "0" {
+				return fmt.Errorf("import must not adopt whitelist groups, got db_instance_ip_arrays.#=%q", got)
+			}
+			return nil
+		},
+	}
 }
 
 func mergeStringInterfaceMap(base, override map[string]interface{}) map[string]interface{} {

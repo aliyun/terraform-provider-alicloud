@@ -749,7 +749,7 @@ The following arguments are supported:
 * `db_instance_ip_array_attribute` - (Optional, Available since v1.125.0) The attribute of the IP address whitelist. By default, this parameter is empty.
 
   -> **NOTE:** The IP address whitelists that have the hidden attribute are not displayed in the ApsaraDB RDS console. These IP address whitelists are used to access Alibaba Cloud services, such as Data Transmission Service (DTS).
-* `db_instance_ip_arrays` - (Optional, Set, Available since v2.2.0) A set of IP address whitelist group blocks. Each block manages one whitelist group, and all configured groups are created, updated or deleted within a single apply. At most 199 groups can be declared here: an instance supports 200 whitelist groups in total and the group managed through `security_ips` always counts against that limit. See [`db_instance_ip_arrays`](#db_instance_ip_arrays) below.
+* `db_instance_ip_arrays` - (Optional, Set, Available since v2.3.0) A set of IP address whitelist group blocks. Each block manages one whitelist group, and all configured groups are created, updated or deleted within a single apply. At most 199 groups can be declared here: an instance supports 200 whitelist groups in total and the group managed through `security_ips` always counts against that limit. See [`db_instance_ip_arrays`](#db_instance_ip_arrays) below.
 
   -> **NOTE:** Group names must be unique and must differ from `db_instance_ip_array_name`. The group configured through `security_ips` is managed separately and is not managed by `db_instance_ip_arrays`. Removing a block deletes that group from the instance and renaming a block deletes the old group and creates the new one. The `default` group and groups that are not managed by this resource are never deleted. Groups whose attribute is `hidden` are system groups used by DMS, DTS and DAS and are not managed by this resource.
 
@@ -993,8 +993,8 @@ The following arguments are supported:
 
 The db_instance_ip_arrays mapping supports the following:
 
-* `name` - (Required, String, Available since v2.2.0) The name of the IP address whitelist group. It must be 1 to 64 characters long, must be unique within this block set, and must differ from `db_instance_ip_array_name`. Renaming the group deletes the old group and creates the new one.
-* `security_ips` - (Optional, Set, Available since v2.2.0) A set of IP addresses in the group. At least one IP address or CIDR block is required; a group without any entry is rejected during plan.
+* `name` - (Required, String, Available since v2.3.0) The name of the IP address whitelist group. It must be 1 to 64 characters long, must be unique within this block set, and must differ from `db_instance_ip_array_name`. Renaming the group deletes the old group and creates the new one.
+* `security_ips` - (Optional, Set, Available since v2.3.0) A set of IP addresses in the group. At least one IP address or CIDR block is required; a group without any entry is rejected during plan.
 
 ### `parameters`
 

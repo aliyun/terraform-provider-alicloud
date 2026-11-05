@@ -1434,7 +1434,7 @@ func (s *RdsService) modifyDBSecurityIpsGroup(instanceId, groupName, ips, modify
 	if !ok {
 		return WrapErrorf(fmt.Errorf("no time left to wait for the instance after ModifySecurityIps"), IdMsg, instanceId)
 	}
-	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, remaining, 1*time.Second, s.RdsDBInstanceStateRefreshFuncWithinDeadline(instanceId, []string{"Deleting"}, deadline))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, remaining, 1*time.Second, s.dbInstanceStateRefreshFuncWithinDeadline(instanceId, []string{"Deleting"}, deadline))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, instanceId)
 	}
@@ -1913,11 +1913,11 @@ func (s *RdsService) RdsDBInstanceStateRefreshFunc(id string, failStates []strin
 	}
 }
 
-// RdsDBInstanceStateRefreshFuncWithinDeadline is the lifecycle-scoped variant of
+// dbInstanceStateRefreshFuncWithinDeadline is the lifecycle-scoped variant of
 // RdsDBInstanceStateRefreshFunc. Every refresh spends only the budget that is
 // left before deadline, so a persistent retryable error cannot open a new
 // five-minute window inside a wait that already has less time than that.
-func (s *RdsService) RdsDBInstanceStateRefreshFuncWithinDeadline(id string, failStates []string, deadline time.Time) retry.StateRefreshFunc {
+func (s *RdsService) dbInstanceStateRefreshFuncWithinDeadline(id string, failStates []string, deadline time.Time) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		budget, ok := remainingLifecycleBudget(deadline)
 		if !ok {
@@ -1949,12 +1949,32 @@ type dbInstanceExistenceReader interface {
 	DescribeDBInstanceWithTimeout(id string, timeout time.Duration) (map[string]interface{}, error)
 }
 
+// isDBInstanceAbsent reports whether an instance lookup result proves that this
+// instance no longer exists. queryDBInstance wraps exactly two instance-specific
+// outcomes with NotFoundMsg: an instance-specific NotFound code and an empty
+// attribute list. A generic 404 from DescribeDBInstanceAttribute (for example
+// InvalidClusterKms, Request.NotFound or HostInfo.NotFound) is wrapped with
+// DefaultErrorMsg and must not be read as absence, even though the shared
+// NotFoundError classifier treats every 404 as not found.
+func isDBInstanceAbsent(err error) bool {
+	for {
+		e, ok := err.(*ComplexError)
+		if !ok {
+			return false
+		}
+		if e.Err != nil {
+			return strings.HasPrefix(e.Err.Error(), ResourceNotfound)
+		}
+		err = e.Cause
+	}
+}
+
 // waitForDBInstanceDeleted waits until the instance lookup confirms absence.
 // DeleteDBInstance stops reporting task entries once the instance is released,
-// so an empty DescribeTasks list cannot prove completion; only an explicit
-// NotFound from the instance lookup can. Reads spend the remaining delete
-// budget, and any other error keeps its original handling instead of being
-// read as absence.
+// so an empty DescribeTasks list cannot prove completion; only instance-specific
+// absence evidence from the lookup can. Reads spend the remaining delete budget,
+// and every other error, including non-instance 404s, keeps its original
+// handling instead of being read as absence.
 func waitForDBInstanceDeleted(reader dbInstanceExistenceReader, id string, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for {
@@ -1963,7 +1983,7 @@ func waitForDBInstanceDeleted(reader dbInstanceExistenceReader, id string, timeo
 			return WrapError(Error("timeout while waiting for DB instance %s to be deleted", id))
 		}
 		if _, err := reader.DescribeDBInstanceWithTimeout(id, budget); err != nil {
-			if NotFoundError(err) {
+			if isDBInstanceAbsent(err) {
 				return nil
 			}
 			return WrapError(err)

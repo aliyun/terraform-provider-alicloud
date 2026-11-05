@@ -383,7 +383,7 @@ func TestUnitAliCloudDBInstanceLifecycleBudget(t *testing.T) {
 
 func TestUnitAliCloudDBInstanceStateRefreshWithinDeadlineExhausted(t *testing.T) {
 	service := &RdsService{}
-	refresh := service.RdsDBInstanceStateRefreshFuncWithinDeadline("rm-test", []string{"Deleting"}, time.Now().Add(-time.Second))
+	refresh := service.dbInstanceStateRefreshFuncWithinDeadline("rm-test", []string{"Deleting"}, time.Now().Add(-time.Second))
 	_, _, err := refresh()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "budget is exhausted")
@@ -483,9 +483,12 @@ func TestUnitAliCloudDBInstanceDeleteWaitSucceedsOnNotFound(t *testing.T) {
 
 // The instance can outlive DeleteDBInstance, and a released instance reports an
 // empty task list, so the wait must keep reading the instance itself until the
-// lookup confirms it is gone.
+// lookup confirms it is gone. Every read must receive less budget than the one
+// before it, so an implementation that rebuilds the full timeout per round
+// cannot pass this test.
 func TestUnitAliCloudDBInstanceDeleteWaitPollsWhileInstanceExists(t *testing.T) {
 	fastDeleteWait(t)
+	dbInstanceDeletePollInterval = 5 * time.Millisecond
 	reader := &fakeDBInstanceExistenceReader{responses: []fakeDBInstanceReadResult{
 		{object: map[string]interface{}{"DBInstanceStatus": "Deleting"}},
 		{object: map[string]interface{}{"DBInstanceStatus": "Deleting"}},
@@ -494,8 +497,9 @@ func TestUnitAliCloudDBInstanceDeleteWaitPollsWhileInstanceExists(t *testing.T) 
 	err := waitForDBInstanceDeleted(reader, "rm-test", time.Minute)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, reader.calls)
+	assert.GreaterOrEqual(t, len(reader.budgets), 3)
 	for i := 1; i < len(reader.budgets); i++ {
-		assert.LessOrEqual(t, reader.budgets[i], reader.budgets[i-1], "the budget must never be rebuilt between reads")
+		assert.Less(t, reader.budgets[i], reader.budgets[i-1], "each read must spend the remaining delete budget, never a rebuilt timeout")
 	}
 }
 
@@ -508,6 +512,44 @@ func TestUnitAliCloudDBInstanceDeleteWaitErrorPropagates(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "permission denied")
 	assert.Equal(t, 1, reader.calls, "an authorization error must not be retried into absence")
+}
+
+// dbInstanceGenericNotFoundError reproduces the production wrapper for a 404
+// that is not about this instance: queryDBInstance wraps it with DefaultErrorMsg.
+func dbInstanceGenericNotFoundError(id string) error {
+	return WrapErrorf(sdkerrors.NewServerError(404, `{"Code":"InvalidClusterKms","Message":"The specified cluster kms is not found."}`, ""), DefaultErrorMsg, id, "DescribeDBInstanceAttribute", AlibabaCloudSdkGoERROR)
+}
+
+// A generic 404 from DescribeDBInstanceAttribute does not prove that the
+// instance was released. The shared NotFoundError classifier treats any 404 as
+// not found, so the wait must apply its own instance-specific check, otherwise
+// destroy would report success while the instance still exists.
+func TestUnitAliCloudDBInstanceDeleteWaitPropagatesNonInstanceNotFound(t *testing.T) {
+	fastDeleteWait(t)
+	reader := &fakeDBInstanceExistenceReader{responses: []fakeDBInstanceReadResult{
+		{err: dbInstanceGenericNotFoundError("rm-test")},
+	}}
+	err := waitForDBInstanceDeleted(reader, "rm-test", time.Minute)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "InvalidClusterKms")
+	assert.Equal(t, 1, reader.calls, "a non-instance 404 must not be retried into absence")
+}
+
+func TestUnitAliCloudDBInstanceAbsenceEvidence(t *testing.T) {
+	instanceNotFound := dbInstanceNotFoundError("rm-test")
+	emptyListNotFound := WrapErrorf(NotFoundErr("DBInstance", "rm-test"), NotFoundMsg, ProviderERROR)
+	genericNotFound := dbInstanceGenericNotFoundError("rm-test")
+	permissionDenied := sdkerrors.NewServerError(403, `{"Code":"Forbidden.RAM","Message":"permission denied"}`, "")
+
+	// The shared classifier is deliberately broad: every 404 matches it.
+	assert.True(t, NotFoundError(genericNotFound))
+
+	assert.True(t, isDBInstanceAbsent(instanceNotFound), "an instance-specific NotFound code ends the wait")
+	assert.True(t, isDBInstanceAbsent(emptyListNotFound), "an empty attribute list is the synthetic instance absence")
+	assert.False(t, isDBInstanceAbsent(genericNotFound), "a generic 404 is not instance absence")
+	assert.False(t, isDBInstanceAbsent(permissionDenied))
+	assert.False(t, isDBInstanceAbsent(nil))
+	assert.False(t, isDBInstanceAbsent(fmt.Errorf("plain error")))
 }
 
 func TestUnitAliCloudDBInstanceDeleteWaitBudgetExhausted(t *testing.T) {
