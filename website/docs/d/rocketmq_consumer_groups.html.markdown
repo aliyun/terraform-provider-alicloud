@@ -32,6 +32,10 @@ variable "name" {
   default = "terraform-example"
 }
 
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
@@ -66,7 +70,7 @@ resource "alicloud_rocketmq_instance" "default" {
   sub_series_code   = "cluster_ha"
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   remark            = "example"
-  ip_whitelists     = ["192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"]
+  ip_whitelists     = ["192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16", "0.0.0.0/0"]
   software {
     maintain_time = "02:00-06:00"
   }
@@ -91,11 +95,15 @@ resource "alicloud_rocketmq_consumer_group" "default" {
   consumer_group_id   = var.name
   delivery_order_type = "Concurrently"
   remark              = "example"
+  consume_retry_policy {
+    retry_policy = "DefaultRetryPolicy"
+  }
 }
 
 data "alicloud_rocketmq_consumer_groups" "default" {
   instance_id = alicloud_rocketmq_instance.default.id
   name_regex  = "^${var.name}$"
+  depends_on  = [alicloud_rocketmq_consumer_group.default]
 }
 
 output "rocketmq_consumer_group_ids" {

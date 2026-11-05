@@ -28,6 +28,7 @@ func TestAccAliCloudRocketmqTopics_basic(t *testing.T) {
 				Config: dependence + `
 data "alicloud_rocketmq_topics" "default" {
   instance_id = alicloud_rocketmq_instance.default.id
+  depends_on  = [alicloud_rocketmq_topic.first, alicloud_rocketmq_topic.second]
   ids         = [var.name, "${var.name}-second"]
 }
 `,
@@ -52,6 +53,7 @@ data "alicloud_rocketmq_topics" "default" {
 				Config: dependence + `
 data "alicloud_rocketmq_topics" "default" {
   instance_id = alicloud_rocketmq_instance.default.id
+  depends_on  = [alicloud_rocketmq_topic.first, alicloud_rocketmq_topic.second]
   name_regex  = "^${var.name}$"
 }
 `,
@@ -64,6 +66,7 @@ data "alicloud_rocketmq_topics" "default" {
 				Config: dependence + `
 data "alicloud_rocketmq_topics" "default" {
   instance_id   = alicloud_rocketmq_instance.default.id
+  depends_on    = [alicloud_rocketmq_topic.first, alicloud_rocketmq_topic.second]
   name_regex    = "^${var.name}"
   message_types = ["FIFO"]
 }
@@ -78,6 +81,7 @@ data "alicloud_rocketmq_topics" "default" {
 				Config: dependence + `
 data "alicloud_rocketmq_topics" "default" {
   instance_id = alicloud_rocketmq_instance.default.id
+  depends_on  = [alicloud_rocketmq_topic.first, alicloud_rocketmq_topic.second]
   filter      = "${var.name}-second"
 }
 `,
@@ -90,6 +94,7 @@ data "alicloud_rocketmq_topics" "default" {
 				Config: dependence + `
 data "alicloud_rocketmq_topics" "default" {
   instance_id = alicloud_rocketmq_instance.default.id
+  depends_on  = [alicloud_rocketmq_topic.first, alicloud_rocketmq_topic.second]
   ids         = ["not-exist-topic"]
 }
 `,

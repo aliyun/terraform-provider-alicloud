@@ -28,6 +28,7 @@ func TestAccAliCloudRocketmqConsumerGroups_basic(t *testing.T) {
 				Config: dependence + `
 data "alicloud_rocketmq_consumer_groups" "default" {
   instance_id = alicloud_rocketmq_instance.default.id
+  depends_on  = [alicloud_rocketmq_consumer_group.first, alicloud_rocketmq_consumer_group.second]
   ids         = [var.name, "${var.name}-second"]
 }
 `,
@@ -51,6 +52,7 @@ data "alicloud_rocketmq_consumer_groups" "default" {
 				Config: dependence + `
 data "alicloud_rocketmq_consumer_groups" "default" {
   instance_id = alicloud_rocketmq_instance.default.id
+  depends_on  = [alicloud_rocketmq_consumer_group.first, alicloud_rocketmq_consumer_group.second]
   name_regex  = "^${var.name}$"
 }
 `,
@@ -63,6 +65,7 @@ data "alicloud_rocketmq_consumer_groups" "default" {
 				Config: dependence + `
 data "alicloud_rocketmq_consumer_groups" "default" {
   instance_id = alicloud_rocketmq_instance.default.id
+  depends_on  = [alicloud_rocketmq_consumer_group.first, alicloud_rocketmq_consumer_group.second]
   filter      = "${var.name}-second"
 }
 `,
@@ -75,6 +78,7 @@ data "alicloud_rocketmq_consumer_groups" "default" {
 				Config: dependence + `
 data "alicloud_rocketmq_consumer_groups" "default" {
   instance_id = alicloud_rocketmq_instance.default.id
+  depends_on  = [alicloud_rocketmq_consumer_group.first, alicloud_rocketmq_consumer_group.second]
   ids         = ["not-exist-group"]
 }
 `,
@@ -96,6 +100,9 @@ resource "alicloud_rocketmq_consumer_group" "first" {
   delivery_order_type = "Concurrently"
   remark              = "example"
   max_receive_tps     = 1000
+  consume_retry_policy {
+    retry_policy = "DefaultRetryPolicy"
+  }
 }
 
 resource "alicloud_rocketmq_consumer_group" "second" {
@@ -103,6 +110,9 @@ resource "alicloud_rocketmq_consumer_group" "second" {
   consumer_group_id   = "${var.name}-second"
   delivery_order_type = "Orderly"
   remark              = "example"
+  consume_retry_policy {
+    retry_policy = "DefaultRetryPolicy"
+  }
 }
 `
 }

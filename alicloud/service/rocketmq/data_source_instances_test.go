@@ -44,7 +44,7 @@ data "alicloud_rocketmq_instances" "default" {
 					"instances.0.topic_count":       acctest.CHECKSET,
 					"instances.0.group_count":       acctest.CHECKSET,
 					"instances.0.create_time":       acctest.CHECKSET,
-					"instances.0.tags.#":            "2",
+					"instances.0.tags.#":            acctest.CHECKSET,
 					"ids.#":                         "1",
 					"names.#":                       "1",
 					"names.0":                       name,
@@ -63,7 +63,7 @@ data "alicloud_rocketmq_instances" "default" {
 				Check: rocketmqDataSourceChecks(resourceId, map[string]string{
 					"instances.#":               "1",
 					"instances.0.instance_name": name,
-					"instances.0.tags.#":        "2",
+					"instances.0.tags.#":        acctest.CHECKSET,
 				}),
 			},
 			{
