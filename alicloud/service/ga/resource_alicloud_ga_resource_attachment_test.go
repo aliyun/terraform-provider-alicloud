@@ -26,6 +26,11 @@ func TestAccAliCloudGaResourceAttachment_basic0(t *testing.T) {
 		CheckDestroy:             testAccCheckAliCloudGaResourceAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
+				Config:      testAccAliCloudGaResourceAttachmentConfigInvalidType(name),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`associated_resource_type`),
+			},
+			{
 				Config: testAccAliCloudGaResourceAttachmentConfig(name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceId, "id"),
@@ -41,11 +46,6 @@ func TestAccAliCloudGaResourceAttachment_basic0(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-			},
-			{
-				Config:      testAccAliCloudGaResourceAttachmentConfigInvalidType(name),
-				PlanOnly:    true,
-				ExpectError: regexp.MustCompile(`associated_resource_type`),
 			},
 		},
 	})
