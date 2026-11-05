@@ -2243,7 +2243,10 @@ func TestUnitRealtimeComputeVvpNamespaceInFlightRequestHonoursBudget(t *testing.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		<-r.Context().Done()
 	}))
-	t.Cleanup(server.Close)
+	t.Cleanup(func() {
+		server.CloseClientConnections()
+		server.Close()
+	})
 	client := vvpNamespaceTestClient(t, server.URL)
 
 	t.Run("remaining deadline bounds the request", func(t *testing.T) {
@@ -2294,7 +2297,10 @@ func TestUnitRealtimeComputeVvpNamespaceUpdateInFlightWriteHonoursBudget(t *test
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":1,"MemoryGB":4},"ResourceUsed":{"Cpu":1,"Cu":1,"MemoryGB":4},"Tags":[]}]}`)
 	}))
-	t.Cleanup(server.Close)
+	t.Cleanup(func() {
+		server.CloseClientConnections()
+		server.Close()
+	})
 
 	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
 	stateValue := vvpNamespaceUpdateTestValue(t, sch, "1s", 1, 4)
