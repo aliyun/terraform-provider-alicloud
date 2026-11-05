@@ -8,6 +8,12 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "FC",
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_fc_pipeline_template",
+				Factory:  NewPipelineTemplateResource,
+			},
+		},
 		SDKResources: []conns.SDKResource{
 			{
 				TypeName: "alicloud_fc_service",
