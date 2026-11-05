@@ -50,5 +50,14 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  ResourceRealtimeComputeVvpInstance,
 			},
 		},
+		// Framework (conns.Resources) types coexist with the SDKv2 types above.
+		// alicloud_realtime_compute_udf_artifact is the first handwritten Framework
+		// type of this package; its factory is the fwadapt.ResourceBase resource.
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_realtime_compute_udf_artifact",
+				Factory:  NewRealtimeComputeUdfArtifactResource,
+			},
+		},
 	}
 }
