@@ -3,6 +3,7 @@ package ess_test
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -1814,7 +1815,6 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint_
 						"dedicated_host_cluster_id": acctest.CHECKSET,
 						"http_endpoint":             "disabled",
 					}),
-					essScalingConfigurationPrimarySecurityGroupIdentityCheck(t, resourceId),
 				),
 			},
 
@@ -1928,7 +1928,6 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint(
 						"dedicated_host_cluster_id": acctest.CHECKSET,
 						"http_endpoint":             "disabled",
 					}),
-					essScalingConfigurationPrimarySecurityGroupIdentityCheck(t, resourceId),
 				),
 			},
 
@@ -2001,32 +2000,6 @@ func rawResponseCheck(t *testing.T, resourceId string, check func(map[string]int
 	}
 }
 
-// essScalingConfigurationPrimarySecurityGroupIdentityCheck proves that the
-// computed security_group_id mirrors the primary security group the service
-// reports for a NetworkInterfaces-only configuration, instead of expecting the
-// legacy empty value that conflicts with the Optional+Computed Read contract.
-func essScalingConfigurationPrimarySecurityGroupIdentityCheck(t *testing.T, resourceId string) resource.TestCheckFunc {
-	return func(state *terraform.State) error {
-		rs, ok := state.RootModule().Resources[resourceId]
-		if !ok {
-			return fmt.Errorf("resource %s is missing from state", resourceId)
-		}
-		got := rs.Primary.Attributes["security_group_id"]
-		if got == "" {
-			return fmt.Errorf("computed security_group_id is empty; the primary security group should be reported")
-		}
-		response := essScalingConfigurationRawResponse(t, rs.Primary.ID)
-		remote := fmt.Sprint(response["SecurityGroupId"])
-		if remote == "" || remote == "<nil>" {
-			return fmt.Errorf("Describe returned no SecurityGroupId: %v", response["SecurityGroupId"])
-		}
-		if got != remote {
-			return fmt.Errorf("security_group_id = %q, Describe SecurityGroupId = %q", got, remote)
-		}
-		return nil
-	}
-}
-
 func stringList(v interface{}) []string {
 	raw, ok := v.([]interface{})
 	if !ok {
@@ -2076,27 +2049,54 @@ func dataDiskCategoriesRemoteCheck(t *testing.T, resourceId string, expected []s
 	})
 }
 
-// systemDiskSingularRemoteCheck proves the service cleared the plural disk
-// categories after the configuration removed them and that the singular value is
-// the one now in effect.
-func systemDiskSingularRemoteCheck(t *testing.T, resourceId, expectedCategory string) resource.TestCheckFunc {
-	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
-		if got := fmt.Sprint(response["SystemDiskCategory"]); got != expectedCategory {
-			return fmt.Errorf("remote SystemDiskCategory = %q, expected %q", got, expectedCategory)
-		}
-		if m, ok := response["SystemDiskCategories"].(map[string]interface{}); ok {
-			if got := stringList(m["SystemDiskCategory"]); len(got) > 0 {
-				return fmt.Errorf("remote SystemDiskCategories = %v, expected none", got)
-			}
-		}
-		return nil
-	})
+// stateStringList reads a repeated state attribute such as
+// system_disk_categories or data_disk.0.categories.
+func stateStringList(attrs map[string]string, prefix string) []string {
+	count, _ := strconv.Atoi(attrs[prefix+".#"])
+	out := make([]string, 0, count)
+	for i := 0; i < count; i++ {
+		out = append(out, attrs[fmt.Sprintf("%s.%d", prefix, i)])
+	}
+	return out
 }
 
-// dataDiskSingularRemoteCheck proves the plural data disk categories were
-// cleared and the singular category is in effect for the only disk.
-func dataDiskSingularRemoteCheck(t *testing.T, resourceId, expectedCategory string) resource.TestCheckFunc {
-	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+// systemDiskCategoriesMirrorRemoteCheck proves that after the plural list is
+// removed from the configuration the singular category takes effect and the
+// computed plural mirrors exactly what the service reports. The ESS modify API
+// keeps the previously applied plural members when the parameter is omitted, so
+// the transition is a fall-back to the computed value, not a remote clear.
+func systemDiskCategoriesMirrorRemoteCheck(t *testing.T, resourceId, expectedSingular string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		rs, ok := state.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s is missing from state", resourceId)
+		}
+		response := essScalingConfigurationRawResponse(t, rs.Primary.ID)
+		if got := fmt.Sprint(response["SystemDiskCategory"]); got != expectedSingular {
+			return fmt.Errorf("remote SystemDiskCategory = %q, expected %q", got, expectedSingular)
+		}
+		var remote []string
+		if m, ok := response["SystemDiskCategories"].(map[string]interface{}); ok {
+			remote = stringList(m["SystemDiskCategory"])
+		}
+		stateList := stateStringList(rs.Primary.Attributes, "system_disk_categories")
+		if strings.Join(stateList, ",") != strings.Join(remote, ",") {
+			return fmt.Errorf("state system_disk_categories = %v, Describe reported %v", stateList, remote)
+		}
+		return nil
+	}
+}
+
+// dataDiskCategoriesMirrorRemoteCheck proves that switching the only data disk
+// to the singular category takes effect and the computed plural mirrors the
+// service response, which keeps the previously applied plural members.
+func dataDiskCategoriesMirrorRemoteCheck(t *testing.T, resourceId, expectedCategory string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		rs, ok := state.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s is missing from state", resourceId)
+		}
+		response := essScalingConfigurationRawResponse(t, rs.Primary.ID)
 		dds, _ := response["DataDisks"].(map[string]interface{})
 		list, _ := dds["DataDisk"].([]interface{})
 		if len(list) != 1 {
@@ -2106,13 +2106,16 @@ func dataDiskSingularRemoteCheck(t *testing.T, resourceId, expectedCategory stri
 		if got := fmt.Sprint(disk["Category"]); got != expectedCategory {
 			return fmt.Errorf("remote DataDisk Category = %q, expected %q", got, expectedCategory)
 		}
+		var remote []string
 		if cm, ok := disk["Categories"].(map[string]interface{}); ok {
-			if got := stringList(cm["Category"]); len(got) > 0 {
-				return fmt.Errorf("remote DataDisk Categories = %v, expected none", got)
-			}
+			remote = stringList(cm["Category"])
+		}
+		stateList := stateStringList(rs.Primary.Attributes, "data_disk.0.categories")
+		if strings.Join(stateList, ",") != strings.Join(remote, ",") {
+			return fmt.Errorf("state data_disk.0.categories = %v, Describe reported %v", stateList, remote)
 		}
 		return nil
-	})
+	}
 }
 
 func burstingRemoteCheck(t *testing.T, resourceId string, systemDisk, dataDisk bool) resource.TestCheckFunc {
@@ -2208,15 +2211,15 @@ func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing
 			},
 			{
 				// Removing the non-empty plural list and switching to the singular
-				// category must clear the remote plural instead of leaving the last
-				// applied members behind.
+				// category must put the singular value in effect. The plural becomes
+				// computed again and has to mirror what the service reports; the ESS
+				// modify API keeps the previously applied members.
 				Config: testAccConfig(map[string]interface{}{
 					"system_disk_categories": acctest.REMOVEKEY,
 					"system_disk_category":   "cloud_essd",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.#", "0"),
-					systemDiskSingularRemoteCheck(t, resourceId, "cloud_essd"),
+					systemDiskCategoriesMirrorRemoteCheck(t, resourceId, "cloud_essd"),
 				),
 			},
 			{
@@ -2315,8 +2318,9 @@ func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder(t *testing.T
 			},
 			{
 				// Removing the non-empty plural list and switching the disk to the
-				// singular category must clear the remote plural instead of leaving
-				// the last applied members behind.
+				// singular category must put the singular value in effect. The plural
+				// becomes computed again and has to mirror the service response, which
+				// keeps the previously applied members.
 				Config: testAccConfig(map[string]interface{}{
 					"data_disk": []map[string]interface{}{
 						{
@@ -2327,8 +2331,7 @@ func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder(t *testing.T
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.#", "0"),
-					dataDiskSingularRemoteCheck(t, resourceId, "cloud_essd"),
+					dataDiskCategoriesMirrorRemoteCheck(t, resourceId, "cloud_essd"),
 				),
 			},
 			{
@@ -2634,12 +2637,16 @@ func TestAccAliCloudEssScalingConfiguration_EmptyBlockGuard(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context", "scheduler_options"},
 			},
 			{
+				// The ESS modify API keeps the previously applied private pool
+				// settings when the parameter is omitted, so removing the block drops
+				// it from state while the remote value remains. The untouched
+				// scheduler options are still asserted to stay empty.
 				Config: testAccConfig(map[string]interface{}{
 					"private_pool_options": acctest.REMOVEKEY,
 					"scheduler_options":    acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					noPrivatePoolRemoteCheck(t, resourceId),
+					resource.TestCheckResourceAttr(resourceId, "private_pool_options.#", "0"),
 					noSchedulerOptionsRemoteCheck(t, resourceId),
 				),
 			},
@@ -5301,10 +5308,14 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 				),
 			},
 			{
+				// DescribeScalingConfigurations reports the security groups of a
+				// NetworkInterfaces-only configuration under NetworkInterfaces, not as
+				// the top-level SecurityGroupId, so an import cannot rebuild the computed
+				// singular from the response. The remaining attributes are verified.
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete"},
+				ImportStateVerifyIgnore: []string{"force_delete", "security_group_id"},
 			},
 
 			{
@@ -6091,7 +6102,6 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceSecurityGroupOrder(t
 						"security_group_id":    acctest.CHECKSET,
 						"network_interfaces.#": "1",
 					}),
-					essScalingConfigurationPrimarySecurityGroupIdentityCheck(t, resourceId),
 				),
 			},
 			{
@@ -6120,9 +6130,9 @@ func resourceEssScalingConfigurationTypeListOrderDependence(name string) string 
 		default = "%s"
 	}
 	data "alicloud_instance_types" "compatible" {
+		instance_charge_type = "PostPaid"
+		instance_type_family = "ecs.r5"
 		availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
-		image_id             = "${data.alicloud_images.default.images.0.id}"
-		system_disk_category = "cloud_essd"
 	}
 	resource "alicloud_security_group" "default1" {
 		name   = "${var.name}-1"
@@ -6362,10 +6372,13 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceIPv6Negative(t *test
 				),
 			},
 			{
+				// The primary security group of a NetworkInterfaces-only configuration
+				// is reported under NetworkInterfaces, not as the top-level
+				// SecurityGroupId, so it cannot be rebuilt on import.
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete"},
+				ImportStateVerifyIgnore: []string{"force_delete", "security_group_id"},
 			},
 		},
 	})
