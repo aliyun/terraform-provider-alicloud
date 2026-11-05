@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -239,5 +240,122 @@ func TestUnitCSClusterCredentialReadAPIError(t *testing.T) {
 	err := CsClusterAuthDescriptionAttributes(d, client, cluster)
 	if err == nil || !strings.Contains(err.Error(), "DescribeClusterKubeConfigWithExpiration") {
 		t.Fatalf("read error = %v, want it to contain 'DescribeClusterKubeConfigWithExpiration'", err)
+	}
+}
+
+func csKubeconfigForbiddenHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusForbidden)
+	_, _ = w.Write([]byte(`{"code":"StatusForbidden","message":"STSToken policy Forbidden for action cs:DescribeClusterUserKubeconfig"}`))
+}
+
+func TestUnitSetCertsKubeconfigForbiddenOptional(t *testing.T) {
+	for _, tc := range []struct {
+		name                 string
+		resource             func() *schema.Resource
+		certificateAuthority bool
+	}{
+		{"managed", ResourceCSManagedKubernetes, true},
+		{"dedicated", ResourceCSKubernetes, true},
+		{"edge", ResourceCSEdgeKubernetes, true},
+		{"serverless", ResourceCSServerlessKubernetes, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client := csKubeconfigTestClient(t, csKubeconfigHandler(t, testKubeConfigYaml))
+			d := schema.TestResourceDataRaw(t, tc.resource().Schema, map[string]interface{}{})
+			d.SetId("c1")
+			// Populate credentials through a successful read before access is denied.
+			if err := setCerts(d, client, false, tc.certificateAuthority); err != nil {
+				t.Fatalf("initial credential read: %v", err)
+			}
+			if tc.certificateAuthority {
+				for _, field := range []string{"cluster_cert", "client_cert", "client_key"} {
+					if d.State().Attributes["certificate_authority.0."+field] == "" {
+						t.Fatalf("initial read did not populate %s", field)
+					}
+				}
+			}
+
+			csKubeconfigFixture(t, csKubeconfigForbiddenHandler)
+			// Preserve existing values without opt-out, then clear them when
+			// opt-out is enabled and keep them cleared on subsequent refresh.
+			for _, skip := range []bool{false, true, true} {
+				if tc.certificateAuthority {
+					if err := d.Set("skip_set_certificate_authority", skip); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if err := setCerts(d, client, skip, tc.certificateAuthority); err != nil {
+					t.Fatalf("optional kubeconfig must not block resource refresh: %v", err)
+				}
+				state := d.State()
+				if state.ID != "c1" {
+					t.Fatal("permission denial must not remove the cluster from state")
+				}
+				if tc.certificateAuthority {
+					if got := d.Get("skip_set_certificate_authority").(bool); got != skip {
+						t.Fatalf("skip_set_certificate_authority = %t, want %t", got, skip)
+					}
+					for _, field := range []string{"cluster_cert", "client_cert", "client_key"} {
+						value, exists := state.Attributes["certificate_authority.0."+field]
+						if !exists || (skip && value != "") || (!skip && value == "") {
+							t.Fatalf("unexpected persisted %s state for skip=%t (exists=%t, empty=%t)", field, skip, exists, value == "")
+						}
+					}
+				} else {
+					for key := range state.Attributes {
+						if strings.HasPrefix(key, "certificate_authority.") {
+							t.Fatal("serverless must not acquire undeclared credential state")
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestUnitSetCertsKubeconfigForbiddenExplicitOutput(t *testing.T) {
+	for _, field := range []string{"kube_config", "client_cert", "client_key", "cluster_ca_cert"} {
+		t.Run(field, func(t *testing.T) {
+			client := csKubeconfigTestClient(t, csKubeconfigForbiddenHandler)
+			path := filepath.Join(t.TempDir(), "credential")
+			resource := ResourceCSManagedKubernetes()
+			if field == "kube_config" {
+				// Managed clusters no longer expose the legacy kube_config path.
+				resource = ResourceCSEdgeKubernetes()
+			}
+			d := schema.TestResourceDataRaw(t, resource.Schema, map[string]interface{}{field: path})
+			d.SetId("c1")
+			for _, skip := range []bool{false, true} {
+				if err := setCerts(d, client, skip, true); err == nil || !strings.Contains(err.Error(), "StatusForbidden") {
+					t.Fatalf("explicit %s output must report permission denial: %v", field, err)
+				}
+			}
+			if _, err := os.Stat(path); !os.IsNotExist(err) {
+				t.Fatalf("failed credential fetch must not write a file: %v", err)
+			}
+		})
+	}
+}
+
+func TestUnitCSClusterCredentialReadForbidden(t *testing.T) {
+	client := csKubeconfigTestClient(t, csKubeconfigForbiddenHandler)
+	d := csClusterCredentialTestData(t)
+	cluster := &roacs.DescribeClusterDetailResponseBody{ClusterId: tea.String("c1")}
+	if err := CsClusterAuthDescriptionAttributes(d, client, cluster); err == nil || !strings.Contains(err.Error(), "StatusForbidden") {
+		t.Fatalf("credential data source must report permission denial: %v", err)
+	}
+}
+
+func TestUnitSetCertsKubeconfigUnrelatedError(t *testing.T) {
+	client := csKubeconfigTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"code":"InvalidParameter","message":"diagnostic contains StatusForbidden and 403"}`))
+	})
+	d := schema.TestResourceDataRaw(t, ResourceCSManagedKubernetes().Schema, map[string]interface{}{})
+	d.SetId("c1")
+	if err := setCerts(d, client, false, true); err == nil || !strings.Contains(err.Error(), "InvalidParameter") {
+		t.Fatalf("unrelated API errors must not be suppressed by matching diagnostic text: %v", err)
 	}
 }
