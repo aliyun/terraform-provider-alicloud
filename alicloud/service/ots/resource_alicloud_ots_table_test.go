@@ -1016,6 +1016,7 @@ func TestUnitOtsTableCustomizeDiffRejectsInvalidConfigs(t *testing.T) {
 type otsTableWireFixture struct {
 	createRequests [][]byte
 	describe       *otsprotocol.DescribeTableResponse
+	paths          []string
 }
 
 // newOtsTableWireClient points both the OTS REST API and the TableStore
@@ -1025,18 +1026,16 @@ func newOtsTableWireClient(t *testing.T) (*connectivity.AliyunClient, *otsTableW
 	t.Helper()
 	fixture := &otsTableWireFixture{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		switch req.URL.Path {
-		case "/v2/openapi/getinstance":
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = io.WriteString(w, `{"body":{"InstanceName":"tf-test-instance","Status":"Normal","InstanceType":"Capacity"}}`)
-		case "/CreateTable":
+		fixture.paths = append(fixture.paths, req.Method+" "+req.URL.Path)
+		switch {
+		case strings.Contains(req.URL.Path, "CreateTable"):
 			raw, err := io.ReadAll(req.Body)
 			if err != nil {
 				t.Errorf("read CreateTable request: %v", err)
 			}
 			fixture.createRequests = append(fixture.createRequests, raw)
 			w.WriteHeader(http.StatusOK)
-		case "/DescribeTable":
+		case strings.Contains(req.URL.Path, "DescribeTable"):
 			raw, err := proto.Marshal(fixture.describe)
 			if err != nil {
 				t.Errorf("marshal DescribeTable response: %v", err)
@@ -1046,7 +1045,9 @@ func newOtsTableWireClient(t *testing.T) (*connectivity.AliyunClient, *otsTableW
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write(raw)
 		default:
-			w.WriteHeader(http.StatusNotFound)
+			// The OTS REST API describes the instance before creating the table.
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, `{"body":{"InstanceName":"tf-test-instance","Status":"Normal","InstanceType":"Capacity"}}`)
 		}
 	}))
 	t.Cleanup(server.Close)
@@ -1058,7 +1059,7 @@ func newOtsTableWireClient(t *testing.T) (*connectivity.AliyunClient, *otsTableW
 		RegionId:             "cn-hangzhou",
 		AccessKey:            "test-access-key",
 		SecretKey:            "test-secret-key",
-		Protocol:             "HTTP",
+		Protocol:             "http",
 		AccountType:          "test",
 		Endpoints:            endpoints,
 		SignVersion:          signVersions,
@@ -1146,7 +1147,7 @@ func TestUnitOtsTableCreateAndDescribeWire(t *testing.T) {
 		r := ots.ResourceOtsTable()
 		d := schema.TestResourceDataRaw(t, r.Schema, tableConfig(false, primaryKey("pk1", false), primaryKey("pk2", true)))
 		if err := r.Create(d, client); err != nil {
-			t.Fatalf("create table: %v", err)
+			t.Fatalf("create table: %v (requests: %v)", err, fixture.paths)
 		}
 		if len(fixture.createRequests) != 1 {
 			t.Fatalf("expected 1 CreateTable request, got %d", len(fixture.createRequests))
@@ -1187,7 +1188,7 @@ func TestUnitOtsTableCreateAndDescribeWire(t *testing.T) {
 		r := ots.ResourceOtsTable()
 		d := schema.TestResourceDataRaw(t, r.Schema, tableConfig(true, primaryKey("pk1", false)))
 		if err := r.Create(d, client); err != nil {
-			t.Fatalf("create table: %v", err)
+			t.Fatalf("create table: %v (requests: %v)", err, fixture.paths)
 		}
 		if len(fixture.createRequests) != 1 {
 			t.Fatalf("expected 1 CreateTable request, got %d", len(fixture.createRequests))
