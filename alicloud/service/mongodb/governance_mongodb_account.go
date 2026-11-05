@@ -27,7 +27,7 @@ func mongoDBAccountGovernanceSchema() map[string]*schema.Schema {
 			},
 		},
 		"privilege": {
-			Type:     schema.TypeList,
+			Type:     schema.TypeSet,
 			Optional: true,
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
@@ -72,7 +72,18 @@ func mongoDBGovernanceReadAccount(d *schema.ResourceData, client *connectivity.A
 }
 
 func mongoDBGovernanceUpdateAccount(d *schema.ResourceData, client *connectivity.AliyunClient) error {
-	privileges, _ := d.Get("privilege").([]interface{})
+	if err := mongoDBGovernanceValidateAccountPrivilege(d); err != nil {
+		return err
+	}
+	if d.IsNewResource() {
+		// CreateAccount already applies the configured roles for a config server
+		// account; calling ModifyAccountPrivilege here would only repeat it.
+		return nil
+	}
+	privileges := []interface{}{}
+	if set, ok := d.Get("privilege").(*schema.Set); ok && set != nil {
+		privileges = set.List()
+	}
 	if !d.HasChange("privilege") && !d.HasChange("privilege_reset_type") {
 		return nil
 	}
@@ -103,6 +114,43 @@ func mongoDBGovernanceUpdateAccount(d *schema.ResourceData, client *connectivity
 		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "ModifyAccountPrivilege", errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
+}
+
+// mongoDBGovernanceValidateAccountPrivilege rejects privilege blocks for
+// account types whose Dds roles are fixed. The root (normal) account only
+// accepts ResetType=update with empty Roles and a shard direct-connection (db)
+// account rejects Roles with InvalidRoles.NotSupported, so only a config server
+// (cs) account can carry the configured roles.
+func mongoDBGovernanceValidateAccountPrivilege(d *schema.ResourceData) error {
+	set, _ := d.Get("privilege").(*schema.Set)
+	if set == nil || set.Len() == 0 {
+		return nil
+	}
+	characterType := fmt.Sprint(d.Get("character_type"))
+	if characterType != "cs" {
+		return fmt.Errorf("privilege is only supported for config server accounts (character_type = \"cs\"), the account character_type is %q", characterType)
+	}
+	return nil
+}
+
+// mongoDBGovernanceAccountRolesRequest converts the privilege set into the
+// Roles list accepted by CreateAccount.
+func mongoDBGovernanceAccountRolesRequest(set *schema.Set) []map[string]interface{} {
+	roles := make([]map[string]interface{}, 0)
+	if set == nil {
+		return roles
+	}
+	for _, item := range set.List() {
+		privilege, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		roles = append(roles, map[string]interface{}{
+			"Role":   privilege["role"],
+			"DBName": privilege["db_name"],
+		})
+	}
+	return roles
 }
 
 func mongoDBGovernanceDeleteAccount(d *schema.ResourceData, client *connectivity.AliyunClient) error {

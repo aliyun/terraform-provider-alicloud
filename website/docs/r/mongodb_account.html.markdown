@@ -85,12 +85,14 @@ The following arguments are supported:
 * `account_password` - (Required) Account Password
 * `character_type` - (Optional, ForceNew, Computed, Available since v1.241.0) The account Comment Information type. Value:
   - `db`: shard account.
+  - `cs`: config server account.
   - `normal`: The replica set account. (The default value).
 
   -> **NOTE:** When setting the account type to normal, the AccountName must be root. This selection does not create a new account; instead, Terraform will update the password for the existing root account.
+  -> **NOTE:** A `cs` account carries the database roles configured in `privilege`; `db` and `normal` accounts have fixed roles, so setting `privilege` on them is rejected.
 
 * `instance_id` - (Required, ForceNew) Instance Id
-* `privilege` - (Optional, List, Available since v2.3.0) The database roles granted to the account. See [`privilege`](#privilege) below.
+* `privilege` - (Optional, Set, Available since v2.3.0) The database roles granted to a config server (`cs`) account. The order of the blocks is not significant. See [`privilege`](#privilege) below.
 * `privilege_reset_type` - (Optional, Available since v2.3.0) How `privilege` is applied. Valid values: `update`, `grant`, `revoke`. Default value: `update`.
 * `force_destroy` - (Optional, Bool, Available since v2.3.0) Whether to delete the account when the resource is destroyed. Default value: `false`.
 

@@ -50,7 +50,7 @@ func resourceAliCloudMongodbAccount() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validators.StringInSlice([]string{"db", "normal"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"db", "cs", "normal"}, false),
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -72,7 +72,11 @@ func resourceAliCloudMongodbAccount() *schema.Resource {
 func resourceAliCloudMongodbAccountCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	if v, ok := d.GetOk("character_type"); ok && helper.InArray(fmt.Sprint(v), []string{"db"}) {
+	if err := mongoDBGovernanceValidateAccountPrivilege(d); err != nil {
+		return err
+	}
+	characterType := fmt.Sprint(d.Get("character_type"))
+	if v, ok := d.GetOk("character_type"); ok && helper.InArray(fmt.Sprint(v), []string{"db", "cs"}) {
 		action := "CreateAccount"
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -86,6 +90,14 @@ func resourceAliCloudMongodbAccountCreate(d *schema.ResourceData, meta interface
 			request["DBInstanceId"] = v
 		}
 		request["RegionId"] = client.RegionId
+		request["CharacterType"] = characterType
+		if characterType == "cs" {
+			// CreateAccount requires the roles up front for a config server
+			// account; later changes go through ModifyAccountPrivilege.
+			if privilegeSet, ok := d.Get("privilege").(*schema.Set); ok && privilegeSet != nil && privilegeSet.Len() > 0 {
+				request["Roles"] = mongoDBGovernanceAccountRolesRequest(privilegeSet)
+			}
+		}
 
 		request["AccountPassword"] = d.Get("account_password")
 		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
@@ -210,9 +222,13 @@ func resourceAliCloudMongodbAccountUpdate(d *schema.ResourceData, meta interface
 	request["AccountName"] = parts[1]
 	request["DBInstanceId"] = parts[0]
 	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("character_type"); ok {
+		// ResetAccountPassword must address the same account type as the state,
+		// otherwise a cs account falls back to the default db lookup.
+		request["CharacterType"] = v
+	}
 	if !d.IsNewResource() && d.HasChange("character_type") {
 		update = true
-		request["CharacterType"] = d.Get("character_type")
 	}
 
 	if !d.IsNewResource() && d.HasChange("account_password") {

@@ -1335,7 +1335,9 @@ func TestAccAliCloudMongoDBInstance_governanceActions(t *testing.T) {
 					"transform_to_ecs": []map[string]interface{}{
 						{
 							"target_class":             "mongo.x8.large",
+							"coupon_no":                "1234567890",
 							"auto_pay":                 "true",
+							"storage":                  "20",
 							"order_type":               "UPGRADE",
 							"db_instance_storage_type": "cloud_auto",
 							"effective_time":           "Immediately",
@@ -1360,6 +1362,71 @@ func TestAccAliCloudMongoDBInstance_governanceActions(t *testing.T) {
 						"engine_version": "4.2",
 					}),
 				),
+			},
+			{
+				// This plan-only step supplies the modification coverage for the
+				// gated administrative attributes without executing another round
+				// of billable or data-changing Dds actions.
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":         "4.2",
+					"db_instance_class":      "mongo.x8.medium",
+					"db_instance_storage":    "20",
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"advanced_backup_status": "false",
+					"advanced_backup_policy": []map[string]interface{}{
+						{
+							"preferred_backup_time":                       "19:00Z-20:00Z",
+							"snapshot_backup_type":                        "Flash",
+							"backup_retention_policy_on_cluster_deletion": "7",
+							"backup_tamper_proof_enabled":                 "true",
+							"advanced_backup_data_policies":               "[{\"BackupType\":\"full\"}]",
+							"advanced_backup_log_policies":                "[{\"BackupType\":\"log\"}]",
+						},
+					},
+					"archive_operation": "disable",
+					"archived_tables":   "[{\"dbName\":\"testdb\",\"collection\":\"testcoll\"}]",
+					"restored_tables":   "[{\"dbName\":\"testdb\",\"collection\":\"testcoll\"}]",
+					"restore_category":  "DBTables",
+					"table_restore": []map[string]interface{}{
+						{
+							"table_meta":   "[{\"dbName\":\"testdb\",\"collection\":\"testcoll\"}]",
+							"restore_type": "RestoreTimePoint",
+							"restore_time": "2026-01-02T00:00Z",
+						},
+					},
+					"instance_config": []map[string]interface{}{
+						{
+							"config_name":  "operationProfiling.slowOpThresholdMs",
+							"config_value": "100",
+						},
+					},
+					"transform_to_ecs": []map[string]interface{}{
+						{
+							"target_class":             "mongo.x8.xlarge",
+							"coupon_no":                "0987654321",
+							"auto_pay":                 "false",
+							"storage":                  "40",
+							"order_type":               "DOWNGRADE",
+							"db_instance_storage_type": "cloud_essd",
+							"effective_time":           "MaintainTime",
+						},
+					},
+					"ai_gateway": []map[string]interface{}{
+						{
+							"db_instance_class": "mongo.x8.large",
+							"effective_time":    "2",
+						},
+					},
+					"ai_gateway_api_key_reset": "false",
+					"replication_link": []map[string]interface{}{
+						{
+							"source_instance_id":        "dds-source-instance-2",
+							"source_instance_region_id": "cn-shanghai",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

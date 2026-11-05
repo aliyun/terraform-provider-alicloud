@@ -650,16 +650,44 @@ func TestAccAliCloudMongoDBAccount_governance(t *testing.T) {
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
-				// The root account only accepts ResetType=update with empty Roles,
-				// so privilege management is exercised on a shard account.
+				// The root account only accepts ResetType=update with empty Roles
+				// and a shard direct-connection (db) account rejects Roles, so
+				// privilege management is exercised on a config server account.
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":          "${alicloud_mongodb_sharding_instance.default7eOftZ.id}",
 					"account_name":         name,
 					"account_password":     "qwer1234!!!",
-					"character_type":       "db",
+					"character_type":       "cs",
 					"force_destroy":        true,
 					"privilege_reset_type": "update",
 					"privilege": []map[string]interface{}{
+						{
+							"role":    "read",
+							"db_name": "admin",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name":   name,
+						"character_type": "cs",
+					}),
+				),
+			},
+			{
+				// Changing the role set is applied through ModifyAccountPrivilege.
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":          "${alicloud_mongodb_sharding_instance.default7eOftZ.id}",
+					"account_name":         name,
+					"account_password":     "qwer1234!!!",
+					"character_type":       "cs",
+					"force_destroy":        true,
+					"privilege_reset_type": "update",
+					"privilege": []map[string]interface{}{
+						{
+							"role":    "read",
+							"db_name": "testdb",
+						},
 						{
 							"role":    "readWrite",
 							"db_name": "admin",
@@ -669,7 +697,34 @@ func TestAccAliCloudMongoDBAccount_governance(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"account_name":   name,
-						"character_type": "db",
+						"character_type": "cs",
+					}),
+				),
+			},
+			{
+				// Reordering the same set must converge: privilege is unordered.
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":          "${alicloud_mongodb_sharding_instance.default7eOftZ.id}",
+					"account_name":         name,
+					"account_password":     "qwer1234!!!",
+					"character_type":       "cs",
+					"force_destroy":        true,
+					"privilege_reset_type": "update",
+					"privilege": []map[string]interface{}{
+						{
+							"role":    "readWrite",
+							"db_name": "admin",
+						},
+						{
+							"role":    "read",
+							"db_name": "testdb",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name":   name,
+						"character_type": "cs",
 					}),
 				),
 			},
