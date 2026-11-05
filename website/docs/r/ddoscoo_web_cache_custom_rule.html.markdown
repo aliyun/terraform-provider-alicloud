@@ -77,6 +77,6 @@ The following attributes are exported:
 
 DdosCoo Web Cache Custom Rule can be imported using the id, e.g. `<domain>:<name>`, as the import ID.
 
-```terraform
-terraform import alicloud_ddoscoo_web_cache_custom_rule.example www.example.com:my-rule
+```shell
+$ terraform import alicloud_ddoscoo_web_cache_custom_rule.example www.example.com:my-rule
 ```
