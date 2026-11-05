@@ -398,13 +398,14 @@ func (r *subscriptionResource) Create(ctx context.Context, req resource.CreateRe
 	action := "/subscriptions"
 	request := expandSubscriptionRequest(plan)
 	response, err := r.roaCall(ctx, action, request, false, func() (map[string]interface{}, error) {
-		// The shared ROA client cannot attach the operation context to an
-		// already-issued HTTP request, so its own automatic retry is disabled
-		// here: every retry goes through roaCall, which observes the context
-		// before issuing the next attempt. CreateSubscription is replayed as
-		// well, because the API has no idempotency token: a request that already
-		// created the subscription would otherwise create a second, orphaned one.
-		return r.Meta().RoaPost("Cms", "2024-03-30", action, subscriptionQuery(plan.Workspace), nil, request, false)
+		// Every attempt carries the operation deadline into the HTTP transport,
+		// so a response cannot outlive the operation, and its own automatic retry
+		// is disabled: every retry goes through roaCall, which observes the
+		// context before issuing the next attempt. CreateSubscription is not
+		// replayed, because the API has no idempotency token: a request that
+		// already created the subscription would otherwise create a second,
+		// orphaned one.
+		return r.Meta().RoaWithContext(ctx, "POST", "Cms", "2024-03-30", action, subscriptionQuery(plan.Workspace), nil, request, false)
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -432,16 +433,25 @@ func (r *subscriptionResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	object, err := r.waitSubscriptionReadable(ctx, id, plan.Workspace, request, nil)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Reading %s: calling GetSubscription", subscriptionTypeName),
-			errs.WrapErrorf(err, errs.DefaultErrorMsg, subscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
-		)
-		return
+	// A created subscription is enabled by default, but the switch is reported
+	// asynchronously. Both the default and an explicit true must be confirmed
+	// before the response is written to state: a lagging read that still omits
+	// the switch, or still reports it as false, is not success.
+	enable := true
+	if !plan.Enable.IsNull() && !plan.Enable.IsUnknown() {
+		enable = plan.Enable.ValueBool()
 	}
 
-	if !plan.Enable.IsNull() && !plan.Enable.IsUnknown() && !plan.Enable.ValueBool() {
+	var object map[string]interface{}
+	if !enable {
+		// The switch is changed only once the created subscription is readable.
+		if _, err := r.waitSubscriptionReadable(ctx, id, plan.Workspace, request, nil); err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Reading %s: calling GetSubscription", subscriptionTypeName),
+				errs.WrapErrorf(err, errs.DefaultErrorMsg, subscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
+			)
+			return
+		}
 		if err := r.setSubscriptionEnable(ctx, id, plan.Workspace, false); err != nil {
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Creating %s: calling DisableSubscription", subscriptionTypeName),
@@ -449,19 +459,19 @@ func (r *subscriptionResource) Create(ctx context.Context, req resource.CreateRe
 			)
 			return
 		}
-		// The disable operation returns before the change is visible, and a
-		// response that only carries the switch can still hold a partially
-		// applied body. Wait for the requested configuration and the switch
-		// together instead of accepting the first read that reports the switch.
-		disabled := false
-		object, err = r.waitSubscriptionUpdate(ctx, id, plan.Workspace, request, nil, &disabled)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Creating %s: waiting for DisableSubscription", subscriptionTypeName),
-				errs.WrapErrorf(err, errs.DefaultErrorMsg, subscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
-			)
-			return
-		}
+	}
+
+	// The disable operation returns before the change is visible, and a
+	// response that only carries the switch can still hold a partially applied
+	// body. Wait for the requested configuration and the target switch together
+	// instead of accepting the first read that reports the switch.
+	object, err = r.waitSubscriptionUpdate(ctx, id, plan.Workspace, request, nil, &enable)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: waiting for the subscription state", subscriptionTypeName),
+			errs.WrapErrorf(err, errs.DefaultErrorMsg, subscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
+		)
+		return
 	}
 
 	state, err := subscriptionState(object, identity, r.Meta().RegionId)
@@ -570,7 +580,7 @@ func (r *subscriptionResource) Update(ctx context.Context, req resource.UpdateRe
 	}
 
 	_, err = r.roaCall(ctx, action, request, true, func() (map[string]interface{}, error) {
-		return r.Meta().RoaPut("Cms", "2024-03-30", action, subscriptionQuery(state.Workspace), nil, request, false)
+		return r.Meta().RoaWithContext(ctx, "PUT", "Cms", "2024-03-30", action, subscriptionQuery(state.Workspace), nil, request, false)
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -612,7 +622,7 @@ func (r *subscriptionResource) Delete(ctx context.Context, req resource.DeleteRe
 	action := fmt.Sprintf("/subscriptions/%s", state.Id.ValueString())
 	var rawErr error
 	_, err := r.roaCall(ctx, action, subscriptionQuery(state.Workspace), true, func() (map[string]interface{}, error) {
-		response, callErr := r.Meta().RoaDelete("Cms", "2024-03-30", action, subscriptionQuery(state.Workspace), nil, nil, false)
+		response, callErr := r.Meta().RoaWithContext(ctx, "DELETE", "Cms", "2024-03-30", action, subscriptionQuery(state.Workspace), nil, nil, false)
 		rawErr = callErr
 		return response, callErr
 	})
@@ -647,8 +657,9 @@ func (r *subscriptionResource) ImportState(ctx context.Context, req resource.Imp
 // caller's goroutine instead of retry.RetryContext, whose callback goroutine may
 // outlive the cancelled call and race with the caller on the response value.
 // The caller's context is checked before every attempt and every backoff, so no
-// request is issued after the deadline; an attempt already on the wire still
-// finishes and its response, including a created id, is returned to the caller.
+// request is issued after the deadline; each request also carries the remaining
+// operation deadline into the HTTP transport, so a response cannot outlive the
+// operation, and a response that does arrive is returned to the caller.
 // replay reports whether the verb is safe to resend: PUT and DELETE are applied
 // at most once for the same payload, while CreateSubscription has no idempotency
 // token and is therefore sent exactly once, except for a throttling rejection,
@@ -690,11 +701,11 @@ func subscriptionRetryable(err error) bool {
 }
 
 // subscriptionUnknownWriteSuffix marks a write whose outcome cannot be known:
-// the shared connectivity client issues requests without a context, so a
-// request already on the wire when the operation stopped may still complete,
-// and a transport failure or a server-side error can also follow an accepted
-// request whose response was lost. A definitive client-side rejection is not
-// reported as unknown.
+// an early cancellation stops new attempts but does not abort a request already
+// on the wire, which is only bounded by the remaining operation deadline, and a
+// transport failure or a server-side error can also follow an accepted request
+// whose response was lost. A definitive client-side rejection is not reported
+// as unknown.
 func subscriptionUnknownWriteSuffix(ctx context.Context, err error, detail string) string {
 	if !subscriptionWriteOutcomeUnknown(ctx, err) {
 		return ""
@@ -722,13 +733,21 @@ func subscriptionWriteOutcomeUnknown(ctx context.Context, err error) bool {
 
 // subscriptionThrottled reports whether the service rejected the request for
 // rate limiting, which is the one transient failure that is safe to resend for
-// a non-replayable verb.
+// a non-replayable verb. Only an answer that proves the service never processed
+// the request qualifies: the 429 status the gateway returns before forwarding
+// it, or an explicit throttling rejection code. A 5xx answer may follow a
+// request the service already accepted, so a throttling-looking word in its
+// body must not turn it into a replay.
 func subscriptionThrottled(err error) bool {
 	var sdkErr *tea.SDKError
 	if !stderrors.As(err, &sdkErr) {
 		return false
 	}
-	if tea.IntValue(sdkErr.StatusCode) == http.StatusTooManyRequests {
+	status := tea.IntValue(sdkErr.StatusCode)
+	if status >= http.StatusInternalServerError {
+		return false
+	}
+	if status == http.StatusTooManyRequests {
 		return true
 	}
 	code := tea.StringValue(sdkErr.Code)
@@ -743,7 +762,7 @@ func (r *subscriptionResource) setSubscriptionEnable(ctx context.Context, id str
 	action := fmt.Sprintf("/subscriptions/%s/%s", id, suffix)
 
 	_, err := r.roaCall(ctx, action, action, true, func() (map[string]interface{}, error) {
-		return r.Meta().RoaPut("Cms", "2024-03-30", action, subscriptionQuery(workspace), nil, nil, false)
+		return r.Meta().RoaWithContext(ctx, "PUT", "Cms", "2024-03-30", action, subscriptionQuery(workspace), nil, nil, false)
 	})
 	return err
 }

@@ -175,6 +175,9 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 	// replacement removes, so the destroy check covers the objects the final
 	// state no longer references.
 	var objects []cmsSubscriptionObject
+	// The second policy is removed as soon as the configuration stops declaring
+	// it, so the step that deletes it verifies it directly.
+	var removedPolicies []cmsSubscriptionPolicy
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -256,6 +259,7 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 				Config: testAccCmsSubscriptionConfigCompleteRebound(name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCmsSubscriptionRecordObject(resourceId, &objects),
+					testAccCmsSubscriptionRecordPolicy("alicloud_cms_event_notify_policy.second", &removedPolicies),
 					testAccCmsSubscriptionCheckIdChanged(resourceId, &boundId),
 					testAccCmsSubscriptionCaptureId(resourceId, &reboundId),
 					resource.TestCheckResourceAttrPair(resourceId, "notify_strategy_id", "alicloud_cms_event_notify_policy.second", "uuid"),
@@ -274,6 +278,9 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 				Config: testAccCmsSubscriptionConfigCompleteUnbound(name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCmsSubscriptionRecordObject(resourceId, &objects),
+					// The unbind configuration drops the second policy, so the
+					// object recorded in the previous step must be gone here.
+					testAccCmsSubscriptionCheckRecordedPoliciesDestroyed(&removedPolicies),
 					testAccCmsSubscriptionCheckIdChanged(resourceId, &reboundId),
 					testAccCmsSubscriptionCaptureId(resourceId, &unboundId),
 					resource.TestCheckResourceAttr(resourceId, "workspace", strings.ToLower(name)),
@@ -313,6 +320,62 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 type cmsSubscriptionObject struct {
 	id        string
 	workspace string
+}
+
+// cmsSubscriptionPolicy is one notification policy observed during a test. A
+// policy that the configuration stops declaring, such as the second policy when
+// the subscription is unbound, is removed before the final state is inspected,
+// so its identity is captured while it still exists and its deletion is
+// verified on its own.
+type cmsSubscriptionPolicy struct {
+	uuid      string
+	workspace string
+}
+
+func testAccCmsSubscriptionRecordPolicy(resourceId string, records *[]cmsSubscriptionPolicy) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		uuid, workspace := rs.Primary.Attributes["uuid"], rs.Primary.Attributes["workspace"]
+		if uuid == "" || workspace == "" {
+			return fmt.Errorf("policy %s has no uuid or workspace, so its deletion cannot be verified", resourceId)
+		}
+		object := cmsSubscriptionPolicy{uuid: uuid, workspace: workspace}
+		for _, existing := range *records {
+			if existing == object {
+				return nil
+			}
+		}
+		*records = append(*records, object)
+		return nil
+	}
+}
+
+// testAccCmsSubscriptionCheckRecordedPoliciesDestroyed verifies a dependency the
+// test itself removed is gone, using the same scoped lookup, documented absence
+// code and wait as the final destroy check.
+func testAccCmsSubscriptionCheckRecordedPoliciesDestroyed(records *[]cmsSubscriptionPolicy) resource.TestCheckFunc {
+	return func(*terraform.State) error {
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		for _, object := range *records {
+			uuid, workspace := object.uuid, object.workspace
+			check := func() (bool, error) {
+				query := map[string]*string{
+					"uuid":      helper.StringPointer(uuid),
+					"workspace": helper.StringPointer(workspace),
+					"regionId":  helper.StringPointer(client.RegionId),
+				}
+				_, err := client.RoaGet("Cms", "2024-03-30", "/api/eventbase/notify-policy", query, nil, nil)
+				return cmsDependencyDestroyed(err, "NotFound")
+			}
+			if err := waitForCmsDependencyDestroy(check); err != nil {
+				return fmt.Errorf("notify policy %s in workspace %s, removed by this test, is not confirmed deleted: %s", uuid, workspace, err)
+			}
+		}
+		return nil
+	}
 }
 
 func testAccCmsSubscriptionRecordObject(resourceId string, records *[]cmsSubscriptionObject) resource.TestCheckFunc {
@@ -1333,6 +1396,7 @@ func TestUnitCmsSubscriptionCreateRejectsIdentityConflict(t *testing.T) {
 			"subscriptionId":   "another-id",
 			"subscriptionName": "identity",
 			"workspace":        "ws-1",
+			"enable":           true,
 		}}
 	})
 	r := subscriptionUnitResource(t, apiClient)
@@ -3222,6 +3286,27 @@ func TestUnitCmsSubscriptionUpdateExternalFixtures(t *testing.T) {
 	if got := subscriptionUnitStringAttribute(t, updated.State, "subscription_name").ValueString(); got != "fixtures" {
 		t.Fatalf("state subscription_name = %q", got)
 	}
+	// The read echoes the last update, so every distinguishable member must be
+	// written back: a name-only assertion would accept a response that drops or
+	// keeps the previous external references.
+	for _, assertion := range []struct {
+		attributePath path.Path
+		want          string
+		description   string
+	}{
+		{path.Root("pushing_setting").AtListIndex(0).AtName("template_uuid"), "template-action-2", "pushing_setting.template_uuid"},
+		{path.Root("pushing_setting").AtListIndex(0).AtName("response_plan_id"), "plan-action-2", "pushing_setting.response_plan_id"},
+		{path.Root("pushing_setting").AtListIndex(0).AtName("alert_action_ids").AtListIndex(0), "action-2", "pushing_setting.alert_action_ids[0]"},
+		{path.Root("pushing_setting").AtListIndex(0).AtName("restore_action_ids").AtListIndex(0), "action-2", "pushing_setting.restore_action_ids[0]"},
+		{path.Root("workspace_filter_setting").AtListIndex(0).AtName("workspace_uuids").AtListIndex(0), "workspace-uuid-2", "workspace_filter_setting.workspace_uuids[0]"},
+		{path.Root("agent_config").AtListIndex(0).AtName("agent_uuid"), "agent-2", "agent_config.agent_uuid"},
+		{path.Root("agent_config").AtListIndex(0).AtName("routes").AtListIndex(0).AtName("channels").AtListIndex(0).AtName("receivers").AtListIndex(0), "receiver-2", "agent_config.routes[0].channels[0].receivers[0]"},
+		{path.Root("agent_config").AtListIndex(0).AtName("routes").AtListIndex(0).AtName("channels").AtListIndex(0).AtName("enabled_sub_channels").AtListIndex(0), "EMAIL", "agent_config.routes[0].channels[0].enabled_sub_channels[0]"},
+	} {
+		if got := subscriptionUnitStringAt(t, updated.State, assertion.attributePath); got.ValueString() != assertion.want {
+			t.Fatalf("state %s = %q, want %q from the update response", assertion.description, got.ValueString(), assertion.want)
+		}
+	}
 
 	// Omitting the blocks clears them: the request must not carry them and the
 	// read-back state must not keep a block without members.
@@ -3363,4 +3448,260 @@ func TestUnitCmsSubscriptionCreateRetriesThrottling(t *testing.T) {
 	if calls := len(recorder.requests(http.MethodPost)); calls != 2 {
 		t.Fatalf("create requests = %d, want a retry after the throttling rejection", calls)
 	}
+}
+
+// subscriptionUnitStringAt reads one string value from state at an arbitrary
+// path, including a list member or a nested block member.
+func subscriptionUnitStringAt(t *testing.T, state tfsdk.State, attributePath path.Path) types.String {
+	t.Helper()
+	var value types.String
+	if diags := state.GetAttribute(context.Background(), attributePath, &value); diags.HasError() {
+		t.Fatalf("reading state attribute %s: %v", attributePath, diags)
+	}
+	return value
+}
+
+// TestUnitCmsSubscriptionCreateDoesNotReplayThrottling5xx proves a 5xx answer
+// whose body mentions throttling is not replayed: a server error may follow a
+// request the service already processed, so resending it cannot be proven safe
+// and could create a duplicate subscription.
+func TestUnitCmsSubscriptionCreateDoesNotReplayThrottling5xx(t *testing.T) {
+	var mu sync.Mutex
+	posts := 0
+	apiClient := subscriptionUnitHTTPClient(t, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		mu.Lock()
+		posts++
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"requestId": "req-1",
+			"Code":      "Throttling",
+			"Message":   "code: 503, the request was throttled",
+		})
+	}))
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                subscriptionUnitUnknown{},
+		"subscription_name": "throttling-5xx",
+		"workspace":         "ws-1",
+	})
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	r.Create(ctx, req, resp)
+
+	mu.Lock()
+	defer mu.Unlock()
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected Create to fail when the service answers 503")
+	}
+	if posts != 1 {
+		t.Fatalf("create requests = %d, want exactly one: a 5xx answer must not be replayed", posts)
+	}
+	if !strings.Contains(fmt.Sprint(resp.Diagnostics), "unknown") {
+		t.Fatalf("diagnostics = %v, want the unknown write outcome to be reported", resp.Diagnostics)
+	}
+}
+
+// TestUnitCmsSubscriptionCreateReportsKnownRejection proves a definitive 4xx
+// rejection is reported as a failure, not as an unknown write outcome, and is
+// not resent.
+func TestUnitCmsSubscriptionCreateReportsKnownRejection(t *testing.T) {
+	var mu sync.Mutex
+	posts := 0
+	apiClient := subscriptionUnitHTTPClient(t, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		mu.Lock()
+		posts++
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"requestId": "req-1",
+			"Code":      "InvalidParameterValue",
+			"Message":   "the workspace does not exist",
+		})
+	}))
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                subscriptionUnitUnknown{},
+		"subscription_name": "rejected",
+		"workspace":         "ws-1",
+	})
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	r.Create(ctx, req, resp)
+
+	mu.Lock()
+	defer mu.Unlock()
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected Create to fail on a rejected request")
+	}
+	if posts != 1 {
+		t.Fatalf("create requests = %d, want exactly one: a definitive rejection must not be resent", posts)
+	}
+	if strings.Contains(fmt.Sprint(resp.Diagnostics), "unknown") {
+		t.Fatalf("diagnostics = %v, want a definitive rejection, not an unknown write outcome", resp.Diagnostics)
+	}
+}
+
+// TestUnitCmsSubscriptionCreateBoundsSlowResponseByDeadline proves the
+// operation deadline reaches the HTTP transport: a server that does not answer
+// before the deadline is aborted instead of holding the operation open, and the
+// aborted create is not replayed.
+func TestUnitCmsSubscriptionCreateBoundsSlowResponseByDeadline(t *testing.T) {
+	var mu sync.Mutex
+	posts := 0
+	release := make(chan struct{})
+	apiClient := subscriptionUnitHTTPClient(t, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		mu.Lock()
+		posts++
+		mu.Unlock()
+		select {
+		case <-release:
+		case <-time.After(5 * time.Second):
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"requestId": "req-1", "subscriptionId": subscriptionUnitServerId})
+	}))
+	defer close(release)
+
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                subscriptionUnitUnknown{},
+		"subscription_name": "slow",
+		"workspace":         "ws-1",
+	})
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
+	ctx, cancel := context.WithTimeout(context.Background(), 400*time.Millisecond)
+	defer cancel()
+
+	started := time.Now()
+	r.Create(ctx, req, resp)
+	elapsed := time.Since(started)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected Create to fail when the response outlives the operation deadline")
+	}
+	if elapsed > 3*time.Second {
+		t.Fatalf("Create returned after %s; the operation deadline must bound the HTTP request", elapsed)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if posts != 1 {
+		t.Fatalf("create requests = %d, want exactly one: an aborted create must not be replayed", posts)
+	}
+}
+
+// TestUnitCmsSubscriptionCreateConfirmsTargetEnable proves a successful create
+// does not accept a read that still omits the enabled switch or still reports it
+// as false: the default true and an explicit true both wait for the service to
+// report the requested state, and a switch that never converges fails the
+// create instead of being written to state.
+func TestUnitCmsSubscriptionCreateConfirmsTargetEnable(t *testing.T) {
+	cases := map[string]struct {
+		planEnable   interface{}
+		enableValues []interface{}
+		wantError    bool
+	}{
+		"default-missing-then-enabled": {planEnable: nil, enableValues: []interface{}{nil, true}, wantError: false},
+		"explicit-false-then-enabled":  {planEnable: true, enableValues: []interface{}{false, true}, wantError: false},
+		"never-confirmed":              {planEnable: true, enableValues: []interface{}{false}, wantError: true},
+	}
+	for name, testCase := range cases {
+		t.Run(name, func(t *testing.T) {
+			var mu sync.Mutex
+			gets := 0
+			created := map[string]interface{}{}
+			apiClient, recorder := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+				mu.Lock()
+				defer mu.Unlock()
+				if method == http.MethodPost {
+					for key, value := range body {
+						created[key] = value
+					}
+					return http.StatusOK, map[string]interface{}{"requestId": "req-1", "subscriptionId": subscriptionUnitServerId}
+				}
+				subscription := map[string]interface{}{
+					"subscriptionId":   subscriptionUnitServerId,
+					"subscriptionName": "enable",
+					"workspace":        "ws-1",
+				}
+				for key, value := range created {
+					subscription[key] = value
+				}
+				index := gets
+				if index >= len(testCase.enableValues) {
+					index = len(testCase.enableValues) - 1
+				}
+				gets++
+				// A nil entry omits the switch, as a lagging read does.
+				if enable, ok := testCase.enableValues[index].(bool); ok {
+					subscription["enable"] = enable
+				}
+				return http.StatusOK, map[string]interface{}{"requestId": "req-2", "subscription": subscription}
+			})
+
+			r := subscriptionUnitResource(t, apiClient)
+			resourceSchema, objType := subscriptionUnitSchema(t, r)
+			plan := map[string]interface{}{
+				"id":                subscriptionUnitUnknown{},
+				"subscription_name": "enable",
+				"workspace":         "ws-1",
+			}
+			if testCase.planEnable != nil {
+				plan["enable"] = testCase.planEnable
+			}
+			planValue := subscriptionUnitObject(t, objType, plan)
+			req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
+			resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
+			// The waiter polls every three seconds, so a converging case needs a
+			// deadline that covers one poll; a never-confirmed case only has to
+			// survive the first read.
+			timeout := 10 * time.Second
+			if testCase.wantError {
+				timeout = 400 * time.Millisecond
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
+			defer cancel()
+			r.Create(ctx, req, resp)
+
+			if testCase.wantError {
+				if !resp.Diagnostics.HasError() {
+					t.Fatal("expected Create to fail while the switch never converges")
+				}
+				return
+			}
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("Create returned diagnostics: %v", resp.Diagnostics)
+			}
+			if got := subscriptionUnitStringAttribute(t, resp.State, "id").ValueString(); got != subscriptionUnitServerId {
+				t.Fatalf("state id = %q, want the created id", got)
+			}
+			if got := subscriptionUnitBoolAttribute(t, resp.State, "enable"); !got.ValueBool() {
+				t.Fatalf("state enable = %v, want the confirmed true", got)
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			if calls := len(recorder.requests(http.MethodGet)); calls != 2 {
+				t.Fatalf("read requests = %d, want the lagging read to be retried until the switch is confirmed", calls)
+			}
+		})
+	}
+}
+
+func subscriptionUnitBoolAttribute(t *testing.T, state tfsdk.State, name string) types.Bool {
+	t.Helper()
+	var value types.Bool
+	if diags := state.GetAttribute(context.Background(), path.Root(name), &value); diags.HasError() {
+		t.Fatalf("reading state attribute %q: %v", name, diags)
+	}
+	return value
 }

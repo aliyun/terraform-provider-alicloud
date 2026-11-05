@@ -2740,21 +2740,6 @@ func (client *AliyunClient) RoaGet(apiProductCode string, apiVersion string, pat
 	return client.roaRequest("GET", apiProductCode, apiVersion, "", pathName, query, headers, body, true)
 }
 
-// RoaGetWithRetry invoking ROA API request with GET method and an explicit
-// automatic retry policy.
-// parameters:
-//
-//	apiProductCode: API Product code, its value equals to the gateway code of the API
-//	apiVersion - API version
-//	pathName - Request path name
-//	query - API parameters in query
-//	headers - API parameters in headers
-//	body - API parameters in body
-//	autoRetry - whether to auto retry while the runtime has a 5xx error
-func (client *AliyunClient) RoaGetWithRetry(apiProductCode string, apiVersion string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
-	return client.roaRequest("GET", apiProductCode, apiVersion, "", pathName, query, headers, body, autoRetry)
-}
-
 // RoaDelete invoking ROA API request with DELETE method
 // parameters:
 //
@@ -2858,6 +2843,62 @@ func (client *AliyunClient) RoaPatchWithApiName(apiProductCode string, apiVersio
 }
 
 func (client *AliyunClient) roaRequest(method string, apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
+	runtime := &util.RuntimeOptions{}
+	runtime.SetAutoretry(autoRetry)
+	return client.roaRequestWithRuntime(method, apiProductCode, apiVersion, apiName, pathName, query, headers, body, runtime)
+}
+
+// RoaWithContext invokes one ROA request bounded by the caller's context
+// deadline. The shared client cannot attach a context to a request, so the
+// remaining operation budget is handed to the SDK runtime as the HTTP read
+// timeout: the actual transport aborts a response that does not arrive before
+// the deadline instead of letting the request outlive the operation.
+// parameters:
+//
+//	ctx - operation context; its deadline bounds the request
+//	method - HTTP method
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiVersion - API version
+//	pathName - Request path name
+//	query - API parameters in query
+//	headers - API parameters in headers
+//	body - API parameters in body
+//	autoRetry - whether to auto retry while the runtime has a 5xx error
+func (client *AliyunClient) RoaWithContext(ctx context.Context, method string, apiProductCode string, apiVersion string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
+	runtime := &util.RuntimeOptions{}
+	runtime.SetAutoretry(autoRetry)
+	if deadline, ok := ctx.Deadline(); ok {
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			return nil, context.DeadlineExceeded
+		}
+		// The SDK sets the HTTP client timeout to connect+read. The two timeouts
+		// are sized so that their sum is the remaining operation budget, capped
+		// by the client read timeout the provider configured: the request can
+		// never outlive the operation and never becomes more permissive than the
+		// configured read timeout either. The extra millisecond keeps a
+		// sub-millisecond remainder from disabling the timeout entirely.
+		timeout := int(remaining/time.Millisecond) + 1
+		if configured := tea.IntValue(client.teaRoaSdkConfig.ReadTimeout); configured > 0 && configured < timeout {
+			timeout = configured
+		}
+		connect := tea.IntValue(client.teaRoaSdkConfig.ConnectTimeout)
+		if connect < 0 {
+			connect = 0
+		}
+		if connect > timeout {
+			connect = timeout
+		}
+		runtime.SetConnectTimeout(connect)
+		runtime.SetReadTimeout(timeout - connect)
+	}
+	return client.roaRequestWithRuntime(method, apiProductCode, apiVersion, "", pathName, query, headers, body, runtime)
+}
+
+func (client *AliyunClient) roaRequestWithRuntime(method string, apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
 	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
 	endpoint, err := client.loadApiEndpoint(apiProductCode)
 	if err != nil {
@@ -2880,8 +2921,6 @@ func (client *AliyunClient) roaRequest(method string, apiProductCode string, api
 		return nil, err
 	}
 	var response map[string]interface{}
-	runtime := &util.RuntimeOptions{}
-	runtime.SetAutoretry(autoRetry)
 	if apiName != "" {
 		response, err = conn.DoRequestWithAction(tea.String(apiName), tea.String(apiVersion), nil, tea.String(method), tea.String("AK"), tea.String(pathName), query, headers, body, runtime)
 	} else {

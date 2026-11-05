@@ -44,8 +44,10 @@ func subscriptionIsResourceNotFound(err error) bool {
 // The caller's context carries the operation deadline shared by the request,
 // its retries and the polling loops: the SDK automatic retry is disabled so the
 // only request of one attempt leaves this loop, which checks the context before
-// every attempt and every backoff. A request already on the wire cannot be
-// aborted because the shared client does not accept a context.
+// every attempt and every backoff. Each request also hands the remaining
+// deadline to the HTTP transport, so a slow response is aborted at the
+// deadline; an early cancellation stops new attempts but cannot abort a request
+// already on the wire.
 func (s *CmsService) DescribeSubscription(ctx context.Context, id, workspace string) (object map[string]interface{}, err error) {
 	client := s.client
 	action := fmt.Sprintf("/subscriptions/%s", id)
@@ -60,7 +62,7 @@ func (s *CmsService) DescribeSubscription(ctx context.Context, id, workspace str
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return nil, ctxErr
 		}
-		response, err = client.RoaGetWithRetry("Cms", "2024-03-30", action, query, nil, nil, false)
+		response, err = client.RoaWithContext(ctx, "GET", "Cms", "2024-03-30", action, query, nil, nil, false)
 		if err == nil {
 			break
 		}
