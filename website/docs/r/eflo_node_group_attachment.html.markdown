@@ -143,9 +143,9 @@ resource "alicloud_eflo_node_group_attachment" "default" {
 
 The following arguments are supported:
 * `cluster_id` - (Optional, ForceNew, Computed) Cluster ID
-* `data_disk` - (Optional, List) The data disk of the cloud disk to be attached to the node. See [`data_disk`](#data_disk) below.
+* `data_disk` - (Optional, List) The data disk of the cloud disk to be attached to the node. The parameter is immutable after resource creation. See [`data_disk`](#data_disk) below.
 * `hostname` - (Required, ForceNew) Node hostname
-* `ip_allocation_policy` - (Optional, ForceNew, Set, Available since v2.3.0) The IP address allocation policies that assign the cluster subnets of a VPD to bonds, machine types or nodes. Each policy can select only one policy type, and multiple policies can be combined. Changing this argument replaces the resource. This argument is only sent when the resource is created and is not read back, so an imported resource has no value for it. See [`ip_allocation_policy`](#ip_allocation_policy) below.
+* `ip_allocation_policy` - (Optional, ForceNew, Set, Available since v2.3.0) The IP address allocation policies that assign the cluster subnets of a VPD to bonds, machine types or nodes. Each policy can select only one policy type, and multiple policies can be combined. Changing this argument replaces the resource. The parameter is immutable after resource creation. This argument is only sent when the resource is created and is not read back, so an imported resource has no value for it. See [`ip_allocation_policy`](#ip_allocation_policy) below.
 * `login_password` - (Optional) Node login password
 * `node_group_id` - (Optional, ForceNew, Computed) Node group ID
 * `node_id` - (Optional, ForceNew, Computed) Node ID
