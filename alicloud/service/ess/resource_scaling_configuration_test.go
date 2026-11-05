@@ -1876,8 +1876,8 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint(
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
-					"image_id":             "aliyun_3_9_x64_20G_alibase_20231219.vhd",
-					"instance_type":        "ecs.c9i.large",
+					"image_id":             "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
 					"system_disk_category": "cloud_essd",
@@ -1980,6 +1980,83 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint(
 // collection-order: bypass instance_pattern_info.excluded_instance_types -- pre-existing attribute outside this change
 // collection-order: bypass instance_pattern_info.architectures -- pre-existing attribute outside this change
 
+func essRawResponseCheck(t *testing.T, resourceId string, check func(map[string]interface{}) error) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s is missing from state", resourceId)
+		}
+		return check(essScalingConfigurationRawResponse(t, rs.Primary.ID))
+	}
+}
+
+func essStringList(v interface{}) []string {
+	raw, ok := v.([]interface{})
+	if !ok {
+		return nil
+	}
+	out := make([]string, 0, len(raw))
+	for _, item := range raw {
+		out = append(out, fmt.Sprint(item))
+	}
+	return out
+}
+
+func essScalingConfigurationSystemDiskCategoriesCheck(t *testing.T, resourceId string, expected []string) resource.TestCheckFunc {
+	return essRawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+		m, ok := response["SystemDiskCategories"].(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("Describe response has no SystemDiskCategories: %v", response["SystemDiskCategories"])
+		}
+		got := essStringList(m["SystemDiskCategory"])
+		if strings.Join(got, ",") != strings.Join(expected, ",") {
+			return fmt.Errorf("remote SystemDiskCategories = %v, expected %v", got, expected)
+		}
+		return nil
+	})
+}
+
+func essScalingConfigurationDataDiskCategoriesCheck(t *testing.T, resourceId string, expected []string) resource.TestCheckFunc {
+	return essRawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+		dds, ok := response["DataDisks"].(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("Describe response has no DataDisks: %v", response["DataDisks"])
+		}
+		list, _ := dds["DataDisk"].([]interface{})
+		if len(list) != 1 {
+			return fmt.Errorf("remote DataDisk count = %d, expected 1", len(list))
+		}
+		disk, _ := list[0].(map[string]interface{})
+		cm, ok := disk["Categories"].(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("remote DataDisk has no Categories: %v", disk["Categories"])
+		}
+		got := essStringList(cm["Category"])
+		if strings.Join(got, ",") != strings.Join(expected, ",") {
+			return fmt.Errorf("remote DataDisk Categories = %v, expected %v", got, expected)
+		}
+		return nil
+	})
+}
+
+func essScalingConfigurationBurstingCheck(t *testing.T, resourceId string, systemDisk, dataDisk bool) resource.TestCheckFunc {
+	return essRawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+		if !strings.EqualFold(fmt.Sprint(response["SystemDisk.BurstingEnabled"]), fmt.Sprint(systemDisk)) {
+			return fmt.Errorf("remote SystemDisk.BurstingEnabled = %v, expected %v", response["SystemDisk.BurstingEnabled"], systemDisk)
+		}
+		dds, _ := response["DataDisks"].(map[string]interface{})
+		list, _ := dds["DataDisk"].([]interface{})
+		if len(list) != 1 {
+			return fmt.Errorf("remote DataDisk count = %d, expected 1", len(list))
+		}
+		disk, _ := list[0].(map[string]interface{})
+		if !strings.EqualFold(fmt.Sprint(disk["BurstingEnabled"]), fmt.Sprint(dataDisk)) {
+			return fmt.Errorf("remote DataDisk.BurstingEnabled = %v, expected %v", disk["BurstingEnabled"], dataDisk)
+		}
+		return nil
+	})
+}
+
 func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing.T) {
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	rand := tfcacctest.RandIntRange(1000, 999999)
@@ -2010,14 +2087,17 @@ func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":       "${alicloud_ess_scaling_group.default.id}",
-					"image_id":               "aliyun_3_9_x64_20G_alibase_20231219.vhd",
-					"instance_type":          "ecs.c9i.large",
+					"image_id":               "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":          "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id":      "${alicloud_security_group.default1.id}",
 					"force_delete":           "true",
 					"system_disk_categories": []interface{}{"cloud_essd", "cloud"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.#", "2"),
+					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.0", "cloud_essd"),
+					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.1", "cloud"),
+					essScalingConfigurationSystemDiskCategoriesCheck(t, resourceId, []string{"cloud_essd", "cloud"}),
 				),
 			},
 			{
@@ -2026,20 +2106,21 @@ func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.#", "2"),
+					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.0", "cloud"),
+					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.1", "cloud_essd"),
+					essScalingConfigurationSystemDiskCategoriesCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
 			},
 		},
 	})
 }
 
-// TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder verifies
-// that the nested TypeList attribute data_disk.categories converges under a
-// member reorder: a single data disk is created with two distinct categories
-// in one order, then the same data_disk block is reapplied with the inner
-// categories reordered. The outer data_disk list keeps a single member in the
-// same position in both steps; only the inner list is reordered. The empty
-// post-apply plan after the reorder proves the data_disk update path (F3)
-// propagates categories and that the API's ordering contract converges.
 func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder(t *testing.T) {
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	rand := tfcacctest.RandIntRange(1000, 999999)
@@ -2070,15 +2151,14 @@ func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder(t *testing.T
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
-					"image_id":             "aliyun_3_9_x64_20G_alibase_20231219.vhd",
-					"instance_type":        "ecs.c9i.large",
+					"image_id":             "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
 					"system_disk_category": "cloud_essd",
 					"data_disk": []map[string]interface{}{
 						{
 							"size":                 "20",
-							"category":             "cloud_essd",
 							"delete_with_instance": "true",
 							"categories":           []interface{}{"cloud_essd", "cloud"},
 						},
@@ -2086,6 +2166,9 @@ func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder(t *testing.T
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.#", "2"),
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.0", "cloud_essd"),
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.1", "cloud"),
+					essScalingConfigurationDataDiskCategoriesCheck(t, resourceId, []string{"cloud_essd", "cloud"}),
 				),
 			},
 			{
@@ -2093,7 +2176,6 @@ func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder(t *testing.T
 					"data_disk": []map[string]interface{}{
 						{
 							"size":                 "20",
-							"category":             "cloud_essd",
 							"delete_with_instance": "true",
 							"categories":           []interface{}{"cloud", "cloud_essd"},
 						},
@@ -2101,33 +2183,21 @@ func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder(t *testing.T
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.#", "2"),
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.0", "cloud"),
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.1", "cloud_essd"),
+					essScalingConfigurationDataDiskCategoriesCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
 			},
 		},
 	})
 }
 
-// TestAccAliCloudEssScalingConfiguration_PropertyAttributes exercises the
-// subset of property_coverage attributes that need no special prerequisites in
-// the standard ACC account/region and asserts both their create and modify
-// paths against the read-back state. system_disk_bursting_enabled and
-// data_disk.bursting_enabled are created enabled then disabled, verifying the
-// F1/F3 modify path that previously dropped these attributes on update;
-// tenancy and affinity are created with default values and asserted.
-//
-// The order-sensitive multi-member TypeList attributes system_disk_categories
-// and data_disk.categories are covered by their dedicated convergent reorder
-// tests (...CategoriesOrder) above, which also exercise their modify paths.
-//
-// The remaining property_coverage attributes (cpu, memory, image_family,
-// spot_interruption_behavior, load_balancer_weight, ipv6_address_count,
-// hpc_cluster_id, dedicated_host_id, deployment_set_id, zone_id,
-// private_pool_options and scheduler_options) require prerequisites absent
-// from the standard ACC account or are mutually exclusive with the present
-// instance specification. They are registered for the static coverage gate by
-// the explicitly skipped TestAccAliCloudEssScalingConfiguration_PropertyCoverage
-// below and must not be reported as runtime-verified until their prerequisites
-// are provisioned or explicit coverage authorization is granted.
 func TestAccAliCloudEssScalingConfiguration_PropertyAttributes(t *testing.T) {
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	rand := tfcacctest.RandIntRange(1000, 999999)
@@ -2158,18 +2228,18 @@ func TestAccAliCloudEssScalingConfiguration_PropertyAttributes(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":             "${alicloud_ess_scaling_group.default.id}",
-					"image_id":                     "aliyun_3_9_x64_20G_alibase_20231219.vhd",
-					"instance_type":                "ecs.c9i.large",
+					"image_id":                     "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":                "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id":            "${alicloud_security_group.default1.id}",
 					"force_delete":                 "true",
-					"system_disk_category":         "cloud_essd",
+					"system_disk_category":         "cloud_auto",
 					"system_disk_bursting_enabled": "true",
 					"tenancy":                      "default",
 					"affinity":                     "default",
 					"data_disk": []map[string]interface{}{
 						{
-							"size":                 "20",
-							"category":             "cloud_essd",
+							"size":                 "40",
+							"category":             "cloud_auto",
 							"delete_with_instance": "true",
 							"bursting_enabled":     "true",
 						},
@@ -2180,6 +2250,7 @@ func TestAccAliCloudEssScalingConfiguration_PropertyAttributes(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceId, "tenancy", "default"),
 					resource.TestCheckResourceAttr(resourceId, "affinity", "default"),
 					resource.TestCheckResourceAttr(resourceId, "data_disk.0.bursting_enabled", "true"),
+					essScalingConfigurationBurstingCheck(t, resourceId, true, true),
 				),
 			},
 			{
@@ -2187,8 +2258,8 @@ func TestAccAliCloudEssScalingConfiguration_PropertyAttributes(t *testing.T) {
 					"system_disk_bursting_enabled": "false",
 					"data_disk": []map[string]interface{}{
 						{
-							"size":                 "20",
-							"category":             "cloud_essd",
+							"size":                 "40",
+							"category":             "cloud_auto",
 							"delete_with_instance": "true",
 							"bursting_enabled":     "false",
 						},
@@ -2197,7 +2268,108 @@ func TestAccAliCloudEssScalingConfiguration_PropertyAttributes(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "system_disk_bursting_enabled", "false"),
 					resource.TestCheckResourceAttr(resourceId, "data_disk.0.bursting_enabled", "false"),
+					essScalingConfigurationBurstingCheck(t, resourceId, false, false),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudEssScalingConfiguration_ConstraintValidation covers the
+// plan-time cross-attribute constraints. Every step expects a configuration
+// error before any cloud resource is created.
+func TestAccAliCloudEssScalingConfiguration_ConstraintValidation(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	resourceId := "alicloud_ess_scaling_configuration.cv"
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfiguration_NetworkInterfaces)
+	base := map[string]interface{}{
+		"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
+		"image_id":          "${data.alicloud_images.default1.images.0.id}",
+		"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
+		"security_group_id": "${alicloud_security_group.default1.id}",
+		"force_delete":      "true",
+	}
+	withBase := func(extra map[string]interface{}) map[string]interface{} {
+		cfg := map[string]interface{}{}
+		for k, val := range base {
+			cfg[k] = val
+		}
+		for k, val := range extra {
+			cfg[k] = val
+		}
+		return cfg
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(withBase(map[string]interface{}{
+					"private_pool_options": []map[string]interface{}{
+						{"match_criteria": "Target"},
+					},
+				})),
+				ExpectError: regexp.MustCompile(`pool_id must be set when private_pool_options.0.match_criteria is Target`),
+				Check:       resource.ComposeTestCheckFunc(),
+			},
+			{
+				Config: testAccConfig(withBase(map[string]interface{}{
+					"private_pool_options": acctest.REMOVEKEY,
+					"cpu":                  "2",
+				})),
+				ExpectError: regexp.MustCompile(`must be specified`),
+				Check:       resource.ComposeTestCheckFunc(),
+			},
+			{
+				Config: testAccConfig(withBase(map[string]interface{}{
+					"cpu":    "2",
+					"memory": "8",
+				})),
+				ExpectError: regexp.MustCompile(`conflicts with`),
+				Check:       resource.ComposeTestCheckFunc(),
+			},
+			{
+				Config: testAccConfig(withBase(map[string]interface{}{
+					"cpu":          acctest.REMOVEKEY,
+					"memory":       acctest.REMOVEKEY,
+					"image_family": "acs:alibaba-cloud-linux-3",
+				})),
+				ExpectError: regexp.MustCompile(`conflicts with`),
+				Check:       resource.ComposeTestCheckFunc(),
+			},
+			{
+				Config: testAccConfig(withBase(map[string]interface{}{
+					"image_family":                   acctest.REMOVEKEY,
+					"resource_pool_options_strategy": "PrivatePoolFirst",
+					"private_pool_options": []map[string]interface{}{
+						{"match_criteria": "Open"},
+					},
+				})),
+				ExpectError: regexp.MustCompile(`conflicts with`),
+				Check:       resource.ComposeTestCheckFunc(),
+			},
+			{
+				Config: testAccConfig(withBase(map[string]interface{}{
+					"resource_pool_options_strategy": acctest.REMOVEKEY,
+					"private_pool_options":           acctest.REMOVEKEY,
+					"security_group_id":              acctest.REMOVEKEY,
+					"ipv6_address_count":             "1",
+					"network_interfaces": []map[string]interface{}{
+						{"instance_type": "Primary", "ipv6_address_count": "1"},
+					},
+				})),
+				ExpectError: regexp.MustCompile(`ipv6_address_count conflicts with network_interfaces`),
+				Check:       resource.ComposeTestCheckFunc(),
 			},
 		},
 	})
@@ -2256,8 +2428,8 @@ func TestAccAliCloudEssScalingConfiguration_PropertyCoverage(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
-					"image_id":             "aliyun_3_9_x64_20G_alibase_20231219.vhd",
-					"instance_type":        "ecs.c9i.large",
+					"image_id":             "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
 					"system_disk_category": "cloud_essd",
@@ -4563,8 +4735,8 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
-					"image_id":             "aliyun_3_9_x64_20G_alibase_20231219.vhd",
-					"instance_type":        "ecs.c9i.large",
+					"image_id":             "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
 					"system_disk_category": "cloud_essd",
