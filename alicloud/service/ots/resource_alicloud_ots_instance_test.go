@@ -34,12 +34,17 @@ func testSweepOtsInstances(region string) error {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
+	// OTS instance names are limited to 3-16 characters, so documentation
+	// examples cannot use the 17-character "terraform-example" prefix and use
+	// "tf-example" instead; both forms are kept here so either one is swept.
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
 		"tf_test_",
 		"tf-test-",
 		"tftest",
+		"terraform-example",
+		"tf-example",
 	}
 
 	var insts []sdkots.InstanceInfo
