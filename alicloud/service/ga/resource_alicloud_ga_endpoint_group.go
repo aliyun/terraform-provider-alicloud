@@ -782,6 +782,7 @@ func resourceAliCloudGaEndpointGroupUpdateProbe(d *schema.ResourceData, client *
 	}
 
 	enabled := strconv.FormatBool(d.Get("enable").(bool))
+	gaService := Service{client}
 	endpointConfigurations, _ := d.Get("endpoint_configurations").([]interface{})
 	for _, item := range endpointConfigurations {
 		endpointConfiguration, ok := item.(map[string]interface{})
@@ -838,7 +839,7 @@ func resourceAliCloudGaEndpointGroupUpdateProbe(d *schema.ResourceData, client *
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, Service{client}.GaEndpointGroupStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gaService.GaEndpointGroupStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
@@ -853,7 +854,8 @@ func resourceAliCloudGaEndpointGroupUpdateAccessLog(d *schema.ResourceData, clie
 	}
 
 	headerList := convert.ExpandStringList(d.Get("access_log_record_customized_header_list").(*schema.Set).List())
-	object, err := (Service{client}).DescribeGaEndpointGroup(d.Id())
+	gaService := Service{client}
+	object, err := gaService.DescribeGaEndpointGroup(d.Id())
 	if err != nil {
 		return err
 	}
