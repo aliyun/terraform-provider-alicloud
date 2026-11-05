@@ -1271,6 +1271,7 @@ func TestUnitECSSecurityGroupRuleCidrIpValidation(t *testing.T) {
 		{"::/0", false, "use ipv6_cidr_ip", ""},
 		{"2001:db8::1", false, "use ipv6_cidr_ip", ""},
 		{"::ffff:10.0.0.1", false, "use ipv6_cidr_ip", ""},
+		{"::ffff:10.0.0.0/104", false, "use ipv6_cidr_ip", ""},
 		{"10.0.0.1:80", false, "must be a single IPv4 address or CIDR block", "use ipv6_cidr_ip"},
 		{"10.0.0.0/33", false, "must be a single IPv4 address or CIDR block", "multiple CIDRs"},
 		{"not-a-cidr", false, "must be a single IPv4 address or CIDR block", "multiple CIDRs"},
