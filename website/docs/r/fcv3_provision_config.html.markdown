@@ -150,9 +150,9 @@ The following arguments are supported:
 * `always_allocate_cpu` - (Optional, Computed, Bool) Whether the CPU is always allocated. If you omit the argument, the value returned by the service is used and no diff is generated. Removing the argument does not trigger an update.
 * `always_allocate_gpu` - (Optional, Computed, Bool) Whether to always assign GPU to function instance. The service keeps this value consistent with `always_allocate_cpu` (verified for a function without GPU configuration), so configure both arguments with the same value; different values produce a persistent diff. If you omit the argument, the value returned by the service is used and no diff is generated. Removing the argument does not trigger an update.
 * `function_name` - (Required, ForceNew) The name of the function. If this parameter is not specified, the provisioned configurations of all functions are listed.
-* `qualifier` - (Optional) The function alias or LATEST.
+* `qualifier` - (Optional) The function alias or LATEST. The resource reads and writes the default (`LATEST`) provision configuration; configuring another qualifier is not supported.
 * `scheduled_actions` - (Optional, List) Timing policy configuration See [`scheduled_actions`](#scheduled_actions) below.
-* `target` - (Optional, Int) Number of reserved target resources. The value range is [0,10000]. The API requires it on every write; if you omit it from the configuration, an update writes `0`. The service also exposes `defaultTarget` as the recommended replacement, which this resource does not model yet.
+* `target` - (Optional, Computed, Int) Number of reserved target resources. The value range is [0,10000]. The API requires it on every write; when you omit it from the configuration or import the resource, an update keeps the value returned by the service instead of writing `0`. The service also exposes `defaultTarget` as the recommended replacement, which this resource does not model yet.
 * `target_tracking_policies` - (Optional, List) Metric tracking scaling policy configuration See [`target_tracking_policies`](#target_tracking_policies) below.
 
 ### `scheduled_actions`

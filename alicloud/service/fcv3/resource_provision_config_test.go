@@ -282,10 +282,14 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 					}),
 				),
 			},
+			// Persist the imported state so the next update runs against it:
+			// CR-04 requires that a configuration omitting target keeps the
+			// value returned by the service instead of writing 0.
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
+				ImportStatePersist:      true,
 				ImportStateVerifyIgnore: []string{"current", "current_error"},
 			},
 			// AC4: explicit false must be stored and converge. Only the two
@@ -294,10 +298,15 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 			// always_allocate_cpu, so both values move together (observed on a
 			// function without GPU: true/false became true/true and false/true
 			// became false/false).
+			//
+			// target is removed from the configuration in the same step: the
+			// import persisted 2, so the replacement PUT must carry 2 and not
+			// the zero value of an unset argument.
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"always_allocate_cpu": "false",
 					"always_allocate_gpu": "false",
+					"target":              acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -323,6 +332,7 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 					testAccCheck(map[string]string{
 						"always_allocate_cpu": "true",
 						"always_allocate_gpu": "true",
+						"target":              "2",
 					}),
 				),
 			},
@@ -332,7 +342,7 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"current", "current_error"},
 			},
-			// Removing both arguments keeps the service-side values because the
+			// Removing all arguments keeps the service-side values because the
 			// fields are Optional+Computed and must not produce a diff.
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -361,9 +371,11 @@ var AlicloudFcv3ProvisionConfigMap7183 = map[string]string{}
 // AlicloudFcv3ProvisionConfigBasicDependence7183 creates a minimal fcv3
 // function without an SLS log_project/log_store (the function carries a
 // log_config with only log_begin_rule, which does not require a separate SLS
-// project). This avoids the account-side ProjectQuotaExceed (300-project SLS
-// quota) that blocks the basic7182 dependency, while still providing a real
-// function for the provision-config lifecycle target.
+// project). The provision-config lifecycle does not need function logging, so
+// this keeps the fixture minimal and avoids depending on the account's SLS
+// project quota. The full-coverage case basic7182 is held back by its
+// CPUUtilization tracking policy, not by the SLS dependency: memberOrder and
+// memberOrderPair reuse that SLS-based dependency and pass.
 func AlicloudFcv3ProvisionConfigBasicDependence7183(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -527,9 +539,16 @@ func TestAccAliCloudFcv3ProvisionConfig_memberOrder(t *testing.T) {
 }
 
 // TestAccAliCloudFcv3ProvisionConfig_memberOrderPair keeps the two TypeList
-// reorder applies adjacent, as required by the repository collection-order
-// check (an import step between the original and the reordered apply breaks
-// the reorder pair). Import coverage for the reordered state follows the pair.
+// reorder applies adjacent, as required by scripts/collection-order/README.md
+// "Required acceptance steps", which defines the reorder evidence as an apply
+// of configuration A followed directly by an apply that only reorders the
+// target list. The checker resets the pair on any intervening step that does
+// not apply the configuration (ImportState included), so an ImportStateVerify
+// between the two applies would drop the coverage. Per-step Import for the
+// same lists is carried by TestAccAliCloudFcv3ProvisionConfig_memberOrder,
+// which places an Import after every successful configuration step; this
+// function supplies the gate-shaped convergence pair and verifies the final
+// reordered state by ImportStateVerify.
 func TestAccAliCloudFcv3ProvisionConfig_memberOrderPair(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_provision_config.default"
@@ -664,6 +683,75 @@ func TestAccAliCloudFcv3ProvisionConfig_memberOrderPair(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudFcv3ProvisionConfig_alwaysAllocateFields verifies AC4 per
+// field: an explicitly configured asymmetric value must persist through apply,
+// refresh and import. The paired transitions in basic7183 cannot show this
+// because both values always move together, and a request-level mock cannot
+// show it because the service, not the Provider, decides the returned value.
+// The fixture is a function without GPU, the only shape available to this
+// account.
+func TestAccAliCloudFcv3ProvisionConfig_alwaysAllocateFields(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_fcv3_provision_config.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ProvisionConfigMap7183)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeProvisionConfig")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sfcv3provisionalloc%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ProvisionConfigBasicDependence7183)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_name":       "${alicloud_fcv3_function.function.function_name}",
+					"target":              "1",
+					"always_allocate_cpu": "false",
+					"always_allocate_gpu": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"always_allocate_cpu": "false",
+						"always_allocate_gpu": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"current", "current_error"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"always_allocate_cpu": "true",
+					"always_allocate_gpu": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"always_allocate_cpu": "true",
+						"always_allocate_gpu": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"current", "current_error"},
+			},
+		},
+	})
+}
+
 // TestUnitAliCloudFcv3ProvisionConfigRequest verifies the request payload built
 // by the public CRUD entry points. Omitted Optional+Computed fields must be
 // absent, an explicit false must be sent as false, and an update that only
@@ -672,6 +760,7 @@ func TestAccAliCloudFcv3ProvisionConfig_memberOrderPair(t *testing.T) {
 func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 	type capturedRequest struct {
 		method string
+		query  string
 		body   map[string]interface{}
 	}
 
@@ -699,7 +788,7 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 		}
 
 		mu.Lock()
-		requests = append(requests, capturedRequest{method: req.Method, body: body})
+		requests = append(requests, capturedRequest{method: req.Method, query: req.URL.RawQuery, body: body})
 		if req.Method == http.MethodPut {
 			// PutProvisionConfig replaces the whole configuration: keys missing
 			// from the request are gone from the response.
@@ -738,6 +827,17 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 		}
 		t.Fatal("no PUT request captured")
 		return nil
+	}
+	lastPutQuery := func() string {
+		mu.Lock()
+		defer mu.Unlock()
+		for i := len(requests) - 1; i >= 0; i-- {
+			if requests[i].method == http.MethodPut {
+				return requests[i].query
+			}
+		}
+		t.Fatal("no PUT request captured")
+		return ""
 	}
 	assertValue := func(body map[string]interface{}, key string, want interface{}) {
 		t.Helper()
@@ -855,6 +955,51 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 	assertValue(body, "alwaysAllocateCPU", true)
 	assertValue(body, "alwaysAllocateGPU", true)
 	assertValue(body, "target", float64(1))
+
+	// CR-04: an update whose configuration omits target (for example right
+	// after an import, where the state value came from the service) must send
+	// the current state value instead of the zero value of an unset argument.
+	body = applyUpdate(priorState(map[string]string{
+		"target":              "5",
+		"always_allocate_cpu": "true",
+		"always_allocate_gpu": "true",
+	}), map[string]interface{}{
+		"function_name":       "unit-provision",
+		"always_allocate_cpu": false,
+		"always_allocate_gpu": true,
+	})
+	assertValue(body, "target", float64(5))
+
+	// An explicitly configured zero is a real value and must still be sent.
+	body = applyUpdate(priorState(map[string]string{
+		"target":              "5",
+		"always_allocate_cpu": "true",
+		"always_allocate_gpu": "true",
+	}), map[string]interface{}{
+		"function_name":       "unit-provision",
+		"target":              0,
+		"always_allocate_cpu": true,
+		"always_allocate_gpu": true,
+	})
+	assertValue(body, "target", float64(0))
+
+	// The qualifier selects the target object and must reach the request query
+	// on every replacement PUT that the resource performs.
+	body = applyUpdate(priorState(map[string]string{
+		"qualifier":           "LATEST",
+		"always_allocate_cpu": "true",
+		"always_allocate_gpu": "true",
+	}), map[string]interface{}{
+		"function_name":       "unit-provision",
+		"target":              1,
+		"qualifier":           "prod",
+		"always_allocate_cpu": false,
+		"always_allocate_gpu": true,
+	})
+	assertValue(body, "target", float64(1))
+	if query := lastPutQuery(); !strings.Contains(query, "qualifier=prod") {
+		t.Fatalf("PUT query %q does not carry the configured qualifier", query)
+	}
 
 	listConfig := map[string]interface{}{
 		"target_tracking_policies": []interface{}{map[string]interface{}{

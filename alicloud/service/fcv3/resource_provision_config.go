@@ -96,6 +96,7 @@ func ResourceProvisionConfig() *schema.Resource {
 			"target": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validators.IntBetween(0, 10000),
 			},
 			"target_tracking_policies": {
@@ -402,7 +403,9 @@ func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) err
 	// PutProvisionConfig replaces the stored provision configuration and
 	// requires target, so every update carries target plus the current
 	// always-allocate values; otherwise a single-field update could drop
-	// them or fall back to the service defaults.
+	// them or fall back to the service defaults. target is Optional+Computed,
+	// so when it is omitted or comes from an import the state holds the value
+	// returned by the service and the PUT keeps it instead of writing zero.
 	if update {
 		request["target"] = d.Get("target")
 		request["alwaysAllocateCPU"] = d.Get("always_allocate_cpu")
