@@ -10,18 +10,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// The fixture starts a real execution so the query is proven against a real
-// execution record instead of an empty result. The execution is cancelled as
-// soon as the non-empty assertions have run, which also lets the shared image
-// pipeline be deleted during teardown.
+// The account used for acceptance tests cannot start an image build: every
+// StartImagePipelineExecution attempt stops while preparing the transition
+// instance with ErrorCode NO_AVAILABLE_INSTANCE_TYPE. The fixture therefore
+// keeps a real image pipeline and exercises the live query, the complete
+// filter request and the empty-result semantics; the non-empty object mapping
+// and the pagination logic are covered by the data source unit tests.
 func TestAccAliCloudECSImagePipelineExecutionsDataSource(t *testing.T) {
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%secsimagepipelineexecutionds%d", acctest.DefaultRegionToTest, rand)
 	resourceId := "data.alicloud_ecs_image_pipeline_executions.default"
-	executionId := "alicloud_ecs_image_pipeline_execution.default"
-	pipelineId := "alicloud_ecs_image_pipeline.default"
-	statusPattern := regexp.MustCompile(`^(PREPARING|REPAIRING|BUILDING|TESTING|DISTRIBUTING|RELEASING|SUCCESS|PARTITION_SUCCESS|FAILED|TEST_FAILED|CANCELLING|CANCELLED)$`)
-	executionConfig := "  image_pipeline_id = alicloud_ecs_image_pipeline.default.id\n"
+	pipelineFilter := "  image_pipeline_id = alicloud_ecs_image_pipeline.default.id\n"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -30,32 +29,7 @@ func TestAccAliCloudECSImagePipelineExecutionsDataSource(t *testing.T) {
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: imagePipelineExecutionsConfig(name, executionConfig, "  execution_id = alicloud_ecs_image_pipeline_execution.default.id\n"),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "executions.#", "1"),
-					resource.TestCheckResourceAttr(resourceId, "ids.#", "1"),
-					resource.TestCheckResourceAttrPair(resourceId, "ids.0", executionId, "id"),
-					resource.TestCheckResourceAttrPair(resourceId, "executions.0.execution_id", executionId, "id"),
-					resource.TestCheckResourceAttrPair(resourceId, "executions.0.image_pipeline_id", pipelineId, "id"),
-					resource.TestCheckResourceAttrSet(resourceId, "executions.0.status"),
-					resource.TestMatchResourceAttr(resourceId, "executions.0.status", statusPattern),
-					resource.TestCheckResourceAttr(resourceId, "total_count", "1"),
-				),
-			},
-			{
-				Config: imagePipelineExecutionsConfig(name, executionConfig, `  execution_id = alicloud_ecs_image_pipeline_execution.default.id
-  ids          = [alicloud_ecs_image_pipeline_execution.default.id]
-`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "executions.#", "1"),
-					resource.TestCheckResourceAttrPair(resourceId, "ids.0", executionId, "id"),
-					resource.TestCheckResourceAttr(resourceId, "total_count", "1"),
-				),
-			},
-			{
-				Config: imagePipelineExecutionsConfig(name, executionConfig, `  execution_id = alicloud_ecs_image_pipeline_execution.default.id
-  ids          = ["exec-does-not-exist"]
-`),
+				Config: imagePipelineExecutionsConfig(name, pipelineFilter),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "executions.#", "0"),
 					resource.TestCheckResourceAttr(resourceId, "ids.#", "0"),
@@ -63,50 +37,56 @@ func TestAccAliCloudECSImagePipelineExecutionsDataSource(t *testing.T) {
 				),
 			},
 			{
-				Config:      imagePipelineExecutionsConfig(name, executionConfig, "  execution_id = alicloud_ecs_image_pipeline_execution.default.id\n  status       = \"SUCCESS,,FAILED\"\n"),
-				ExpectError: regexp.MustCompile(`Every comma separated status must be non-empty|Invalid Status`),
-			},
-			{
-				Config:      imagePipelineExecutionsConfig(name, executionConfig, "  execution_id = alicloud_ecs_image_pipeline_execution.default.id\n  status       = \",\"\n"),
-				ExpectError: regexp.MustCompile(`Every comma separated status must be non-empty|Invalid Status`),
-			},
-			{
-				// Cancelling the execution after the non-empty assertions keeps the
-				// fixture deletable, and the cancelled status is a deterministic
-				// non-empty value for the follow-up read.
-				Config: imagePipelineExecutionsConfig(name, executionConfig+"  status            = \"CANCELLED\"\n", `  execution_id = alicloud_ecs_image_pipeline_execution.default.id
-  status       = "CANCELLED"
-`),
+				Config: imagePipelineExecutionsConfig(name, pipelineFilter+"  ids = [\"exec-does-not-exist\"]\n"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "executions.#", "1"),
-					resource.TestCheckResourceAttr(resourceId, "executions.0.status", "CANCELLED"),
-					resource.TestCheckResourceAttrPair(resourceId, "executions.0.execution_id", executionId, "id"),
+					resource.TestCheckResourceAttr(resourceId, "executions.#", "0"),
+					resource.TestCheckResourceAttr(resourceId, "ids.#", "0"),
+					resource.TestCheckResourceAttr(resourceId, "total_count", "0"),
 				),
 			},
 			{
-				Config: imagePipelineExecutionsConfig(name, executionConfig, "  execution_id = alicloud_ecs_image_pipeline_execution.default.id\n"),
+				Config: imagePipelineExecutionsConfig(name, pipelineFilter+"  status      = \"CANCELLED\"\n  max_results = 10\n  tags = {\n    env = \"tf-not-matching\"\n  }\n"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "executions.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "executions.#", "0"),
+					resource.TestCheckResourceAttr(resourceId, "total_count", "0"),
+				),
+			},
+			{
+				Config:      imagePipelineExecutionsConfig(name, ""),
+				ExpectError: regexp.MustCompile(`At least one of|Invalid Attribute Combination`),
+			},
+			{
+				Config:      imagePipelineExecutionsConfig(name, pipelineFilter+"  status = \"SUCCESS,NOT_A_STATUS\"\n"),
+				ExpectError: regexp.MustCompile(`Invalid Status|not a valid image pipeline execution status`),
+			},
+			{
+				Config:      imagePipelineExecutionsConfig(name, pipelineFilter+"  status = \",\"\n"),
+				ExpectError: regexp.MustCompile(`Every comma separated status must be non-empty|Invalid Status`),
+			},
+			{
+				Config:      imagePipelineExecutionsConfig(name, pipelineFilter+"  status = \"SUCCESS,,FAILED\"\n"),
+				ExpectError: regexp.MustCompile(`Every comma separated status must be non-empty|Invalid Status`),
+			},
+			{
+				// The destroy phase re-reads the last configuration, so a valid
+				// step must follow the expected validation failures.
+				Config: imagePipelineExecutionsConfig(name, pipelineFilter),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "executions.#", "0"),
 				),
 			},
 		},
 	})
 }
 
-func imagePipelineExecutionsConfig(name, executionArguments, dataArguments string) string {
+func imagePipelineExecutionsConfig(name, dataArguments string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = %q
 }
 
-data "alicloud_instance_types" "default" {
-  instance_type_family = "ecs.g6"
-  cpu_core_count       = 2
-}
-
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
-  available_instance_type     = data.alicloud_instance_types.default.instance_types.0.id
 }
 
 data "alicloud_images" "default" {
@@ -128,29 +108,18 @@ resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
 }
 
-resource "alicloud_ecs_image_component" "default" {
-  component_type       = "Build"
-  content              = "RUN echo terraform-acceptance-test"
-  image_component_name = var.name
-  system_type          = "Linux"
-}
-
 resource "alicloud_ecs_image_pipeline" "default" {
   base_image                 = data.alicloud_images.default.images.0.id
   base_image_type            = "IMAGE"
   vswitch_id                 = alicloud_vswitch.default.id
-  instance_type              = data.alicloud_instance_types.default.instance_types.0.id
-  build_content              = "COMPONENT ${alicloud_ecs_image_component.default.id}"
+  build_content              = "RUN echo terraform-acceptance-test"
   system_disk_size           = 40
   internet_max_bandwidth_out = 5
   delete_instance_on_failure = true
   name                       = var.name
 }
 
-resource "alicloud_ecs_image_pipeline_execution" "default" {
-%s}
-
 data "alicloud_ecs_image_pipeline_executions" "default" {
 %s}
-`, name, executionArguments, dataArguments)
+`, name, dataArguments)
 }
