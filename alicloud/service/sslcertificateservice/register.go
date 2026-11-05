@@ -35,6 +35,9 @@ func ServicePackage() conns.ServicePackage {
 			// Legacy alias kept for backward compatibility; reuses the certificates factory.
 			{TypeName: "alicloud_cas_certificates", Factory: dataSourceAliCloudSslCertificatesServiceCertificates},
 		},
+		Resources: []conns.Resource{
+			{TypeName: "alicloud_ssl_certificates_service_cloud_access", Factory: NewCloudAccessResource},
+		},
 		Actions: []conns.Action{
 			{TypeName: "alicloud_ssl_certificates_service_pca_cert_sync", Factory: NewPcaCertSyncAction},
 		},
