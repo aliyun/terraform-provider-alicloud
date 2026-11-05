@@ -122,13 +122,14 @@ func assertRequestKeyAbsent(t *testing.T, action string, request map[string]stri
 
 // requestSerializedValue returns the serialized form of an aggregated request
 // parameter, such as a JSON array, that the RPC client may emit under a single
-// key or under indexed dotted keys. It joins every matching value so a test can
-// assert on the document instead of guessing the transport shape.
+// key or under indexed dotted keys. It joins every matching "key=value" pair so
+// a test can assert on the document and the key names instead of guessing the
+// transport shape.
 func requestSerializedValue(request map[string]string, key string) string {
 	var parts []string
 	for name, value := range request {
 		if name == key || strings.HasPrefix(name, key+".") {
-			parts = append(parts, value)
+			parts = append(parts, name+"="+value)
 		}
 	}
 	return strings.Join(parts, ",")
@@ -276,7 +277,7 @@ func TestUnitScalingConfigurationCreateRequestMatrix(t *testing.T) {
 		if got := request["PrivatePoolOptions.Id"]; got != "pp-unit-test" {
 			t.Fatalf("PrivatePoolOptions.Id = %q, expected pp-unit-test", got)
 		}
-		if got := request["SchedulerOptions"]; !strings.Contains(got, "mps-unit-test") {
+		if got := requestSerializedValue(request, "SchedulerOptions"); !strings.Contains(got, "mps-unit-test") {
 			t.Fatalf("SchedulerOptions = %q, expected the managed private space id", got)
 		}
 	})
@@ -528,7 +529,7 @@ func TestUnitScalingConfigurationRequestSerializedValue(t *testing.T) {
 		"DataDisk.1.Categories.1": "cloud",
 		"Tags":                    "{}",
 	}
-	if got := requestSerializedValue(request, "DataDisk"); !strings.Contains(got, "DataDisk.1.Size") {
+	if got := requestSerializedValue(request, "DataDisk"); !strings.Contains(got, "DataDisk.1.Size=20") {
 		t.Fatalf("requestSerializedValue = %q, expected the indexed keys", got)
 	}
 	if got := requestSerializedValue(request, "Missing"); got != "" {
