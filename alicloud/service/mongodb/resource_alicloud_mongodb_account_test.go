@@ -89,7 +89,7 @@ func TestAccAliCloudMongoDBAccount_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password"},
+				ImportStateVerifyIgnore: []string{"account_password", "force_destroy", "privilege_reset_type"},
 			},
 		},
 	})
@@ -454,7 +454,7 @@ func TestAccAliCloudMongodbAccount_basic9243(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password"},
+				ImportStateVerifyIgnore: []string{"account_password", "force_destroy", "privilege_reset_type"},
 			},
 		},
 	})
@@ -569,7 +569,7 @@ func TestAccAliCloudMongodbAccount_basic8763(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password"},
+				ImportStateVerifyIgnore: []string{"account_password", "force_destroy", "privilege_reset_type"},
 			},
 		},
 	})
@@ -632,29 +632,31 @@ resource "alicloud_mongodb_instance" "default7eOftZ" {
 func TestAccAliCloudMongoDBAccount_governance(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_account.default"
-	acctest.CheckoutSupportedRegions(t, true, connectivity.MongoDBSupportRegions)
-	ra := acctest.ResourceAttrInit(resourceId, AlicloudMongoDBAccountMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudMongodbAccountMap9243)
 	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return mongodb.NewMongodbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMongodbAccount")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smongodbaccountgov%d", acctest.DefaultRegionToTest, rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMongoDBAccountBasicDependence0)
+	name := fmt.Sprintf("tf_testaccgov%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMongodbAccountBasicDependence9243)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 			acctest.PreCheck(t)
 		},
 		ProviderFactories: acctest.SDKProviderFactories,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
+				// The root account only accepts ResetType=update with empty Roles,
+				// so privilege management is exercised on a shard account.
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":          "${alicloud_mongodb_instance.default.id}",
-					"account_name":         "root",
-					"account_password":     "YourPassword+12345",
-					"account_description":  "${var.name}",
+					"instance_id":          "${alicloud_mongodb_sharding_instance.default7eOftZ.id}",
+					"account_name":         name,
+					"account_password":     "qwer1234!!!",
+					"character_type":       "db",
 					"force_destroy":        true,
 					"privilege_reset_type": "update",
 					"privilege": []map[string]interface{}{
@@ -666,7 +668,8 @@ func TestAccAliCloudMongoDBAccount_governance(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_name": "root",
+						"account_name":   name,
+						"character_type": "db",
 					}),
 				),
 			},
