@@ -96,8 +96,13 @@ type titleFile struct {
 	added bool
 	// testcase, docs and service mirror the file classification the
 	// previous title gates applied; flat marks an alicloud flat source
-	// file.
-	testcase, docs, service, flat bool
+	// file. public marks a non-test provider runtime Go file under
+	// alicloud/ that is neither a service source nor a flat entity file
+	// (connectivity client, provider.go, shared helpers): it carries no
+	// registered entity, but like service and flat it clears the docs-only
+	// and testcase-only states so a runtime fix is not forced into a docs
+	// or testcase title when it touches test or docs files alongside.
+	testcase, docs, service, flat, public bool
 	// entities are the registered entities the file implements; an empty
 	// list means the title gate has nothing to demand for it.
 	entities []entity
@@ -160,28 +165,36 @@ func parseNameStatus(out string) []titleFile {
 			continue
 		}
 		tf := titleFile{name: fields[len(fields)-1], added: fields[0] == "A"}
-		tf.testcase, tf.docs, tf.service, tf.flat = classify(tf.name)
+		tf.testcase, tf.docs, tf.service, tf.flat, tf.public = classify(tf.name)
 		files = append(files, tf)
 	}
 	return files
 }
 
 // classify mirrors the classification order of the previous title gates:
-// test files first, then docs, service sources and flat sources.
-func classify(name string) (testcase, docs, service, flat bool) {
+// test files first, then docs, service sources, flat sources and public
+// runtime sources. A non-test .go file under alicloud/ that is neither a
+// service source nor a flat entity file is public runtime code: it carries
+// no entity, but it clears the docs-only and testcase-only states so a
+// runtime fix mixed with test or docs changes is not forced into a
+// testcase: or docs: prefix.
+func classify(name string) (testcase, docs, service, flat, public bool) {
 	if strings.HasSuffix(name, "_test.go") {
-		return true, false, false, false
+		return true, false, false, false, false
 	}
 	if strings.HasPrefix(name, "website/docs") {
-		return false, true, false, false
+		return false, true, false, false, false
 	}
 	if _, split := splitlayout.ServiceProduct(name); split && strings.HasSuffix(name, ".go") {
-		return false, false, true, false
+		return false, false, true, false, false
 	}
 	if strings.HasPrefix(name, "alicloud/resource_alicloud") || strings.HasPrefix(name, "alicloud/data_source_alicloud") {
-		return false, false, false, true
+		return false, false, false, true, false
 	}
-	return false, false, false, false
+	if strings.HasPrefix(name, "alicloud/") && strings.HasSuffix(name, ".go") {
+		return false, false, false, false, true
+	}
+	return false, false, false, false, false
 }
 
 // resolveEntities joins each classified source file to the entities it
@@ -542,7 +555,7 @@ func checkTitle(prTitle string, files []titleFile) bool {
 		case file.docs:
 			docsChanged = true
 			testcaseOnly = false
-		case file.service, file.flat:
+		case file.service, file.flat, file.public:
 			docsOnly = false
 			testcaseOnly = false
 		}

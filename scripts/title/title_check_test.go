@@ -23,6 +23,16 @@ func serviceFile(name string, entities ...entity) titleFile {
 	return titleFile{name: name, service: true, entities: entities}
 }
 
+// publicFile builds a public titleFile: a non-test, non-service, non-flat
+// production Go file under alicloud/ (e.g. alicloud/connectivity/client.go,
+// alicloud/provider.go, alicloud/common.go). Such files implement no
+// registered provider entity, so they carry no entities, but they are
+// production code and must clear the docsOnly/testcaseOnly flags just like
+// service and flat files.
+func publicFile(name string, added bool) titleFile {
+	return titleFile{name: name, added: added, public: true}
+}
+
 // ent builds one entity carrying the kind, existing state and product the
 // kind-aware serviceEntities derivation would produce. The aggregate waiver
 // tests use it to exercise parseAggregate/checkTitle logic; the kind-collision
@@ -121,6 +131,57 @@ func TestCheckTitleServiceSourcesWithoutEntitiesImposeNoRequirement(t *testing.T
 	}
 }
 
+// C-18 regression: a public non-test production Go file under alicloud/ that
+// is neither a flat resource/data source nor a service source (e.g.
+// alicloud/connectivity/client.go, alicloud/provider.go, alicloud/common.go)
+// must clear the docsOnly and testcaseOnly flags the way service and flat
+// files do. Before the fix, classify returned all-false for such files, so a
+// connectivity runtime fix mixed with a test or docs change was wrongly
+// treated as testcase-only or docs-only and rejected without a testcase:/docs:
+// prefix.
+func TestCheckTitlePublicRuntimeClearsTestcaseOnly(t *testing.T) {
+	// connectivity runtime fix + a test file: normal title must pass.
+	files := []titleFile{
+		publicFile("alicloud/connectivity/client.go", true),
+		{name: "alicloud/connectivity/client_test.go", testcase: true},
+	}
+	if !checkTitle("fix: retry connectivity client on transient dns error", files) {
+		t.Error("checkTitle(public runtime + testcase) failed, want pass without testcase: prefix")
+	}
+}
+
+func TestCheckTitlePublicRuntimeClearsDocsOnly(t *testing.T) {
+	// connectivity runtime fix + a docs file: normal title must pass.
+	files := []titleFile{
+		publicFile("alicloud/connectivity/client.go", true),
+		{name: "website/docs/d/connectivity.html.markdown", docs: true},
+	}
+	if !checkTitle("fix: retry connectivity client on transient dns error", files) {
+		t.Error("checkTitle(public runtime + docs) failed, want pass without docs: prefix")
+	}
+}
+
+func TestCheckTitlePublicRuntimeAlonePasses(t *testing.T) {
+	// A single public runtime fix needs no entity announcement and no prefix.
+	files := []titleFile{publicFile("alicloud/provider.go", true)}
+	if !checkTitle("refactor: hoist provider meta into a shared helper", files) {
+		t.Error("checkTitle(public runtime alone) failed, want pass")
+	}
+}
+
+func TestCheckTitlePublicRuntimeWithDocsAndTestcasePasses(t *testing.T) {
+	// public runtime + docs + testcase combination: production code clears
+	// both only-flags, so a normal title must pass.
+	files := []titleFile{
+		publicFile("alicloud/common.go", true),
+		{name: "website/docs/d/common.html.markdown", docs: true},
+		{name: "alicloud/resource_alicloud_common_test.go", testcase: true},
+	}
+	if !checkTitle("fix: deduplicate common retry backoff", files) {
+		t.Error("checkTitle(public runtime + docs + testcase) failed, want pass")
+	}
+}
+
 func TestCheckTitleRequiresServiceEntityInTitle(t *testing.T) {
 	files := []titleFile{serviceFile("alicloud/service/ims/resource_user.go",
 		entity{typeName: "alicloud_ims_user"})}
@@ -193,18 +254,20 @@ func TestParseNameStatus(t *testing.T) {
 }
 
 func TestClassify(t *testing.T) {
-	cases := map[string][4]bool{
-		"alicloud/data_source_alicloud_common.go":                     {false, false, false, true},
-		"alicloud/service/cloudauth/data_source_face_configs_test.go": {true, false, false, false},
-		"alicloud/service/cloudauth/register.go":                      {false, false, true, false},
-		"alicloud/service/cloudauth/data_source_face_configs.go":      {false, false, true, false},
-		"website/docs/d/cloudauth_face_configs.html.markdown":         {false, true, false, false},
-		"alicloud/provider.go":                                        {false, false, false, false},
-		"scripts/internal/splitlayout/splitlayout.go":                 {false, false, false, false},
+	cases := map[string][5]bool{
+		"alicloud/data_source_alicloud_common.go":                     {false, false, false, true, false},
+		"alicloud/service/cloudauth/data_source_face_configs_test.go": {true, false, false, false, false},
+		"alicloud/service/cloudauth/register.go":                      {false, false, true, false, false},
+		"alicloud/service/cloudauth/data_source_face_configs.go":      {false, false, true, false, false},
+		"website/docs/d/cloudauth_face_configs.html.markdown":         {false, true, false, false, false},
+		"alicloud/provider.go":                                        {false, false, false, false, true},
+		"alicloud/connectivity/client.go":                             {false, false, false, false, true},
+		"alicloud/common.go":                                          {false, false, false, false, true},
+		"scripts/internal/splitlayout/splitlayout.go":                 {false, false, false, false, false},
 	}
 	for name, want := range cases {
-		got := [4]bool{}
-		got[0], got[1], got[2], got[3] = classify(name)
+		got := [5]bool{}
+		got[0], got[1], got[2], got[3], got[4] = classify(name)
 		if got != want {
 			t.Errorf("classify(%s) = %+v, want %+v", name, got, want)
 		}
@@ -490,7 +553,7 @@ func ServicePackage() conns.ServicePackage { return conns.ServicePackage{
 	if err := os.WriteFile(path, []byte("package core; func DataSourceAccount() {}"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	_, _, split, flat := classify(path)
+	_, _, split, flat, _ := classify(path)
 	if !split || flat {
 		t.Fatal("core implementation bypassed entity title checks")
 	}
