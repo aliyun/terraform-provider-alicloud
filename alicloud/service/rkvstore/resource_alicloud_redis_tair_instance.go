@@ -276,9 +276,10 @@ func ResourceAliCloudRedisTairInstance() *schema.Resource {
 				Computed: true,
 			},
 			"replica_count": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.IntBetween(1, 4),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -939,9 +940,7 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		if slaveErr != nil {
 			return errs.WrapErrorf(slaveErr, errs.DefaultErrorMsg, d.Id(), "ModifyInstanceSpec", errs.AlibabaCloudSdkGoERROR)
 		}
-		redisServiceV2 := RedisServiceV2{client}
-		stateConf := helper.BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "$.IsOrderCompleted", []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
+		if err := waitTairInstanceSpecApplied(d, RedisServiceV2{client}, slaveRequest); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 		return nil
@@ -1023,9 +1022,7 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		redisServiceV2 := RedisServiceV2{client}
-		stateConf := helper.BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "$.IsOrderCompleted", []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
+		if err := waitTairInstanceSpecApplied(d, RedisServiceV2{client}, request); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
@@ -1989,4 +1986,90 @@ func buildRedisTairInstanceSlaveReplicaCountRequest(instanceId, regionId, client
 		request["OrderType"] = orderType
 	}
 	return request
+}
+
+// tairInstanceSpecAppliedAttributes returns the attributes of a ModifyInstanceSpec request
+// whose applied value DescribeInstanceAttribute reports. IsOrderCompleted stays true after a
+// completed order, so comparing these values is what separates the submitted order from the
+// previous one when the first poll happens before the new order is registered.
+func tairInstanceSpecAppliedAttributes(d *schema.ResourceData, request map[string]interface{}) map[string]interface{} {
+	expected := map[string]interface{}{}
+	if v, ok := request["ReplicaCount"].(int); ok && d.HasChange("replica_count") {
+		expected["ReplicaCount"] = v
+	}
+	if v, ok := request["SlaveReplicaCount"].(int); ok && d.HasChange("slave_replica_count") {
+		expected["SlaveReplicaCount"] = v
+	}
+	if v, ok := request["Storage"].(int); ok && d.HasChange("storage_size_gb") {
+		expected["Storage"] = v
+	}
+	if v, ok := request["InstanceClass"].(string); ok && v != "" && d.HasChange("instance_class") {
+		expected["RealInstanceClass"] = v
+	}
+	if v, ok := request["StorageType"].(string); ok && v != "" && d.HasChange("storage_performance_level") {
+		expected["StorageType"] = v
+	}
+	return expected
+}
+
+// tairInstanceAttributesApplied reports whether the response carries every compared attribute
+// with the requested value. An attribute the response does not carry is not compared.
+func tairInstanceAttributesApplied(object map[string]interface{}, expected map[string]interface{}) bool {
+	for field, want := range expected {
+		value := object[field]
+		if value == nil {
+			continue
+		}
+		switch wanted := want.(type) {
+		case int:
+			actual, err := convert.FormatInt(value)
+			if err != nil || actual != wanted {
+				return false
+			}
+		case string:
+			if fmt.Sprint(value) != wanted {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// waitTairInstanceSpecApplied waits until the order submitted by ModifyInstanceSpec is applied.
+// Waiting on IsOrderCompleted alone has an early-release window: the flag remains true from the
+// previous order until the new one is registered, so a poll taken right after the request can
+// release the update before the change happens. A specification change therefore also requires
+// the applied values to be visible. A deferred change (EffectiveTime=MaintainTime or
+// ForceUpgrade=false) is not observable in the instance attributes right away and only waits for
+// the order status.
+func waitTairInstanceSpecApplied(d *schema.ResourceData, service RedisServiceV2, request map[string]interface{}) error {
+	expected := tairInstanceSpecAppliedAttributes(d, request)
+	deferred := false
+	if v, ok := request["EffectiveTime"].(string); ok && v == "MaintainTime" {
+		deferred = true
+	}
+	if v, ok := request["ForceUpgrade"].(bool); ok && !v {
+		deferred = true
+	}
+	if deferred || len(expected) == 0 {
+		stateConf := helper.BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, service.RedisTairInstanceStateRefreshFunc(d.Id(), "$.IsOrderCompleted", []string{}))
+		_, err := stateConf.WaitForState()
+		return err
+	}
+	refresh := func() (interface{}, string, error) {
+		object, err := service.DescribeRedisTairInstance(d.Id())
+		if err != nil {
+			if errs.NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+		if fmt.Sprint(object["IsOrderCompleted"]) != "true" || !tairInstanceAttributesApplied(object, expected) {
+			return object, "pending", nil
+		}
+		return object, "true", nil
+	}
+	stateConf := helper.BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, refresh)
+	_, err := stateConf.WaitForState()
+	return err
 }

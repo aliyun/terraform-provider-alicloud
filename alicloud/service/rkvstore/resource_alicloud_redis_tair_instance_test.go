@@ -229,6 +229,12 @@ data "alicloud_kvstore_zones" "default" {
   product_type = "Tair_rdb"
 }
 
+data "alicloud_kvstore_instance_classes" "rdb" {
+  zone_id              = data.alicloud_kvstore_zones.default.zones.0.id
+  product_type         = "Tair_rdb"
+  instance_charge_type = "PostPaid"
+}
+
 data "alicloud_vpcs" "default" {
   name_regex = "default-NODELETING"
 }
@@ -249,6 +255,7 @@ resource "alicloud_vswitch" "this" {
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
   zone_id = data.alicloud_kvstore_zones.default.zones.0.id
+  rdb_class = data.alicloud_kvstore_instance_classes.rdb.instance_classes.0
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -3857,11 +3864,15 @@ func TestAccAliCloudRedisTairInstance_elastic_burst(t *testing.T) {
 	})
 }
 
+// tairInstanceImportStateVerifyIgnore lists the arguments an import cannot recover: write-only
+// arguments and creation-only options that DescribeInstanceAttribute does not return.
+var tairInstanceImportStateVerifyIgnore = []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"}
+
 // TestAccAliCloudRedisTairInstance_propertyCompleteness covers the CreateTairInstance
 // parameters and the in-place ModifyInstanceSpec storage change. The prepaid conversion
-// (TransformInstanceChargeType) is not exercised here because creating a prepaid order
-// requires an account balance the acceptance test account does not have; the coupon
-// parameter of that request is covered by TestUnitRedisTairInstanceOrderTypeAndCouponRequests.
+// (TransformInstanceChargeType) and its coupon parameter are covered by
+// TestAccAliCloudRedisTairInstance_prepaidCouponConversion and
+// TestUnitRedisTairInstanceOrderTypeAndCouponRequests.
 func TestAccAliCloudRedisTairInstance_propertyCompleteness(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_redis_tair_instance.default"
@@ -3915,6 +3926,14 @@ func TestAccAliCloudRedisTairInstance_propertyCompleteness(t *testing.T) {
 				),
 			},
 			{
+				// Verify the import after every step, not only at the end: an import must reflect
+				// the state the preceding step applied.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
+			},
+			{
 				// storage_performance_level and storage_size_gb now go through ModifyInstanceSpec
 				// instead of forcing a new instance. PL2 requires an 8C class and a storage size
 				// between 470 and 1000 GB, so the class and size are scaled up in the same request.
@@ -3934,6 +3953,12 @@ func TestAccAliCloudRedisTairInstance_propertyCompleteness(t *testing.T) {
 						"maintain_end_time":         "07:00Z",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
 			},
 			{
 				// A storage size change without a performance level change must still send
@@ -4019,6 +4044,7 @@ func TestAccAliCloudRedisTairInstance_replicaCount(t *testing.T) {
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependenceReplicaCount)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, connectivity.RedisTariInstanceSupportRegions)
 			acctest.PreCheck(t)
 		},
 		ProviderFactories: acctest.SDKProviderFactories,
@@ -4051,6 +4077,12 @@ func TestAccAliCloudRedisTairInstance_replicaCount(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"replica_count": "2",
 				}),
@@ -4060,6 +4092,12 @@ func TestAccAliCloudRedisTairInstance_replicaCount(t *testing.T) {
 						"slave_replica_count": "1",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
 			},
 			{
 				// The secondary zone replica count is applied in its own request after the
@@ -4073,6 +4111,12 @@ func TestAccAliCloudRedisTairInstance_replicaCount(t *testing.T) {
 						"slave_replica_count": "2",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
 			},
 			{
 				// Both replica counts change in this step; the provider applies them in two
@@ -4148,8 +4192,74 @@ locals {
 
 // tairInstanceUpdateFixtureClient serves the RPC calls of resourceAliCloudRedisTairInstanceUpdate
 // from an in-process HTTP fixture. Every ModifyInstanceSpec request is captured in arrival
-// order, and the describe call used by the state waiter reports a completed order.
+// order, and the describe call used by the state waiter reports a completed order together with
+// the specification the last request asked for, so a waiter that compares the applied values
+// converges while one that only reads IsOrderCompleted would release early.
 func tairInstanceUpdateFixtureClient(t *testing.T, requests *[]map[string]string) *connectivity.AliyunClient {
+	t.Helper()
+	applied := map[string]string{
+		"ReplicaCount":      "1",
+		"SlaveReplicaCount": "1",
+		"RealInstanceClass": "tair.rdb.2g",
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstanceAttribute":
+			fields := []string{`"InstanceId":"r-tftest"`, `"InstanceStatus":"Normal"`, `"IsOrderCompleted":"true"`}
+			for key, value := range applied {
+				if key == "RealInstanceClass" || key == "StorageType" {
+					fields = append(fields, fmt.Sprintf("%q:%q", key, value))
+					continue
+				}
+				fields = append(fields, fmt.Sprintf("%q:%s", key, value))
+			}
+			fmt.Fprint(w, `{"RequestId":"mock","Instances":{"DBInstanceAttribute":[{`+strings.Join(fields, ",")+`}]}}`)
+		case "ModifyInstanceSpec":
+			captured := map[string]string{}
+			for _, key := range []string{"ReplicaCount", "SlaveReplicaCount", "InstanceClass", "ForceUpgrade", "EffectiveTime", "Storage", "StorageType", "OrderType", "NodeType", "ReadOnlyCount", "SlaveReadOnlyCount"} {
+				if values, ok := r.Form[key]; ok && len(values) > 0 {
+					captured[key] = values[0]
+				}
+			}
+			*requests = append(*requests, captured)
+			for _, key := range []string{"ReplicaCount", "SlaveReplicaCount", "Storage", "InstanceClass", "StorageType"} {
+				value, ok := captured[key]
+				if !ok {
+					continue
+				}
+				if key == "InstanceClass" {
+					applied["RealInstanceClass"] = value
+					continue
+				}
+				applied[key] = value
+			}
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		case "TransformInstanceChargeType":
+			captured := map[string]string{}
+			for _, key := range []string{"ChargeType", "Period", "CouponNo", "AutoPay"} {
+				if values, ok := r.Form[key]; ok && len(values) > 0 {
+					captured[key] = values[0]
+				}
+			}
+			*requests = append(*requests, captured)
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			// Update ends with a Read; the auxiliary describes accept an empty payload.
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	return newTairInstanceFixtureClient(t, server)
+}
+
+// tairInstanceStaleOrderFixtureClient reports the previous order as completed together with the
+// old replica count on the first describe after a ModifyInstanceSpec, like the API does until the
+// new order is registered, and reports the requested count afterwards.
+func tairInstanceStaleOrderFixtureClient(t *testing.T, requests *[]map[string]string, describes *int) *connectivity.AliyunClient {
 	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
@@ -4159,31 +4269,51 @@ func tairInstanceUpdateFixtureClient(t *testing.T, requests *[]map[string]string
 		w.Header().Set("Content-Type", "application/json")
 		switch r.Form.Get("Action") {
 		case "DescribeInstanceAttribute":
-			fmt.Fprint(w, `{"RequestId":"test","Instances":{"DBInstanceAttribute":[{"InstanceId":"r-tftest","InstanceStatus":"Normal","IsOrderCompleted":"true","ReplicaCount":2,"SlaveReplicaCount":2}]}}`)
+			*describes++
+			replicaCount := 1
+			if *describes > 1 {
+				replicaCount = 2
+			}
+			fmt.Fprintf(w, `{"RequestId":"mock","Instances":{"DBInstanceAttribute":[{"InstanceId":"r-tftest","InstanceStatus":"Normal","IsOrderCompleted":"true","ReplicaCount":%d}]}}`, replicaCount)
 		case "ModifyInstanceSpec":
 			captured := map[string]string{}
-			for _, key := range []string{"ReplicaCount", "SlaveReplicaCount", "InstanceClass", "ForceUpgrade", "EffectiveTime", "Storage", "StorageType", "OrderType", "NodeType", "ReadOnlyCount", "SlaveReadOnlyCount"} {
+			for _, key := range []string{"ReplicaCount"} {
 				if values, ok := r.Form[key]; ok && len(values) > 0 {
 					captured[key] = values[0]
 				}
 			}
 			*requests = append(*requests, captured)
-			fmt.Fprint(w, `{"RequestId":"test"}`)
-		case "TransformInstanceChargeType":
-			captured := map[string]string{}
-			for _, key := range []string{"ChargeType", "Period", "CouponNo", "AutoPay"} {
-				if values, ok := r.Form[key]; ok && len(values) > 0 {
-					captured[key] = values[0]
-				}
-			}
-			*requests = append(*requests, captured)
-			fmt.Fprint(w, `{"RequestId":"test"}`)
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
 		default:
-			// Update ends with a Read; the auxiliary describes accept an empty payload.
-			fmt.Fprint(w, `{"RequestId":"test"}`)
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
 		}
 	}))
 	return newTairInstanceFixtureClient(t, server)
+}
+
+// TestUnitRedisTairInstanceWaitsForAppliedSpec covers the early-release window of the order
+// waiter: the fixture reports IsOrderCompleted=true with the old replica count for the first
+// describe after the request, so an update that only reads the flag would return before the new
+// value is visible.
+func TestUnitRedisTairInstanceWaitsForAppliedSpec(t *testing.T) {
+	var requests []map[string]string
+	describes := 0
+	client := tairInstanceStaleOrderFixtureClient(t, &requests, &describes)
+	d := tairInstanceUpdateFixtureData(t,
+		map[string][2]string{"replica_count": {"1", "2"}},
+		map[string]cty.Value{
+			"config":         cty.NullVal(cty.Map(cty.String)),
+			"instance_class": cty.StringVal("tair.rdb.2g"),
+			"replica_count":  cty.NumberIntVal(2),
+		},
+		nil)
+
+	if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
+		t.Fatalf("update failed: %v", err)
+	}
+	assert.Len(t, requests, 1)
+	assert.Equal(t, "2", requests[0]["ReplicaCount"])
+	assert.GreaterOrEqual(t, describes, 3, "the update must not release on the stale completed-order flag")
 }
 
 // newTairInstanceFixtureClient builds a client pointed at an in-process fixture server so
@@ -4918,7 +5048,7 @@ func tairInstanceTransformRetryFixtureClient(t *testing.T, requests *[]map[strin
 		w.Header().Set("Content-Type", "application/json")
 		switch r.Form.Get("Action") {
 		case "DescribeInstanceAttribute":
-			fmt.Fprint(w, `{"RequestId":"test","Instances":{"DBInstanceAttribute":[{"InstanceId":"r-tftest","InstanceStatus":"Normal","IsOrderCompleted":"true"}]}}`)
+			fmt.Fprint(w, `{"RequestId":"mock","Instances":{"DBInstanceAttribute":[{"InstanceId":"r-tftest","InstanceStatus":"Normal","IsOrderCompleted":"true"}]}}`)
 		case "TransformInstanceChargeType":
 			transformCalls++
 			captured := map[string]string{}
@@ -4930,12 +5060,12 @@ func tairInstanceTransformRetryFixtureClient(t *testing.T, requests *[]map[strin
 			*requests = append(*requests, captured)
 			if transformCalls == 1 {
 				w.WriteHeader(http.StatusBadRequest)
-				fmt.Fprint(w, `{"Code":"Order.LatestOrderIsHanding","Message":"the previous order is still processing","RequestId":"test"}`)
+				fmt.Fprint(w, `{"Code":"Order.LatestOrderIsHanding","Message":"the previous order is still processing","RequestId":"mock"}`)
 				return
 			}
-			fmt.Fprint(w, `{"RequestId":"test"}`)
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
 		default:
-			fmt.Fprint(w, `{"RequestId":"test"}`)
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
 		}
 	}))
 	return newTairInstanceFixtureClient(t, server)
@@ -4986,7 +5116,7 @@ func tairInstanceCreateFixtureClient(t *testing.T, requests *[]map[string]string
 			*requests = append(*requests, captured)
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, `{"Code":"InvalidParameter","Message":"fixture rejects the request","RequestId":"test"}`)
+		fmt.Fprint(w, `{"Code":"InvalidParameter","Message":"fixture rejects the request","RequestId":"mock"}`)
 	}))
 	return newTairInstanceFixtureClient(t, server)
 }
@@ -5211,6 +5341,56 @@ func TestUnitRedisTairInstanceCreateThenUpdate(t *testing.T) {
 	assert.Empty(t, requests, "a new resource must not send ModifyInstanceSpec or run the existing-instance order direction validation")
 }
 
+// captureTairInstanceId stores the created instance ID so a prepaid test can release it even
+// when a step fails before the test converts the instance back to pay-as-you-go.
+func captureTairInstanceId(target *string, object *map[string]interface{}) resource.TestCheckFunc {
+	return func(*terraform.State) error {
+		if object == nil || *object == nil {
+			return nil
+		}
+		if id, ok := (*object)["InstanceId"].(string); ok {
+			*target = id
+		}
+		return nil
+	}
+}
+
+// releasePrepaidTairInstance releases an instance left behind by a failed step. A Subscription
+// instance cannot be deleted directly, so a leftover is converted back to pay-as-you-go first.
+// Failures are logged and never replace the original test failure.
+func releasePrepaidTairInstance(t *testing.T, instanceId string) {
+	if instanceId == "" {
+		return
+	}
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	service := rkvstore.NewRedisServiceV2(client)
+	object, err := service.DescribeRedisTairInstance(instanceId)
+	if err != nil {
+		if !errs.NotFoundError(err) {
+			t.Logf("cleanup: describe %s: %s", instanceId, err)
+		}
+		return
+	}
+	if fmt.Sprint(object["ChargeType"]) == "PrePaid" {
+		request := map[string]interface{}{"InstanceId": instanceId, "RegionId": client.RegionId, "ChargeType": "PostPaid", "AutoPay": "true"}
+		if _, err := client.RpcPost("R-kvstore", "2015-01-01", "TransformInstanceChargeType", nil, request, true); err != nil {
+			t.Logf("cleanup: convert %s back to pay-as-you-go: %s", instanceId, err)
+			return
+		}
+		stateConf := helper.BuildStateConf([]string{}, []string{"true"}, 30*time.Minute, 10*time.Second, service.RedisTairInstanceStateRefreshFunc(instanceId, "$.IsOrderCompleted", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			t.Logf("cleanup: wait for the conversion of %s: %s", instanceId, err)
+			return
+		}
+	}
+	request := map[string]interface{}{"InstanceId": instanceId, "RegionId": client.RegionId}
+	if _, err := client.RpcPost("R-kvstore", "2015-01-01", "DeleteInstance", nil, request, true); err != nil && !errs.NotFoundError(err) {
+		t.Logf("cleanup: delete %s: %s", instanceId, err)
+		return
+	}
+	t.Logf("cleanup: released instance %s", instanceId)
+}
+
 func TestAccAliCloudRedisTairInstance_prepaidCouponConversion(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_redis_tair_instance.default"
@@ -5223,8 +5403,11 @@ func TestAccAliCloudRedisTairInstance_prepaidCouponConversion(t *testing.T) {
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", acctest.DefaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependence3314)
+	var instanceId string
+	t.Cleanup(func() { releasePrepaidTairInstance(t, instanceId) })
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, connectivity.RedisTariInstanceSupportRegions)
 			acctest.PreCheck(t)
 		},
 		ProviderFactories: acctest.SDKProviderFactories,
@@ -5235,7 +5418,7 @@ func TestAccAliCloudRedisTairInstance_prepaidCouponConversion(t *testing.T) {
 					"payment_type":       "PayAsYouGo",
 					"instance_type":      "tair_rdb",
 					"zone_id":            "${local.zone_id}",
-					"instance_class":     "tair.rdb.2g",
+					"instance_class":     "${local.rdb_class}",
 					"shard_count":        "2",
 					"vswitch_id":         "${local.vswitch_id}",
 					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
@@ -5244,10 +5427,17 @@ func TestAccAliCloudRedisTairInstance_prepaidCouponConversion(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":   "PayAsYouGo",
-						"instance_class": "tair.rdb.2g",
+						"instance_class": acctest.CHECKSET,
 						"shard_count":    "2",
 					}),
+					captureTairInstanceId(&instanceId, &v),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
 			},
 			{
 				// E-02 forward direction: converting a PayAsYouGo instance to Subscription must
@@ -5264,6 +5454,12 @@ func TestAccAliCloudRedisTairInstance_prepaidCouponConversion(t *testing.T) {
 						"coupon_no":    "default",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
 			},
 			{
 				// E-02 reverse direction: converting back to PayAsYouGo must be accepted so the
@@ -5306,8 +5502,11 @@ func TestAccAliCloudRedisTairInstance_prepaidDowngrade(t *testing.T) {
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", acctest.DefaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependenceReplicaCount)
+	var instanceId string
+	t.Cleanup(func() { releasePrepaidTairInstance(t, instanceId) })
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, connectivity.RedisTariInstanceSupportRegions)
 			acctest.PreCheck(t)
 		},
 		ProviderFactories: acctest.SDKProviderFactories,
@@ -5334,7 +5533,14 @@ func TestAccAliCloudRedisTairInstance_prepaidDowngrade(t *testing.T) {
 						"replica_count":       "2",
 						"slave_replica_count": "1",
 					}),
+					captureTairInstanceId(&instanceId, &v),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
 			},
 			{
 				// EG-01: a prepaid replica count decrease must be submitted as a DOWNGRADE
@@ -5348,6 +5554,12 @@ func TestAccAliCloudRedisTairInstance_prepaidDowngrade(t *testing.T) {
 						"slave_replica_count": "1",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
