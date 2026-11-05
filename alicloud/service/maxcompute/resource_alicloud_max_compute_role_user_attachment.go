@@ -1,0 +1,171 @@
+// Package maxcompute. This file is generated automatically. Please do not modify it manually, thank you!
+package maxcompute
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"strings"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/tidwall/sjson"
+)
+
+func resourceAliCloudMaxComputeRoleUserAttachment() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAliCloudMaxComputeRoleUserAttachmentCreate,
+		Read:   resourceAliCloudMaxComputeRoleUserAttachmentRead,
+		Delete: resourceAliCloudMaxComputeRoleUserAttachmentDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"project_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"role_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"user": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+		},
+	}
+}
+
+func resourceAliCloudMaxComputeRoleUserAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+
+	projectName := d.Get("project_name")
+	roleName := d.Get("role_name")
+	action := fmt.Sprintf("/api/v1/projects/%s/roles/%s/users", projectName, roleName)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]*string)
+	body := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+
+	jsonString := convert.ConvertObjectToJsonString(request)
+	jsonString, _ = sjson.Set(jsonString, "add.0", d.Get("user"))
+	err = json.Unmarshal([]byte(jsonString), &request)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+
+	body = request
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_max_compute_role_user_attachment", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	addVar, _ := jsonpath.Get("add[0]", request)
+	d.SetId(fmt.Sprintf("%v&%v&%v", projectName, roleName, addVar))
+
+	return resourceAliCloudMaxComputeRoleUserAttachmentRead(d, meta)
+}
+
+func resourceAliCloudMaxComputeRoleUserAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	maxComputeServiceV2 := MaxComputeServiceV2{client}
+
+	objectRaw, err := maxComputeServiceV2.DescribeMaxComputeRoleUserAttachment(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_max_compute_role_user_attachment DescribeMaxComputeRoleUserAttachment Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	if objectRaw["name"] != nil {
+		d.Set("user", objectRaw["name"])
+	}
+
+	parts := strings.Split(d.Id(), "&")
+	d.Set("project_name", parts[0])
+	d.Set("role_name", parts[1])
+
+	return nil
+}
+
+func resourceAliCloudMaxComputeRoleUserAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), "&")
+	projectName := parts[0]
+	roleName := parts[1]
+	action := fmt.Sprintf("/api/v1/projects/%s/roles/%s/users", projectName, roleName)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]*string)
+	body := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+
+	jsonString := convert.ConvertObjectToJsonString(request)
+	jsonString, _ = sjson.Set(jsonString, "remove.0", parts[2])
+	err = json.Unmarshal([]byte(jsonString), &request)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+
+	body = request
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body, true)
+
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}

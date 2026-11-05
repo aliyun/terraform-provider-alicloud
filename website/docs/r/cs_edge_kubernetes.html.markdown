@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cs_edge_kubernetes
 
--> **DEPRECATION NOTICE:** This resource has been deprecated since v1.276.0 and will be removed in a future release. Please use `alicloud_cs_managed_kubernetes` instead.
+-> **DEPRECATED:** This resource has been deprecated since v1.276.0 and will be removed in a future release. Please use `alicloud_cs_managed_kubernetes` instead.
 
 This resource will help you to manage a Edge Kubernetes Cluster in Alibaba Cloud Kubernetes Service, see [What is edge kubernetes](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/create-an-ack-edge-cluster).
 
@@ -153,7 +153,7 @@ resource "alicloud_cs_edge_kubernetes" "default" {
 
 ## Argument Reference
 
-*Global params*
+Global params
 
 * `name` - (Optional) The kubernetes cluster's name. It is unique in one Alicloud account.
 * `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
@@ -173,7 +173,7 @@ resource "alicloud_cs_edge_kubernetes" "default" {
 * `availability_zone` - (Optional) The ID of availability zone.
 * `skip_set_certificate_authority` - (Optional) Configure whether to save certificate authority data for your cluster to attribute `certificate_authority`. For cluster security, recommended configuration as `true`. Will be removed with attribute certificate_authority removed.
 
-*Network params*
+Network params
 
 * `pod_cidr` - (Optional) [Flannel Specific] The CIDR block for the pod network when using Flannel.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true. Then openapi in Alibaba Cloud are not all on intranet, So turn this option on is a good choice.
@@ -183,7 +183,7 @@ resource "alicloud_cs_edge_kubernetes" "default" {
 * `load_balancer_spec` - (Optional, Available since v1.185.0) The cluster api server load balance instance specification. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
 ->NOTE: If you want to use `Flannel` as CNI network plugin, You need to specific the `pod_cidr` field and addons with `flannel`.
 
-*Worker params*
+Worker params
 
 * `password` - (Optional, Sensitive) The password of ssh login cluster node. You have to specify one of `password`, `key_name` `kms_encrypted_password` fields.
 * `key_name` - (Optional) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
@@ -200,7 +200,7 @@ resource "alicloud_cs_edge_kubernetes" "default" {
 * `worker_disk_performance_level` - (Optional, Available since v1.120.0) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
 * `worker_disk_snapshot_policy_id` - (Optional, Available since v1.120.0) Worker node system disk auto snapshot policy.
 
-*Computed params*
+Computed params
 
 You can set some file paths to save kube_config information, but this way is cumbersome. Since version 1.105.0, we've written it to tf state file. About its use，see export attribute certificate_authority. From version 1.187.0+, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kube_config.
 
@@ -209,10 +209,9 @@ You can set some file paths to save kube_config information, but this way is cum
 * `client_key` - (Optional, Deprecated from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.client_key](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#client_key) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/client-key.pem) for replace it.
 * `cluster_ca_cert` - (Optional, Deprecated from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.cluster_cert](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#cluster_cert) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.
 
-*Removed params*
+Removed params
 
 * `log_config` - (Optional, Deprecated) A list of one element containing information about the associated log store. See [`log_config`](#log_config) below.
-* `force_update` - (Removed) Whether to force the update of kubernetes cluster arguments. Default to false.
 
 ### `addons`
 
@@ -225,14 +224,14 @@ The addons supports the following:
 
 The following example is the definition of addons block, The type of this field is list:
 
-```
+```terraform
 # install nginx ingress, conflict with SLB ingress
 addons {
   name = "nginx-ingress-controller"
   # use internet
-  config = "{\"IngressSlbNetworkType\":\"internet",\"IngressSlbSpec\":\"slb.s2.small\"}"
+  config = "{\"IngressSlbNetworkType\":\"internet\",\"IngressSlbSpec\":\"slb.s2.small\"}"
   # if use intranet, detail below.
-  # config = "{\"IngressSlbNetworkType\":\"intranet",\"IngressSlbSpec\":\"slb.s2.small\"}"
+  # config = "{\"IngressSlbNetworkType\":\"intranet\",\"IngressSlbSpec\":\"slb.s2.small\"}"
 }
 ```
 
@@ -264,11 +263,11 @@ The log_config supports the following:
 
 The following example is the definition of runtime block:
 
-```
-  runtime = {
-    name = "containerd"
-    version = "1.6.28"
-  }
+```terraform
+runtime = {
+  name    = "containerd"
+  version = "1.6.28"
+}
 ```
 
 ## Attributes Reference
@@ -279,6 +278,7 @@ The following attributes are exported:
 * `vpc_id` - The ID of VPC where the current cluster is located.
 * `slb_intranet` - The ID of private load balancer where the current cluster master node is located.
 * `slb_internet` - The public ip of load balancer.
+* `slb_id` - The ID of APIServer load balancer.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
 * `worker_nodes` - List of cluster worker nodes.
   * `id` - ID of the node.

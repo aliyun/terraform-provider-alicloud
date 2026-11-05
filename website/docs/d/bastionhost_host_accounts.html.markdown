@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Bastionhost Host Accounts of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.135.0+.
+-> **NOTE:** Available since v1.135.0.
 
 ## Example Usage
 
@@ -50,17 +50,17 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `protocol_name` - (Optional, ForceNew) Specify the new hosting account of the agreement name. Valid values: USING SSH and RDP.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Host Account names.
 * `accounts` - A list of Bastionhost Host Accounts. Each element contains the following attributes:
-	* `has_password` - Whether to set a new password.
-	* `host_account_id` - Hosting account ID.
-	* `host_account_name` - Specify the new hosting account's name, support the longest 128 characters.
-	* `host_id` - Specifies the database where you want to create your hosting account's host ID.
-	* `id` - The ID of the Host Account.
-	* `instance_id` - Specifies the database where you want to create your hosting account's host bastion host ID of.
-	* `private_key_fingerprint` - The situation where the private keys of the fingerprint information.
-	* `protocol_name` - Specify the new hosting account of the agreement name. Valid values: USING SSH and RDP.
+  * `has_password` - Whether to set a new password.
+  * `host_account_id` - Hosting account ID.
+  * `host_account_name` - Specify the new hosting account's name, support the longest 128 characters.
+  * `host_id` - Specifies the database where you want to create your hosting account's host ID.
+  * `id` - The ID of the Host Account.
+  * `instance_id` - Specifies the database where you want to create your hosting account's host bastion host ID of.
+  * `private_key_fingerprint` - The situation where the private keys of the fingerprint information.
+  * `protocol_name` - Specify the new hosting account of the agreement name. Valid values: USING SSH and RDP.

@@ -414,7 +414,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
 
 The following arguments are supported:
 
-*Global params*
+Global params
 
 * `name` - (Optional) The kubernetes cluster's name. It is unique in one Alicloud account.
 * `zone_ids` - (Optional, Available since v1.243.0) The IDs of the zone in which the cluster control plane is deployed. ACK automatically creates a VPC in the region and vSwitches in the specified zones. Only works for **Create** Operation. Do not specify this with `vswitch_ids` together.
@@ -493,7 +493,7 @@ Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes com
 
   -> **NOTE:** This parameter only applies during resource update.
 
-*Network params*
+Network params
 
 * `pod_cidr` - (Optional, ForceNew) - [Flannel Specific] The CIDR block for the pod network when using Flannel.
 * `pod_vswitch_ids` - (Optional) - [Terway Specific] The vswitches for the pod network when using Terway. It is recommended that `pod_vswitch_ids` is not belong to `vswitch_ids` but must be in same availability zones. Only works for **Create** Operation. 
@@ -508,52 +508,11 @@ Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes com
   -> **NOTE:** If you want to use `Terway` as CNI network plugin, You need to specify the `pod_vswitch_ids` field and addons with `terway-eniip`.
   If you want to use `Flannel` as CNI network plugin, You need to specify the `pod_cidr` field and addons with `flannel`.
 
-*Computed params*
+Computed params
 
 * `client_cert` - (Optional, Deprecated  from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.client_cert](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#client_cert) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/client-cert.pem) for replace it.
 * `client_key` - (Optional, Deprecated  from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.client_key](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#client_key) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/client-key.pem) for replace it.
 * `cluster_ca_cert` - (Optional, Deprecated  from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.cluster_cert](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#cluster_cert) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.
-
-*Removed params*
-
-* `worker_instance_type` - (Removed from version 1.16.0) The instance type of worker node.
-* `force_update` - (Removed) Whether to force the update of kubernetes cluster arguments. Default to false.
-* `log_config` - (Removed) A list of one element containing information about the associated log store. See [`log_config`](#log_config) below.
-* `cluster_network_type` - (Removed) The network that cluster uses, use `flannel` or `terway`.
-* `worker_data_disk_category` - (Removed) The data disk category of worker, use `worker_data_disks` to instead it.
-* `worker_data_disk_size` - (Removed) The data disk size of worker, use `worker_data_disks` to instead it.
-* `worker_numbers` - (Removed) The number of workers, use `worker_number` to instead it.
-* `runtime` - (Removed since v1.212.0) A list of the runtime of the containers. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). See [`runtime`](#runtime) below.
-* `enable_ssh` - (Removed since v1.212.0) Enable login to the node through SSH. Default to `false`.
-* `rds_instances` - (Removed since v1.212.0) RDS instance list, You can choose which RDS instances whitelist to add instances to.
-* `install_cloud_monitor` - (Removed since v1.212.0) Install cloud monitor agent on ECS. Default is `true` in previous version. From provider version 1.208.0, the default value is `false`.
-* `exclude_autoscaler_nodes` - (Removed since v1.212.0) Exclude autoscaler nodes from `worker_nodes`. Default to `false`.
-* `kube_config` - (Removed since v1.212.0) The path of kube config, like ~/.kube/config. Please use the attribute [output_file](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#output_file) of new DataSource `alicloud_cs_cluster_credential` to replace it.
-* `availability_zone` - (Removed since v1.212.0) The Zone where new kubernetes cluster will be located. If it is not be specified, the `vswitch_ids` should be set, its value will be vswitch's zone.
-* `worker_number` - (Removed since v1.212.0) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us. From version 1.109.1, It is not necessary in the professional managed cluster, but it is necessary in other types of clusters.
-* `worker_instance_types` - (Removed since v1.212.0) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster. From version 1.109.1, It is not necessary in the professional managed cluster, but it is necessary in other types of clusters.
-* `password` - (Removed since v1.212.0) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.1, It is not necessary in the professional managed cluster.
-* `key_name` - (Removed since v1.212.0) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.1, It is not necessary in the professional managed cluster.
-* `kms_encrypted_password` - (Removed since v1.212.0) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
-* `kms_encryption_context` - (Removed since v1.212.0) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
-* `worker_instance_charge_type` - (Removed since v1.212.0) Worker payment type, its valid value is either or `PostPaid` or `PrePaid`. Defaults to `PostPaid`. If value is `PrePaid`, the files `worker_period`, `worker_period_unit`, `worker_auto_renew` and `worker_auto_renew_period` are required, default is `PostPaid`.
-* `worker_period` - (Removed since v1.212.0) Worker payment period. The unit is `Month`. Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
-* `worker_period_unit` - (Removed since v1.212.0) Worker payment period unit, the valid value is `Month`.
-* `worker_auto_renew` - (Removed since v1.212.0) Enable worker payment auto-renew, defaults to false.
-* `worker_auto_renew_period` - (Removed since v1.212.0) Worker payment auto-renew period, it can be one of {1, 2, 3, 6, 12}.
-* `worker_disk_category` - (Removed since v1.212.0) The system disk category of worker node. Its valid value are `cloud`, `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `worker_disk_size` - (Removed since v1.212.0) The system disk size of worker node. Its valid value range [40~500] in GB.
-* `worker_data_disks` - (Removed since v1.212.0) The data disk configurations of worker nodes, such as the disk type and disk size.  See [`worker_data_disks`](#worker_data_disks) below.
-* `node_name_mode` - (Removed since v1.212.0) Each node name consists of a prefix, an IP substring, and a suffix, the input format is `customized,<prefix>,IPSubStringLen,<suffix>`. For example "customized,aliyun.com-,5,-test", if the node IP address is 192.168.59.176, the prefix is aliyun.com-, IP substring length is 5, and the suffix is -test, the node name will be aliyun.com-59176-test.
-* `node_port_range`- (Removed since v1.212.0) The service port range of nodes, valid values: `30000` to `65535`. Default to `30000-32767`.
-* `os_type` - (Removed since v1.212.0) The operating system of the nodes that run pods, its valid value is either `Linux` or `Windows`. Default to `Linux`.
-* `platform` - (Removed since v1.212.0) The architecture of the nodes that run pods, its valid value is either `CentOS` or `AliyunLinux`. Default to `CentOS`.
-* `image_id` - (Removed since v1.212.0) Custom Image support. Must based on CentOS7 or AliyunLinux2.
-* `cpu_policy` - (Removed since v1.212.0) Kubelet cpu policy. For Kubernetes 1.12.6 and later, its valid value is either `static` or `none`. Default to `none`.
-* `user_data` - (Removed since v1.212.0) Custom data that can execute on nodes. For more information, see [Prepare user data](https://www.alibabacloud.com/help/doc-detail/49121.htm).
-* `taints` - (Removed since v1.212.0) Taints ensure pods are not scheduled onto inappropriate nodes. One or more taints are applied to a node; this marks that the node should not accept any pods that do not tolerate the taints. For more information, see [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). See [`taints`](#taints) below.
-* `worker_disk_performance_level` - (Removed since v1.212.0) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
-* `worker_disk_snapshot_policy_id` - (Removed since v1.212.0) Worker node system disk auto snapshot policy.
 
 ### `maintenance_window`
 
@@ -565,7 +524,8 @@ The following arguments are supported in the `maintenance_window` configuration 
 * `weekly_period` - (Optional) Maintenance cycle, you can set the values from Monday to Sunday, separated by commas when the values are multiple. The default is Thursday.
 
 for example:
-```
+
+```text
   maintenance_window {
     enable            = true
     maintenance_time  = "2024-10-15T12:31:00.000+08:00"
@@ -575,16 +535,19 @@ for example:
 ```
 
 ### `operation_policy`
+
 * `cluster_auto_upgrade` - (Optional) Automatic cluster upgrade policy. See [`cluster_auto_upgrade`](#operation_policy-cluster_auto_upgrade) below.
 
 ### `operation_policy-cluster_auto_upgrade`
+
 Automatic cluster upgrade policy. If `enabled` is set to `true`, ACK will automatically upgrade cluster depends on the `channel` value. The `version` field may show diffs if set in config, please remove the field or ignore it.  
 
 * `enabled` - (Optional) Whether to enable automatic cluster upgrade.
 * `channel` - (Optional) The automatic cluster upgrade channel. Valid values: `patch`, `stable`, `rapid`.
 
 for example:
-```
+
+```text
   operation_policy {
     cluster_auto_upgrade {
       enabled = true
@@ -594,23 +557,26 @@ for example:
 ```
 
 ### `audit_log_config`
+
 Audit log config. If `enabled` is set to `true`, a Logstore is created in the specified Simple Log Service project(SLS) to store cluster audit logs.  
 
 * `enabled` - (Optional) Whether to enable audit logging. Valid values: `true`, `false`.
 * `sls_project_name` - (Optional) The SLS project to which the Logstore storing the cluster audit logs belongs.
 
 ### `auto_mode`
+
 Auto mode cluster config.
 
 * `enabled` - (Optional, ForceNew) Whether to enable auto mode. Valid values: `true`, `false`. Only ACK managed Pro clusters support Auto Mode.
 
 ### `control_plane_endpoints_config`
+
 The cluster access configuration.
 
 * `load_balancers_config` - (Optional, Computed) The load balancing configuration for cluster access. See [`load_balancers_config`](#control_plane_endpoints_config-load_balancers_config) below.
 * `internal_dns_config` - (Optional, Computed) The cluster internal domain name configuration, applicable to ACK managed clusters. See [`internal_dns_config`](#control_plane_endpoints_config-internal_dns_config) below.
 
-#### `control_plane_endpoints_config-load_balancers_config`
+### `control_plane_endpoints_config-load_balancers_config`
 
 -> **NOTE:** CLB configuration may be generated automatically after updating for an old cluster, so keep it in `load_balancers_config` unless you really intend to remove the CLB. Removing a load balancer configuration may affect access to the cluster, please proceed with caution. When a configuration is removed, its associated load balancer (SLB/NLB) instance is only disassociated from the cluster and is **not** released, you need to release it manually.
 
@@ -618,18 +584,20 @@ The cluster access configuration.
 * `endpoint_type` - (Optional, Computed) The endpoint type. Valid values: `private`, `public`.
 * `endpoint` - (Computed) The access address.
 
-#### `control_plane_endpoints_config-internal_dns_config`
+### `control_plane_endpoints_config-internal_dns_config`
 
 * `bind_vpcs` - (Optional, Computed) The list of VPCs where the API Server access domain name takes effect. By default, the VPC of the cluster is included.
 * `enabled` - (Optional, Computed) Whether to enable the cluster internal domain name access. When enabled, node-side components (kubelet, kube-proxy) access the API Server through the cluster internal domain name. This field can only be set on update, not on create.
 
 ### `upgrade_policy`
+
 Configuration block for cluster upgrade operations. This is a transient parameter that controls upgrade behavior when updating the `version` field.
 
 * `control_plane_only` - (Optional) Whether to upgrade only the control plane without upgrading worker nodes. Valid values: `true`, `false`. When set to `true`, only the cluster control plane components will be upgraded, and worker nodes will remain at their current version. Default is `false`.
 
 for example:
-```
+
+```text
   # Upgrade cluster version with control plane only
   version = "1.32.1-aliyun.1"
   
@@ -659,7 +627,7 @@ You can get more information about addons on ACK web console. When you create a 
 
 The `main.tf`:
 
-```
+```text
 resource "alicloud_cs_managed_kubernetes" "k8s" {
   # ... other configuration ...
 
@@ -677,7 +645,7 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
 
 The `varibales.tf`:
 
-```
+```text
 # Network-flannel is required, Conflicts With Network-terway
 variable "cluster_addons" {
   description = "Addon components in kubernetes cluster"
@@ -831,74 +799,11 @@ variable "cluster_addons" {
 }
 ```
 
-### `worker_data_disks`
-
-The following arguments are supported in the `worker_data_disks` configuration block:
-
-* `category` - (Optional) The type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
-* `size` - (Optional) The size of a data disk, at least 40. Unit: GiB.
-* `encrypted` - (Optional) Specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
-* `performance_level` - (Optional, Available since v1.120.0) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
-* `auto_snapshot_policy_id` - (Optional, Available since v1.120.0) Worker node data disk auto snapshot policy.
-* `kms_key_id` - (Optional) The ID of the Key Management Service (KMS) key to use for data disk N.
-* `device` - (Optional) The mount point of data disk N.
-* `name` - (Optional) The name of data disk N. The name must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (.), underscores (_), and hyphens (-).
-* `snapshot_id` - (Optional) The ID of the snapshot to be used to create data disk N. Valid values of N: 1 to 16. When DataDisk.N.SnapshotId is specified, DataDisk.N.Size is ignored. The data disk is created based on the size of the specified snapshot. Use snapshots that were created on or after July 15, 2013. Otherwise, an error is returned and your request is rejected.
-
-### `taints`
-
-The following arguments are supported in the `taints` configuration block:
-
-* `key` - (Optional) The taint key.
-* `value` - (Optional) The taint value.
-* `effect` - (Optional) The taint effect.
-
-The following example is the definition of taints block:
-
-```
-resource "alicloud_cs_managed_kubernetes" "k8s" {
-  # ... other configuration ...
-
-  #  defining two taints
-  taints {
-    key = "key-a"
-    value = "value-a"
-    effect = "NoSchedule"
-  }
-  taints {
-    key = "key-b"
-    value = "value-b"
-    effect = "NoSchedule"
-  }
-}
-```
-
-### `log_config`
-
-The following arguments are supported in the `log_config` configuration block:
-
-* `type` - (Required) Type of collecting logs, only `SLS` are supported currently.
-* `project` - (Optional) Log Service project name, cluster logs will output to this project.
-
-### `runtime`
-
-* `name` - (Optional) The name of the runtime. Supported runtimes can be queried by data source [alicloud_cs_kubernetes_version](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_kubernetes_version).
-* `version` - (Optional) The version of the runtime.
-
-The following example is the definition of runtime block:
-
-```
-  runtime = {
-    name = "containerd"
-    version = "1.6.28"
-  }
-```
-
 ### tags
 
 The following example is the definition of tags block. The type of this field is map:
 
-```
+```text
   # for example, define three tags
 
   tags = {
@@ -920,7 +825,7 @@ The following arguments are supported in the `delete_options` configuration bloc
   - `SLS_Data`: SLS Project used by the cluster logging feature, default behavior is to retain, option to delete is available. 
   - `SLS_ControlPlane`: SLS Project used for the managed cluster control plane logs, default behavior is to retain, option to delete is available.
 
-```
+```text
   ...
   // Specify delete_options as below when deleting cluster
   // delete SLB resources created by the Nginx Ingress Service
@@ -944,6 +849,7 @@ The following arguments are supported in the `delete_options` configuration bloc
     resource_type = "SLS_ControlPlane"
   }
 ```
+
 ## Attributes Reference
 
 The following attributes are exported:
@@ -954,10 +860,6 @@ The following attributes are exported:
 * `slb_internet` - The public ip of load balancer.
 * `slb_id` - The ID of APIServer load balancer.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
-* `worker_nodes` - (Removed from version 1.212.0) List of cluster worker nodes.
-  * `id` - ID of the node.
-  * `name` - Node name.
-  * `private_ip` - The private IP address of node.
 * `connections` - A list of kubernetes cluster connection information.
   * `api_server_internet` - API Server Internet endpoint.
   * `api_server_intranet` - API Server Intranet endpoint.

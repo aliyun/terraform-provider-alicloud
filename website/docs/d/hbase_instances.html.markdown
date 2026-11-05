@@ -7,12 +7,12 @@ description: |-
     Provides a collection of HBase instances according to the specified filters.
 ---
 
-# alicloud\_hbase\_instances
+# alicloud_hbase_instances
 
 The `alicloud_hbase_instances` data source provides a collection of HBase instances available in Alicloud account.
 Filters support regular expression for the instance name, ids or availability_zone.
 
--> **NOTE:**  Available in 1.67.0+
+-> **NOTE:** Available since v1.67.0.
 
 ## Example Usage
 
@@ -60,4 +60,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `created_time` - The created time of the instance.
   * `expire_time` - The expire time of the instance.
   * `deletion_protection` - The switch of delete protection.
-  * `tags` - A mapping of tags to assign to the resource.
+  * `tags` - (Optional) A mapping of tags to assign to the resource.

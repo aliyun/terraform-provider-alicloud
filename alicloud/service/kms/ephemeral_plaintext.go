@@ -88,7 +88,7 @@ func (e *plaintextEphemeral) Open(ctx context.Context, req ephemeral.OpenRequest
 		request["EncryptionContext"] = string(contextJson)
 	}
 
-	response, err := e.Client().RpcPost("Kms", "2016-01-20", action, nil, request, true)
+	response, err := e.Meta().RpcPost("Kms", "2016-01-20", action, nil, request, true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Opening %s: calling %s", plaintextEphemeralTypeName, action),

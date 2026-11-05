@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
@@ -13,7 +15,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourcePaiWorkspaceDataset() *schema.Resource {
@@ -35,7 +36,7 @@ func ResourcePaiWorkspaceDataset() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PRIVATE", "PUBLIC"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PRIVATE", "PUBLIC"}, false),
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -45,14 +46,14 @@ func ResourcePaiWorkspaceDataset() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"OSS", "NAS"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"OSS", "NAS"}, false),
 			},
 			"data_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"COMMON", "PIC", "TEXT"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"COMMON", "PIC", "TEXT"}, false),
 			},
 			"dataset_name": {
 				Type:     schema.TypeString,
@@ -86,7 +87,7 @@ func ResourcePaiWorkspaceDataset() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"FILE", "DIRECTORY"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"FILE", "DIRECTORY"}, false),
 			},
 			"source_id": {
 				Type:     schema.TypeString,
@@ -98,7 +99,7 @@ func ResourcePaiWorkspaceDataset() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"USER", "ITAG"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"USER", "ITAG"}, false),
 			},
 			"uri": {
 				Type:     schema.TypeString,
@@ -110,7 +111,7 @@ func ResourcePaiWorkspaceDataset() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile("^\\d+$"), "The ID of the dataset owner."),
+				ValidateFunc: validators.StringMatch(regexp.MustCompile("^\\d+$"), "The ID of the dataset owner."),
 			},
 			"workspace_id": {
 				Type:     schema.TypeString,

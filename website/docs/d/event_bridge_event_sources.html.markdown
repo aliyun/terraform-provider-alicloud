@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Event Bridge Event Sources of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.130.0+.
+-> **NOTE:** Available since v1.130.0.
 
 ## Example Usage
 
@@ -36,16 +36,16 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Event Source name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Event Source names.
 * `sources` - A list of Event Bridge Event Sources. Each element contains the following attributes:
-	* `description` - The detail describe of event source.
-	* `event_source_name` - The code name of event source.
-	* `external_source_config` - The config of external data source.
-	* `external_source_type` - The type of external data source.
-	* `id` - The ID of the Event Source.
-	* `linked_external_source` - Whether to connect to an external data source.
-	* `event_bus_name` - The Event Source and Event Source Bound to the Event Bus Name.
+  * `description` - The detail describe of event source.
+  * `event_source_name` - The code name of event source.
+  * `external_source_config` - The config of external data source.
+  * `external_source_type` - The type of external data source.
+  * `id` - The ID of the Event Source.
+  * `linked_external_source` - Whether to connect to an external data source.
+  * `type` - The type of the event source.

@@ -4,6 +4,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	mapset "github.com/deckarep/golang-set"
@@ -150,4 +151,191 @@ func setAttrs(d interface{ Set(string, interface{}) }) {
 			t.Fatalf("unregistered another_force_new in ImportStateVerifyIgnore should remain illegal; checkAttributeSet returned PASS")
 		}
 	})
+}
+
+// fixtureTab expands the » marker into a single tab so fixture source can be
+// written readably inside a raw string literal while still matching the
+// scanner's tab-anchored regexes (configRegex / stepEndSentinelRegex key on
+// \t, not \s). The marker is replaced before the fixture is written to the
+// temp file the scanner reads, so » never reaches the scanner.
+func fixtureTab(s string) string {
+	return strings.ReplaceAll(s, "»", "\t")
+}
+
+// parseCoverageFixture writes src to a temporary Go test file and runs the
+// production scanner getTestCaseAttr against it, returning whether parsing
+// succeeded plus the captured must/modify attribute sets. Tests assert on both
+// Config-step segmentation (success/failure) and attribute coverage.
+//
+// Fixture functions inside src are named TestAccAliCloud* (NOT TestUnit*)
+// because the scanner skips TestUnit* functions (unitFuncRegex); the actual
+// test functions here keep the TestUnit* prefix so ci-check-quick collects them.
+func parseCoverageFixture(t *testing.T, src string) (ok bool, mustSet, modifySet mapset.Set) {
+	t.Helper()
+	filePath := filepath.Join(t.TempDir(), "resource_test.go")
+	if err := os.WriteFile(filePath, []byte(src), 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+	mustSet = mapset.NewSet()
+	modifySet = mapset.NewSet()
+	ignoreSet := mapset.NewSet()
+	ok = getTestCaseAttr(filePath, "alicloud_test_resource", &mustSet, &modifySet, &ignoreSet)
+	return ok, mustSet, modifySet
+}
+
+// AC1: a PlanOnly step (with an empty-map Config) must end Config capture so
+// the next (nested) Config step is segmented independently. Before the fix
+// PlanOnly was not a sentinel: the PlanOnly line, the step boundary `},`/`{`
+// and the next Config line were all appended to the same configStr, producing
+// an unbalanced-bracket blob that bracketMatch rejected (false). The nested
+// config also proves list/map type declarations (matchMap) still parse.
+var planOnlyEmptyMapThenNestedSrc = fixtureTab(`func TestAccAliCloudPlanOnly_basic(t *testing.T) {
+»cases := []resource.TestStep{
+»»{
+»»»Config: testAccConfig(map[string]interface{}{}),
+»»»PlanOnly: true,
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"name": "test",
+»»»»"items": []map[string]interface{}{
+»»»»»{
+»»»»»»"key": "value",
+»»»»»},
+»»»»},
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»}
+}
+`)
+
+func TestUnitScannerPlanOnlyEndsNestedConfigCapture(t *testing.T) {
+	ok, mustSet, _ := parseCoverageFixture(t, planOnlyEmptyMapThenNestedSrc)
+	if !ok {
+		t.Fatalf("scanner should parse PlanOnly step + adjacent nested Config independently (no bracket/JSON error); got parse failure — steps likely merged")
+	}
+	for _, attr := range []string{"name", "items", "items.key"} {
+		if !mustSet.Contains(attr) {
+			t.Fatalf("expected %q captured from the nested Config step; got %v", attr, mustSet.ToSlice())
+		}
+	}
+}
+
+// AC1 (flat variant): same segmentation with a simple flat Config so the
+// regression is not pinned to a single config shape.
+var planOnlyEmptyMapThenFlatSrc = fixtureTab(`func TestAccAliCloudPlanOnly_flat(t *testing.T) {
+»cases := []resource.TestStep{
+»»{
+»»»Config: testAccConfig(map[string]interface{}{}),
+»»»PlanOnly: true,
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"name": "test",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»}
+}
+`)
+
+func TestUnitScannerPlanOnlyEndsFlatConfigCapture(t *testing.T) {
+	ok, mustSet, _ := parseCoverageFixture(t, planOnlyEmptyMapThenFlatSrc)
+	if !ok {
+		t.Fatalf("scanner should parse PlanOnly step + adjacent flat Config independently; got parse failure — steps likely merged")
+	}
+	if !mustSet.Contains("name") {
+		t.Fatalf("expected 'name' captured from the flat Config step; got %v", mustSet.ToSlice())
+	}
+}
+
+// AC2: consecutive PlanOnly-only steps must not merge; the final Config step
+// (with Check) still segments and captures its attributes.
+var continuousPlanOnlyThenConfigSrc = fixtureTab(`func TestAccAliCloudContinuousPlanOnly_basic(t *testing.T) {
+»cases := []resource.TestStep{
+»»{
+»»»Config: testAccConfig(map[string]interface{}{}),
+»»»PlanOnly: true,
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{}),
+»»»PlanOnly: true,
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"name": "final",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»}
+}
+`)
+
+func TestUnitScannerContinuousPlanOnlyNotMerged(t *testing.T) {
+	ok, mustSet, _ := parseCoverageFixture(t, continuousPlanOnlyThenConfigSrc)
+	if !ok {
+		t.Fatalf("scanner should parse consecutive PlanOnly steps without merging; got parse failure")
+	}
+	if !mustSet.Contains("name") {
+		t.Fatalf("expected 'name' captured from the final Config step; got %v", mustSet.ToSlice())
+	}
+}
+
+// AC3: the PlanOnly addition must not disturb existing sentinels — Check,
+// ExpectError and ExpectNonEmptyPlan steps still segment independently.
+var sentinelStepsSrc = fixtureTab(`func TestAccAliCloudSentinels_basic(t *testing.T) {
+»cases := []resource.TestStep{
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"name": "a",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"name": "b",
+»»»}),
+»»»ExpectError: regexp.MustCompile("error"),
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"name": "c",
+»»»}),
+»»»ExpectNonEmptyPlan: true,
+»»},
+»}
+}
+`)
+
+func TestUnitScannerSentinelsStillIndependent(t *testing.T) {
+	ok, mustSet, _ := parseCoverageFixture(t, sentinelStepsSrc)
+	if !ok {
+		t.Fatalf("scanner should parse Check/ExpectError/ExpectNonEmptyPlan steps independently; got parse failure")
+	}
+	if !mustSet.Contains("name") {
+		t.Fatalf("expected 'name' captured across sentinel steps; got %v", mustSet.ToSlice())
+	}
+}
+
+// AC4: a genuinely illegal config (unbalanced brackets — an extra closing
+// brace) must still be blocked after the PlanOnly fix; the scanner must not
+// swallow the error or skip all checks when it cannot parse.
+var illegalBracketConfigSrc = fixtureTab(`func TestAccAliCloudIllegalBracket_basic(t *testing.T) {
+»cases := []resource.TestStep{
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"name": "test",
+»»»}}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»}
+}
+`)
+
+func TestUnitScannerIllegalConfigStillBlocked(t *testing.T) {
+	ok, _, _ := parseCoverageFixture(t, illegalBracketConfigSrc)
+	if ok {
+		t.Fatalf("scanner must still block genuinely illegal (unbalanced bracket) configs after the PlanOnly fix; got parse success")
+	}
 }

@@ -1,0 +1,140 @@
+package quotas_test
+
+import (
+	"fmt"
+	"strings"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+)
+
+func TestAccAlicloudQuotasTemplateApplicationsDataSource(t *testing.T) {
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+			"ids": `["${alicloud_quotas_template_applications.default.id}"]`,
+		}),
+		FakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+			"ids": `["${alicloud_quotas_template_applications.default.id}_fake"]`,
+		}),
+	}
+
+	ProductCodeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+			"ids":          `["${alicloud_quotas_template_applications.default.id}"]`,
+			"product_code": `"vpc"`,
+		}),
+		FakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+			"ids":          `["${alicloud_quotas_template_applications.default.id}_fake"]`,
+			"product_code": `"vpc_fake"`,
+		}),
+	}
+	QuotaActionCodeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+			"ids":               `["${alicloud_quotas_template_applications.default.id}"]`,
+			"quota_action_code": `"vpc_whitelist/ha_vip_whitelist"`,
+		}),
+		FakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+			"ids":               `["${alicloud_quotas_template_applications.default.id}_fake"]`,
+			"quota_action_code": `"vpc_whitelist/ha_vip_whitelist_fake"`,
+		}),
+	}
+	QuotaCategoryConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+			"ids":            `["${alicloud_quotas_template_applications.default.id}"]`,
+			"quota_category": `"FlowControl"`,
+		}),
+		FakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+			"ids":            `["${alicloud_quotas_template_applications.default.id}_fake"]`,
+			"quota_category": `"CommonQuota"`,
+		}),
+	}
+
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+			"ids":          `["${alicloud_quotas_template_applications.default.id}"]`,
+			"product_code": `"vpc"`,
+
+			"quota_action_code": `"vpc_whitelist/ha_vip_whitelist"`,
+
+			"quota_category": `"FlowControl"`,
+		}),
+		FakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+			"ids":          `["${alicloud_quotas_template_applications.default.id}_fake"]`,
+			"product_code": `"vpc_fake"`,
+
+			"quota_action_code": `"vpc_whitelist/ha_vip_whitelist_fake"`,
+
+			"quota_category": `"CommonQuota"`,
+		}),
+	}
+
+	QuotasTemplateApplicationsCheckInfo.DataSourceTestCheck(t, rand, idsConf, ProductCodeConf, QuotaActionCodeConf, QuotaCategoryConf, allConf)
+}
+
+var existQuotasTemplateApplicationsMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"applications.#":    "1",
+		"applications.0.id": acctest.CHECKSET,
+	}
+}
+
+var fakeQuotasTemplateApplicationsMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"applications.#": "0",
+	}
+}
+
+var QuotasTemplateApplicationsCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_quotas_template_applications.default",
+	ExistMapFunc: existQuotasTemplateApplicationsMapFunc,
+	FakeMapFunc:  fakeQuotasTemplateApplicationsMapFunc,
+}
+
+func testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
+	config := fmt.Sprintf(`
+variable "name" {
+	default = "tf-testAccQuotasTemplateApplications%d"
+}
+
+data "alicloud_resource_manager_accounts" "default" {
+  status  = "CreateSuccess"
+}
+
+
+
+resource "alicloud_quotas_template_applications" "default" {
+  quota_action_code = "vpc_whitelist/ha_vip_whitelist"
+  product_code      = "vpc"
+  quota_category    = "FlowControl"
+  aliyun_uids       = ["${data.alicloud_resource_manager_accounts.default.ids.0}"]
+  desire_value      = 6
+  notice_type       = "0"
+  env_language      = "zh"
+  reason            = "测试"
+  dimensions {
+    key   = "apiName"
+    value = "GetProductQuotaDimension"
+  }
+  dimensions {
+    key   = "apiVersion"
+    value = "2020-05-10"
+  }
+  dimensions {
+    key   = "regionId"
+    value = "cn-hangzhou"
+  }
+}
+
+data "alicloud_quotas_template_applications" "default" {
+%s
+}
+`, rand, strings.Join(pairs, "\n   "))
+	return config
+}

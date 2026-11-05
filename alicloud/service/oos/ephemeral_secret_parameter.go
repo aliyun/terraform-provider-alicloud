@@ -72,7 +72,7 @@ func (e *secretParameterEphemeral) Open(ctx context.Context, req ephemeral.OpenR
 		request["ParameterVersion"] = config.ParameterVersion.ValueInt64()
 	}
 
-	response, err := e.Client().RpcPost("oos", "2019-06-01", action, nil, request, true)
+	response, err := e.Meta().RpcPost("oos", "2019-06-01", action, nil, request, true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Opening %s: calling %s", secretParameterEphemeralTypeName, action),

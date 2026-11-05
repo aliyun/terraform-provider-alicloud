@@ -92,8 +92,8 @@ The following arguments are supported:
 * `endpoint_public_access_enabled` - (Optional, ForceNew) Whether to create internet eip for API Server. Default to false. Only works for **Create** Operation. 
 * `service_discovery_types` - (Optional, Available since v1.123.1) Service discovery type. Only works for **Create** Operation. If the value is empty, it means that service discovery is not enabled. Valid values are `CoreDNS` and `PrivateZone`.
 * `deletion_protection` - (Optional, ForceNew) Whether enable the deletion protection or not.
-    - true: Enable deletion protection.
-    - false: Disable deletion protection.
+  - `true`: Enable deletion protection.
+  - `false`: Disable deletion protection.
 * `enable_rrsa` - (Optional, Available since v1.171.0) Whether to enable cluster to support RRSA for version 1.22.3+. Default to `false`. Once the RRSA function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
 * `tags` - (Optional) Default nil, A map of tags assigned to the kubernetes cluster and work nodes.
 * `kube_config` - (Optional, Deprecated from v1.187.0) The path of kube config, like ~/.kube/config. Please use the attribute [output_file](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#output_file) of new DataSource `alicloud_cs_cluster_credential` to replace it.
@@ -112,8 +112,8 @@ The following arguments are supported:
 * `retain_resources` - (Optional, Available since v1.141.0) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
 * `delete_options` - (Optional, Available since v1.229.1) Delete options, only work for deleting resource. Make sure you have run `terraform apply` to make the configuration applied. See [`delete_options`](#delete_options) below.
 * `cluster_spec` - (Optional, ForceNew, Available since v1.162.0) The cluster specifications of serverless kubernetes cluster, which can be empty. Valid values:
-    - ack.standard: Standard serverless clusters.
-    - ack.pro.small: Professional serverless clusters.
+  - `ack.standard`: Standard serverless clusters.
+  - `ack.pro.small`: Professional serverless clusters.
 * `custom_san` - (Optional, Available since v1.229.1) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
 
   -> **NOTE:** Make sure you have specified all certificate SANs before updating. Updating this field will lead APIServer to restart.
@@ -124,12 +124,9 @@ The following arguments are supported:
 * `maintenance_window` - (Optional, Available since v1.232.0) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
 * `operation_policy` - (Optional, Available since v1.232.0) The cluster automatic operation policy. See [`operation_policy`](#operation_policy) below.
 
-*Removed params*
+The following arguments have been removed since v1.229.1: `vswitch_id`, `create_v2_cluster`, and `force_update`. Use `vswitch_ids` instead of `vswitch_id`.
 
-* `vswitch_id` - (Removed since v1.229.1) The vswitch where new kubernetes cluster will be located. Specify one vswitch's id, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
 * `private_zone` - (Deprecated since v1.123.1) Has been deprecated from provider version 1.123.1. `PrivateZone` is used as the enumeration value of `service_discovery_types`.
-* `create_v2_cluster` - (Removed since v1.229.1) whether to create a v2 version cluster.
-* `force_update` - (Removed since v1.229.1) Default false, when you want to change `vpc_id` and `vswitch_id`, you have to set this field to true, then the cluster will be recreated.
 
 ### `maintenance_window`
 
@@ -141,32 +138,36 @@ The following arguments are supported in the `maintenance_window` configuration 
 * `weekly_period` - (Optional) Maintenance cycle, you can set the values from Monday to Sunday, separated by commas when the values are multiple. The default is Thursday.
 
 for example:
-```
-  maintenance_window {
-    enable            = true
-    maintenance_time  = "2024-10-15T12:31:00.000+08:00"
-    duration          = "3h"
-    weekly_period     = "Monday,Friday"
-  }
+
+```terraform
+maintenance_window {
+  enable           = true
+  maintenance_time = "2024-10-15T12:31:00.000+08:00"
+  duration         = "3h"
+  weekly_period    = "Monday,Friday"
+}
 ```
 
 ### `operation_policy`
+
 * `cluster_auto_upgrade` - (Optional) Automatic cluster upgrade policy. See [`cluster_auto_upgrade`](#operation_policy-cluster_auto_upgrade) below.
 
 ### `operation_policy-cluster_auto_upgrade`
-Automatic cluster upgrade policy. If `enabled` is set to `true`, ACK will automatically upgrade cluster depends on the `channel` value. The `version` field may show diffs if set in config, please remove the field or ignore it.  
+
+Automatic cluster upgrade policy. If `enabled` is set to `true`, ACK will automatically upgrade cluster depends on the `channel` value. The `version` field may show diffs if set in config, please remove the field or ignore it.
 
 * `enabled` - (Optional) Whether to enable automatic cluster upgrade.
 * `channel` - (Optional) The automatic cluster upgrade channel. Valid values: `patch`, `stable`, `rapid`.
 
 for example:
-```
-  operation_policy {
-    cluster_auto_upgrade {
-      enabled = true
-      channel = "stable"
-    }
+
+```terraform
+operation_policy {
+  cluster_auto_upgrade {
+    enabled = true
+    channel = "stable"
   }
+}
 ```
 
 
@@ -181,14 +182,14 @@ The addons supports the following:
 
 The following example is the definition of addons block, The type of this field is list:
 
-```
+```terraform
 # install nginx ingress, conflict with ALB ingress
 addons {
   name = "nginx-ingress-controller"
   # use internet
-  config = "{\"IngressSlbNetworkType\":\"internet",\"IngressSlbSpec\":\"slb.s2.small\"}"
+  config = "{\"IngressSlbNetworkType\":\"internet\",\"IngressSlbSpec\":\"slb.s2.small\"}"
   # if use intranet, detail below.
-  # config = "{\"IngressSlbNetworkType\":\"intranet",\"IngressSlbSpec\":\"slb.s2.small\"}"
+  # config = "{\"IngressSlbNetworkType\":\"intranet\",\"IngressSlbSpec\":\"slb.s2.small\"}"
 }
 # install ALB ingress, conflict with nginx ingress
 addons {
@@ -207,6 +208,7 @@ addons {
   name = "arms-prometheus"
 }
 ```
+
 ### `delete_options`
 
 The following arguments are supported in the `delete_options` configuration block:
@@ -219,34 +221,34 @@ The following arguments are supported in the `delete_options` configuration bloc
   - `SLS_Data`: SLS Project used by the cluster logging feature, default behavior is to retain, option to delete is available. 
   - `SLS_ControlPlane`: SLS Project used for the managed cluster control plane logs, default behavior is to retain, option to delete is available.
   - `PrivateZone`: PrivateZone resources created by the cluster, default behavior is to retain, option to delete is available.
-```
-  ...
-  // Specify delete_options as below when deleting cluster
-  // delete SLB resources created by the Nginx Ingress Service
-  delete_options {
-    delete_mode = "delete"
-    resource_type = "SLB"
-  }
-  // delete ALB resources created by the ALB Ingress Controller
-  delete_options {
-    delete_mode = "delete"
-    resource_type = "ALB"
-  }
-  // delete SLS Project used by the cluster logging feature
-  delete_options {
-    delete_mode = "delete"
-    resource_type = "SLS_Data"
-  }
-  // delete SLS Project used for the managed cluster control plane logs
-  delete_options {
-    delete_mode = "delete"
-    resource_type = "SLS_ControlPlane"
-  }
-  // delete PrivateZone resources created by the cluster
-  delete_options {
-    delete_mode = "delete"
-    resource_type = "PrivateZone"
-  }
+
+```terraform
+# Specify delete_options as below when deleting cluster
+# delete SLB resources created by the Nginx Ingress Service
+delete_options {
+  delete_mode   = "delete"
+  resource_type = "SLB"
+}
+# delete ALB resources created by the ALB Ingress Controller
+delete_options {
+  delete_mode   = "delete"
+  resource_type = "ALB"
+}
+# delete SLS Project used by the cluster logging feature
+delete_options {
+  delete_mode   = "delete"
+  resource_type = "SLS_Data"
+}
+# delete SLS Project used for the managed cluster control plane logs
+delete_options {
+  delete_mode   = "delete"
+  resource_type = "SLS_ControlPlane"
+}
+# delete PrivateZone resources created by the cluster
+delete_options {
+  delete_mode   = "delete"
+  resource_type = "PrivateZone"
+}
 ```
 
 ## Attributes Reference

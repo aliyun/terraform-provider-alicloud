@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Simple Application Server Instances of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.135.0+.
+-> **NOTE:** Available since v1.135.0.
 
 ## Example Usage
 
@@ -44,22 +44,22 @@ The following arguments are supported:
 * `payment_type` - (Optional, ForceNew) The paymen type of the resource. Valid values: `Subscription`.
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `Resetting`, `Running`, `Stopped`, `Upgrading`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Instance names.
 * `instances` - A list of Simple Application Server Instances. Each element contains the following attributes:
-	* `business_status` - The billing status of the simple application server. Valid values: `Normal`, `Expired` and `Overdue`.
-	* `create_time` - The time when the simple application server was created.
-	* `ddos_status` - The DDoS protection status. Valid values: `Normal`, `BlackHole`, and `Defense`.
-	* `expired_time` - The time when the simple application server expires.
-	* `id` - The ID of the Instance.
-	* `image_id` - The ID of the simple application server Image.
-	* `inner_ip_address` - The internal IP address of the simple application server.
-	* `instance_id` - The ID of the simple application server.
-	* `instance_name` - The name of the resource.
-	* `payment_type` - The billing method of the simple application server.
-	* `plan_id` - The ID of the simple application server plan.
-	* `public_ip_address` - The public IP address of the simple application server.
-	* `status` - The status of the resource.
+  * `business_status` - The billing status of the simple application server. Valid values: `Normal`, `Expired` and `Overdue`.
+  * `create_time` - The time when the simple application server was created.
+  * `ddos_status` - The DDoS protection status. Valid values: `Normal`, `BlackHole`, and `Defense`.
+  * `expired_time` - The time when the simple application server expires.
+  * `id` - The ID of the Instance.
+  * `image_id` - The ID of the simple application server Image.
+  * `inner_ip_address` - The internal IP address of the simple application server.
+  * `instance_id` - The ID of the simple application server.
+  * `instance_name` - The name of the resource.
+  * `payment_type` - The billing method of the simple application server.
+  * `plan_id` - The ID of the simple application server plan.
+  * `public_ip_address` - The public IP address of the simple application server.
+  * `status` - The status of the resource.

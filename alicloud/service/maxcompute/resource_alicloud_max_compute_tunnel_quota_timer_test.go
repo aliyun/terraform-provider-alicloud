@@ -1,0 +1,229 @@
+package maxcompute_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/maxcompute"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+// Test MaxCompute TunnelQuotaTimer. >>> Resource test cases, automatically generated.
+// Case TunnelQuotaTimer_terraform测试 9976
+// Deprecated alicloud_max_compute_tunnel_quota_timer
+func SkipTestAccAliCloudMaxComputeTunnelQuotaTimer_basic9976(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_max_compute_tunnel_quota_timer.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudMaxComputeTunnelQuotaTimerMap9976)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return maxcompute.NewMaxComputeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMaxComputeTunnelQuotaTimer")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%smaxcomputetunnelquotatimer%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMaxComputeTunnelQuotaTimerBasicDependence9976)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"quota_timer": []map[string]interface{}{
+						{
+							"begin_time": "00:00",
+							"end_time":   "01:00",
+							"tunnel_quota_parameter": []map[string]interface{}{
+								{
+									"slot_num":                  "50",
+									"elastic_reserved_slot_num": "50",
+								},
+							},
+						},
+						{
+							"begin_time": "01:00",
+							"end_time":   "02:00",
+							"tunnel_quota_parameter": []map[string]interface{}{
+								{
+									"slot_num":                  "50",
+									"elastic_reserved_slot_num": "50",
+								},
+							},
+						},
+						{
+							"begin_time": "02:00",
+							"end_time":   "24:00",
+							"tunnel_quota_parameter": []map[string]interface{}{
+								{
+									"slot_num":                  "50",
+									"elastic_reserved_slot_num": "50",
+								},
+							},
+						},
+					},
+					"nickname":  "ot_terraform_p",
+					"time_zone": "Asia/Shanghai",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"quota_timer.#": "3",
+						"nickname":      "ot_terraform_p",
+						"time_zone":     "Asia/Shanghai",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"quota_timer": []map[string]interface{}{
+						{
+							"begin_time": "00:00",
+							"end_time":   "20:00",
+							"tunnel_quota_parameter": []map[string]interface{}{
+								{
+									"slot_num":                  "50",
+									"elastic_reserved_slot_num": "40",
+								},
+							},
+						},
+						{
+							"begin_time": "20:00",
+							"end_time":   "22:00",
+							"tunnel_quota_parameter": []map[string]interface{}{
+								{
+									"slot_num":                  "50",
+									"elastic_reserved_slot_num": "40",
+								},
+							},
+						},
+						{
+							"begin_time": "22:00",
+							"end_time":   "23:00",
+							"tunnel_quota_parameter": []map[string]interface{}{
+								{
+									"slot_num":                  "50",
+									"elastic_reserved_slot_num": "40",
+								},
+							},
+						},
+						{
+							"begin_time": "23:00",
+							"end_time":   "24:00",
+							"tunnel_quota_parameter": []map[string]interface{}{
+								{
+									"slot_num":                  "50",
+									"elastic_reserved_slot_num": "40",
+								},
+							},
+						},
+					},
+					"time_zone": "Asia/Tokyo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"quota_timer.#": "4",
+						"time_zone":     "Asia/Tokyo",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"quota_timer": []map[string]interface{}{
+						{
+							"begin_time": "00:00",
+							"end_time":   "20:00",
+							"tunnel_quota_parameter": []map[string]interface{}{
+								{
+									"slot_num":                  "50",
+									"elastic_reserved_slot_num": "50",
+								},
+							},
+						},
+						{
+							"begin_time": "20:00",
+							"end_time":   "23:00",
+							"tunnel_quota_parameter": []map[string]interface{}{
+								{
+									"slot_num":                  "50",
+									"elastic_reserved_slot_num": "50",
+								},
+							},
+						},
+						{
+							"begin_time": "23:00",
+							"end_time":   "24:00",
+							"tunnel_quota_parameter": []map[string]interface{}{
+								{
+									"slot_num":                  "50",
+									"elastic_reserved_slot_num": "50",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"quota_timer.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"quota_timer": []map[string]interface{}{
+						{
+							"begin_time": "00:00",
+							"end_time":   "24:00",
+							"tunnel_quota_parameter": []map[string]interface{}{
+								{
+									"slot_num":                  "50",
+									"elastic_reserved_slot_num": "50",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"quota_timer.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"quota_timer": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"quota_timer.#": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"time_zone"},
+			},
+		},
+	})
+}
+
+var AliCloudMaxComputeTunnelQuotaTimerMap9976 = map[string]string{}
+
+func AliCloudMaxComputeTunnelQuotaTimerBasicDependence9976(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Test MaxCompute TunnelQuotaTimer. <<< Resource test cases, automatically generated.

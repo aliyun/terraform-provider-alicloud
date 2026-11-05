@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Resource Manager Control Policies of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.120.0+.
+-> **NOTE:** Available since v1.120.0.
 
 ## Example Usage
 
@@ -39,17 +39,17 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `policy_type` - (Optional, ForceNew) The policy type of control policy. Valid values `System` and `Custom`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Control Policy names.
 * `policies` - A list of Resource Manager Control Policies. Each element contains the following attributes:
-	* `attachment_count` - The count of policy attachment.
-	* `control_policy_name` - The name of policy.
-	* `description` - The description of policy.
-	* `effect_scope` - The effect scope.
-	* `id` - The ID of the Control Policy.
-	* `policy_document` - The policy document.
-	* `policy_id` - The ID of policy.
-	* `policy_type` - The type of policy.
+  * `attachment_count` - The count of policy attachment.
+  * `control_policy_name` - The name of policy.
+  * `description` - The description of policy.
+  * `effect_scope` - The effect scope.
+  * `id` - The ID of the Control Policy.
+  * `policy_document` - The policy document.
+  * `policy_id` - The ID of policy.
+  * `policy_type` - The type of policy.

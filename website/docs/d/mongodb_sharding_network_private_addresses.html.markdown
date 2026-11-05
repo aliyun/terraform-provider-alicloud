@@ -7,11 +7,11 @@ description: |-
   Provides a list of Mongodb Sharding Network Private Addresses to the user.
 ---
 
-# alicloud\_mongodb\_sharding\_network\_private\_addresses
+# alicloud_mongodb_sharding_network_private_addresses
 
 This data source provides the Mongodb Sharding Network Private Addresses of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.157.0+.
+-> **NOTE:** Available since v1.157.0.
 
 ## Example Usage
 
@@ -37,7 +37,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `role` - (Optional, ForceNew) The role of the node. Valid values: `Primary` or `Secondary`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
