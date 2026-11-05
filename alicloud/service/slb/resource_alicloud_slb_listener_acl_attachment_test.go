@@ -1253,6 +1253,10 @@ func TestUnitListenerAclAttachmentProtocolCreateFirstReadFailure(t *testing.T) {
 }
 
 func TestUnitListenerAclAttachmentProtocolUnknownWrite(t *testing.T) {
+	previousOperation := *slbsvc.ListenerAclAttachmentOperationTimeoutForTest
+	*slbsvc.ListenerAclAttachmentOperationTimeoutForTest = 200 * time.Millisecond
+	t.Cleanup(func() { *slbsvc.ListenerAclAttachmentOperationTimeoutForTest = previousOperation })
+
 	transportErr := errors.New(`Post "https://slb.aliyuncs.com": dial tcp 10.0.0.1:443: i/o timeout`)
 
 	t.Run("confirmed readback keeps the binding", func(t *testing.T) {

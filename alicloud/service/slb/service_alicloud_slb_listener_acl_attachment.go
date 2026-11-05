@@ -14,13 +14,12 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 )
 
-const listenerAclAttachmentOperationTimeout = 300 * time.Second
-
-// The confirm window and poll interval are variables so unit tests can shorten
-// them without changing production behaviour.
+// The operation budget, confirm window and poll interval are variables so unit
+// tests can shorten them without changing production behaviour.
 var (
-	listenerAclAttachmentConfirmTimeout = 30 * time.Second
-	listenerAclAttachmentPollInterval   = 3 * time.Second
+	listenerAclAttachmentOperationTimeout = 300 * time.Second
+	listenerAclAttachmentConfirmTimeout   = 30 * time.Second
+	listenerAclAttachmentPollInterval     = 3 * time.Second
 )
 
 // errListenerAclAttachmentListeningNotVisible marks a Describe response that does
