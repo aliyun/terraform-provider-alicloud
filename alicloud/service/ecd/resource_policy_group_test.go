@@ -545,6 +545,196 @@ var AlicloudECDPolicyGroupMap0 = map[string]string{
 	"policy_group_name": "tf-testaccPolicyGroupName",
 }
 
+func TestAccAliCloudECDPolicyGroup_basic3(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecd_policy_group.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudECDPolicyGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ecd.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEcdPolicyGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secdpolicygroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudECDPolicyGroupBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.EcdSupportRegions)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy_group_name":               "tf-testaccPolicyGroupName",
+					"internet_communication_protocol": "TCP",
+					"recording":                       "alltime",
+					"recording_duration":              "30",
+					"client_types": []map[string]interface{}{
+						{
+							"client_type": "html5",
+							"status":      "off",
+						},
+					},
+					"end_user_apply_admin_coordinate": "on",
+					"end_user_group_coordinate":       "on",
+				}),
+				// DescribePolicyGroups returns every client type, but state mirrors the
+				// configured subset, so the step converges without ExpectNonEmptyPlan.
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy_group_name":               "tf-testaccPolicyGroupName",
+						"internet_communication_protocol": "TCP",
+						"recording_duration":              "30",
+						"end_user_apply_admin_coordinate": "on",
+						"end_user_group_coordinate":       "on",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "client_types.#", "1"),
+					// F1: client_types read back from the plural "ClientTypes" key.
+					// F2: status lowercased on read (OFF -> off); html5 disabled via ToUpper on write.
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "client_types.*", map[string]string{
+						"client_type": "html5",
+						"status":      "off",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"internet_communication_protocol": "BOTH",
+					"recording":                       "alltime",
+					"recording_duration":              "60",
+					"client_types": []map[string]interface{}{
+						{
+							"client_type": "html5",
+							"status":      "on",
+						},
+						{
+							"client_type": "windows",
+							"status":      "on",
+						},
+					},
+					"end_user_apply_admin_coordinate": "off",
+					"end_user_group_coordinate":       "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"internet_communication_protocol": "BOTH",
+						"recording_duration":              "60",
+						"end_user_apply_admin_coordinate": "off",
+						"end_user_group_coordinate":       "off",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "client_types.#", "2"),
+					// F2: html5 re-enabled (on -> ON on write, ON -> on on read).
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "client_types.*", map[string]string{
+						"client_type": "html5",
+						"status":      "on",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "client_types.*", map[string]string{
+						"client_type": "windows",
+						"status":      "on",
+					}),
+				),
+			},
+			{
+				// An entry without a status must keep an identical element hash across
+				// refresh: Read must not backfill the API status, otherwise the set
+				// element identity never holds and every plan is non-empty.
+				Config: testAccConfig(map[string]interface{}{
+					"client_types": []map[string]interface{}{
+						{
+							"client_type": "windows",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"internet_communication_protocol": "BOTH",
+						"recording_duration":              "60",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "client_types.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "client_types.*", map[string]string{
+						"client_type": "windows",
+					}),
+				),
+			},
+			{
+				// Removal transition: dropping every client_types block sends
+				// ModifyPolicyGroup without ClientType parameters (the contract then
+				// defaults to allowing every client type) and converges to an empty set.
+				Config: testAccConfig(map[string]interface{}{
+					"client_types": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"internet_communication_protocol": "BOTH",
+						"recording_duration":              "60",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "client_types.#", "0"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestUnitAliCloudEcdPolicyGroupClientTypesValidation(t *testing.T) {
+	cases := []struct {
+		name        string
+		clientTypes []interface{}
+		wantErr     bool
+	}{
+		{
+			name:        "valid subset",
+			clientTypes: []interface{}{map[string]interface{}{"client_type": "html5", "status": "off"}},
+			wantErr:     false,
+		},
+		{
+			name:        "valid entry without status",
+			clientTypes: []interface{}{map[string]interface{}{"client_type": "windows"}},
+			wantErr:     false,
+		},
+		{
+			name:        "empty list is allowed",
+			clientTypes: []interface{}{},
+			wantErr:     false,
+		},
+		{
+			name:        "empty client_type is rejected",
+			clientTypes: []interface{}{map[string]interface{}{"client_type": "", "status": "on"}},
+			wantErr:     true,
+		},
+		{
+			name:        "nil element from an empty block is rejected",
+			clientTypes: []interface{}{nil},
+			wantErr:     true,
+		},
+		{
+			name: "duplicate client_type is rejected",
+			clientTypes: []interface{}{
+				map[string]interface{}{"client_type": "html5", "status": "off"},
+				map[string]interface{}{"client_type": "html5", "status": "on"},
+			},
+			wantErr: true,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			err := ecd.ValidatePolicyGroupClientTypes(c.clientTypes)
+			switch {
+			case c.wantErr && err == nil:
+				t.Fatalf("expected an error, got nil")
+			case !c.wantErr && err != nil:
+				t.Fatalf("expected no error, got: %v", err)
+			}
+		})
+	}
+}
+
 func AlicloudECDPolicyGroupBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
