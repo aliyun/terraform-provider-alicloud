@@ -157,7 +157,7 @@ The backend_node_groups supports the following:
   - pl1: Maximum random read/write IOPS per disk is 50,000.
   - pl2: Maximum random read/write IOPS per disk is 100,000.
   - pl3: Maximum random read/write IOPS per disk is 1,000,000.
-* `storage_size` - (Optional, Int) Storage size of the backend node group, measured in GiB. Increasing this value expands the disks of the node group in place, without rebuilding the instance. It can only be expanded: decreasing it still replaces the instance. In-place expansion requires a Standard Edition instance (`package_type` set to `official`) that is in the Running state.
+* `storage_size` - (Optional, Int) Storage size of the backend node group, measured in GiB. Increasing this value expands the disks of the node group in place, without rebuilding the instance. It can only be expanded: decreasing or removing it still replaces the instance. In-place expansion requires an `official` package instance (`package_type = "official"`) that is in the Running state.
 * `zone_id` - (Optional, ForceNew) Zone ID.
 
 ### `frontend_node_groups`

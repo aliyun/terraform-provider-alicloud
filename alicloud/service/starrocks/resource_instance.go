@@ -486,8 +486,8 @@ func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 // resourceInstanceCustomizeDiff keeps replacement semantics for a smaller backend
-// node group disk: ModifyDiskSize can only expand a disk, so shrinking storage_size
-// must still rebuild the instance instead of failing at apply time.
+// node group disk: ModifyDiskSize can only expand a disk, so shrinking or removing
+// storage_size must still rebuild the instance instead of failing at apply time.
 func resourceInstanceCustomizeDiff(_ context.Context, diff *schema.ResourceDiff, _ interface{}) error {
 	if diff.Id() == "" || !diff.HasChange("backend_node_groups") || !diff.NewValueKnown("backend_node_groups") {
 		return nil
@@ -501,11 +501,24 @@ func resourceInstanceCustomizeDiff(_ context.Context, diff *schema.ResourceDiff,
 	for i := range newGroups {
 		oldStorageSize, oldOk := backendNodeGroupStorageSize(oldGroups[i])
 		newStorageSize, newOk := backendNodeGroupStorageSize(newGroups[i])
-		if oldOk && newOk && newStorageSize < oldStorageSize {
+		if backendNodeGroupStorageSizeChangeForcesReplacement(oldStorageSize, oldOk, newStorageSize, newOk) {
 			return diff.ForceNew("backend_node_groups")
 		}
 	}
 	return nil
+}
+
+// backendNodeGroupStorageSizeChangeForcesReplacement reports whether a storage_size
+// change cannot be applied in place. Removing the value is treated like a shrink:
+// the API has no way to detach or reduce a disk.
+func backendNodeGroupStorageSizeChangeForcesReplacement(oldSize int, oldOk bool, newSize int, newOk bool) bool {
+	if !oldOk {
+		return false
+	}
+	if !newOk {
+		return true
+	}
+	return newSize < oldSize
 }
 
 func backendNodeGroupStorageSize(raw interface{}) (int, bool) {
@@ -643,13 +656,16 @@ func resourceInstanceModifyBackendNodeGroupStorageSize(d *schema.ResourceData, s
 	for i := range newGroups {
 		oldGroup, _ := oldGroups[i].(map[string]interface{})
 		newGroup, _ := newGroups[i].(map[string]interface{})
-		newStorageSize, newOk := backendNodeGroupStorageSize(newGroup)
 		oldStorageSize, oldOk := backendNodeGroupStorageSize(oldGroup)
-		if !newOk || !oldOk || newStorageSize == oldStorageSize {
+		newStorageSize, newOk := backendNodeGroupStorageSize(newGroup)
+		if !oldOk {
 			continue
 		}
-		if newStorageSize < oldStorageSize {
+		if backendNodeGroupStorageSizeChangeForcesReplacement(oldStorageSize, oldOk, newStorageSize, newOk) {
 			return fmt.Errorf("backend_node_groups.%d storage_size can only be expanded in place, got %d -> %d GiB", i, oldStorageSize, newStorageSize)
+		}
+		if !newOk || newStorageSize == oldStorageSize {
+			continue
 		}
 		nodeGroupId, err := matchBackendNodeGroup(groups, oldGroup)
 		if err != nil {

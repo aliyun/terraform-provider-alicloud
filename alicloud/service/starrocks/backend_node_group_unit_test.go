@@ -1,3 +1,6 @@
+// Node group matching is not reachable through a public entry point: the resource
+// exposes no lookup helper and DescribeNodeGroups needs a live instance, so these
+// cases live in an internal unit test file.
 package starrocks
 
 import (
@@ -21,7 +24,7 @@ func unitTestBackendNodeGroup(id, zone string) map[string]interface{} {
 	}
 }
 
-func TestMatchBackendNodeGroup(t *testing.T) {
+func TestUnitMatchBackendNodeGroup(t *testing.T) {
 	config := map[string]interface{}{
 		"cu":                          8,
 		"disk_number":                 1,
@@ -72,7 +75,7 @@ func TestMatchBackendNodeGroup(t *testing.T) {
 	})
 }
 
-func TestBackendNodeGroupAttributesMatch(t *testing.T) {
+func TestUnitBackendNodeGroupAttributesMatch(t *testing.T) {
 	config := map[string]interface{}{
 		"cu":                          8,
 		"disk_number":                 1,
@@ -98,5 +101,30 @@ func TestBackendNodeGroupAttributesMatch(t *testing.T) {
 	group["StorageSize"] = float64(400)
 	if !backendNodeGroupAttributesMatch(group, config) {
 		t.Fatal("expected storage_size to be ignored when matching")
+	}
+}
+
+func TestUnitBackendNodeGroupStorageSizeChangeForcesReplacement(t *testing.T) {
+	cases := []struct {
+		name  string
+		old   int
+		oldOk bool
+		new   int
+		newOk bool
+		want  bool
+	}{
+		{name: "growth is in place", old: 200, oldOk: true, new: 300, newOk: true, want: false},
+		{name: "same size is in place", old: 200, oldOk: true, new: 200, newOk: true, want: false},
+		{name: "shrink replaces", old: 300, oldOk: true, new: 200, newOk: true, want: true},
+		{name: "removing the value replaces", old: 300, oldOk: true, new: 0, newOk: false, want: true},
+		{name: "no previous value never replaces", old: 0, oldOk: false, new: 300, newOk: true, want: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := backendNodeGroupStorageSizeChangeForcesReplacement(tc.old, tc.oldOk, tc.new, tc.newOk)
+			if got != tc.want {
+				t.Fatalf("expected %v, got %v", tc.want, got)
+			}
+		})
 	}
 }

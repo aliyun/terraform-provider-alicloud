@@ -4,6 +4,7 @@ package starrocks_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -681,6 +682,37 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 		}
 		return nil
 	}
+	// The state attribute mirrors the configuration because Read does not backfill
+	// node groups, so the remote disk size is checked through the API as well.
+	checkBackendNodeGroupStorageSize := func(expected int) resource.TestCheckFunc {
+		return func(s *terraform.State) error {
+			instance, ok := s.RootModule().Resources[resourceId]
+			if !ok {
+				return fmt.Errorf("resource %s not found in state", resourceId)
+			}
+			service := starrocks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+			deadline := time.Now().Add(10 * time.Minute)
+			var lastSize []float64
+			for {
+				groups, err := service.DescribeBackendNodeGroups(instance.Primary.ID)
+				if err != nil {
+					return err
+				}
+				lastSize = make([]float64, 0, len(groups))
+				for _, group := range groups {
+					size, _ := group["StorageSize"].(float64)
+					lastSize = append(lastSize, size)
+				}
+				if len(groups) == 1 && len(lastSize) == 1 && int(lastSize[0]) == expected {
+					return nil
+				}
+				if time.Now().After(deadline) {
+					return fmt.Errorf("backend node group storage sizes %v did not converge to %d GiB", lastSize, expected)
+				}
+				time.Sleep(15 * time.Second)
+			}
+		}
+	}
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -695,6 +727,7 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 					checkInstanceNotReplaced,
 					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.#", "1"),
 					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.0.storage_size", "200"),
+					checkBackendNodeGroupStorageSize(200),
 				),
 			},
 			{
@@ -703,6 +736,7 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 					checkInstanceNotReplaced,
 					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.#", "1"),
 					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.0.storage_size", "300"),
+					checkBackendNodeGroupStorageSize(300),
 				),
 			},
 			{
@@ -710,6 +744,14 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"admin_password", "auto_renew", "backend_node_groups", "cluster_zone_id", "duration", "frontend_node_groups", "observer_node_groups", "oss_accessing_role_name", "pricing_cycle", "promotion_option_no"},
+			},
+			{
+				// Shrinking is not supported in place, so the plan must keep the change
+				// (a replacement) instead of converging silently. Plan only: applying it
+				// would rebuild the instance.
+				Config:             starRocksInstanceBackendNodeGroupsStorageSizeConfig(name, 100),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
@@ -737,6 +779,7 @@ resource "alicloud_vswitch" "default106DkE" {
 resource "alicloud_star_rocks_instance" "default" {
   admin_password    = "1qaz@QAZ"
   cluster_zone_id   = "cn-hangzhou-i"
+  instance_name     = var.name
   duration          = 1
   pay_type          = "postPaid"
   vpc_id            = alicloud_vpc.defaultB21JUD.id
