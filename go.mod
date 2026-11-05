@@ -10,7 +10,7 @@ require (
 	github.com/alibabacloud-go/alibabacloud-gateway-oss-util v0.0.14
 	github.com/alibabacloud-go/alibabacloud-gateway-sls v0.3.0
 	github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.5
-	github.com/alibabacloud-go/cs-20151215/v8 v8.0.4
+	github.com/alibabacloud-go/cs-20151215/v8 v8.2.5
 	github.com/alibabacloud-go/darabonba-openapi/v2 v2.2.4
 	github.com/alibabacloud-go/fc-open-20210406/v2 v2.0.7
 	github.com/alibabacloud-go/sts-20150401/v2 v2.0.2
@@ -41,6 +41,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-cty v1.5.0
 	github.com/hashicorp/go-uuid v1.0.3
+	github.com/hashicorp/hcl/v2 v2.24.0
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.19.0
 	github.com/hashicorp/terraform-plugin-go v0.31.0
@@ -120,7 +121,6 @@ require (
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hc-install v0.9.4 // indirect
-	github.com/hashicorp/hcl/v2 v2.24.0 // indirect
 	github.com/hashicorp/logutils v1.0.0 // indirect
 	github.com/hashicorp/terraform-exec v0.25.1 // indirect
 	github.com/hashicorp/terraform-json v0.27.2 // indirect
