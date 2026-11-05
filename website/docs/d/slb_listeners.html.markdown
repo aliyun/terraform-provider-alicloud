@@ -25,7 +25,10 @@ terraform {
 }
 
 resource "alicloud_slb_load_balancer" "default" {
-  load_balancer_name = "tf-exampleSlbListenerTcp"
+  load_balancer_name   = "tf-exampleSlbListenerTcp"
+  internet_charge_type = "PayByTraffic"
+  address_type         = "internet"
+  load_balancer_spec   = "slb.s1.small"
 }
 resource "alicloud_slb_listener" "tcp" {
   load_balancer_id          = alicloud_slb_load_balancer.default.id
