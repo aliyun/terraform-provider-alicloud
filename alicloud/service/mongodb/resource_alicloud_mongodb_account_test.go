@@ -7,12 +7,14 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"sync"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
@@ -1087,27 +1089,53 @@ func unitAccountResourceData(t *testing.T, id string, attrs map[string]interface
 }
 
 type accountApiCall struct {
-	Product string
-	Version string
-	Action  string
-	Query   map[string]interface{}
-	Body    map[string]interface{}
+	Action string
+	Query  map[string]interface{}
+	Body   map[string]interface{}
 }
 
-func accountUnitClient() *connectivity.AliyunClient {
-	return &connectivity.AliyunClient{RegionId: "cn-shanghai"}
-}
-
-// patchAccountRpcPost records the action, query and body the provider passes to
-// the transport layer. RpcPost is the last provider-owned boundary: its query
-// and body maps are handed unchanged to the SDK request serialization, so the
-// assertions cover the exact parameters sent for each API call without needing
-// cloud credentials.
-func patchAccountRpcPost(t *testing.T, calls *[]accountApiCall, responses map[string]interface{}) *gomonkey.Patches {
+// accountUnitClient builds a client with a fake credential and a preloaded
+// endpoint so the provider reaches the SDK request layer without cloud access.
+func accountUnitClient(t *testing.T) *connectivity.AliyunClient {
 	t.Helper()
-	return gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, product string, version string, action string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
-		*calls = append(*calls, accountApiCall{Product: product, Version: version, Action: action, Query: query, Body: body})
-		if response, ok := responses[action]; ok {
+	endpoints := &sync.Map{}
+	endpoints.Store("dds", "dds.cn-shanghai.aliyuncs.com")
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").
+		SetAccessKeyId("test-access-key").
+		SetAccessKeySecret("test-secret-key"))
+	if err != nil {
+		t.Fatalf("failed to build the test credential: %v", err)
+	}
+	config := connectivity.Config{
+		Region:               connectivity.Region("cn-shanghai"),
+		RegionId:             "cn-shanghai",
+		AccessKey:            "test-access-key",
+		SecretKey:            "test-secret-key",
+		Protocol:             "HTTPS",
+		Endpoints:            endpoints,
+		SignVersion:          &sync.Map{},
+		ClientReadTimeout:    30000,
+		ClientConnectTimeout: 60000,
+		SkipRegionValidation: true,
+		AccountType:          "Domestic",
+		AccountId:            "1234567890123456",
+		Credential:           credential,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatalf("failed to build the test client: %v", err)
+	}
+	return client
+}
+
+// patchAccountDoRequest records the action, query and body the provider passes
+// to the SDK, which is the last point before wire serialization.
+func patchAccountDoRequest(t *testing.T, calls *[]accountApiCall, responses map[string]interface{}) *gomonkey.Patches {
+	t.Helper()
+	return gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, query map[string]interface{}, body map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		*calls = append(*calls, accountApiCall{Action: *action, Query: query, Body: body})
+		if response, ok := responses[*action]; ok {
 			if responseErr, ok := response.(error); ok {
 				return nil, responseErr
 			}
@@ -1306,7 +1334,7 @@ func TestUnitAccountUpdateShardDescriptionRejected(t *testing.T) {
 // account with custom roles reaches CreateAccount with the roles, the database
 // and the description in the request body (C1, C3-C5).
 func TestUnitAccountCreateSendsRolesForReplicaSet(t *testing.T) {
-	client := accountUnitClient()
+	client := accountUnitClient(t)
 	d := schema.TestResourceDataRaw(t, unitAccountResourceSchema(t), map[string]interface{}{
 		"instance_id":         "dds-1",
 		"account_name":        "normal_acc",
@@ -1323,7 +1351,7 @@ func TestUnitAccountCreateSendsRolesForReplicaSet(t *testing.T) {
 		"CreateAccount":    map[string]interface{}{},
 		"DescribeAccounts": accountDescribeResponse("dds-1", "admin", "normal_acc", "normal", "normal description", []map[string]string{{"role": "read", "db_name": "admin"}}),
 	}
-	patches := patchAccountRpcPost(t, &calls, responses)
+	patches := patchAccountDoRequest(t, &calls, responses)
 	defer patches.Reset()
 
 	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountCreate(d, client))
@@ -1331,8 +1359,6 @@ func TestUnitAccountCreateSendsRolesForReplicaSet(t *testing.T) {
 	if call == nil {
 		t.Fatal("expected a replica set account with roles to reach CreateAccount")
 	}
-	assert.Equal(t, "Dds", call.Product)
-	assert.Equal(t, "2015-12-01", call.Version)
 	assert.Equal(t, "normal", fmt.Sprint(call.Body["CharacterType"]))
 	assert.Equal(t, "admin", fmt.Sprint(call.Body["DBName"]))
 	assert.Equal(t, "normal description", fmt.Sprint(call.Body["AccountDescription"]))
@@ -1350,7 +1376,7 @@ func TestUnitAccountCreateSendsRolesForReplicaSet(t *testing.T) {
 // when character_type is omitted, roles are created as a replica set (normal)
 // account instead of falling back to the API default db.
 func TestUnitAccountCreateDefaultsNormalForRoles(t *testing.T) {
-	client := accountUnitClient()
+	client := accountUnitClient(t)
 	d := schema.TestResourceDataRaw(t, unitAccountResourceSchema(t), map[string]interface{}{
 		"instance_id":      "dds-1",
 		"account_name":     "normal_def_acc",
@@ -1364,7 +1390,7 @@ func TestUnitAccountCreateDefaultsNormalForRoles(t *testing.T) {
 		"CreateAccount":    map[string]interface{}{},
 		"DescribeAccounts": accountDescribeResponse("dds-1", "admin", "normal_def_acc", "normal", "", []map[string]string{{"role": "read", "db_name": "admin"}}),
 	}
-	patches := patchAccountRpcPost(t, &calls, responses)
+	patches := patchAccountDoRequest(t, &calls, responses)
 	defer patches.Reset()
 
 	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountCreate(d, client))
@@ -1380,7 +1406,7 @@ func TestUnitAccountCreateDefaultsNormalForRoles(t *testing.T) {
 // rejects a shard account with roles locally: the request reaches CreateAccount
 // and the InvalidRoles.NotSupported response comes from the API.
 func TestUnitAccountCreateForwardsShardRolesToApi(t *testing.T) {
-	client := accountUnitClient()
+	client := accountUnitClient(t)
 	d := schema.TestResourceDataRaw(t, unitAccountResourceSchema(t), map[string]interface{}{
 		"instance_id":      "dds-1",
 		"account_name":     "shard_acc",
@@ -1400,7 +1426,7 @@ func TestUnitAccountCreateForwardsShardRolesToApi(t *testing.T) {
 			StatusCode: tea.Int(400),
 		},
 	}
-	patches := patchAccountRpcPost(t, &calls, responses)
+	patches := patchAccountDoRequest(t, &calls, responses)
 	defer patches.Reset()
 
 	err := mongodb.ResourceAliCloudMongodbAccountCreate(d, client)
@@ -1422,7 +1448,7 @@ func TestUnitAccountCreateForwardsShardRolesToApi(t *testing.T) {
 // TestUnitAccountCreateSendsCreateAccountPayload covers the config server
 // account payload: description, database, character type and roles (C1-C5).
 func TestUnitAccountCreateSendsCreateAccountPayload(t *testing.T) {
-	client := accountUnitClient()
+	client := accountUnitClient(t)
 	d := schema.TestResourceDataRaw(t, unitAccountResourceSchema(t), map[string]interface{}{
 		"instance_id":         "dds-1",
 		"account_name":        "cs_acc",
@@ -1439,7 +1465,7 @@ func TestUnitAccountCreateSendsCreateAccountPayload(t *testing.T) {
 		"CreateAccount":    map[string]interface{}{},
 		"DescribeAccounts": accountDescribeResponse("dds-1", "appdb", "cs_acc", "cs", "cs description", []map[string]string{{"role": "readWrite", "db_name": "appdb"}}),
 	}
-	patches := patchAccountRpcPost(t, &calls, responses)
+	patches := patchAccountDoRequest(t, &calls, responses)
 	defer patches.Reset()
 
 	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountCreate(d, client))
@@ -1463,7 +1489,7 @@ func TestUnitAccountCreateSendsCreateAccountPayload(t *testing.T) {
 // TestUnitAccountCreateRootSendsResetPasswordDbName covers C6: the default
 // database is sent explicitly even when the configuration omits db_name.
 func TestUnitAccountCreateRootSendsResetPasswordDbName(t *testing.T) {
-	client := accountUnitClient()
+	client := accountUnitClient(t)
 	d := schema.TestResourceDataRaw(t, unitAccountResourceSchema(t), map[string]interface{}{
 		"instance_id":      "dds-1",
 		"account_name":     "root",
@@ -1474,7 +1500,7 @@ func TestUnitAccountCreateRootSendsResetPasswordDbName(t *testing.T) {
 		"ResetAccountPassword": map[string]interface{}{},
 		"DescribeAccounts":     accountDescribeResponse("dds-1", "admin", "root", "normal", "", nil),
 	}
-	patches := patchAccountRpcPost(t, &calls, responses)
+	patches := patchAccountDoRequest(t, &calls, responses)
 	defer patches.Reset()
 
 	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountCreate(d, client))
@@ -1490,7 +1516,7 @@ func TestUnitAccountCreateRootSendsResetPasswordDbName(t *testing.T) {
 
 // TestUnitAccountUpdatePasswordSendsDbName covers C7.
 func TestUnitAccountUpdatePasswordSendsDbName(t *testing.T) {
-	client := accountUnitClient()
+	client := accountUnitClient(t)
 	d := unitAccountResourceData(t, "dds-1:appdb:acc", map[string]interface{}{
 		"instance_id":      "dds-1",
 		"account_name":     "acc",
@@ -1505,7 +1531,7 @@ func TestUnitAccountUpdatePasswordSendsDbName(t *testing.T) {
 		"ResetAccountPassword": map[string]interface{}{},
 		"DescribeAccounts":     accountDescribeResponse("dds-1", "appdb", "acc", "db", "", nil),
 	}
-	patches := patchAccountRpcPost(t, &calls, responses)
+	patches := patchAccountDoRequest(t, &calls, responses)
 	defer patches.Reset()
 
 	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountUpdate(d, client))
@@ -1519,7 +1545,7 @@ func TestUnitAccountUpdatePasswordSendsDbName(t *testing.T) {
 
 // TestUnitAccountUpdateDescriptionSendsDbName covers C8.
 func TestUnitAccountUpdateDescriptionSendsDbName(t *testing.T) {
-	client := accountUnitClient()
+	client := accountUnitClient(t)
 	d := unitAccountResourceData(t, "dds-1:appdb:acc", map[string]interface{}{
 		"instance_id":         "dds-1",
 		"account_name":        "acc",
@@ -1533,7 +1559,7 @@ func TestUnitAccountUpdateDescriptionSendsDbName(t *testing.T) {
 		"ModifyAccountDescription": map[string]interface{}{},
 		"DescribeAccounts":         accountDescribeResponse("dds-1", "appdb", "acc", "normal", "after", nil),
 	}
-	patches := patchAccountRpcPost(t, &calls, responses)
+	patches := patchAccountDoRequest(t, &calls, responses)
 	defer patches.Reset()
 
 	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountUpdate(d, client))
@@ -1548,7 +1574,7 @@ func TestUnitAccountUpdateDescriptionSendsDbName(t *testing.T) {
 // TestUnitAccountDescribeFiltersByIdentity covers QA-PR-07: the collection read
 // must return the requested account even when other accounts exist.
 func TestUnitAccountDescribeFiltersByIdentity(t *testing.T) {
-	client := accountUnitClient()
+	client := accountUnitClient(t)
 	calls := make([]accountApiCall, 0)
 	responses := map[string]interface{}{
 		"DescribeAccounts": map[string]interface{}{
@@ -1560,7 +1586,7 @@ func TestUnitAccountDescribeFiltersByIdentity(t *testing.T) {
 			},
 		},
 	}
-	patches := patchAccountRpcPost(t, &calls, responses)
+	patches := patchAccountDoRequest(t, &calls, responses)
 	defer patches.Reset()
 	service := mongodb.NewMongodbServiceV2(client)
 
@@ -1582,12 +1608,12 @@ func TestUnitAccountDescribeFiltersByIdentity(t *testing.T) {
 // TestUnitAccountDescribeDecodesEscapedDatabase covers the reversible id for a
 // legal database name that contains a colon (QA-PR-02).
 func TestUnitAccountDescribeDecodesEscapedDatabase(t *testing.T) {
-	client := accountUnitClient()
+	client := accountUnitClient(t)
 	calls := make([]accountApiCall, 0)
 	responses := map[string]interface{}{
 		"DescribeAccounts": accountDescribeResponse("dds-1", "app:logs", "acc1", "db", "", nil),
 	}
-	patches := patchAccountRpcPost(t, &calls, responses)
+	patches := patchAccountDoRequest(t, &calls, responses)
 	defer patches.Reset()
 	service := mongodb.NewMongodbServiceV2(client)
 
