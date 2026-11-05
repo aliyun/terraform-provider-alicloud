@@ -1344,6 +1344,25 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 				),
 			},
 			{
+				// Import after the interval change: the snapshot type and interval are
+				// readable, while the already deleted policy keeps the same exemptions as
+				// the import above.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: append([]string{
+					"cross_backup_type",
+					"cross_backup_period",
+					"cross_retention_type",
+					"cross_retention_value",
+					"cross_log_retention_type",
+					"cross_log_retention_value",
+					"src_region",
+					"dest_region",
+					"enable_cross_log_backup",
+				}, mongodbInstanceImportStateVerifyIgnore...),
+			},
+			{
 				// With the minute-level interval in effect, the two high-frequency
 				// attributes must reach the service and be reported back. This replaces
 				// the ExpectError-only registration that could never reach the API.
@@ -1388,10 +1407,12 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 }
 
 // testAccCheckMongoDBInstanceCrossBackupPolicyValues reads the backup policy from the
-// DDS API, passing the source region so the service resolves the geo-redundant entry,
-// and compares the exact values the configuration asked for. Terraform state is not
-// consulted: Read keeps the configured value when the response omits a key, so a
-// state-only assertion cannot prove that the write reached the service.
+// DDS API and compares the exact values the configuration asked for. SrcRegion is
+// supplied when the state has it so the service can resolve the geo-redundant entry
+// without relying on the instance's own region; the policy fields are also reported
+// without it while the policy is active. Terraform state is not consulted: Read keeps
+// the configured value when the response omits a key, so a state-only assertion cannot
+// prove that the write reached the service.
 func testAccCheckMongoDBInstanceCrossBackupPolicyValues(resourceId string, expectPeriod []string, expected map[string]string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceId]
