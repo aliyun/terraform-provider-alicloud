@@ -1879,7 +1879,10 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 			sgs := convert.ExpandStringList(securityGroupIds)
 			request["SecurityGroupIds"] = sgs
 		}
-		if securityGroupId != "" {
+		// security_group_id is computed, so a value mirrored by Read is not a
+		// user change; sending it together with NetworkInterfaces is rejected by
+		// the API. Send it only when the configuration sets the singular.
+		if rawConfigValueIsSet(rawConfig, "security_group_id") && securityGroupId != "" {
 			request["SecurityGroupId"] = securityGroupId
 		}
 		update = true
