@@ -573,6 +573,7 @@ func TestAccAliCloudPolarDbAccount_propertyCoverage(t *testing.T) {
 	rand := tfacctest.RandIntRange(1, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudPolarDbAccountBasicDependencePropertyCoverage)
+	testAccConfigWithPostCreationDatabase := withPolarDbAccountPostCreationDatabase(testAccConfig)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -653,13 +654,11 @@ func TestAccAliCloudPolarDbAccount_propertyCoverage(t *testing.T) {
 				// database added later, not only databases prepared before account creation.
 				// DescribeAccounts does not enumerate PrivForAllDB grants, so this step records the
 				// account response while the follow-up database exists and does not claim the
-				// per-database effect of the grant.
-				Config: testAccConfig(map[string]interface{}{}) + `
-resource "alicloud_polardb_database" "post_creation" {
-  db_cluster_id = alicloud_polardb_cluster.default.id
-  db_name       = "tf_testacc_db3"
-}
-`,
+				// per-database effect of the grant. The extra resource is appended by a helper so
+				// the step's Config text stays a plain attribute map for the coverage checker.
+				Config: testAccConfigWithPostCreationDatabase(map[string]interface{}{
+					"db_name": "tf_testacc_db",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("alicloud_polardb_database.post_creation", "id"),
 					testAccCheckPolarDbAccountDatabasePrivilegesEmpty(),
@@ -668,7 +667,9 @@ resource "alicloud_polardb_database" "post_creation" {
 			{
 				// Dropping the follow-up database must leave the cluster-wide account unchanged and
 				// still reporting no explicit per-database entries.
-				Config: testAccConfig(map[string]interface{}{}),
+				Config: testAccConfig(map[string]interface{}{
+					"priv_for_all_db": "1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckPolarDbAccountDatabasePrivilegesEmpty(),
 				),
@@ -983,6 +984,22 @@ func polarDbAccountDatabasePrivilegeList(privileges map[string]string) []string 
 	}
 	sort.Strings(list)
 	return list
+}
+
+const polarDbAccountPostCreationDatabase = `
+resource "alicloud_polardb_database" "post_creation" {
+  db_cluster_id = alicloud_polardb_cluster.default.id
+  db_name       = "tf_testacc_db3"
+}
+`
+
+// withPolarDbAccountPostCreationDatabase appends a database resource to the generated account
+// config. Keeping the literal here instead of inline in the test step keeps each step's Config a
+// plain attribute map so the testing-coverage checker can still parse the later steps.
+func withPolarDbAccountPostCreationDatabase(config acctest.ResourceTestAccConfigFunc) acctest.ResourceTestAccConfigFunc {
+	return func(attributes map[string]interface{}) string {
+		return config(attributes) + polarDbAccountPostCreationDatabase
+	}
 }
 
 func testAccCheckPolarDbAccountDatabasePrivileges(expected map[string]string) resource.TestCheckFunc {
