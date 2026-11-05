@@ -38,20 +38,19 @@ terraform {
   }
 }
 
+provider "alicloud" {
+  region = "cn-beijing"
+}
+
 variable "name" {
   default = "terraform-example"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-
-data "alicloud_mongodb_zones" "default" {
-}
-
 locals {
-  vswitch_zone_ids = toset(data.alicloud_zones.default.zones[*].id)
-  zone_id          = [for zone in data.alicloud_mongodb_zones.default.zones : zone.id if contains(local.vswitch_zone_ids, zone.id)][0]
+  # The example pins a zone where the dds.mongo.mid instance class is sold and
+  # VPC vSwitches can be created. Replace the region and zone with values that
+  # are available for your account.
+  zone_id = "cn-beijing-h"
 }
 
 resource "alicloud_vpc" "default" {
