@@ -1340,12 +1340,16 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 				// readable. The cross log retention pair is exempted because the service
 				// stops reporting it once cross-region log backup is disabled (observed on
 				// this head: the imported state has no CrossLogRetentionType/Value), while
-				// the resource keeps the configured values by design.
+				// the resource keeps the configured values by design. The cross retention
+				// value is exempted for the same structural reason as the "never" import
+				// above: the retention type is "never", so the service does not report a
+				// retention value.
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: append([]string{
 					"cross_backup_type",
+					"cross_retention_value",
 					"cross_log_retention_type",
 					"cross_log_retention_value",
 				}, mongodbInstanceImportStateVerifyIgnore...),
