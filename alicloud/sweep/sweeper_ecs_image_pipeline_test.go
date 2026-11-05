@@ -50,7 +50,7 @@ func testSweepEcsImagePipeline(region string) error {
 		// The token guard below catches an echoed cursor; this cap catches a
 		// server that keeps returning distinct tokens, so the listing always
 		// terminates like the data source helpers do.
-		if pages >= imagePipelineSweepMaxPages {
+		if imagePipelinePageBudgetExceeded(pages) {
 			listErrors = append(listErrors, fmt.Sprintf("%s kept returning a continuation token for %d pages; the sweep stopped instead of listing forever", action, pages))
 			break
 		}
@@ -110,6 +110,13 @@ func testSweepEcsImagePipeline(region string) error {
 		request["NextToken"] = nextToken
 	}
 	return imagePipelineSweepError(region, deleteErrors, recordErrors, listErrors)
+}
+
+// imagePipelinePageBudgetExceeded reports whether the sweep has already read
+// the pages one listing may use and must stop instead of following another
+// token.
+func imagePipelinePageBudgetExceeded(pages int) bool {
+	return pages >= imagePipelineSweepMaxPages
 }
 
 // imagePipelineNextToken returns the continuation token the next request must
@@ -391,6 +398,20 @@ func TestUnitImagePipelineOwnedBySweeper(t *testing.T) {
 	// ownership unknown instead of guessing either way.
 	if _, err := imagePipelineOwnedBySweeper("terraform-example", "not-an-object"); err == nil {
 		t.Fatal("unreadable ownership tags must be reported instead of deciding ownership")
+	}
+}
+
+func TestUnitImagePipelinePageBudget(t *testing.T) {
+	for pages := 0; pages < imagePipelineSweepMaxPages; pages++ {
+		if imagePipelinePageBudgetExceeded(pages) {
+			t.Fatalf("page %d of the %d page budget must be allowed", pages, imagePipelineSweepMaxPages)
+		}
+	}
+	if !imagePipelinePageBudgetExceeded(imagePipelineSweepMaxPages) {
+		t.Fatalf("page %d must end the listing", imagePipelineSweepMaxPages)
+	}
+	if !imagePipelinePageBudgetExceeded(imagePipelineSweepMaxPages + 1) {
+		t.Fatal("a page beyond the budget must end the listing")
 	}
 }
 

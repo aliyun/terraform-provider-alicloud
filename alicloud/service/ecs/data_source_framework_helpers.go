@@ -375,9 +375,9 @@ func fwRequestRuntime() *utilV2.RuntimeOptions {
 }
 
 // fwNeedRetry reports whether a failed read is worth retrying inside the read
-// budget. The context bound SDK path reports throttling, 5xx and timeouts as tea
-// SDK errors, which the shared helper classifies. A cancelled or expired read is
-// never retried: its budget is gone.
+// budget. The context bound SDK path reports throttling and 5xx as tea SDK
+// errors, and a transport failure as a URL error; the shared helper classifies
+// both. A cancelled or expired read is never retried: its budget is gone.
 func fwNeedRetry(err error) bool {
 	if err == nil {
 		return false
