@@ -53,7 +53,7 @@ func (d *defaultDomainDataSource) Schema(ctx context.Context, req datasource.Sch
 func (d *defaultDomainDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	const action = "GetDefaultDomain"
 
-	response, err := d.Client().RpcPost("Ims", "2019-08-15", action, nil, map[string]interface{}{}, true)
+	response, err := d.Meta().RpcPost("Ims", "2019-08-15", action, nil, map[string]interface{}{}, true)
 	if err != nil {
 		resp.Diagnostics.AddError(fmt.Sprintf("Reading %s: calling %s", defaultDomainTypeName, action), err.Error())
 		return

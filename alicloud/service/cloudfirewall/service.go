@@ -5,12 +5,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	jsonpath "github.com/PaesslerAG/jsonpath"
+	connectivity "github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	errs "github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	helper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	logs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	retry "github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type Service struct {
@@ -203,4 +203,113 @@ func (s *Service) InstanceOrderDetailStateRefreshFunc(orderId string, failStates
 
 		return object, object["PaymentStatus"].(string), nil
 	}
+}
+
+// QueryAvailableInstance queries the BSS QueryAvailableInstances API for the
+// legacy vipcloudfw Cloud Firewall instance (the v1 alicloud_cloud_firewall_instance
+// resource). The v2 instance resource uses a different product code (cfw) and is
+// served by DescribeInstance; the two are not interchangeable.
+func (s *Service) QueryAvailableInstance(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "QueryAvailableInstances"
+	request := map[string]interface{}{
+		"InstanceIDs": id,
+		"ProductCode": "vipcloudfw",
+		"ProductType": "vipcloudfw",
+	}
+	if client.IsInternationalAccount() {
+		request["ProductCode"] = "cfw"
+		request["ProductType"] = "cfw_pre_intl"
+	}
+
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("BssOpenApi", "2017-12-14", action, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data.InstanceList", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Data.InstanceList", response)
+	}
+
+	if len(v.([]interface{})) < 1 {
+		return object, errs.WrapErrorf(errs.NotFoundErr("CloudFirewall", id), errs.NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceID"]) != id {
+			return object, errs.WrapErrorf(errs.NotFoundErr("CloudFirewall", id), errs.NotFoundWithResponse, response)
+		}
+	}
+
+	object = v.([]interface{})[0].(map[string]interface{})
+
+	return object, nil
+}
+
+// QueryAvailableInstanceList lists available BSS instances for the legacy Cloud
+// Firewall instance pre-check, which waits for any leftover Normal-status
+// instance to be cleaned up before the integration test creates a new one. It
+// mirrors BssOpenApiService.QueryAvailableInstanceList from the root package so
+// the cloudfirewall test package does not need to reach back into the root
+// package for this query.
+func (s *Service) QueryAvailableInstanceList(instanceRegion, productCode, productType, productCodeIntl, productTypeIntl string) (object []interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	var endpoint string
+	action := "QueryAvailableInstances"
+	request := map[string]interface{}{
+		"ProductCode":      productCode,
+		"ProductType":      productType,
+		"SubscriptionType": "Subscription",
+	}
+	if client.IsInternationalAccount() {
+		request = map[string]interface{}{
+			"ProductCode": productCodeIntl,
+			"ProductType": productTypeIntl,
+		}
+	}
+	if instanceRegion != "" {
+		request["Region"] = instanceRegion
+	}
+
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductType"] = productTypeIntl
+				request["ProductCode"] = productCodeIntl
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return object, errs.WrapError(err)
+	}
+	v, err := jsonpath.Get("$.Data.InstanceList", response)
+	if err != nil {
+		return object, errs.WrapError(err)
+	}
+	return v.([]interface{}), nil
 }

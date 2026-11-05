@@ -1,0 +1,36 @@
+package vpc_test
+
+import (
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+func TestAccAliCloudVpcFlowLogServiceDataSource(t *testing.T) {
+	resourceId := "data.alicloud_vpc_flow_log_service.default"
+	testAccCheck := acctest.ResourceAttrInit(resourceId, map[string]string{}).ResourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAliCloudVpcFlowLogServiceDataSource,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"id":     acctest.CHECKSET,
+						"status": "Opened",
+					}),
+				),
+			},
+		},
+	})
+}
+
+const testAccCheckAliCloudVpcFlowLogServiceDataSource = `
+	data "alicloud_vpc_flow_log_service" "default" {
+  		enable = "On"
+	}
+`

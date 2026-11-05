@@ -173,30 +173,30 @@ The following arguments are supported:
 * `vpc_id` - (Optional) The ID of the VPC.
 * `vswitch_id` - (Optional) When creating a VPC-Connected instance, you must specify its VSwitch ID.
 * `zone_id` - (Optional) The zone ID of the instance.
-* `http_endpoint` - (Optional, ForceNew) Whether to enable access to instance metadata. Valid values:
+* `http_endpoint` - (Optional) Whether to enable access to instance metadata. Valid values:
   - enabled: Enabled.
   - disabled: Disabled.
 **NOTE:** From version 1.260.0, `http_endpoint` can be modified.
-* `http_tokens` - (Optional, ForceNew) Whether to use the hardened mode (IMDSv2) when accessing instance metadata. Valid values:
+* `http_tokens` - (Optional) Whether to use the hardened mode (IMDSv2) when accessing instance metadata. Valid values:
   - optional: Not mandatory.
   - required: Mandatory. After this value is set, the normal mode cannot access instance metadata.
 **NOTE:** From version 1.260.0, `http_tokens` can be modified.
-* `http_put_response_hop_limit` - (Optional, ForceNew) The HTTP PUT response hop limit required for instance metadata requests. Valid values: `1` to `64`.
+* `http_put_response_hop_limit` - (Optional) The HTTP PUT response hop limit required for instance metadata requests. Valid values: `1` to `64`.
 
   -> **NOTE:** From version 1.260.0, `http_put_response_hop_limit` can be modified.
 * `tags` - (Optional) A mapping of tags to assign to instance, block storage, and elastic network.
-    - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
-    - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
+  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
+  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 * `template_tags` - (Optional) A mapping of tags to assign to the launch template. 
 * `default_version_number` - (Optional, Int, Computed, Available since v1.241.0) The version number of the default launch template version. Default to 1. It is conflict with `update_default_version_number`.
 * `update_default_version_number` - (Optional, Bool, Available since v1.241.0) Whether to update the default version of the launch template to the latest version automatically. It is conflict with `default_version_number`.
 * `image_options` - (Optional, Set, Available since v1.254.0) The options of images. See [`image_options`](#image_options) below.
-* `name` - (Deprecated) It has been deprecated from version 1.120.0, and use field `launch_template_name` instead.
-* `userdata` - (Deprecated) It has been deprecated from version 1.120.0, and use field `user_data` instead.
-* `system_disk_name` - (Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
-* `system_disk_category` - (Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
-* `system_disk_size` - (Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
-* `system_disk_description` - (Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
+* `name` - (Optional, ForceNew, Deprecated) It has been deprecated from version 1.120.0, and use field `launch_template_name` instead.
+* `userdata` - (Optional, Deprecated) It has been deprecated from version 1.120.0, and use field `user_data` instead.
+* `system_disk_name` - (Optional, Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
+* `system_disk_category` - (Optional, Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
+* `system_disk_size` - (Optional, Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
+* `system_disk_description` - (Optional, Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
 
 ### `system_disk`
 

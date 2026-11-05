@@ -15,8 +15,10 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 // ResourceInstance is the SDKv2 factory for alicloud_elasticsearch_instance.
@@ -37,6 +39,10 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 			Create: schema.DefaultTimeout(61 * time.Minute),
 			Update: schema.DefaultTimeout(360 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("password"), cty.GetAttrPath("password_wo")),
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("kms_encrypted_password"), cty.GetAttrPath("password_wo")),
 		},
 		Schema: map[string]*schema.Schema{
 			"arch_type": {
@@ -158,6 +164,41 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validators.StringInSlice([]string{"x-pack", "IS"}, false),
 			},
+			"index_node_configuration": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"amount": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"disk": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"disk_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
+						"performance_level": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"spec": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
 			"kibana_configuration": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -258,6 +299,19 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Optional:  true,
 				Sensitive: true,
 			},
+			"password_wo": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				WriteOnly:     true,
+				RequiredWith:  []string{"password_wo_version"},
+				ConflictsWith: []string{"password", "kms_encrypted_password"},
+			},
+			"password_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntAtLeast(1),
+				RequiredWith: []string{"password_wo"},
+			},
 			"payment_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -311,6 +365,41 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Type:     schema.TypeMap,
 				Optional: true,
 				Computed: true,
+			},
+			"search_node_configuration": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"amount": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"disk": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"disk_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
+						"performance_level": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"spec": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -632,6 +721,11 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 
 	password := d.Get("password").(string)
 	kmsPassword := d.Get("kms_encrypted_password").(string)
+	if woValue, err := helper.GetWriteOnlyValue(d, cty.GetAttrPath("password_wo"), cty.String); err != nil {
+		return errs.WrapError(err)
+	} else if !woValue.IsNull() {
+		password = woValue.AsString()
+	}
 	if password == "" && kmsPassword == "" {
 		return errs.WrapError(errs.Error("One of the 'password' and 'kms_encrypted_password' should be set."))
 	}
@@ -773,6 +867,46 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 		warmNode["diskEncryption"] = d.Get("warm_node_disk_encrypted")
 		request["warmNode"] = true
 		request["warmNodeConfiguration"] = warmNode
+	}
+
+	searchNodeConfiguration := make(map[string]interface{})
+	if v := d.Get("search_node_configuration"); !helper.IsNil(v) {
+		if amount, _ := jsonpath.Get("$[0].amount", v); amount != nil && amount != "" {
+			searchNodeConfiguration["amount"] = amount
+		}
+		if disk, _ := jsonpath.Get("$[0].disk", v); disk != nil && disk != "" {
+			searchNodeConfiguration["disk"] = disk
+		}
+		if diskType, _ := jsonpath.Get("$[0].disk_type", v); diskType != nil && diskType != "" {
+			searchNodeConfiguration["diskType"] = diskType
+		}
+		if performanceLevel, _ := jsonpath.Get("$[0].performance_level", v); performanceLevel != nil && performanceLevel != "" {
+			searchNodeConfiguration["performanceLevel"] = performanceLevel
+		}
+		if spec, _ := jsonpath.Get("$[0].spec", v); spec != nil && spec != "" {
+			searchNodeConfiguration["spec"] = spec
+		}
+		request["searchNodeConfiguration"] = searchNodeConfiguration
+	}
+
+	indexNodeConfiguration := make(map[string]interface{})
+	if v := d.Get("index_node_configuration"); !helper.IsNil(v) {
+		if amount, _ := jsonpath.Get("$[0].amount", v); amount != nil && amount != "" {
+			indexNodeConfiguration["amount"] = amount
+		}
+		if disk, _ := jsonpath.Get("$[0].disk", v); disk != nil && disk != "" {
+			indexNodeConfiguration["disk"] = disk
+		}
+		if diskType, _ := jsonpath.Get("$[0].disk_type", v); diskType != nil && diskType != "" {
+			indexNodeConfiguration["diskType"] = diskType
+		}
+		if performanceLevel, _ := jsonpath.Get("$[0].performance_level", v); performanceLevel != nil && performanceLevel != "" {
+			indexNodeConfiguration["performanceLevel"] = performanceLevel
+		}
+		if spec, _ := jsonpath.Get("$[0].spec", v); spec != nil && spec != "" {
+			indexNodeConfiguration["spec"] = spec
+		}
+		request["indexNodeConfiguration"] = indexNodeConfiguration
 	}
 
 	body = request
@@ -981,6 +1115,43 @@ func resourceAliCloudElasticsearchInstanceRead(d *schema.ResourceData, meta inte
 		warmNodeConfigurationMaps = append(warmNodeConfigurationMaps, warmNodeConfigurationMap)
 	}
 	if err := d.Set("warm_node_configuration", warmNodeConfigurationMaps); err != nil {
+		return err
+	}
+
+	searchNodeConfigurationMaps := make([]map[string]interface{}, 0)
+	searchNodeConfigurationMap := make(map[string]interface{})
+	searchNodeConfigurationRaw := make(map[string]interface{})
+	if objectRaw["searchNodeConfiguration"] != nil {
+		searchNodeConfigurationRaw = objectRaw["searchNodeConfiguration"].(map[string]interface{})
+	}
+	if len(searchNodeConfigurationRaw) > 0 {
+		searchNodeConfigurationMap["amount"] = searchNodeConfigurationRaw["amount"]
+		searchNodeConfigurationMap["disk"] = searchNodeConfigurationRaw["disk"]
+		searchNodeConfigurationMap["disk_type"] = searchNodeConfigurationRaw["diskType"]
+		searchNodeConfigurationMap["performance_level"] = searchNodeConfigurationRaw["performanceLevel"]
+		searchNodeConfigurationMap["spec"] = searchNodeConfigurationRaw["spec"]
+
+		searchNodeConfigurationMaps = append(searchNodeConfigurationMaps, searchNodeConfigurationMap)
+	}
+	if err := d.Set("search_node_configuration", searchNodeConfigurationMaps); err != nil {
+		return err
+	}
+	indexNodeConfigurationMaps := make([]map[string]interface{}, 0)
+	indexNodeConfigurationMap := make(map[string]interface{})
+	indexNodeConfigurationRaw := make(map[string]interface{})
+	if objectRaw["indexNodeConfiguration"] != nil {
+		indexNodeConfigurationRaw = objectRaw["indexNodeConfiguration"].(map[string]interface{})
+	}
+	if len(indexNodeConfigurationRaw) > 0 {
+		indexNodeConfigurationMap["amount"] = indexNodeConfigurationRaw["amount"]
+		indexNodeConfigurationMap["disk"] = indexNodeConfigurationRaw["disk"]
+		indexNodeConfigurationMap["disk_type"] = indexNodeConfigurationRaw["diskType"]
+		indexNodeConfigurationMap["performance_level"] = indexNodeConfigurationRaw["performanceLevel"]
+		indexNodeConfigurationMap["spec"] = indexNodeConfigurationRaw["spec"]
+
+		indexNodeConfigurationMaps = append(indexNodeConfigurationMaps, indexNodeConfigurationMap)
+	}
+	if err := d.Set("index_node_configuration", indexNodeConfigurationMaps); err != nil {
 		return err
 	}
 
@@ -1694,6 +1865,66 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		request["kibanaConfiguration"] = kibanaConfiguration
 	}
 
+	if !d.IsNewResource() && d.HasChange("search_node_configuration") {
+		update = true
+	}
+	searchNodeConfiguration := make(map[string]interface{})
+
+	if v := d.Get("search_node_configuration"); !helper.IsNil(v) || d.HasChange("search_node_configuration") {
+		amount9, _ := jsonpath.Get("$[0].amount", v)
+		if amount9 != nil && amount9 != "" {
+			searchNodeConfiguration["amount"] = amount9
+		}
+		disk11, _ := jsonpath.Get("$[0].disk", v)
+		if disk11 != nil && disk11 != "" {
+			searchNodeConfiguration["disk"] = disk11
+		}
+		diskType9, _ := jsonpath.Get("$[0].disk_type", v)
+		if diskType9 != nil && diskType9 != "" {
+			searchNodeConfiguration["diskType"] = diskType9
+		}
+		performanceLevel3, _ := jsonpath.Get("$[0].performance_level", v)
+		if performanceLevel3 != nil && performanceLevel3 != "" {
+			searchNodeConfiguration["performanceLevel"] = performanceLevel3
+		}
+		spec11, _ := jsonpath.Get("$[0].spec", v)
+		if spec11 != nil && spec11 != "" {
+			searchNodeConfiguration["spec"] = spec11
+		}
+
+		request["searchNodeConfiguration"] = searchNodeConfiguration
+	}
+
+	if !d.IsNewResource() && d.HasChange("index_node_configuration") {
+		update = true
+	}
+	indexNodeConfiguration := make(map[string]interface{})
+
+	if v := d.Get("index_node_configuration"); !helper.IsNil(v) || d.HasChange("index_node_configuration") {
+		amount11, _ := jsonpath.Get("$[0].amount", v)
+		if amount11 != nil && amount11 != "" {
+			indexNodeConfiguration["amount"] = amount11
+		}
+		disk13, _ := jsonpath.Get("$[0].disk", v)
+		if disk13 != nil && disk13 != "" {
+			indexNodeConfiguration["disk"] = disk13
+		}
+		diskType11, _ := jsonpath.Get("$[0].disk_type", v)
+		if diskType11 != nil && diskType11 != "" {
+			indexNodeConfiguration["diskType"] = diskType11
+		}
+		performanceLevel4, _ := jsonpath.Get("$[0].performance_level", v)
+		if performanceLevel4 != nil && performanceLevel4 != "" {
+			indexNodeConfiguration["performanceLevel"] = performanceLevel4
+		}
+		spec13, _ := jsonpath.Get("$[0].spec", v)
+		if spec13 != nil && spec13 != "" {
+			indexNodeConfiguration["spec"] = spec13
+		}
+
+		request["indexNodeConfiguration"] = indexNodeConfiguration
+	}
+
 	if v, ok := d.GetOkExists("force"); ok {
 		query["force"] = helper.StringPointer(strconv.FormatBool(v.(bool)))
 	}
@@ -1777,7 +2008,15 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 	if !d.IsNewResource() && d.HasChange("password") {
 		update = true
 	}
+	if !d.IsNewResource() && d.HasChange("password_wo_version") {
+		update = true
+	}
 	password := d.Get("password").(string)
+	if woValue, err := helper.GetWriteOnlyValue(d, cty.GetAttrPath("password_wo"), cty.String); err != nil {
+		return errs.WrapError(err)
+	} else if !woValue.IsNull() {
+		password = woValue.AsString()
+	}
 	kmsPassword := d.Get("kms_encrypted_password").(string)
 	if password == "" && kmsPassword == "" {
 		return errs.WrapError(errs.Error("One of the 'password' and 'kms_encrypted_password' should be set."))
@@ -1791,7 +2030,6 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		}
 		request["esAdminPassword"] = decryptResp
 	}
-
 	body = request
 	if update {
 		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)

@@ -13,6 +13,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 )
 
+func TestMain(m *testing.M) {
+	resource.TestMain(m)
+}
+
 func TestAccAliCloudOosSecretParameterEphemeral_basic(t *testing.T) {
 	rand := sdkacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccOosSecretParameterEphemeral%d", rand)

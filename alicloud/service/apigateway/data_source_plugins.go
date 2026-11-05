@@ -1,0 +1,255 @@
+package apigateway
+
+import (
+	"fmt"
+	"regexp"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func DataSourcePlugins() *schema.Resource {
+	return &schema.Resource{
+		Read: DataSourcePluginsRead,
+		Schema: map[string]*schema.Schema{
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"plugin_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"plugin_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"backendSignature", "caching", "cors", "ipControl", "jwtAuth", "trafficControl"}, false),
+			},
+			"tags": tags.TagsSchema(),
+			"page_number": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"page_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  50,
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"plugins": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"create_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"modified_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"plugin_data": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"plugin_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"plugin_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"plugin_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func DataSourcePluginsRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "DescribePlugins"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOk("plugin_name"); ok {
+		request["PluginName"] = v
+	}
+	if v, ok := d.GetOk("plugin_type"); ok {
+		request["PluginType"] = v
+	}
+	helper.SetPagingRequest(d, request, helper.PageSizeLarge)
+	var objects []map[string]interface{}
+	var pluginNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		pluginNameRegex = r
+	}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+	tagsMap := make(map[string]interface{})
+	if v, ok := d.GetOk("tags"); ok && len(v.(map[string]interface{})) > 0 {
+		tagsMap = v.(map[string]interface{})
+	}
+	var response map[string]interface{}
+	var err error
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_api_gateway_plugins", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.Plugins.PluginAttribute", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Plugins.PluginAttribute", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if pluginNameRegex != nil && !pluginNameRegex.MatchString(fmt.Sprint(item["PluginName"])) {
+				continue
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["PluginId"])]; !ok {
+					continue
+				}
+			}
+			if len(tagsMap) > 0 {
+				if _, ok := item["Tags"]; !ok {
+					continue
+				}
+				if len(item["Tags"].(map[string]interface{})["TagInfo"].([]interface{})) != len(tagsMap) {
+					continue
+				}
+				match := true
+				for _, tag := range item["Tags"].(map[string]interface{})["TagInfo"].([]interface{}) {
+					if v, ok := tagsMap[tag.(map[string]interface{})["Key"].(string)]; !ok || v.(string) != tag.(map[string]interface{})["Value"].(string) {
+						match = false
+						break
+					}
+				}
+				if !match {
+					continue
+				}
+			}
+			objects = append(objects, item)
+		}
+		if len(result) < request["PageSize"].(int) {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"create_time":   object["CreatedTime"],
+			"description":   object["Description"],
+			"modified_time": object["ModifiedTime"],
+			"plugin_data":   object["PluginData"],
+			"id":            fmt.Sprint(object["PluginId"]),
+			"plugin_id":     fmt.Sprint(object["PluginId"]),
+			"plugin_name":   object["PluginName"],
+			"plugin_type":   object["PluginType"],
+		}
+
+		tagsMap := make(map[string]interface{})
+		t, _ := jsonpath.Get("$.Tags.TagInfo", object)
+		if t != nil {
+			for _, t := range t.([]interface{}) {
+				key := t.(map[string]interface{})["Key"].(string)
+				value := t.(map[string]interface{})["Value"].(string)
+				if !tags.IgnoredTags(key, value) {
+					tagsMap[key] = value
+				}
+			}
+		}
+		mapping["tags"] = tagsMap
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["PluginName"])
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("plugins", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

@@ -1,10 +1,6 @@
 package alicloud
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -87,18 +83,6 @@ func healthCheckTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 		return false
 	}
 	return true
-}
-
-// ensLoadBalancerHttpListenerHealthCheckOffDiffSuppressFunc suppresses the
-// ENS HTTP listener health check parameter fields when health_check is "off".
-// The ENS Describe API omits HealthCheckDomain/URI/HealthyThreshold/
-// UnhealthyThreshold/HealthCheckTimeout/HealthCheckInterval/HealthCheckHttpCode/
-// HealthCheckMethod while health check is off (HealthCheckConnectPort is still
-// returned), so these parameters must neither be planned into the diff nor set
-// into state; otherwise they persist as empty/zero values and surface as
-// unexpected attributes after refresh.
-func ensLoadBalancerHttpListenerHealthCheckOffDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return d.Get("health_check").(string) == "off"
 }
 
 func establishedTimeoutDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -343,6 +327,27 @@ func redisSecurityGroupIdDiffSuppressFunc(k, old, new string, d *schema.Resource
 	return true
 }
 
+func elasticsearchEnablePublicDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOkExists("enable_public"); ok && v.(bool) == true {
+		return false
+	}
+	return true
+}
+
+func elasticsearchEnableKibanaPublicDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOkExists("enable_kibana_public_network"); ok && v.(bool) == true {
+		return false
+	}
+	return true
+}
+
+func elasticsearchEnableKibanaPrivateDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOkExists("enable_kibana_private_network"); ok && v.(bool) == true {
+		return false
+	}
+	return true
+}
+
 func ecsNotAutoRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if d.Get("instance_charge_type").(string) == "PostPaid" {
 		return true
@@ -579,6 +584,20 @@ func imageIdSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return new == "" || !(d.Id() == "") && !d.Get("force_update").(bool)
 }
 
+func esVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+
+	oldVersion := strings.Split(strings.Split(old, "_")[0], ".")
+	newVersion := strings.Split(strings.Split(new, "_")[0], ".")
+
+	if len(oldVersion) >= 2 && len(newVersion) >= 2 {
+		if oldVersion[0] == newVersion[0] && oldVersion[1] == newVersion[1] {
+			return true
+		}
+	}
+
+	return false
+}
+
 func vpnSslConnectionsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if enable_ssl, ok := d.GetOk("enable_ssl"); !ok || !enable_ssl.(bool) {
 		return true
@@ -649,13 +668,7 @@ func sagClientUserPasswordSuppressFunc(k, old, new string, d *schema.ResourceDat
 	return false
 }
 
-func selectdbPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if d.Get("payment_type").(string) == "Subscription" {
-		return false
-	}
-	return true
-}
-
+// Migrated to alicloud/service/selectdb.postPaidDiffSuppressFunc.
 func cmsClientInfoSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	for _, v := range d.Get("escalations_info").([]interface{}) {
 		mapping := v.(map[string]interface{})
@@ -684,148 +697,6 @@ func cmsClientCriticalSuppressFunc(k, old, new string, d *schema.ResourceData) b
 		}
 	}
 	return false
-}
-
-func alikafkaInstanceConfigDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if new == "" {
-		return true
-	}
-	if old == "" {
-		return false
-	}
-
-	oldMap := make(map[string]string)
-	err := json.Unmarshal([]byte(old), &oldMap)
-	if err != nil {
-		return false
-	}
-
-	newMap := make(map[string]string)
-	err = json.Unmarshal([]byte(new), &newMap)
-	if err != nil {
-		return false
-	}
-
-	// key exist in oldMap && found new value item different with old item
-	for k, newValueItem := range newMap {
-		oldValueItem, ok := oldMap[k]
-		if ok && newValueItem != oldValueItem {
-			return false
-		}
-	}
-
-	return true
-}
-
-// alikafkaTopicConfigsDiffSuppressFunc suppresses the diff on the configs attribute of
-// alicloud_alikafka_topic as long as every key declared in the configuration matches the
-// value reported by the service. The service returns the whole effective topic configuration,
-// which on a serverless instance always contains keys the user never declared
-// (cloud.native.topic.type and replication-factor), so a whole-document comparison can never
-// converge.
-//
-// Removing a key that was declared before is not reported as a diff: the update merges the
-// submitted keys and cannot reset a single key. A key the service does not report yet is still
-// reported as a diff so that it gets applied.
-//
-// helper.CompareJsonHasSubset does not fit here: it compares the decoded values with
-// reflect.DeepEqual, so a number or a boolean declared in the configuration would never match the
-// string the service reports for the same value. The values are compared through their literal
-// text instead.
-func alikafkaTopicConfigsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if new == "" {
-		return true
-	}
-	if old == "" {
-		return false
-	}
-
-	oldMap, err := decodeJsonObjectKeepingNumbers(old)
-	if err != nil {
-		log.Printf("[DEBUG] %s: the reported configuration is not a JSON object, keeping the diff: %s", k, err)
-		return false
-	}
-	newMap, err := decodeJsonObjectKeepingNumbers(new)
-	if err != nil {
-		log.Printf("[DEBUG] %s: the declared configuration is not a JSON object, keeping the diff: %s", k, err)
-		return false
-	}
-
-	for key, newValue := range newMap {
-		oldValue, ok := oldMap[key]
-		if !ok {
-			log.Printf("[DEBUG] %s: the reported configuration does not contain the declared key %q, keeping the diff", k, key)
-			return false
-		}
-		if formatJsonConfigValue(oldValue) != formatJsonConfigValue(newValue) {
-			log.Printf("[DEBUG] %s: the declared key %q is %q while the service reports %q, keeping the diff",
-				k, key, formatJsonConfigValue(newValue), formatJsonConfigValue(oldValue))
-			return false
-		}
-	}
-
-	return true
-}
-
-// decodeJsonObjectKeepingNumbers decodes a JSON object without converting numbers to float64,
-// so their literal text stays available for comparison.
-func decodeJsonObjectKeepingNumbers(s string) (map[string]interface{}, error) {
-	decoder := json.NewDecoder(strings.NewReader(s))
-	decoder.UseNumber()
-
-	object := make(map[string]interface{})
-	if err := decoder.Decode(&object); err != nil {
-		return nil, err
-	}
-	if err := decoder.Decode(new(interface{})); err != io.EOF {
-		if err == nil {
-			return nil, fmt.Errorf("unexpected trailing data after the JSON object")
-		}
-		return nil, err
-	}
-	return object, nil
-}
-
-// formatJsonConfigValue renders a decoded JSON value as the text the API carries it in, so that
-// values that only differ in their JSON type compare equal.
-func formatJsonConfigValue(value interface{}) string {
-	switch v := value.(type) {
-	case nil:
-		return ""
-	case string:
-		return v
-	case json.Number:
-		return v.String()
-	case bool:
-		return strconv.FormatBool(v)
-	default:
-		encoded, _ := json.Marshal(v)
-		return string(encoded)
-	}
-}
-
-func payTypePostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return strings.ToLower(d.Get("pay_type").(string)) == "postpaid"
-}
-
-func engineDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return strings.ToLower(d.Get("engine").(string)) == "bds"
-}
-
-func whiteIpListDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	oldArray := strings.Split(old, ",")
-	newArray := strings.Split(new, ",")
-	if len(oldArray) != len(newArray) {
-		return false
-	}
-	sort.Strings(oldArray)
-	sort.Strings(newArray)
-	for i := range newArray {
-		if newArray[i] != oldArray[i] {
-			return false
-		}
-	}
-	return true
 }
 
 func sslEnabledDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -896,4 +767,11 @@ func CmsAlarmDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	sort.Strings(oldvlist)
 	return strings.Join(newvlist, " ") == strings.Join(oldvlist, " ")
 
+}
+
+func esDataNodeDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("data_node_disk_type"); ok && v.(string) != "cloud_essd" {
+		return true
+	}
+	return false
 }

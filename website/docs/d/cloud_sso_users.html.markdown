@@ -7,11 +7,11 @@ description: |-
   Provides a list of Cloud Sso Users to the user.
 ---
 
-# alicloud\_cloud\_sso\_users
+# alicloud_cloud_sso_users
 
 This data source provides the Cloud Sso Users of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.140.0+.
+-> **NOTE:** Available since v1.140.0.
 
 -> **NOTE:** Cloud SSO Only Support `cn-shanghai` And `us-west-1` Region
 
@@ -68,26 +68,26 @@ The following arguments are supported:
 * `provision_type` - (Optional, ForceNew) ProvisionType. Valid values: `Manual`, `Synchronized`.
 * `status` - (Optional, ForceNew) The status of user. Valid values: `Disabled`, `Enabled`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of User names.
 * `users` - A list of Cloud Sso Users. Each element contains the following attributes:
-    * `create_time` - The create time of the user.
-    * `description` - The description of user.
-    * `directory_id` - The ID of the Directory.
-    * `display_name` - The display name of user.
-    * `email` - The User's Contact Email Address.
-    * `first_name` - The first name of user.
-    * `id` - The ID of the User.
-    * `last_name` - The last name of user.
-    * `mfa_devices` - The List of MFA Device for User.
-      * `device_id` - The MFA Device ID.
-      * `device_name` - The MFA Device Name.
-      * `device_type` - The MFA Device Type.
-      * `effective_time` - The Effective Time of MFA Device.
-    * `provision_type` - ProvisionType.
-    * `status` - User status. Valid values: `Enabled` and `Disabled`.
-    * `user_id` - The User ID of the group.
-    * `user_name` - The name of user.
+  * `create_time` - The create time of the user.
+  * `description` - The description of user.
+  * `directory_id` - The ID of the Directory.
+  * `display_name` - The display name of user.
+  * `email` - The User's Contact Email Address.
+  * `first_name` - The first name of user.
+  * `id` - The ID of the User.
+  * `last_name` - The last name of user.
+  * `mfa_devices` - The List of MFA Device for User.
+    * `device_id` - The MFA Device ID.
+    * `device_name` - The MFA Device Name.
+    * `device_type` - The MFA Device Type.
+    * `effective_time` - The Effective Time of MFA Device.
+  * `provision_type` - ProvisionType.
+  * `status` - User status. Valid values: `Enabled` and `Disabled`.
+  * `user_id` - The User ID of the group.
+  * `user_name` - The name of user.

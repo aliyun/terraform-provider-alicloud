@@ -1,0 +1,220 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+package esa
+
+import (
+	"fmt"
+	"log"
+	"strings"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	errs "github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	helper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	logs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	validators "github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func resourceAliCloudEsaWafRuleset() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAliCloudEsaWafRulesetCreate,
+		Read:   resourceAliCloudEsaWafRulesetRead,
+		Update: resourceAliCloudEsaWafRulesetUpdate,
+		Delete: resourceAliCloudEsaWafRulesetDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"phase": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"ruleset_id": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"site_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"site_version": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validators.StringInSlice([]string{"On", "Off"}, false),
+			},
+		},
+	}
+}
+
+func resourceAliCloudEsaWafRulesetCreate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "CreateWafRuleset"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("site_id"); ok {
+		request["SiteId"] = v
+	}
+
+	if v, ok := d.GetOkExists("site_version"); ok {
+		request["SiteVersion"] = v
+	}
+	request["Phase"] = d.Get("phase")
+	if v, ok := d.GetOk("name"); ok {
+		request["Name"] = v
+	}
+	wait := helper.IncrementalWait(5*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_esa_waf_ruleset", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprintf("%v:%v", response["Id"], request["SiteId"]))
+
+	return resourceAliCloudEsaWafRulesetUpdate(d, meta)
+}
+
+func resourceAliCloudEsaWafRulesetRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	esaServiceV2 := EsaServiceV2{client}
+
+	objectRaw, err := esaServiceV2.DescribeEsaWafRuleset(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_esa_waf_ruleset DescribeEsaWafRuleset Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	d.Set("name", objectRaw["Name"])
+	d.Set("phase", objectRaw["Phase"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("ruleset_id", objectRaw["Id"])
+
+	parts := strings.Split(d.Id(), ":")
+	d.Set("site_id", parts[1])
+
+	return nil
+}
+
+func resourceAliCloudEsaWafRulesetUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
+	var err error
+	parts := strings.Split(d.Id(), ":")
+	action := "UpdateWafRuleset"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["SiteId"] = parts[1]
+	request["Id"] = parts[0]
+
+	if v, ok := d.GetOkExists("site_version"); ok {
+		request["SiteVersion"] = v
+	}
+	if d.HasChange("status") {
+		update = true
+		request["Status"] = d.Get("status")
+	}
+
+	if update {
+		wait := helper.IncrementalWait(5*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return resourceAliCloudEsaWafRulesetRead(d, meta)
+}
+
+func resourceAliCloudEsaWafRulesetDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "DeleteWafRuleset"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["SiteId"] = parts[1]
+	request["Id"] = parts[0]
+
+	if v, ok := d.GetOkExists("site_version"); ok {
+		request["SiteVersion"] = v
+	}
+	wait := helper.IncrementalWait(5*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}

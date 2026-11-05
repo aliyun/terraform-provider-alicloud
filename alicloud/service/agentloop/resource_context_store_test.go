@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/agentloop"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -15,20 +16,25 @@ import (
 // Case ContextStore全生命周期 11077
 func TestAccAliCloudAgentloopContextStore_basic11077(t *testing.T) {
 	resourceId := "alicloud_agentloop_context_store.default"
-	rac := resourceAttrCheckInit(resourceId, AlicloudAgentloopContextStoreMap11077, (*agentloop.Service).DescribeContextStore)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	var v map[string]interface{}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAgentloopContextStoreMap11077)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return agentloop.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeContextStore")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tftestaccctxstore%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAgentloopContextStoreBasicDependence11077)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAgentloopContextStoreBasicDependence11077)
 	// The ID is reused after a replacement, so create_time tells an in-place
 	// update apart from a recreation.
 	var createTime string
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             rac.checkResourceDestroy(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -222,11 +228,12 @@ func TestAccAliCloudAgentloopContextStore_basic11077(t *testing.T) {
 // 直接回读 API，避免仅检查保留在 state 中的 metadata_field 而漏掉更新请求缺失。
 func checkContextStoreMetadataUpdate(resourceId string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
+		client := agentloop.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 		rs, ok := s.RootModule().Resources[resourceId]
 		if !ok || rs.Primary == nil {
 			return fmt.Errorf("resource %s missing from state", resourceId)
 		}
-		object, err := testAccService().DescribeContextStore(rs.Primary.ID)
+		object, err := client.DescribeContextStore(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -262,23 +269,21 @@ func checkContextStoreCreateTime(resourceId string, createTime *string, replaced
 }
 
 var AlicloudAgentloopContextStoreMap11077 = map[string]string{
-	"region_id":   CHECKSET,
-	"create_time": CHECKSET,
-	"update_time": CHECKSET,
-	"status":      CHECKSET,
+	"region_id":   acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"update_time": acctest.CHECKSET,
+	"status":      acctest.CHECKSET,
 }
 
 func AlicloudAgentloopContextStoreBasicDependence11077(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 resource "alicloud_agentloop_agent_space" "default" {
-    agent_space = "${var.name}-as"
-}
-
-`, name)
+  agent_space = "${var.name}-as"
+}`, name)
 }
 
 // Test Agentloop ContextStore. <<< Resource test cases, automatically generated.

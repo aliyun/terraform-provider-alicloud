@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Hbr NasBackupPlans of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.132.0+.
+-> **NOTE:** Available since v1.132.0.
 
 ## Example Usage
 
@@ -37,26 +37,26 @@ The following arguments are supported:
 * `vault_id` - (Optional, ForceNew) The backup vault ID of the NasBackupPlan used.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of NasBackupPlan names.
 * `plans` - A list of Hbr NasBackupPlans. Each element contains the following attributes:
-    * `id` - The ID of Nas backup plan.
-    * `vault_id` - The ID of backup vault.
-    * `nas_backup_plan_id` - The ID of Nas backup plan.
-    * `nas_backup_plan_name` - The name of the resource.
-    * `retention` - Backup retention days, the minimum is 1.
-    * `schedule` - Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered.
-        * `startTime` Backup start time, UNIX time seconds.
-        * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
-    * `file_system_id` - The File System ID of Nas.
-    * `create_time` - File System Creation Time. **Note** The time format of the API adopts the ISO 8601 format, such as `2021-07-09T15:45:30CST`.
-    * `path` - List of backup path. Up to 65536 Characters. e.g.`["/home", "/var"]`
-    * `backup_type` - Backup type. Valid values: `COMPLETE`.
-    * `disabled` - Whether to be suspended. Valid values: `true`, `false`.
-    * `options` - Options field of Nas backup plan.
-    * `created_time` - The creation time of the backup plan. UNIX time in seconds.
-    * `updated_time` - The update time of the backup plan. UNIX time in seconds.
+  * `id` - The ID of Nas backup plan.
+  * `vault_id` - The ID of backup vault.
+  * `nas_backup_plan_id` - The ID of Nas backup plan.
+  * `nas_backup_plan_name` - The name of the resource.
+  * `retention` - Backup retention days, the minimum is 1.
+  * `schedule` - Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered.
+    - `startTime` Backup start time, UNIX time seconds.
+    - `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
+  * `file_system_id` - The File System ID of Nas.
+  * `create_time` - File System Creation Time. **Note** The time format of the API adopts the ISO 8601 format, such as `2021-07-09T15:45:30CST`.
+  * `path` - List of backup path. Up to 65536 Characters. e.g.`["/home", "/var"]`
+  * `backup_type` - Backup type. Valid values: `COMPLETE`.
+  * `disabled` - Whether to be suspended. Valid values: `true`, `false`.
+  * `options` - Options field of Nas backup plan.
+  * `created_time` - The creation time of the backup plan. UNIX time in seconds.
+  * `updated_time` - The update time of the backup plan. UNIX time in seconds.
 

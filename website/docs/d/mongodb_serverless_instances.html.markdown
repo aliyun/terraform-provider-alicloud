@@ -7,11 +7,11 @@ description: |-
   Provides a list of Mongodb Serverless Instances to the user.
 ---
 
-# alicloud\_mongodb\_serverless\_instances
+# alicloud_mongodb_serverless_instances
 
 This data source provides the Mongodb Serverless Instances of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.148.0+.
+-> **NOTE:** Available since v1.148.0.
 
 ## Example Usage
 
@@ -56,7 +56,7 @@ The following arguments are supported:
 * `zone_id` - (Optional, ForceNew) The ID of the zone.
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -82,9 +82,9 @@ The following attributes are exported in addition to the arguments listed above:
   * `protocol_type` - The access protocol type of the instance. Valid values: `mongodb`, `dynamodb`.
   * `resource_group_id` - The ID of the resource group.
   * `security_ip_groups` - The security ip list.
-      * `security_ip_group_attribute` - The attribute of the IP whitelist. This parameter is empty by default.
-      * `security_ip_group_name` - The name of the IP whitelist.
-      * `security_ip_list` - The IP addresses in the whitelist.
+    * `security_ip_group_attribute` - The attribute of the IP whitelist. This parameter is empty by default.
+    * `security_ip_group_name` - The name of the IP whitelist.
+    * `security_ip_list` - The IP addresses in the whitelist.
   * `status` - The status of the instance.
   * `storage_engine` - The storage engine used by the instance.
   * `tags` - The tag of the resource.

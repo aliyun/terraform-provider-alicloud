@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
@@ -14,7 +16,6 @@ import (
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceImsOidcProvider() *schema.Resource {
@@ -58,7 +59,7 @@ func ResourceImsOidcProvider() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.IntBetween(0, 168),
+				ValidateFunc: validators.IntBetween(0, 168),
 			},
 			"issuer_url": {
 				Type:     schema.TypeString,

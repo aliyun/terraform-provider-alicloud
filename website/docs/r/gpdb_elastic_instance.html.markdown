@@ -10,9 +10,7 @@ description: |-
 # alicloud_gpdb_elastic_instance
 
 Provides a AnalyticDB for PostgreSQL instance resource which storage type is flexible. Compared to the reserved storage ADB PG instance, you can scale up each disk and smoothly scale out nodes online.  
-For more detail product introduction, see [here](https://www.alibabacloud.com/help/doc-detail/141368.htm).
-
--> **NOTE:** Deprecated since v1.147.0.
+For more detail product introduction, see [AnalyticDB for PostgreSQL documentation](https://www.alibabacloud.com/help/doc-detail/141368.htm).
 
 -> **DEPRECATED:**  This resource  has been deprecated from version `1.147.0`. Please use new resource [alicloud_gpdb_instance](https://www.terraform.io/docs/providers/alicloud/r/alicloud_gpdb_instance).
 
@@ -64,9 +62,9 @@ The following arguments are supported:
 * `seg_storage_type` - (Required, ForceNew) The disk type of segment nodes. Valid values: `cloud_essd`, `cloud_efficiency`.
 * `seg_node_num` - (Required, ForceNew) The number of segment nodes. Minimum is `4`, max is `256`, step is `4`.
 * `storage_size` - (Required, ForceNew) The storage capacity of per segment node. Unit: GB. Minimum is `50`, max is `4000`, step is `50`. 
-* `instance_spec` - (Required, ForceNew) The specification of segment nodes. 
-   * When `db_instance_category` is `HighAvailability`, Valid values: `2C16G`, `4C32G`, `16C128G`.
-   * When `db_instance_category` is `Basic`, Valid values: `2C8G`, `4C16G`, `8C32G`, `16C64G`.
+* `instance_spec` - (Required, ForceNew) The specification of segment nodes.
+  * When `db_instance_category` is `HighAvailability`, Valid values: `2C16G`, `4C32G`, `16C128G`.
+  * When `db_instance_category` is `Basic`, Valid values: `2C8G`, `4C16G`, `8C32G`, `16C64G`.
 * `db_instance_category` - (Optional, ForceNew, Available since v1.158.0) The edition of the instance. Valid values: `Basic`, `HighAvailability`. Default value: `HighAvailability`.
 * `db_instance_description` - (Optional) The description of ADB PG instance. It is a string of 2 to 256 characters.
 * `instance_network_type` - (Optional, ForceNew) The network type of ADB PG instance. Only `VPC` supported now.
@@ -83,16 +81,6 @@ The following arguments are supported:
 * `encryption_type` - (Optional, ForceNew, Available since v1.158.0)  The type of the encryption. Valid values: `CloudDisk`. **Note:** Disk encryption cannot be disabled after it is enabled.
 
 
-## Timeouts
-
--> **NOTE:** Available since v1.127.0.
-
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 60 mins) Used when creating the ADB PG instance (until it reaches the initial `Running` status). 
-* `update` - (Defaults to 30 mins) Used when updating the ADB PG instance (until it reaches the initial `Running` status).
-* `delete` - (Defaults to 10 mins) Used when terminating the ADB PG instance.
-
 ## Attributes Reference
 
 The following attributes are exported:
@@ -101,6 +89,16 @@ The following attributes are exported:
 * `connection_string` - ADB PG instance connection string.
 * `port` - (Available since v1.196.0) The connection port of the instance.
 * `status` - Instance status.
+
+## Timeouts
+
+-> **NOTE:** Available since v1.127.0.
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
+* `create` - (Defaults to 60 mins) Used when creating the ADB PG instance (until it reaches the initial `Running` status).
+* `update` - (Defaults to 30 mins) Used when updating the ADB PG instance (until it reaches the initial `Running` status).
+* `delete` - (Defaults to 10 mins) Used when terminating the ADB PG instance.
 
 ## Import
 

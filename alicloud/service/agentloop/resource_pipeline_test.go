@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/agentloop"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -14,17 +15,22 @@ import (
 // Case Pipeline全生命周期 11086
 func TestAccAliCloudAgentloopPipeline_basic11086(t *testing.T) {
 	resourceId := "alicloud_agentloop_pipeline.default"
-	rac := resourceAttrCheckInit(resourceId, AlicloudAgentloopPipelineMap11086, (*agentloop.Service).DescribePipeline)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	var v map[string]interface{}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAgentloopPipelineMap11086)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return agentloop.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribePipeline")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tftestaccpipeline%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAgentloopPipelineBasicDependence11086)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAgentloopPipelineBasicDependence11086)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             rac.checkResourceDestroy(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -222,7 +228,7 @@ func TestAccAliCloudAgentloopPipeline_basic11086(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"source.0.dataset.0.filter": REMOVEKEY,
+						"source.0.dataset.0.filter": acctest.REMOVEKEY,
 						"source.#":                  "1",
 						"sink.#":                    "1",
 						"execute_policy.#":          "1",
@@ -598,35 +604,35 @@ func TestAccAliCloudAgentloopPipeline_basic11086(t *testing.T) {
 }
 
 var AlicloudAgentloopPipelineMap11086 = map[string]string{
-	"create_time": CHECKSET,
-	"update_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"update_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudAgentloopPipelineBasicDependence11086(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 resource "alicloud_agentloop_agent_space" "default" {
-    agent_space = "${var.name}-as"
+  agent_space = "${var.name}-as"
 }
 
 resource "alicloud_agentloop_dataset" "default" {
-    agent_space  = alicloud_agentloop_agent_space.default.agent_space
-    dataset_name = "${var.name}ds1"
-    schema = {
-        input = "{\"chn\":true,\"type\":\"text\"}"
-    }
+  agent_space  = alicloud_agentloop_agent_space.default.agent_space
+  dataset_name = "${var.name}ds1"
+  schema = {
+    input = "{\"chn\":true,\"type\":\"text\"}"
+  }
 }
 
 resource "alicloud_agentloop_dataset" "default2" {
-    agent_space  = alicloud_agentloop_agent_space.default.agent_space
-    dataset_name = "${var.name}ds2"
-    schema = {
-        input = "{\"chn\":true,\"type\":\"text\"}"
-    }
+  agent_space  = alicloud_agentloop_agent_space.default.agent_space
+  dataset_name = "${var.name}ds2"
+  schema = {
+    input = "{\"chn\":true,\"type\":\"text\"}"
+  }
 }
 
 # default3-default6 back the TypeList order coverage steps: the source reads
@@ -635,48 +641,48 @@ resource "alicloud_agentloop_dataset" "default2" {
 # Their schemas carry both input and output so the two-field input_fields and
 # the route outputs match.
 resource "alicloud_agentloop_dataset" "default3" {
-    agent_space  = alicloud_agentloop_agent_space.default.agent_space
-    dataset_name = "${var.name}ds3"
-    schema = {
-        input  = "{\"chn\":true,\"type\":\"text\"}"
-        output = "{\"chn\":false,\"type\":\"text\"}"
-    }
+  agent_space  = alicloud_agentloop_agent_space.default.agent_space
+  dataset_name = "${var.name}ds3"
+  schema = {
+    input  = "{\"chn\":true,\"type\":\"text\"}"
+    output = "{\"chn\":false,\"type\":\"text\"}"
+  }
 }
 
 resource "alicloud_agentloop_dataset" "default4" {
-    agent_space  = alicloud_agentloop_agent_space.default.agent_space
-    dataset_name = "${var.name}ds4"
-    schema = {
-        input  = "{\"chn\":true,\"type\":\"text\"}"
-        output = "{\"chn\":false,\"type\":\"text\"}"
-    }
+  agent_space  = alicloud_agentloop_agent_space.default.agent_space
+  dataset_name = "${var.name}ds4"
+  schema = {
+    input  = "{\"chn\":true,\"type\":\"text\"}"
+    output = "{\"chn\":false,\"type\":\"text\"}"
+  }
 }
 
 resource "alicloud_agentloop_dataset" "default5" {
-    agent_space  = alicloud_agentloop_agent_space.default.agent_space
-    dataset_name = "${var.name}ds5"
-    schema = {
-        input  = "{\"chn\":true,\"type\":\"text\"}"
-        output = "{\"chn\":false,\"type\":\"text\"}"
-    }
+  agent_space  = alicloud_agentloop_agent_space.default.agent_space
+  dataset_name = "${var.name}ds5"
+  schema = {
+    input  = "{\"chn\":true,\"type\":\"text\"}"
+    output = "{\"chn\":false,\"type\":\"text\"}"
+  }
 }
 
 resource "alicloud_agentloop_dataset" "default6" {
-    agent_space  = alicloud_agentloop_agent_space.default.agent_space
-    dataset_name = "${var.name}ds6"
-    schema = {
-        input  = "{\"chn\":true,\"type\":\"text\"}"
-        output = "{\"chn\":false,\"type\":\"text\"}"
-    }
+  agent_space  = alicloud_agentloop_agent_space.default.agent_space
+  dataset_name = "${var.name}ds6"
+  schema = {
+    input  = "{\"chn\":true,\"type\":\"text\"}"
+    output = "{\"chn\":false,\"type\":\"text\"}"
+  }
 }
 
 resource "alicloud_log_project" "default" {
-    project_name = "${var.name}-log"
+  project_name = "${var.name}-log"
 }
 
 resource "alicloud_log_store" "default" {
-    project_name  = alicloud_log_project.default.project_name
-    logstore_name = "${var.name}-store"
+  project_name  = alicloud_log_project.default.project_name
+  logstore_name = "${var.name}-store"
 }
 
 # The pipeline logstore source runs its query against SLS, which requires an
@@ -685,19 +691,17 @@ resource "alicloud_log_store" "default" {
 # field, so a field index for it must exist as well (otherwise pipeline
 # planning fails with "field not found in complete input schema").
 resource "alicloud_log_store_index" "default" {
-    project  = alicloud_log_project.default.project_name
-    logstore = alicloud_log_store.default.logstore_name
-    full_text {
-        token = " #$^*\r\n\t"
-    }
-    field_search {
-        name  = "input"
-        type  = "text"
-        token = " #$^*\r\n\t"
-    }
-}
-
-`, name)
+  project  = alicloud_log_project.default.project_name
+  logstore = alicloud_log_store.default.logstore_name
+  full_text {
+    token = " #$^*\r\n\t"
+  }
+  field_search {
+    name  = "input"
+    type  = "text"
+    token = " #$^*\r\n\t"
+  }
+}`, name)
 }
 
 // Test Agentloop Pipeline. <<< Resource test cases, automatically generated.

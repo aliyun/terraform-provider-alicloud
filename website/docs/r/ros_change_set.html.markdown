@@ -51,7 +51,7 @@ The following arguments are supported:
 * `description` - (Optional, ForceNew) The description of the change set. The description can be up to 1,024 bytes in length.
 * `disable_rollback` - (Optional, ForceNew) Specifies whether to disable rollback on stack creation failure. Default value: false.  Valid values:  true: disables rollback on stack creation failure. false: enables rollback on stack creation failure. Note This parameter takes effect only when ChangeSetType is set to CREATE or IMPORT.
 * `notification_urls` - (Optional, ForceNew) The notification urls.
-* `parameters` - (Optional, ForceNew) Parameters.
+* `parameters` - (Optional, ForceNew) Parameters. See [`parameters`](#parameters) below.
 * `ram_role_name` - (Optional, ForceNew) The ram role name.
 * `replacement_option` - (Optional, ForceNew) The replacement option.
 * `stack_id` - (Optional, ForceNew) The ID of the stack for which you want to create the change set. ROS generates the change set by comparing the stack information with the information that you submit, such as a modified template or different inputs.
@@ -65,9 +65,9 @@ The following arguments are supported:
 * `timeout_in_minutes` - (Optional, ForceNew) Timeout In Minutes.
 * `use_previous_parameters` - (Optional, ForceNew) The use previous parameters.
 
-#### Block parameters
+### `parameters`
 
-The parameters supports the following: 
+The parameters supports the following:
 
 * `parameter_key` - (Required) The parameter key.
 * `parameter_value` - (Required) The parameter value.
