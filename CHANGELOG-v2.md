@@ -171,6 +171,10 @@ BUG FIXES:
 - resource/alicloud_cs_kubernetes and Kubernetes cluster data sources: tolerate nodes with missing IP addresses instead of panicking. ([#11087](https://github.com/aliyun/terraform-provider-alicloud/issues/11087))
 - provider: add the regional eflo_controller endpoint fallback. ([#11094](https://github.com/aliyun/terraform-provider-alicloud/issues/11094))
 
+ENHANCEMENTS:
+
+- resource/alicloud_privatelink_vpc_endpoint: support `zone_affinity_enabled` and `reset_policy`.
+
 ## 2.0.0 (October 12, 2026)
 
 This is the first stable release of the 2.x line. It rolls up every change merged from the 1.x line since v2.0.0-beta5 — no additional 1.x section has been cut since `1.294.0` (`1.295.0` remains unreleased) — plus the v2-only changes below. Changes that merged to the 1.x line after the v2.0.0-beta5 cut are also listed below; with the 1.x line no longer maintained after this release, they will never appear in a released 1.x section.

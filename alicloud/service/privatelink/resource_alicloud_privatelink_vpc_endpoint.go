@@ -89,6 +89,10 @@ func ResourceVpcEndpoint() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"reset_policy": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -131,6 +135,11 @@ func ResourceVpcEndpoint() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"zone_affinity_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"zone_private_ip_address_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -171,6 +180,9 @@ func resourceAliCloudPrivateLinkVpcEndpointCreate(d *schema.ResourceData, meta i
 	}
 	if v, ok := d.GetOkExists("zone_private_ip_address_count"); ok {
 		request["ZonePrivateIpAddressCount"] = v
+	}
+	if v, ok := d.GetOkExists("zone_affinity_enabled"); ok {
+		request["ZoneAffinityEnabled"] = v
 	}
 	if v, ok := d.GetOk("address_ip_version"); ok {
 		request["AddressIpVersion"] = v
@@ -305,6 +317,9 @@ func resourceAliCloudPrivateLinkVpcEndpointRead(d *schema.ResourceData, meta int
 	if objectRaw["ZonePrivateIpAddressCount"] != nil {
 		d.Set("zone_private_ip_address_count", objectRaw["ZonePrivateIpAddressCount"])
 	}
+	if objectRaw["ZoneAffinityEnabled"] != nil {
+		d.Set("zone_affinity_enabled", objectRaw["ZoneAffinityEnabled"])
+	}
 
 	objectRaw, err = privateLinkServiceV2.DescribeVpcEndpointListTagResources(d.Id())
 	if err != nil && !errs.NotFoundError(err) {
@@ -363,6 +378,14 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 	if !d.IsNewResource() && d.HasChange("cross_region_bandwidth") {
 		update = true
 		request["CrossRegionBandwidth"] = d.Get("cross_region_bandwidth")
+	}
+	if !d.IsNewResource() && d.HasChange("zone_affinity_enabled") {
+		update = true
+		request["ZoneAffinityEnabled"] = d.Get("zone_affinity_enabled")
+	}
+	if !d.IsNewResource() && d.HasChange("reset_policy") {
+		update = true
+		request["ResetPolicy"] = d.Get("reset_policy")
 	}
 
 	if update {

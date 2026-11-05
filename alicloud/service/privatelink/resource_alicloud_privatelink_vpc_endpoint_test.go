@@ -122,20 +122,22 @@ func TestAccAliCloudPrivatelinkVpcEndpoint_base(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"service_id":         "${alicloud_privatelink_vpc_endpoint_service.default.id}",
-					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
-					"security_group_ids": []string{"${alicloud_security_group.default.id}"},
-					"vpc_endpoint_name":  name,
-					"depends_on":         []string{"alicloud_privatelink_vpc_endpoint_service.default"},
-					"address_ip_version": "IPv4",
+					"service_id":            "${alicloud_privatelink_vpc_endpoint_service.default.id}",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"security_group_ids":    []string{"${alicloud_security_group.default.id}"},
+					"vpc_endpoint_name":     name,
+					"depends_on":            []string{"alicloud_privatelink_vpc_endpoint_service.default"},
+					"address_ip_version":    "IPv4",
+					"zone_affinity_enabled": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"service_id":           acctest.CHECKSET,
-						"vpc_id":               acctest.CHECKSET,
-						"security_group_ids.#": "1",
-						"vpc_endpoint_name":    name,
-						"address_ip_version":   "IPv4",
+						"service_id":            acctest.CHECKSET,
+						"vpc_id":                acctest.CHECKSET,
+						"security_group_ids.#":  "1",
+						"vpc_endpoint_name":     name,
+						"address_ip_version":    "IPv4",
+						"zone_affinity_enabled": "false",
 					}),
 				),
 			},
@@ -210,6 +212,23 @@ func TestAccAliCloudPrivatelinkVpcEndpoint_base(t *testing.T) {
 						"vpc_endpoint_name":    name,
 					}),
 				),
+			},
+			// Enabling zone affinity and resetting the endpoint policy are rejected
+			// by the service unless the account/region has the capability enabled,
+			// so these two steps verify the schema and plan wiring only.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_affinity_enabled": "true",
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"reset_policy": "true",
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
