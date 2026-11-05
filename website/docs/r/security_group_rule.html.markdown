@@ -30,6 +30,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "alicloud_security_group" "default" {
   security_group_name = "default"
 }
@@ -63,7 +71,7 @@ The following arguments are supported:
 * `ip_protocol` - (Required, ForceNew) The transport layer protocol of the Security Group Rule. Valid values: `tcp`, `udp`, `icmp`, `icmpv6`, `gre`, `all`. **NOTE:** From version 1.262.0, `ip_protocol` can be set to `icmpv6`.
 * `policy` - (Optional, ForceNew) The action of the Security Group Rule that determines whether to allow inbound access. Default value: `accept`. Valid values: `accept`, `drop`.
 * `priority` - (Optional, ForceNew, Int) The priority of the Security Group Rule. Default value: `1`. Valid values: `1` to `100`.
-* `cidr_ip` - (Optional, ForceNew) The target IPv4 CIDR address range. Other supported formats include 10.159.6.18/12. Only IPv4 is supported. **NOTE:** This field has no default value; leaving it empty does not open traffic to all sources but instead fails with `MissingParameter.Source` (ingress) or `MissingParameter.Dest` (egress). To allow all IPv4 traffic, set `cidr_ip = "0.0.0.0/0"` explicitly.
+* `cidr_ip` - (Optional, ForceNew, String) The target IPv4 CIDR address range. Other supported formats include 10.159.6.18/12. Only IPv4 is supported. The value must be a single IPv4 address or a single IPv4 CIDR block; a comma- or space-separated list of CIDRs is rejected during `terraform plan`, because one rule can only carry one CIDR. To authorize several CIDRs, define one `alicloud_security_group_rule` resource per CIDR. **NOTE:** This field has no default value; leaving it empty does not open traffic to all sources but instead fails with `MissingParameter.Source` (ingress) or `MissingParameter.Dest` (egress). To allow all IPv4 traffic, set `cidr_ip = "0.0.0.0/0"` explicitly.
 * `ipv6_cidr_ip`- (Optional, ForceNew, Available since v1.174.0) Source IPv6 CIDR address block that requires access. Supports IP address ranges in CIDR format and IPv6 format. **NOTE:** This parameter cannot be set at the same time as the `cidr_ip` parameter.
 * `source_security_group_id` - (Optional, ForceNew) The target security group ID within the same region. If this field is specified, the `nic_type` can only select `intranet`.
 * `source_group_owner_account` - (Optional, ForceNew, Deprecated) The Alibaba Cloud account of the target security group owner when security groups are authorized across accounts. This field may not take effect. Use `source_group_owner_id` instead. This parameter is invalid if `cidr_ip` has already been set.
