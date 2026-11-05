@@ -200,5 +200,11 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  dataSourceAlicloudThreatDetectionInstances,
 			},
 		},
+		DataSources: []conns.DataSource{
+			{
+				TypeName: "alicloud_threat_detection_client_file_protect_events",
+				Factory:  NewClientFileProtectEventsDataSource,
+			},
+		},
 	}
 }
