@@ -502,7 +502,9 @@ func resourceInstanceCustomizeDiff(_ context.Context, diff *schema.ResourceDiff,
 		oldStorageSize, oldOk := backendNodeGroupStorageSize(oldGroups[i])
 		newStorageSize, newOk := backendNodeGroupStorageSize(newGroups[i])
 		if backendNodeGroupStorageSizeChangeForcesReplacement(oldStorageSize, oldOk, newStorageSize, newOk) {
-			return diff.ForceNew("backend_node_groups")
+			// ForceNew has to name the changed nested attribute: on the parent list it
+			// does not reach the element diff, and the plan stays an in-place update.
+			return diff.ForceNew(fmt.Sprintf("backend_node_groups.%d.storage_size", i))
 		}
 	}
 	return nil
