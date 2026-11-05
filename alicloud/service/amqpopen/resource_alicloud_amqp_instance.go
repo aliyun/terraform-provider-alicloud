@@ -1,6 +1,7 @@
 package amqpopen
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -302,8 +303,8 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOkExists("serverless_switch"); ok {
 		request["ServerlessSwitch"] = v
 	}
-	if v, ok := d.GetOk("tags"); ok {
-		request["Tags"] = tags.ConvertTags(v.(map[string]interface{}))
+	if err := addAmqpInstanceTagsCreateRequest(d, request); err != nil {
+		return err
 	}
 	if v, ok := d.GetOk("vswitch_ids"); ok {
 		vswitchIdsMapsArray := convert.ConvertListToJsonString(convert.ConvertToInterfaceArray(v))
@@ -883,6 +884,24 @@ func addAmqpInstanceEncryptionCreateRequest(d *schema.ResourceData, request map[
 	}
 	if kmsKeyConfigured {
 		request["KmsKeyId"] = kmsKeyId
+	}
+	return nil
+}
+
+// addAmqpInstanceTagsCreateRequest serializes the resource tags into a single
+// JSON string parameter expected by the amqp-open CreateInstance API
+// (style:json). The expanded Tags.N.Key/Tags.N.Value encoding produced by
+// tags.ConvertTags is correct for style:repeatList APIs, but the amqp-open
+// CreateInstance API declares Tags with style:json; sending the expanded form
+// makes the API accept the request while silently dropping every tag.
+func addAmqpInstanceTagsCreateRequest(d *schema.ResourceData, request map[string]interface{}) error {
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMapsArray := tags.ConvertTags(v.(map[string]interface{}))
+		tagsMapsJson, err := json.Marshal(tagsMapsArray)
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		request["Tags"] = string(tagsMapsJson)
 	}
 	return nil
 }
