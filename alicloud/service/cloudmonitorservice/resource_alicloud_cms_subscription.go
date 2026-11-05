@@ -11,13 +11,14 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	logs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -32,8 +33,9 @@ const cmsSubscriptionTypeName = "alicloud_cms_subscription"
 const cmsSubscriptionTimeout = 5 * time.Minute
 
 var (
-	_ resource.Resource                = &cmsSubscriptionResource{}
-	_ resource.ResourceWithImportState = &cmsSubscriptionResource{}
+	_ resource.Resource                     = &cmsSubscriptionResource{}
+	_ resource.ResourceWithImportState      = &cmsSubscriptionResource{}
+	_ resource.ResourceWithConfigValidators = &cmsSubscriptionResource{}
 )
 
 func NewCmsSubscriptionResource() resource.Resource {
@@ -113,6 +115,10 @@ func (r *cmsSubscriptionResource) Metadata(ctx context.Context, req resource.Met
 	resp.TypeName = cmsSubscriptionTypeName
 }
 
+func (r *cmsSubscriptionResource) ConfigValidators(ctx context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{cmsSubscriptionChannelValidator{}}
+}
+
 func (r *cmsSubscriptionResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
@@ -145,9 +151,6 @@ func (r *cmsSubscriptionResource) Schema(ctx context.Context, req resource.Schem
 			"subscribe_legacy_event": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"user_id": schema.StringAttribute{
 				Computed: true,
@@ -189,10 +192,16 @@ func (r *cmsSubscriptionResource) Schema(ctx context.Context, req resource.Schem
 						},
 						"relation": schema.StringAttribute{
 							Optional: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("AND", "OR"),
+							},
 						},
 					},
 					Blocks: map[string]schema.Block{
 						"conditions": schema.ListNestedBlock{
+							Validators: []validator.List{
+								listvalidator.SizeAtMost(10),
+							},
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
 									"field": schema.StringAttribute{
@@ -200,6 +209,9 @@ func (r *cmsSubscriptionResource) Schema(ctx context.Context, req resource.Schem
 									},
 									"op": schema.StringAttribute{
 										Required: true,
+										Validators: []validator.String{
+											stringvalidator.OneOf("IN", "CONTAIN", "EQ"),
+										},
 									},
 									"value": schema.StringAttribute{
 										Required: true,
@@ -289,6 +301,9 @@ func (r *cmsSubscriptionResource) Schema(ctx context.Context, req resource.Schem
 												"day_in_week": schema.ListAttribute{
 													Optional:    true,
 													ElementType: types.Int64Type,
+													Validators: []validator.List{
+														listvalidator.ValueInt64sAre(int64validator.Between(0, 6)),
+													},
 												},
 												"start_time_in_minute": schema.Int64Attribute{
 													Optional: true,
@@ -321,7 +336,7 @@ func (r *cmsSubscriptionResource) Create(ctx context.Context, req resource.Creat
 	var response map[string]interface{}
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	err = retry.Retry(cmsSubscriptionTimeout, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, cmsSubscriptionTimeout, func() *retry.RetryError {
 		response, err = r.Meta().RoaPost("Cms", "2024-03-30", action, cmsSubscriptionQuery(plan.Workspace), nil, request, true)
 		if err != nil {
 			if helper.NeedRetry(err) {
@@ -350,7 +365,14 @@ func (r *cmsSubscriptionResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	object, err := r.waitCmsSubscriptionReadable(id, plan.Workspace)
+	// Persist the identity as soon as it is known: every later step can fail,
+	// and without it the created subscription could neither be refreshed nor destroyed.
+	resp.Diagnostics.Append(resp.State.Set(ctx, cmsSubscriptionIdentityState(plan, id))...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	object, err := r.waitCmsSubscriptionReadable(ctx, id, plan.Workspace, request, nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetSubscription", cmsSubscriptionTypeName),
@@ -359,21 +381,21 @@ func (r *cmsSubscriptionResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 	if !plan.Enable.IsNull() && !plan.Enable.IsUnknown() && !plan.Enable.ValueBool() {
-		if err := r.setCmsSubscriptionEnable(id, plan.Workspace, false); err != nil {
+		if err := r.setCmsSubscriptionEnable(ctx, id, plan.Workspace, false); err != nil {
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Creating %s: calling DisableSubscription", cmsSubscriptionTypeName),
 				errs.WrapErrorf(err, errs.DefaultErrorMsg, cmsSubscriptionTypeName, "/subscriptions/"+id+"/disable", errs.AlibabaCloudSdkGoERROR).Error(),
 			)
 			return
 		}
-		if err := r.waitCmsSubscriptionEnable(id, plan.Workspace, false); err != nil {
+		if err := r.waitCmsSubscriptionEnable(ctx, id, plan.Workspace, false); err != nil {
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Creating %s: waiting for DisableSubscription", cmsSubscriptionTypeName),
 				errs.WrapErrorf(err, errs.DefaultErrorMsg, cmsSubscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
 			)
 			return
 		}
-		if object, err = NewCmsService(r.Meta()).DescribeCmsSubscription(id, plan.Workspace.ValueString()); err != nil {
+		if object, err = NewCmsService(r.Meta()).DescribeCmsSubscription(ctx, id, plan.Workspace.ValueString()); err != nil {
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Reading %s: calling GetSubscription", cmsSubscriptionTypeName),
 				errs.WrapErrorf(err, errs.DefaultErrorMsg, cmsSubscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
@@ -382,13 +404,7 @@ func (r *cmsSubscriptionResource) Create(ctx context.Context, req resource.Creat
 		}
 	}
 
-	previous := cmsSubscriptionResourceModel{
-		Id:               types.StringValue(id),
-		SubscriptionName: plan.SubscriptionName,
-		Workspace:        plan.Workspace,
-		Enable:           plan.Enable,
-	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, cmsSubscriptionState(object, previous))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, cmsSubscriptionState(object, plan, r.Meta().RegionId))...)
 }
 
 func (r *cmsSubscriptionResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -398,7 +414,7 @@ func (r *cmsSubscriptionResource) Read(ctx context.Context, req resource.ReadReq
 		return
 	}
 
-	object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(state.Id.ValueString(), state.Workspace.ValueString())
+	object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(ctx, state.Id.ValueString(), state.Workspace.ValueString())
 	if err != nil {
 		if errs.NotFoundError(err) {
 			resp.State.RemoveResource(ctx)
@@ -410,7 +426,7 @@ func (r *cmsSubscriptionResource) Read(ctx context.Context, req resource.ReadReq
 		)
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, cmsSubscriptionState(object, state))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, cmsSubscriptionState(object, state, r.Meta().RegionId))...)
 }
 
 func (r *cmsSubscriptionResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -422,15 +438,20 @@ func (r *cmsSubscriptionResource) Update(ctx context.Context, req resource.Updat
 	}
 
 	id := state.Id.ValueString()
-	if !plan.Enable.Equal(state.Enable) {
-		if err := r.setCmsSubscriptionEnable(id, state.Workspace, plan.Enable.ValueBool()); err != nil {
+	if !plan.Enable.Equal(state.Enable) && !plan.Enable.IsNull() && !plan.Enable.IsUnknown() {
+		enable := plan.Enable.ValueBool()
+		suffix := "enable"
+		if !enable {
+			suffix = "disable"
+		}
+		if err := r.setCmsSubscriptionEnable(ctx, id, state.Workspace, enable); err != nil {
 			resp.Diagnostics.AddError(
-				fmt.Sprintf("Updating %s: toggling the subscription enabled state", cmsSubscriptionTypeName),
-				errs.WrapErrorf(err, errs.DefaultErrorMsg, cmsSubscriptionTypeName, "/subscriptions/"+id+"/enable", errs.AlibabaCloudSdkGoERROR).Error(),
+				fmt.Sprintf("Updating %s: calling /%s", cmsSubscriptionTypeName, suffix),
+				errs.WrapErrorf(err, errs.DefaultErrorMsg, cmsSubscriptionTypeName, "/subscriptions/"+id+"/"+suffix, errs.AlibabaCloudSdkGoERROR).Error(),
 			)
 			return
 		}
-		if err := r.waitCmsSubscriptionEnable(id, state.Workspace, plan.Enable.ValueBool()); err != nil {
+		if err := r.waitCmsSubscriptionEnable(ctx, id, state.Workspace, enable); err != nil {
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Updating %s: waiting for the subscription enabled state", cmsSubscriptionTypeName),
 				errs.WrapErrorf(err, errs.DefaultErrorMsg, cmsSubscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
@@ -444,7 +465,7 @@ func (r *cmsSubscriptionResource) Update(ctx context.Context, req resource.Updat
 	var response map[string]interface{}
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	err = retry.Retry(cmsSubscriptionTimeout, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, cmsSubscriptionTimeout, func() *retry.RetryError {
 		response, err = r.Meta().RoaPut("Cms", "2024-03-30", action, cmsSubscriptionQuery(state.Workspace), nil, request, true)
 		if err != nil {
 			if helper.NeedRetry(err) {
@@ -464,7 +485,8 @@ func (r *cmsSubscriptionResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	object, err := r.waitCmsSubscriptionUpdate(id, state.Workspace, request)
+	removed := cmsSubscriptionRemovedPaths(plan, state)
+	object, err := r.waitCmsSubscriptionUpdate(ctx, id, state.Workspace, request, removed)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetSubscription", cmsSubscriptionTypeName),
@@ -472,8 +494,7 @@ func (r *cmsSubscriptionResource) Update(ctx context.Context, req resource.Updat
 		)
 		return
 	}
-	updated := cmsSubscriptionState(object, state)
-	resp.Diagnostics.Append(resp.State.Set(ctx, updated)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, cmsSubscriptionState(object, plan, r.Meta().RegionId))...)
 }
 
 func (r *cmsSubscriptionResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -487,7 +508,7 @@ func (r *cmsSubscriptionResource) Delete(ctx context.Context, req resource.Delet
 	var response map[string]interface{}
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	err = retry.Retry(cmsSubscriptionTimeout, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, cmsSubscriptionTimeout, func() *retry.RetryError {
 		response, err = r.Meta().RoaDelete("Cms", "2024-03-30", action, cmsSubscriptionQuery(state.Workspace), nil, nil, true)
 		if err != nil {
 			if helper.NeedRetry(err) {
@@ -500,7 +521,7 @@ func (r *cmsSubscriptionResource) Delete(ctx context.Context, req resource.Delet
 	})
 	logs.AddDebug(action, response, cmsSubscriptionQuery(state.Workspace))
 	if err != nil {
-		if errs.NotFoundError(err) || errs.IsExpectedErrors(err, []string{"NotFound", "ResourceNotFound"}) {
+		if errs.NotFoundError(err) || errs.IsExpectedErrors(err, []string{"ResourceNotFound"}) {
 			return
 		}
 		resp.Diagnostics.AddError(
@@ -526,7 +547,7 @@ func (r *cmsSubscriptionResource) ImportState(ctx context.Context, req resource.
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace"), parts[0])...)
 }
 
-func (r *cmsSubscriptionResource) setCmsSubscriptionEnable(id string, workspace types.String, enable bool) error {
+func (r *cmsSubscriptionResource) setCmsSubscriptionEnable(ctx context.Context, id string, workspace types.String, enable bool) error {
 	suffix := "enable"
 	if !enable {
 		suffix = "disable"
@@ -536,7 +557,7 @@ func (r *cmsSubscriptionResource) setCmsSubscriptionEnable(id string, workspace 
 	var response map[string]interface{}
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	err = retry.Retry(cmsSubscriptionTimeout, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, cmsSubscriptionTimeout, func() *retry.RetryError {
 		response, err = r.Meta().RoaPut("Cms", "2024-03-30", action, cmsSubscriptionQuery(workspace), nil, nil, true)
 		if err != nil {
 			if helper.NeedRetry(err) {
@@ -554,10 +575,10 @@ func (r *cmsSubscriptionResource) setCmsSubscriptionEnable(id string, workspace 
 // waitCmsSubscriptionEnable polls GetSubscription until the enabled state
 // reported by the service matches the requested one. The enable and disable
 // operations return before the change is visible on the read path.
-func (r *cmsSubscriptionResource) waitCmsSubscriptionEnable(id string, workspace types.String, enable bool) error {
+func (r *cmsSubscriptionResource) waitCmsSubscriptionEnable(ctx context.Context, id string, workspace types.String, enable bool) error {
 	deadline := time.Now().Add(cmsSubscriptionTimeout)
 	for {
-		object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(id, workspace.ValueString())
+		object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(ctx, id, workspace.ValueString())
 		if err != nil {
 			return err
 		}
@@ -567,85 +588,302 @@ func (r *cmsSubscriptionResource) waitCmsSubscriptionEnable(id string, workspace
 		if time.Now().After(deadline) {
 			return fmt.Errorf("subscription %s did not reach enable=%t within %s", id, enable, cmsSubscriptionTimeout)
 		}
-		time.Sleep(3 * time.Second)
+		if err := cmsSubscriptionSleep(ctx, 3*time.Second); err != nil {
+			return err
+		}
 	}
 }
 
 // waitCmsSubscriptionReadable polls GetSubscription until the freshly created
-// subscription is visible on the read path. Creation is asynchronous, so an
-// immediate read can still report the subscription as not found.
-func (r *cmsSubscriptionResource) waitCmsSubscriptionReadable(id string, workspace types.String) (map[string]interface{}, error) {
+// subscription is visible on the read path and reflects the requested
+// configuration. Creation is asynchronous, so an immediate read can still
+// report the subscription as not found or return a partially applied object.
+func (r *cmsSubscriptionResource) waitCmsSubscriptionReadable(ctx context.Context, id string, workspace types.String, request map[string]interface{}, removed [][]string) (map[string]interface{}, error) {
 	deadline := time.Now().Add(cmsSubscriptionTimeout)
 	for {
-		object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(id, workspace.ValueString())
-		if err == nil {
+		object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(ctx, id, workspace.ValueString())
+		if err == nil && cmsSubscriptionRequestVisible(object, request) && cmsSubscriptionPathsEmpty(object, removed) {
 			return object, nil
 		}
-		if !errs.NotFoundError(err) || time.Now().After(deadline) {
+		if err != nil && !errs.NotFoundError(err) {
 			return nil, err
 		}
-		time.Sleep(3 * time.Second)
+		if time.Now().After(deadline) {
+			if err != nil {
+				return nil, err
+			}
+			return nil, fmt.Errorf("subscription %s configuration did not become visible within %s", id, cmsSubscriptionTimeout)
+		}
+		if err := cmsSubscriptionSleep(ctx, 3*time.Second); err != nil {
+			return nil, err
+		}
 	}
 }
 
 // waitCmsSubscriptionUpdate polls GetSubscription until the configuration sent
-// to UpdateSubscription is visible on the read path. The Cms event subscription
-// reads are eventually consistent, so an immediate read can return the values
-// from before the update.
-func (r *cmsSubscriptionResource) waitCmsSubscriptionUpdate(id string, workspace types.String, request map[string]interface{}) (map[string]interface{}, error) {
+// to UpdateSubscription is visible on the read path and every removed key is
+// gone. The Cms event subscription reads are eventually consistent, so an
+// immediate read can return the values from before the update.
+func (r *cmsSubscriptionResource) waitCmsSubscriptionUpdate(ctx context.Context, id string, workspace types.String, request map[string]interface{}, removed [][]string) (map[string]interface{}, error) {
 	deadline := time.Now().Add(cmsSubscriptionTimeout)
 	for {
-		object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(id, workspace.ValueString())
-		if err != nil {
-			if errs.NotFoundError(err) && time.Now().Before(deadline) {
-				time.Sleep(3 * time.Second)
-				continue
-			}
-			return nil, err
-		}
-		if cmsSubscriptionUpdateApplied(object, request) {
+		object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(ctx, id, workspace.ValueString())
+		if err == nil && cmsSubscriptionRequestVisible(object, request) && cmsSubscriptionPathsEmpty(object, removed) {
 			return object, nil
 		}
+		if err != nil && !errs.NotFoundError(err) {
+			return nil, err
+		}
 		if time.Now().After(deadline) {
+			if err != nil {
+				return nil, err
+			}
 			return nil, fmt.Errorf("subscription %s configuration did not converge within %s", id, cmsSubscriptionTimeout)
 		}
-		time.Sleep(3 * time.Second)
+		if err := cmsSubscriptionSleep(ctx, 3*time.Second); err != nil {
+			return nil, err
+		}
 	}
 }
 
-func cmsSubscriptionUpdateApplied(object, request map[string]interface{}) bool {
-	for _, key := range []string{"subscriptionName", "description", "notifyStrategyId"} {
-		if want, ok := request[key].(string); ok {
-			got, _ := object[key].(string)
-			if got != want {
-				return false
-			}
-		}
+func cmsSubscriptionSleep(ctx context.Context, duration time.Duration) error {
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
 	}
-	if want, ok := request["subscribeLegacyEvent"].(bool); ok {
-		if got, ok := object["subscribeLegacyEvent"].(bool); !ok || got != want {
-			return false
-		}
-	}
-	wantFilter, ok := request["filterSetting"].(map[string]interface{})
-	if !ok {
-		return true
-	}
-	gotFilter, _ := object["filterSetting"].(map[string]interface{})
-	for _, key := range []string{"expression", "relation"} {
-		if want, ok := wantFilter[key].(string); ok {
-			if got, _ := gotFilter[key].(string); got != want {
-				return false
-			}
-		}
-	}
-	if wantConditions, ok := wantFilter["conditions"].([]map[string]interface{}); ok {
-		gotConditions, _ := gotFilter["conditions"].([]interface{})
-		if len(gotConditions) != len(wantConditions) {
+}
+
+// cmsSubscriptionRequestVisible reports whether every value sent to the API is
+// already reflected by the read response. It is a subset comparison so fields
+// the service adds on its own (ids, timestamps, defaults) do not block
+// convergence, while every managed member, list element and nested block does.
+func cmsSubscriptionRequestVisible(object, request map[string]interface{}) bool {
+	for key, want := range request {
+		if !cmsSubscriptionValueVisible(object[key], want) {
 			return false
 		}
 	}
 	return true
+}
+
+func cmsSubscriptionValueVisible(actual, want interface{}) bool {
+	switch wantValue := want.(type) {
+	case map[string]interface{}:
+		actualMap, ok := actual.(map[string]interface{})
+		if !ok {
+			return false
+		}
+		return cmsSubscriptionRequestVisible(actualMap, wantValue)
+	case []map[string]interface{}:
+		actualItems := cmsSubscriptionJSONItems(actual)
+		if len(actualItems) != len(wantValue) {
+			return false
+		}
+		for i := range wantValue {
+			if !cmsSubscriptionValueVisible(actualItems[i], wantValue[i]) {
+				return false
+			}
+		}
+		return true
+	case []string:
+		actualItems := cmsSubscriptionJSONItems(actual)
+		if len(actualItems) != len(wantValue) {
+			return false
+		}
+		for i := range wantValue {
+			if got, ok := actualItems[i].(string); !ok || got != wantValue[i] {
+				return false
+			}
+		}
+		return true
+	case []int64:
+		actualItems := cmsSubscriptionJSONItems(actual)
+		if len(actualItems) != len(wantValue) {
+			return false
+		}
+		for i := range wantValue {
+			got, ok := cmsSubscriptionJSONInt64(actualItems[i])
+			if !ok || got != wantValue[i] {
+				return false
+			}
+		}
+		return true
+	case string:
+		if wantValue == "" {
+			// The service may drop empty strings from the response.
+			return cmsSubscriptionValueEmpty(actual)
+		}
+		got, ok := actual.(string)
+		return ok && got == wantValue
+	case bool:
+		got, ok := actual.(bool)
+		if ok {
+			return got == wantValue
+		}
+		// subscribeLegacyEvent documents false and null as equivalent.
+		return !wantValue
+	case int64:
+		got, ok := cmsSubscriptionJSONInt64(actual)
+		return ok && got == wantValue
+	case nil:
+		return cmsSubscriptionValueEmpty(actual)
+	}
+	return false
+}
+
+func cmsSubscriptionJSONItems(actual interface{}) []interface{} {
+	switch items := actual.(type) {
+	case []interface{}:
+		return items
+	case []map[string]interface{}:
+		result := make([]interface{}, 0, len(items))
+		for _, item := range items {
+			result = append(result, item)
+		}
+		return result
+	}
+	return nil
+}
+
+func cmsSubscriptionJSONInt64(v interface{}) (int64, bool) {
+	switch n := v.(type) {
+	case json.Number:
+		if i, err := n.Int64(); err == nil {
+			return i, true
+		}
+	case float64:
+		return int64(n), true
+	case int:
+		return int64(n), true
+	case int64:
+		return n, true
+	}
+	return 0, false
+}
+
+func cmsSubscriptionValueEmpty(v interface{}) bool {
+	switch value := v.(type) {
+	case nil:
+		return true
+	case string:
+		return value == ""
+	case bool:
+		return !value
+	case []interface{}:
+		return len(value) == 0
+	case []map[string]interface{}:
+		return len(value) == 0
+	case []string:
+		return len(value) == 0
+	case map[string]interface{}:
+		return len(value) == 0
+	}
+	return false
+}
+
+// cmsSubscriptionPathsEmpty reports whether every path removed from the
+// configuration no longer carries a value on the read path.
+func cmsSubscriptionPathsEmpty(object map[string]interface{}, paths [][]string) bool {
+	for _, fieldPath := range paths {
+		if !cmsSubscriptionPathEmpty(object, fieldPath) {
+			return false
+		}
+	}
+	return true
+}
+
+func cmsSubscriptionPathEmpty(object map[string]interface{}, fieldPath []string) bool {
+	var current interface{} = object
+	for i, key := range fieldPath {
+		container, ok := current.(map[string]interface{})
+		if !ok {
+			return true
+		}
+		current = container[key]
+		if i == len(fieldPath)-1 {
+			return cmsSubscriptionValueEmpty(current)
+		}
+	}
+	return cmsSubscriptionValueEmpty(current)
+}
+
+// cmsSubscriptionRemovedPaths lists the configuration paths that were present
+// in state and are absent from the new plan, so the update waiter can require
+// them to be cleared rather than accepting a stale response.
+func cmsSubscriptionRemovedPaths(plan, state cmsSubscriptionResourceModel) [][]string {
+	paths := make([][]string, 0)
+	if !state.Description.IsNull() && plan.Description.IsNull() {
+		paths = append(paths, []string{"description"})
+	}
+	if !state.NotifyStrategyId.IsNull() && plan.NotifyStrategyId.IsNull() {
+		paths = append(paths, []string{"notifyStrategyId"})
+	}
+	if !state.SubscribeLegacyEvent.IsNull() && plan.SubscribeLegacyEvent.IsNull() {
+		paths = append(paths, []string{"subscribeLegacyEvent"})
+	}
+	if len(state.FilterSetting) > 0 {
+		if len(plan.FilterSetting) == 0 {
+			paths = append(paths, []string{"filterSetting"})
+		} else {
+			before := state.FilterSetting[0]
+			after := plan.FilterSetting[0]
+			if !before.Expression.IsNull() && after.Expression.IsNull() {
+				paths = append(paths, []string{"filterSetting", "expression"})
+			}
+			if !before.Relation.IsNull() && after.Relation.IsNull() {
+				paths = append(paths, []string{"filterSetting", "relation"})
+			}
+			if len(before.Conditions) > 0 && len(after.Conditions) == 0 {
+				paths = append(paths, []string{"filterSetting", "conditions"})
+			}
+		}
+	}
+	if len(state.PushingSetting) > 0 {
+		if len(plan.PushingSetting) == 0 {
+			paths = append(paths, []string{"pushingSetting"})
+		} else {
+			before := state.PushingSetting[0]
+			after := plan.PushingSetting[0]
+			if !before.AlertActionIds.IsNull() && after.AlertActionIds.IsNull() {
+				paths = append(paths, []string{"pushingSetting", "alertActionIds"})
+			}
+			if !before.RestoreActionIds.IsNull() && after.RestoreActionIds.IsNull() {
+				paths = append(paths, []string{"pushingSetting", "restoreActionIds"})
+			}
+			if !before.TemplateUuid.IsNull() && after.TemplateUuid.IsNull() {
+				paths = append(paths, []string{"pushingSetting", "templateUuid"})
+			}
+			if !before.ResponsePlanId.IsNull() && after.ResponsePlanId.IsNull() {
+				paths = append(paths, []string{"pushingSetting", "responsePlanId"})
+			}
+		}
+	}
+	if len(state.WorkspaceFilterSetting) > 0 {
+		if len(plan.WorkspaceFilterSetting) == 0 {
+			paths = append(paths, []string{"workspaceFilterSetting"})
+		} else if !state.WorkspaceFilterSetting[0].WorkspaceUuids.IsNull() && plan.WorkspaceFilterSetting[0].WorkspaceUuids.IsNull() {
+			paths = append(paths, []string{"workspaceFilterSetting", "workspaceUuids"})
+		}
+	}
+	if len(state.AgentConfig) > 0 {
+		if len(plan.AgentConfig) == 0 {
+			paths = append(paths, []string{"agentConfig"})
+		} else {
+			before := state.AgentConfig[0]
+			after := plan.AgentConfig[0]
+			if !before.AgentUuid.IsNull() && after.AgentUuid.IsNull() {
+				paths = append(paths, []string{"agentConfig", "agentUuid"})
+			}
+			if len(before.Routes) > 0 && len(after.Routes) == 0 {
+				paths = append(paths, []string{"agentConfig", "routes"})
+			}
+		}
+	}
+	return paths
 }
 
 func cmsSubscriptionQuery(workspace types.String) map[string]*string {
@@ -658,6 +896,8 @@ func cmsSubscriptionQuery(workspace types.String) map[string]*string {
 
 // expandCmsSubscriptionRequest always returns the complete body: UpdateSubscription
 // replaces the stored configuration, so unchanged attributes must be re-sent.
+// Values that are configured but empty ("", [] or false) are sent explicitly so
+// the service can clear them instead of keeping the previous value.
 func expandCmsSubscriptionRequest(plan cmsSubscriptionResourceModel) map[string]interface{} {
 	request := map[string]interface{}{
 		"subscriptionName": plan.SubscriptionName.ValueString(),
@@ -692,11 +932,11 @@ func expandCmsSubscriptionFilterSetting(blocks []cmsSubscriptionFilterSettingMod
 	}
 	block := blocks[0]
 	result := map[string]interface{}{}
-	if v := cmsSubscriptionValueString(block.Expression); v != "" {
-		result["expression"] = v
+	if !block.Expression.IsNull() && !block.Expression.IsUnknown() {
+		result["expression"] = block.Expression.ValueString()
 	}
-	if v := cmsSubscriptionValueString(block.Relation); v != "" {
-		result["relation"] = v
+	if !block.Relation.IsNull() && !block.Relation.IsUnknown() {
+		result["relation"] = block.Relation.ValueString()
 	}
 	if len(block.Conditions) > 0 {
 		conditions := make([]map[string]interface{}, 0, len(block.Conditions))
@@ -721,17 +961,17 @@ func expandCmsSubscriptionPushingSetting(blocks []cmsSubscriptionPushingSettingM
 	}
 	block := blocks[0]
 	result := map[string]interface{}{}
-	if v := cmsSubscriptionValueStringList(block.AlertActionIds); len(v) > 0 {
-		result["alertActionIds"] = v
+	if !block.AlertActionIds.IsNull() && !block.AlertActionIds.IsUnknown() {
+		result["alertActionIds"] = cmsSubscriptionValueStringList(block.AlertActionIds)
 	}
-	if v := cmsSubscriptionValueStringList(block.RestoreActionIds); len(v) > 0 {
-		result["restoreActionIds"] = v
+	if !block.RestoreActionIds.IsNull() && !block.RestoreActionIds.IsUnknown() {
+		result["restoreActionIds"] = cmsSubscriptionValueStringList(block.RestoreActionIds)
 	}
-	if v := cmsSubscriptionValueString(block.TemplateUuid); v != "" {
-		result["templateUuid"] = v
+	if !block.TemplateUuid.IsNull() && !block.TemplateUuid.IsUnknown() {
+		result["templateUuid"] = block.TemplateUuid.ValueString()
 	}
-	if v := cmsSubscriptionValueString(block.ResponsePlanId); v != "" {
-		result["responsePlanId"] = v
+	if !block.ResponsePlanId.IsNull() && !block.ResponsePlanId.IsUnknown() {
+		result["responsePlanId"] = block.ResponsePlanId.ValueString()
 	}
 	if len(result) == 0 {
 		return nil
@@ -744,8 +984,8 @@ func expandCmsSubscriptionWorkspaceFilterSetting(blocks []cmsSubscriptionWorkspa
 		return nil
 	}
 	result := map[string]interface{}{}
-	if v := cmsSubscriptionValueStringList(blocks[0].WorkspaceUuids); len(v) > 0 {
-		result["workspaceUuids"] = v
+	if !blocks[0].WorkspaceUuids.IsNull() && !blocks[0].WorkspaceUuids.IsUnknown() {
+		result["workspaceUuids"] = cmsSubscriptionValueStringList(blocks[0].WorkspaceUuids)
 	}
 	if len(result) == 0 {
 		return nil
@@ -759,24 +999,25 @@ func expandCmsSubscriptionAgentConfig(blocks []cmsSubscriptionAgentConfigModel) 
 	}
 	block := blocks[0]
 	result := map[string]interface{}{}
-	if v := cmsSubscriptionValueString(block.AgentUuid); v != "" {
-		result["agentUuid"] = v
+	if !block.AgentUuid.IsNull() && !block.AgentUuid.IsUnknown() {
+		result["agentUuid"] = block.AgentUuid.ValueString()
 	}
 	if len(block.Routes) > 0 {
 		routes := make([]map[string]interface{}, 0, len(block.Routes))
 		for _, route := range block.Routes {
 			routeItem := map[string]interface{}{}
-			if len(route.Channels) > 0 {
+			if route.Channels != nil {
 				channels := make([]map[string]interface{}, 0, len(route.Channels))
 				for _, channel := range route.Channels {
-					channelItem := map[string]interface{}{
-						"channelType": cmsSubscriptionValueString(channel.ChannelType),
+					channelItem := map[string]interface{}{}
+					if !channel.ChannelType.IsNull() && !channel.ChannelType.IsUnknown() {
+						channelItem["channelType"] = channel.ChannelType.ValueString()
 					}
-					if v := cmsSubscriptionValueStringList(channel.Receivers); len(v) > 0 {
-						channelItem["receivers"] = v
+					if !channel.Receivers.IsNull() && !channel.Receivers.IsUnknown() {
+						channelItem["receivers"] = cmsSubscriptionValueStringList(channel.Receivers)
 					}
-					if v := cmsSubscriptionValueStringList(channel.EnabledSubChannels); len(v) > 0 {
-						channelItem["enabledSubChannels"] = v
+					if !channel.EnabledSubChannels.IsNull() && !channel.EnabledSubChannels.IsUnknown() {
+						channelItem["enabledSubChannels"] = cmsSubscriptionValueStringList(channel.EnabledSubChannels)
 					}
 					channels = append(channels, channelItem)
 				}
@@ -785,11 +1026,11 @@ func expandCmsSubscriptionAgentConfig(blocks []cmsSubscriptionAgentConfigModel) 
 			if len(route.EffectTimeRange) > 0 {
 				effectTimeRange := route.EffectTimeRange[0]
 				rangeItem := map[string]interface{}{}
-				if v := cmsSubscriptionValueString(effectTimeRange.TimeZone); v != "" {
-					rangeItem["timeZone"] = v
+				if !effectTimeRange.TimeZone.IsNull() && !effectTimeRange.TimeZone.IsUnknown() {
+					rangeItem["timeZone"] = effectTimeRange.TimeZone.ValueString()
 				}
-				if v := cmsSubscriptionValueInt64List(effectTimeRange.DayInWeek); len(v) > 0 {
-					rangeItem["dayInWeek"] = v
+				if !effectTimeRange.DayInWeek.IsNull() && !effectTimeRange.DayInWeek.IsUnknown() {
+					rangeItem["dayInWeek"] = cmsSubscriptionValueInt64List(effectTimeRange.DayInWeek)
 				}
 				if v, ok := cmsSubscriptionValueInt64(effectTimeRange.StartTimeInMinute); ok {
 					rangeItem["startTimeInMinute"] = v
@@ -809,22 +1050,49 @@ func expandCmsSubscriptionAgentConfig(blocks []cmsSubscriptionAgentConfigModel) 
 	return result
 }
 
-func cmsSubscriptionState(object map[string]interface{}, previous cmsSubscriptionResourceModel) cmsSubscriptionResourceModel {
+// cmsSubscriptionIdentityState resolves the planned value into a persistable
+// state that carries the created id. Computed values stay null until the
+// follow-up read succeeds; configured values are kept so a failed apply still
+// leaves a state Terraform can refresh and destroy.
+func cmsSubscriptionIdentityState(plan cmsSubscriptionResourceModel, id string) cmsSubscriptionResourceModel {
+	state := plan
+	state.Id = types.StringValue(id)
+	if state.Description.IsUnknown() {
+		state.Description = types.StringNull()
+	}
+	if state.NotifyStrategyId.IsUnknown() {
+		state.NotifyStrategyId = types.StringNull()
+	}
+	if state.Enable.IsUnknown() {
+		state.Enable = types.BoolNull()
+	}
+	if state.SubscribeLegacyEvent.IsUnknown() {
+		state.SubscribeLegacyEvent = types.BoolNull()
+	}
+	state.UserId = types.StringNull()
+	state.SubscriptionType = types.StringNull()
+	state.RegionId = types.StringNull()
+	state.CreateTime = types.StringNull()
+	state.UpdateTime = types.StringNull()
+	return state
+}
+
+func cmsSubscriptionState(object map[string]interface{}, previous cmsSubscriptionResourceModel, regionId string) cmsSubscriptionResourceModel {
 	state := cmsSubscriptionResourceModel{
 		Id:                     types.StringValue(cmsSubscriptionJSONString(object["subscriptionId"])),
 		SubscriptionName:       cmsSubscriptionJSONStringValue(object["subscriptionName"]),
-		Description:            cmsSubscriptionJSONStringValue(object["description"]),
-		NotifyStrategyId:       cmsSubscriptionJSONStringValue(object["notifyStrategyId"]),
+		Description:            cmsSubscriptionStringStateValue(object["description"], previous.Description),
+		NotifyStrategyId:       cmsSubscriptionStringStateValue(object["notifyStrategyId"], previous.NotifyStrategyId),
 		Workspace:              cmsSubscriptionJSONStringValue(object["workspace"]),
 		Enable:                 cmsSubscriptionJSONBoolValue(object["enable"]),
-		SubscribeLegacyEvent:   cmsSubscriptionJSONBoolValue(object["subscribeLegacyEvent"]),
-		FilterSetting:          flattenCmsSubscriptionFilterSetting(object["filterSetting"]),
-		PushingSetting:         flattenCmsSubscriptionPushingSetting(object["pushingSetting"]),
-		WorkspaceFilterSetting: flattenCmsSubscriptionWorkspaceFilterSetting(object["workspaceFilterSetting"]),
-		AgentConfig:            flattenCmsSubscriptionAgentConfig(object["agentConfig"]),
+		SubscribeLegacyEvent:   cmsSubscriptionBoolStateValue(object["subscribeLegacyEvent"], previous.SubscribeLegacyEvent),
+		FilterSetting:          flattenCmsSubscriptionFilterSetting(object["filterSetting"], previous.FilterSetting),
+		PushingSetting:         flattenCmsSubscriptionPushingSetting(object["pushingSetting"], previous.PushingSetting),
+		WorkspaceFilterSetting: flattenCmsSubscriptionWorkspaceFilterSetting(object["workspaceFilterSetting"], previous.WorkspaceFilterSetting),
+		AgentConfig:            flattenCmsSubscriptionAgentConfig(object["agentConfig"], previous.AgentConfig),
 		UserId:                 cmsSubscriptionJSONStringValue(object["userId"]),
 		SubscriptionType:       cmsSubscriptionJSONStringValue(object["subscriptionType"]),
-		RegionId:               cmsSubscriptionJSONStringValue(object["regionId"]),
+		RegionId:               types.StringValue(regionId),
 		CreateTime:             cmsSubscriptionJSONStringValue(object["createTime"]),
 		UpdateTime:             cmsSubscriptionJSONStringValue(object["updateTime"]),
 	}
@@ -839,70 +1107,137 @@ func cmsSubscriptionState(object map[string]interface{}, previous cmsSubscriptio
 	return state
 }
 
-func flattenCmsSubscriptionFilterSetting(raw interface{}) []cmsSubscriptionFilterSettingModel {
+func flattenCmsSubscriptionFilterSetting(raw interface{}, previous []cmsSubscriptionFilterSettingModel) []cmsSubscriptionFilterSettingModel {
 	setting, ok := raw.(map[string]interface{})
 	if !ok || len(setting) == 0 {
+		if len(previous) > 0 {
+			return previous
+		}
 		return nil
 	}
 	block := cmsSubscriptionFilterSettingModel{
-		Expression: cmsSubscriptionJSONStringValue(setting["expression"]),
-		Relation:   cmsSubscriptionJSONStringValue(setting["relation"]),
+		Expression: cmsSubscriptionStringStateValue(setting["expression"], cmsSubscriptionPreviousFilterString(previous, "expression")),
+		Relation:   cmsSubscriptionStringStateValue(setting["relation"], cmsSubscriptionPreviousFilterString(previous, "relation")),
 	}
+	previousConditions := cmsSubscriptionPreviousFilterConditions(previous)
 	if items, ok := setting["conditions"].([]interface{}); ok {
+		conditions := make([]cmsSubscriptionConditionModel, 0, len(items))
 		for _, item := range items {
 			condition, ok := item.(map[string]interface{})
 			if !ok {
 				continue
 			}
-			block.Conditions = append(block.Conditions, cmsSubscriptionConditionModel{
+			conditions = append(conditions, cmsSubscriptionConditionModel{
 				Field: cmsSubscriptionJSONStringValue(condition["field"]),
 				Op:    cmsSubscriptionJSONStringValue(condition["op"]),
 				Value: cmsSubscriptionJSONStringValue(condition["value"]),
 			})
 		}
+		block.Conditions = conditions
+	} else {
+		block.Conditions = previousConditions
 	}
 	return []cmsSubscriptionFilterSettingModel{block}
 }
 
-func flattenCmsSubscriptionPushingSetting(raw interface{}) []cmsSubscriptionPushingSettingModel {
-	setting, ok := raw.(map[string]interface{})
-	if !ok || len(setting) == 0 {
-		return nil
+func cmsSubscriptionPreviousFilterString(previous []cmsSubscriptionFilterSettingModel, attribute string) types.String {
+	if len(previous) == 0 {
+		return types.StringNull()
 	}
-	return []cmsSubscriptionPushingSettingModel{{
-		AlertActionIds:   cmsSubscriptionJSONStringList(setting["alertActionIds"]),
-		RestoreActionIds: cmsSubscriptionJSONStringList(setting["restoreActionIds"]),
-		TemplateUuid:     cmsSubscriptionJSONStringValue(setting["templateUuid"]),
-		ResponsePlanId:   cmsSubscriptionJSONStringValue(setting["responsePlanId"]),
-	}}
+	if attribute == "expression" {
+		return previous[0].Expression
+	}
+	return previous[0].Relation
 }
 
-func flattenCmsSubscriptionWorkspaceFilterSetting(raw interface{}) []cmsSubscriptionWorkspaceFilterModel {
+func cmsSubscriptionPreviousFilterConditions(previous []cmsSubscriptionFilterSettingModel) []cmsSubscriptionConditionModel {
+	if len(previous) == 0 {
+		return nil
+	}
+	return previous[0].Conditions
+}
+
+func flattenCmsSubscriptionPushingSetting(raw interface{}, previous []cmsSubscriptionPushingSettingModel) []cmsSubscriptionPushingSettingModel {
 	setting, ok := raw.(map[string]interface{})
 	if !ok || len(setting) == 0 {
+		if len(previous) > 0 {
+			return previous
+		}
 		return nil
+	}
+	block := cmsSubscriptionPushingSettingModel{
+		AlertActionIds:   cmsSubscriptionJSONStringListState(setting["alertActionIds"], cmsSubscriptionPreviousPushingList(previous, "alert")),
+		RestoreActionIds: cmsSubscriptionJSONStringListState(setting["restoreActionIds"], cmsSubscriptionPreviousPushingList(previous, "restore")),
+		TemplateUuid:     cmsSubscriptionStringStateValue(setting["templateUuid"], cmsSubscriptionPreviousPushingString(previous, "template")),
+		ResponsePlanId:   cmsSubscriptionStringStateValue(setting["responsePlanId"], cmsSubscriptionPreviousPushingString(previous, "response")),
+	}
+	return []cmsSubscriptionPushingSettingModel{block}
+}
+
+func cmsSubscriptionPreviousPushingList(previous []cmsSubscriptionPushingSettingModel, attribute string) types.List {
+	if len(previous) == 0 {
+		return types.ListNull(types.ListType{ElemType: types.StringType})
+	}
+	if attribute == "alert" {
+		return previous[0].AlertActionIds
+	}
+	return previous[0].RestoreActionIds
+}
+
+func cmsSubscriptionPreviousPushingString(previous []cmsSubscriptionPushingSettingModel, attribute string) types.String {
+	if len(previous) == 0 {
+		return types.StringNull()
+	}
+	if attribute == "template" {
+		return previous[0].TemplateUuid
+	}
+	return previous[0].ResponsePlanId
+}
+
+func flattenCmsSubscriptionWorkspaceFilterSetting(raw interface{}, previous []cmsSubscriptionWorkspaceFilterModel) []cmsSubscriptionWorkspaceFilterModel {
+	setting, ok := raw.(map[string]interface{})
+	if !ok || len(setting) == 0 {
+		if len(previous) > 0 {
+			return previous
+		}
+		return nil
+	}
+	previousList := types.ListNull(types.ListType{ElemType: types.StringType})
+	if len(previous) > 0 {
+		previousList = previous[0].WorkspaceUuids
 	}
 	return []cmsSubscriptionWorkspaceFilterModel{{
-		WorkspaceUuids: cmsSubscriptionJSONStringList(setting["workspaceUuids"]),
+		WorkspaceUuids: cmsSubscriptionJSONStringListState(setting["workspaceUuids"], previousList),
 	}}
 }
 
-func flattenCmsSubscriptionAgentConfig(raw interface{}) []cmsSubscriptionAgentConfigModel {
+func flattenCmsSubscriptionAgentConfig(raw interface{}, previous []cmsSubscriptionAgentConfigModel) []cmsSubscriptionAgentConfigModel {
 	config, ok := raw.(map[string]interface{})
 	if !ok || len(config) == 0 {
+		if len(previous) > 0 {
+			return previous
+		}
 		return nil
 	}
+	previousUuid := types.StringNull()
+	if len(previous) > 0 {
+		previousUuid = previous[0].AgentUuid
+	}
 	block := cmsSubscriptionAgentConfigModel{
-		AgentUuid: cmsSubscriptionJSONStringValue(config["agentUuid"]),
+		AgentUuid: cmsSubscriptionStringStateValue(config["agentUuid"], previousUuid),
 	}
 	if items, ok := config["routes"].([]interface{}); ok {
+		routes := make([]cmsSubscriptionAgentRouteModel, 0, len(items))
 		for _, item := range items {
 			route, ok := item.(map[string]interface{})
 			if !ok {
 				continue
 			}
-			block.Routes = append(block.Routes, flattenCmsSubscriptionAgentRoute(route))
+			routes = append(routes, flattenCmsSubscriptionAgentRoute(route))
 		}
+		block.Routes = routes
+	} else if len(previous) > 0 {
+		block.Routes = previous[0].Routes
 	}
 	return []cmsSubscriptionAgentConfigModel{block}
 }
@@ -910,17 +1245,19 @@ func flattenCmsSubscriptionAgentConfig(raw interface{}) []cmsSubscriptionAgentCo
 func flattenCmsSubscriptionAgentRoute(route map[string]interface{}) cmsSubscriptionAgentRouteModel {
 	result := cmsSubscriptionAgentRouteModel{}
 	if items, ok := route["channels"].([]interface{}); ok {
+		channels := make([]cmsSubscriptionAgentChannelModel, 0, len(items))
 		for _, item := range items {
 			channel, ok := item.(map[string]interface{})
 			if !ok {
 				continue
 			}
-			result.Channels = append(result.Channels, cmsSubscriptionAgentChannelModel{
+			channels = append(channels, cmsSubscriptionAgentChannelModel{
 				ChannelType:        cmsSubscriptionJSONStringValue(channel["channelType"]),
 				Receivers:          cmsSubscriptionJSONStringList(channel["receivers"]),
 				EnabledSubChannels: cmsSubscriptionJSONStringList(channel["enabledSubChannels"]),
 			})
 		}
+		result.Channels = channels
 	}
 	if item, ok := route["effectTimeRange"].(map[string]interface{}); ok {
 		result.EffectTimeRange = append(result.EffectTimeRange, cmsSubscriptionAgentEffectTimeRangeModel{
@@ -987,11 +1324,33 @@ func cmsSubscriptionJSONStringValue(v interface{}) types.String {
 	return types.StringNull()
 }
 
+func cmsSubscriptionStringStateValue(v interface{}, previous types.String) types.String {
+	if s := cmsSubscriptionJSONString(v); s != "" {
+		return types.StringValue(s)
+	}
+	if !previous.IsNull() && !previous.IsUnknown() {
+		return types.StringValue("")
+	}
+	return types.StringNull()
+}
+
 func cmsSubscriptionJSONBoolValue(v interface{}) types.Bool {
 	if b, ok := v.(bool); ok {
 		return types.BoolValue(b)
 	}
 	return types.BoolNull()
+}
+
+func cmsSubscriptionBoolStateValue(v interface{}, previous types.Bool) types.Bool {
+	if b, ok := v.(bool); ok {
+		return types.BoolValue(b)
+	}
+	if previous.IsNull() {
+		return types.BoolNull()
+	}
+	// The contract states that null and false both mean "not subscribed", so an
+	// unset response resolves the planned unknown to the service default.
+	return types.BoolValue(false)
 }
 
 func cmsSubscriptionJSONStringList(v interface{}) types.List {
@@ -1010,6 +1369,17 @@ func cmsSubscriptionJSONStringList(v interface{}) types.List {
 		return types.ListNull(elementType)
 	}
 	return types.ListValueMust(elementType, values)
+}
+
+func cmsSubscriptionJSONStringListState(v interface{}, previous types.List) types.List {
+	list := cmsSubscriptionJSONStringList(v)
+	if !list.IsNull() {
+		return list
+	}
+	if !previous.IsNull() && !previous.IsUnknown() {
+		return types.ListValueMust(types.ListType{ElemType: types.StringType}, []attr.Value{})
+	}
+	return list
 }
 
 func cmsSubscriptionJSONInt64List(v interface{}) types.List {
@@ -1045,4 +1415,44 @@ func cmsSubscriptionJSONInt64Value(v interface{}) types.Int64 {
 		return types.Int64Value(n)
 	}
 	return types.Int64Null()
+}
+
+type cmsSubscriptionChannelValidator struct{}
+
+func (v cmsSubscriptionChannelValidator) Description(ctx context.Context) string {
+	return "enabled_sub_channels is required when channel_type is CONTACT, GROUP or DUTY"
+}
+
+func (v cmsSubscriptionChannelValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v cmsSubscriptionChannelValidator) ValidateResource(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var config cmsSubscriptionResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	for i, agent := range config.AgentConfig {
+		for j, route := range agent.Routes {
+			for k, channel := range route.Channels {
+				if channel.ChannelType.IsNull() || channel.ChannelType.IsUnknown() {
+					continue
+				}
+				switch channel.ChannelType.ValueString() {
+				case "CONTACT", "GROUP", "DUTY":
+					if channel.EnabledSubChannels.IsNull() || channel.EnabledSubChannels.IsUnknown() || len(channel.EnabledSubChannels.Elements()) == 0 {
+						resp.Diagnostics.AddAttributeError(
+							path.Root("agent_config").AtListIndex(i).
+								AtName("routes").AtListIndex(j).
+								AtName("channels").AtListIndex(k).
+								AtName("enabled_sub_channels"),
+							"Missing enabled_sub_channels",
+							fmt.Sprintf("enabled_sub_channels must contain at least one value when channel_type is %s.", channel.ChannelType.ValueString()),
+						)
+					}
+				}
+			}
+		}
+	}
 }

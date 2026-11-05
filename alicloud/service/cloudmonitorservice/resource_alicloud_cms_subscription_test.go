@@ -1,6 +1,7 @@
 package cloudmonitorservice_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -16,7 +17,7 @@ import (
 func TestAccAliCloudCmsSubscription_basic(t *testing.T) {
 	resourceId := "alicloud_cms_subscription.default"
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tfacccmssubscription%d", rand)
+	name := fmt.Sprintf("tf-testAccCmsSubscription%d", rand)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -24,9 +25,30 @@ func TestAccAliCloudCmsSubscription_basic(t *testing.T) {
 		CheckDestroy:             testAccCheckCmsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCmsSubscriptionConfigBasic(name),
+				Config: testAccCmsSubscriptionConfigMinimal(name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "subscription_name", name),
+					resource.TestCheckResourceAttr(resourceId, "workspace", name),
+					resource.TestCheckResourceAttr(resourceId, "enable", "true"),
+					resource.TestCheckResourceAttr(resourceId, "region_id", "cn-hangzhou"),
+					resource.TestCheckResourceAttrSet(resourceId, "user_id"),
+					resource.TestCheckResourceAttrSet(resourceId, "subscription_type"),
+					resource.TestCheckResourceAttrSet(resourceId, "create_time"),
+					resource.TestCheckResourceAttrSet(resourceId, "update_time"),
+					resource.TestCheckNoResourceAttr(resourceId, "description"),
+					resource.TestCheckNoResourceAttr(resourceId, "notify_strategy_id"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.#", "0"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccCmsSubscriptionConfigFiltered(name),
+				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "description", "created by terraform"),
 					resource.TestCheckResourceAttr(resourceId, "enable", "false"),
 					resource.TestCheckResourceAttr(resourceId, "filter_setting.#", "1"),
@@ -35,34 +57,114 @@ func TestAccAliCloudCmsSubscription_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.0.field", "labels.alertname"),
 					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.0.op", "EQ"),
 					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.0.value", "HighCPUUsage"),
-					resource.TestCheckResourceAttrSet(resourceId, "create_time"),
 				),
 			},
 			{
-				Config: testAccCmsSubscriptionConfigUpdate(name),
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
+				ImportStateVerify: true,
+			},
+			{
+				// Removing every optional value must clear it remotely, and the
+				// explicit false must survive the round trip.
+				Config: testAccCmsSubscriptionConfigCleared(name),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "description", "updated by terraform"),
 					resource.TestCheckResourceAttr(resourceId, "enable", "true"),
-					resource.TestCheckResourceAttr(resourceId, "subscribe_legacy_event", "true"),
-					resource.TestCheckResourceAttr(resourceId, "filter_setting.#", "1"),
-					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.expression", "1 and 2"),
-					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.#", "2"),
+					resource.TestCheckResourceAttr(resourceId, "subscribe_legacy_event", "false"),
+					resource.TestCheckNoResourceAttr(resourceId, "description"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.#", "0"),
 				),
 			},
 			{
-				ResourceName: resourceId,
-				ImportState:  true,
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					rs, ok := s.RootModule().Resources[resourceId]
-					if !ok {
-						return "", fmt.Errorf("resource %s not found in state", resourceId)
-					}
-					return fmt.Sprintf("%s:%s", rs.Primary.Attributes["workspace"], rs.Primary.ID), nil
-				},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
 				ImportStateVerify: true,
 			},
 		},
 	})
+}
+
+func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
+	resourceId := "alicloud_cms_subscription.default"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccCmsSubscriptionFull%d", rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckCmsSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCmsSubscriptionConfigComplete(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription"),
+					resource.TestCheckResourceAttr(resourceId, "enable", "true"),
+					resource.TestCheckResourceAttr(resourceId, "subscribe_legacy_event", "true"),
+					resource.TestCheckResourceAttrPair(resourceId, "notify_strategy_id", "alicloud_cms_event_notify_policy.default", "uuid"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.expression", "1 and 2"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.#", "2"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.0.field", "labels.alertname"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.0.op", "EQ"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.0.value", "HighCPUUsage"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.1.field", "labels.severity"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.1.op", "IN"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.1.value", "P1,P2"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
+				ImportStateVerify: true,
+			},
+			{
+				// Same number of conditions with different content, plus a
+				// different expression: a count-only waiter would pass here.
+				Config: testAccCmsSubscriptionConfigCompleteUpdated(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription updated"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.expression", "1 and 2 or 3"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.#", "2"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.0.value", "CriticalCPUUsage"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.1.value", "P0,P1"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
+				ImportStateVerify: true,
+			},
+			{
+				// Dropping the expression must fall back to relation.
+				Config: testAccCmsSubscriptionConfigCompleteRelation(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.relation", "OR"),
+					resource.TestCheckNoResourceAttr(resourceId, "filter_setting.0.expression"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.#", "2"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func testAccCmsSubscriptionImportStateIdFunc(resourceId string) resource.ImportStateIdFunc {
+	return func(s *terraform.State) (string, error) {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return "", fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		return fmt.Sprintf("%s:%s", rs.Primary.Attributes["workspace"], rs.Primary.ID), nil
+	}
 }
 
 func testAccCheckCmsSubscriptionDestroy(s *terraform.State) error {
@@ -71,7 +173,7 @@ func testAccCheckCmsSubscriptionDestroy(s *terraform.State) error {
 			continue
 		}
 		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
-		_, err := cloudmonitorservice.NewCmsService(client).DescribeCmsSubscription(rs.Primary.ID, rs.Primary.Attributes["workspace"])
+		_, err := cloudmonitorservice.NewCmsService(client).DescribeCmsSubscription(context.Background(), rs.Primary.ID, rs.Primary.Attributes["workspace"])
 		if err != nil {
 			if errs.NotFoundError(err) {
 				continue
@@ -83,7 +185,7 @@ func testAccCheckCmsSubscriptionDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccCmsSubscriptionConfigBasic(name string) string {
+func testAccCmsSubscriptionDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
@@ -101,7 +203,20 @@ resource "alicloud_cms_workspace" "default" {
   workspace_name = var.name
   sls_project    = alicloud_log_project.default.project_name
 }
+`, name)
+}
 
+func testAccCmsSubscriptionConfigMinimal(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_cms_subscription" "default" {
+  subscription_name = var.name
+  workspace         = alicloud_cms_workspace.default.workspace_name
+}
+`, testAccCmsSubscriptionDependence(name))
+}
+
+func testAccCmsSubscriptionConfigFiltered(name string) string {
+	return fmt.Sprintf(`%s
 resource "alicloud_cms_subscription" "default" {
   subscription_name = var.name
   workspace         = alicloud_cms_workspace.default.workspace_name
@@ -118,38 +233,37 @@ resource "alicloud_cms_subscription" "default" {
     }
   }
 }
-`, name)
+`, testAccCmsSubscriptionDependence(name))
 }
 
-func testAccCmsSubscriptionConfigUpdate(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-  default = "%s"
+func testAccCmsSubscriptionConfigCleared(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_cms_subscription" "default" {
+  subscription_name      = var.name
+  workspace              = alicloud_cms_workspace.default.workspace_name
+  enable                 = true
+  subscribe_legacy_event = false
+}
+`, testAccCmsSubscriptionDependence(name))
 }
 
-provider "alicloud" {
-  region = "cn-hangzhou"
-}
-
-resource "alicloud_log_project" "default" {
-  project_name = var.name
-}
-
-resource "alicloud_cms_workspace" "default" {
-  workspace_name = var.name
-  sls_project    = alicloud_log_project.default.project_name
+func testAccCmsSubscriptionConfigComplete(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_cms_event_notify_policy" "default" {
+  workspace = alicloud_cms_workspace.default.workspace_name
+  name      = var.name
 }
 
 resource "alicloud_cms_subscription" "default" {
   subscription_name      = var.name
   workspace              = alicloud_cms_workspace.default.workspace_name
-  description            = "updated by terraform"
+  notify_strategy_id     = alicloud_cms_event_notify_policy.default.uuid
+  description            = "complete subscription"
   enable                 = true
   subscribe_legacy_event = true
 
   filter_setting {
     expression = "1 and 2"
-    relation   = "AND"
 
     conditions {
       field = "labels.alertname"
@@ -164,5 +278,73 @@ resource "alicloud_cms_subscription" "default" {
     }
   }
 }
-`, name)
+`, testAccCmsSubscriptionDependence(name))
+}
+
+func testAccCmsSubscriptionConfigCompleteUpdated(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_cms_event_notify_policy" "default" {
+  workspace = alicloud_cms_workspace.default.workspace_name
+  name      = var.name
+}
+
+resource "alicloud_cms_subscription" "default" {
+  subscription_name      = var.name
+  workspace              = alicloud_cms_workspace.default.workspace_name
+  notify_strategy_id     = alicloud_cms_event_notify_policy.default.uuid
+  description            = "complete subscription updated"
+  enable                 = true
+  subscribe_legacy_event = true
+
+  filter_setting {
+    expression = "1 and 2 or 3"
+
+    conditions {
+      field = "labels.alertname"
+      op    = "EQ"
+      value = "CriticalCPUUsage"
+    }
+
+    conditions {
+      field = "labels.severity"
+      op    = "IN"
+      value = "P0,P1"
+    }
+  }
+}
+`, testAccCmsSubscriptionDependence(name))
+}
+
+func testAccCmsSubscriptionConfigCompleteRelation(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_cms_event_notify_policy" "default" {
+  workspace = alicloud_cms_workspace.default.workspace_name
+  name      = var.name
+}
+
+resource "alicloud_cms_subscription" "default" {
+  subscription_name      = var.name
+  workspace              = alicloud_cms_workspace.default.workspace_name
+  notify_strategy_id     = alicloud_cms_event_notify_policy.default.uuid
+  description            = "complete subscription updated"
+  enable                 = true
+  subscribe_legacy_event = true
+
+  filter_setting {
+    relation = "OR"
+
+    conditions {
+      field = "labels.alertname"
+      op    = "EQ"
+      value = "CriticalCPUUsage"
+    }
+
+    conditions {
+      field = "labels.severity"
+      op    = "IN"
+      value = "P0,P1"
+    }
+  }
+}
+`, testAccCmsSubscriptionDependence(name))
 }
