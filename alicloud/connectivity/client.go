@@ -1,8 +1,14 @@
 package connectivity
 
 import (
+	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -2672,6 +2678,240 @@ func (client *AliyunClient) RpcGet(apiProductCode string, apiVersion string, api
 }
 
 func (client *AliyunClient) rpcRequest(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
+	return client.rpcRequestWithTimeouts(method, apiProductCode, apiVersion, apiName, query, body, autoRetry, endpoint)
+}
+
+// contextRpcHTTPClient is used by the context-aware RPC entry points. The request is handed to the
+// transport with the lifecycle context attached, so cancelling the Terraform operation closes the
+// connection in flight; the client itself carries no timeout because the context owns the budget.
+var contextRpcHTTPClient = &http.Client{
+	Transport: &http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           (&net.Dialer{Timeout: 15 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	},
+}
+
+// RpcPostWithContext invokes a POST RPC that belongs to a Terraform operation budget. The request is
+// serialized and signed here instead of going through the legacy SDK entry point because that path
+// builds its http.Request without a context: only this form lets cancellation reach the socket in
+// flight and lets the operation deadline bound the request. Retrying stays with the caller, so a
+// cancelled lifecycle never issues another request.
+func (client *AliyunClient) RpcPostWithContext(ctx context.Context, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}) (map[string]interface{}, error) {
+	return client.rpcRequestWithContext(ctx, "POST", apiProductCode, apiVersion, apiName, query, body)
+}
+
+// RpcGetWithContext is the GET variant of RpcPostWithContext.
+func (client *AliyunClient) RpcGetWithContext(ctx context.Context, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}) (map[string]interface{}, error) {
+	return client.rpcRequestWithContext(ctx, "GET", apiProductCode, apiVersion, apiName, query, body)
+}
+
+// rpcRequestWithContext performs one signed RPC attempt whose HTTP request carries ctx. The RPC
+// envelope mirrors the tea-rpc client (Action/Format/Timestamp/Version/SignatureNonce, HMAC-SHA1
+// signature over query and form body, x-acs-* headers) so the wire format is unchanged; only the
+// context handling differs.
+func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}) (map[string]interface{}, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
+	endpoint, err := client.loadApiEndpoint(apiProductCode)
+	if err != nil {
+		return nil, err
+	}
+	credential, err := client.config.Credential.GetCredential()
+	if err != nil || credential == nil {
+		return nil, fmt.Errorf("get credential failed. Error: %#v", err)
+	}
+
+	cfg := client.teaSdkConfig
+	protocol := "https"
+	if value := tea.StringValue(cfg.Protocol); value != "" {
+		protocol = strings.ToLower(value)
+	}
+	method = strings.ToUpper(method)
+	requestQuery, err := flattenRpcParams(tea.ToMap(map[string]interface{}{
+		"Action":         apiName,
+		"Format":         "json",
+		"Timestamp":      rpcTimestamp(),
+		"Version":        apiVersion,
+		"SignatureNonce": util.GetNonce(),
+	}, query))
+	if err != nil {
+		return nil, err
+	}
+	if value := tea.StringValue(cfg.SourceIp); value != "" {
+		requestQuery["SourceIp"] = tea.String(value)
+	}
+	if value := tea.StringValue(cfg.SecureTransport); value != "" {
+		requestQuery["SecureTransport"] = tea.String(value)
+	}
+	var bodyParams map[string]*string
+	formBody := ""
+	if body != nil {
+		bodyParams, err = flattenRpcParams(body)
+		if err != nil {
+			return nil, err
+		}
+		values := url.Values{}
+		for key, value := range bodyParams {
+			values.Add(key, tea.StringValue(value))
+		}
+		formBody = values.Encode()
+	}
+	if value := tea.StringValue(credential.SecurityToken); value != "" {
+		requestQuery["SecurityToken"] = tea.String(value)
+	}
+	requestQuery["SignatureMethod"] = tea.String("HMAC-SHA1")
+	requestQuery["SignatureVersion"] = tea.String("1.0")
+	requestQuery["AccessKeyId"] = credential.AccessKeyId
+	requestQuery["Signature"] = tea.String(rpcSignatureV1(tea.Merge(requestQuery, bodyParams), method, tea.StringValue(credential.AccessKeySecret)))
+
+	values := url.Values{}
+	for key, value := range requestQuery {
+		values.Add(key, tea.StringValue(value))
+	}
+	requestURL := fmt.Sprintf("%s://%s/?%s", protocol, endpoint, values.Encode())
+	var bodyReader io.Reader
+	if formBody != "" {
+		bodyReader = strings.NewReader(formBody)
+	}
+	httpRequest, err := http.NewRequestWithContext(ctx, method, requestURL, bodyReader)
+	if err != nil {
+		return nil, err
+	}
+	httpRequest.Host = endpoint
+	httpRequest.Header.Set("x-acs-version", apiVersion)
+	httpRequest.Header.Set("x-acs-action", apiName)
+	if value := tea.StringValue(cfg.UserAgent); value != "" {
+		httpRequest.Header.Set("User-Agent", value)
+	}
+	if formBody != "" {
+		httpRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}
+
+	response, err := contextRpcHTTPClient.Do(httpRequest)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	decoded, err := util.ReadAsJSON(response.Body)
+	if err != nil {
+		return nil, err
+	}
+	result := util.AssertAsMap(decoded)
+	headers := make(map[string]*string, len(response.Header))
+	for key := range response.Header {
+		headers[key] = tea.String(response.Header.Get(key))
+	}
+	result["_headers"] = headers
+	if response.StatusCode >= http.StatusBadRequest {
+		return nil, formatError(result, tea.NewSDKError(map[string]interface{}{
+			"code":       rpcResponseField(result, "Code", "code"),
+			"statusCode": response.StatusCode,
+			"message": fmt.Sprintf("code: %d, %s request id: %s", response.StatusCode,
+				rpcResponseField(result, "Message", "message"), rpcResponseField(result, "RequestId", "requestId")),
+			"data": result,
+		}))
+	}
+	return result, formatError(result, nil)
+}
+
+// rpcResponseField returns the first populated field among the given response keys, covering the
+// PascalCase and lowerCamelCase spellings products use in their error envelopes.
+func rpcResponseField(response map[string]interface{}, keys ...string) string {
+	for _, key := range keys {
+		if value, ok := response[key]; ok && value != nil {
+			return fmt.Sprint(value)
+		}
+	}
+	return ""
+}
+
+// rpcTimestamp returns the RPC Timestamp value in the format the gateway expects.
+func rpcTimestamp() *string {
+	return tea.String(time.Now().UTC().Format("2006-01-02T15:04:05Z"))
+}
+
+// flattenRpcParams flattens a query or body map into the dotted parameter form used by the RPC
+// gateway (nested maps become "A.B", repeated elements become "A.1", "A.2", ...). It mirrors the
+// tea-rpc serializer so the wire format stays identical to the SDK entry point.
+func flattenRpcParams(source map[string]interface{}) (map[string]*string, error) {
+	if source == nil {
+		return map[string]*string{}, nil
+	}
+	encoded, err := json.Marshal(source)
+	if err != nil {
+		return nil, err
+	}
+	var normalized map[string]interface{}
+	decoder := json.NewDecoder(bytes.NewReader(encoded))
+	decoder.UseNumber()
+	if err := decoder.Decode(&normalized); err != nil {
+		return nil, err
+	}
+	flattened := map[string]*string{}
+	if err := flattenRpcValue("", normalized, flattened); err != nil {
+		return nil, err
+	}
+	return flattened, nil
+}
+
+func flattenRpcValue(prefix string, value interface{}, flattened map[string]*string) error {
+	switch typed := value.(type) {
+	case nil:
+		// An absent parameter is simply not sent.
+		return nil
+	case map[string]interface{}:
+		for key, element := range typed {
+			path := key
+			if prefix != "" {
+				path = prefix + "." + key
+			}
+			if err := flattenRpcValue(path, element, flattened); err != nil {
+				return err
+			}
+		}
+	case []interface{}:
+		for index, element := range typed {
+			if element == nil {
+				return fmt.Errorf("cannot serialize repeated parameter element %q: value is nil", prefix)
+			}
+			if err := flattenRpcValue(fmt.Sprintf("%s.%d", prefix, index+1), element, flattened); err != nil {
+				return err
+			}
+		}
+	default:
+		flattened[prefix] = tea.String(fmt.Sprintf("%v", typed))
+	}
+	return nil
+}
+
+// rpcSignatureV1 computes the HMAC-SHA1 signature required by the RPC signature version 1 protocol.
+// The algorithm is fixed by the API protocol (and matches the tea-rpc client), not a local choice.
+func rpcSignatureV1(params map[string]*string, method string, accessKeySecret string) string {
+	values := url.Values{}
+	for key, value := range params {
+		values.Add(key, tea.StringValue(value))
+	}
+	canonical := values.Encode()
+	canonical = strings.ReplaceAll(canonical, "+", "%20")
+	canonical = strings.ReplaceAll(canonical, "*", "%2A")
+	canonical = strings.ReplaceAll(canonical, "%7E", "~")
+	mac := hmac.New(sha1.New, []byte(accessKeySecret+"&"))
+	mac.Write([]byte(method + "&%2F&" + url.QueryEscape(canonical)))
+	return base64.StdEncoding.EncodeToString(mac.Sum(nil))
+}
+
+// rpcRequestWithTimeouts runs one RPC attempt through the legacy SDK entry point.
+func (client *AliyunClient) rpcRequestWithTimeouts(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
 	var err error
 	if endpoint == "" {
 		apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))

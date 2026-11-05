@@ -1,0 +1,3083 @@
+package realtimecompute_test
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-framework/path"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/credentials-go/credentials"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/realtimecompute"
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	fwschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	sdkterraform "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+)
+
+func TestAccAliCloudRealtimeComputeVvpNamespace_basic0(t *testing.T) {
+	resourceId := "alicloud_realtime_compute_vvp_namespace.default"
+	// Pin Hangzhou instead of inheriting the worker default region: it is the region the
+	// product's own VvpInstance test targets and where this lifecycle is known to provision.
+	region := "cn-hangzhou"
+	if err := os.Setenv("ALICLOUD_REGION", region); err != nil {
+		t.Fatalf("setting ALICLOUD_REGION failed: %s", err)
+	}
+	if zone := os.Getenv("ALICLOUD_ZONE"); zone != "" {
+		t.Logf("using the zone from ALICLOUD_ZONE: %s", zone)
+	}
+	rand := tfacctest.RandIntRange(10000, 99999)
+	// The Flink workspace and namespace names, and the OSS bucket derived from them, only accept
+	// lowercase letters, digits and hyphens (foasconsole CreateInstance/CreateNamespace and OSS
+	// bucket naming rules), so these tests keep the lowercase tf-testacc prefix instead of
+	// emitting names the product rejects.
+	name := fmt.Sprintf("tf-testacc%srtcns%d", strings.ReplaceAll(region, "-", ""), rand)
+	namespace := fmt.Sprintf("tf-testacc-ns-%d", rand)
+	namespaceHa := fmt.Sprintf("tf-testacc-ns-ha-%d", rand)
+	zone := realtimeComputeTestZone(region)
+	var instanceId string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckRealtimeComputeVvpNamespaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				// A pay-as-you-go workspace only finishes provisioning when it is created with a
+				// resource spec. Its default namespace then takes that whole spec, so the extra
+				// capacity is bought in the next step's PreConfig, before the namespace exists.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, "", zone, 4, 16, 0, 0),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_realtime_compute_vvp_instance.default", "id"),
+					testAccRealtimeComputeVvpCaptureInstanceId(&instanceId),
+					testAccRealtimeComputeVvpCheckDefaultNamespace(name, 4, 16),
+				),
+			},
+			{
+				PreConfig: func() {
+					if err := testAccRealtimeComputeVvpPurchaseCapacity(instanceId, 8, 32); err != nil {
+						t.Fatalf("purchasing capacity for %s failed: %s", instanceId, err)
+					}
+				},
+				// The minimal configuration omits ha and uses explicit timeouts: the created namespace
+				// must still come back with the service default (false on a single-zone workspace), and
+				// the local timeouts block must be accepted without a per-apply change.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceMinimal0(name, namespace, zone, 8, 32, 2, 8),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "namespace", namespace),
+					resource.TestCheckResourceAttr(resourceId, "ha", "false"),
+					resource.TestCheckResourceAttrSet(resourceId, "instance_id"),
+					resource.TestCheckResourceAttrSet(resourceId, "status"),
+					resource.TestCheckResourceAttrSet(resourceId, "gmt_create"),
+					resource.TestCheckResourceAttrSet(resourceId, "gmt_modified"),
+					resource.TestCheckResourceAttr(resourceId, "resource_used.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceId, "resource_used.0.cpu"),
+					resource.TestCheckResourceAttrSet(resourceId, "resource_used.0.cu"),
+					resource.TestCheckResourceAttrSet(resourceId, "resource_used.0.memory_gb"),
+					testAccRealtimeComputeVvpCheckNoTags(resourceId),
+					resource.TestCheckResourceAttrSet(resourceId, "id"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "2"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "8"),
+				),
+			},
+			{
+				// Import right after the create must reproduce the created state.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceMinimal0(name, namespace, zone, 8, 32, 2, 8),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "namespace", namespace),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "2"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "8"),
+				),
+			},
+			{
+				// Import right after re-applying the same configuration must still match.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Growing the namespace is the supported update. A successful shrink is not
+				// covered: ModifyNamespaceSpec rejects a target below the sum of the namespace's
+				// resource queues (903099), and that rejected shrink is asserted later in this test
+				// as the negative case.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceMinimal0(name, namespace, zone, 8, 32, 3, 12),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "3"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "12"),
+				),
+			},
+			{
+				// Import right after the grow must reproduce the updated state.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// resource_spec is Optional+Computed and updatable. Removing it from an existing
+				// configuration must keep the specification already in state: the PreApply check
+				// proves the plan is a no-op (no replacement and no resize request) before anything
+				// is applied, and the following import must reproduce the retained 3/12 spec.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceMinimal0WithoutSpec(name, namespace, zone, 8, 32),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "3"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "12"),
+				),
+			},
+			{
+				// Import right after removing resource_spec must still reproduce the retained state.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Shrinking below the capacity the namespace's resource queues already use is
+				// rejected by the product, so the update is asserted as a negative case rather
+				// than dropped: 903099 is the expected, identifiable error.
+				Config:      testAccAliCloudRealtimeComputeVvpNamespaceMinimal0(name, namespace, zone, 8, 32, 2, 8),
+				ExpectError: regexp.MustCompile("903099"),
+			},
+			{
+				// An HA namespace needs HA capacity on the parent workspace. The workspace this fixture
+				// creates is non-HA (the provider's workspace resource cannot provision HA capacity), so
+				// the product refuses the create with 903100. Asserting that refusal keeps the ha=true
+				// path exercised and pins the prerequisite instead of pretending the lifecycle ran.
+				Config:      testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, namespaceHa, zone, 8, 32),
+				ExpectError: regexp.MustCompile("903100"),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRealtimeComputeVvpNamespace_ha0 covers the positive HA lifecycle: the namespace
+// is created with ha = true, read back, imported, replaced when ha flips to false and replaced
+// again when it flips back. The provider's workspace resource cannot buy HA capacity and the
+// product refuses HA on a pay-as-you-go X86 workspace (903100), so this test consumes a
+// pre-provisioned cross-zone workspace instead of creating one; see
+// testAccRealtimeComputeVvpRequireHaWorkspace for how it is located.
+func TestAccAliCloudRealtimeComputeVvpNamespace_ha0(t *testing.T) {
+	// This case reads a pre-provisioned workspace before resource.Test builds its steps, so it has
+	// to honour the TF_ACC gate itself: without it a plain `go test` run would touch the cloud
+	// instead of skipping like the other acceptance cases.
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("acceptance tests are skipped unless TF_ACC is set")
+	}
+	resourceId := "alicloud_realtime_compute_vvp_namespace.ha"
+	region := "cn-hangzhou"
+	if err := os.Setenv("ALICLOUD_REGION", region); err != nil {
+		t.Fatalf("setting ALICLOUD_REGION failed: %s", err)
+	}
+	rand := tfacctest.RandIntRange(10000, 99999)
+	namespace := fmt.Sprintf("tf-testacc-ha-ns-%d", rand)
+	// A test step's config is a plain string, so the workspace has to be resolved before the
+	// TestCase is built; PreCheck is too late for that.
+	acctest.PreCheck(t)
+	instanceId := testAccRealtimeComputeVvpRequireHaWorkspace(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckRealtimeComputeVvpNamespaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				// The default namespace of the workspace keeps its own CU, so the HA namespace is
+				// sized to the remaining cross-zone capacity.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspace(instanceId, namespace, true, 1, 4),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "instance_id", instanceId),
+					resource.TestCheckResourceAttr(resourceId, "namespace", namespace),
+					resource.TestCheckResourceAttr(resourceId, "ha", "true"),
+					resource.TestCheckResourceAttrSet(resourceId, "status"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "1"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "4"),
+					resource.TestCheckResourceAttrSet(resourceId, "id"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Re-applying the same configuration must not plan a change.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspace(instanceId, namespace, true, 1, 4),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "ha", "true"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "1"),
+				),
+			},
+			{
+				// Every successful create or update configuration is followed by its own import
+				// comparison, including this no-op re-apply.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// ha is immutable at the product: changing it has to replace the namespace, which
+				// frees the cross-zone CU before the non-HA namespace takes the single-zone CU.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspace(instanceId, namespace, false, 1, 4),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "ha", "false"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "1"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// The reverse direction is the same replacement: false back to true re-acquires the
+				// cross-zone CU.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspace(instanceId, namespace, true, 1, 4),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "ha", "true"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "1"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// ha is Optional+Computed and only forces replacement when it is configured. Dropping
+				// it from the configuration must keep the value already in state (true) without a
+				// replacement or any other diff. The PreApply check proves the plan is a no-op before
+				// anything is applied: state assertions and the post-apply empty plan would also pass
+				// if the provider replaced the namespace and then converged on the same values.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspaceWithoutHa(instanceId, namespace, 1, 4),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "ha", "true"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "1"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRealtimeComputeVvpNamespace_intl0 covers the international site (ap-southeast-1):
+// it prepares the workspace, creates the namespace 2/8, re-applies the same configuration for an
+// empty plan and destroys. The CU grow, import and 903099 negative case stay in basic0.
+func TestAccAliCloudRealtimeComputeVvpNamespace_intl0(t *testing.T) {
+	resourceId := "alicloud_realtime_compute_vvp_namespace.default"
+	region := "ap-southeast-1"
+	if err := os.Setenv("ALICLOUD_REGION", region); err != nil {
+		t.Fatalf("setting ALICLOUD_REGION failed: %s", err)
+	}
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%srtcnsintl%d", strings.ReplaceAll(region, "-", ""), rand)
+	namespace := fmt.Sprintf("tf-testacc-ns-intl-%d", rand)
+	zone := realtimeComputeTestZone(region)
+	var instanceId string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckRealtimeComputeVvpNamespaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceBasic0(name, "", zone, 4, 16, 0, 0),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_realtime_compute_vvp_instance.default", "id"),
+					testAccRealtimeComputeVvpCaptureInstanceId(&instanceId),
+				),
+			},
+			{
+				PreConfig: func() {
+					if err := testAccRealtimeComputeVvpPurchaseCapacity(instanceId, 8, 32); err != nil {
+						t.Fatalf("purchasing capacity for %s failed: %s", instanceId, err)
+					}
+				},
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceBasic0(name, namespace, zone, 8, 32, 2, 8),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "namespace", namespace),
+					resource.TestCheckResourceAttr(resourceId, "ha", "false"),
+					resource.TestCheckResourceAttrSet(resourceId, "instance_id"),
+					resource.TestCheckResourceAttrSet(resourceId, "status"),
+					resource.TestCheckResourceAttrSet(resourceId, "id"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "2"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "8"),
+				),
+			},
+			{
+				// Import right after the create must reproduce the created state.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Second apply of the same configuration: the plan must be empty.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceBasic0(name, namespace, zone, 8, 32, 2, 8),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "2"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "8"),
+				),
+			},
+			{
+				// Import right after re-applying the same configuration must still match.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRealtimeComputeVvpNamespace_intlAccount repeats the ap-southeast-1 lifecycle,
+// import and cleanup with the dedicated international test account supplied through
+// ALICLOUD_ACCESS_KEY_1 / ALICLOUD_SECRET_KEY_1, so the international-site evidence does not
+// depend on the ambient ACC account. It skips when either variable is missing; a SKIP is not
+// international-site evidence. The case runs alone: it rewrites the provider credential
+// environment for the process and restores every variable when the test ends.
+func TestAccAliCloudRealtimeComputeVvpNamespace_intlAccount(t *testing.T) {
+	// resource.Test enforces the TF_ACC opt-in only once it runs, which is after the account
+	// preflight below. Gate first so a plain `go test` never issues signed cloud requests just
+	// because the dedicated credentials happen to be present.
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("Acceptance tests skipped unless env 'TF_ACC' set")
+	}
+	ak := strings.TrimSpace(os.Getenv("ALICLOUD_ACCESS_KEY_1"))
+	sk := strings.TrimSpace(os.Getenv("ALICLOUD_SECRET_KEY_1"))
+	if ak == "" || sk == "" {
+		t.Skip("Skipping: set ALICLOUD_ACCESS_KEY_1 and ALICLOUD_SECRET_KEY_1 to run the international-site lifecycle on the dedicated international test account")
+	}
+	region := "ap-southeast-1"
+	// These have to be in place before the provider and SDK clients are built: the provider reads
+	// them in Configure, and the read/import/CheckDestroy helpers reuse that configured client.
+	// Long-term keys are not paired with an ambient STS token or profile, and the region stays in the
+	// environment so no credential-bearing provider block is rendered.
+	t.Setenv("ALICLOUD_ACCESS_KEY", ak)
+	t.Setenv("ALICLOUD_SECRET_KEY", sk)
+	t.Setenv("ALICLOUD_SECURITY_TOKEN", "")
+	t.Setenv("ALICLOUD_PROFILE", "")
+	t.Setenv("ALIBABA_CLOUD_PROFILE", "")
+	t.Setenv("ALICLOUD_REGION", region)
+
+	accountId := testAccRealtimeComputeVvpIntlAccountIdentity(t, region, ak, sk)
+
+	resourceId := "alicloud_realtime_compute_vvp_namespace.default"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%srtcnsintlacct%d", strings.ReplaceAll(region, "-", ""), rand)
+	namespace := fmt.Sprintf("tf-testacc-ns-intl-acct-%d", rand)
+	zone := realtimeComputeTestZone(region)
+	var instanceId string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckRealtimeComputeVvpNamespaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Plan-only first: the provider is configured without creating anything, so the
+				// identity assertion proves the configured client is the dedicated account before
+				// a single paid resource exists.
+				Config:             testAccAliCloudRealtimeComputeVvpNamespaceBasic0(name, "", zone, 4, 16, 0, 0),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccRealtimeComputeVvpProviderIdentity(accountId),
+				),
+			},
+			{
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceBasic0(name, "", zone, 4, 16, 0, 0),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_realtime_compute_vvp_instance.default", "id"),
+					testAccRealtimeComputeVvpCaptureInstanceId(&instanceId),
+				),
+			},
+			{
+				PreConfig: func() {
+					if err := testAccRealtimeComputeVvpPurchaseCapacity(instanceId, 8, 32); err != nil {
+						t.Fatalf("purchasing capacity for %s failed: %s", instanceId, err)
+					}
+				},
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceBasic0(name, namespace, zone, 8, 32, 2, 8),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "namespace", namespace),
+					resource.TestCheckResourceAttr(resourceId, "ha", "false"),
+					resource.TestCheckResourceAttrSet(resourceId, "instance_id"),
+					resource.TestCheckResourceAttrSet(resourceId, "status"),
+					resource.TestCheckResourceAttrSet(resourceId, "id"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "2"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "8"),
+				),
+			},
+			{
+				// Import right after the create must reproduce the created state.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Second apply of the same configuration: the plan must be empty.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceBasic0(name, namespace, zone, 8, 32, 2, 8),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "2"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "8"),
+				),
+			},
+			{
+				// Import right after re-applying the same configuration must still match.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRealtimeComputeVvpNamespace_default0 adopts the namespace a workspace creates on
+// its own (the default namespace) and adjusts its CU through this resource: import, grow, read
+// back, then require an empty second plan. It answers the actual business question — changing the
+// CU of the default namespace — instead of only reading the default's initial spec.
+func TestAccAliCloudRealtimeComputeVvpNamespace_default0(t *testing.T) {
+	resourceId := "alicloud_realtime_compute_vvp_namespace.default"
+	region := "cn-hangzhou"
+	if err := os.Setenv("ALICLOUD_REGION", region); err != nil {
+		t.Fatalf("setting ALICLOUD_REGION failed: %s", err)
+	}
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svvpnsdefault%d", strings.ReplaceAll(region, "-", ""), rand)
+	zone := realtimeComputeTestZone(region)
+	defaultNamespace := fmt.Sprintf("%s-default", name)
+	var instanceId string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckRealtimeComputeVvpDefaultWorkspaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				// The workspace is created alone first, so its own default namespace is the
+				// pre-existing object this test adopts instead of one Terraform created.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, "", zone, 4, 16, 0, 0),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_realtime_compute_vvp_instance.default", "id"),
+					testAccRealtimeComputeVvpCaptureInstanceId(&instanceId),
+					testAccRealtimeComputeVvpCheckDefaultNamespace(name, 4, 16),
+				),
+			},
+			{
+				// The workspace already holds 4/16 in its default namespace, so buying 8/32 first
+				// leaves capacity for the default to grow into.
+				PreConfig: func() {
+					if err := testAccRealtimeComputeVvpPurchaseCapacity(instanceId, 16, 64); err != nil {
+						t.Fatalf("purchasing capacity for %s failed: %s", instanceId, err)
+					}
+				},
+				Config:            testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, defaultNamespace, zone, 16, 64, 8, 32),
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				// Keep the imported default in state so the next step grows it in place instead of
+				// trying to create a namespace that already exists.
+				ImportStatePersist: true,
+				ImportStateIdFunc: func(*terraform.State) (string, error) {
+					return fmt.Sprintf("%s:%s", instanceId, defaultNamespace), nil
+				},
+			},
+			{
+				// Pin the value the product actually holds before growing: the workspace expansion
+				// bought 8/32 for the workspace, but the default namespace still owns 4/16. Reading
+				// the API here is what makes the later "8/32" assertion prove that
+				// ModifyNamespaceSpec really grew this namespace instead of the import arriving
+				// already grown.
+				Config:             testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, defaultNamespace, zone, 16, 64, 8, 32),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccRealtimeComputeVvpCheckNamespaceSpec(&instanceId, defaultNamespace, 4, 16),
+				),
+			},
+			{
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, defaultNamespace, zone, 16, 64, 8, 32),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "namespace", defaultNamespace),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "8"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "32"),
+				),
+			},
+			{
+				// Import right after the grow must reproduce the updated state; every attribute this
+				// resource tracks is returned by DescribeNamespaces, so the comparison needs no
+				// ignore list.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Re-applying the same configuration must produce an empty plan.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, defaultNamespace, zone, 16, 64, 8, 32),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "8"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "32"),
+				),
+			},
+			{
+				// Import right after re-applying the same configuration must still match.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Removing the namespace while it is the workspace's last one must fail with the
+				// product's 903054 refusal and must NOT be reported as a successful delete.
+				Config:      testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, "", zone, 16, 64, 0, 0),
+				ExpectError: regexp.MustCompile("903054|last namespace"),
+			},
+			{
+				// The failed delete must have kept the resource in state: the same configuration plans
+				// empty, which it could not do if the previous step had dropped the state entry.
+				Config:   testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, defaultNamespace, zone, 16, 64, 8, 32),
+				PlanOnly: true,
+			},
+			{
+				// Terraform can only delete a namespace that is not the last one, and the destroy at
+				// the end of this test has to succeed. Add one untracked namespace through the API
+				// (it goes away with the workspace) so the managed default namespace is no longer the
+				// workspace's last valid one when Terraform deletes it.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, defaultNamespace, zone, 16, 64, 8, 32),
+				Check: resource.ComposeTestCheckFunc(
+					testAccRealtimeComputeVvpCreateSideNamespace(&instanceId, fmt.Sprintf("%s-extra", name), 2, 8),
+				),
+			},
+			{
+				// Import right after the final successful configuration must still match. The side
+				// namespace only exists outside Terraform, so the comparison covers the managed
+				// default namespace exactly as the previous step left it.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRealtimeComputeVvpNamespace_validation0 covers the plan-time input rules: an
+// invalid cpu/memory ratio, an explicitly empty resource_spec and a null resource_spec element must
+// be rejected while planning (no cloud resource is created), while omitting resource_spec
+// altogether or leaving its values unknown must still plan.
+func TestAccAliCloudRealtimeComputeVvpNamespace_validation0(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccAliCloudRealtimeComputeVvpNamespaceSpecOnly("2", "9"),
+				ExpectError: regexp.MustCompile("memory_gb must be 4 times"),
+			},
+			{
+				Config:             testAccAliCloudRealtimeComputeVvpNamespaceSpecOnly("2", "8"),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config:      testAccAliCloudRealtimeComputeVvpNamespaceSpecEmpty(),
+				ExpectError: regexp.MustCompile("at least 1"),
+			},
+			{
+				// [null] satisfies SizeAtLeast(1) but carries no cpu/memory_gb; the serializer would
+				// skip the element and send the request without a spec, so it is rejected at plan time.
+				Config:      testAccAliCloudRealtimeComputeVvpNamespaceSpecNullElement(),
+				ExpectError: regexp.MustCompile(`resource_spec\[0\] is null`),
+			},
+			{
+				// Values that are unknown at plan time are deferred to apply time, not rejected.
+				Config:             testAccAliCloudRealtimeComputeVvpNamespaceSpecUnknown(),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config:             testAccAliCloudRealtimeComputeVvpNamespaceSpecOmitted(),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+// testAccRealtimeComputeVvpCaptureInstanceId records the workspace id so a later step's
+// PreConfig can buy capacity for it before the namespace is planned.
+func testAccRealtimeComputeVvpCaptureInstanceId(target *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources["alicloud_realtime_compute_vvp_instance.default"]
+		if !ok {
+			return fmt.Errorf("cannot find alicloud_realtime_compute_vvp_instance.default in state")
+		}
+		*target = rs.Primary.ID
+		return nil
+	}
+}
+
+// testAccRealtimeComputeVvpCheckNamespaceSpec reads one namespace straight from the API and
+// asserts its allocated CU, so a test can prove what the product holds independently of the
+// Terraform state the provider writes.
+func testAccRealtimeComputeVvpCheckNamespaceSpec(instanceId *string, namespace string, cpu, memoryGb int) resource.TestCheckFunc {
+	return func(*terraform.State) error {
+		if *instanceId == "" {
+			return fmt.Errorf("workspace id was not captured before checking namespace %s", namespace)
+		}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		object, err := realtimecompute.DescribeVvpNamespace(client, fmt.Sprintf("%s:%s", *instanceId, namespace))
+		if err != nil {
+			return fmt.Errorf("describing namespace %s failed: %s", namespace, err)
+		}
+		if object == nil {
+			return fmt.Errorf("namespace %s does not exist", namespace)
+		}
+		spec, _ := object["ResourceSpec"].(map[string]interface{})
+		if spec == nil {
+			return fmt.Errorf("namespace %s has no ResourceSpec: %v", namespace, object)
+		}
+		if got := fmt.Sprint(spec["Cpu"]); got != fmt.Sprint(cpu) {
+			return fmt.Errorf("namespace %s cpu = %s, expected %d", namespace, got, cpu)
+		}
+		if got := fmt.Sprint(spec["MemoryGB"]); got != fmt.Sprint(memoryGb) {
+			return fmt.Errorf("namespace %s memory_gb = %s, expected %d", namespace, got, memoryGb)
+		}
+		return nil
+	}
+}
+
+// testAccRealtimeComputeVvpCreateSideNamespace creates one namespace straight through the API,
+// outside Terraform state. The product refuses to delete a workspace's last namespace (903054), so
+// this untracked namespace keeps the managed default namespace deletable during teardown; it is
+// removed together with the workspace.
+func testAccRealtimeComputeVvpCreateSideNamespace(instanceId *string, namespace string, cpu, memoryGb int) resource.TestCheckFunc {
+	return func(*terraform.State) error {
+		if *instanceId == "" {
+			return fmt.Errorf("workspace id was not captured before creating namespace %s", namespace)
+		}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		request := map[string]interface{}{
+			"ClientToken": fmt.Sprintf("TF-CreateNamespace-%d", time.Now().UnixNano()),
+			"RegionId":    client.RegionId,
+			"CreateNamespaceRequest": map[string]interface{}{
+				"InstanceId": *instanceId,
+				"Namespace":  namespace,
+				"Region":     client.RegionId,
+				"ResourceSpec": map[string]interface{}{
+					"Cpu":      cpu,
+					"MemoryGB": memoryGb,
+				},
+			},
+		}
+		if _, err := client.RpcPost("foasconsole", "2019-06-01", "CreateNamespace", nil, request, true); err != nil {
+			return fmt.Errorf("creating side namespace %s failed: %s", namespace, err)
+		}
+		// The product only counts a namespace as valid once it is usable, so wait for SUCCESS
+		// before the teardown starts relying on it.
+		deadline := time.Now().Add(5 * time.Minute)
+		for {
+			object, err := realtimecompute.DescribeVvpNamespace(client, fmt.Sprintf("%s:%s", *instanceId, namespace))
+			if err == nil && object != nil && fmt.Sprint(object["Status"]) == "SUCCESS" {
+				return nil
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("side namespace %s did not reach SUCCESS: last error %v", namespace, err)
+			}
+			time.Sleep(10 * time.Second)
+		}
+	}
+}
+
+// testAccRealtimeComputeVvpCheckDefaultNamespace asserts the fact behind "the default namespace
+// CU equals the workspace ceiling": creating the workspace also creates its default namespace,
+// which takes the whole purchased spec — so adjusting that namespace is exactly what this
+// resource is for. The default namespace is named after the workspace (not after the instance
+// id), and it appears shortly after the workspace turns RUNNING, so the check polls the read
+// path this resource uses instead of assuming one request-time name.
+func testAccRealtimeComputeVvpCheckDefaultNamespace(workspaceName string, cpu, memoryGb int) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources["alicloud_realtime_compute_vvp_instance.default"]
+		if !ok {
+			return fmt.Errorf("cannot find alicloud_realtime_compute_vvp_instance.default in state")
+		}
+		instanceId := rs.Primary.ID
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		candidates := []string{
+			fmt.Sprintf("%s-default", workspaceName),
+			fmt.Sprintf("%s-default-ha", workspaceName),
+		}
+		deadline := time.Now().Add(5 * time.Minute)
+		for {
+			for _, name := range candidates {
+				object, err := realtimecompute.DescribeVvpNamespace(client, fmt.Sprintf("%s:%s", instanceId, name))
+				if err != nil {
+					return fmt.Errorf("describing the default namespace %s failed: %s", name, err)
+				}
+				if object == nil {
+					continue
+				}
+				spec, _ := object["ResourceSpec"].(map[string]interface{})
+				if spec == nil {
+					return fmt.Errorf("default namespace %s has no ResourceSpec: %v", name, object)
+				}
+				if got := fmt.Sprint(spec["Cpu"]); got != fmt.Sprint(cpu) {
+					return fmt.Errorf("default namespace %s cpu = %s, expected %d", name, got, cpu)
+				}
+				if got := fmt.Sprint(spec["MemoryGB"]); got != fmt.Sprint(memoryGb) {
+					return fmt.Errorf("default namespace %s memory_gb = %s, expected %d", name, got, memoryGb)
+				}
+				return nil
+			}
+			if time.Now().After(deadline) {
+				listed, listErr := testAccRealtimeComputeVvpListNamespaces(client, instanceId)
+				return fmt.Errorf("workspace %s (name %s) did not get a default namespace named any of %v; namespaces listed by the API: %v (list error: %v)",
+					instanceId, workspaceName, candidates, listed, listErr)
+			}
+			time.Sleep(10 * time.Second)
+		}
+	}
+}
+
+// testAccRealtimeComputeVvpListNamespaces lists the namespace names of a workspace. It is only
+// used to explain a failed default-namespace assertion, so a failing call is reported, not fatal.
+func testAccRealtimeComputeVvpListNamespaces(client *connectivity.AliyunClient, instanceId string) ([]string, error) {
+	response, err := client.RpcGet("foasconsole", "2019-06-01", "DescribeNamespaces", map[string]interface{}{
+		"DescribeNamespacesRequest.Region":     client.RegionId,
+		"DescribeNamespacesRequest.InstanceId": instanceId,
+	}, nil)
+	if err != nil {
+		return nil, err
+	}
+	names := []string{}
+	if items, ok := response["Namespaces"].([]interface{}); ok {
+		for _, item := range items {
+			namespace, _ := item.(map[string]interface{})
+			if name, ok := namespace["Namespace"].(string); ok {
+				names = append(names, name)
+			}
+		}
+	}
+	return names, nil
+}
+
+// testAccRealtimeComputeVvpPurchaseCapacity buys additional pay-as-you-go capacity for the
+// workspace and waits until DescribeInstances reports it.
+func testAccRealtimeComputeVvpPurchaseCapacity(instanceId string, cpu, memoryGb int) error {
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	region := client.RegionId
+	// ModifyInstanceSpec declares ResourceSpec with the json style, so it has to be sent as
+	// an encoded object instead of the dotted parameters used by the flat RPC calls.
+	resourceSpec, err := json.Marshal(map[string]int{"Cpu": cpu, "MemoryGB": memoryGb})
+	if err != nil {
+		return fmt.Errorf("encoding the capacity spec %d/%d failed: %s", cpu, memoryGb, err)
+	}
+	request := map[string]interface{}{
+		"Region":       region,
+		"InstanceId":   instanceId,
+		"ResourceSpec": string(resourceSpec),
+	}
+	if _, err := client.RpcPost("foasconsole", "2021-10-28", "ModifyInstanceSpec", nil, request, true); err != nil {
+		return fmt.Errorf("buying %d/%d failed: %s", cpu, memoryGb, err)
+	}
+
+	deadline := time.Now().Add(10 * time.Minute)
+	var lastResponse map[string]interface{}
+	var lastErr error
+	for {
+		response, err := client.RpcGet("foasconsole", "2021-10-28", "DescribeInstances",
+			map[string]interface{}{"Region": region, "InstanceId": instanceId}, nil)
+		lastResponse, lastErr = response, err
+		if err == nil {
+			if instances, ok := response["Instances"].([]interface{}); ok && len(instances) == 1 {
+				instance, _ := instances[0].(map[string]interface{})
+				spec, _ := instance["ResourceSpec"].(map[string]interface{})
+				if spec != nil &&
+					fmt.Sprint(spec["Cpu"]) == fmt.Sprint(cpu) &&
+					fmt.Sprint(spec["MemoryGB"]) == fmt.Sprint(memoryGb) &&
+					fmt.Sprint(instance["ClusterStatus"]) == "RUNNING" {
+					return nil
+				}
+			}
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("waiting for the capacity to become %d/%d: last response %v, last error %v",
+				cpu, memoryGb, lastResponse, lastErr)
+		}
+		time.Sleep(10 * time.Second)
+	}
+}
+
+// testAccRealtimeComputeVvpHaWorkspacePrefix names the cross-zone workspace the positive HA
+// lifecycle consumes. It is provisioned out of band because neither the provider's workspace
+// resource nor a pay-as-you-go X86 workspace can carry the cross-zone capacity the product
+// requires for ha = true.
+const testAccRealtimeComputeVvpHaWorkspacePrefix = "tf-acc-vvp-ha-ns"
+
+// testAccRealtimeComputeVvpRequireHaWorkspace resolves that workspace from the account the test
+// runs in. PreCheck runs before any Terraform command, so the shared provider has not been
+// configured yet and Meta() is nil; configure it once from the environment to read the listing.
+func testAccRealtimeComputeVvpRequireHaWorkspace(t *testing.T) string {
+	t.Helper()
+	if acctest.Provider.Meta() == nil {
+		raw := sdkterraform.NewResourceConfigRaw(map[string]interface{}{"region": "cn-hangzhou"})
+		if diagnostics := acctest.Provider.Configure(context.Background(), raw); diagnostics.HasError() {
+			t.Fatalf("configuring the provider for the HA workspace lookup failed: %v", diagnostics)
+		}
+	}
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	response, err := client.RpcGet("foasconsole", "2021-10-28", "DescribeInstances",
+		map[string]interface{}{"Region": "cn-hangzhou", "PageSize": 100}, nil)
+	if err != nil {
+		t.Fatalf("listing the workspaces for the HA lifecycle failed: %s", err)
+	}
+	raw, ok := response["Instances"]
+	if !ok {
+		t.Fatalf("listing the workspaces for the HA lifecycle returned no Instances collection")
+	}
+	if raw == nil {
+		t.Fatalf("listing the workspaces for the HA lifecycle returned a null Instances collection")
+	}
+	instances, ok := raw.([]interface{})
+	if !ok {
+		t.Fatalf("listing the workspaces for the HA lifecycle returned Instances of type %T", raw)
+	}
+	for _, item := range instances {
+		instance, _ := item.(map[string]interface{})
+		if !strings.HasPrefix(fmt.Sprint(instance["InstanceName"]), testAccRealtimeComputeVvpHaWorkspacePrefix) {
+			continue
+		}
+		if fmt.Sprint(instance["ChargeType"]) != "PRE" || fmt.Sprint(instance["ClusterStatus"]) != "RUNNING" {
+			continue
+		}
+		haSpec, _ := instance["HaResourceSpec"].(map[string]interface{})
+		if haSpec == nil || fmt.Sprint(haSpec["Cpu"]) == "0" {
+			continue
+		}
+		instanceId := fmt.Sprint(instance["InstanceId"])
+		t.Logf("HA lifecycle uses the pre-provisioned cross-zone workspace %s", instanceId)
+		return instanceId
+	}
+	t.Skipf("no running PRE cross-zone workspace named %q* is available; the HA lifecycle needs one and never creates it", testAccRealtimeComputeVvpHaWorkspacePrefix)
+	return ""
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspace renders a namespace against an existing
+// workspace, so the lifecycle can flip ha without provisioning another workspace.
+func testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspace(instanceId, namespace string, ha bool, cpu, memoryGb int) string {
+	return fmt.Sprintf(`
+resource "alicloud_realtime_compute_vvp_namespace" "ha" {
+  instance_id = %q
+  namespace   = %q
+  ha          = %t
+
+  resource_spec = [
+    {
+      cpu       = %d
+      memory_gb = %d
+    }
+  ]
+}`, instanceId, namespace, ha, cpu, memoryGb)
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspaceWithoutHa renders the HA-workspace
+// configuration with the optional ha argument omitted, so a test can prove that dropping it from the
+// configuration preserves the value already in state.
+func testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspaceWithoutHa(instanceId, namespace string, cpu, memoryGb int) string {
+	return fmt.Sprintf(`
+resource "alicloud_realtime_compute_vvp_namespace" "ha" {
+  instance_id = %q
+  namespace   = %q
+
+  resource_spec = [
+    {
+      cpu       = %d
+      memory_gb = %d
+    }
+  ]
+}`, instanceId, namespace, cpu, memoryGb)
+}
+
+// realtimeComputeTestZone returns a zone expression usable in HCL. Realtime Compute accepts
+// only a subset of a region's zones and alicloud_zones has no filter for this product, so
+// known regions use a verified zone while other regions fall back to the first VSwitch zone.
+func realtimeComputeTestZone(region string) string {
+	if zone := os.Getenv("ALICLOUD_ZONE"); zone != "" {
+		return fmt.Sprintf("%q", zone)
+	}
+	switch region {
+	case "cn-beijing":
+		return `"cn-beijing-i"`
+	case "cn-hangzhou":
+		return `"cn-hangzhou-i"`
+	case "ap-southeast-1":
+		// DescribeSupportedZones reports ap-southeast-1b/1c; the first one is pinned so
+		// the lifecycle does not depend on the zone data source ordering.
+		return `"ap-southeast-1b"`
+	}
+	return "data.alicloud_zones.default.zones.0.id"
+}
+
+// testAccCheckRealtimeComputeVvpDefaultWorkspaceDestroy verifies cleanup for the default-namespace
+// test. The test first creates one namespace outside Terraform state, so the managed default is no
+// longer the workspace's last valid one and Terraform really deletes it (DeleteNamespace + gone
+// wait); that side namespace is then removed together with the workspace. This check therefore only
+// proves the workspace and its dependants are gone — it is not evidence for deleting a namespace on
+// its own.
+func testAccCheckRealtimeComputeVvpDefaultWorkspaceDestroy(s *terraform.State) error {
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_realtime_compute_vvp_instance" {
+			continue
+		}
+		if err := testAccRealtimeComputeVvpWaitWorkspaceGone(client, rs.Primary.ID, 10*time.Second, 5*time.Minute); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// testAccRealtimeComputeVvpWaitWorkspaceGone polls DescribeInstances until the workspace is
+// definitively gone. Only a decoded empty Instances collection or an explicit not-found error
+// proves absence: an omitted, null or mistyped collection is an unreadable response, and reading it
+// as "deleted" would let the destroy check pass while the workspace, and every namespace it owns
+// including ones created outside state, still exists. Other errors keep the bounded wait.
+func testAccRealtimeComputeVvpWaitWorkspaceGone(client *connectivity.AliyunClient, instanceId string, interval, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	var lastErr error
+	for {
+		response, err := client.RpcGet("foasconsole", "2021-10-28", "DescribeInstances",
+			map[string]interface{}{"Region": client.RegionId, "InstanceId": instanceId}, nil)
+		lastErr = err
+		if err != nil {
+			if errs.NotFoundError(err) {
+				return nil
+			}
+		} else {
+			absent, decodeErr := testAccRealtimeComputeVvpInstancesAbsent(response)
+			if decodeErr != nil {
+				return fmt.Errorf("cannot tell whether workspace %s is gone after destroy: %w", instanceId, decodeErr)
+			}
+			if absent {
+				return nil
+			}
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("workspace %s still exists after destroy: last error %v", instanceId, lastErr)
+		}
+		time.Sleep(interval)
+	}
+}
+
+// testAccRealtimeComputeVvpInstancesAbsent reports whether a DescribeInstances response proves the
+// workspace no longer exists. The response schema is not published in the API metadata, so an
+// omitted, null or mistyped Instances field is treated as unreadable instead of empty; only an
+// explicitly decoded array is accepted, and an empty array is a legal empty collection.
+func testAccRealtimeComputeVvpInstancesAbsent(response map[string]interface{}) (bool, error) {
+	if response == nil {
+		return false, fmt.Errorf("DescribeInstances returned an empty response")
+	}
+	raw, ok := response["Instances"]
+	if !ok {
+		return false, fmt.Errorf("DescribeInstances response does not contain Instances")
+	}
+	if raw == nil {
+		return false, fmt.Errorf("DescribeInstances response Instances is null")
+	}
+	items, ok := raw.([]interface{})
+	if !ok {
+		return false, fmt.Errorf("DescribeInstances response Instances has unexpected type %T", raw)
+	}
+	return len(items) == 0, nil
+}
+
+func testAccCheckRealtimeComputeVvpNamespaceDestroy(s *terraform.State) error {
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_realtime_compute_vvp_namespace" {
+			continue
+		}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		object, err := realtimecompute.DescribeVvpNamespace(client, rs.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("describing namespace %s failed: %s", rs.Primary.ID, err)
+		}
+		if object != nil {
+			return fmt.Errorf("namespace %s still exists", rs.Primary.ID)
+		}
+	}
+	return nil
+}
+
+// testAccRealtimeComputeVvpIntlAccountIdentity verifies in this process that the dedicated
+// credentials are a working account for the international region and that Realtime Compute answers
+// there, before the lifecycle spends anything. Only the account tail and the workspace count are
+// logged; the credentials themselves are never printed.
+func testAccRealtimeComputeVvpIntlAccountIdentity(t *testing.T, region, ak, sk string) string {
+	t.Helper()
+	client, err := sdk.NewClientWithAccessKey(region, ak, sk)
+	if err != nil {
+		t.Fatalf("building the STS client for the international test account failed: %s", err)
+	}
+	identity, err := testAccRealtimeComputeVvpIntlCall(client, requests.POST, "Sts", "2015-04-01", "sts."+region+".aliyuncs.com", "GetCallerIdentity", nil)
+	if err != nil {
+		t.Fatalf("Sts GetCallerIdentity with the international test account failed: %s", err)
+	}
+	accountId := strings.TrimSpace(fmt.Sprint(identity["AccountId"]))
+	if accountId == "" || accountId == "<nil>" {
+		t.Fatalf("Sts GetCallerIdentity returned no AccountId for the international test account")
+	}
+	tail := accountId
+	if len(tail) > 4 {
+		tail = tail[len(tail)-4:]
+	}
+	t.Logf("international test account identity verified via Sts GetCallerIdentity (account tail %s)", tail)
+
+	// Read-only product probe for the region the lifecycle runs in: reachability plus how many
+	// workspaces the account already holds there.
+	instances, err := testAccRealtimeComputeVvpIntlCall(client, requests.GET, "foasconsole", "2021-10-28", "foasconsole.aliyuncs.com", "DescribeInstances", map[string]string{"Region": region})
+	if err != nil {
+		t.Fatalf("DescribeInstances in %s with the international test account failed: %s", region, err)
+	}
+	count := 0
+	if items, ok := instances["Instances"].([]interface{}); ok {
+		count = len(items)
+	}
+	t.Logf("Realtime Compute answered in %s; the account currently holds %d workspace(s) there", region, count)
+	return accountId
+}
+
+// testAccRealtimeComputeVvpIntlCall issues one signed common request with the dedicated
+// credentials, so the preflight never falls back to the ambient account. The HTTP method follows
+// the action: GetCallerIdentity accepts POST while foasconsole DescribeInstances is GET-only.
+func testAccRealtimeComputeVvpIntlCall(client *sdk.Client, method, product, version, domain, action string, params map[string]string) (map[string]interface{}, error) {
+	request := requests.NewCommonRequest()
+	request.Method = method
+	request.Scheme = "https"
+	request.Domain = domain
+	request.Version = version
+	request.Product = product
+	request.ApiName = action
+	for key, value := range params {
+		request.QueryParams[key] = value
+	}
+	request.TransToAcsRequest()
+
+	response, err := client.ProcessCommonRequest(request)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]interface{})
+	_ = json.Unmarshal([]byte(response.GetHttpContentString()), &result)
+	if !response.IsSuccess() {
+		return nil, fmt.Errorf("%s failed with %v %v", action, result["Code"], result["Message"])
+	}
+	return result, nil
+}
+
+// testAccRealtimeComputeVvpProviderIdentity proves the configured provider client is the same
+// account the preflight verified, so the HCL resources, reads, import and CheckDestroy all run on
+// that account instead of only the environment having been rewritten.
+func testAccRealtimeComputeVvpProviderIdentity(expectedAccountId string) resource.TestCheckFunc {
+	return func(*terraform.State) error {
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		identity, err := client.GetCallerIdentity()
+		if err != nil {
+			return fmt.Errorf("reading the configured provider caller identity failed: %s", err)
+		}
+		if identity.AccountId != expectedAccountId {
+			return fmt.Errorf("the configured provider account does not match the dedicated international test account")
+		}
+		return nil
+	}
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0 keeps the namespace fixtures inside the
+// account's shared default VPC instead of creating a new one per run. The ACC account sits at its
+// VPC quota and this resource has no VPC behaviour to verify, so reusing the shared network keeps
+// the test focused and avoids failing on QuotaExceeded.Vpc before any namespace code runs.
+func testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, namespace, zone string, instanceCpu, instanceMemoryGb, cpu, memoryGb int) string {
+	namespaceBlock := ""
+	if namespace != "" {
+		namespaceBlock = fmt.Sprintf(`
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = alicloud_realtime_compute_vvp_instance.default.id
+  namespace   = %q
+  ha          = false
+
+  resource_spec = [
+    {
+      cpu       = %d
+      memory_gb = %d
+    }
+  ]
+}`, namespace, cpu, memoryGb)
+	}
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = %s
+}
+
+resource "alicloud_oss_bucket" "default" {
+  bucket = var.name
+}
+
+resource "alicloud_realtime_compute_vvp_instance" "default" {
+  storage {
+    oss {
+      bucket = alicloud_oss_bucket.default.bucket
+    }
+  }
+  vvp_instance_name = var.name
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  zone_id           = %s
+  vswitch_ids       = [data.alicloud_vswitches.default.ids.0]
+  payment_type      = "PayAsYouGo"
+
+  resource_spec {
+    cpu       = %d
+    memory_gb = %d
+  }
+}
+%s
+`, name, zone, zone, instanceCpu, instanceMemoryGb, namespaceBlock)
+}
+
+func testAccAliCloudRealtimeComputeVvpNamespaceBasic0(name, namespace, zone string, instanceCpu, instanceMemoryGb, cpu, memoryGb int) string {
+	namespaceBlock := ""
+	if namespace != "" {
+		namespaceBlock = fmt.Sprintf(`
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = alicloud_realtime_compute_vvp_instance.default.id
+  namespace   = %q
+  ha          = false
+
+  resource_spec = [
+    {
+      cpu       = %d
+      memory_gb = %d
+    }
+  ]
+}`, namespace, cpu, memoryGb)
+	}
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/21"
+  zone_id      = %s
+  vswitch_name = var.name
+}
+
+resource "alicloud_oss_bucket" "default" {
+  bucket = var.name
+}
+
+resource "alicloud_realtime_compute_vvp_instance" "default" {
+  storage {
+    oss {
+      bucket = alicloud_oss_bucket.default.bucket
+    }
+  }
+  vvp_instance_name = var.name
+  vpc_id            = alicloud_vpc.default.id
+  zone_id           = %s
+  vswitch_ids       = [alicloud_vswitch.default.id]
+  payment_type      = "PayAsYouGo"
+
+  resource_spec {
+    cpu       = %d
+    memory_gb = %d
+  }
+}
+%s
+`, name, zone, zone, instanceCpu, instanceMemoryGb, namespaceBlock)
+}
+
+// The three helpers below only exercise plan-time validation: the namespace never reaches the API,
+// so no cloud resource is created for them.
+func testAccAliCloudRealtimeComputeVvpNamespaceSpecOnly(cpu, memoryGb string) string {
+	return fmt.Sprintf(`
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = "f-example-instance"
+  namespace   = "tf-example-ns"
+
+  resource_spec = [
+    {
+      cpu       = %s
+      memory_gb = %s
+    }
+  ]
+}`, cpu, memoryGb)
+}
+
+func testAccAliCloudRealtimeComputeVvpNamespaceSpecEmpty() string {
+	return `
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = "f-example-instance"
+  namespace   = "tf-example-ns"
+
+  resource_spec = []
+}`
+}
+
+func testAccAliCloudRealtimeComputeVvpNamespaceSpecNullElement() string {
+	return `
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = "f-example-instance"
+  namespace   = "tf-example-ns"
+
+  resource_spec = [null]
+}`
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceSpecUnknown keeps the cpu/memory_gb pair unknown at
+// plan time by deriving it from a resource that does not exist yet, so the plan-time validator has
+// to defer the ratio check to apply time instead of rejecting the configuration.
+func testAccAliCloudRealtimeComputeVvpNamespaceSpecUnknown() string {
+	return `
+resource "alicloud_oss_bucket" "default" {
+  bucket = "tf-example-vvp-ns-unknown"
+}
+
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = "f-example-instance"
+  namespace   = "tf-example-ns"
+
+  resource_spec = [
+    {
+      cpu       = length(alicloud_oss_bucket.default.id)
+      memory_gb = 4 * length(alicloud_oss_bucket.default.id)
+    }
+  ]
+}`
+}
+
+func testAccAliCloudRealtimeComputeVvpNamespaceSpecOmitted() string {
+	return `
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = "f-example-instance"
+  namespace   = "tf-example-ns"
+}`
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceMinimal0 is the shared-VPC fixture with a minimal
+// namespace block: ha is omitted so the service default is exercised, and the timeouts block uses
+// non-default values so the local operation budget is actually configured.
+func testAccAliCloudRealtimeComputeVvpNamespaceMinimal0(name, namespace, zone string, instanceCpu, instanceMemoryGb, cpu, memoryGb int) string {
+	namespaceBlock := ""
+	if namespace != "" {
+		namespaceBlock = fmt.Sprintf(`
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = alicloud_realtime_compute_vvp_instance.default.id
+  namespace   = %q
+
+  resource_spec = [
+    {
+      cpu       = %d
+      memory_gb = %d
+    }
+  ]
+
+  timeouts {
+    create = "30m"
+    update = "30m"
+    delete = "30m"
+  }
+}`, namespace, cpu, memoryGb)
+	}
+	return testAccAliCloudRealtimeComputeVvpNamespaceSharedVpcWorkspace(name, zone, instanceCpu, instanceMemoryGb) + namespaceBlock
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceMinimal0WithoutSpec renders the same lifecycle without
+// the resource_spec block: on an existing namespace the attribute is Optional+Computed, so removing
+// it keeps the specification already in state instead of sending a resize.
+func testAccAliCloudRealtimeComputeVvpNamespaceMinimal0WithoutSpec(name, namespace, zone string, instanceCpu, instanceMemoryGb int) string {
+	return testAccAliCloudRealtimeComputeVvpNamespaceSharedVpcWorkspace(name, zone, instanceCpu, instanceMemoryGb) + fmt.Sprintf(`
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = alicloud_realtime_compute_vvp_instance.default.id
+  namespace   = %q
+
+  timeouts {
+    create = "30m"
+    update = "30m"
+    delete = "30m"
+  }
+}`, namespace)
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceHa0 keeps the main namespace at its grown
+// specification (3/12) and adds an HA namespace next to it. The non-HA workspace refuses that
+// create with 903100, which is what the caller asserts.
+func testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, namespaceHa, zone string, instanceCpu, instanceMemoryGb int) string {
+	return testAccAliCloudRealtimeComputeVvpNamespaceSharedVpcWorkspace(name, zone, instanceCpu, instanceMemoryGb) + fmt.Sprintf(`
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = alicloud_realtime_compute_vvp_instance.default.id
+  namespace   = %q
+
+  resource_spec = [
+    {
+      cpu       = 3
+      memory_gb = 12
+    }
+  ]
+}
+
+resource "alicloud_realtime_compute_vvp_namespace" "ha" {
+  instance_id = alicloud_realtime_compute_vvp_instance.default.id
+  namespace   = %q
+  ha          = true
+
+  resource_spec = [
+    {
+      cpu       = 1
+      memory_gb = 4
+    }
+  ]
+}`, namespace, namespaceHa)
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceSharedVpcWorkspace renders only the workspace part of
+// the shared-VPC fixture, so the fixture variants can append their own namespace blocks.
+func testAccAliCloudRealtimeComputeVvpNamespaceSharedVpcWorkspace(name, zone string, instanceCpu, instanceMemoryGb int) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = %s
+}
+
+resource "alicloud_oss_bucket" "default" {
+  bucket = var.name
+}
+
+resource "alicloud_realtime_compute_vvp_instance" "default" {
+  storage {
+    oss {
+      bucket = alicloud_oss_bucket.default.bucket
+    }
+  }
+  vvp_instance_name = var.name
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  zone_id           = %s
+  vswitch_ids       = [data.alicloud_vswitches.default.ids.0]
+  payment_type      = "PayAsYouGo"
+
+  resource_spec {
+    cpu       = %d
+    memory_gb = %d
+  }
+}
+`, name, zone, zone, instanceCpu, instanceMemoryGb)
+}
+
+// testAccRealtimeComputeVvpCheckNoTags accepts the two ways an untagged namespace can be rendered:
+// the service omits Tags (the attribute is null and absent from the flat state) or returns an empty
+// array (tags.% = 0). A namespace that reports tags fails the check.
+func testAccRealtimeComputeVvpCheckNoTags(resourceId string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("cannot find %s in state", resourceId)
+		}
+		if count, ok := rs.Primary.Attributes["tags.%"]; ok && count != "0" {
+			return fmt.Errorf("%s reports %s tags, expected none", resourceId, count)
+		}
+		return nil
+	}
+}
+
+// vvpNamespaceUpdateMock serves the foasconsole actions the update path can call and records the
+// ordered actions plus the specification the write request carried. The DescribeNamespaces response
+// follows the specification the last ModifyNamespaceSpec wrote, so the refreshed state proves that
+// the provider used the service answer rather than the plan.
+type vvpNamespaceUpdateMock struct {
+	mu           sync.Mutex
+	actions      []string
+	modifyCpu    string
+	modifyMemory string
+	currentCpu   int64
+	currentMem   int64
+}
+
+func (m *vvpNamespaceUpdateMock) snapshot() ([]string, string, string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]string(nil), m.actions...), m.modifyCpu, m.modifyMemory
+}
+
+func (m *vvpNamespaceUpdateMock) spec() (int64, int64) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.currentCpu, m.currentMem
+}
+
+// vvpNamespaceUpdateTestServer starts a foasconsole stub. delay slows every DescribeNamespaces so a
+// case can let the operation budget run out after the write started; onModify runs right after the
+// write is accepted so a case can cancel the lifecycle in flight.
+func vvpNamespaceUpdateTestServer(t *testing.T, failReads bool, delay time.Duration, onModify func()) (*httptest.Server, *vvpNamespaceUpdateMock) {
+	t.Helper()
+	mock := &vvpNamespaceUpdateMock{currentCpu: 1, currentMem: 4}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		action := r.FormValue("Action")
+		mock.mu.Lock()
+		mock.actions = append(mock.actions, action)
+		mock.mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		switch action {
+		case "ModifyNamespaceSpec":
+			mock.mu.Lock()
+			mock.modifyCpu = r.FormValue("ModifyNamespaceSpecRequest.ResourceSpec.Cpu")
+			mock.modifyMemory = r.FormValue("ModifyNamespaceSpecRequest.ResourceSpec.MemoryGB")
+			if cpu, err := strconv.ParseInt(mock.modifyCpu, 10, 64); err == nil {
+				mock.currentCpu = cpu
+			}
+			if memory, err := strconv.ParseInt(mock.modifyMemory, 10, 64); err == nil {
+				mock.currentMem = memory
+			}
+			mock.mu.Unlock()
+			if onModify != nil {
+				onModify()
+			}
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			if delay > 0 {
+				time.Sleep(delay)
+			}
+			if failReads {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, `{"RequestId":"mock","Code":"InternalError","Message":"mock read failure"}`)
+				return
+			}
+			cpu, memory := mock.spec()
+			fmt.Fprintf(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":%d,"MemoryGB":%d},"ResourceUsed":{"Cpu":1,"Cu":1,"MemoryGB":4},"Tags":[]}]}`, cpu, memory)
+		}
+	}))
+	t.Cleanup(server.Close)
+	return server, mock
+}
+
+// vvpNamespaceUpdateTestResource configures a fresh resource against a local foasconsole endpoint.
+func vvpNamespaceUpdateTestResource(t *testing.T, endpoint string) (fwresource.Resource, fwschema.Schema) {
+	t.Helper()
+	client := vvpNamespaceTestClient(t, endpoint)
+	res := realtimecompute.NewVvpNamespaceResource()
+	configurable, ok := res.(fwresource.ResourceWithConfigure)
+	if !ok {
+		t.Fatalf("the resource does not implement the Configure interface")
+	}
+	var configureResp fwresource.ConfigureResponse
+	configurable.Configure(context.Background(), fwresource.ConfigureRequest{ProviderData: client}, &configureResp)
+	if configureResp.Diagnostics.HasError() {
+		t.Fatalf("configuring the resource: %v", configureResp.Diagnostics)
+	}
+	var schemaResp fwresource.SchemaResponse
+	res.Schema(context.Background(), fwresource.SchemaRequest{}, &schemaResp)
+	if schemaResp.Diagnostics.HasError() {
+		t.Fatalf("building schema: %v", schemaResp.Diagnostics)
+	}
+	return res, schemaResp.Schema
+}
+
+// vvpNamespaceTestClient builds a foasconsole client whose endpoint is the given local stub, so a
+// test can drive code that takes the client directly (the acceptance destroy helpers included).
+func vvpNamespaceTestClient(t *testing.T, endpoint string) *connectivity.AliyunClient {
+	t.Helper()
+	t.Setenv("NO_PROXY", "127.0.0.1")
+	t.Setenv("no_proxy", "127.0.0.1")
+	credential, err := credentials.NewCredential(new(credentials.Config).SetType("access_key").
+		SetAccessKeyId("test-access-key-id").
+		SetAccessKeySecret("test-access-key-secret"))
+	if err != nil {
+		t.Fatalf("build credential failed: %v", err)
+	}
+	endpoints := new(sync.Map)
+	config := connectivity.Config{
+		AccessKey:            "test-access-key-id",
+		SecretKey:            "test-access-key-secret",
+		Credential:           credential,
+		RegionId:             "cn-hangzhou",
+		AccountType:          "test",
+		Protocol:             "http",
+		SkipRegionValidation: true,
+		Endpoints:            endpoints,
+		SignVersion:          new(sync.Map),
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatalf("build client failed: %v", err)
+	}
+	// Both the tea RPC layer and the legacy SDK prepend the scheme themselves.
+	endpoints.Store("foasconsole", strings.TrimPrefix(endpoint, "http://"))
+	return client
+}
+
+// vvpNamespaceUpdateTestValue builds one state or plan value at the given specification with the
+// given timeouts.update.
+func vvpNamespaceUpdateTestValue(t *testing.T, sch fwschema.Schema, updateTimeout string, cpu, memoryGb int64) tftypes.Value {
+	t.Helper()
+	objectType, ok := sch.Type().TerraformType(context.Background()).(tftypes.Object)
+	if !ok {
+		t.Fatalf("resource schema does not describe an object")
+	}
+	specListType, ok := objectType.AttributeTypes["resource_spec"].(tftypes.List)
+	if !ok {
+		t.Fatalf("resource_spec is not a list: %T", objectType.AttributeTypes["resource_spec"])
+	}
+	spec := tftypes.NewValue(specListType, []tftypes.Value{
+		tftypes.NewValue(specListType.ElementType, map[string]tftypes.Value{
+			"cpu":       tftypes.NewValue(tftypes.Number, cpu),
+			"memory_gb": tftypes.NewValue(tftypes.Number, memoryGb),
+		}),
+	})
+	timeouts := tftypes.NewValue(objectType.AttributeTypes["timeouts"], map[string]tftypes.Value{
+		"create": tftypes.NewValue(tftypes.String, nil),
+		"update": tftypes.NewValue(tftypes.String, updateTimeout),
+		"delete": tftypes.NewValue(tftypes.String, nil),
+	})
+	return tftypes.NewValue(objectType, map[string]tftypes.Value{
+		"id":            tftypes.NewValue(tftypes.String, "inst-unit:demo"),
+		"gmt_create":    tftypes.NewValue(tftypes.Number, 1700000000),
+		"gmt_modified":  tftypes.NewValue(tftypes.Number, 1700000000),
+		"ha":            tftypes.NewValue(tftypes.Bool, false),
+		"instance_id":   tftypes.NewValue(tftypes.String, "inst-unit"),
+		"namespace":     tftypes.NewValue(tftypes.String, "demo"),
+		"resource_spec": spec,
+		"resource_used": tftypes.NewValue(objectType.AttributeTypes["resource_used"], nil),
+		"status":        tftypes.NewValue(tftypes.String, "SUCCESS"),
+		"tags":          tftypes.NewValue(objectType.AttributeTypes["tags"], nil),
+		"timeouts":      timeouts,
+	})
+}
+
+// TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget drives the public Update request
+// path. It pins the single operation budget across the stages that follow the write (the SUCCESS
+// wait and the confirmation read), the in-flight cancellation, the exact ModifyNamespaceSpec
+// request and the refreshed state: the mock answers with the specification the write carried, so a
+// successful case proves the provider stored the service answer rather than the plan.
+func TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget(t *testing.T) {
+	cases := []struct {
+		name             string
+		updateTimeout    string
+		cancelBefore     bool
+		cancelAfterWrite bool
+		failReads        bool
+		readDelay        time.Duration
+		planCpu          int64
+		planMemoryGb     int64
+		wantErrSubstring string
+		wantModifies     int
+		wantReads        int
+		wantModifyCpu    string
+		wantModifyMem    string
+		wantStateCpu     int64
+		wantStateMem     int64
+	}{
+		{
+			name:             "exhausted budget keeps state without a read",
+			updateTimeout:    "1ns",
+			planCpu:          1,
+			planMemoryGb:     4,
+			wantErrSubstring: "timeouts.update",
+			wantStateCpu:     1,
+			wantStateMem:     4,
+		},
+		{
+			name:             "exhausted budget on a cancelled lifecycle keeps state without a read",
+			updateTimeout:    "1ns",
+			cancelBefore:     true,
+			planCpu:          1,
+			planMemoryGb:     4,
+			wantErrSubstring: "timeouts.update",
+			wantStateCpu:     1,
+			wantStateMem:     4,
+		},
+		{
+			name:             "confirmation read after the write runs out of the same budget",
+			updateTimeout:    "6s",
+			readDelay:        700 * time.Millisecond,
+			planCpu:          2,
+			planMemoryGb:     8,
+			wantErrSubstring: "confirmation read interrupted",
+			wantModifies:     1,
+			wantReads:        2,
+			wantModifyCpu:    "2",
+			wantModifyMem:    "8",
+			wantStateCpu:     1,
+			wantStateMem:     4,
+		},
+		{
+			name:             "cancelled lifecycle interrupts the wait after the write",
+			updateTimeout:    "1m",
+			cancelAfterWrite: true,
+			planCpu:          2,
+			planMemoryGb:     8,
+			wantErrSubstring: "-",
+			wantModifies:     1,
+			wantReads:        -1,
+			wantModifyCpu:    "2",
+			wantModifyMem:    "8",
+			wantStateCpu:     1,
+			wantStateMem:     4,
+		},
+		{
+			name:          "remaining budget updates and refreshes the state",
+			updateTimeout: "1m",
+			planCpu:       2,
+			planMemoryGb:  8,
+			wantModifies:  1,
+			wantReads:     2,
+			wantModifyCpu: "2",
+			wantModifyMem: "8",
+			wantStateCpu:  2,
+			wantStateMem:  8,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			var cancel context.CancelFunc
+			if tc.cancelBefore || tc.cancelAfterWrite {
+				ctx, cancel = context.WithCancel(ctx)
+				defer cancel()
+			}
+			if tc.cancelBefore {
+				cancel()
+			}
+			server, mock := vvpNamespaceUpdateTestServer(t, tc.failReads, tc.readDelay, func() {
+				if tc.cancelAfterWrite {
+					cancel()
+				}
+			})
+			res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+			stateValue := vvpNamespaceUpdateTestValue(t, sch, tc.updateTimeout, 1, 4)
+			planValue := vvpNamespaceUpdateTestValue(t, sch, tc.updateTimeout, tc.planCpu, tc.planMemoryGb)
+
+			req := fwresource.UpdateRequest{
+				Plan:  tfsdk.Plan{Schema: sch, Raw: planValue},
+				State: tfsdk.State{Schema: sch, Raw: stateValue},
+			}
+			resp := &fwresource.UpdateResponse{State: tfsdk.State{Schema: sch, Raw: stateValue}}
+			res.Update(ctx, req, resp)
+
+			actions, modifyCpu, modifyMem := mock.snapshot()
+			modifies, reads := 0, 0
+			for _, action := range actions {
+				switch action {
+				case "ModifyNamespaceSpec":
+					modifies++
+				case "DescribeNamespaces":
+					reads++
+				}
+			}
+			if tc.wantReads >= 0 && (modifies != tc.wantModifies || reads != tc.wantReads) {
+				t.Fatalf("ModifyNamespaceSpec = %d, DescribeNamespaces = %d, want %d/%d (actions: %v)",
+					modifies, reads, tc.wantModifies, tc.wantReads, actions)
+			}
+			if tc.wantReads < 0 && modifies != tc.wantModifies {
+				t.Fatalf("ModifyNamespaceSpec = %d, want %d (actions: %v)", modifies, tc.wantModifies, actions)
+			}
+			if tc.wantModifyCpu != "" && (modifyCpu != tc.wantModifyCpu || modifyMem != tc.wantModifyMem) {
+				t.Fatalf("ModifyNamespaceSpec carried cpu=%q memory_gb=%q, want %q/%q", modifyCpu, modifyMem, tc.wantModifyCpu, tc.wantModifyMem)
+			}
+			if tc.wantErrSubstring == "" {
+				if resp.Diagnostics.HasError() {
+					t.Fatalf("unexpected diagnostics: %v", resp.Diagnostics)
+				}
+				for i, action := range actions {
+					want := []string{"ModifyNamespaceSpec", "DescribeNamespaces", "DescribeNamespaces"}
+					if i < len(want) && action != want[i] {
+						t.Fatalf("action order = %v, want %v", actions, want)
+					}
+				}
+			} else {
+				if !resp.Diagnostics.HasError() {
+					t.Fatalf("expected an error containing %q, got none", tc.wantErrSubstring)
+				}
+				detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+				if tc.wantErrSubstring != "-" && !strings.Contains(detail, tc.wantErrSubstring) {
+					t.Fatalf("expected an error containing %q, got %q", tc.wantErrSubstring, detail)
+				}
+			}
+
+			if resp.State.Raw.IsNull() {
+				t.Fatalf("the update dropped the namespace from state")
+			}
+			var id types.String
+			resp.State.GetAttribute(context.Background(), path.Root("id"), &id)
+			if id.ValueString() != "inst-unit:demo" {
+				t.Fatalf("state id = %q, want inst-unit:demo", id.ValueString())
+			}
+			var spec types.List
+			resp.State.GetAttribute(context.Background(), path.Root("resource_spec"), &spec)
+			if spec.IsNull() || len(spec.Elements()) != 1 {
+				t.Fatalf("state resource_spec = %v, want one element", spec)
+			}
+			attrs := spec.Elements()[0].(types.Object).Attributes()
+			cpu := attrs["cpu"].(types.Int64).ValueInt64()
+			memory := attrs["memory_gb"].(types.Int64).ValueInt64()
+			if cpu != tc.wantStateCpu || memory != tc.wantStateMem {
+				t.Fatalf("state resource_spec = %d/%d, want %d/%d", cpu, memory, tc.wantStateCpu, tc.wantStateMem)
+			}
+		})
+	}
+}
+
+// vvpNamespaceConfirmationCancelTestServer cancels the lifecycle while the confirmation read is in
+// flight: the first DescribeNamespaces answers SUCCESS for the SUCCESS wait, the second cancels the
+// context from inside the handler and answers a retryable 500, so the read ends through the
+// cancelled operation context instead of a lifecycle that was already cancelled beforehand.
+func vvpNamespaceConfirmationCancelTestServer(t *testing.T, cancel func()) (*httptest.Server, *vvpNamespaceUpdateMock) {
+	t.Helper()
+	mock := &vvpNamespaceUpdateMock{currentCpu: 1, currentMem: 4}
+	var reads int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		action := r.FormValue("Action")
+		mock.mu.Lock()
+		mock.actions = append(mock.actions, action)
+		if action == "ModifyNamespaceSpec" {
+			mock.modifyCpu = r.FormValue("ModifyNamespaceSpecRequest.ResourceSpec.Cpu")
+			mock.modifyMemory = r.FormValue("ModifyNamespaceSpecRequest.ResourceSpec.MemoryGB")
+			if cpu, err := strconv.ParseInt(mock.modifyCpu, 10, 64); err == nil {
+				mock.currentCpu = cpu
+			}
+			if memory, err := strconv.ParseInt(mock.modifyMemory, 10, 64); err == nil {
+				mock.currentMem = memory
+			}
+			mock.mu.Unlock()
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+			return
+		}
+		reads++
+		index := reads
+		cpu, memory := mock.currentCpu, mock.currentMem
+		mock.mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if index == 1 {
+			fmt.Fprintf(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":%d,"MemoryGB":%d},"ResourceUsed":{"Cpu":1,"Cu":1,"MemoryGB":4},"Tags":[]}]}`, cpu, memory)
+			return
+		}
+		// The confirmation read is now in flight. Cancelling here, while the handler is still
+		// answering, is what distinguishes an in-flight cancellation from a pre-cancelled lifecycle.
+		cancel()
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{"RequestId":"mock","Code":"InternalError","Message":"mock read failure"}`)
+	}))
+	t.Cleanup(server.Close)
+	return server, mock
+}
+
+// TestUnitRealtimeComputeVvpNamespaceCancelledConfirmationReadKeepsState cancels the lifecycle while
+// the confirmation read is in flight and pins the resulting behaviour: the provider reports the
+// interrupted read, keeps the previous state and ID, and returns within a bounded window instead of
+// waiting for the remaining budget.
+func TestUnitRealtimeComputeVvpNamespaceCancelledConfirmationReadKeepsState(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	server, mock := vvpNamespaceConfirmationCancelTestServer(t, cancel)
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	stateValue := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+	planValue := vvpNamespaceUpdateTestValue(t, sch, "1m", 2, 8)
+
+	req := fwresource.UpdateRequest{
+		Plan:  tfsdk.Plan{Schema: sch, Raw: planValue},
+		State: tfsdk.State{Schema: sch, Raw: stateValue},
+	}
+	resp := &fwresource.UpdateResponse{State: tfsdk.State{Schema: sch, Raw: stateValue}}
+	started := time.Now()
+	res.Update(ctx, req, resp)
+	elapsed := time.Since(started)
+
+	actions, modifyCpu, modifyMem := mock.snapshot()
+	modifies, reads := 0, 0
+	for _, action := range actions {
+		switch action {
+		case "ModifyNamespaceSpec":
+			modifies++
+		case "DescribeNamespaces":
+			reads++
+		}
+	}
+	if modifies != 1 || modifyCpu != "2" || modifyMem != "8" {
+		t.Fatalf("ModifyNamespaceSpec = %d carrying %q/%q, want 1 carrying 2/8 (actions: %v)", modifies, modifyCpu, modifyMem, actions)
+	}
+	if reads != 2 {
+		t.Fatalf("DescribeNamespaces = %d, want 2 (one SUCCESS wait, one confirmation read) (actions: %v)", reads, actions)
+	}
+	if elapsed > 30*time.Second {
+		t.Fatalf("the cancelled update took %s, which is not a bounded return", elapsed)
+	}
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("expected the interrupted confirmation read to be reported, got none")
+	}
+	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+	if !strings.Contains(detail, "confirmation read interrupted") {
+		t.Fatalf("expected the confirmation read diagnostic, got %q", detail)
+	}
+	if resp.State.Raw.IsNull() {
+		t.Fatalf("the cancelled update dropped the namespace from state")
+	}
+	var id types.String
+	resp.State.GetAttribute(context.Background(), path.Root("id"), &id)
+	if id.ValueString() != "inst-unit:demo" {
+		t.Fatalf("state id = %q, want inst-unit:demo", id.ValueString())
+	}
+	var spec types.List
+	resp.State.GetAttribute(context.Background(), path.Root("resource_spec"), &spec)
+	if spec.IsNull() || len(spec.Elements()) != 1 {
+		t.Fatalf("state resource_spec = %v, want one element", spec)
+	}
+	attrs := spec.Elements()[0].(types.Object).Attributes()
+	if cpu := attrs["cpu"].(types.Int64).ValueInt64(); cpu != 1 {
+		t.Fatalf("state resource_spec.cpu = %d, want the previous 1", cpu)
+	}
+	if memory := attrs["memory_gb"].(types.Int64).ValueInt64(); memory != 4 {
+		t.Fatalf("state resource_spec.memory_gb = %d, want the previous 4", memory)
+	}
+}
+
+// vvpNamespaceUnreadableCollectionTestServer answers every DescribeNamespaces with the given body
+// and records the actions, so the public Read and Delete entry points can be driven against an
+// unreadable collection without a namespace object behind it.
+func vvpNamespaceUnreadableCollectionTestServer(t *testing.T, body string) (*httptest.Server, func() []string) {
+	t.Helper()
+	var mu sync.Mutex
+	var actions []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		action := r.FormValue("Action")
+		mu.Lock()
+		actions = append(actions, action)
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if action == "DescribeNamespaces" {
+			fmt.Fprint(w, body)
+			return
+		}
+		fmt.Fprint(w, `{"RequestId":"mock"}`)
+	}))
+	t.Cleanup(server.Close)
+	return server, func() []string {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]string(nil), actions...)
+	}
+}
+
+// vvpNamespaceUnreadableCollectionCases are the three response shapes the read decoding must refuse
+// instead of treating them as "the namespace is gone".
+func vvpNamespaceUnreadableCollectionCases() []struct {
+	name    string
+	body    string
+	wantErr string
+} {
+	return []struct {
+		name    string
+		body    string
+		wantErr string
+	}{
+		{name: "missing collection", body: `{"RequestId":"mock"}`, wantErr: "does not contain Namespaces"},
+		{name: "null collection", body: `{"RequestId":"mock","Namespaces":null}`, wantErr: "is null"},
+		{name: "mistyped collection", body: `{"RequestId":"mock","Namespaces":"unexpected"}`, wantErr: "unexpected type"},
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceReadKeepsStateOnUnreadableCollection drives the public Read
+// entry point: an omitted, null or mistyped Namespaces field is reported and the namespace stays in
+// state instead of being removed as if it no longer existed.
+func TestUnitRealtimeComputeVvpNamespaceReadKeepsStateOnUnreadableCollection(t *testing.T) {
+	for _, tc := range vvpNamespaceUnreadableCollectionCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			server, _ := vvpNamespaceUnreadableCollectionTestServer(t, tc.body)
+			res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+			value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+
+			req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+			resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+			res.Read(context.Background(), req, resp)
+
+			if !resp.Diagnostics.HasError() {
+				t.Fatalf("expected an unreadable response to be reported, got none")
+			}
+			detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+			if !strings.Contains(detail, tc.wantErr) {
+				t.Fatalf("expected a diagnostic containing %q, got %q", tc.wantErr, detail)
+			}
+			if resp.State.Raw.IsNull() {
+				t.Fatalf("the read dropped the namespace from state")
+			}
+			var id types.String
+			resp.State.GetAttribute(context.Background(), path.Root("id"), &id)
+			if id.ValueString() != "inst-unit:demo" {
+				t.Fatalf("state id = %q, want inst-unit:demo", id.ValueString())
+			}
+		})
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceDeleteKeepsStateWithoutWriteOnUnreadableCollection drives the
+// public Delete entry point: when the pre-delete read cannot be decoded the provider reports it,
+// keeps the resource in state and never sends DeleteNamespace.
+func TestUnitRealtimeComputeVvpNamespaceDeleteKeepsStateWithoutWriteOnUnreadableCollection(t *testing.T) {
+	for _, tc := range vvpNamespaceUnreadableCollectionCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			server, observed := vvpNamespaceUnreadableCollectionTestServer(t, tc.body)
+			res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+			value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+
+			req := fwresource.DeleteRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+			resp := &fwresource.DeleteResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+			res.Delete(context.Background(), req, resp)
+
+			if !resp.Diagnostics.HasError() {
+				t.Fatalf("expected the unreadable pre-delete read to be reported, got none")
+			}
+			detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+			if !strings.Contains(detail, tc.wantErr) {
+				t.Fatalf("expected a diagnostic containing %q, got %q", tc.wantErr, detail)
+			}
+			for _, action := range observed() {
+				if action == "DeleteNamespace" {
+					t.Fatalf("Delete sent DeleteNamespace although the pre-delete read was unreadable: %v", observed())
+				}
+			}
+			if resp.State.Raw.IsNull() {
+				t.Fatalf("the delete dropped the namespace from state")
+			}
+			var id types.String
+			resp.State.GetAttribute(context.Background(), path.Root("id"), &id)
+			if id.ValueString() != "inst-unit:demo" {
+				t.Fatalf("state id = %q, want inst-unit:demo", id.ValueString())
+			}
+		})
+	}
+}
+
+// vvpNamespaceShrinkingTotalPageServer answers page 1 with TotalPage 2 and page 2 with TotalPage 1,
+// both carrying one non-target row and no TotalCount: the collection cannot shrink below the page
+// the service just returned, so a complete search must not be concluded from that page.
+func vvpNamespaceShrinkingTotalPageServer(t *testing.T) (*httptest.Server, func() []string) {
+	t.Helper()
+	var mu sync.Mutex
+	var actions []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		action := r.FormValue("Action")
+		mu.Lock()
+		actions = append(actions, action)
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if action != "DescribeNamespaces" {
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+			return
+		}
+		if r.FormValue("DescribeNamespacesRequest.PageIndex") == "2" {
+			fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"other","Namespace":"other","Status":"SUCCESS"}],"TotalPage":1,"PageIndex":2}`)
+			return
+		}
+		fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"other","Namespace":"other","Status":"SUCCESS"}],"TotalPage":2,"PageIndex":1}`)
+	}))
+	t.Cleanup(server.Close)
+	return server, func() []string {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]string(nil), actions...)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceReadRejectsShrinkingTotalPage pins that a positive TotalPage
+// below the page just read is reported instead of being taken as the last page: otherwise the read
+// would conclude absence and remove a live namespace from state.
+func TestUnitRealtimeComputeVvpNamespaceReadRejectsShrinkingTotalPage(t *testing.T) {
+	server, _ := vvpNamespaceShrinkingTotalPageServer(t)
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+
+	req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+	resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+	res.Read(context.Background(), req, resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("expected the shrinking page count to be reported, got none")
+	}
+	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+	if !strings.Contains(detail, "TotalPage") {
+		t.Fatalf("expected a TotalPage diagnostic, got %q", detail)
+	}
+	if resp.State.Raw.IsNull() {
+		t.Fatalf("the read removed the namespace from state although the page count was contradictory")
+	}
+	var cpu types.Int64
+	if err := resp.State.GetAttribute(context.Background(), path.Root("resource_spec").AtListIndex(0).AtName("cpu"), &cpu); err != nil {
+		t.Fatalf("reading the retained spec: %v", err)
+	}
+	if cpu.ValueInt64() != 1 {
+		t.Fatalf("state resource_spec.cpu = %d, want the previous 1", cpu.ValueInt64())
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceDeleteRejectsShrinkingTotalPage drives the public Delete entry
+// point: a pre-delete read whose page count shrinks is reported, the resource stays in state and
+// DeleteNamespace is never sent.
+func TestUnitRealtimeComputeVvpNamespaceDeleteRejectsShrinkingTotalPage(t *testing.T) {
+	server, observed := vvpNamespaceShrinkingTotalPageServer(t)
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+
+	req := fwresource.DeleteRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+	resp := &fwresource.DeleteResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+	res.Delete(context.Background(), req, resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("expected the shrinking page count to be reported, got none")
+	}
+	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+	if !strings.Contains(detail, "TotalPage") {
+		t.Fatalf("expected a TotalPage diagnostic, got %q", detail)
+	}
+	for _, action := range observed() {
+		if action == "DeleteNamespace" {
+			t.Fatalf("Delete sent DeleteNamespace although absence was not proven: %v", observed())
+		}
+	}
+	if resp.State.Raw.IsNull() {
+		t.Fatalf("the delete dropped the namespace from state")
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceReadSelectsRequestedParentOnSamePage pins that a same-name
+// namespace of another workspace on the same page is scoped out before duplicate detection: the
+// requested parent must still be selectable, while a duplicate inside the requested parent stays an
+// error (covered by the walking reader tests with a single parent).
+func TestUnitRealtimeComputeVvpNamespaceReadSelectsRequestedParentOnSamePage(t *testing.T) {
+	body := `{"RequestId":"mock","Namespaces":[` +
+		`{"InstanceId":"other-instance","Namespace":"demo","Status":"SUCCESS","Ha":false,"ResourceSpec":{"Cpu":8,"MemoryGB":32},"Tags":[]},` +
+		`{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"Tags":[]}` +
+		`],"TotalPage":1,"PageIndex":1,"TotalCount":2}`
+	server, _ := vvpNamespaceUnreadableCollectionTestServer(t, body)
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+
+	req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+	resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+	res.Read(context.Background(), req, resp)
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("a same-name row of another parent must not make the requested one ambiguous: %v", resp.Diagnostics)
+	}
+	var cpu types.Int64
+	if err := resp.State.GetAttribute(context.Background(), path.Root("resource_spec").AtListIndex(0).AtName("cpu"), &cpu); err != nil {
+		t.Fatalf("reading the selected spec: %v", err)
+	}
+	if cpu.ValueInt64() != 2 {
+		t.Fatalf("state resource_spec.cpu = %d, want 2 from the requested parent", cpu.ValueInt64())
+	}
+	var id types.String
+	if err := resp.State.GetAttribute(context.Background(), path.Root("id"), &id); err != nil {
+		t.Fatalf("reading the state id: %v", err)
+	}
+	if id.ValueString() != "inst-unit:demo" {
+		t.Fatalf("state id = %q, want inst-unit:demo", id.ValueString())
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceReadKeepsStateOnWrongTypedRowFields pins that a row whose
+// consumed fields cannot be converted is reported and the previous state is kept: silently mapping a
+// wrong type to null/empty would overwrite a valid resource_spec and cause a spurious resize.
+func TestUnitRealtimeComputeVvpNamespaceReadKeepsStateOnWrongTypedRowFields(t *testing.T) {
+	validRow := `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","GmtCreate":1700000000,"GmtModified":1700000000,"Ha":false,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"ResourceUsed":{"Cpu":0,"Cu":0,"MemoryGB":0},"Tags":[]}`
+	cases := []struct {
+		name    string
+		row     string
+		wantErr string
+		wantCPU int64
+		wantTag string
+	}{
+		{
+			name:    "ResourceSpec is not a collection",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","ResourceSpec":"unexpected"}`,
+			wantErr: "ResourceSpec field has unexpected type",
+		},
+		{
+			name:    "ResourceSpec element is not an object",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","ResourceSpec":["unexpected"]}`,
+			wantErr: "ResourceSpec[0] element has unexpected type",
+		},
+		{
+			name:    "ResourceSpec cpu has the wrong type",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","ResourceSpec":{"Cpu":"two","MemoryGB":8}}`,
+			wantErr: `Cpu value "two" is not an integer`,
+		},
+		{
+			name:    "ResourceUsed is not a collection",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","ResourceUsed":"unexpected"}`,
+			wantErr: "ResourceUsed field has unexpected type",
+		},
+		{
+			name:    "Tags is not a collection",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Tags":"unexpected"}`,
+			wantErr: "Tags field has unexpected type",
+		},
+		{
+			name:    "Tags element is not an object",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Tags":["unexpected"]}`,
+			wantErr: "Tags[0] element has unexpected type",
+		},
+		{
+			name:    "Ha has the wrong type",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":"false"}`,
+			wantErr: "Ha field has unexpected type",
+		},
+		{
+			name:    "GmtCreate has the wrong type",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","GmtCreate":"yesterday"}`,
+			wantErr: `the GmtCreate value "yesterday" is not an integer`,
+		},
+		{
+			name:    "Status has the wrong type",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":1}`,
+			wantErr: "Status field has unexpected type",
+		},
+		{
+			// GmtCreate/GmtModified have been observed as numeric strings; parsing keeps the value.
+			name:    "numeric string counter is accepted",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","GmtCreate":"1700000000","GmtModified":"1700000000","Ha":false,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"Tags":[]}`,
+			wantCPU: 2,
+		},
+		{
+			name:    "valid row with tags",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","GmtCreate":1700000000,"GmtModified":1700000000,"Ha":false,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"Tags":[{"Key":"env","Value":"prod"}]}`,
+			wantCPU: 2,
+			wantTag: "env",
+		},
+		{
+			name:    "valid control",
+			row:     validRow,
+			wantCPU: 2,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			body := fmt.Sprintf(`{"RequestId":"mock","Namespaces":[%s],"TotalPage":1,"PageIndex":1,"TotalCount":1}`, tc.row)
+			server, _ := vvpNamespaceUnreadableCollectionTestServer(t, body)
+			res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+			value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+
+			req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+			resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+			res.Read(context.Background(), req, resp)
+
+			if tc.wantErr != "" {
+				if !resp.Diagnostics.HasError() {
+					t.Fatalf("expected a wrong-typed field to be reported, got none")
+				}
+				detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+				if !strings.Contains(detail, tc.wantErr) {
+					t.Fatalf("expected a diagnostic containing %q, got %q", tc.wantErr, detail)
+				}
+				if resp.State.Raw.IsNull() {
+					t.Fatalf("the read removed the namespace from state")
+				}
+				var cpu types.Int64
+				if err := resp.State.GetAttribute(context.Background(), path.Root("resource_spec").AtListIndex(0).AtName("cpu"), &cpu); err != nil {
+					t.Fatalf("reading the retained spec: %v", err)
+				}
+				if cpu.ValueInt64() != 1 {
+					t.Fatalf("state resource_spec.cpu = %d, want the previous 1", cpu.ValueInt64())
+				}
+				return
+			}
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("unexpected diagnostics: %v", resp.Diagnostics)
+			}
+			var cpu types.Int64
+			if err := resp.State.GetAttribute(context.Background(), path.Root("resource_spec").AtListIndex(0).AtName("cpu"), &cpu); err != nil {
+				t.Fatalf("reading the decoded spec: %v", err)
+			}
+			if cpu.ValueInt64() != tc.wantCPU {
+				t.Fatalf("state resource_spec.cpu = %d, want %d", cpu.ValueInt64(), tc.wantCPU)
+			}
+			if tc.wantTag != "" {
+				var tagValue types.String
+				if err := resp.State.GetAttribute(context.Background(), path.Root("tags").AtMapKey(tc.wantTag), &tagValue); err != nil {
+					t.Fatalf("reading the decoded tag %q: %v", tc.wantTag, err)
+				}
+				if tagValue.ValueString() != "prod" {
+					t.Fatalf("state tags[%q] = %q, want prod", tc.wantTag, tagValue.ValueString())
+				}
+			}
+		})
+	}
+}
+
+// vvpNamespaceCreateRecoveryTestServer answers CreateNamespace with a 5xx that does not prove the
+// request was rejected, while DescribeNamespaces lists the namespace afterwards. Existence after the
+// failure must not be adopted: the product has no request correlation, so the provider cannot prove
+// this request created the object.
+func vvpNamespaceCreateRecoveryTestServer(t *testing.T) (*httptest.Server, func() []string) {
+	t.Helper()
+	var mu sync.Mutex
+	var actions []string
+	created := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		action := r.FormValue("Action")
+		mu.Lock()
+		actions = append(actions, action)
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if action == "CreateNamespace" {
+			mu.Lock()
+			created = true
+			mu.Unlock()
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"RequestId":"mock","Code":"InternalError","Message":"mock create failure"}`)
+			return
+		}
+		mu.Lock()
+		present := created
+		mu.Unlock()
+		if !present {
+			// The ownership guard reads the identity before the write; it must not exist yet. The
+			// read after the injected failure therefore sees only the object the failed write may
+			// have created, which the provider must still refuse to adopt.
+			fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[]}`)
+			return
+		}
+		fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"ResourceUsed":{"Cpu":0,"Cu":0,"MemoryGB":0},"Tags":[]}]}`)
+	}))
+	t.Cleanup(server.Close)
+	return server, func() []string {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]string(nil), actions...)
+	}
+}
+
+// vvpNamespaceCreateTestValue builds a create plan for the unit recovery test.
+func vvpNamespaceCreateTestValue(t *testing.T, sch fwschema.Schema, createTimeout string, cpu, memoryGb int64) tftypes.Value {
+	t.Helper()
+	objectType, ok := sch.Type().TerraformType(context.Background()).(tftypes.Object)
+	if !ok {
+		t.Fatalf("resource schema does not describe an object")
+	}
+	specListType, ok := objectType.AttributeTypes["resource_spec"].(tftypes.List)
+	if !ok {
+		t.Fatalf("resource_spec is not a list: %T", objectType.AttributeTypes["resource_spec"])
+	}
+	spec := tftypes.NewValue(specListType, []tftypes.Value{
+		tftypes.NewValue(specListType.ElementType, map[string]tftypes.Value{
+			"cpu":       tftypes.NewValue(tftypes.Number, cpu),
+			"memory_gb": tftypes.NewValue(tftypes.Number, memoryGb),
+		}),
+	})
+	timeouts := tftypes.NewValue(objectType.AttributeTypes["timeouts"], map[string]tftypes.Value{
+		"create": tftypes.NewValue(tftypes.String, createTimeout),
+		"update": tftypes.NewValue(tftypes.String, nil),
+		"delete": tftypes.NewValue(tftypes.String, nil),
+	})
+	return tftypes.NewValue(objectType, map[string]tftypes.Value{
+		"id":            tftypes.NewValue(tftypes.String, nil),
+		"gmt_create":    tftypes.NewValue(tftypes.Number, nil),
+		"gmt_modified":  tftypes.NewValue(tftypes.Number, nil),
+		"ha":            tftypes.NewValue(tftypes.Bool, false),
+		"instance_id":   tftypes.NewValue(tftypes.String, "inst-unit"),
+		"namespace":     tftypes.NewValue(tftypes.String, "demo"),
+		"resource_spec": spec,
+		"resource_used": tftypes.NewValue(objectType.AttributeTypes["resource_used"], nil),
+		"status":        tftypes.NewValue(objectType.AttributeTypes["status"], nil),
+		"tags":          tftypes.NewValue(objectType.AttributeTypes["tags"], nil),
+		"timeouts":      timeouts,
+	})
+}
+
+// TestUnitRealtimeComputeVvpNamespaceCreateUncertainExistingIdentityIsNotAdopted drives the public
+// Create path against a service whose CreateNamespace answers 5xx while the identity exists. The
+// product exposes no request correlation or idempotency token, so an existing object cannot be
+// proven to belong to this request: the create must fail explicitly with import guidance and leave
+// the object out of state instead of taking over another caller's namespace.
+func TestUnitRealtimeComputeVvpNamespaceCreateUncertainExistingIdentityIsNotAdopted(t *testing.T) {
+	server, observed := vvpNamespaceCreateRecoveryTestServer(t)
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	planValue := vvpNamespaceCreateTestValue(t, sch, "1s", 2, 8)
+
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: sch, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: sch}}
+	res.Create(context.Background(), req, resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("a create whose ownership cannot be proven must be reported")
+	}
+	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+	for _, want := range []string{"uncertain", "workspace owner", "terraform import alicloud_realtime_compute_vvp_namespace.<resource_label> inst-unit:demo", "coordinate with its owner"} {
+		if !strings.Contains(detail, want) {
+			t.Fatalf("expected the diagnostic to contain %q, got %q", want, detail)
+		}
+	}
+	if strings.Contains(detail, "otherwise remove it") {
+		t.Fatalf("the diagnostic must not advise deleting an object whose owner is unknown: %q", detail)
+	}
+	if !resp.State.Raw.IsNull() {
+		t.Fatalf("the provider adopted a namespace that may belong to another caller")
+	}
+	actions := observed()
+	creates, reads := 0, 0
+	for _, action := range actions {
+		switch action {
+		case "CreateNamespace":
+			creates++
+		case "DescribeNamespaces":
+			reads++
+		}
+	}
+	if creates == 0 {
+		t.Fatalf("the create path never reached CreateNamespace: %v", actions)
+	}
+	if reads < 2 {
+		t.Fatalf("the ownership guard and the uncertainty lookup must both read: %v", actions)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceCreateUncertainAbsentIdentityReportsTheWriteError pins the other
+// half of the uncertain path: when the identity is absent after a lost response there is nothing to
+// adopt, and the original write failure is reported.
+func TestUnitRealtimeComputeVvpNamespaceCreateUncertainAbsentIdentityReportsTheWriteError(t *testing.T) {
+	var mu sync.Mutex
+	creates := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		if r.FormValue("Action") == "CreateNamespace" {
+			mu.Lock()
+			creates++
+			mu.Unlock()
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"RequestId":"mock","Code":"InternalError","Message":"mock create failure"}`)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[]}`)
+	}))
+	t.Cleanup(func() {
+		server.CloseClientConnections()
+		server.Close()
+	})
+
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	planValue := vvpNamespaceCreateTestValue(t, sch, "1s", 2, 8)
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: sch, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: sch}}
+	res.Create(context.Background(), req, resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("a failed create must be reported")
+	}
+	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+	if !strings.Contains(detail, "CreateNamespace") {
+		t.Fatalf("expected the original write failure in the diagnostic, got %q", detail)
+	}
+	if !resp.State.Raw.IsNull() {
+		t.Fatalf("a create that never succeeded must not write state")
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if creates == 0 {
+		t.Fatalf("the create path never reached CreateNamespace")
+	}
+}
+
+// vvpNamespaceInstancesTestServer answers DescribeInstances with the given status and body and
+// counts the calls, so the destroy wait can be driven without a workspace behind it.
+func vvpNamespaceInstancesTestServer(t *testing.T, status int, body string) (*httptest.Server, func() int) {
+	t.Helper()
+	var mu sync.Mutex
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		w.Header().Set("Content-Type", "application/json")
+		if r.FormValue("Action") != "DescribeInstances" {
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+			return
+		}
+		mu.Lock()
+		calls++
+		mu.Unlock()
+		if status != http.StatusOK {
+			w.WriteHeader(status)
+		}
+		fmt.Fprint(w, body)
+	}))
+	t.Cleanup(server.Close)
+	return server, func() int {
+		mu.Lock()
+		defer mu.Unlock()
+		return calls
+	}
+}
+
+// TestUnitRealtimeComputeVvpDefaultWorkspaceDestroyRejectsUnreadableInstances pins the cleanup
+// criterion the default0 acceptance case relies on: the destroy of the parent workspace is what
+// removes the side namespace created outside state, so an Instances collection that cannot be
+// decoded neither proves the workspace gone nor may it be retried into a timeout silently — it is
+// reported as an unreadable response.
+func TestUnitRealtimeComputeVvpDefaultWorkspaceDestroyRejectsUnreadableInstances(t *testing.T) {
+	cases := []struct {
+		name    string
+		body    string
+		wantErr string
+	}{
+		{name: "missing collection", body: `{"RequestId":"mock"}`, wantErr: "does not contain Instances"},
+		{name: "null collection", body: `{"RequestId":"mock","Instances":null}`, wantErr: "Instances is null"},
+		{name: "mistyped collection", body: `{"RequestId":"mock","Instances":{}}`, wantErr: "unexpected type"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			server, calls := vvpNamespaceInstancesTestServer(t, http.StatusOK, tc.body)
+			client := vvpNamespaceTestClient(t, server.URL)
+			started := time.Now()
+			err := testAccRealtimeComputeVvpWaitWorkspaceGone(client, "inst-unit", 10*time.Millisecond, time.Minute)
+			if err == nil {
+				t.Fatalf("an unreadable Instances response was accepted as a destroyed workspace")
+			}
+			if !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("expected an error containing %q, got %q", tc.wantErr, err)
+			}
+			if calls() != 1 {
+				t.Fatalf("DescribeInstances was called %d times, want 1: an unreadable response is reported, not retried", calls())
+			}
+			if elapsed := time.Since(started); elapsed > 30*time.Second {
+				t.Fatalf("the unreadable response took %s to be reported", elapsed)
+			}
+		})
+	}
+}
+
+// TestUnitRealtimeComputeVvpDefaultWorkspaceDestroyAcceptsDecodedAbsence is the control for the
+// counterexamples above: a decoded empty collection is a legal empty result and proves absence.
+func TestUnitRealtimeComputeVvpDefaultWorkspaceDestroyAcceptsDecodedAbsence(t *testing.T) {
+	cases := []struct {
+		name   string
+		status int
+		body   string
+	}{
+		{name: "empty collection", status: http.StatusOK, body: `{"RequestId":"mock","Instances":[]}`},
+		{name: "explicit not-found error", status: http.StatusNotFound, body: `{"RequestId":"mock","Code":"NotFound","Message":"InvalidInstanceId.NotFound: the specified instance is not found."}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			server, calls := vvpNamespaceInstancesTestServer(t, tc.status, tc.body)
+			client := vvpNamespaceTestClient(t, server.URL)
+			if err := testAccRealtimeComputeVvpWaitWorkspaceGone(client, "inst-unit", 10*time.Millisecond, 10*time.Second); err != nil {
+				t.Fatalf("decoded absence is proof the workspace is gone, got %v", err)
+			}
+			if calls() != 1 {
+				t.Fatalf("DescribeInstances was called %d times, want 1", calls())
+			}
+		})
+	}
+}
+
+// TestUnitRealtimeComputeVvpDefaultWorkspaceDestroyKeepsWaitingWhileWorkspaceExists is the second
+// control: a decoded non-empty collection keeps the bounded wait and fails the check with the
+// workspace named, so a live workspace can never be reported as destroyed.
+func TestUnitRealtimeComputeVvpDefaultWorkspaceDestroyKeepsWaitingWhileWorkspaceExists(t *testing.T) {
+	server, calls := vvpNamespaceInstancesTestServer(t, http.StatusOK,
+		`{"RequestId":"mock","Instances":[{"InstanceId":"inst-unit","ClusterStatus":"RUNNING"}]}`)
+	client := vvpNamespaceTestClient(t, server.URL)
+
+	started := time.Now()
+	err := testAccRealtimeComputeVvpWaitWorkspaceGone(client, "inst-unit", 20*time.Millisecond, 200*time.Millisecond)
+	elapsed := time.Since(started)
+
+	if err == nil {
+		t.Fatalf("a workspace still listed by DescribeInstances was reported as destroyed")
+	}
+	if !strings.Contains(err.Error(), "still exists") || !strings.Contains(err.Error(), "inst-unit") {
+		t.Fatalf("expected a still-exists error naming the workspace, got %q", err)
+	}
+	if calls() < 2 {
+		t.Fatalf("DescribeInstances was called %d times, want at least 2: the wait must keep polling the live workspace", calls())
+	}
+	if elapsed < 150*time.Millisecond {
+		t.Fatalf("the wait returned after %s, before its budget was spent", elapsed)
+	}
+	if elapsed > 30*time.Second {
+		t.Fatalf("the wait took %s, which is not bounded", elapsed)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceUpdateInFlightWriteHonoursBudget drives the public Update path
+// against a write that never answers: the update must stop at its budget, keep the namespace in
+// state and never reach the stages after the write.
+func TestUnitRealtimeComputeVvpNamespaceUpdateInFlightWriteHonoursBudget(t *testing.T) {
+	var mu sync.Mutex
+	reads := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		if r.FormValue("Action") == "ModifyNamespaceSpec" {
+			<-r.Context().Done()
+			return
+		}
+		mu.Lock()
+		reads++
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":1,"MemoryGB":4},"ResourceUsed":{"Cpu":1,"Cu":1,"MemoryGB":4},"Tags":[]}]}`)
+	}))
+	t.Cleanup(func() {
+		server.CloseClientConnections()
+		server.Close()
+	})
+
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	stateValue := vvpNamespaceUpdateTestValue(t, sch, "1s", 1, 4)
+	planValue := vvpNamespaceUpdateTestValue(t, sch, "1s", 2, 8)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	req := fwresource.UpdateRequest{
+		Plan:  tfsdk.Plan{Schema: sch, Raw: planValue},
+		State: tfsdk.State{Schema: sch, Raw: stateValue},
+	}
+	resp := &fwresource.UpdateResponse{State: tfsdk.State{Schema: sch, Raw: stateValue}}
+
+	started := time.Now()
+	res.Update(ctx, req, resp)
+	if elapsed := time.Since(started); elapsed > 4*time.Second {
+		t.Fatalf("the update returned after %s; the in-flight write was not bounded by timeouts.update", elapsed)
+	}
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("a hung write must be reported, got no diagnostics")
+	}
+	if resp.State.Raw.IsNull() {
+		t.Fatalf("the update dropped the namespace from state")
+	}
+	var id types.String
+	resp.State.GetAttribute(context.Background(), path.Root("id"), &id)
+	if id.ValueString() != "inst-unit:demo" {
+		t.Fatalf("state id = %q, want inst-unit:demo", id.ValueString())
+	}
+	var spec types.List
+	resp.State.GetAttribute(context.Background(), path.Root("resource_spec"), &spec)
+	if spec.IsNull() || len(spec.Elements()) != 1 {
+		t.Fatalf("state resource_spec = %v, want one element", spec)
+	}
+	attrs := spec.Elements()[0].(types.Object).Attributes()
+	if cpu := attrs["cpu"].(types.Int64).ValueInt64(); cpu != 1 {
+		t.Fatalf("state resource_spec.cpu = %d, want the previous 1", cpu)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if reads != 0 {
+		t.Fatalf("the update reached %d read stage(s) after the hung write; later stages must not run", reads)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceCreateRefusesExistingIdentity pins the ownership guard: when the
+// identity already exists before the request, Create reports it and never sends CreateNamespace, so
+// the recovery path cannot adopt a namespace that belongs to someone else.
+func TestUnitRealtimeComputeVvpNamespaceCreateRefusesExistingIdentity(t *testing.T) {
+	var mu sync.Mutex
+	creates := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		if r.FormValue("Action") == "CreateNamespace" {
+			mu.Lock()
+			creates++
+			mu.Unlock()
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"ResourceUsed":{"Cpu":0,"Cu":0,"MemoryGB":0},"Tags":[]}]}`)
+	}))
+	t.Cleanup(server.Close)
+
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	planValue := vvpNamespaceCreateTestValue(t, sch, "1m", 2, 8)
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: sch, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: sch}}
+	res.Create(context.Background(), req, resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("creating an identity that already exists must be reported")
+	}
+	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+	if !strings.Contains(detail, "already exists") {
+		t.Fatalf("expected an already-exists diagnostic, got %q", detail)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if creates != 0 {
+		t.Fatalf("CreateNamespace was sent %d time(s); an existing identity must not be written again", creates)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceReadRejectsUnreadablePagination pins the page-metadata contract:
+// an unreadable or contradictory page count, or a full page without any page count, is an incomplete
+// search and must fail the read instead of turning into a not-found that removes a live namespace
+// from state. Only a legacy response without pagination metadata whose page is not full may be
+// treated as a complete single-page search.
+func TestUnitRealtimeComputeVvpNamespaceReadRejectsUnreadablePagination(t *testing.T) {
+	fullPage := `{"RequestId":"mock","Namespaces":[`
+	for i := 0; i < 100; i++ {
+		if i > 0 {
+			fullPage += ","
+		}
+		fullPage += `{"InstanceId":"other","Namespace":"other","Status":"SUCCESS"}`
+	}
+	fullPage += `]}`
+	cases := []struct {
+		name     string
+		body     string
+		wantErr  string
+		wantGone bool
+	}{
+		{name: "unreadable page count", body: `{"RequestId":"mock","Namespaces":[],"TotalPage":"oops"}`, wantErr: "TotalPage"},
+		{name: "negative page count", body: `{"RequestId":"mock","Namespaces":[],"TotalPage":-2}`, wantErr: "TotalPage"},
+		{name: "page count contradicts the reported total", body: `{"RequestId":"mock","Namespaces":[],"TotalPage":0,"TotalCount":5}`, wantErr: "TotalPage"},
+		{name: "positive page count cannot cover the reported total", body: `{"RequestId":"mock","Namespaces":[],"TotalPage":1,"PageIndex":1,"PageSize":10,"TotalCount":11}`, wantErr: "TotalPage"},
+		{name: "unreadable page index", body: `{"RequestId":"mock","PageIndex":"oops","Namespaces":[]}`, wantErr: "PageIndex"},
+		{name: "response page differs from the requested page", body: `{"RequestId":"mock","PageIndex":2,"Namespaces":[]}`, wantErr: "page 2 but page 1 was requested"},
+		{name: "legacy single page without metadata", body: `{"RequestId":"mock","Namespaces":[]}`, wantGone: true},
+		{name: "legacy full page cannot prove absence", body: fullPage, wantErr: "within 100 DescribeNamespaces pages"},
+		{name: "consistent empty result", body: `{"RequestId":"mock","Namespaces":[],"TotalPage":1,"TotalCount":0}`, wantGone: true},
+		// The rows read cannot outnumber TotalCount: this page claims the collection is empty while
+		// returning a row, so the metadata describes a different collection and cannot prove absence.
+		{name: "reported total below the rows read", body: `{"RequestId":"mock","Namespaces":[{"InstanceId":"other","Namespace":"other","Status":"SUCCESS"}],"TotalPage":1,"PageIndex":1,"PageSize":10,"TotalCount":0}`, wantErr: "TotalCount"},
+		{name: "reported total below the rows read without a page count", body: `{"RequestId":"mock","Namespaces":[{"InstanceId":"other","Namespace":"other","Status":"SUCCESS"}],"TotalCount":0}`, wantErr: "TotalCount"},
+		{name: "reported total below the rows read across pages", body: `{"RequestId":"mock","Namespaces":[{"InstanceId":"other","Namespace":"other","Status":"SUCCESS"}],"TotalPage":2,"PageIndex":1,"PageSize":1,"TotalCount":0}`, wantErr: "TotalCount"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprint(w, tc.body)
+			}))
+			t.Cleanup(func() {
+				server.CloseClientConnections()
+				server.Close()
+			})
+			res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+			value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+			req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+			resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+			res.Read(context.Background(), req, resp)
+			if tc.wantErr != "" {
+				if !resp.Diagnostics.HasError() {
+					t.Fatalf("expected an incomplete search to be reported")
+				}
+				detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+				if !strings.Contains(detail, tc.wantErr) {
+					t.Fatalf("expected %q in the diagnostic, got %q", tc.wantErr, detail)
+				}
+				if resp.State.Raw.IsNull() {
+					t.Fatalf("an incomplete search must not remove the namespace from state")
+				}
+				return
+			}
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("unexpected diagnostics: %v", resp.Diagnostics)
+			}
+			if tc.wantGone != resp.State.Raw.IsNull() {
+				t.Fatalf("gone = %t, want %t", resp.State.Raw.IsNull(), tc.wantGone)
+			}
+		})
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceReadRejectsRepeatedPageIndex pins the echoed PageIndex contract:
+// when the server repeats page 1 for a page-2 request, the walk must not treat the repeated page as
+// the requested one. The read reports the mismatch and keeps the namespace in state instead of
+// concluding absence from a page that was never received.
+func TestUnitRealtimeComputeVvpNamespaceReadRejectsRepeatedPageIndex(t *testing.T) {
+	var mu sync.Mutex
+	var requested []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		page := r.FormValue("DescribeNamespacesRequest.PageIndex")
+		mu.Lock()
+		requested = append(requested, page)
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		// Every response claims to be page 1, even after page 2 is requested.
+		fmt.Fprint(w, `{"RequestId":"mock","PageIndex":1,"TotalPage":2,"PageSize":1,"TotalCount":2,"Namespaces":[{"InstanceId":"other-instance","Namespace":"other-ns","Status":"SUCCESS"}]}`)
+	}))
+	t.Cleanup(func() {
+		server.CloseClientConnections()
+		server.Close()
+	})
+
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+	req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+	resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+	res.Read(context.Background(), req, resp)
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("a repeated page index must be reported")
+	}
+	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+	if !strings.Contains(detail, "page 1 but page 2 was requested") {
+		t.Fatalf("expected the page mismatch in the diagnostic, got %q", detail)
+	}
+	if resp.State.Raw.IsNull() {
+		t.Fatalf("a repeated page must not remove the namespace from state")
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(requested) < 2 || requested[0] != "1" || requested[1] != "2" {
+		t.Fatalf("DescribeNamespaces pages = %v, want page 2 to be requested", requested)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceDeleteRefusesRepeatedPageIndex pins the Delete side of the same
+// contract: a pre-delete search that receives a repeated page cannot prove the namespace is gone, so
+// Delete reports the mismatch, keeps the resource in state and never sends DeleteNamespace.
+func TestUnitRealtimeComputeVvpNamespaceDeleteRefusesRepeatedPageIndex(t *testing.T) {
+	var mu sync.Mutex
+	var actions []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		mu.Lock()
+		actions = append(actions, r.FormValue("Action"))
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"RequestId":"mock","PageIndex":1,"TotalPage":2,"PageSize":1,"TotalCount":2,"Namespaces":[{"InstanceId":"other-instance","Namespace":"other-ns","Status":"SUCCESS"}]}`)
+	}))
+	t.Cleanup(func() {
+		server.CloseClientConnections()
+		server.Close()
+	})
+
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+	req := fwresource.DeleteRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+	resp := &fwresource.DeleteResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+	res.Delete(context.Background(), req, resp)
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("a delete whose pre-read receives a repeated page must be reported")
+	}
+	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+	if !strings.Contains(detail, "page 1 but page 2 was requested") {
+		t.Fatalf("expected the page mismatch in the diagnostic, got %q", detail)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	for _, action := range actions {
+		if action == "DeleteNamespace" {
+			t.Fatalf("Delete sent DeleteNamespace although the search was incomplete: %v", actions)
+		}
+	}
+	if resp.State.Raw.IsNull() {
+		t.Fatalf("the delete dropped the namespace from state")
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceReadContinuesIncompleteLegacyPagination covers a response that
+// omits TotalPage (null) while PageSize/TotalCount show that another page exists: the read must walk
+// page 2 instead of treating page 1 as a complete legacy response, so a namespace stored on the
+// second page is found and absence is never concluded early.
+func TestUnitRealtimeComputeVvpNamespaceReadContinuesIncompleteLegacyPagination(t *testing.T) {
+	otherRows := ""
+	for i := 0; i < 10; i++ {
+		if i > 0 {
+			otherRows += ","
+		}
+		otherRows += fmt.Sprintf(`{"InstanceId":"other-instance-%d","Namespace":"other-ns-%d","Status":"SUCCESS","Ha":false,"ResourceSpec":{"Cpu":8,"MemoryGB":32},"Tags":[]}`, i, i)
+	}
+	pages := map[string]string{
+		"1": fmt.Sprintf(`{"RequestId":"mock","TotalPage":null,"PageIndex":1,"PageSize":10,"TotalCount":11,"Namespaces":[%s]}`, otherRows),
+		"2": `{"RequestId":"mock","TotalPage":null,"PageIndex":2,"PageSize":10,"TotalCount":11,"Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"ResourceUsed":{"Cpu":0,"Cu":0,"MemoryGB":0},"Tags":[]}]}`,
+	}
+	var mu sync.Mutex
+	var requested []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		page := r.FormValue("DescribeNamespacesRequest.PageIndex")
+		mu.Lock()
+		requested = append(requested, page)
+		mu.Unlock()
+		body, ok := pages[page]
+		if !ok {
+			body = `{"RequestId":"mock","Namespaces":[]}`
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, body)
+	}))
+	t.Cleanup(func() {
+		server.CloseClientConnections()
+		server.Close()
+	})
+
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+	req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+	resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+	res.Read(context.Background(), req, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("an incomplete legacy page must be walked, not reported: %v", resp.Diagnostics)
+	}
+	if resp.State.Raw.IsNull() {
+		t.Fatalf("the read dropped a namespace that exists on the second page")
+	}
+	var spec types.List
+	resp.State.GetAttribute(context.Background(), path.Root("resource_spec"), &spec)
+	if spec.IsNull() || len(spec.Elements()) != 1 {
+		t.Fatalf("state resource_spec = %v, want one element", spec)
+	}
+	attrs := spec.Elements()[0].(types.Object).Attributes()
+	if cpu := attrs["cpu"].(types.Int64).ValueInt64(); cpu != 2 {
+		t.Fatalf("state resource_spec.cpu = %d, want 2 from the second page", cpu)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(requested) < 2 || requested[0] != "1" || requested[1] != "2" {
+		t.Fatalf("DescribeNamespaces pages = %v, want page 2 to be requested", requested)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceDeleteRefusesIncompletePagination pins that a contradictory
+// page shape keeps the resource in state and never sends DeleteNamespace: absence was not proven.
+func TestUnitRealtimeComputeVvpNamespaceDeleteRefusesIncompletePagination(t *testing.T) {
+	cases := []struct {
+		name    string
+		body    string
+		wantErr string
+	}{
+		{
+			name:    "page count cannot cover the total",
+			body:    `{"RequestId":"mock","Namespaces":[],"TotalPage":1,"PageIndex":1,"PageSize":10,"TotalCount":11}`,
+			wantErr: "TotalPage",
+		},
+		{
+			// The collection cannot hold fewer rows than this page returned. Treating the page as a
+			// complete search would let the delete skip DeleteNamespace for a namespace that exists.
+			name:    "reported total below the rows read",
+			body:    `{"RequestId":"mock","Namespaces":[{"InstanceId":"other","Namespace":"other","Status":"SUCCESS"}],"TotalPage":1,"PageIndex":1,"PageSize":10,"TotalCount":0}`,
+			wantErr: "TotalCount",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var mu sync.Mutex
+			var actions []string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_ = r.ParseForm()
+				mu.Lock()
+				actions = append(actions, r.FormValue("Action"))
+				mu.Unlock()
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprint(w, tc.body)
+			}))
+			t.Cleanup(func() {
+				server.CloseClientConnections()
+				server.Close()
+			})
+
+			res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+			value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+			req := fwresource.DeleteRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+			resp := &fwresource.DeleteResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+			res.Delete(context.Background(), req, resp)
+			if !resp.Diagnostics.HasError() {
+				t.Fatalf("a delete whose pre-read cannot prove absence must be reported")
+			}
+			detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+			if !strings.Contains(detail, tc.wantErr) {
+				t.Fatalf("expected the %s diagnostic, got %q", tc.wantErr, detail)
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			for _, action := range actions {
+				if action == "DeleteNamespace" {
+					t.Fatalf("Delete sent DeleteNamespace although absence was not proven: %v", actions)
+				}
+			}
+			if resp.State.Raw.IsNull() {
+				t.Fatalf("the delete dropped the namespace from state")
+			}
+		})
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceReadWalksPagesAndScopesToParent covers the documented pagination
+// and the parent scope of DescribeNamespaces: a same-name namespace under another workspace is not
+// this resource, and a match on a later page is still found. Exhausting the pages is a positive
+// not-found.
+func TestUnitRealtimeComputeVvpNamespaceReadWalksPagesAndScopesToParent(t *testing.T) {
+	cases := []struct {
+		name      string
+		pages     map[string]string
+		totalPage int
+		wantCPU   int64
+		wantGone  bool
+		wantErr   bool
+	}{
+		{
+			name: "match on the second page after a same-name row of another parent",
+			pages: map[string]string{
+				"1": `{"RequestId":"mock","TotalCount":2,"TotalPage":2,"PageIndex":1,"PageSize":1,"Namespaces":[{"InstanceId":"other-instance","Namespace":"demo","Status":"SUCCESS","Ha":false,"ResourceSpec":{"Cpu":8,"MemoryGB":32},"Tags":[]}]}`,
+				"2": `{"RequestId":"mock","TotalCount":2,"TotalPage":2,"PageIndex":2,"PageSize":1,"Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"Tags":[]}]}`,
+			},
+			totalPage: 2,
+			wantCPU:   2,
+		},
+		{
+			name: "no page carries this identity",
+			pages: map[string]string{
+				"1": `{"RequestId":"mock","TotalCount":2,"TotalPage":2,"PageIndex":1,"PageSize":1,"Namespaces":[{"InstanceId":"other-instance","Namespace":"demo","Status":"SUCCESS","Ha":false,"ResourceSpec":{"Cpu":8,"MemoryGB":32},"Tags":[]}]}`,
+				"2": `{"RequestId":"mock","TotalCount":2,"TotalPage":2,"PageIndex":2,"PageSize":1,"Namespaces":[{"InstanceId":"other-instance-2","Namespace":"demo","Status":"SUCCESS","Ha":false,"ResourceSpec":{"Cpu":8,"MemoryGB":32},"Tags":[]}]}`,
+			},
+			totalPage: 2,
+			wantGone:  true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var mu sync.Mutex
+			var pages []string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_ = r.ParseForm()
+				page := r.FormValue("DescribeNamespacesRequest.PageIndex")
+				mu.Lock()
+				pages = append(pages, page)
+				mu.Unlock()
+				body, ok := tc.pages[page]
+				if !ok {
+					body = `{"RequestId":"mock","TotalCount":0,"TotalPage":0,"PageIndex":1,"PageSize":1,"Namespaces":[]}`
+				}
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprint(w, body)
+			}))
+			t.Cleanup(server.Close)
+
+			res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+			value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+			req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+			resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+			res.Read(context.Background(), req, resp)
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("unexpected diagnostics: %v", resp.Diagnostics)
+			}
+			if tc.wantGone {
+				if !resp.State.Raw.IsNull() {
+					t.Fatalf("a namespace that exists under another parent must not be adopted")
+				}
+			} else {
+				if resp.State.Raw.IsNull() {
+					t.Fatalf("the read dropped a namespace that exists on a later page")
+				}
+				var spec types.List
+				resp.State.GetAttribute(context.Background(), path.Root("resource_spec"), &spec)
+				if spec.IsNull() || len(spec.Elements()) != 1 {
+					t.Fatalf("state resource_spec = %v, want one element", spec)
+				}
+				attrs := spec.Elements()[0].(types.Object).Attributes()
+				if cpu := attrs["cpu"].(types.Int64).ValueInt64(); cpu != tc.wantCPU {
+					t.Fatalf("state resource_spec.cpu = %d, want %d", cpu, tc.wantCPU)
+				}
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			if len(pages) < tc.totalPage {
+				t.Fatalf("DescribeNamespaces pages requested = %v, want at least %d", pages, tc.totalPage)
+			}
+		})
+	}
+}

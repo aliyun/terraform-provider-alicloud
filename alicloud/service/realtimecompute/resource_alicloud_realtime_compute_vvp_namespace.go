@@ -1,0 +1,776 @@
+// Package realtimecompute. This file is generated automatically. Please do not modify it manually, thank you!
+// Object-valued attributes use list of object types to stay compatible with Terraform Plugin Protocol 5.
+package realtimecompute
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwutil"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+const vvpNamespaceTypeName = "alicloud_realtime_compute_vvp_namespace"
+
+var (
+	_ resource.Resource                = &vvpNamespaceResource{}
+	_ resource.ResourceWithImportState = &vvpNamespaceResource{}
+)
+
+func NewVvpNamespaceResource() resource.Resource {
+	return &vvpNamespaceResource{}
+}
+
+type vvpNamespaceResource struct {
+	fwadapt.ResourceBase
+}
+
+type vvpNamespaceResourceModel struct {
+	Id           types.String `tfsdk:"id"`
+	FwTimeouts   types.Object `tfsdk:"timeouts"`
+	GmtCreate    types.Int64  `tfsdk:"gmt_create"`
+	GmtModified  types.Int64  `tfsdk:"gmt_modified"`
+	Ha           types.Bool   `tfsdk:"ha"`
+	InstanceId   types.String `tfsdk:"instance_id"`
+	Namespace    types.String `tfsdk:"namespace"`
+	ResourceSpec types.List   `tfsdk:"resource_spec"`
+	ResourceUsed types.List   `tfsdk:"resource_used"`
+	Status       types.String `tfsdk:"status"`
+	Tags         types.Map    `tfsdk:"tags"`
+}
+
+func (r *vvpNamespaceResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = vvpNamespaceTypeName
+}
+
+func (r *vvpNamespaceResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Blocks: map[string]schema.Block{"timeouts": fwutil.TimeoutBlock("create", "update", "delete")},
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"gmt_create": schema.Int64Attribute{
+				Computed:    true,
+				Description: "The creation time",
+			},
+			"gmt_modified": schema.Int64Attribute{
+				Computed:    true,
+				Description: "The modification time",
+			},
+			"ha": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: "High availability, set at creation, immutable",
+			},
+			"instance_id": schema.StringAttribute{
+				Required: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+				Description: "The instance id of the parent vvp instance",
+			},
+			"namespace": schema.StringAttribute{
+				Required: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+				Description: "The namespace name; the workspace default namespace is named <workspace_name>-default (or <workspace_name>-default-ha for a multi-availability-zone workspace)",
+			},
+			"resource_spec": schema.ListAttribute{
+				ElementType: vvpNamespaceResourceSpecObjType(),
+				Validators: []validator.List{
+					listvalidator.SizeAtLeast(1),
+					listvalidator.SizeAtMost(1),
+					vvpNamespaceResourceSpecValidator{},
+				},
+				Optional:    true,
+				Computed:    true,
+				Description: "Resource specification (CU) of the namespace",
+			},
+			"resource_used": schema.ListAttribute{
+				ElementType: vvpNamespaceResourceUsedObjType(),
+				Computed:    true,
+				Description: "Resource usage of the namespace",
+			},
+			"status": schema.StringAttribute{
+				Computed:    true,
+				Description: "The status of the namespace",
+			},
+			"tags": schema.MapAttribute{
+				ElementType: types.StringType,
+				Computed:    true,
+				Description: "Tags of the namespace",
+			},
+		},
+	}
+}
+
+// vvpNamespaceResourceSpecValidator enforces the required cpu/memory_gb pair inside every
+// resource_spec element. Protocol 5 cannot carry nested attributes, so the per-field
+// required-ness declared by the CloudSpec model is checked here instead of in the schema.
+type vvpNamespaceResourceSpecValidator struct{}
+
+func (vvpNamespaceResourceSpecValidator) Description(context.Context) string {
+	return "resource_spec requires cpu and memory_gb in every element"
+}
+
+func (vvpNamespaceResourceSpecValidator) MarkdownDescription(context.Context) string {
+	return "resource_spec requires cpu and memory_gb in every element"
+}
+
+func (vvpNamespaceResourceSpecValidator) ValidateList(ctx context.Context, req validator.ListRequest, resp *validator.ListResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	for i, element := range req.ConfigValue.Elements() {
+		object, ok := element.(types.Object)
+		if !ok {
+			resp.Diagnostics.AddAttributeError(
+				req.Path.AtListIndex(i),
+				"Invalid resource specification",
+				fmt.Sprintf("resource_spec[%d] must be an object carrying cpu and memory_gb.", i),
+			)
+			continue
+		}
+		// An unknown element is deferred to apply time. A known null element is rejected here: the
+		// serializer skips null elements, so accepting it would send Create/Update without a spec
+		// even though SizeAtLeast(1) already counted the list as non-empty.
+		if object.IsUnknown() {
+			continue
+		}
+		if object.IsNull() {
+			resp.Diagnostics.AddAttributeError(
+				req.Path.AtListIndex(i),
+				"Missing required value",
+				fmt.Sprintf("resource_spec[%d] is null; resource_spec elements must be objects carrying cpu and memory_gb.", i),
+			)
+			continue
+		}
+		attributes := object.Attributes()
+		for _, name := range []string{"cpu", "memory_gb"} {
+			if value, present := attributes[name]; !present || value.IsNull() {
+				resp.Diagnostics.AddAttributeError(
+					req.Path.AtListIndex(i).AtName(name),
+					"Missing required value",
+					fmt.Sprintf("resource_spec[%d].%s is required.", i, name),
+				)
+			}
+		}
+		cpu, okCPU := attributes["cpu"].(types.Int64)
+		memory, okMemory := attributes["memory_gb"].(types.Int64)
+		if !okCPU || !okMemory || cpu.IsNull() || cpu.IsUnknown() || memory.IsNull() || memory.IsUnknown() {
+			continue
+		}
+		if reason := vvpNamespaceResourceSpecRatioError(cpu.ValueInt64(), memory.ValueInt64()); reason != "" {
+			resp.Diagnostics.AddAttributeError(req.Path.AtListIndex(i).AtName("memory_gb"), "Invalid resource specification", reason)
+		}
+	}
+}
+
+// vvpNamespaceResourceSpecRatioError returns a non-empty reason when the pair violates the product
+// contract documented on foasconsole ResourceSpec: memory must be exactly four times the CPU count.
+// Unknown values are filtered by the caller, so this only judges pairs that are known at plan time.
+func vvpNamespaceResourceSpecRatioError(cpu, memoryGb int64) string {
+	if cpu <= 0 || memoryGb <= 0 {
+		return fmt.Sprintf("resource_spec requires positive cpu and memory_gb, got cpu=%d memory_gb=%d", cpu, memoryGb)
+	}
+	if memoryGb != 4*cpu {
+		return fmt.Sprintf("resource_spec.memory_gb must be 4 times resource_spec.cpu, got cpu=%d memory_gb=%d", cpu, memoryGb)
+	}
+	return ""
+}
+
+func (r *vvpNamespaceResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan vvpNamespaceResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	operationTimeout, timeoutDiagnostics := fwutil.TimeoutDuration(plan.FwTimeouts, "create", 5*time.Minute)
+	resp.Diagnostics.Append(timeoutDiagnostics...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// One budget for the whole create: the RPC, the visibility wait and the SUCCESS wait all spend
+	// the same deadline instead of restarting a full timeout each time.
+	operationCtx, remaining, cancelOperation := vvpNamespaceOperationBudget(ctx, operationTimeout)
+	defer cancelOperation()
+
+	// The composite identity is built from the required plan fields that are mapped into the
+	// request below, so it is known before the call and can be used to recover an uncertain result.
+	instanceId := strings.TrimSpace(plan.InstanceId.ValueString())
+	if instanceId == "" {
+		resp.Diagnostics.AddError("Creating alicloud_realtime_compute_vvp_namespace: missing identity", "The create request did not carry the instance_id component")
+		return
+	}
+	namespaceName := strings.TrimSpace(plan.Namespace.ValueString())
+	if namespaceName == "" {
+		resp.Diagnostics.AddError("Creating alicloud_realtime_compute_vvp_namespace: missing identity", "The create request did not carry the namespace component")
+		return
+	}
+	id := strings.Join([]string{instanceId, namespaceName}, ":")
+
+	request := map[string]interface{}{
+		"ClientToken": helper.BuildClientToken("CreateNamespace"),
+	}
+	// gap#9: RPC APIs require RegionId as a request param (separate from endpoint resolution);
+	// the SDK RpcPost resolves the endpoint by region but does NOT inject RegionId into query/body.
+	// v1 sets request["RegionId"] = client.RegionId authoritatively (provider region wins).
+	request["RegionId"] = r.Meta().RegionId
+	createValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
+	if !plan.Ha.IsNull() && !plan.Ha.IsUnknown() {
+		createValues["Ha"] = fwadapt.ValueToInterface(plan.Ha, map[string]fwadapt.WireField{}, false)
+	}
+	if !plan.InstanceId.IsNull() && !plan.InstanceId.IsUnknown() {
+		createValues["InstanceId"] = fwadapt.ValueToInterface(plan.InstanceId, map[string]fwadapt.WireField{}, false)
+	}
+	if !plan.Namespace.IsNull() && !plan.Namespace.IsUnknown() {
+		createValues["Namespace"] = fwadapt.ValueToInterface(plan.Namespace, map[string]fwadapt.WireField{}, false)
+	}
+	if !plan.ResourceSpec.IsNull() && !plan.ResourceSpec.IsUnknown() {
+		createValues["ResourceSpec"] = fwadapt.ValueToInterface(plan.ResourceSpec, map[string]fwadapt.WireField{"cpu": {Name: "Cpu", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}, "memory_gb": {Name: "MemoryGb", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}}, true)
+	}
+	if err := fwadapt.ApplyMappings(request, createValues, []fwadapt.Mapping{
+		{Source: "$.Ha", Target: "CreateNamespaceRequest.Ha", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+		{Source: "$.InstanceId", Target: "CreateNamespaceRequest.InstanceId", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+		{Source: "$.Namespace", Target: "CreateNamespaceRequest.Namespace", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+		{Source: "$.RegionId", Target: "CreateNamespaceRequest.Region", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+		{Source: "$.ResourceSpec.Cpu", Target: "CreateNamespaceRequest.ResourceSpec.Cpu", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+		{Source: "$.ResourceSpec.MemoryGb", Target: "CreateNamespaceRequest.ResourceSpec.MemoryGB", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+	}, false); err != nil {
+		resp.Diagnostics.AddError("Building create request", err.Error())
+		return
+	}
+
+	// Ownership guard. An identity that already exists before the write cannot be claimed by this
+	// create, so it is reported as already exists and the write is never sent. A later uncertain
+	// result is not adopted either: existence after the failure does not prove this request created
+	// it, and the create reports an explicit uncertain-result diagnostic instead.
+	existing, existingErr := vvpNamespaceGetWithTimeout(operationCtx, r.Meta(), id, remaining())
+	if existingErr != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("Creating %s: checking the existing namespace", vvpNamespaceTypeName), existingErr.Error())
+		return
+	}
+	if existing != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: already exists", vvpNamespaceTypeName),
+			fmt.Sprintf("The namespace %s already exists in this workspace; import it into state instead of creating it again.", id),
+		)
+		return
+	}
+
+	createBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+	if budgetErr != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("Creating %s: operation budget", vvpNamespaceTypeName), budgetErr.Error())
+		return
+	}
+	if _, err := retryRpcPost(operationCtx, r.Meta(), "foasconsole", "2019-06-01", "CreateNamespace", request, createBudget); err != nil {
+		recovered, recoveryErr := vvpNamespaceRecoverCreate(operationCtx, r.Meta(), id, err)
+		if recoveryErr != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Creating %s: calling CreateNamespace", vvpNamespaceTypeName),
+				errs.WrapErrorf(recoveryErr, "Creating %s: CreateNamespace failed with %v and the result could not be verified", vvpNamespaceTypeName, err).Error(),
+			)
+			return
+		}
+		if recovered == nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Creating %s: calling CreateNamespace", vvpNamespaceTypeName),
+				errs.WrapErrorf(err, "Creating %s: calling CreateNamespace", vvpNamespaceTypeName).Error(),
+			)
+			return
+		}
+		// The identity exists after the failed call, but that does not prove this request created
+		// it: the product exposes no request correlation or idempotency token, so a concurrent caller
+		// may own the object. Adopting it would take over someone else's namespace, so the create
+		// stops with an explicit uncertain-result diagnostic and leaves the object out of state.
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: the create result is uncertain", vvpNamespaceTypeName),
+			fmt.Sprintf("CreateNamespace failed with %v, and a namespace with the identity %s now exists. Realtime Compute exposes no request correlation or idempotency token, so the provider cannot prove this request created it, and the namespace was left out of Terraform state. Do not delete or reuse it until its ownership is clear: check with the workspace owner whether this namespace belongs to your configuration (who created it and what it is used for). If it is yours, import it with `terraform import %s.<resource_label> %s`. If it belongs to another operator or to a concurrent request, coordinate with its owner or choose a different namespace name and apply again.", err, id, vvpNamespaceTypeName, id),
+		)
+		return
+	}
+
+	// Persist the allocated identity before any asynchronous or configuration stage.
+	trackedPlan := plan
+	trackedPlan.Id = types.StringValue(id)
+	trackedPlan.GmtCreate = fwadapt.KnownValue(trackedPlan.GmtCreate).(types.Int64)
+	trackedPlan.GmtModified = fwadapt.KnownValue(trackedPlan.GmtModified).(types.Int64)
+	trackedPlan.Ha = fwadapt.KnownValue(trackedPlan.Ha).(types.Bool)
+	trackedPlan.InstanceId = fwadapt.KnownValue(trackedPlan.InstanceId).(types.String)
+	trackedPlan.Namespace = fwadapt.KnownValue(trackedPlan.Namespace).(types.String)
+	trackedPlan.ResourceSpec = fwadapt.KnownValue(trackedPlan.ResourceSpec).(types.List)
+	trackedPlan.ResourceUsed = fwadapt.KnownValue(trackedPlan.ResourceUsed).(types.List)
+	trackedPlan.Status = fwadapt.KnownValue(trackedPlan.Status).(types.String)
+	trackedPlan.Tags = fwadapt.KnownValue(trackedPlan.Tags).(types.Map)
+	resp.Diagnostics.Append(resp.State.Set(ctx, trackedPlan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// The model's create async detection is assertNotEmpty on $.Namespace, so poll until
+	// DescribeNamespaces returns the namespace instead of waiting for a status string.
+	visibilityBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+	if budgetErr != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("Creating %s: operation budget", vvpNamespaceTypeName), budgetErr.Error())
+		return
+	}
+	object, err := vvpNamespaceWaitForState(operationCtx, r.Meta(), id, "#$.Namespace", []string{"#CHECKSET"}, nil, visibilityBudget)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: waiting for the namespace to become visible", vvpNamespaceTypeName),
+			errs.WrapErrorf(err, "Creating %s: waiting for the namespace to become visible (%s)", vvpNamespaceTypeName, id).Error(),
+		)
+		return
+	}
+	if object == nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: after create", vvpNamespaceTypeName),
+			fmt.Sprintf("The resource %s is not visible via DescribeNamespaces right after creation", id),
+		)
+		return
+	}
+	// The namespace is listed as soon as the create request is accepted, while its capacity
+	// allocation still runs in the background; any follow-up call fails with 903047 until that
+	// allocation settles, so wait for SUCCESS before reporting the create as done.
+	successBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+	if budgetErr != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("Creating %s: operation budget", vvpNamespaceTypeName), budgetErr.Error())
+		return
+	}
+	if object, err = vvpNamespaceWaitForState(operationCtx, r.Meta(), id, "Status", []string{"SUCCESS"}, []string{"FAILED"}, successBudget); err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: waiting for SUCCESS", vvpNamespaceTypeName),
+			errs.WrapErrorf(err, "Creating %s: waiting for SUCCESS (%s)", vvpNamespaceTypeName, id).Error(),
+		)
+		return
+	}
+	model, stateErr := vvpNamespaceState(object, &plan)
+	if stateErr != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: decoding the created namespace", vvpNamespaceTypeName),
+			errs.WrapErrorf(stateErr, "Creating %s: decoding the created namespace (%s)", vvpNamespaceTypeName, id).Error(),
+		)
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+}
+
+func (r *vvpNamespaceResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state vvpNamespaceResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	object, err := vvpNamespaceGet(ctx, r.Meta(), state.Id.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Reading %s: calling DescribeNamespaces", vvpNamespaceTypeName),
+			errs.WrapErrorf(err, "Reading %s: calling DescribeNamespaces", vvpNamespaceTypeName).Error(),
+		)
+		return
+	}
+	if object == nil {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	model, stateErr := vvpNamespaceState(object, &state)
+	if stateErr != nil {
+		// A malformed row must not overwrite valid state: report it and keep what is tracked.
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Reading %s: decoding DescribeNamespaces", vvpNamespaceTypeName),
+			errs.WrapErrorf(stateErr, "Reading %s: decoding DescribeNamespaces", vvpNamespaceTypeName).Error(),
+		)
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+}
+
+func (r *vvpNamespaceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	resp.State = req.State
+	var plan, state vvpNamespaceResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	operationTimeout, timeoutDiagnostics := fwutil.TimeoutDuration(plan.FwTimeouts, "update", 5*time.Minute)
+	resp.Diagnostics.Append(timeoutDiagnostics...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// One budget for the whole update: the ModifyNamespaceSpec RPC, the SUCCESS wait and the final
+	// read share the configured timeouts.update instead of restarting it per stage.
+	operationCtx, remaining, cancelOperation := vvpNamespaceOperationBudget(ctx, operationTimeout)
+	defer cancelOperation()
+
+	planValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
+	if !plan.InstanceId.IsNull() && !plan.InstanceId.IsUnknown() {
+		planValues["InstanceId"] = fwadapt.ValueToInterface(plan.InstanceId, map[string]fwadapt.WireField{}, false)
+	}
+	if !plan.Namespace.IsNull() && !plan.Namespace.IsUnknown() {
+		planValues["Namespace"] = fwadapt.ValueToInterface(plan.Namespace, map[string]fwadapt.WireField{}, false)
+	}
+	if !plan.ResourceSpec.IsNull() && !plan.ResourceSpec.IsUnknown() {
+		planValues["ResourceSpec"] = fwadapt.ValueToInterface(plan.ResourceSpec, map[string]fwadapt.WireField{"cpu": {Name: "Cpu", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}, "memory_gb": {Name: "MemoryGb", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}}, true)
+	}
+	stateValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
+	if !state.InstanceId.IsNull() && !state.InstanceId.IsUnknown() {
+		stateValues["InstanceId"] = fwadapt.ValueToInterface(state.InstanceId, map[string]fwadapt.WireField{}, false)
+	}
+	if !state.Namespace.IsNull() && !state.Namespace.IsUnknown() {
+		stateValues["Namespace"] = fwadapt.ValueToInterface(state.Namespace, map[string]fwadapt.WireField{}, false)
+	}
+	if !state.ResourceSpec.IsNull() && !state.ResourceSpec.IsUnknown() {
+		stateValues["ResourceSpec"] = fwadapt.ValueToInterface(state.ResourceSpec, map[string]fwadapt.WireField{"cpu": {Name: "Cpu", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}, "memory_gb": {Name: "MemoryGb", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}}, true)
+	}
+	updated0 := false
+	if fwadapt.PlannedChanged(plan.ResourceSpec, state.ResourceSpec) {
+		updated0 = true
+	}
+	if updated0 {
+		operationValues0 := planValues
+		request0 := map[string]interface{}{"ClientToken": helper.BuildClientToken("ModifyNamespaceSpec")}
+		request0["RegionId"] = r.Meta().RegionId
+		if err := fwadapt.ApplyMappings(request0, operationValues0, fwadapt.ChangedUpdateMappings([]fwadapt.Mapping{
+			{Source: "$.InstanceId", Target: "ModifyNamespaceSpecRequest.InstanceId", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+			{Source: "$.Namespace", Target: "ModifyNamespaceSpecRequest.Namespace", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+			{Source: "$.RegionId", Target: "ModifyNamespaceSpecRequest.Region", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+			{Source: "$.ResourceSpec.Cpu", Target: "ModifyNamespaceSpecRequest.ResourceSpec.Cpu", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+			{Source: "$.ResourceSpec.MemoryGb", Target: "ModifyNamespaceSpecRequest.ResourceSpec.MemoryGB", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+		}, operationValues0, stateValues, []string{"$.InstanceId", "$.Namespace", "$.RegionId", "$.ResourceSpec.Cpu", "$.ResourceSpec.MemoryGb"}), false); err != nil {
+			resp.Diagnostics.AddError("Building ModifyNamespaceSpec request", err.Error())
+			return
+		}
+		updateBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+		if budgetErr != nil {
+			resp.Diagnostics.AddError("Updating alicloud_realtime_compute_vvp_namespace: operation budget", budgetErr.Error())
+			return
+		}
+		if _, err := retryRpcPost(operationCtx, r.Meta(), "foasconsole", "2019-06-01", "ModifyNamespaceSpec", request0, updateBudget); err != nil {
+			resp.Diagnostics.AddError("Updating alicloud_realtime_compute_vvp_namespace: ModifyNamespaceSpec", err.Error())
+			return
+		}
+		// ModifyNamespaceSpec returns before the new capacity is in place; wait for SUCCESS so the
+		// state written below and the next operation see a settled namespace.
+		updateWaitBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+		if budgetErr != nil {
+			resp.Diagnostics.AddError("Updating alicloud_realtime_compute_vvp_namespace: operation budget", budgetErr.Error())
+			return
+		}
+		if _, err := vvpNamespaceWaitForState(operationCtx, r.Meta(), state.Id.ValueString(), "Status", []string{"SUCCESS"}, []string{"FAILED"}, updateWaitBudget); err != nil {
+			resp.Diagnostics.AddError(
+				"Updating alicloud_realtime_compute_vvp_namespace: waiting for SUCCESS",
+				errs.WrapErrorf(err, "Updating %s: waiting for SUCCESS (%s)", vvpNamespaceTypeName, state.Id.ValueString()).Error(),
+			)
+			return
+		}
+	}
+	// The confirmation read is the last stage of the same update: it spends what is left of
+	// timeouts.update and stays attached to the caller's cancellation. Restarting a fresh deadline
+	// here would let an update that already ran out of budget keep talking to the service after
+	// Terraform stopped waiting for it.
+	readBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+	if budgetErr != nil {
+		// The namespace stays tracked with the state this apply started from, instead of being
+		// dropped because the refresh did not run.
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Updating %s: operation budget exhausted", vvpNamespaceTypeName),
+			fmt.Sprintf("The update of %s consumed timeouts.update before the confirmation read could run, so the state was not refreshed. The namespace remains tracked; run terraform refresh (or apply again with a larger timeouts.update) to confirm the applied specification.", state.Id.ValueString()),
+		)
+		return
+	}
+	object, err := vvpNamespaceGetWithTimeout(operationCtx, r.Meta(), state.Id.ValueString(), readBudget)
+	if err != nil {
+		if operationCtx.Err() != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Updating %s: confirmation read interrupted", vvpNamespaceTypeName),
+				errs.WrapErrorf(err, "Updating %s: the confirmation read for %s did not finish within timeouts.update or was cancelled, so the state was not refreshed. The namespace remains tracked; run terraform refresh (or apply again with a larger timeouts.update) to confirm the applied specification", vvpNamespaceTypeName, state.Id.ValueString()).Error(),
+			)
+			return
+		}
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Reading %s: calling DescribeNamespaces", vvpNamespaceTypeName),
+			errs.WrapErrorf(err, "Reading %s: calling DescribeNamespaces", vvpNamespaceTypeName).Error(),
+		)
+		return
+	}
+	if object == nil {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	model, stateErr := vvpNamespaceState(object, &plan)
+	if stateErr != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Updating %s: decoding the confirmation read", vvpNamespaceTypeName),
+			errs.WrapErrorf(stateErr, "Updating %s: decoding the confirmation read (%s)", vvpNamespaceTypeName, state.Id.ValueString()).Error(),
+		)
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+}
+
+func (r *vvpNamespaceResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state vvpNamespaceResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	operationTimeout, timeoutDiagnostics := fwutil.TimeoutDuration(state.FwTimeouts, "delete", 5*time.Minute)
+	resp.Diagnostics.Append(timeoutDiagnostics...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// One budget for the whole delete: the pre-delete read, the DeleteNamespace RPC and the gone
+	// wait consume the configured timeouts.delete instead of each starting a fresh one.
+	operationCtx, remaining, cancelOperation := vvpNamespaceOperationBudget(ctx, operationTimeout)
+	defer cancelOperation()
+
+	// Delete drops the state entry only when the pre-delete read proves the namespace is gone: an
+	// explicit namespace-not-found response (ResourceNotFound.VvpNamespace or ResourceNotFound) or a
+	// decoded DescribeNamespaces list without the stored identity. An unreadable response (omitted,
+	// null or mistyped Namespaces) is surfaced as a delete error and keeps the resource in state.
+	// Deleting the parent workspace first is not one of those cases either: DescribeNamespaces
+	// reports 903021, which is surfaced as a delete error and keeps the resource in state.
+	if state.Id.ValueString() != "" {
+		existing, err := vvpNamespaceGet(operationCtx, r.Meta(), state.Id.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("Deleting alicloud_realtime_compute_vvp_namespace: DescribeNamespaces", err.Error())
+			return
+		}
+		if existing == nil {
+			return
+		}
+	}
+
+	deleteValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
+	if !state.InstanceId.IsNull() && !state.InstanceId.IsUnknown() {
+		deleteValues["InstanceId"] = fwadapt.ValueToInterface(state.InstanceId, map[string]fwadapt.WireField{}, false)
+	}
+	if !state.Namespace.IsNull() && !state.Namespace.IsUnknown() {
+		deleteValues["Namespace"] = fwadapt.ValueToInterface(state.Namespace, map[string]fwadapt.WireField{}, false)
+	}
+	identityParts := strings.Split(state.Id.ValueString(), ":")
+	if len(identityParts) > 0 {
+		deleteValues["InstanceId"] = identityParts[0]
+	}
+	if len(identityParts) > 1 {
+		deleteValues["Namespace"] = identityParts[1]
+	}
+	if state.InstanceId.ValueString() == "" || state.Namespace.ValueString() == "" {
+		resp.Diagnostics.AddError("Deleting alicloud_realtime_compute_vvp_namespace", "The namespace identity is incomplete; the resource remains tracked")
+		return
+	}
+	request0 := map[string]interface{}{"ClientToken": helper.BuildClientToken("DeleteNamespace")}
+	request0["RegionId"] = r.Meta().RegionId
+	if err := fwadapt.ApplyMappings(request0, deleteValues, []fwadapt.Mapping{
+		{Source: "$.InstanceId", Target: "DeleteNamespaceRequest.InstanceId", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+		{Source: "$.Namespace", Target: "DeleteNamespaceRequest.Namespace", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+		{Source: "$.RegionId", Target: "DeleteNamespaceRequest.Region", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+	}, false); err != nil {
+		resp.Diagnostics.AddError("Building DeleteNamespace request", err.Error())
+		return
+	}
+	deleteBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+	if budgetErr != nil {
+		resp.Diagnostics.AddError("Deleting alicloud_realtime_compute_vvp_namespace: operation budget", budgetErr.Error())
+		return
+	}
+	if _, err := retryRpcPost(operationCtx, r.Meta(), "foasconsole", "2019-06-01", "DeleteNamespace", request0, deleteBudget); err != nil {
+		if errs.IsExpectedErrors(err, []string{"ResourceNotFound.VvpNamespace", "ResourceNotFound"}) {
+			// Already gone; fall through to the gone-wait so the state entry is dropped.
+		} else if errs.IsExpectedErrors(err, []string{"903054"}) {
+			// 903054: the namespace is the last valid one in its workspace, so the product refuses
+			// to delete it on its own and the object still exists. Dropping it from state here would
+			// make Terraform forget a live resource and hide the drift, so keep the state and hand
+			// the decision back to the user.
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Deleting %s: the workspace keeps its last namespace", vvpNamespaceTypeName),
+				fmt.Sprintf("%s is the last valid namespace of workspace %s, and Realtime Compute refuses to delete it on its own (903054). The namespace still exists and stays in Terraform state. Delete the parent workspace instead, or remove this resource from state with `terraform state rm` once you have confirmed the namespace should disappear with the workspace.",
+					state.Namespace.ValueString(), state.InstanceId.ValueString()),
+			)
+			return
+		} else {
+			resp.Diagnostics.AddError("Deleting alicloud_realtime_compute_vvp_namespace: DeleteNamespace", err.Error())
+			return
+		}
+	}
+	// gap: v1 Delete 用 BuildStateConf(target=[]) 轮询 StateRefreshFunc 直到 Get 返回 nil（gone），
+	// 解决 gateway-route-table 异步删除后 DeleteVpc 竞态 DependencyViolation.GatewayRouteTable。
+	// v2 WaitForState：空 deleteTargetStatus（gone-wait）发 Target=[]string{}（空 slice, len 0），
+	// 镜像 v1 BuildStateConf(target=[])。hashicorp retry 当 Refresh 返回 (nil,"",nil)（gone）且
+	// Target 空 → success（done）；若误用 Target=[""]（len 1, 非空），gone 时 helper 报
+	// NotFoundError("couldn't find resource (N retries)") 而非 success——此前 route_table destroy
+	// 即栽此。非空 deleteTargetStatus 则发 Target=["<status>"] 等待该终态。Get 在 not-found 返回
+	// (nil,nil)（非 error），故 wait 不挂；同步删除资源首检即 gone（nil,"",nil→Target 空→done），无 hang。
+	goneBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+	if budgetErr != nil {
+		resp.Diagnostics.AddError("Deleting alicloud_realtime_compute_vvp_namespace: operation budget", budgetErr.Error())
+		return
+	}
+	if _, err := vvpNamespaceWaitForState(operationCtx, r.Meta(), state.Id.ValueString(), "Namespace", []string{}, nil, goneBudget); err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Deleting %s: waiting for gone", vvpNamespaceTypeName),
+			errs.WrapErrorf(err, "Deleting %s: waiting for gone (%s)", vvpNamespaceTypeName, state.Id.ValueString()).Error(),
+		)
+		return
+	}
+}
+
+func (r *vvpNamespaceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// vvpNamespaceState maps the Get response object onto the resource model. Fields present in the
+// response are read via their responseKey (e.g. status -> ListenerStatus); request-only fields
+// (responseKey empty, e.g. dry_run) are preserved from the prior plan/state instead.
+func vvpNamespaceState(object map[string]interface{}, prior *vvpNamespaceResourceModel) (vvpNamespaceResourceModel, error) {
+	// Get has already merged and normalized every response mapping. A field that is present but has
+	// an unexpected type is an error: mapping it to null or empty would silently overwrite a valid
+	// state value with a wrong one (and can trigger a spurious resize on the next apply).
+	navigate := func(key string) (interface{}, bool) {
+		cur := interface{}(object)
+		for _, seg := range strings.Split(key, ".") {
+			m, ok := cur.(map[string]interface{})
+			if !ok {
+				return nil, false
+			}
+			cur, ok = m[seg]
+			if !ok {
+				return nil, false
+			}
+		}
+		return cur, true
+	}
+	str := func(key string) (types.String, error) {
+		cur, present := navigate(key)
+		if !present || cur == nil {
+			return types.StringNull(), nil
+		}
+		// gap#7c: present-but-empty strings must return ValueString(""), not Null.
+		// v1 d.Set(field, "") treats empty as set (not absence); TestCheckResourceAttrSet
+		// expects a non-null value for API-returned "" (e.g. DhcpOptionsSetId when VPC has
+		// no DHCP set). The earlier && v != "" collapsed present-empty to Null, failing Set
+		// checks. Absent fields still return Null via the !ok branches above.
+		if v, ok := cur.(string); ok {
+			return types.StringValue(v), nil
+		}
+		return types.StringNull(), fmt.Errorf("the %s field has unexpected type %T", key, cur)
+	}
+	boolVal := func(key string) (types.Bool, error) {
+		cur, present := navigate(key)
+		if !present || cur == nil {
+			return types.BoolNull(), nil
+		}
+		if v, ok := cur.(bool); ok {
+			return types.BoolValue(v), nil
+		}
+		return types.BoolNull(), fmt.Errorf("the %s field has unexpected type %T", key, cur)
+	}
+	intVal := func(key string) (types.Int64, error) {
+		cur, present := navigate(key)
+		if !present || cur == nil {
+			return types.Int64Null(), nil
+		}
+		value, err := vvpNamespaceStrictIntValue(cur, key)
+		if err != nil {
+			return types.Int64Null(), err
+		}
+		return types.Int64Value(value), nil
+	}
+	// lookup traverses a dotted responseKey (e.g. "RegionStatuses.RegionStatus") segment by segment
+	// from the Get response object, returning the raw value (array/map/scalar) or nil. gap#5: array
+	// fields' responseKey is the array's true path from the read-tree [*] child, which may be a
+	// two-level unwrap (object["RegionStatuses"]["RegionStatus"]) that a literal object[key] lookup
+	// cannot reach. Single-segment keys (e.g. "IpWhiteList") traverse one step == object[key].
+	lookup := func(key string) interface{} {
+		cur, present := navigate(key)
+		if !present {
+			return nil
+		}
+		return cur
+	}
+	instanceId, err := str("InstanceId")
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	namespace, err := str("Namespace")
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	status, err := str("Status")
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	gmtCreate, err := intVal("GmtCreate")
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	gmtModified, err := intVal("GmtModified")
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	ha, err := boolVal("Ha")
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	resourceSpec, err := vvpNamespaceResourceSpecToTypeList(lookup("ResourceSpec"))
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	resourceUsed, err := vvpNamespaceResourceUsedToTypeList(lookup("ResourceUsed"))
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	tagMap, err := tagsToTypeMap(lookup("Tags"))
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	// gap#11: composite-ID resource — build the id from all composite fields in the response,
+	// joined by ":" (e.g. AccessGroupName:FileSystemType). The Get response carries every
+	// part, so the state id round-trips through Read/Delete correctly (otherwise Read would
+	// lose FileSystemType and DescribeAccessGroups would query the wrong namespace → 404).
+	m := vvpNamespaceResourceModel{
+		FwTimeouts:   types.ObjectNull(fwutil.TimeoutTypes("create", "update", "delete")),
+		Id:           types.StringValue(strings.Join([]string{instanceId.ValueString(), namespace.ValueString()}, ":")),
+		GmtCreate:    gmtCreate,
+		GmtModified:  gmtModified,
+		Ha:           ha,
+		InstanceId:   instanceId,
+		Namespace:    namespace,
+		ResourceSpec: resourceSpec,
+		ResourceUsed: resourceUsed,
+		Status:       status,
+		Tags:         tagMap,
+	}
+	if prior != nil {
+		m.FwTimeouts = prior.FwTimeouts
+		m.ResourceSpec = fwadapt.PreserveRequestValues(m.ResourceSpec, prior.ResourceSpec, map[string]fwadapt.WireField{"cpu": {Name: "Cpu", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}, "memory_gb": {Name: "MemoryGb", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}}).(types.List)
+		m.ResourceUsed = fwadapt.PreserveRequestValues(m.ResourceUsed, prior.ResourceUsed, map[string]fwadapt.WireField{}).(types.List)
+	}
+	return m, nil
+}

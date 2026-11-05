@@ -5,8 +5,8 @@ import (
 )
 
 // ServicePackage returns the registration declaration of the Realtime Compute
-// (foasconsole 2019-06-01 / ververica 2022-07-18) service. All migrated types
-// are SDKv2.
+// (foasconsole 2019-06-01 / ververica 2022-07-18) service. The migrated types
+// are SDKv2; alicloud_realtime_compute_vvp_namespace is Framework.
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "RealtimeCompute",
@@ -48,6 +48,12 @@ func ServicePackage() conns.ServicePackage {
 			{
 				TypeName: "alicloud_realtime_compute_vvp_instance",
 				Factory:  ResourceRealtimeComputeVvpInstance,
+			},
+		},
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_realtime_compute_vvp_namespace",
+				Factory:  NewVvpNamespaceResource,
 			},
 		},
 	}
