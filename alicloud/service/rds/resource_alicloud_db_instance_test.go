@@ -5085,8 +5085,11 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				// Old state created before this block existed: only the legacy
-				// single group is configured, so the new block is absent.
+				// State written without the new block: only the legacy single
+				// group is configured, so db_instance_ip_arrays stays empty.
+				// This models a configuration that predates the attribute; the
+				// state itself is created by this provider version, not by an
+				// older provider binary.
 				Config: testAccConfig(testAccDBInstanceIpArraysMysqlConfig()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -5146,8 +5149,8 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 			},
 			importAfterConfigStep(resourceId),
 			{
-				// Second plan after the old state was upgraded to the new block:
-				// the configuration is unchanged, so the plan must be empty.
+				// Re-plan after the new block was added: the configuration is
+				// unchanged, so no residual diff may remain.
 				Config:   testAccConfig(map[string]interface{}{}),
 				PlanOnly: true,
 			},

@@ -1303,7 +1303,10 @@ func deleteDBSecurityIpsGroup(instanceId, groupName, currentIps string, timeout 
 		return err
 	}
 	coverErr := access.modifyGroup(instanceId, groupName, "", "Cover", budget)
-	if coverErr == nil || IsExpectedErrors(coverErr, []string{"InvalidSecurityIps.MalFormed"}) {
+	// A malformed request was rejected without changing the group, so it must
+	// not wait for a disappearance that cannot happen. It falls through to the
+	// Delete fallback, which is verified by the read-back after the write.
+	if coverErr == nil {
 		// A removed group can stay visible for a short while, so poll for it
 		// inside the shared budget instead of deciding on a single read.
 		coverWindow := dbSecurityIpsCoverAbsenceWindow

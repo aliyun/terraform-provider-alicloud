@@ -2981,17 +2981,34 @@ func modifyDBInstanceIpArrays(d *schema.ResourceData, meta interface{}) error {
 		sort.Strings(removed)
 	}
 
+	names := make([]string, 0, len(newGroups))
+	for name := range newGroups {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
 	// Groups marked by the API as whitelist-template groups are owned by the
 	// template. Reject a configuration that would write or remove one of those
 	// names before any write, so the template group and the template
 	// association stay unchanged.
-	managedNames := make([]string, 0, len(newGroups)+len(removed))
-	for name := range newGroups {
-		managedNames = append(managedNames, name)
-	}
+	managedNames := make([]string, 0, len(names)+len(removed))
+	managedNames = append(managedNames, names...)
 	managedNames = append(managedNames, removed...)
 	if name, conflict := findDBInstanceIpArrayTemplateConflict(managedNames, templateDBInstanceIpArrayGroupNames(apiIpArrays)); conflict {
 		return WrapError(fmt.Errorf("db_instance_ip_arrays cannot manage group %q: it is provided by an attached whitelist template; co-managing the same group is unsupported", name))
+	}
+
+	// A hidden system group is not managed by this resource either. Check it
+	// together with the template conflict so every refusal happens before the
+	// first delete or write leaves a partial change behind.
+	for _, name := range names {
+		existing, ok := findDBInstanceIpArray(apiIpArrays, name)
+		if !ok {
+			continue
+		}
+		if attribute, _ := existing["DBInstanceIPArrayAttribute"].(string); attribute == DBInstanceIpArrayAttributeHidden {
+			return WrapError(fmt.Errorf("db_instance_ip_arrays cannot manage group %q: it is a hidden system group used by DMS, DTS or DAS", name))
+		}
 	}
 
 	// Delete the groups this resource managed before but no longer configures.
@@ -3021,19 +3038,7 @@ func modifyDBInstanceIpArrays(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	// Create or overwrite the configured groups.
-	names := make([]string, 0, len(newGroups))
-	for name := range newGroups {
-		names = append(names, name)
-	}
-	sort.Strings(names)
 	for _, name := range names {
-		if existing, ok := findDBInstanceIpArray(apiIpArrays, name); ok {
-			if attribute, _ := existing["DBInstanceIPArrayAttribute"].(string); attribute == DBInstanceIpArrayAttributeHidden {
-				return WrapError(fmt.Errorf("db_instance_ip_arrays cannot manage group %q: it is a hidden system group used by DMS, DTS or DAS", name))
-			} else if attribute == DBInstanceIpArrayAttributeTemplate {
-				return WrapError(fmt.Errorf("db_instance_ip_arrays cannot manage group %q: it is provided by an attached whitelist template; co-managing the same group is unsupported", name))
-			}
-		}
 		ips := strings.Join(expandStringList(newGroups[name]["security_ips"].(*schema.Set).List()), COMMA_SEPARATED)
 		timeout, err := remainingUpdateTime()
 		if err != nil {
