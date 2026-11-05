@@ -462,6 +462,10 @@ func TestAccAliCloudOtsTable_withTableByOKEncryption(t *testing.T) {
 func TestAccAliCloudOtsTable_withAutoIncrementPrimaryKey(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
+	// Let the provider emit its AddDebug request/response payloads so the
+	// CreateTable and DescribeTable wire for this field is locatable in the run log.
+	t.Setenv("DEBUG", "terraform")
+
 	resourceId := "alicloud_ots_table.default"
 	ra := acctest.ResourceAttrInit(resourceId, otsTableBasicMap)
 	serviceFunc := func() interface{} {
@@ -529,6 +533,10 @@ func TestAccAliCloudOtsTable_withAutoIncrementPrimaryKey(t *testing.T) {
 
 func TestAccAliCloudOtsTable_withLocalTxn(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
+
+	// Let the provider emit its AddDebug request/response payloads so the
+	// CreateTable and DescribeTable wire for this field is locatable in the run log.
+	t.Setenv("DEBUG", "terraform")
 
 	resourceId := "alicloud_ots_table.default"
 	ra := acctest.ResourceAttrInit(resourceId, otsTableBasicMap)
@@ -1013,18 +1021,18 @@ func TestUnitOtsTableCustomizeDiffRejectsInvalidConfigs(t *testing.T) {
 	})
 }
 
-type otsTableWireFixture struct {
+type tableWireFixture struct {
 	createRequests [][]byte
 	describe       *otsprotocol.DescribeTableResponse
 	paths          []string
 }
 
-// newOtsTableWireClient points both the OTS REST API and the TableStore
+// newTableWireClient points both the OTS REST API and the TableStore
 // protobuf endpoint at a local server, so a full resource Create runs without
 // touching the cloud and every serialized request can be inspected.
-func newOtsTableWireClient(t *testing.T) (*connectivity.AliyunClient, *otsTableWireFixture) {
+func newTableWireClient(t *testing.T) (*connectivity.AliyunClient, *tableWireFixture) {
 	t.Helper()
-	fixture := &otsTableWireFixture{}
+	fixture := &tableWireFixture{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		fixture.paths = append(fixture.paths, req.Method+" "+req.URL.Path)
 		switch {
@@ -1083,7 +1091,7 @@ func newOtsTableWireClient(t *testing.T) (*connectivity.AliyunClient, *otsTableW
 	return client, fixture
 }
 
-func otsTableDescribeResponse(secondAutoIncrement bool) *otsprotocol.DescribeTableResponse {
+func tableDescribeResponse(secondAutoIncrement bool) *otsprotocol.DescribeTableResponse {
 	timeToLive := int32(-1)
 	maxVersion := int32(1)
 	deviation := int64(86400)
@@ -1141,9 +1149,9 @@ func TestUnitOtsTableCreateAndDescribeWire(t *testing.T) {
 		}
 	}
 
-	t.Run("auto_increment is sent on CreateTable and read back from DescribeTable", func(t *testing.T) {
-		client, fixture := newOtsTableWireClient(t)
-		fixture.describe = otsTableDescribeResponse(true)
+	t.Run("auto_increment is sent on CreateTable", func(t *testing.T) {
+		client, fixture := newTableWireClient(t)
+		fixture.describe = tableDescribeResponse(true)
 
 		r := ots.ResourceOtsTable()
 		d := schema.TestResourceDataRaw(t, r.Schema, tableConfig(false, primaryKey("pk1", false), primaryKey("pk2", true)))
@@ -1169,6 +1177,32 @@ func TestUnitOtsTableCreateAndDescribeWire(t *testing.T) {
 		if request.EnableLocalTxn == nil || *request.EnableLocalTxn {
 			t.Fatalf("EnableLocalTxn = %v, want false", request.EnableLocalTxn)
 		}
+	})
+
+	// The configuration has no auto-increment key while the DescribeTable
+	// response does, so a passing state assertion can only come from Read.
+	t.Run("auto_increment is read back from the DescribeTable response", func(t *testing.T) {
+		client, fixture := newTableWireClient(t)
+		fixture.describe = tableDescribeResponse(true)
+
+		r := ots.ResourceOtsTable()
+		d := schema.TestResourceDataRaw(t, r.Schema, tableConfig(false, primaryKey("pk1", false), primaryKey("pk2", false)))
+		if err := r.Create(d, client); err != nil {
+			t.Fatalf("create table: %v (requests: %v)", err, fixture.paths)
+		}
+		if len(fixture.createRequests) != 1 {
+			t.Fatalf("expected 1 CreateTable request, got %d", len(fixture.createRequests))
+		}
+		request := &otsprotocol.CreateTableRequest{}
+		if err := proto.Unmarshal(fixture.createRequests[0], request); err != nil {
+			t.Fatalf("decode CreateTable request: %v", err)
+		}
+		if len(request.TableMeta.PrimaryKey) != 2 {
+			t.Fatalf("expected 2 primary keys in the request, got %d", len(request.TableMeta.PrimaryKey))
+		}
+		if request.TableMeta.PrimaryKey[1].Option != nil {
+			t.Fatalf("configured pk2 must not request an option, got %v", *request.TableMeta.PrimaryKey[1].Option)
+		}
 
 		keys := d.Get("primary_key").([]interface{})
 		if len(keys) != 2 {
@@ -1178,13 +1212,13 @@ func TestUnitOtsTableCreateAndDescribeWire(t *testing.T) {
 			t.Fatalf("pk1 auto_increment = %v, want false", got)
 		}
 		if got := keys[1].(map[string]interface{})["auto_increment"]; got != true {
-			t.Fatalf("pk2 auto_increment = %v, want true", got)
+			t.Fatalf("pk2 auto_increment = %v, want true from the DescribeTable response", got)
 		}
 	})
 
 	t.Run("enable_local_txn is sent on CreateTable", func(t *testing.T) {
-		client, fixture := newOtsTableWireClient(t)
-		fixture.describe = otsTableDescribeResponse(false)
+		client, fixture := newTableWireClient(t)
+		fixture.describe = tableDescribeResponse(false)
 
 		r := ots.ResourceOtsTable()
 		d := schema.TestResourceDataRaw(t, r.Schema, tableConfig(true, primaryKey("pk1", false)))
