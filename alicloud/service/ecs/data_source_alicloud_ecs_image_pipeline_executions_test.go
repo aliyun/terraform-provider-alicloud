@@ -128,12 +128,19 @@ resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
 }
 
+resource "alicloud_ecs_image_component" "default" {
+  component_type = "Build"
+  content        = "RUN echo terraform-acceptance-test"
+  name           = var.name
+  system_type    = "Linux"
+}
+
 resource "alicloud_ecs_image_pipeline" "default" {
   base_image                 = data.alicloud_images.default.images.0.id
   base_image_type            = "IMAGE"
   vswitch_id                 = alicloud_vswitch.default.id
   instance_type              = data.alicloud_instance_types.default.instance_types.0.id
-  build_content              = "RUN echo terraform-acceptance-test"
+  build_content              = "COMPONENT ${alicloud_ecs_image_component.default.id}"
   system_disk_size           = 40
   internet_max_bandwidth_out = 5
   delete_instance_on_failure = true
