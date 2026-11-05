@@ -3157,7 +3157,7 @@ func TestAccAliCloudESAWafRuleresource_wafrule_coverage_modify_test(t *testing.T
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sESAWafRule%d", acctest.DefaultRegionToTest, rand)
 
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudESAWafRuleresource_wafrule_http_anti_scan_testBasicDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudESAWafRuleresource_wafrule_http_scan_tools_testBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -3349,7 +3349,7 @@ func TestAccAliCloudESAWafRuleresource_wafrule_managed_list_coverage_test(t *tes
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sESAWafRule%d", acctest.DefaultRegionToTest, rand)
 
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudESAWafRuleresource_wafrule_http_anti_scan_testBasicDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudESAWafRuleresource_wafrule_http_scan_tools_testBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
