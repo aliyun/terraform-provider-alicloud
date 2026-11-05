@@ -243,6 +243,11 @@ var (
 	rpcParam                                  = helper.RpcParam
 	setPagingRequest                          = helper.SetPagingRequest
 	setTags                                   = tags.SetTags
+	setTagsWithDefault                        = tags.SetTagsWithDefault
+	stripDefaultTags                          = tags.StripDefaultTags
+	tagsAllSchema                             = tags.TagsAllSchema
+	customizeDiffDefaultTags                  = tags.CustomizeDiffDefaultTags
+	mergeTags                                 = tags.MergeTags
 	skipResourceSchemaValidation              = validators.SkipResourceSchemaValidation
 	splitMultiZoneId                          = helper.SplitMultiZoneId
 	tagIgnored                                = tags.TagIgnored

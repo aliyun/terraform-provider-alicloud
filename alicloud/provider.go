@@ -115,7 +115,8 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SKIP_REGION_VALIDATION", false),
 				Description: descriptions["skip_region_validation"],
 			},
-			"features": featuresSchema(),
+			"features":     featuresSchema(),
+			"default_tags": defaultTagsSchema(),
 			"configuration_source": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -349,6 +350,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 		TerraformVersion:     p.TerraformVersion,
 	}
 	config.Features = expandFeatures(d.Get("features").([]interface{}))
+	config.DefaultTags = expandDefaultTags(d.Get("default_tags").([]interface{}))
 	if credential == nil && credentialsURI != "" {
 		credential = newCredentialsURICredential(credentialsURI, credentialsURIExpiration, config.ClientReadTimeout, config.ClientConnectTimeout)
 	}
@@ -706,6 +708,8 @@ func init() {
 		"skip_region_validation": "Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet). It can also be sourced from the `ALICLOUD_SKIP_REGION_VALIDATION` environment variable.",
 
 		"features": "Customize the behaviour of certain resources. Every toggle it holds is optional, and leaving the block out keeps the provider's default behaviour.",
+
+		"default_tags": "Configuration block with a `tags` map that is applied to every resource managed by this provider, unless the resource overrides a key with its own `tags`. Mirrors the AWS provider's `default_tags`.",
 
 		"configuration_source": "Use this to mark a terraform configuration file source.",
 
@@ -1146,6 +1150,49 @@ func expandFeatures(featuresList []interface{}) features.Features {
 		}
 	}
 	return expanded
+}
+
+// defaultTagsSchema returns the provider's default_tags block. Like features it
+// is a single nested block holding a tags map; resources that declare a
+// tags_all field merge it with their own tags so a change to default_tags
+// alone plans an update of those resources.
+func defaultTagsSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeList,
+		Optional: true,
+		MaxItems: 1,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"tags": {
+					Type:     schema.TypeMap,
+					Optional: true,
+					Elem: &schema.Schema{
+						Type: schema.TypeString,
+					},
+				},
+			},
+		},
+		Description: descriptions["default_tags"],
+	}
+}
+
+// expandDefaultTags reads the default_tags block into the flat map the client
+// carries. An absent block contributes an empty (never nil) map so downstream
+// code can branch on len(client.DefaultTags) without nil checks.
+func expandDefaultTags(defaultTagsList []interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	if len(defaultTagsList) == 0 || defaultTagsList[0] == nil {
+		return result
+	}
+	defaultTagsMap := defaultTagsList[0].(map[string]interface{})
+	if tags, ok := defaultTagsMap["tags"]; ok {
+		if tm, ok := tags.(map[string]interface{}); ok {
+			for k, v := range tm {
+				result[k] = v
+			}
+		}
+	}
+	return result
 }
 
 func endpointsSchema() *schema.Schema {

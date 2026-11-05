@@ -432,6 +432,25 @@ The `sign_version` configuration block overrides the signature version used by t
 
 * `sls` - (Optional) The signature version used by the SLS (Log Service) SDK client. Valid values: `v1`, `v4`. Defaults to `v1`. Full v4 signature support across all `alicloud_sls_*` / `alicloud_log_*` resources is available since v1.276.0.
 
+### `default_tags`
+
+The `default_tags` configuration block assigns a set of default tags that the provider applies to every resource that supports tags. Resource-level `tags` override any default tag with the same key, and the merged set is exposed on each resource as `tags_all`. Changing or removing a default tag triggers an update of every affected resource so the cloud state stays in sync.
+
+```terraform
+provider "alicloud" {
+  default_tags {
+    tags = {
+      Owner       = "platform-team"
+      Environment = "production"
+    }
+  }
+}
+```
+
+The following arguments are supported:
+
+* `tags` - (Optional) A mapping of default tags to apply to every taggable resource managed by this provider. A resource's own `tags` override a default tag with the same key.
+
 ### `features`
 
 The `features` configuration block groups the arguments that change how a resource behaves, as opposed to which account, region or endpoint the provider talks to. Every argument in it is optional, so leaving the block out keeps the provider's default behaviour. The arguments of this block have no environment variable equivalent, and can only be set in the `provider` block.

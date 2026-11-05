@@ -196,6 +196,11 @@ type Config struct {
 
 	// Features carries the provider's behaviour toggles. See the features package.
 	Features features.Features
+
+	// DefaultTags carries the provider's default_tags block, merged into the
+	// effective tag set of resources that declare a tags_all field so that a
+	// change to default_tags alone propagates without touching their tags.
+	DefaultTags map[string]interface{}
 }
 
 type AssumeRoleWithOidc struct {

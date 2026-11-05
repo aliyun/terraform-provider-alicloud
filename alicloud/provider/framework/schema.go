@@ -3,8 +3,10 @@ package framework
 import (
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	sdkschema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -52,6 +54,19 @@ func convertSchemaMap(sdk map[string]*sdkschema.Schema, prefix string, diags *di
 
 		if s.Elem == nil {
 			if attribute, ok := convertAttribute(s, path, diags); ok {
+				attributes[name] = attribute
+			}
+			continue
+		}
+
+		// A *schema.Schema Elem (rather than *schema.Resource) marks a typed
+		// collection attribute such as default_tags.tags: SDK v2 models it as a
+		// TypeMap whose Elem is the value schema, which the framework expresses
+		// as a MapAttribute so the muxed provider schemas stay byte-identical.
+		// A TypeList or TypeSet with a *schema.Schema Elem is still unsupported
+		// and falls through to the error below.
+		if elemSchema, isAttrElem := s.Elem.(*sdkschema.Schema); isAttrElem {
+			if attribute, ok := convertCollectionAttribute(s, elemSchema, path, diags); ok {
 				attributes[name] = attribute
 			}
 			continue
@@ -119,6 +134,66 @@ func convertAttribute(s *sdkschema.Schema, path string, diags *diag.Diagnostics)
 
 	addUnsupportedError(diags, path, fmt.Sprintf("type %s is not supported; only TypeString, TypeInt and TypeBool are", s.Type))
 
+	return nil, false
+}
+
+// convertCollectionAttribute converts an SDK v2 schema whose Elem is a
+// *schema.Schema (a typed collection such as a map of strings, e.g.
+// default_tags.tags) into the matching framework collection attribute. Only
+// TypeMap is supported today, since that is the only collection-of-scalars
+// construct the provider schema uses; any other collection type with a
+// *schema.Schema Elem still reports unsupported below.
+//
+// Computed and WriteOnly are rejected for the same reason as convertAttribute:
+// framework provider schema attributes cannot express either, and a divergent
+// proto attribute would break the mux comparison.
+func convertCollectionAttribute(s *sdkschema.Schema, elem *sdkschema.Schema, path string, diags *diag.Diagnostics) (fwschema.Attribute, bool) {
+	if s.Computed {
+		addUnsupportedError(diags, path, "Computed is not expressible in a framework provider schema")
+		return nil, false
+	}
+	if s.WriteOnly {
+		addUnsupportedError(diags, path, "WriteOnly is not expressible in a framework provider schema")
+		return nil, false
+	}
+
+	required, optional := requiredOptional(s)
+
+	switch s.Type {
+	case sdkschema.TypeMap:
+		elementType, ok := frameworkElementType(elem, path, diags)
+		if !ok {
+			return nil, false
+		}
+		return fwschema.MapAttribute{
+			Required:           required,
+			Optional:           optional,
+			Sensitive:          s.Sensitive,
+			Description:        s.Description,
+			DeprecationMessage: s.Deprecated,
+			ElementType:        elementType,
+		}, true
+	}
+
+	addUnsupportedError(diags, path, fmt.Sprintf("type %s with a *schema.Schema Elem is not supported; only TypeMap is", s.Type))
+
+	return nil, false
+}
+
+// frameworkElementType maps an SDK v2 scalar Elem schema onto the framework
+// attribute type that produces the same tfprotov5 element descriptor, mirroring
+// the scalar handling in convertAttribute so a muxed collection attribute stays
+// byte-identical.
+func frameworkElementType(elem *sdkschema.Schema, path string, diags *diag.Diagnostics) (attr.Type, bool) {
+	switch elem.Type {
+	case sdkschema.TypeString:
+		return types.StringType, true
+	case sdkschema.TypeInt:
+		return types.Int64Type, true
+	case sdkschema.TypeBool:
+		return types.BoolType, true
+	}
+	addUnsupportedError(diags, path, fmt.Sprintf("map Elem type %s is not supported; only TypeString, TypeInt and TypeBool are", elem.Type))
 	return nil, false
 }
 
