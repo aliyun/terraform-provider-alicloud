@@ -58,7 +58,7 @@ The following arguments are supported:
 * `force_https` - (Optional) Specifies whether to enable forced HTTPS redirection. Required for a `Serverless` domain and for a `Dedicated` domain when `protocol` is `HTTPS`; not validated for a `Dedicated` domain when `protocol` is `HTTP`.
 * `gateway_type` - (Optional) Gateway type. Valid values: `API`, `AI`. Defaults to `API` when not specified.
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `http2_option` - (Optional) HTTP/2 settings.
 * `m_tls_enabled` - (Optional) Whether to enable mTLS mutual authentication

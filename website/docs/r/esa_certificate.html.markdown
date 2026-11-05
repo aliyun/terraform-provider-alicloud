@@ -55,12 +55,12 @@ The following arguments are supported:
   - `upload` (custom upload certificate)
   - `free`( Free certificate).
 
--> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `domains` - (Optional, ForceNew) A list of domain names. Multiple domain names are separated by commas.
 * `private_key` - (Optional) The certificate private key.
 
--> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `region` - (Optional, Computed) Region. This parameter is required if the type is CAS.
 For accounts on the Chinese site, this parameter value is: cn-hangzhou

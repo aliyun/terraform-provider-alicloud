@@ -11,7 +11,7 @@ description: |-
 
 This data source provides a list of ONS Topics in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.53.0+
+-> **NOTE:** Available since v1.53.0.
 
 ## Example Usage
 
@@ -53,9 +53,10 @@ The following arguments are supported:
 
 * `instance_id` - (Required) ID of the ONS Instance that owns the topics.
 * `ids` - (Optional, Available in v1.97.0+)  A list of topic IDs to filter results.
-* `name_regex` - (Optional) A regex string to filter results by the topic name. 
+* `name_regex` - (Optional) A regex string to filter results by the topic name.
 * `tags` - (Optional, Available in v1.97.0+) A map of tags assigned to the Ons instance.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `enable_details` - (Optional, Available in v1.97.0+) Default to `false`. Set it to true can output more details.
 
 
 ## Attributes Reference
@@ -72,7 +73,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `relation_name` - The name of the relation, for example, owner, publishable, subscribable, and publishable and subscribable.
   * `message_type` - The type of the message. Read [Fields in PublishInfoDo](https://www.alibabacloud.com/help/doc-detail/29590.html) for further details.
   * `independent_naming` - Indicates whether namespaces are available. Read [Fields in PublishInfoDo](https://www.alibabacloud.com/help/doc-detail/29590.html) for further details.
-  * `create_time` - Time of creation.
+  * `instance_id` - ID of the ONS Instance that owns the topic.
   * `remark` - Remark of the topic.
   * `tags` - A map of tags assigned to the Ons instance.
   * `perm` - This attribute is used to set the read-write mode for the topic.

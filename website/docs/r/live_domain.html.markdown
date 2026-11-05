@@ -51,13 +51,13 @@ resource "alicloud_live_domain" "default" {
 The following arguments are supported:
 * `check_url` - (Optional) Health check URL.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `domain_name` - (Required, ForceNew) Fuzzy match filter for domain names.
 
--> **NOTE:** - If `domain_type` (live streaming domain business type) is set to `liveVideo`, and this parameter is not specified, the system queries information about the user's playback domains by default.
+  -> **NOTE:** - If `domain_type` (live streaming domain business type) is set to `liveVideo`, and this parameter is not specified, the system queries information about the user's playback domains by default.
 
--> **NOTE:** - If `domain_type` is set to `liveEdge`, and this parameter is not specified, the system queries information about the user's ingest domains by default.
+  -> **NOTE:** - If `domain_type` is set to `liveEdge`, and this parameter is not specified, the system queries information about the user's ingest domains by default.
 
 * `domain_type` - (Required, ForceNew) Domain business type. Valid values:  
   - `liveVideo`: Playback domain.  

@@ -73,7 +73,8 @@ The following arguments are supported:
 * `config_rule_trigger_types` - (Required) The trigger type of the rule. Valid values:
   - `ConfigurationItemChangeNotification`: The rule is triggered by configuration changes.
   - `ScheduledNotification`: The rule is periodically triggered.
--> **NOTE:** Separate multiple trigger types with commas (,).
+
+  -> **NOTE:** Separate multiple trigger types with commas (,).
 * `description` - (Optional) The description of the rule.
 * `exclude_resource_ids_scope` - (Optional) The rule monitors excluded resource IDs, multiple of which are separated by commas, only applies to rules created based on managed rules, , custom rule this field is empty.
 * `exclude_tags_scope` - (Optional) The rule monitors excluded tags, only applies to rules created based on managed rules. See [`exclude_tags_scope`](#exclude_tags_scope) below for details.

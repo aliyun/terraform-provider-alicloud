@@ -116,23 +116,23 @@ autoRenew (whether to enable automatic renewal)
 If PaymentType is PayAsYouGo, you do not need to fill in
 * `part_nick_name` - (Optional) Quota partial nickname, supports English letters and numbers, up to 24 characters
 
--> **NOTE:** If PaymentType is PayAsYouGo, you do not need to fill it in
+  -> **NOTE:** If PaymentType is PayAsYouGo, you do not need to fill it in
 
 * `payment_type` - (Required, ForceNew) Payment type. Valid values: Subscription/PayAsYouGo
 
--> **NOTE:** -- PayAsYouGo only needs to be opened once per region. Since the pay-as-you-go quota cannot be deleted, creating this resource with `payment_type = "PayAsYouGo"` adopts the existing pay-as-you-go quota of the region when it has already been opened
+  -> **NOTE:** -- PayAsYouGo only needs to be opened once per region. Since the pay-as-you-go quota cannot be deleted, creating this resource with `payment_type = "PayAsYouGo"` adopts the existing pay-as-you-go quota of the region when it has already been opened
 
 * `sub_quota_info_list` - (Optional, Set) Secondary Quota list
 
--> **NOTE:** -- Add: If the configuration contains a second-level Quota that does not exist, a second-level Quota is added. -- Delete: If the configuration does not contain the existing secondary Quota, it will be deleted. -- Modify: If the configuration is inconsistent with the existing secondary Quota configuration parameters, the secondary Quota configuration will be updated. -- The default secondary Quota must be configured and cannot be deleted.
- See [`sub_quota_info_list`](#sub_quota_info_list) below.
+  -> **NOTE:** -- Add: If the configuration contains a second-level Quota that does not exist, a second-level Quota is added. -- Delete: If the configuration does not contain the existing secondary Quota, it will be deleted. -- Modify: If the configuration is inconsistent with the existing secondary Quota configuration parameters, the secondary Quota configuration will be updated. -- The default secondary Quota must be configured and cannot be deleted.
+  See [`sub_quota_info_list`](#sub_quota_info_list) below.
 
 ### `sub_quota_info_list`
 
 The sub_quota_info_list supports the following:
 * `nick_name` - (Required) Secondary Quota nickname.
 
--> **NOTE:** -- Subscription: If you enter partNickName, the first-level QuotaNickName created is os_partNickName_p. Each first-level Quota has a default second-level Quota whose QuotaNickName is os_partNickName . -- The first-level quotanicname created by PayAsYouGo is os_PayAsYouGoQuota_p  by default, the second-level quotanicname is os_PayAsYouGoQuota
+  -> **NOTE:** -- Subscription: If you enter partNickName, the first-level QuotaNickName created is os_partNickName_p. Each first-level Quota has a default second-level Quota whose QuotaNickName is os_partNickName . -- The first-level quotanicname created by PayAsYouGo is os_PayAsYouGoQuota_p  by default, the second-level quotanicname is os_PayAsYouGoQuota
 
 * `parameter` - (Optional, List) Parameter See [`parameter`](#sub_quota_info_list-parameter) below.
 * `type` - (Optional, Computed) The secondary Quota type. The default value is: FUXI_OFFLINE
@@ -144,16 +144,16 @@ The sub_quota_info_list-parameter supports the following:
 * `force_reserved_min` - (Optional, Computed) Exclusive or not. Valid values: true/false, default: false
 * `max_cu` - (Required, Int) The value of maxCU in Reserved CUs.
 
--> **NOTE:**  The value of maxCU must be less than or equal to the value of maxCU in the level-1 quota that you purchased.
+  -> **NOTE:**  The value of maxCU must be less than or equal to the value of maxCU in the level-1 quota that you purchased.
 
 * `min_cu` - (Required, Int) The value of minCU in Reserved CUs.
 
--> **NOTE:**  -- The total value of minCU in all the level-2 quotas is equal to the value of minCU in the level-1 quota.    -- The value of minCU must be less than or equal to the value of maxCU in the level-2 quota and less than or equal to the value of minCU in the level-1 quota that you purchased.
+  -> **NOTE:**  -- The total value of minCU in all the level-2 quotas is equal to the value of minCU in the level-1 quota.    -- The value of minCU must be less than or equal to the value of maxCU in the level-2 quota and less than or equal to the value of minCU in the level-1 quota that you purchased.
 
 * `scheduler_type` - (Optional, Computed) Scheduling policy. Valid values: Fifo/Fair, default: Fifo
 * `single_job_cu_limit` - (Optional, Int) Single job CU upper limit. Valid value: greater than or equal to 1
 
--> **NOTE:** -- If you want to not restrict SingleJobCuLimit, please make sure that this parameter is not included in the configuration at all. That is, do not configure SingleJobCuLimit to "null" or any other invalid value
+  -> **NOTE:** -- If you want to not restrict SingleJobCuLimit, please make sure that this parameter is not included in the configuration at all. That is, do not configure SingleJobCuLimit to "null" or any other invalid value
 
 
 ## Attributes Reference

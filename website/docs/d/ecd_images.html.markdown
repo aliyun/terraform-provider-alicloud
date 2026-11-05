@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ecd Images to the user.
 ---
 
-# alicloud\_ecd\_images
+# alicloud_ecd_images
 
 This data source provides the Ecd Images of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.146.0+.
+-> **NOTE:** Available since v1.146.0.
 
 ## Example Usage
 
@@ -89,21 +89,21 @@ The following arguments are supported:
 * `os_type` - (Optional, ForceNew, Available in 1.170.0+) The operating system type of the image. Valid values: `Windows` and `Linux`.
 * `desktop_instance_type` - (Optional, ForceNew, Available in 1.170.0+) The desktop type of the image.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Image names.
 * `images` - A list of Ecd Images. Each element contains the following attributes:
-	* `create_time` - The creation time of the image.
-	* `data_disk_size` - The size of data disk of the image.
-	* `description` - The description of the image.
-	* `gpu_category` - The Gpu Category of the image.
-	* `id` - The ID of the Image.
-	* `image_id` - The image id of the image.
-	* `image_name` - The image name.
-	* `image_type` - The image type of the image. Valid values: `SYSTEM`, `CUSTOM`.
-	* `os_type` - The os type of the image.
-	* `progress` - The progress of the image.
-	* `size` - The size of the image.
-	* `status` - The status of the image. Valid values: `Creating`, `Available`, `CreateFailed`.
+  * `create_time` - The creation time of the image.
+  * `data_disk_size` - The size of data disk of the image.
+  * `description` - The description of the image.
+  * `gpu_category` - The Gpu Category of the image.
+  * `id` - The ID of the Image.
+  * `image_id` - The image id of the image.
+  * `image_name` - The image name.
+  * `image_type` - The image type of the image. Valid values: `SYSTEM`, `CUSTOM`.
+  * `os_type` - The os type of the image.
+  * `progress` - The progress of the image.
+  * `size` - The size of the image.
+  * `status` - The status of the image. Valid values: `Creating`, `Available`, `CreateFailed`.

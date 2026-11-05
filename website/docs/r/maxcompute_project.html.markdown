@@ -48,8 +48,9 @@ If the calculation Quota is not specified, the default Quota resource will be co
 * `ip_white_list` - (Optional, List) IP whitelist See [`ip_white_list`](#ip_white_list) below.
 * `is_logical` - (Optional) Whether to logically delete. Default value: true. Value: (ture/false),
 
--> **NOTE:** -- ture: In this case, the project status will be changed to' deleting' and completely deleted after 14 days. -- false: delete immediately, that is, completely deleted and permanently irrecoverable.
+  -> **NOTE:** -- ture: In this case, the project status will be changed to' deleting' and completely deleted after 14 days. -- false: delete immediately, that is, completely deleted and permanently irrecoverable.
 
+* `product_type` - (Optional) The product type of the MaxCompute project.
 * `project_name` - (Optional, ForceNew, Computed) The name begins with a letter, containing letters, digits, and underscores (_). It can be 3 to 28 characters in length and is globally unique.
 * `properties` - (Optional, List) Project base attributes See [`properties`](#properties) below.
 * `security_properties` - (Optional, List) Security-related attributes See [`security_properties`](#security_properties) below.
@@ -63,11 +64,11 @@ If the calculation Quota is not specified, the default Quota resource will be co
 The ip_white_list supports the following:
 * `ip_list` - (Optional) Set the IP address whitelist in the classic network. Only devices in the whitelist are allowed to access the project.
 
--> **NOTE:** If you only configure a classic network IP address whitelist, access to the classic network is restricted and all access to the VPC is prohibited.
+  -> **NOTE:** If you only configure a classic network IP address whitelist, access to the classic network is restricted and all access to the VPC is prohibited.
 
 * `vpc_ip_list` - (Optional) Set the IP address whitelist in the VPC network to allow only devices in the whitelist to access the project space.
 
--> **NOTE:** If you only configure a VPC network IP address whitelist, access to the VPC network is restricted and access to the classic network is prohibited.
+  -> **NOTE:** If you only configure a VPC network IP address whitelist, access to the VPC network is restricted and access to the classic network is prohibited.
 
 
 ### `properties`
@@ -77,8 +78,9 @@ The properties supports the following:
 * `enable_dr` - (Optional, Bool, Available since v1.253.0) Enable multi-AZ storage disaster tolerance. Valid values: `true`, `false`.
 * `enable_decimal2` - (Optional, Bool) Whether to turn on Decimal2.0.
 * `encryption` - (Optional, List) Storage encryption. For details, see [Storage Encryption](https://www.alibabacloud.com/help/en/maxcompute/security-and-compliance/storage-encryption)
+
   -> **NOTE :**:
-To enable storage encryption, you need to modify the parameters of the basic attributes of the MaxCompute project. This operation permission is authenticated by RAM, and you need to have the Super_Administrator role permission of the corresponding project.
+  To enable storage encryption, you need to modify the parameters of the basic attributes of the MaxCompute project. This operation permission is authenticated by RAM, and you need to have the Super_Administrator role permission of the corresponding project.
 
 To configure the permissions and IP whitelist parameters of the MaxCompute project, you must have the management permissions (Admin) of the corresponding project, including Super_Administrator, Admin, or custom management permissions. For more information, see the project management permissions list.
 
@@ -102,7 +104,7 @@ The properties-encryption supports the following:
 * `algorithm` - (Optional) The encryption algorithm supported by the key, including AES256, AESCTR, and RC4.
 * `enable` - (Optional, Bool) Only enable function is supported. Value: (true)
 
--> **NOTE:** cannot be turned off after the function is turned on
+  -> **NOTE:** cannot be turned off after the function is turned on
 
 * `key` - (Optional) The encryption algorithm Key, the Key type used by the project, including the Default Key (MaxCompute Default Key) and the self-contained Key (BYOK). The MaxCompute Default Key is the Default Key created inside MaxCompute.
 
@@ -123,7 +125,7 @@ The security_properties supports the following:
 * `object_creator_has_grant_permission` - (Optional, Bool) The ObjectCreatorHasGrantPermission attribute is set to allow the object creator to have the authorization permission on the object. The default is the allowed state.
 * `project_protection` - (Optional, List) Project protection See [`project_protection`](#security_properties-project_protection) below.
 * `using_acl` - (Optional, Bool) Set whether to use the [ACL permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/maxcompute-permissions), that is, set the CheckPermissionUsingACL attribute, which is in use by default.
-* `using_policy` - (Optional, Bool) Set whether to use the Policy permission control function (https://www.alibabacloud.com/help/en/maxcompute/user-guide/policy-based-access-control-1), that is, set the CheckPermissionUsingACL attribute, which is in use by default.
+* `using_policy` - (Optional, Bool) Set whether to use the [Policy permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/policy-based-access-control-1), that is, set the CheckPermissionUsingACL attribute, which is in use by default.
 
 ### `security_properties-project_protection`
 

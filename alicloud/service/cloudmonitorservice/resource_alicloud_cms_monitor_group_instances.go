@@ -1,0 +1,217 @@
+package cloudmonitorservice
+
+import (
+	"fmt"
+	"log"
+	"strings"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func resourceAlicloudCmsMonitorGroupInstances() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAlicloudCmsMonitorGroupInstancesCreate,
+		Read:   resourceAlicloudCmsMonitorGroupInstancesRead,
+		Update: resourceAlicloudCmsMonitorGroupInstancesUpdate,
+		Delete: resourceAlicloudCmsMonitorGroupInstancesDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Schema: map[string]*schema.Schema{
+			"group_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"instances": {
+				Type:     schema.TypeSet,
+				Required: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"category": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"instance_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"instance_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"region_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func resourceAlicloudCmsMonitorGroupInstancesCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "CreateMonitorGroupInstances"
+	request := make(map[string]interface{})
+	var err error
+	request["GroupId"] = d.Get("group_id")
+	Instances := make([]map[string]interface{}, len(d.Get("instances").(*schema.Set).List()))
+	for i, InstancesValue := range d.Get("instances").(*schema.Set).List() {
+		InstancesMap := InstancesValue.(map[string]interface{})
+		Instances[i] = make(map[string]interface{})
+		Instances[i]["Category"] = InstancesMap["category"]
+		Instances[i]["InstanceId"] = InstancesMap["instance_id"]
+		Instances[i]["InstanceName"] = InstancesMap["instance_name"]
+		Instances[i]["RegionId"] = InstancesMap["region_id"]
+	}
+	request["Instances"] = Instances
+
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		logs.AddDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cms_monitor_group_instances", action, errs.AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
+		return errs.WrapError(errs.Error("CreateMonitorGroupInstances failed for %s", response["Message"]))
+	}
+
+	d.SetId(fmt.Sprint(request["GroupId"]))
+
+	return resourceAlicloudCmsMonitorGroupInstancesRead(d, meta)
+}
+func resourceAlicloudCmsMonitorGroupInstancesRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	cmsService := CmsService{client}
+	object, err := cmsService.DescribeCmsMonitorGroupInstances(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cms_monitor_group_instances cmsService.DescribeCmsMonitorGroupInstances Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	d.Set("group_id", d.Id())
+	resourceMap := make([]map[string]interface{}, 0)
+	for _, v := range object {
+		temp1 := map[string]interface{}{
+			"category":      strings.ToLower(v["Category"].(string)),
+			"instance_id":   v["InstanceId"],
+			"instance_name": v["InstanceName"],
+			"region_id":     v["RegionId"],
+		}
+		resourceMap = append(resourceMap, temp1)
+	}
+	if err := d.Set("instances", resourceMap); err != nil {
+		return errs.WrapError(err)
+	}
+	return nil
+}
+func resourceAlicloudCmsMonitorGroupInstancesUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var err error
+	var response map[string]interface{}
+	if d.HasChange("instances") {
+		request := map[string]interface{}{
+			"GroupId": d.Id(),
+		}
+		Instances := make([]map[string]interface{}, len(d.Get("instances").(*schema.Set).List()))
+		for i, InstancesValue := range d.Get("instances").(*schema.Set).List() {
+			InstancesMap := InstancesValue.(map[string]interface{})
+			Instances[i] = make(map[string]interface{})
+			Instances[i]["Category"] = InstancesMap["category"]
+			Instances[i]["InstanceId"] = InstancesMap["instance_id"]
+			Instances[i]["InstanceName"] = InstancesMap["instance_name"]
+			Instances[i]["RegionId"] = InstancesMap["region_id"]
+		}
+		request["Instances"] = Instances
+
+		action := "ModifyMonitorGroupInstances"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			logs.AddDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprintf(`%v`, response["Code"]) != "200" {
+			return errs.WrapError(errs.Error("ModifyMonitorGroupInstances failed for %s", response["Message"]))
+		}
+	}
+	return resourceAlicloudCmsMonitorGroupInstancesRead(d, meta)
+}
+func resourceAlicloudCmsMonitorGroupInstancesDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteMonitorGroupInstances"
+	var response map[string]interface{}
+	var err error
+	info := make(map[string]string)
+	for _, InstancesValue := range d.Get("instances").(*schema.Set).List() {
+		InstancesMap := InstancesValue.(map[string]interface{})
+		if value, ok := info[InstancesMap["category"].(string)]; ok {
+			info[InstancesMap["category"].(string)] = value + "," + InstancesMap["instance_id"].(string)
+		} else {
+			info[InstancesMap["category"].(string)] = InstancesMap["instance_id"].(string)
+		}
+	}
+	for category, instanceIds := range info {
+		request := map[string]interface{}{
+			"GroupId":        d.Id(),
+			"Category":       category,
+			"InstanceIdList": instanceIds,
+		}
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			logs.AddDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		if errs.IsExpectedErrorCodes(fmt.Sprintf("%v", response["Code"]), []string{"ResourceNotFound"}) {
+			return nil
+		}
+		if fmt.Sprintf("%v", response["Code"]) != "200" {
+			return errs.WrapError(errs.Error("DeleteMonitorGroupInstances failed for %s", response["Message"]))
+		}
+	}
+	return nil
+}

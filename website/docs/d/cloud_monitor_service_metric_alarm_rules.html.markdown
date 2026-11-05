@@ -87,11 +87,11 @@ You can specify a new alarm rule ID or use an existing alarm rule ID from CloudM
 
 * `metric_name` - (ForceNew, Optional) The name of the metric. For information about how to query metric names, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
 
--> **NOTE:**  When you create a Prometheus alert rule for Enterprise Cloud Monitoring, this parameter specifies the metric store name. For information about how to obtain the metric store name, see [DescribeHybridMonitorNamespaceList](https://help.aliyun.com/document_detail/428880.html).
+  -> **NOTE:**  When you create a Prometheus alert rule for Enterprise Cloud Monitoring, this parameter specifies the metric store name. For information about how to obtain the metric store name, see [DescribeHybridMonitorNamespaceList](https://help.aliyun.com/document_detail/428880.html).
 
 * `namespace` - (ForceNew, Optional) The namespace of the cloud service metric data. For information about how to query the namespace of a cloud service, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
 
--> **NOTE:**  When you create a Prometheus alert rule for Enterprise Cloud Monitoring, this parameter must be set to `acs_prometheus`.
+  -> **NOTE:**  When you create a Prometheus alert rule for Enterprise Cloud Monitoring, this parameter must be set to `acs_prometheus`.
 
 * `rule_name` - (ForceNew, Optional) Alert rule name.
 

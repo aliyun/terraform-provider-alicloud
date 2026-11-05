@@ -7,13 +7,15 @@ description: |-
     Provides a list of bucket objects to the user.
 ---
 
-# alicloud\_oss_bucket_objects
+# alicloud_oss_bucket_objects
 
 This data source provides the objects of an OSS bucket.
 
+-> **NOTE:** Available since v1.17.0.
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_oss_bucket_objects" "bucket_objects_ds" {
   bucket_name = "sample_bucket"
   key_regex   = "sample/sample_object.txt"
@@ -28,7 +30,7 @@ output "first_object_key" {
 
 The following arguments are supported:
 
-* `bucket_name` - Name of the bucket that contains the objects to find.
+* `bucket_name` - (Required) Name of the bucket that contains the objects to find.
 * `key_regex` - (Optional) A regex string to filter results by key.
 * `key_prefix` - (Optional) Filter results by the given key prefix (such as "path/to/folder/logs-").
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -49,6 +51,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `expires` - Expiration date for the the request/response. Read [RFC2616 Expires](https://www.ietf.org/rfc/rfc2616.txt) for further details.
   * `server_side_encryption` - Server-side encryption of the object in OSS. It can be empty or `AES256`.
   * `sse_kms_key_id` - If present, specifies the ID of the Key Management Service(KMS) master encryption key that was used for the object.
+  * `x_oss_hash_crc64ecma` - The CRC64-ECMA checksum of the object content, which is the value of the `x-oss-hash-crc64ecma` response header returned by OSS. Available since v2.1.0.
   * `etag` - ETag generated for the object (MD5 sum of the object content).
   * `storage_class` - Object storage type. Possible values: `Standard`, `IA`, `Archive` and `ColdArchive`.
   * `last_modification_time` - Last modification time of the object.

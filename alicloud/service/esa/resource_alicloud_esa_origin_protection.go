@@ -1,0 +1,178 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+package esa
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	errs "github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	helper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	logs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func resourceAliCloudEsaOriginProtection() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAliCloudEsaOriginProtectionCreate,
+		Read:   resourceAliCloudEsaOriginProtectionRead,
+		Update: resourceAliCloudEsaOriginProtectionUpdate,
+		Delete: resourceAliCloudEsaOriginProtectionDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"origin_converge": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"site_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+		},
+	}
+}
+
+func resourceAliCloudEsaOriginProtectionCreate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "CreateOriginProtection"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("site_id"); ok {
+		request["SiteId"] = v
+	}
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_esa_origin_protection", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(request["SiteId"]))
+
+	return resourceAliCloudEsaOriginProtectionUpdate(d, meta)
+}
+
+func resourceAliCloudEsaOriginProtectionRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	esaServiceV2 := EsaServiceV2{client}
+
+	objectRaw, err := esaServiceV2.DescribeEsaOriginProtection(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_esa_origin_protection DescribeEsaOriginProtection Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	d.Set("origin_converge", objectRaw["OriginConverge"])
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
+
+	d.Set("site_id", d.Id())
+
+	return nil
+}
+
+func resourceAliCloudEsaOriginProtectionUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
+	var err error
+	action := "UpdateOriginProtection"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["SiteId"] = d.Id()
+
+	if d.HasChange("origin_converge") {
+		update = true
+	}
+	request["OriginConverge"] = d.Get("origin_converge")
+	if update {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return resourceAliCloudEsaOriginProtectionRead(d, meta)
+}
+
+func resourceAliCloudEsaOriginProtectionDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteOriginProtection"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["SiteId"] = d.Id()
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}

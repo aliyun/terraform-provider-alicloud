@@ -314,6 +314,7 @@ var productCodeToLocationCode = map[string]string{
 	"milvus":                  "cloudmilvus",       // Milvus
 	"resourcedirectorymaster": "resourcedirectory", // ResourceManager
 	"openapiexplorer":         "apiexplorer",       // OpenAPIExplorer
+	"agentloop":               "agentloop",         // AgentLoop
 }
 
 // productCodeToConfigEndpoints records all products' code mapping to endpoints' subfield name
@@ -349,6 +350,7 @@ var irregularProductEndpoint = map[string]string{
 	"alidns":                  "alidns.aliyuncs.com",
 	"openapiexplorer":         "openapi-mcp.cn-hangzhou.aliyuncs.com",
 	"computenestsupplier":     "computenestsupplier.cn-hangzhou.aliyuncs.com",
+	"agentloop":               "agentloop.%s.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlRegion specially records those product codes that
@@ -451,6 +453,7 @@ var regularProductEndpoint = map[string]string{
 	"nlb":                  "nlb.%s.aliyuncs.com",
 	"ebs":                  "ebs.%s.aliyuncs.com",
 	"eflo":                 "eflo.%s.aliyuncs.com",
+	"eflo_controller":      "eflo-controller.%s.aliyuncs.com",
 	"oceanbasepro":         "oceanbasepro.%s.aliyuncs.com",
 	"adcp":                 "adcp.%s.aliyuncs.com",
 	"rocketmq":             "rocketmq.%s.aliyuncs.com",
@@ -662,7 +665,7 @@ func (client *AliyunClient) describeEndpointForService(productCode string) (stri
 		args.Domain = "location.aliyuncs.com"
 	}
 
-	locationClient, err := location.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
+	locationClient, err := location.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return "", fmt.Errorf("unable to initialize the location client: %#v", err)
 

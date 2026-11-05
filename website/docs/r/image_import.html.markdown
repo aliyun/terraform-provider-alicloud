@@ -24,7 +24,7 @@ For information about ECS Image Import and how to use it, see [What is Image Imp
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_image_import&exampleId=cbaeaecf-5db3-ee5b-a5d4-0702941f1900a4a7558e&activeTab=example&spm=docs.r.image_import.0.cbaeaecf5d&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_image_import&exampleId=920347ac-9775-d1ee-ccc8-1524edb64b26eb86dd97&activeTab=example&spm=docs.r.image_import.0.920347ac97&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -82,7 +82,8 @@ The following arguments are supported:
 * `architecture` - (Optional, ForceNew) The architecture of the image. Default value: `x86_64`. Valid values: `x86_64`, `i386`.
 * `os_type` - (Optional, ForceNew) The type of the operating system. Default value: `linux`. Valid values: `windows`, `linux`.
 * `platform` - (Optional, ForceNew) The operating system platform. More valid values refer to [ImportImage OpenAPI](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/importimage).
--> **NOTE:** Before provider version 1.197.0, the default value of `platform` is `Ubuntu`.
+
+  -> **NOTE:** Before provider version 1.197.0, the default value of `platform` is `Ubuntu`.
 * `boot_mode` - (Optional, ForceNew, Available since v1.225.0) The boot mode of the image. Valid values: `BIOS`, `UEFI`.
 * `license_type` - (Optional, ForceNew) The type of the license used to activate the operating system after the image is imported. Default value: `Auto`. Valid values: `Auto`, `Aliyun`, `BYOL`.
 * `image_name` - (Optional) The name of the image. The `image_name` must be `2` to `128` characters in length. The `image_name` must start with a letter and cannot start with acs: or aliyun. The `image_name` cannot contain http:// or https://. The `image_name` can contain letters, digits, periods (.), colons (:), underscores (_), and hyphens (-).
@@ -108,7 +109,7 @@ The features supports the following:
   - `supported`: The image supports NVMe. Instances created from this image also support NVMe.
   - `unsupported`: The image does not support NVMe. Instances created from this image do not support NVMe.
 
--> **NOTE:** `nvme_support` only declares the capability of the image: setting it does not install the NVMe driver. The image must already have the NVMe driver built in before setting `nvme_support` to `supported`, otherwise instances created from the image may fail to boot. If this parameter is not set or is empty, it defaults to `unsupported`.
+  -> **NOTE:** `nvme_support` only declares the capability of the image: setting it does not install the NVMe driver. The image must already have the NVMe driver built in before setting `nvme_support` to `supported`, otherwise instances created from the image may fail to boot. If this parameter is not set or is empty, it defaults to `unsupported`.
 
 ## Attributes Reference
 

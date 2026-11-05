@@ -11,7 +11,7 @@ description: |-
 
 This data source provides Router Interface available to the user.[What is Router Interface](https://www.alibabacloud.com/help/en/express-connect/developer-reference/api-vpc-2016-04-28-describerouterinterfaces-efficiency-channels)
 
--> **NOTE:** Available in 1.199.0+
+-> **NOTE:** Available since v1.199.0
 
 ## Example Usage
 
@@ -33,6 +33,14 @@ The following arguments are supported:
 * `include_reservation_data` - (Optional, ForceNew) Does it contain renewal data. Valid values: `true`, `false`.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `filter` - (Optional) Custom filter block as described below. See [`filter`](#filter) below.
+
+### `filter`
+
+More complex filters can be expressed using one or more `filter` sub-blocks,
+which take the following arguments:
+* `key` - (Optional) The key of the field to filter by.
+* `value` - (Optional) Set of values that are accepted for the given field.
 
 
 ## Attributes Reference
@@ -54,6 +62,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `hc_threshold` -  The hc threshold of the resource.
   * `health_check_source_ip` - The health check source IP address, must be an unused IP within the local VPC.
   * `health_check_target_ip` - The IP address for health screening purposes.
+  * `id` - The ID of the router interface.
   * `opposite_access_point_id` -The Access point ID to which the other end belongs.
   * `opposite_bandwidth` -  The opposite bandwidth of the router on the other side.
   * `opposite_interface_business_status` - The opposite interface business status of the router on the other side. Valid Values: `Normal`, `FinancialLocked`, `SecurityLocked`.

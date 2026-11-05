@@ -1,0 +1,143 @@
+package privatelink
+
+import (
+	"fmt"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func DataSourceVpcEndpointZones() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceAlicloudPrivatelinkVpcEndpointZonesRead,
+		Schema: map[string]*schema.Schema{
+			"endpoint_id": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validators.StringInSlice([]string{"Connected", "Connecting", "Creating", "Deleted", "Deleting", "Disconnected", "Disconnecting", "Wait"}, false),
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"zones": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"eni_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"eni_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"zone_domain": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"zone_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceAlicloudPrivatelinkVpcEndpointZonesRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "ListVpcEndpointZones"
+	request := make(map[string]interface{})
+	request["EndpointId"] = d.Get("endpoint_id")
+	request["RegionId"] = client.RegionId
+	request["MaxResults"] = helper.PageSizeLarge
+	var objects []map[string]interface{}
+	status, statusOk := d.GetOk("status")
+	var response map[string]interface{}
+	var err error
+	for {
+		response, err = client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_zones", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		logs.AddDebug(action, response, request)
+
+		resp, err := jsonpath.Get("$.Zones", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Zones", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if statusOk && status.(string) != "" && status.(string) != item["ZoneStatus"].(string) {
+				continue
+			}
+			objects = append(objects, item)
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	ids := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"id":          fmt.Sprint(request["EndpointId"], ":", object["ZoneId"]),
+			"eni_id":      object["EniId"],
+			"eni_ip":      object["EniIp"],
+			"status":      object["ZoneStatus"],
+			"vswitch_id":  object["VSwitchId"],
+			"zone_domain": object["ZoneDomain"],
+			"zone_id":     object["ZoneId"],
+		}
+		ids = append(ids, fmt.Sprint(request["EndpointId"], ":", object["ZoneId"]))
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("zones", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

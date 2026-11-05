@@ -608,9 +608,11 @@ The following arguments are supported:
 * `config_mns` - (Optional, ForceNew, Available in 1.41.0) The config of Function Compute trigger when the type is "mns_topic".It is conflict with `config`.
 * `type` - (Required, ForceNew) The Type of the trigger. Valid values: ["oss", "log", "timer", "http", "mns_topic", "cdn_events", "eventbridge"].
 
--> **NOTE:** Config does not support modification when type is mns_topic.
--> **NOTE:** type = cdn_events, available in 1.47.0+.
--> **NOTE:** type = eventbridge, available in 1.173.0+.
+  -> **NOTE:** Config does not support modification when type is mns_topic.
+
+  -> **NOTE:** type = cdn_events, available in 1.47.0+.
+
+  -> **NOTE:** type = eventbridge, available in 1.173.0+.
 
 ## Attributes Reference
 

@@ -63,7 +63,7 @@ The following arguments are supported:
 * `network_origin` - (Required, ForceNew) Access point network source. The valid values are as follows: 
   - vpc: only the specified VPC ID can be used to access the access point. 
   - internet: the access point can be accessed through both external and internal Endpoint.
-* `public_access_block_configuration` - (Optional, List) Configuration of Access Point Blocking Public Access See [`public_access_block_configuration`](#public_access_block_configuration) below.
+* `public_access_block_configuration` - (Optional, Computed, List) Configuration of Access Point Blocking Public Access See [`public_access_block_configuration`](#public_access_block_configuration) below.
 * `vpc_configuration` - (Optional, ForceNew, List) If the Network Origin is vpc, the VPC source information is saved here. See [`vpc_configuration`](#vpc_configuration) below.
 
 ### `public_access_block_configuration`

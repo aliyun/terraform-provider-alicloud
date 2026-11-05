@@ -196,7 +196,8 @@ The volumes supports the following:
 * `nfs_volume_server` - (Optional, ForceNew) The address of the NFS server.
 * `nfs_volume_read_only` - (Optional, ForceNew, Bool) The nfs volume read only. Default value: `false`.
 * `config_file_volume_config_file_to_paths` - (Optional, Set, ForceNew) The paths of the ConfigFile volume. See [`config_file_volume_config_file_to_paths`](#volumes-config_file_volume_config_file_to_paths) below.
--> **NOTE:** Every volumes mounted must have `name` and `type` attributes.
+
+  -> **NOTE:** Every volumes mounted must have `name` and `type` attributes.
 
 ### `volumes-config_file_volume_config_file_to_paths`
 
@@ -362,7 +363,7 @@ The liveness_probe supports the following:
 * `tcp_socket` - (Optional, Set) Health check using TCP socket method. See [`tcp_socket`](#containers-liveness_probe-tcp_socket) below.
 * `http_get` - (Optional, Set) Health check using HTTP request method. See [`http_get`](#containers-liveness_probe-http_get) below.
 
--> **NOTE:** When you configure `liveness_probe`, you can select only one of the `exec`, `tcp_socket`, `http_get`.
+  -> **NOTE:** When you configure `liveness_probe`, you can select only one of the `exec`, `tcp_socket`, `http_get`.
 
 ### `containers-liveness_probe-exec`
 
@@ -397,7 +398,7 @@ The readiness_probe supports the following:
 * `tcp_socket` - (Optional) Health check using TCP socket method. See [`tcp_socket`](#containers-readiness_probe-tcp_socket) below.
 * `http_get` - (Optional) Health check using HTTP request method. See [`http_get`](#containers-readiness_probe-http_get) below.
 
--> **NOTE:** When you configure `readiness_probe`, you can select only one of the `exec`, `tcp_socket`, `http_get`.
+  -> **NOTE:** When you configure `readiness_probe`, you can select only one of the `exec`, `tcp_socket`, `http_get`.
 
 ### `containers-readiness_probe-exec`
 

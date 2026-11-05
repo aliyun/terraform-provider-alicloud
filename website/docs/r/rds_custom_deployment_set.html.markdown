@@ -56,7 +56,7 @@ The following arguments are supported:
 
   Default value: 3
 
--> **NOTE:**  This parameter takes effect only when 'Strategy = AvailabilityGroup.
+  -> **NOTE:**  This parameter takes effect only when 'Strategy = AvailabilityGroup.
 
 * `on_unable_to_redeploy_failed_instance` - (Optional) After the instance in the deployment set is down and migrated, there is no emergency solution for the scattered instance inventory. Value range:
   - `CancelMembershipAndStart`: removes the instance from the deployment set and starts the instance immediately after the instance is down and migrated.

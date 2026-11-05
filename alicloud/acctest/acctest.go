@@ -19,13 +19,13 @@ var Provider = alicloud.Provider()
 // ProtoV5ProviderFactories serves the real muxed provider — the SDK v2 half and the
 // framework half behind one server — under the name given, defaulting to "alicloud".
 //
-// It works from a test on either harness, terraform-plugin-sdk/v2/helper/resource or
-// terraform-plugin-testing/helper/resource, but only because no non-test file in package
-// alicloud imports the former any more: both register a -sweep flag in their init, and a
-// test binary linking both dies at startup with "flag redefined: sweep" before any test
-// runs. This package imports package alicloud for Provider(), so a single non-test file
-// in package alicloud going back to helper/resource resurrects that panic for every
-// terraform-plugin-testing test that reaches this factory. Non-test code retries with
+// Every alicloud test binary runs terraform-plugin-testing/helper/resource — the root
+// monolith tests included since the framework flip — and none may link
+// terraform-plugin-sdk/v2/helper/resource again: both register a -sweep flag in their
+// init, and a test binary linking both dies at startup with "flag redefined: sweep"
+// before any test runs. This package imports package alicloud for Provider(), so a
+// single file — test or non-test — going back to SDKv2 helper/resource resurrects that
+// panic for every test that reaches this factory. Non-test code retries with
 // helper/retry instead.
 func ProtoV5ProviderFactories(names ...string) map[string]func() (tfprotov5.ProviderServer, error) {
 	if len(names) == 0 {
@@ -62,10 +62,9 @@ func ProtoV6ProviderFactories(names ...string) map[string]func() (tfprotov6.Prov
 
 // PreCheck is the exported form of the suite's testAccPreCheck: it fails the test unless
 // credentials are in the environment, and defaults the region the way the suite does.
-//
-// It does not set package alicloud's defaultRegionToTest, which is unexported and only
-// read by tests in that package. Read the region back from ALICLOUD_REGION if a test in a
-// service package needs it.
+// It keeps this package's DefaultRegionToTest in sync with the final ALICLOUD_REGION
+// value. Package alicloud's own defaultRegionToTest stays unexported and only tests in
+// that package read it.
 func PreCheck(t *testing.T) {
 	if v := os.Getenv("ALICLOUD_ACCESS_KEY"); v == "" {
 		t.Fatal("ALICLOUD_ACCESS_KEY must be set for acceptance tests")
@@ -76,6 +75,9 @@ func PreCheck(t *testing.T) {
 	if v := os.Getenv("ALICLOUD_REGION"); v == "" {
 		log.Println("[INFO] Test: Using cn-beijing as test region")
 		os.Setenv("ALICLOUD_REGION", "cn-beijing")
+		DefaultRegionToTest = "cn-beijing"
+	} else {
+		DefaultRegionToTest = v
 	}
 }
 

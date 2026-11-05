@@ -92,7 +92,7 @@ output "alicloud_gpdb_db_extension_example_id" {
 The following arguments are supported:
 * `db_instance_id` - (Required) The instance ID.
 
--> **NOTE:**   You can call the [DescribeDBInstances](https://www.alibabacloud.com/help/en/doc-detail/86911.html) operation to query the information about all AnalyticDB for PostgreSQL instances within a region, including instance IDs.
+  -> **NOTE:**   You can call the [DescribeDBInstances](https://www.alibabacloud.com/help/en/doc-detail/86911.html) operation to query the information about all AnalyticDB for PostgreSQL instances within a region, including instance IDs.
 
 * `database_name` - (Required) The name of the database.
 * `ids` - (Optional, Computed) A list of Db Extension IDs. The value is formulated as `<db_instance_id>:<database_name>:<extension_name>`.

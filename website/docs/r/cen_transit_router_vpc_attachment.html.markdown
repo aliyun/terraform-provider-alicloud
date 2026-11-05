@@ -98,19 +98,19 @@ The following arguments are supported:
   - `true`
 * `cen_id` - (Optional) The ID of the Cloud Enterprise Network (CEN) instance.
 
--> **NOTE:** This parameter is only evaluated during resource creation and deletion. Modifying it in isolation will not trigger any action.
+  -> **NOTE:** This parameter is only evaluated during resource creation and deletion. Modifying it in isolation will not trigger any action.
 
 * `dry_run` - (Optional) Whether to perform PreCheck on this request, including permissions and instance status verification. Value:
   - `false` (default): A normal request is sent, and a VPC connection is directly created after the check is passed.
   - `true`: The check request is sent, only verification is performed, and no VPC connection is created. Check items include whether required parameters and request format are filled in. If the check does not pass, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `force_delete` - (Optional, Available since v1.230.1) Whether to forcibly delete the VPC connection. The value is:
   - `false` (default): before deleting the VPC connection, check whether there are related resource dependencies, such as Association forwarding and route learning. If related dependencies exist, deletion is not allowed and the corresponding error is returned.
   - `true`: When you delete a VPC connection, all related dependencies are deleted by default.
 
--> **NOTE:** This parameter configures deletion behavior and is only evaluated when Terraform attempts to destroy the resource. Changes to this parameter during updates are stored but have no immediate effect.
+  -> **NOTE:** This parameter configures deletion behavior and is only evaluated when Terraform attempts to destroy the resource. Changes to this parameter during updates are stored but have no immediate effect.
 
 * `options` - (Optional, Computed, List, Available since v1.279.0) A collection of feature attributes. See [`options`](#options) below.
 * `order_type` - (Optional, Computed, Available since v1.276.0) The entity that pays the fees of the network instance. Valid values:

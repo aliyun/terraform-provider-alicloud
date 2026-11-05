@@ -198,11 +198,14 @@ The following arguments are supported:
 * `listener_id` - (Required, ForceNew) The ID of the listener that is associated with the endpoint group.
 * `endpoint_group_region` - (Required, ForceNew) The ID of the region where the endpoint group is deployed.
 * `endpoint_group_type` - (Optional, ForceNew) The endpoint group type. Default value: `default`. Valid values: `default`, `virtual`.
--> **NOTE:** Currently, only `HTTP` or `HTTPS` protocol listener can directly create a `virtual` Endpoint Group. If it is `TCP` protocol listener, and you want to create a `virtual` Endpoint Group, please ensure that the `default` Endpoint Group has been created.
+
+  -> **NOTE:** Currently, only `HTTP` or `HTTPS` protocol listener can directly create a `virtual` Endpoint Group. If it is `TCP` protocol listener, and you want to create a `virtual` Endpoint Group, please ensure that the `default` Endpoint Group has been created.
 * `endpoint_request_protocol` - (Optional) The protocol that is used by the backend server. Valid values: `HTTP`, `HTTPS`.
--> **NOTE:** `endpoint_request_protocol` can be specified only if the listener that is associated with the endpoint group uses `HTTP` or `HTTPS`. For the listener of `HTTP` protocol, `endpoint_request_protocol` can only be set to `HTTP`.
+
+  -> **NOTE:** `endpoint_request_protocol` can be specified only if the listener that is associated with the endpoint group uses `HTTP` or `HTTPS`. For the listener of `HTTP` protocol, `endpoint_request_protocol` can only be set to `HTTP`.
 * `endpoint_protocol_version` - (Optional, Available since v1.230.1) The backend service protocol of the endpoint that is associated with the intelligent routing listener. Valid values: `HTTP1.1`, `HTTP2`.
--> **NOTE:** `endpoint_protocol_version` is valid only when `endpoint_request_protocol` is set to `HTTPS`.
+
+  -> **NOTE:** `endpoint_protocol_version` is valid only when `endpoint_request_protocol` is set to `HTTPS`.
 * `health_check_enabled` - (Optional, Bool, Available since v1.215.0) Specifies whether to enable the health check feature. Valid values:
   - `true`: Enables the health check feature.
   - `false`: Disables the health check feature.
@@ -212,7 +215,8 @@ The following arguments are supported:
   - `TCP` or `tcp`: TCP protocol.
   - `HTTP` or `http`: HTTP protocol.
   - `HTTPS` or `https`: HTTPS protocol.
--> **NOTE:** From version 1.223.0, `health_check_protocol` can be set to `TCP`, `HTTP`, `HTTPS`.
+
+  -> **NOTE:** From version 1.223.0, `health_check_protocol` can be set to `TCP`, `HTTP`, `HTTPS`.
 * `health_check_interval_seconds` - (Optional, Int) The interval between two consecutive health checks. Unit: seconds.
 * `threshold_count` - (Optional, Int) The number of consecutive failed heath checks that must occur before the endpoint is deemed unhealthy. Default value: `3`.
 * `traffic_percentage` - (Optional, Int) The weight of the endpoint group when the corresponding listener is associated with multiple endpoint groups.
@@ -220,7 +224,8 @@ The following arguments are supported:
 * `description` - (Optional) The description of the endpoint group.
 * `endpoint_configurations` - (Required, Set) The endpointConfigurations of the endpoint group. See [`endpoint_configurations`](#endpoint_configurations) below.
 * `port_overrides` - (Optional, Set) Mapping between listening port and forwarding port of boarding point. See [`port_overrides`](#port_overrides) below.
--> **NOTE:** Port mapping is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. The listening port in the port map must be consistent with the listening port of the current listening instance.
+
+  -> **NOTE:** Port mapping is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. The listening port in the port map must be consistent with the listening port of the current listening instance.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
 
 ### `endpoint_configurations`
@@ -240,9 +245,11 @@ The endpoint_configurations supports the following:
   - `ENI`: (Available since v1.232.0) An Elastic Network Interface (ENI).
   - `OSS`: (Available since v1.232.0) An Object Storage Service (OSS) bucket.
 * `weight` - (Required, Int) The weight of Endpoint N in the endpoint group. Valid values: `0` to `255`.
--> **NOTE:** If the weight of a terminal node is set to `0`, global acceleration will terminate the distribution of traffic to the terminal node. Please be careful.
+
+  -> **NOTE:** If the weight of a terminal node is set to `0`, global acceleration will terminate the distribution of traffic to the terminal node. Please be careful.
 * `sub_address` - (Optional, Available since v1.232.0) The private IP address of the ENI.
--> **NOTE:** `sub_address` is valid only when `type` is set to `ENI`.
+
+  -> **NOTE:** `sub_address` is valid only when `type` is set to `ENI`.
 * `enable_proxy_protocol` - (Optional, Bool, Available since v1.207.1) Specifies whether to preserve client IP addresses by using the ProxyProtocol module. Default Value: `false`. Valid values:
   - `true`: preserves client IP addresses by using the ProxyProtocol module.
   - `false`: does not preserve client IP addresses by using the ProxyProtocol module.
