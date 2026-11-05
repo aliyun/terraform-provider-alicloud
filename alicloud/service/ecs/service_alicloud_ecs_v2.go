@@ -762,7 +762,7 @@ func (s *ServiceV2) DescribeEcsElasticityAssurance(id string) (object map[string
 	// PackageType defaults to ElasticityAssurance on the service side, so a time-division
 	// elasticity assurance is invisible unless the type is requested explicitly.
 	for _, packageType := range []string{"", "TimeDivisionElasticityAssurance"} {
-		object, err = s.describeEcsElasticityAssuranceByPackageType(id, packageType)
+		object, err = s.describeElasticityAssuranceByPackageType(id, packageType)
 		if err == nil {
 			return object, nil
 		}
@@ -773,7 +773,7 @@ func (s *ServiceV2) DescribeEcsElasticityAssurance(id string) (object map[string
 	return object, err
 }
 
-func (s *ServiceV2) describeEcsElasticityAssuranceByPackageType(id string, packageType string) (object map[string]interface{}, err error) {
+func (s *ServiceV2) describeElasticityAssuranceByPackageType(id string, packageType string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}

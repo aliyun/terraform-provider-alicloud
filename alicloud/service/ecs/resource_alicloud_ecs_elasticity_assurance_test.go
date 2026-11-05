@@ -266,6 +266,7 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sEcsElasticityAssurance%d", acctest.DefaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsElasticityAssuranceBasicDependence1716)
+	createdId := ""
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -287,10 +288,12 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 					"assurance_times":                     "Unlimited",
 					"recurrence_rules": []map[string]interface{}{
 						{
-							"recurrence_type":  "Daily",
-							"recurrence_value": "1",
-							"start_hour":       "8",
-							"end_hour":         "12",
+							// The documented permitted schedule change exercised by the update step
+							// below starts from this weekly rule.
+							"recurrence_type":  "Weekly",
+							"recurrence_value": "1,2",
+							"start_hour":       "4",
+							"end_hour":         "8",
 						},
 						{
 							// start_hour 0 is the documented lower bound and must survive Create and Read
@@ -315,10 +318,10 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 						"recurrence_rules.#":                  "2",
 					}),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "recurrence_rules.*", map[string]string{
-						"recurrence_type":  "Daily",
-						"recurrence_value": "1",
-						"start_hour":       "8",
-						"end_hour":         "12",
+						"recurrence_type":  "Weekly",
+						"recurrence_value": "1,2",
+						"start_hour":       "4",
+						"end_hour":         "8",
 					}),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "recurrence_rules.*", map[string]string{
 						"recurrence_type":  "Daily",
@@ -326,11 +329,27 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 						"start_hour":       "0",
 						"end_hour":         "4",
 					}),
+					func(s *sdktf.State) error {
+						if rs := s.RootModule().Resources[resourceId]; rs != nil {
+							createdId = rs.Primary.ID
+						}
+						if createdId == "" {
+							return fmt.Errorf("the created assurance ID is missing from state")
+						}
+						return nil
+					},
 				),
 			},
 			{
+				// Every successful create or update configuration step is followed by an import check.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "period_unit"},
+			},
+			{
 				// The rules are stored as a set, so declaring the same rules in a different order must
-				// produce an empty plan instead of proposing to replace the assurance.
+				// produce an empty plan instead of proposing a change to the assurance.
 				Config: testAccConfig(map[string]interface{}{
 					"recurrence_rules": []map[string]interface{}{
 						{
@@ -340,10 +359,10 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 							"end_hour":         "4",
 						},
 						{
-							"recurrence_type":  "Daily",
-							"recurrence_value": "1",
-							"start_hour":       "8",
-							"end_hour":         "12",
+							"recurrence_type":  "Weekly",
+							"recurrence_value": "1,2",
+							"start_hour":       "4",
+							"end_hour":         "8",
 						},
 					},
 				}),
@@ -351,22 +370,23 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 				ExpectNonEmptyPlan: false,
 			},
 			{
-				// Changing the content of a rule must still propose a replacement, because
-				// recurrence_rules is ForceNew. PlanOnly steps skip the pre-apply hook, so the
-				// action is asserted on the non-refresh plan instead.
+				// A schedule change that keeps the total assured duration is applied in place: the
+				// documented example moves Weekly 1,2 04:00-08:00 to Weekly 3,4 10:00-14:00. The action
+				// assertion proves the assurance is updated instead of replaced. PlanOnly steps skip the
+				// pre-apply hook, so the action is asserted on the non-refresh plan.
 				Config: testAccConfig(map[string]interface{}{
 					"recurrence_rules": []map[string]interface{}{
+						{
+							"recurrence_type":  "Weekly",
+							"recurrence_value": "3,4",
+							"start_hour":       "10",
+							"end_hour":         "14",
+						},
 						{
 							"recurrence_type":  "Daily",
 							"recurrence_value": "1",
 							"start_hour":       "0",
 							"end_hour":         "4",
-						},
-						{
-							"recurrence_type":  "Daily",
-							"recurrence_value": "1",
-							"start_hour":       "8",
-							"end_hour":         "18",
 						},
 					},
 				}),
@@ -374,32 +394,60 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 				ExpectNonEmptyPlan: true,
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PostApplyPreRefresh: []plancheck.PlanCheck{
-						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionUpdate),
 					},
 				},
 			},
 			{
-				// The reordered rules converge after apply without any residual diff.
+				// The permitted update converges after apply, keeps the assurance and only replaces the
+				// schedule.
 				Config: testAccConfig(map[string]interface{}{
 					"recurrence_rules": []map[string]interface{}{
+						{
+							"recurrence_type":  "Weekly",
+							"recurrence_value": "3,4",
+							"start_hour":       "10",
+							"end_hour":         "14",
+						},
 						{
 							"recurrence_type":  "Daily",
 							"recurrence_value": "1",
 							"start_hour":       "0",
 							"end_hour":         "4",
 						},
-						{
-							"recurrence_type":  "Daily",
-							"recurrence_value": "1",
-							"start_hour":       "8",
-							"end_hour":         "12",
-						},
 					},
 				}),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionUpdate),
+					},
+				},
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"recurrence_rules.#": "2",
 					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "recurrence_rules.*", map[string]string{
+						"recurrence_type":  "Weekly",
+						"recurrence_value": "3,4",
+						"start_hour":       "10",
+						"end_hour":         "14",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "recurrence_rules.*", map[string]string{
+						"recurrence_type":  "Daily",
+						"recurrence_value": "1",
+						"start_hour":       "0",
+						"end_hour":         "4",
+					}),
+					func(s *sdktf.State) error {
+						rs := s.RootModule().Resources[resourceId]
+						if rs == nil {
+							return fmt.Errorf("the assurance is missing from state after the permitted update")
+						}
+						if rs.Primary.ID != createdId {
+							return fmt.Errorf("the permitted schedule change replaced the assurance: expected ID %s, got %s", createdId, rs.Primary.ID)
+						}
+						return nil
+					},
 				),
 			},
 			{

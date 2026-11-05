@@ -34,18 +34,18 @@ func resourceAliCloudEcsElasticityAssurance() *schema.Resource {
 				return nil
 			}
 			if period, ok := d.GetOk("period"); ok {
-				if err := validateEcsElasticityAssurancePeriod(periodUnit, period.(int)); err != nil {
+				if err := validateElasticityAssurancePeriod(periodUnit, period.(int)); err != nil {
 					return err
 				}
 			}
 
-			if !ecsElasticityAssuranceRecurrenceRulesWhollyKnown(d) {
+			if !elasticityAssuranceRecurrenceRulesWhollyKnown(d) {
 				return nil
 			}
-			if err := validateEcsElasticityAssuranceRecurrenceRuleAttributes(d.GetRawConfig()); err != nil {
+			if err := validateElasticityAssuranceRecurrenceRuleAttributes(d.GetRawConfig()); err != nil {
 				return err
 			}
-			return validateEcsElasticityAssuranceRecurrenceRules(periodUnit, ecsElasticityAssuranceRecurrenceRules(d.Get("recurrence_rules")))
+			return validateElasticityAssuranceRecurrenceRules(periodUnit, elasticityAssuranceRecurrenceRules(d.Get("recurrence_rules")))
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
@@ -123,32 +123,27 @@ func resourceAliCloudEcsElasticityAssurance() *schema.Resource {
 			"recurrence_rules": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				ForceNew: true,
 				MaxItems: 20,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"start_hour": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ForceNew:     true,
 							ValidateFunc: IntBetween(0, 24),
 						},
 						"recurrence_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ForceNew:     true,
 							ValidateFunc: StringInSlice([]string{"Daily", "Weekly", "Monthly"}, false),
 						},
 						"end_hour": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ForceNew:     true,
 							ValidateFunc: IntBetween(0, 24),
 						},
 						"recurrence_value": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 					},
 				},
@@ -254,19 +249,19 @@ func resourceAliCloudEcsElasticityAssuranceCreate(d *schema.ResourceData, meta i
 	}
 	periodUnit := fmt.Sprint(d.Get("period_unit"))
 	if period, ok := d.GetOk("period"); ok {
-		if err := validateEcsElasticityAssurancePeriod(periodUnit, period.(int)); err != nil {
+		if err := validateElasticityAssurancePeriod(periodUnit, period.(int)); err != nil {
 			return WrapError(err)
 		}
 	}
-	recurrenceRules := ecsElasticityAssuranceRecurrenceRules(d.Get("recurrence_rules"))
-	if err := validateEcsElasticityAssuranceRecurrenceRuleAttributes(d.GetRawConfig()); err != nil {
+	recurrenceRules := elasticityAssuranceRecurrenceRules(d.Get("recurrence_rules"))
+	if err := validateElasticityAssuranceRecurrenceRuleAttributes(d.GetRawConfig()); err != nil {
 		return WrapError(err)
 	}
-	if err := validateEcsElasticityAssuranceRecurrenceRules(periodUnit, recurrenceRules); err != nil {
+	if err := validateElasticityAssuranceRecurrenceRules(periodUnit, recurrenceRules); err != nil {
 		return WrapError(err)
 	}
 	if v, ok := d.GetOk("recurrence_rules"); ok {
-		recurrenceRulesMapsArray, expandErr := expandEcsElasticityAssuranceRecurrenceRules(ecsElasticityAssuranceRecurrenceRules(v))
+		recurrenceRulesMapsArray, expandErr := expandElasticityAssuranceRecurrenceRules(elasticityAssuranceRecurrenceRules(v))
 		if expandErr != nil {
 			return WrapError(expandErr)
 		}
@@ -281,7 +276,7 @@ func resourceAliCloudEcsElasticityAssuranceCreate(d *schema.ResourceData, meta i
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 		if err != nil {
-			if isEcsElasticityAssurancePeriodTooShortError(err) {
+			if isElasticityAssurancePeriodTooShortError(err) {
 				return retry.NonRetryableError(err)
 			}
 			if NeedRetry(err) {
@@ -309,7 +304,7 @@ func resourceAliCloudEcsElasticityAssuranceCreate(d *schema.ResourceData, meta i
 	return resourceAliCloudEcsElasticityAssuranceUpdate(d, meta)
 }
 
-func expandEcsElasticityAssuranceRecurrenceRules(recurrenceRules []interface{}) ([]interface{}, error) {
+func expandElasticityAssuranceRecurrenceRules(recurrenceRules []interface{}) ([]interface{}, error) {
 	recurrenceRulesMapsArray := make([]interface{}, 0, len(recurrenceRules))
 	for i, recurrenceRuleRaw := range recurrenceRules {
 		recurrenceRule, ok := recurrenceRuleRaw.(map[string]interface{})
@@ -326,7 +321,7 @@ func expandEcsElasticityAssuranceRecurrenceRules(recurrenceRules []interface{}) 
 	return recurrenceRulesMapsArray, nil
 }
 
-func ecsElasticityAssuranceRecurrenceRules(v interface{}) []interface{} {
+func elasticityAssuranceRecurrenceRules(v interface{}) []interface{} {
 	switch rules := v.(type) {
 	case *schema.Set:
 		return rules.List()
@@ -336,10 +331,10 @@ func ecsElasticityAssuranceRecurrenceRules(v interface{}) []interface{} {
 	return nil
 }
 
-// ecsElasticityAssuranceRecurrenceRulesWhollyKnown reports whether every recurrence rule attribute
+// elasticityAssuranceRecurrenceRulesWhollyKnown reports whether every recurrence rule attribute
 // already has its final value. The block is a set, so a single unknown attribute makes the whole set
 // unknown at plan time; validation is then deferred to Create, which re-runs the same checks.
-func ecsElasticityAssuranceRecurrenceRulesWhollyKnown(d *schema.ResourceDiff) bool {
+func elasticityAssuranceRecurrenceRulesWhollyKnown(d *schema.ResourceDiff) bool {
 	if !d.NewValueKnown("recurrence_rules") {
 		return false
 	}
@@ -354,7 +349,7 @@ func ecsElasticityAssuranceRecurrenceRulesWhollyKnown(d *schema.ResourceDiff) bo
 // breaking change by scripts/compatibility (new required attributes are rejected). They remain mandatory for
 // every rule, which is checked against the raw config because a missing attribute is null there, while the
 // zero value of the decoded rule is indistinguishable from an omitted one.
-func validateEcsElasticityAssuranceRecurrenceRuleAttributes(rawConfig cty.Value) error {
+func validateElasticityAssuranceRecurrenceRuleAttributes(rawConfig cty.Value) error {
 	if rawConfig.IsNull() || !rawConfig.IsKnown() || !rawConfig.Type().IsObjectType() || !rawConfig.Type().HasAttribute("recurrence_rules") {
 		return nil
 	}
@@ -380,7 +375,7 @@ func validateEcsElasticityAssuranceRecurrenceRuleAttributes(rawConfig cty.Value)
 // A day-based period below the time-division minimum is refused by the service; the documented
 // refusal is 400 InvalidOperation.ElasticityAssuranceActiveTimeTooShort. Return a period-too-short
 // refusal immediately so a deterministic parameter error is not passed to the generic retry path.
-func isEcsElasticityAssurancePeriodTooShortError(err error) bool {
+func isElasticityAssurancePeriodTooShortError(err error) bool {
 	if err == nil {
 		return false
 	}
@@ -389,7 +384,14 @@ func isEcsElasticityAssurancePeriodTooShortError(err error) bool {
 		strings.Contains(message, "less than the minimum requirement for TimeDivision")
 }
 
-func validateEcsElasticityAssurancePeriod(periodUnit string, period int) error {
+// The service refuses in-place schedule changes that alter the total assured duration of a
+// prepaid time-division assurance. Surface that documented refusal as a distinct, actionable
+// error instead of a generic request failure.
+func isElasticityAssuranceTotalActiveTimeUnsupportedError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "InvalidOperation.ModifyTotalActiveTimeUnsupported")
+}
+
+func validateElasticityAssurancePeriod(periodUnit string, period int) error {
 	switch strings.ToUpper(periodUnit) {
 	case "DAY":
 		if period < 1 || period > 365 {
@@ -407,7 +409,7 @@ func validateEcsElasticityAssurancePeriod(periodUnit string, period int) error {
 	return nil
 }
 
-func validateEcsElasticityAssuranceRecurrenceValue(recurrenceType, recurrenceValue string) error {
+func validateElasticityAssuranceRecurrenceValue(recurrenceType, recurrenceValue string) error {
 	switch recurrenceType {
 	case "Daily":
 		value, err := strconv.Atoi(recurrenceValue)
@@ -437,7 +439,7 @@ func validateEcsElasticityAssuranceRecurrenceValue(recurrenceType, recurrenceVal
 	return nil
 }
 
-func validateEcsElasticityAssuranceRecurrenceRules(periodUnit string, recurrenceRules []interface{}) error {
+func validateElasticityAssuranceRecurrenceRules(periodUnit string, recurrenceRules []interface{}) error {
 	if len(recurrenceRules) == 0 {
 		if periodUnit == "Day" {
 			return fmt.Errorf("recurrence_rules must be specified when period_unit is Day")
@@ -462,7 +464,7 @@ func validateEcsElasticityAssuranceRecurrenceRules(periodUnit string, recurrence
 		}
 		recurrenceType, _ := recurrenceRule["recurrence_type"].(string)
 		recurrenceValue, _ := recurrenceRule["recurrence_value"].(string)
-		if err := validateEcsElasticityAssuranceRecurrenceValue(recurrenceType, recurrenceValue); err != nil {
+		if err := validateElasticityAssuranceRecurrenceValue(recurrenceType, recurrenceValue); err != nil {
 			return fmt.Errorf("invalid recurrence_rules.%d: %s", i, err)
 		}
 	}
@@ -521,7 +523,7 @@ func resourceAliCloudEcsElasticityAssuranceRead(d *schema.ResourceData, meta int
 			recurrenceRulesMap := make(map[string]interface{})
 			recurrenceRulesMap["start_hour"] = recurrenceRule["StartHour"]
 			recurrenceRulesMap["end_hour"] = recurrenceRule["EndHour"]
-			recurrenceRulesMap["recurrence_type"] = convertEcsElasticityAssuranceRecurrenceTypeResponse(recurrenceRule["RecurrenceType"])
+			recurrenceRulesMap["recurrence_type"] = convertElasticityAssuranceRecurrenceTypeResponse(recurrenceRule["RecurrenceType"])
 			recurrenceRulesMap["recurrence_value"] = recurrenceRule["RecurrenceValue"]
 			recurrenceRulesMaps = append(recurrenceRulesMaps, recurrenceRulesMap)
 		}
@@ -572,6 +574,58 @@ func resourceAliCloudEcsElasticityAssuranceUpdate(d *schema.ResourceData, meta i
 		request["Description"] = d.Get("description")
 	}
 
+	if !d.IsNewResource() && d.HasChange("recurrence_rules") {
+		periodUnit, _ := d.Get("period_unit").(string)
+		recurrenceRules := elasticityAssuranceRecurrenceRules(d.Get("recurrence_rules"))
+		if err := validateElasticityAssuranceRecurrenceRuleAttributes(d.GetRawConfig()); err != nil {
+			return WrapError(err)
+		}
+		if err := validateElasticityAssuranceRecurrenceRules(periodUnit, recurrenceRules); err != nil {
+			return WrapError(err)
+		}
+		recurrenceRulesMapsArray, expandErr := expandElasticityAssuranceRecurrenceRules(recurrenceRules)
+		if expandErr != nil {
+			return WrapError(expandErr)
+		}
+		update = true
+		request["RecurrenceRules"] = recurrenceRulesMapsArray
+	}
+
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
+			if err != nil {
+				if isElasticityAssuranceTotalActiveTimeUnsupportedError(err) {
+					return retry.NonRetryableError(err)
+				}
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			if isElasticityAssuranceTotalActiveTimeUnsupportedError(err) {
+				return WrapError(fmt.Errorf("cannot update alicloud_ecs_elasticity_assurance %s in place: the total assured duration of the time-division schedule cannot be changed (InvalidOperation.ModifyTotalActiveTimeUnsupported); keep the previous total assured duration or replace the assurance: %w", d.Id(), err))
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	// InstanceAmount cannot be modified together with other attributes, so the capacity
+	// change is always sent in its own request.
+	action = "ModifyElasticityAssurance"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["PrivatePoolOptions.Id"] = d.Id()
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+	update = false
+
 	if !d.IsNewResource() && d.HasChange("instance_amount") {
 		update = true
 		request["InstanceAmount"] = d.Get("instance_amount")
@@ -596,11 +650,9 @@ func resourceAliCloudEcsElasticityAssuranceUpdate(d *schema.ResourceData, meta i
 		}
 		ecsServiceV2 := ServiceV2{client}
 
-		if d.HasChange("instance_amount") {
-			stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("instance_amount"))}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ecsServiceV2.EcsElasticityAssuranceStateRefreshFunc(d.Id(), "InstanceAmount", []string{}))
-			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
-			}
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("instance_amount"))}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ecsServiceV2.EcsElasticityAssuranceStateRefreshFunc(d.Id(), "InstanceAmount", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -730,7 +782,7 @@ func convertEcsElasticityAssuranceRenewalStatusRequest(source interface{}) inter
 	return source
 }
 
-func convertEcsElasticityAssuranceRecurrenceTypeResponse(source interface{}) interface{} {
+func convertElasticityAssuranceRecurrenceTypeResponse(source interface{}) interface{} {
 	recurrenceType := fmt.Sprint(source)
 	switch strings.ToUpper(recurrenceType) {
 	case "DAILY":
