@@ -10,6 +10,7 @@ package eflo_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
@@ -183,3 +184,121 @@ resource "alicloud_eflo_node_group_attachment" "default0" {
 }
 
 // Test Eflo NodeGroupAttachment. <<< Resource test cases, automatically generated.
+
+// Case VPD 集群 Attachment 生命周期验证：节点通过 VpdSubnets/IpAllocationPolicy 从集群子网分配 IP，不配置 vpc_id/vswitch_id
+//
+// 前置条件（一次性环境，非本测试自建）：一个可用的 VPD 集群、其节点组与待挂载节点，以及该集群所属 VPD 的子网和节点机型，
+// 分别通过 ALICLOUD_EFLO_VPD_CLUSTER_ID / _NODE_GROUP_ID / _NODE_ID / _SUBNET_ID / _MACHINE_TYPE 传入；
+// ALICLOUD_EFLO_VPD_REGION 用于区域前置校验，须与 Provider 实际运行地域一致（缺省 cn-hangzhou）。
+// 注意：Destroy 通过 ShrinkCluster 把该节点移出集群，一次执行即消耗该预置节点，重复执行前需由环境责任人补充可用节点。
+func TestAccAliCloudEfloNodeGroupAttachment_vpd(t *testing.T) {
+	clusterId := os.Getenv("ALICLOUD_EFLO_VPD_CLUSTER_ID")
+	nodeGroupId := os.Getenv("ALICLOUD_EFLO_VPD_NODE_GROUP_ID")
+	nodeId := os.Getenv("ALICLOUD_EFLO_VPD_NODE_ID")
+	subnetId := os.Getenv("ALICLOUD_EFLO_VPD_SUBNET_ID")
+	machineType := os.Getenv("ALICLOUD_EFLO_VPD_MACHINE_TYPE")
+	region := os.Getenv("ALICLOUD_EFLO_VPD_REGION")
+	if region == "" {
+		region = "cn-hangzhou"
+	}
+	if clusterId == "" || nodeGroupId == "" || nodeId == "" || subnetId == "" || machineType == "" {
+		t.Skip("Skipping VPD attachment acceptance test: ALICLOUD_EFLO_VPD_CLUSTER_ID, ALICLOUD_EFLO_VPD_NODE_GROUP_ID, ALICLOUD_EFLO_VPD_NODE_ID, ALICLOUD_EFLO_VPD_SUBNET_ID and ALICLOUD_EFLO_VPD_MACHINE_TYPE must point to a pre-provisioned VPD cluster, subnet and available node")
+	}
+
+	var v map[string]interface{}
+	resourceId := "alicloud_eflo_node_group_attachment.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEfloNodeGroupAttachmentMapVpd)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eflo.NewEfloServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEfloNodeGroupAttachment")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccEfloAttachment%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEfloNodeGroupAttachmentBasicDependenceVpd)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(region)})
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_id":    clusterId,
+					"node_group_id": nodeGroupId,
+					"node_id":       nodeId,
+					"hostname":      name,
+					"vpd_subnets": []string{
+						subnetId,
+					},
+					"ip_allocation_policy": []map[string]interface{}{
+						{
+							"bond_policy": []map[string]interface{}{
+								{
+									"bond_default_subnet": subnetId,
+									"bonds": []map[string]interface{}{
+										{
+											"name":   "Bond0",
+											"subnet": subnetId,
+										},
+									},
+								},
+							},
+						},
+						{
+							"machine_type_policy": []map[string]interface{}{
+								{
+									"bonds": []map[string]interface{}{
+										{
+											"name":   "Bond0",
+											"subnet": subnetId,
+										},
+									},
+									"machine_type": machineType,
+								},
+							},
+						},
+						{
+							"node_policy": []map[string]interface{}{
+								{
+									"bonds": []map[string]interface{}{
+										{
+											"name":   "Bond0",
+											"subnet": subnetId,
+										},
+									},
+									"hostname": name,
+									"node_id":  nodeId,
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_id":             clusterId,
+						"node_group_id":          nodeGroupId,
+						"node_id":                nodeId,
+						"hostname":               name,
+						"vpd_subnets.#":          "1",
+						"ip_allocation_policy.#": "3",
+					}),
+				),
+			},
+		},
+	})
+}
+
+var AlicloudEfloNodeGroupAttachmentMapVpd = map[string]string{}
+
+func AlicloudEfloNodeGroupAttachmentBasicDependenceVpd(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}

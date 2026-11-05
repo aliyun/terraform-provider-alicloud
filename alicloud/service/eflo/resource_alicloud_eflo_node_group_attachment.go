@@ -65,6 +65,104 @@ func ResourceNodeGroupAttachment() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"ip_allocation_policy": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"bond_policy": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"bond_default_subnet": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"bonds": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"name": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"subnet": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"machine_type_policy": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"bonds": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"name": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"subnet": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+									"machine_type": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"node_policy": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"bonds": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"name": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"subnet": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+									"hostname": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"node_id": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"login_password": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -85,14 +183,22 @@ func ResourceNodeGroupAttachment() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"vpd_subnets": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 		},
@@ -171,6 +277,22 @@ func resourceNodeGroupAttachmentCreate(d *schema.ResourceData, meta interface{})
 		return errs.WrapError(err)
 	}
 	request["NodeGroups"] = string(objectDataLocalMapJson)
+
+	if v, ok := d.GetOk("vpd_subnets"); ok {
+		vpdSubnetsJson, err := json.Marshal(v.(*schema.Set).List())
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		request["VpdSubnets"] = string(vpdSubnetsJson)
+	}
+
+	if v, ok := d.GetOk("ip_allocation_policy"); ok {
+		ipAllocationPolicyJson, err := json.Marshal(expandNodeGroupAttachmentIpAllocationPolicy(v.(*schema.Set)))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		request["IpAllocationPolicy"] = string(ipAllocationPolicyJson)
+	}
 
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -293,4 +415,72 @@ func resourceNodeGroupAttachmentDelete(d *schema.ResourceData, meta interface{})
 	}
 
 	return nil
+}
+
+func expandNodeGroupAttachmentIpAllocationPolicy(policies *schema.Set) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0)
+	for _, item := range policies.List() {
+		policyRaw := item.(map[string]interface{})
+		policy := make(map[string]interface{})
+
+		if bondPolicies, ok := policyRaw["bond_policy"].([]interface{}); ok && len(bondPolicies) > 0 && bondPolicies[0] != nil {
+			bondPolicyRaw := bondPolicies[0].(map[string]interface{})
+			bondPolicy := make(map[string]interface{})
+			if v, ok := bondPolicyRaw["bond_default_subnet"]; ok && v != "" {
+				bondPolicy["BondDefaultSubnet"] = v
+			}
+			bondPolicy["Bonds"] = expandNodeGroupAttachmentBonds(bondPolicyRaw["bonds"])
+			policy["BondPolicy"] = bondPolicy
+		}
+
+		if machineTypePolicies, ok := policyRaw["machine_type_policy"].(*schema.Set); ok && machineTypePolicies.Len() > 0 {
+			machineTypePolicyList := make([]map[string]interface{}, 0)
+			for _, machineTypeItem := range machineTypePolicies.List() {
+				machineTypeRaw := machineTypeItem.(map[string]interface{})
+				machineTypePolicy := make(map[string]interface{})
+				if v, ok := machineTypeRaw["machine_type"]; ok && v != "" {
+					machineTypePolicy["MachineType"] = v
+				}
+				machineTypePolicy["Bonds"] = expandNodeGroupAttachmentBonds(machineTypeRaw["bonds"])
+				machineTypePolicyList = append(machineTypePolicyList, machineTypePolicy)
+			}
+			policy["MachineTypePolicy"] = machineTypePolicyList
+		}
+
+		if nodePolicies, ok := policyRaw["node_policy"].(*schema.Set); ok && nodePolicies.Len() > 0 {
+			nodePolicyList := make([]map[string]interface{}, 0)
+			for _, nodeItem := range nodePolicies.List() {
+				nodeRaw := nodeItem.(map[string]interface{})
+				nodePolicy := make(map[string]interface{})
+				if v, ok := nodeRaw["hostname"]; ok && v != "" {
+					nodePolicy["Hostname"] = v
+				}
+				if v, ok := nodeRaw["node_id"]; ok && v != "" {
+					nodePolicy["NodeId"] = v
+				}
+				nodePolicy["Bonds"] = expandNodeGroupAttachmentBonds(nodeRaw["bonds"])
+				nodePolicyList = append(nodePolicyList, nodePolicy)
+			}
+			policy["NodePolicy"] = nodePolicyList
+		}
+
+		result = append(result, policy)
+	}
+	return result
+}
+
+func expandNodeGroupAttachmentBonds(v interface{}) []map[string]interface{} {
+	bonds := make([]map[string]interface{}, 0)
+	for _, item := range v.(*schema.Set).List() {
+		bondRaw := item.(map[string]interface{})
+		bond := make(map[string]interface{})
+		if v, ok := bondRaw["name"]; ok {
+			bond["Name"] = v
+		}
+		if v, ok := bondRaw["subnet"]; ok {
+			bond["Subnet"] = v
+		}
+		bonds = append(bonds, bond)
+	}
+	return bonds
 }
