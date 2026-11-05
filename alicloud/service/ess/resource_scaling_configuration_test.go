@@ -2066,13 +2066,20 @@ func burstingRemoteCheck(t *testing.T, resourceId string, systemDisk, dataDisk b
 	})
 }
 
+// resourceEssScalingConfiguration_NetworkInterfacesWithSecondary adds a second
+// scaling configuration to the dependence so the identity assertion on the
+// primary object cannot pass by reading the wrong object.
+func resourceEssScalingConfiguration_NetworkInterfacesWithSecondary(name string) string {
+	return resourceEssScalingConfiguration_NetworkInterfaces(name) + essScalingConfigurationSecondaryForOrder
+}
+
 func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing.T) {
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	rand := tfcacctest.RandIntRange(1000, 999999)
 	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
 	resourceId := "alicloud_ess_scaling_configuration.sco"
 	var v ess.ScalingConfiguration
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfiguration_NetworkInterfaces)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfiguration_NetworkInterfacesWithSecondary)
 	basicMap := map[string]string{
 		"scaling_group_id":  acctest.CHECKSET,
 		"instance_type":     acctest.CHECKSET,
@@ -2101,7 +2108,7 @@ func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing
 					"security_group_id":      "${alicloud_security_group.default1.id}",
 					"force_delete":           "true",
 					"system_disk_categories": []interface{}{"cloud_essd", "cloud"},
-				}) + essScalingConfigurationSecondaryForOrder,
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.#", "2"),
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.0", "cloud_essd"),
@@ -2112,7 +2119,7 @@ func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"system_disk_categories": []interface{}{"cloud", "cloud_essd"},
-				}) + essScalingConfigurationSecondaryForOrder,
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.#", "2"),
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.0", "cloud"),
