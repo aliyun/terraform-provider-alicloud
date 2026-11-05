@@ -953,7 +953,7 @@ type fakeListenerAclAttachmentApi struct {
 func (f *fakeListenerAclAttachmentApi) Describe(ctx context.Context, listenerId string) (map[string]interface{}, error) {
 	f.describes++
 	if f.describe == nil {
-		return map[string]interface{}{"AclStatus": "on", "AclType": "white", "ListenerPort": 80}, nil
+		return map[string]interface{}{"AclStatus": "on", "AclType": "white", "AclId": "acl-1", "ListenerPort": 80}, nil
 	}
 	return f.describe(ctx, listenerId)
 }

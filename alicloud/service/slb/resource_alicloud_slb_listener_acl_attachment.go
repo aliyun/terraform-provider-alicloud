@@ -317,18 +317,31 @@ func UpdateListenerAclAttachment(ctx context.Context, api ListenerAclAttachmentA
 				fmt.Sprintf("The request that updates the access control settings of listener %s returned an unknown result, but the listener reports the planned binding; the identity is kept in state.", listenerId),
 			}, nil
 		}
+
+		// The write was acknowledged: wait for the listener to report the
+		// planned settings instead of storing a stale response.
+		planState := ListenerAclAttachmentPlanState(plan)
+		object, converged, err := waitListenerAclAttachmentConverged(ctx, api, listenerId, aclId, aclType)
+		if err != nil {
+			return planState, []string{
+				fmt.Sprintf("The access control settings of listener %s were updated, but reading the listener failed: %s. The planned state is kept and will be reconciled on the next refresh.", listenerId, err),
+			}, nil
+		}
+		if !converged {
+			return planState, []string{
+				fmt.Sprintf("The access control settings of listener %s were updated, but the listener did not report the planned settings within the read budget. The planned state is kept and will be reconciled on the next refresh.", listenerId),
+			}, nil
+		}
+		return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), nil, nil
 	}
 
+	// No ACL field changed, so a single read is enough to refresh the server
+	// values.
 	planState := ListenerAclAttachmentPlanState(plan)
-	object, converged, err := waitListenerAclAttachmentConverged(ctx, api, listenerId, aclId, aclType)
+	object, err := api.Describe(ctx, listenerId)
 	if err != nil {
 		return planState, []string{
-			fmt.Sprintf("The access control settings of listener %s were updated, but reading the listener failed: %s. The planned state is kept and will be reconciled on the next refresh.", listenerId, err),
-		}, nil
-	}
-	if !converged {
-		return planState, []string{
-			fmt.Sprintf("The access control settings of listener %s were updated, but the listener did not report the planned settings within the read budget. The planned state is kept and will be reconciled on the next refresh.", listenerId),
+			fmt.Sprintf("Reading the access control settings of listener %s failed: %s. The planned state is kept and will be reconciled on the next refresh.", listenerId, err),
 		}, nil
 	}
 	return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), nil, nil
