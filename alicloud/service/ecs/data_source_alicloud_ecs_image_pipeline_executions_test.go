@@ -68,6 +68,12 @@ func TestAccAliCloudECSImagePipelineExecutionsDataSource(t *testing.T) {
 				ExpectError: regexp.MustCompile(`Every comma separated status must be non-empty|Invalid Status`),
 			},
 			{
+				// A null tag value used to be dropped, which silently widened the
+				// query; it is now rejected at the query entry.
+				Config:      imagePipelineExecutionsConfig(name, pipelineFilter+"  tags = {\n    env = null\n  }\n"),
+				ExpectError: regexp.MustCompile(`Invalid Tag Value|must be set`),
+			},
+			{
 				// The destroy phase re-reads the last configuration, so a valid
 				// step must follow the expected validation failures.
 				Config: imagePipelineExecutionsConfig(name, pipelineFilter),

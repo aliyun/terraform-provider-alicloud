@@ -2,15 +2,15 @@ package ecs
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
@@ -201,10 +201,13 @@ func ecsFwSetRequestString(request map[string]interface{}, key string, value typ
 }
 
 // ecsFwApplyRepeatList writes a repeat-list filter in the 1-based
-// `Parameter.N` form using the shared convert helper.
+// `Parameter.N` form using the shared convert helper. Blank and repeated values
+// are sent once, so a duplicated input does not change the request or make the
+// result count depend on the server's duplicate handling.
 func ecsFwApplyRepeatList(request map[string]interface{}, parameter string, values []string) {
-	raw := make([]interface{}, 0, len(values))
-	for _, value := range values {
+	unique := ecsFwUniqueStrings(values)
+	raw := make([]interface{}, 0, len(unique))
+	for _, value := range unique {
 		raw = append(raw, value)
 	}
 	expandArrayToMap(request, raw, parameter)
@@ -334,11 +337,53 @@ func ecsFwSleepBackoff(ctx context.Context, duration time.Duration) error {
 	}
 }
 
+// ecsFwRpcCall performs the single transport call. It is a variable so tests
+// can assert the runtime options and simulate a request that is still in flight
+// when the read is cancelled.
+var ecsFwRpcCall = func(client *connectivity.AliyunClient, action string, request map[string]interface{}, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
+	return client.RpcPostWithRuntimeOptions("Ecs", "2014-05-26", action, request, runtime)
+}
+
+// ecsFwRemainingBudgetMillis converts the read deadline into the millisecond
+// transport timeouts the SDK expects. Without a deadline it returns 0, which
+// leaves the SDK defaults in place.
+func ecsFwRemainingBudgetMillis(ctx context.Context) int {
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		return 0
+	}
+	remaining := time.Until(deadline)
+	if remaining <= 0 {
+		return 1
+	}
+	millis := remaining.Milliseconds()
+	if millis < 1 {
+		millis = 1
+	}
+	if millis > math.MaxInt32 {
+		millis = math.MaxInt32
+	}
+	return int(millis)
+}
+
+// ecsFwRequestRuntime bounds one request with the remaining read budget and
+// switches off the SDK internal retry loop: every retry is owned by the loop
+// below, which stops on the same deadline and cancellation signal.
+func ecsFwRequestRuntime(ctx context.Context) *util.RuntimeOptions {
+	runtime := &util.RuntimeOptions{}
+	runtime.SetAutoretry(false)
+	if millis := ecsFwRemainingBudgetMillis(ctx); millis > 0 {
+		runtime.ConnectTimeout = &millis
+		runtime.ReadTimeout = &millis
+	}
+	return runtime
+}
+
 // ecsFwRpcPost sends one read-only ECS query with the shared retry policy:
 // transient failures are retried inside the bounded window, everything else
-// fails on the first response. The context carries the read budget, so the
-// retry window, the backoff between attempts and the RPC itself all stop at the
-// same deadline and on the same cancellation signal.
+// fails on the first response. The context carries the read budget: it gates
+// every attempt and the backoff, and the same remaining budget is handed to the
+// transport as connect/read timeouts, so an in-flight request cannot outlive it.
 func ecsFwRpcPost(ctx context.Context, client *connectivity.AliyunClient, typeName, action string, request map[string]interface{}) (map[string]interface{}, error) {
 	var response map[string]interface{}
 	backoff := 3 * time.Second
@@ -346,7 +391,7 @@ func ecsFwRpcPost(ctx context.Context, client *connectivity.AliyunClient, typeNa
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return sdkretry.NonRetryableError(ctxErr)
 		}
-		result, rpcErr := client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
+		result, rpcErr := ecsFwRpcCall(client, action, request, ecsFwRequestRuntime(ctx))
 		if rpcErr != nil {
 			if helper.NeedRetry(rpcErr) {
 				if waitErr := ecsFwSleepBackoff(ctx, backoff); waitErr != nil {
@@ -405,17 +450,63 @@ func ecsFwDecodeRecordList(response map[string]interface{}, container, member, a
 	return items, nil
 }
 
+// ecsFwParseCount parses a response count. Only a non-negative whole number is
+// a valid count: a fractional value would be silently truncated, and a negative
+// value is never a count.
+func ecsFwParseCount(value interface{}) (int64, bool) {
+	switch v := value.(type) {
+	case json.Number:
+		n, err := v.Int64()
+		if err != nil || n < 0 {
+			return 0, false
+		}
+		return n, true
+	case int:
+		if v < 0 {
+			return 0, false
+		}
+		return int64(v), true
+	case int32:
+		if v < 0 {
+			return 0, false
+		}
+		return int64(v), true
+	case int64:
+		if v < 0 {
+			return 0, false
+		}
+		return v, true
+	case float64:
+		if v < 0 || v != math.Trunc(v) {
+			return 0, false
+		}
+		return int64(v), true
+	case float32:
+		if v < 0 || float64(v) != math.Trunc(float64(v)) {
+			return 0, false
+		}
+		return int64(v), true
+	case string:
+		n, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64)
+		if err != nil || n < 0 {
+			return 0, false
+		}
+		return n, true
+	}
+	return 0, false
+}
+
 // ecsFwDecodeCount reads an integer response member. A missing member is
 // reported as unknown so the caller can fall back; a member that is present but
-// not an integer is a malformed response, not a count of 0.
+// is not a non-negative whole number is a malformed response, not a count of 0.
 func ecsFwDecodeCount(response map[string]interface{}, key, action string) (int64, bool, error) {
 	raw, ok := response[key]
 	if !ok || raw == nil {
 		return 0, false, nil
 	}
-	value, ok := ecsFwParseInt64(raw)
+	value, ok := ecsFwParseCount(raw)
 	if !ok {
-		return 0, false, fmt.Errorf("%s returned %s as %T instead of an integer", action, key, raw)
+		return 0, false, fmt.Errorf("%s returned %s as %T instead of a non-negative integer", action, key, raw)
 	}
 	return value, true, nil
 }
@@ -435,28 +526,128 @@ func ecsFwDecodeToken(response map[string]interface{}, key, action string) (stri
 	return token, nil
 }
 
-// ecsFwPageSignature identifies a page by its decoded content. Two pages with
-// the same signature mean the endpoint ignored the page parameter, which would
-// otherwise duplicate rows or loop until the page budget is exhausted.
-func ecsFwPageSignature(items []map[string]interface{}) string {
-	hash := sha256.New()
-	for _, item := range items {
-		fmt.Fprintf(hash, "%v|", item)
+// ecsFwOptionalObjectList decodes a single nested object into a one element
+// list. An absent member is an empty list; a member of the wrong type is a
+// malformed record and is reported instead of being treated as absent.
+func ecsFwOptionalObjectList(name string, value interface{}, objectType types.ObjectType, build func(object map[string]interface{}) map[string]attr.Value) (types.List, error) {
+	if value == nil {
+		return types.ListValueMust(objectType, []attr.Value{}), nil
 	}
-	return hex.EncodeToString(hash.Sum(nil))
+	object, ok := value.(map[string]interface{})
+	if !ok {
+		return types.ListNull(objectType), fmt.Errorf("%s is %T instead of an object", name, value)
+	}
+	return types.ListValueMust(objectType, []attr.Value{types.ObjectValueMust(objectType.AttrTypes, build(object))}), nil
+}
+
+// ecsFwOptionalObjectListMember decodes a nested list member into a list of
+// objects. An absent container or member is an empty list; a container, member
+// or entry of the wrong type is a malformed record and is reported instead of
+// being dropped, so a partial result cannot be written to state.
+func ecsFwOptionalObjectListMember(name, member string, value interface{}, objectType types.ObjectType, build func(item map[string]interface{}) (attr.Value, error)) (types.List, error) {
+	if value == nil {
+		return types.ListValueMust(objectType, []attr.Value{}), nil
+	}
+	container, ok := value.(map[string]interface{})
+	if !ok {
+		return types.ListNull(objectType), fmt.Errorf("%s is %T instead of an object", name, value)
+	}
+	raw, ok := container[member]
+	if !ok || raw == nil {
+		return types.ListValueMust(objectType, []attr.Value{}), nil
+	}
+	list, ok := raw.([]interface{})
+	if !ok {
+		return types.ListNull(objectType), fmt.Errorf("%s.%s is %T instead of a list", name, member, raw)
+	}
+	elements := make([]attr.Value, 0, len(list))
+	for index, entry := range list {
+		item, ok := entry.(map[string]interface{})
+		if !ok {
+			return types.ListNull(objectType), fmt.Errorf("%s.%s[%d] is %T instead of an object", name, member, index, entry)
+		}
+		element, err := build(item)
+		if err != nil {
+			return types.ListNull(objectType), fmt.Errorf("%s.%s[%d]: %w", name, member, index, err)
+		}
+		elements = append(elements, element)
+	}
+	return types.ListValueMust(objectType, elements), nil
+}
+
+// ecsFwOptionalStringList decodes a nested list of strings. An absent container
+// or member is an empty list; a container, member or entry of the wrong type is
+// a malformed record and is reported.
+func ecsFwOptionalStringList(name, member string, value interface{}) (types.List, error) {
+	if value == nil {
+		return types.ListValueMust(types.StringType, []attr.Value{}), nil
+	}
+	container, ok := value.(map[string]interface{})
+	if !ok {
+		return types.ListNull(types.StringType), fmt.Errorf("%s is %T instead of an object", name, value)
+	}
+	raw, ok := container[member]
+	if !ok || raw == nil {
+		return types.ListValueMust(types.StringType, []attr.Value{}), nil
+	}
+	list, ok := raw.([]interface{})
+	if !ok {
+		return types.ListNull(types.StringType), fmt.Errorf("%s.%s is %T instead of a list", name, member, raw)
+	}
+	elements := make([]attr.Value, 0, len(list))
+	for index, entry := range list {
+		text, ok := entry.(string)
+		if !ok {
+			return types.ListNull(types.StringType), fmt.Errorf("%s.%s[%d] is %T instead of a string", name, member, index, entry)
+		}
+		elements = append(elements, types.StringValue(text))
+	}
+	return types.ListValueMust(types.StringType, elements), nil
+}
+
+// ecsFwRecordIdentity returns the stable identity of a record. A record without
+// an identity cannot be deduplicated or addressed, so it is a malformed result.
+func ecsFwRecordIdentity(object map[string]interface{}, key, action string) (string, error) {
+	identity := strings.TrimSpace(ecsFwString(object[key]).ValueString())
+	if identity == "" {
+		return "", fmt.Errorf("%s returned a record without %s; the result was not returned because the record cannot be identified", action, key)
+	}
+	return identity, nil
+}
+
+// ecsFwUniqueStrings drops blank and repeated values while preserving order, so
+// a repeated filter value is sent once.
+func ecsFwUniqueStrings(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	unique := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		unique = append(unique, value)
+	}
+	return unique
 }
 
 // ecsFwCollectNumberedPages reads numbered pages until a short or empty page,
 // the server total is reached, or the page budget is exhausted. The context
 // carries the read deadline and cancellation signal, so the loop stops at the
-// same point as the requests it issues. A page that repeats earlier content, or
-// a full page for the whole budget, means the endpoint ignored the page
-// parameters, so the result is discarded instead of returned incomplete.
-func ecsFwCollectNumberedPages(ctx context.Context, maxPages int, startPage, pageSize int64, action string, fetch func(pageNumber int64) ([]map[string]interface{}, int64, error)) ([]map[string]interface{}, int64, error) {
+// same point as the requests it issues. Integrity is enforced before anything
+// is returned: every record must carry a unique, non-empty identity, the server
+// total must stay consistent, a short or empty page is only accepted when it
+// accounts for every row the total promised, and a full page for the whole
+// budget means the endpoint ignored the page parameters.
+func ecsFwCollectNumberedPages(ctx context.Context, maxPages int, startPage, pageSize int64, action, identityKey string, fetch func(pageNumber int64) ([]map[string]interface{}, int64, error)) ([]map[string]interface{}, int64, error) {
 	objects := make([]map[string]interface{}, 0)
 	totalCount := int64(0)
+	totalKnown := false
 	pageNumber := startPage
-	seenPages := make(map[string]int64, maxPages)
+	seen := make(map[string]struct{})
 	for page := 0; page < maxPages; page++ {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return nil, 0, fmt.Errorf("%s read stopped before page %d was requested: %v; the result was not returned because it would be incomplete", action, pageNumber, ctxErr)
@@ -465,21 +656,40 @@ func ecsFwCollectNumberedPages(ctx context.Context, maxPages int, startPage, pag
 		if err != nil {
 			return nil, 0, err
 		}
-		if len(pageItems) > 0 {
-			signature := ecsFwPageSignature(pageItems)
-			if previous, ok := seenPages[signature]; ok {
-				return nil, 0, fmt.Errorf("%s returned the same content for pages %d and %d, so the page parameters are not honoured; the result was not returned because it would be incomplete", action, previous, pageNumber)
+		if pageTotal > 0 {
+			if totalKnown && pageTotal != totalCount {
+				return nil, 0, fmt.Errorf("%s reported TotalCount %d on page %d after %d on an earlier page; the result was not returned because the server total is inconsistent", action, pageTotal, pageNumber, totalCount)
 			}
-			seenPages[signature] = pageNumber
+			totalCount = pageTotal
+			totalKnown = true
+		}
+		for _, item := range pageItems {
+			identity, err := ecsFwRecordIdentity(item, identityKey, action)
+			if err != nil {
+				return nil, 0, err
+			}
+			if _, duplicate := seen[identity]; duplicate {
+				return nil, 0, fmt.Errorf("%s returned %s %q more than once; the result was not returned because it would contain duplicate rows", action, identityKey, identity)
+			}
+			seen[identity] = struct{}{}
 		}
 		objects = append(objects, pageItems...)
-		if pageTotal > 0 {
-			totalCount = pageTotal
+		if totalKnown && int64(len(objects)) > totalCount {
+			return nil, 0, fmt.Errorf("%s returned %d rows while reporting TotalCount %d; the result was not returned because the response is inconsistent", action, len(objects), totalCount)
 		}
-		if len(pageItems) == 0 || int64(len(pageItems)) < pageSize {
+		if len(pageItems) == 0 {
+			if totalKnown && int64(len(objects)) < totalCount {
+				return nil, 0, fmt.Errorf("%s returned an empty page at page %d while TotalCount %d still expects %d more rows; the result was not returned because it would be incomplete", action, pageNumber, totalCount, totalCount-int64(len(objects)))
+			}
 			break
 		}
-		if totalCount > 0 && int64(len(objects)) >= totalCount {
+		if int64(len(pageItems)) < pageSize {
+			if totalKnown && int64(len(objects)) < totalCount {
+				return nil, 0, fmt.Errorf("%s returned a short page at page %d while TotalCount %d still expects %d more rows; the result was not returned because it would be incomplete", action, pageNumber, totalCount, totalCount-int64(len(objects)))
+			}
+			break
+		}
+		if totalKnown && int64(len(objects)) >= totalCount {
 			break
 		}
 		pageNumber++
@@ -487,19 +697,21 @@ func ecsFwCollectNumberedPages(ctx context.Context, maxPages int, startPage, pag
 			return nil, 0, fmt.Errorf("%s returned a full page for %d consecutive requests (PageSize=%d), so pagination did not terminate; the result was not returned because it would be incomplete", action, maxPages, pageSize)
 		}
 	}
-	if totalCount == 0 && len(objects) > 0 {
+	if !totalKnown && len(objects) > 0 {
 		totalCount = int64(len(objects))
 	}
 	return objects, totalCount, nil
 }
 
 // ecsFwCollectTokenPages follows a continuation token until the server returns
-// none. A repeated token or a token for the whole page budget means the cursor
-// never terminates; the accumulated rows are discarded instead of being
-// returned as a partial result. The context carries the read deadline.
-func ecsFwCollectTokenPages(ctx context.Context, maxPages int, initialToken string, action string, fetch func(token string) ([]map[string]interface{}, string, error)) ([]map[string]interface{}, string, error) {
+// none. Every record must carry a unique, non-empty identity, so partially
+// overlapping pages are rejected as well. A repeated token or a token for the
+// whole page budget means the cursor never terminates; the accumulated rows are
+// discarded instead of being returned as a partial result.
+func ecsFwCollectTokenPages(ctx context.Context, maxPages int, initialToken, action, identityKey string, fetch func(token string) ([]map[string]interface{}, string, error)) ([]map[string]interface{}, string, error) {
 	objects := make([]map[string]interface{}, 0)
 	seenTokens := map[string]struct{}{}
+	seenRecords := map[string]struct{}{}
 	token := initialToken
 	for page := 0; page < maxPages; page++ {
 		if ctxErr := ctx.Err(); ctxErr != nil {
@@ -508,6 +720,16 @@ func ecsFwCollectTokenPages(ctx context.Context, maxPages int, initialToken stri
 		pageItems, nextToken, err := fetch(token)
 		if err != nil {
 			return nil, "", err
+		}
+		for _, item := range pageItems {
+			identity, err := ecsFwRecordIdentity(item, identityKey, action)
+			if err != nil {
+				return nil, "", err
+			}
+			if _, duplicate := seenRecords[identity]; duplicate {
+				return nil, "", fmt.Errorf("%s returned %s %q more than once; the result was not returned because it would contain duplicate rows", action, identityKey, identity)
+			}
+			seenRecords[identity] = struct{}{}
 		}
 		objects = append(objects, pageItems...)
 		if nextToken == "" {

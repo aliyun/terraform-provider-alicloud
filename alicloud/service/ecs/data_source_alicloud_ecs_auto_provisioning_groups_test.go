@@ -61,6 +61,16 @@ func TestAccAliCloudECSAutoProvisioningGroupsDataSource(t *testing.T) {
 				),
 			},
 			{
+				// A repeated input ID is sent once, so the result and the count
+				// do not depend on the server's duplicate handling.
+				Config: autoProvisioningGroupsConfig("  ids = [data.alicloud_ecs_auto_provisioning_groups.all.groups.0.auto_provisioning_group_id, data.alicloud_ecs_auto_provisioning_groups.all.groups.0.auto_provisioning_group_id]\n"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "groups.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "ids.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "total_count", "1"),
+				),
+			},
+			{
 				Config: autoProvisioningGroupsConfig("  auto_provisioning_group_name = data.alicloud_ecs_auto_provisioning_groups.all.groups.0.auto_provisioning_group_name\n"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "groups.#", "1"),

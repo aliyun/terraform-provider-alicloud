@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
 	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
@@ -178,20 +179,21 @@ func (d *imagePipelineExecutionsDataSource) Schema(ctx context.Context, req data
 			"tags": schema.MapAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
-				Description: "A mapping of tags to filter by. Each entry is sent as a `Tag` filter. A maximum of 20 entries is allowed.",
+				Description: "A mapping of tags to filter by. Each entry is sent as a `Tag` filter. A maximum of 20 entries is allowed. A key must be 1 to 128 characters, must not start with `aliyun` or `acs:`, and must not contain a URL. A value may be empty, is limited to 128 characters and must not contain a URL. A null value is rejected: omit the entry to leave the tag out of the request, or use an empty string to send an empty value.",
 				Validators: []validator.Map{
 					mapvalidator.SizeAtMost(20),
+					ecsFwTagMapValidator{allowEmptyValue: true},
 				},
 			},
 			"ids": schema.ListAttribute{
 				Optional:    true,
 				Computed:    true,
 				ElementType: types.StringType,
-				Description: "A list of execution IDs to filter by. The filter is applied on the provider side after all pages are read, so a server that ignores it cannot widen the result.",
+				Description: "A list of execution IDs to filter by. The filter is applied on the provider side after all pages are read, so a server that ignores it cannot widen the result. Blank and repeated IDs are sent once.",
 			},
 			"max_results": schema.Int64Attribute{
 				Optional:    true,
-				Description: "The number of entries per page. Valid values: 1 to 500. Defaults to 50. A page shorter than this value ends the read.",
+				Description: "The number of entries per page. Valid values: 1 to 500. Defaults to 50. Only the server decides when the result ends: a page shorter than this value is still followed when it returns a continuation token.",
 				Validators: []validator.Int64{
 					int64validator.Between(1, 500),
 				},
@@ -199,11 +201,11 @@ func (d *imagePipelineExecutionsDataSource) Schema(ctx context.Context, req data
 			"next_token": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "The pagination token to start reading from. The first request omits it; each following request sends the token of the previous response, and the read stops when the server returns none. A token that repeats, or a token after 1,000 consecutive requests, aborts the read with an error instead of returning a partial result. The value stored afterwards is the last token the server returned, and it is empty when every page has been read.",
+				Description: "The pagination token to start reading from. The first request omits it; each following request sends the token of the previous response, and the read stops when the server returns none. A token that repeats, or 1,000 consecutive requests that each still return a token, aborts the read with an error instead of returning a partial result. The value stored afterwards is the last token the server returned, and it is empty when every page has been read.",
 			},
 			"total_count": schema.Int64Attribute{
 				Computed:    true,
-				Description: "The number of execution records returned by this read after all configured filters, including `ids`. DescribeImagePipelineExecutions does not report a total, so this is the number of rows read, not a server-side total.",
+				Description: "The number of execution records this read returned after all configured filters, including the provider-side `ids` filter. `DescribeImagePipelineExecutions` also returns a `TotalCount` for the query, but that value does not account for the `ids` filter, so the attribute reports the rows actually returned.",
 			},
 			"executions": schema.ListAttribute{
 				Computed:    true,
@@ -246,15 +248,36 @@ func (d *imagePipelineExecutionsDataSource) Read(ctx context.Context, req dataso
 	ctx, cancel := context.WithTimeout(ctx, imagePipelineExecutionsReadBudget)
 	defer cancel()
 
-	request := imagePipelineExecutionsRequest(model, d.Meta().RegionId)
-
-	objects, lastToken, err := d.imagePipelineExecutionsDescribeAll(ctx, request)
+	model, err := d.load(ctx, d.Meta(), d.Meta().RegionId, model)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling %s", imagePipelineExecutionsTypeName, imagePipelineExecutionsAction),
 			err.Error(),
 		)
 		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+}
+
+// load performs the whole read: it builds the request, follows every page,
+// decodes the records and returns the state model. Read only adds the deadline,
+// diagnostics and the state write, so the same request-to-state path can be
+// exercised directly in unit tests.
+func (d *imagePipelineExecutionsDataSource) load(ctx context.Context, client *connectivity.AliyunClient, regionId string, model imagePipelineExecutionsModel) (imagePipelineExecutionsModel, error) {
+	hasImagePipelineId := !model.ImagePipelineId.IsNull() && !model.ImagePipelineId.IsUnknown() && model.ImagePipelineId.ValueString() != ""
+	hasExecutionId := !model.ExecutionId.IsNull() && !model.ExecutionId.IsUnknown() && model.ExecutionId.ValueString() != ""
+	// The configuration validator enforces this before Read; the check keeps a
+	// direct Read invocation from sending a request the API always rejects.
+	if !hasImagePipelineId && !hasExecutionId {
+		return model, fmt.Errorf("at least one of `image_pipeline_id` and `execution_id` must be set; DescribeImagePipelineExecutions cannot list executions without one of them")
+	}
+
+	request := imagePipelineExecutionsRequest(model, regionId)
+
+	objects, lastToken, err := d.imagePipelineExecutionsDescribeAll(ctx, client, request)
+	if err != nil {
+		return model, err
 	}
 
 	idsFilter := make(map[string]struct{}, len(model.Ids.Elements()))
@@ -284,22 +307,14 @@ func (d *imagePipelineExecutionsDataSource) Read(ctx context.Context, req dataso
 		ids = append(ids, ecsFwString(object["ExecutionId"]).ValueString())
 		element, err := imagePipelineExecutionObject(object)
 		if err != nil {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Reading %s: decoding a record", imagePipelineExecutionsTypeName),
-				err.Error(),
-			)
-			return
+			return model, err
 		}
 		elements = append(elements, element)
 	}
 
-	// A cancelled or expired read must not write a partial result to state.
+	// A cancelled or expired read must not return a partial result to state.
 	if ctxErr := ctx.Err(); ctxErr != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Reading %s: the read did not finish", imagePipelineExecutionsTypeName),
-			fmt.Sprintf("The read was cancelled or ran out of time before the result was written: %v", ctxErr),
-		)
-		return
+		return model, fmt.Errorf("the read was cancelled or ran out of time before the result was written: %v", ctxErr)
 	}
 
 	model.Id = types.StringValue(helper.DataResourceIdHash(ids))
@@ -307,8 +322,7 @@ func (d *imagePipelineExecutionsDataSource) Read(ctx context.Context, req dataso
 	model.TotalCount = types.Int64Value(int64(len(elements)))
 	model.NextToken = types.StringValue(lastToken)
 	model.Executions = types.ListValueMust(imagePipelineExecutionObjectType, elements)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	return model, nil
 }
 
 // imagePipelineExecutionsRequest builds the full DescribeImagePipelineExecutions
@@ -347,18 +361,18 @@ func imagePipelineExecutionsNormalizedStatus(status types.String) types.String {
 	return types.StringValue(strings.Join(tokens, ","))
 }
 
-func (d *imagePipelineExecutionsDataSource) imagePipelineExecutionsDescribeAll(ctx context.Context, request map[string]interface{}) ([]map[string]interface{}, string, error) {
+func (d *imagePipelineExecutionsDataSource) imagePipelineExecutionsDescribeAll(ctx context.Context, client *connectivity.AliyunClient, request map[string]interface{}) ([]map[string]interface{}, string, error) {
 	initialToken := ""
 	if v, ok := request["NextToken"].(string); ok {
 		initialToken = v
 	}
-	return ecsFwCollectTokenPages(ctx, imagePipelineExecutionsMaxPages, initialToken, imagePipelineExecutionsAction, func(token string) ([]map[string]interface{}, string, error) {
+	return ecsFwCollectTokenPages(ctx, imagePipelineExecutionsMaxPages, initialToken, imagePipelineExecutionsAction, "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
 		if token == "" {
 			delete(request, "NextToken")
 		} else {
 			request["NextToken"] = token
 		}
-		response, err := ecsFwRpcPost(ctx, d.Meta(), imagePipelineExecutionsTypeName, imagePipelineExecutionsAction, request)
+		response, err := ecsFwRpcPost(ctx, client, imagePipelineExecutionsTypeName, imagePipelineExecutionsAction, request)
 		if err != nil {
 			return nil, "", err
 		}
@@ -375,9 +389,13 @@ func (d *imagePipelineExecutionsDataSource) imagePipelineExecutionsDescribeAll(c
 }
 
 func imagePipelineExecutionObject(object map[string]interface{}) (types.Object, error) {
+	identity, err := ecsFwRecordIdentity(object, "ExecutionId", imagePipelineExecutionsAction)
+	if err != nil {
+		return types.ObjectNull(imagePipelineExecutionAttrTypes), err
+	}
 	tags, err := ecsFwDecodeTags(object["Tags"])
 	if err != nil {
-		return types.ObjectNull(imagePipelineExecutionAttrTypes), fmt.Errorf("%s: %w", ecsFwString(object["ExecutionId"]).ValueString(), err)
+		return types.ObjectNull(imagePipelineExecutionAttrTypes), fmt.Errorf("%s: %w", identity, err)
 	}
 	return types.ObjectValueMust(imagePipelineExecutionAttrTypes, map[string]attr.Value{
 		"execution_id":      ecsFwString(object["ExecutionId"]),

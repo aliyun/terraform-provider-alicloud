@@ -2672,6 +2672,24 @@ func (client *AliyunClient) RpcGet(apiProductCode string, apiVersion string, api
 }
 
 func (client *AliyunClient) rpcRequest(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
+	runtime := &util.RuntimeOptions{}
+	runtime.SetAutoretry(autoRetry)
+	return client.rpcRequestWithRuntimeOptions(method, apiProductCode, apiVersion, apiName, query, body, runtime, endpoint)
+}
+
+// RpcPostWithRuntimeOptions invokes an RPC API with POST and caller supplied
+// runtime options. A read-only caller uses it to bound the transport with the
+// remaining read budget (the SDK reads the timeouts in milliseconds) and to
+// switch off the SDK internal retry loop, so retries stay under the caller's
+// own deadline and cancellation control.
+func (client *AliyunClient) RpcPostWithRuntimeOptions(apiProductCode string, apiVersion string, apiName string, body map[string]interface{}, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
+	if runtime == nil {
+		runtime = &util.RuntimeOptions{}
+	}
+	return client.rpcRequestWithRuntimeOptions("POST", apiProductCode, apiVersion, apiName, nil, body, runtime, "")
+}
+
+func (client *AliyunClient) rpcRequestWithRuntimeOptions(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, runtime *util.RuntimeOptions, endpoint string) (map[string]interface{}, error) {
 	var err error
 	if endpoint == "" {
 		apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
@@ -2693,8 +2711,6 @@ func (client *AliyunClient) rpcRequest(method string, apiProductCode string, api
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
 	}
-	runtime := &util.RuntimeOptions{}
-	runtime.SetAutoretry(autoRetry)
 	response, err := conn.DoRequest(tea.String(apiName), nil, tea.String(method), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
 	return response, formatError(response, err)
 }

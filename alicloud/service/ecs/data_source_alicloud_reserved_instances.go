@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -185,21 +186,21 @@ func (d *reservedInstancesDataSource) Schema(ctx context.Context, req datasource
 			},
 			"page_number": schema.Int64Attribute{
 				Optional:    true,
-				Description: "The number of the first page to read. Valid values: 1 or greater. Defaults to 1. The data source continues with the following pages until a short or empty page, the server total or the read budget is reached.",
+				Description: "The number of the first page to read. Valid values: 1 or greater. Defaults to 1. The data source continues with the following pages until the server total is reached or the read budget is exhausted.",
 				Validators: []validator.Int64{
 					int64validator.AtLeast(1),
 				},
 			},
 			"page_size": schema.Int64Attribute{
 				Optional:    true,
-				Description: "The number of entries per page. Valid values: 1 to 100. Defaults to 100. A page shorter than this value ends the read.",
+				Description: "The number of entries per page. Valid values: 1 to 100. Defaults to 100. A page shorter than this value ends the read only when it accounts for every row the server total promised; otherwise the read is reported as incomplete.",
 				Validators: []validator.Int64{
 					int64validator.Between(1, 100),
 				},
 			},
 			"total_count": schema.Int64Attribute{
 				Computed:    true,
-				Description: "The number of reserved instances that match all configured filters, as reported by the `TotalCount` of the API response. It counts every matching reserved instance in the region, not only the rows returned from `page_number`; when the page parameter is ignored and the read is aborted, no value is written.",
+				Description: "The number of reserved instances that match all configured filters, as reported by the `TotalCount` of the API response. It counts every matching reserved instance in the region, not only the rows returned from `page_number`. A total that changes between pages, or that disagrees with the rows read, is reported as an error instead of being written.",
 			},
 			"names": schema.ListAttribute{
 				Computed:    true,
@@ -254,15 +255,28 @@ func (d *reservedInstancesDataSource) Read(ctx context.Context, req datasource.R
 	ctx, cancel := context.WithTimeout(ctx, reservedInstancesReadBudget)
 	defer cancel()
 
-	request := reservedInstancesRequest(model, d.Meta().RegionId, scope, pageNumber, pageSize)
-
-	objects, totalCount, err := d.reservedInstancesDescribeAll(ctx, request, pageNumber, pageSize)
+	model, err := d.load(ctx, d.Meta(), d.Meta().RegionId, scope, pageNumber, pageSize, model)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling %s", reservedInstancesTypeName, reservedInstancesAction),
 			err.Error(),
 		)
 		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+}
+
+// load performs the whole read: it builds the request, follows every page,
+// decodes the records and returns the state model. Read only adds the deadline,
+// diagnostics and the state write, so the same request-to-state path can be
+// exercised directly in unit tests.
+func (d *reservedInstancesDataSource) load(ctx context.Context, client *connectivity.AliyunClient, regionId, scope string, pageNumber, pageSize int64, model reservedInstancesModel) (reservedInstancesModel, error) {
+	request := reservedInstancesRequest(model, regionId, scope, pageNumber, pageSize)
+
+	objects, totalCount, err := d.reservedInstancesDescribeAll(ctx, client, request, pageNumber, pageSize)
+	if err != nil {
+		return model, err
 	}
 
 	sorted := append([]map[string]interface{}(nil), objects...)
@@ -278,22 +292,14 @@ func (d *reservedInstancesDataSource) Read(ctx context.Context, req datasource.R
 		names = append(names, ecsFwString(object["ReservedInstanceName"]).ValueString())
 		element, err := reservedInstanceObject(object)
 		if err != nil {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Reading %s: decoding a record", reservedInstancesTypeName),
-				err.Error(),
-			)
-			return
+			return model, err
 		}
 		elements = append(elements, element)
 	}
 
-	// A cancelled or expired read must not write a partial result to state.
+	// A cancelled or expired read must not return a partial result to state.
 	if ctxErr := ctx.Err(); ctxErr != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Reading %s: the read did not finish", reservedInstancesTypeName),
-			fmt.Sprintf("The read was cancelled or ran out of time before the result was written: %v", ctxErr),
-		)
-		return
+		return model, fmt.Errorf("the read was cancelled or ran out of time before the result was written: %v", ctxErr)
 	}
 
 	model.Id = types.StringValue(helper.DataResourceIdHash(ids))
@@ -301,8 +307,7 @@ func (d *reservedInstancesDataSource) Read(ctx context.Context, req datasource.R
 	model.Names = ecsFwStringListValue(names)
 	model.TotalCount = types.Int64Value(totalCount)
 	model.Instances = types.ListValueMust(reservedInstanceObjectType, elements)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	return model, nil
 }
 
 // reservedInstancesRequest builds the full DescribeReservedInstances request
@@ -328,11 +333,11 @@ func reservedInstancesRequest(model reservedInstancesModel, regionId, scope stri
 	return request
 }
 
-func (d *reservedInstancesDataSource) reservedInstancesDescribeAll(ctx context.Context, request map[string]interface{}, startPage, pageSize int64) ([]map[string]interface{}, int64, error) {
-	return ecsFwCollectNumberedPages(ctx, reservedInstancesMaxPages, startPage, pageSize, reservedInstancesAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+func (d *reservedInstancesDataSource) reservedInstancesDescribeAll(ctx context.Context, client *connectivity.AliyunClient, request map[string]interface{}, startPage, pageSize int64) ([]map[string]interface{}, int64, error) {
+	return ecsFwCollectNumberedPages(ctx, reservedInstancesMaxPages, startPage, pageSize, reservedInstancesAction, "ReservedInstanceId", func(pageNumber int64) ([]map[string]interface{}, int64, error) {
 		request["PageNumber"] = int(pageNumber)
 		request["PageSize"] = int(pageSize)
-		response, err := ecsFwRpcPost(ctx, d.Meta(), reservedInstancesTypeName, reservedInstancesAction, request)
+		response, err := ecsFwRpcPost(ctx, client, reservedInstancesTypeName, reservedInstancesAction, request)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -349,9 +354,21 @@ func (d *reservedInstancesDataSource) reservedInstancesDescribeAll(ctx context.C
 }
 
 func reservedInstanceObject(object map[string]interface{}) (types.Object, error) {
+	identity, err := ecsFwRecordIdentity(object, "ReservedInstanceId", reservedInstancesAction)
+	if err != nil {
+		return types.ObjectNull(reservedInstanceAttrTypes), err
+	}
 	tags, err := ecsFwDecodeTags(object["Tags"])
 	if err != nil {
-		return types.ObjectNull(reservedInstanceAttrTypes), fmt.Errorf("%s: %w", ecsFwString(object["ReservedInstanceId"]).ValueString(), err)
+		return types.ObjectNull(reservedInstanceAttrTypes), fmt.Errorf("%s: %w", identity, err)
+	}
+	operationLocks, err := ecsFwOptionalObjectListMember("OperationLocks", "OperationLock", object["OperationLocks"], reservedInstanceOperationLockObjectType, func(lock map[string]interface{}) (attr.Value, error) {
+		return types.ObjectValueMust(reservedInstanceOperationLockAttrTypes, map[string]attr.Value{
+			"lock_reason": ecsFwString(lock["LockReason"]),
+		}), nil
+	})
+	if err != nil {
+		return types.ObjectNull(reservedInstanceAttrTypes), fmt.Errorf("%s: %w", identity, err)
 	}
 	return types.ObjectValueMust(reservedInstanceAttrTypes, map[string]attr.Value{
 		"reserved_instance_id":   ecsFwString(object["ReservedInstanceId"]),
@@ -370,33 +387,7 @@ func reservedInstanceObject(object map[string]interface{}) (types.Object, error)
 		"allocation_status":      ecsFwString(object["AllocationStatus"]),
 		"description":            ecsFwString(object["Description"]),
 		"resource_group_id":      ecsFwString(object["ResourceGroupId"]),
-		"operation_locks":        reservedInstanceOperationLocks(object["OperationLocks"]),
+		"operation_locks":        operationLocks,
 		"tags":                   tags,
 	}), nil
-}
-
-func reservedInstanceOperationLocks(value interface{}) types.List {
-	elements := make([]attr.Value, 0)
-	container, ok := value.(map[string]interface{})
-	if !ok {
-		return types.ListValueMust(reservedInstanceOperationLockObjectType, elements)
-	}
-	raw, ok := container["OperationLock"]
-	if !ok {
-		return types.ListValueMust(reservedInstanceOperationLockObjectType, elements)
-	}
-	list, ok := raw.([]interface{})
-	if !ok {
-		return types.ListValueMust(reservedInstanceOperationLockObjectType, elements)
-	}
-	for _, entry := range list {
-		lock, ok := entry.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		elements = append(elements, types.ObjectValueMust(reservedInstanceOperationLockAttrTypes, map[string]attr.Value{
-			"lock_reason": ecsFwString(lock["LockReason"]),
-		}))
-	}
-	return types.ListValueMust(reservedInstanceOperationLockObjectType, elements)
 }

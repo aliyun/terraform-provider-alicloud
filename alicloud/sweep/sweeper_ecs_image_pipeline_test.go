@@ -39,6 +39,8 @@ func testSweepEcsImagePipeline(region string) error {
 	request["RegionId"] = aliyunClient.RegionId
 	request["MaxResults"] = tfhelper.PageSizeLarge
 
+	deleteErrors := make([]string, 0)
+
 	var response map[string]interface{}
 	for {
 		wait := tfhelper.IncrementalWait(3*time.Second, 3*time.Second)
@@ -56,21 +58,25 @@ func testSweepEcsImagePipeline(region string) error {
 		tflogs.AddDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", action, err)
-			return nil
+			return fmt.Errorf("%s failed to list image pipelines in %s: %s", action, region, err)
 		}
 
 		resp, err := jsonpath.Get("$.ImagePipeline.ImagePipelineSet", response)
 		if err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.ImagePipeline.ImagePipelineSet", action, err)
-			return nil
+			return fmt.Errorf("%s returned an unexpected image pipeline list in %s: %s", action, region, err)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
-			item := v.(map[string]interface{})
+			item, ok := v.(map[string]interface{})
+			if !ok {
+				deleteErrors = append(deleteErrors, fmt.Sprintf("malformed pipeline record %T", v))
+				continue
+			}
 
 			name, _ := item["Name"].(string)
-			if !shouldSweepEcsImagePipeline(name) {
-				log.Printf("[INFO] Skipping Ecs Image Pipeline: %s", item["Name"])
+			if !shouldSweepEcsImagePipeline(name, imagePipelineTagMap(item["Tags"])) {
+				log.Printf("[INFO] Skipping Ecs Image Pipeline: %s", name)
 				continue
 			}
 			action := "DeleteImagePipeline"
@@ -80,9 +86,12 @@ func testSweepEcsImagePipeline(region string) error {
 			}
 			_, err = aliyunClient.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete Ecs Image Pipeline (%s): %s", item["Name"], err)
+				id, _ := item["ImagePipelineId"].(string)
+				log.Printf("[ERROR] Failed to delete Ecs Image Pipeline (%s): %s", name, err)
+				deleteErrors = append(deleteErrors, fmt.Sprintf("%s (%s): %s", name, id, err))
+				continue
 			}
-			log.Printf("[INFO] Delete Ecs Image Pipeline success: %s ", item["Name"])
+			log.Printf("[INFO] Delete Ecs Image Pipeline success: %s ", name)
 		}
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
@@ -90,39 +99,105 @@ func testSweepEcsImagePipeline(region string) error {
 			break
 		}
 	}
+	if len(deleteErrors) > 0 {
+		return fmt.Errorf("failed to delete %d Ecs Image Pipeline(s): %s", len(deleteErrors), strings.Join(deleteErrors, "; "))
+	}
 	return nil
 }
 
-// shouldSweepEcsImagePipeline reports whether a pipeline name belongs to the
-// fixtures this sweeper owns. The documentation example uses the exact name
-// `terraform-example`; a prefix match on it would also delete unrelated
-// pipelines that merely share that prefix, so it is matched exactly. The
-// acceptance-test prefixes stay prefix matches.
-func shouldSweepEcsImagePipeline(name string) bool {
-	lower := strings.ToLower(name)
-	if lower == "terraform-example" {
-		return true
+// The documentation example deliberately uses a generic name, so the sweeper
+// only treats an exactly named pipeline as its own when the example's ownership
+// tag is present. Acceptance-test fixtures keep their name prefixes.
+const (
+	imagePipelineOwnerTagKey   = "terraform-example"
+	imagePipelineOwnerTagValue = "true"
+)
+
+// imagePipelineTagMap decodes the Tags member into a plain map. A malformed
+// member yields an empty map, which means "not owned" and never matches.
+func imagePipelineTagMap(tags interface{}) map[string]string {
+	result := map[string]string{}
+	container, ok := tags.(map[string]interface{})
+	if !ok {
+		return result
 	}
+	raw, ok := container["Tag"]
+	if !ok {
+		return result
+	}
+	list, ok := raw.([]interface{})
+	if !ok {
+		return result
+	}
+	for _, entry := range list {
+		item, ok := entry.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		key, _ := item["TagKey"].(string)
+		value, _ := item["TagValue"].(string)
+		if key != "" {
+			result[key] = value
+		}
+	}
+	return result
+}
+
+// shouldSweepEcsImagePipeline reports whether a pipeline belongs to a fixture
+// this sweeper owns. Acceptance-test fixtures are matched by name prefix. The
+// documentation example's generic name is matched only together with its
+// ownership tag, so an unrelated pipeline with the same name is left alone.
+func shouldSweepEcsImagePipeline(name string, tags map[string]string) bool {
+	lower := strings.ToLower(name)
 	for _, prefix := range []string{"tf-testacc", "tf_testacc"} {
 		if strings.HasPrefix(lower, prefix) {
 			return true
 		}
 	}
+	if lower == "terraform-example" {
+		return tags[imagePipelineOwnerTagKey] == imagePipelineOwnerTagValue
+	}
 	return false
 }
 
 func TestUnitShouldSweepEcsImagePipeline(t *testing.T) {
-	cases := map[string]bool{
-		"terraform-example":           true,
-		"tf-testAccimagepipeline1234": true,
-		"tf_testAccimage":             true,
-		"terraform-example-2":         false,
-		"terraform-examples-backup":   false,
-		"production-image-pipeline":   false,
+	owned := map[string]string{imagePipelineOwnerTagKey: imagePipelineOwnerTagValue}
+	cases := []struct {
+		name string
+		tags map[string]string
+		want bool
+	}{
+		{"tf-testAccimagepipeline1234", nil, true},
+		{"tf_testAccimage", nil, true},
+		{"terraform-example", owned, true},
+		{"terraform-example", nil, false},
+		{"terraform-example", map[string]string{imagePipelineOwnerTagKey: "false"}, false},
+		{"terraform-example-2", owned, false},
+		{"terraform-examples-backup", owned, false},
+		{"production-image-pipeline", owned, false},
 	}
-	for name, want := range cases {
-		if got := shouldSweepEcsImagePipeline(name); got != want {
-			t.Errorf("shouldSweepEcsImagePipeline(%q) = %v, want %v", name, got, want)
+	for _, testCase := range cases {
+		if got := shouldSweepEcsImagePipeline(testCase.name, testCase.tags); got != testCase.want {
+			t.Errorf("shouldSweepEcsImagePipeline(%q, %v) = %v, want %v", testCase.name, testCase.tags, got, testCase.want)
 		}
+	}
+}
+
+func TestUnitImagePipelineTagMap(t *testing.T) {
+	tags := imagePipelineTagMap(map[string]interface{}{
+		"Tag": []interface{}{
+			map[string]interface{}{"TagKey": imagePipelineOwnerTagKey, "TagValue": imagePipelineOwnerTagValue},
+			"malformed",
+			map[string]interface{}{"TagValue": "no-key"},
+		},
+	})
+	if tags[imagePipelineOwnerTagKey] != imagePipelineOwnerTagValue {
+		t.Fatalf("expected the ownership tag, got %v", tags)
+	}
+	if len(tags) != 1 {
+		t.Fatalf("expected malformed entries to be skipped, got %v", tags)
+	}
+	if len(imagePipelineTagMap("not-an-object")) != 0 {
+		t.Fatal("expected an empty map for a malformed Tags member")
 	}
 }

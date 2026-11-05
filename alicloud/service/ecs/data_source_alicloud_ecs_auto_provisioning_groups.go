@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -158,7 +159,7 @@ func (d *autoProvisioningGroupsDataSource) Schema(ctx context.Context, req datas
 				Optional:    true,
 				Computed:    true,
 				ElementType: types.StringType,
-				Description: "A list of auto provisioning group IDs to filter by. A maximum of 20 IDs may be specified: the DescribeAutoProvisioningGroups operation description limits the ID list to 20 entries even though the published schema metadata still declares `maxItems` 100, and the provider follows the documented operation limit. The filter is sent to the server. The attribute also reports the IDs that matched.",
+				Description: "A list of auto provisioning group IDs to filter by. A maximum of 20 IDs may be specified: the DescribeAutoProvisioningGroups operation description limits the ID list to 20 entries even though the published schema metadata still declares `maxItems` 100, and the provider follows the documented operation limit. Blank and repeated IDs are sent once, so the result does not depend on the server's duplicate handling. The attribute also reports the IDs that matched.",
 				Validators: []validator.List{
 					listvalidator.SizeAtMost(autoProvisioningGroupsMaxIds),
 				},
@@ -200,21 +201,21 @@ func (d *autoProvisioningGroupsDataSource) Schema(ctx context.Context, req datas
 			},
 			"page_number": schema.Int64Attribute{
 				Optional:    true,
-				Description: "The number of the first page to read. Valid values: 1 or greater. Defaults to 1. The data source continues with the following pages until a short or empty page, the server total or the read budget is reached.",
+				Description: "The number of the first page to read. Valid values: 1 or greater. Defaults to 1. The data source continues with the following pages until the server total is reached or the read budget is exhausted.",
 				Validators: []validator.Int64{
 					int64validator.AtLeast(1),
 				},
 			},
 			"page_size": schema.Int64Attribute{
 				Optional:    true,
-				Description: "The number of entries per page. Valid values: 1 to 100. Defaults to 100. A page shorter than this value ends the read.",
+				Description: "The number of entries per page. Valid values: 1 to 100. Defaults to 100. A page shorter than this value ends the read only when it accounts for every row the server total promised; otherwise the read is reported as incomplete.",
 				Validators: []validator.Int64{
 					int64validator.Between(1, 100),
 				},
 			},
 			"total_count": schema.Int64Attribute{
 				Computed:    true,
-				Description: "The number of auto provisioning groups that match all configured filters, as reported by the `TotalCount` of the API response. It counts every matching group in the region, not only the rows returned from `page_number`; when the page parameter is ignored and the read is aborted, no value is written.",
+				Description: "The number of auto provisioning groups that match all configured filters, as reported by the `TotalCount` of the API response. It counts every matching group in the region, not only the rows returned from `page_number`. A total that changes between pages, or that disagrees with the rows read, is reported as an error instead of being written.",
 			},
 			"names": schema.ListAttribute{
 				Computed:    true,
@@ -241,6 +242,23 @@ func (d *autoProvisioningGroupsDataSource) Read(ctx context.Context, req datasou
 	ctx, cancel := context.WithTimeout(ctx, autoProvisioningGroupsReadBudget)
 	defer cancel()
 
+	model, err := d.load(ctx, d.Meta(), d.Meta().RegionId, model)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Reading %s: calling %s", autoProvisioningGroupsTypeName, autoProvisioningGroupsAction),
+			err.Error(),
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+}
+
+// load performs the whole read: it builds the request, follows every page,
+// decodes the records and returns the state model. Read only adds the deadline,
+// diagnostics and the state write, so the same request-to-state path can be
+// exercised directly in unit tests.
+func (d *autoProvisioningGroupsDataSource) load(ctx context.Context, client *connectivity.AliyunClient, regionId string, model autoProvisioningGroupsModel) (autoProvisioningGroupsModel, error) {
 	pageNumber := int64(1)
 	if !model.PageNumber.IsNull() && !model.PageNumber.IsUnknown() {
 		pageNumber = model.PageNumber.ValueInt64()
@@ -250,15 +268,11 @@ func (d *autoProvisioningGroupsDataSource) Read(ctx context.Context, req datasou
 		pageSize = model.PageSize.ValueInt64()
 	}
 
-	request := d.autoProvisioningGroupsRequest(model, d.Meta().RegionId, pageNumber, pageSize)
+	request := d.autoProvisioningGroupsRequest(model, regionId, pageNumber, pageSize)
 
-	objects, totalCount, err := d.autoProvisioningGroupsDescribeAll(ctx, request, pageNumber, pageSize)
+	objects, totalCount, err := d.autoProvisioningGroupsDescribeAll(ctx, client, request, pageNumber, pageSize)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Reading %s: calling %s", autoProvisioningGroupsTypeName, autoProvisioningGroupsAction),
-			err.Error(),
-		)
-		return
+		return model, err
 	}
 
 	sorted := append([]map[string]interface{}(nil), objects...)
@@ -274,22 +288,14 @@ func (d *autoProvisioningGroupsDataSource) Read(ctx context.Context, req datasou
 		names = append(names, ecsFwString(object["AutoProvisioningGroupName"]).ValueString())
 		element, err := autoProvisioningGroupObject(object)
 		if err != nil {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Reading %s: decoding a record", autoProvisioningGroupsTypeName),
-				err.Error(),
-			)
-			return
+			return model, err
 		}
 		elements = append(elements, element)
 	}
 
-	// A cancelled or expired read must not write a partial result to state.
+	// A cancelled or expired read must not return a partial result to state.
 	if ctxErr := ctx.Err(); ctxErr != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Reading %s: the read did not finish", autoProvisioningGroupsTypeName),
-			fmt.Sprintf("The read was cancelled or ran out of time before the result was written: %v", ctxErr),
-		)
-		return
+		return model, fmt.Errorf("the read was cancelled or ran out of time before the result was written: %v", ctxErr)
 	}
 
 	model.Id = types.StringValue(helper.DataResourceIdHash(ids))
@@ -297,8 +303,7 @@ func (d *autoProvisioningGroupsDataSource) Read(ctx context.Context, req datasou
 	model.Names = ecsFwStringListValue(names)
 	model.TotalCount = types.Int64Value(totalCount)
 	model.Groups = types.ListValueMust(autoProvisioningGroupObjectType, elements)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	return model, nil
 }
 
 // autoProvisioningGroupsRequest builds the full DescribeAutoProvisioningGroups
@@ -319,11 +324,11 @@ func (d *autoProvisioningGroupsDataSource) autoProvisioningGroupsRequest(model a
 	return request
 }
 
-func (d *autoProvisioningGroupsDataSource) autoProvisioningGroupsDescribeAll(ctx context.Context, request map[string]interface{}, startPage, pageSize int64) ([]map[string]interface{}, int64, error) {
-	return ecsFwCollectNumberedPages(ctx, autoProvisioningGroupsMaxPages, startPage, pageSize, autoProvisioningGroupsAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+func (d *autoProvisioningGroupsDataSource) autoProvisioningGroupsDescribeAll(ctx context.Context, client *connectivity.AliyunClient, request map[string]interface{}, startPage, pageSize int64) ([]map[string]interface{}, int64, error) {
+	return ecsFwCollectNumberedPages(ctx, autoProvisioningGroupsMaxPages, startPage, pageSize, autoProvisioningGroupsAction, "AutoProvisioningGroupId", func(pageNumber int64) ([]map[string]interface{}, int64, error) {
 		request["PageNumber"] = int(pageNumber)
 		request["PageSize"] = int(pageSize)
-		response, err := ecsFwRpcPost(ctx, d.Meta(), autoProvisioningGroupsTypeName, autoProvisioningGroupsAction, request)
+		response, err := ecsFwRpcPost(ctx, client, autoProvisioningGroupsTypeName, autoProvisioningGroupsAction, request)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -340,9 +345,77 @@ func (d *autoProvisioningGroupsDataSource) autoProvisioningGroupsDescribeAll(ctx
 }
 
 func autoProvisioningGroupObject(object map[string]interface{}) (types.Object, error) {
+	identity, err := ecsFwRecordIdentity(object, "AutoProvisioningGroupId", autoProvisioningGroupsAction)
+	if err != nil {
+		return types.ObjectNull(autoProvisioningGroupAttrTypes), err
+	}
 	tags, err := ecsFwDecodeTags(object["Tags"])
 	if err != nil {
-		return types.ObjectNull(autoProvisioningGroupAttrTypes), fmt.Errorf("%s: %w", ecsFwString(object["AutoProvisioningGroupId"]).ValueString(), err)
+		return types.ObjectNull(autoProvisioningGroupAttrTypes), fmt.Errorf("%s: %w", identity, err)
+	}
+	launchTemplateConfigs, err := ecsFwOptionalObjectListMember("LaunchTemplateConfigs", "LaunchTemplateConfig", object["LaunchTemplateConfigs"], autoProvisioningGroupLaunchTemplateConfigObjectType, func(item map[string]interface{}) (attr.Value, error) {
+		return types.ObjectValueMust(autoProvisioningGroupLaunchTemplateConfigAttrTypes, map[string]attr.Value{
+			"instance_type":     ecsFwString(item["InstanceType"]),
+			"max_price":         ecsFwString(item["MaxPrice"]),
+			"vswitch_id":        ecsFwString(item["VSwitchId"]),
+			"weighted_capacity": ecsFwString(item["WeightedCapacity"]),
+			"priority":          ecsFwString(item["Priority"]),
+		}), nil
+	})
+	if err != nil {
+		return types.ObjectNull(autoProvisioningGroupAttrTypes), fmt.Errorf("%s: %w", identity, err)
+	}
+	targetCapacitySpecification, err := ecsFwOptionalObjectList("TargetCapacitySpecification", object["TargetCapacitySpecification"], autoProvisioningGroupTargetCapacitySpecificationObjectType, func(specification map[string]interface{}) map[string]attr.Value {
+		return map[string]attr.Value{
+			"default_target_capacity_type":  ecsFwString(specification["DefaultTargetCapacityType"]),
+			"total_target_capacity":         ecsFwString(specification["TotalTargetCapacity"]),
+			"pay_as_you_go_target_capacity": ecsFwString(specification["PayAsYouGoTargetCapacity"]),
+			"spot_target_capacity":          ecsFwString(specification["SpotTargetCapacity"]),
+		}
+	})
+	if err != nil {
+		return types.ObjectNull(autoProvisioningGroupAttrTypes), fmt.Errorf("%s: %w", identity, err)
+	}
+	spotOptions, err := ecsFwOptionalObjectList("SpotOptions", object["SpotOptions"], autoProvisioningGroupSpotOptionsObjectType, func(options map[string]interface{}) map[string]attr.Value {
+		return map[string]attr.Value{
+			"allocation_strategy":            ecsFwString(options["AllocationStrategy"]),
+			"instance_interruption_behavior": ecsFwString(options["InstanceInterruptionBehavior"]),
+			"instance_pools_to_use_count":    ecsFwInt64(options["InstancePoolsToUseCount"]),
+		}
+	})
+	if err != nil {
+		return types.ObjectNull(autoProvisioningGroupAttrTypes), fmt.Errorf("%s: %w", identity, err)
+	}
+	payAsYouGoOptions, err := ecsFwOptionalObjectList("PayAsYouGoOptions", object["PayAsYouGoOptions"], autoProvisioningGroupPayAsYouGoOptionsObjectType, func(options map[string]interface{}) map[string]attr.Value {
+		return map[string]attr.Value{
+			"allocation_strategy": ecsFwString(options["AllocationStrategy"]),
+		}
+	})
+	if err != nil {
+		return types.ObjectNull(autoProvisioningGroupAttrTypes), fmt.Errorf("%s: %w", identity, err)
+	}
+	candidateOptions, err := ecsFwOptionalObjectList("CandidateOptions", object["CandidateOptions"], autoProvisioningGroupCandidateOptionsObjectType, func(options map[string]interface{}) map[string]attr.Value {
+		return map[string]attr.Value{
+			"timeout_minutes": ecsFwInt64(options["TimeoutMinutes"]),
+		}
+	})
+	if err != nil {
+		return types.ObjectNull(autoProvisioningGroupAttrTypes), fmt.Errorf("%s: %w", identity, err)
+	}
+	capacitySpecification, err := ecsFwOptionalObjectList("CapacitySpecification", object["CapacitySpecification"], autoProvisioningGroupCapacitySpecificationObjectType, func(specification map[string]interface{}) map[string]attr.Value {
+		return map[string]attr.Value{
+			"pay_as_you_go_capacity": ecsFwString(specification["PayAsYouGoCapacity"]),
+			"pre_paid_capacity":      ecsFwString(specification["PrePaidCapacity"]),
+			"spot_capacity":          ecsFwString(specification["SpotCapacity"]),
+			"total_capacity":         ecsFwString(specification["TotalCapacity"]),
+		}
+	})
+	if err != nil {
+		return types.ObjectNull(autoProvisioningGroupAttrTypes), fmt.Errorf("%s: %w", identity, err)
+	}
+	suspendedProcesses, err := ecsFwOptionalStringList("SuspendedProcesses", "SuspendedProcess", object["SuspendedProcesses"])
+	if err != nil {
+		return types.ObjectNull(autoProvisioningGroupAttrTypes), fmt.Errorf("%s: %w", identity, err)
 	}
 	return types.ObjectValueMust(autoProvisioningGroupAttrTypes, map[string]attr.Value{
 		"auto_provisioning_group_id":          ecsFwString(object["AutoProvisioningGroupId"]),
@@ -362,132 +435,12 @@ func autoProvisioningGroupObject(object map[string]interface{}) (types.Object, e
 		"max_spot_price":                      ecsFwString(object["MaxSpotPrice"]),
 		"creation_time":                       ecsFwString(object["CreationTime"]),
 		"tags":                                tags,
-		"launch_template_configs":             autoProvisioningGroupLaunchTemplateConfigs(object["LaunchTemplateConfigs"]),
-		"target_capacity_specification":       autoProvisioningGroupTargetCapacitySpecification(object["TargetCapacitySpecification"]),
-		"spot_options":                        autoProvisioningGroupSpotOptions(object["SpotOptions"]),
-		"pay_as_you_go_options":               autoProvisioningGroupPayAsYouGoOptions(object["PayAsYouGoOptions"]),
-		"candidate_options":                   autoProvisioningGroupCandidateOptions(object["CandidateOptions"]),
-		"capacity_specification":              autoProvisioningGroupCapacitySpecification(object["CapacitySpecification"]),
-		"suspended_processes":                 autoProvisioningGroupSuspendedProcesses(object["SuspendedProcesses"]),
+		"launch_template_configs":             launchTemplateConfigs,
+		"target_capacity_specification":       targetCapacitySpecification,
+		"spot_options":                        spotOptions,
+		"pay_as_you_go_options":               payAsYouGoOptions,
+		"candidate_options":                   candidateOptions,
+		"capacity_specification":              capacitySpecification,
+		"suspended_processes":                 suspendedProcesses,
 	}), nil
-}
-
-func autoProvisioningGroupLaunchTemplateConfigs(value interface{}) types.List {
-	elements := make([]attr.Value, 0)
-	configs, ok := value.(map[string]interface{})
-	if !ok {
-		return types.ListValueMust(autoProvisioningGroupLaunchTemplateConfigObjectType, elements)
-	}
-	raw, ok := configs["LaunchTemplateConfig"]
-	if !ok {
-		return types.ListValueMust(autoProvisioningGroupLaunchTemplateConfigObjectType, elements)
-	}
-	list, ok := raw.([]interface{})
-	if !ok {
-		return types.ListValueMust(autoProvisioningGroupLaunchTemplateConfigObjectType, elements)
-	}
-	for _, entry := range list {
-		item, ok := entry.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		elements = append(elements, types.ObjectValueMust(autoProvisioningGroupLaunchTemplateConfigAttrTypes, map[string]attr.Value{
-			"instance_type":     ecsFwString(item["InstanceType"]),
-			"max_price":         ecsFwString(item["MaxPrice"]),
-			"vswitch_id":        ecsFwString(item["VSwitchId"]),
-			"weighted_capacity": ecsFwString(item["WeightedCapacity"]),
-			"priority":          ecsFwString(item["Priority"]),
-		}))
-	}
-	return types.ListValueMust(autoProvisioningGroupLaunchTemplateConfigObjectType, elements)
-}
-
-func autoProvisioningGroupTargetCapacitySpecification(value interface{}) types.List {
-	elements := make([]attr.Value, 0)
-	specification, ok := value.(map[string]interface{})
-	if !ok {
-		return types.ListValueMust(autoProvisioningGroupTargetCapacitySpecificationObjectType, elements)
-	}
-	elements = append(elements, types.ObjectValueMust(autoProvisioningGroupTargetCapacitySpecificationAttrTypes, map[string]attr.Value{
-		"default_target_capacity_type":  ecsFwString(specification["DefaultTargetCapacityType"]),
-		"total_target_capacity":         ecsFwString(specification["TotalTargetCapacity"]),
-		"pay_as_you_go_target_capacity": ecsFwString(specification["PayAsYouGoTargetCapacity"]),
-		"spot_target_capacity":          ecsFwString(specification["SpotTargetCapacity"]),
-	}))
-	return types.ListValueMust(autoProvisioningGroupTargetCapacitySpecificationObjectType, elements)
-}
-
-func autoProvisioningGroupSpotOptions(value interface{}) types.List {
-	elements := make([]attr.Value, 0)
-	options, ok := value.(map[string]interface{})
-	if !ok {
-		return types.ListValueMust(autoProvisioningGroupSpotOptionsObjectType, elements)
-	}
-	elements = append(elements, types.ObjectValueMust(autoProvisioningGroupSpotOptionsAttrTypes, map[string]attr.Value{
-		"allocation_strategy":            ecsFwString(options["AllocationStrategy"]),
-		"instance_interruption_behavior": ecsFwString(options["InstanceInterruptionBehavior"]),
-		"instance_pools_to_use_count":    ecsFwInt64(options["InstancePoolsToUseCount"]),
-	}))
-	return types.ListValueMust(autoProvisioningGroupSpotOptionsObjectType, elements)
-}
-
-func autoProvisioningGroupPayAsYouGoOptions(value interface{}) types.List {
-	elements := make([]attr.Value, 0)
-	options, ok := value.(map[string]interface{})
-	if !ok {
-		return types.ListValueMust(autoProvisioningGroupPayAsYouGoOptionsObjectType, elements)
-	}
-	elements = append(elements, types.ObjectValueMust(autoProvisioningGroupPayAsYouGoOptionsAttrTypes, map[string]attr.Value{
-		"allocation_strategy": ecsFwString(options["AllocationStrategy"]),
-	}))
-	return types.ListValueMust(autoProvisioningGroupPayAsYouGoOptionsObjectType, elements)
-}
-
-func autoProvisioningGroupCandidateOptions(value interface{}) types.List {
-	elements := make([]attr.Value, 0)
-	options, ok := value.(map[string]interface{})
-	if !ok {
-		return types.ListValueMust(autoProvisioningGroupCandidateOptionsObjectType, elements)
-	}
-	elements = append(elements, types.ObjectValueMust(autoProvisioningGroupCandidateOptionsAttrTypes, map[string]attr.Value{
-		"timeout_minutes": ecsFwInt64(options["TimeoutMinutes"]),
-	}))
-	return types.ListValueMust(autoProvisioningGroupCandidateOptionsObjectType, elements)
-}
-
-func autoProvisioningGroupCapacitySpecification(value interface{}) types.List {
-	elements := make([]attr.Value, 0)
-	specification, ok := value.(map[string]interface{})
-	if !ok {
-		return types.ListValueMust(autoProvisioningGroupCapacitySpecificationObjectType, elements)
-	}
-	elements = append(elements, types.ObjectValueMust(autoProvisioningGroupCapacitySpecificationAttrTypes, map[string]attr.Value{
-		"pay_as_you_go_capacity": ecsFwString(specification["PayAsYouGoCapacity"]),
-		"pre_paid_capacity":      ecsFwString(specification["PrePaidCapacity"]),
-		"spot_capacity":          ecsFwString(specification["SpotCapacity"]),
-		"total_capacity":         ecsFwString(specification["TotalCapacity"]),
-	}))
-	return types.ListValueMust(autoProvisioningGroupCapacitySpecificationObjectType, elements)
-}
-
-func autoProvisioningGroupSuspendedProcesses(value interface{}) types.List {
-	elements := make([]attr.Value, 0)
-	container, ok := value.(map[string]interface{})
-	if !ok {
-		return types.ListValueMust(types.StringType, elements)
-	}
-	raw, ok := container["SuspendedProcess"]
-	if !ok {
-		return types.ListValueMust(types.StringType, elements)
-	}
-	list, ok := raw.([]interface{})
-	if !ok {
-		return types.ListValueMust(types.StringType, elements)
-	}
-	for _, entry := range list {
-		if process, ok := entry.(string); ok {
-			elements = append(elements, types.StringValue(process))
-		}
-	}
-	return types.ListValueMust(types.StringType, elements)
 }

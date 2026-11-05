@@ -187,43 +187,7 @@ run_check() {
 # literals, and misspell flags them. Only those two literals on that one page are
 # accepted: the same words anywhere else, and ordinary prose on that page, stay
 # reported. Both the strict and the changed-docs spelling checks use this helper.
-MISSPELL_ENUM_DOC="website/docs/d/ecs_image_pipeline_executions.html.markdown"
-
-run_misspell_scoped() {
-  local output status=0 remaining
-  output=$(misspell -error -locale=US "$@" 2>&1) || status=$?
-  if [ $status -eq 0 ]; then
-    return 0
-  fi
-  remaining=$(printf '%s\n' "$output" | awk -v doc="$MISSPELL_ENUM_DOC" '
-    {
-      line = $0
-      sub(/^\.\//, "", line)
-      n = length(doc)
-      if (substr(line, 1, n) == doc && substr(line, n + 1) ~ /^:[0-9]+:[0-9]+: "(CANCELLING|CANCELLED)" is a misspelling of "(CANCELING|CANCELED)"$/) {
-        next
-      }
-      print $0
-    }')
-  if [ -z "$remaining" ]; then
-    printf '%s\n' "$output"
-    echo "Accepted the documented API status literals CANCELLING/CANCELLED."
-    return 0
-  fi
-  printf '%s\n' "$remaining"
-  return 1
-}
-
-# The changed-document list is newline separated, so it is read line by line
-# instead of being expanded into a single `for` word list.
-run_misspell_changed_docs() {
-  local doc
-  while IFS= read -r doc; do
-    [ -n "$doc" ] || continue
-    run_misspell_scoped "$doc" || return 1
-  done <<< "$1"
-  return 0
-}
+. "$(dirname "$0")/lib/misspell-scope.sh"
 
 # Check if we're in a git repository
 if ! git rev-parse --git-dir > /dev/null 2>&1; then

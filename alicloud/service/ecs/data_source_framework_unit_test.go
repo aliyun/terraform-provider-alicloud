@@ -6,9 +6,14 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -194,7 +199,7 @@ func TestUnitEcsFwDecodeTags(t *testing.T) {
 
 func TestUnitEcsFwCollectTokenPagesFollowsTokens(t *testing.T) {
 	var visited []string
-	objects, lastToken, err := ecsFwCollectTokenPages(context.Background(), 10, "", "Discover", func(token string) ([]map[string]interface{}, string, error) {
+	objects, lastToken, err := ecsFwCollectTokenPages(context.Background(), 10, "", "Discover", "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
 		visited = append(visited, token)
 		switch token {
 		case "":
@@ -215,7 +220,7 @@ func TestUnitEcsFwCollectTokenPagesFollowsTokens(t *testing.T) {
 
 func TestUnitEcsFwCollectTokenPagesRejectsRepeatedToken(t *testing.T) {
 	calls := 0
-	objects, lastToken, err := ecsFwCollectTokenPages(context.Background(), 10, "", "Discover", func(token string) ([]map[string]interface{}, string, error) {
+	objects, lastToken, err := ecsFwCollectTokenPages(context.Background(), 10, "", "Discover", "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
 		calls++
 		return []map[string]interface{}{{"ExecutionId": fmt.Sprintf("exec-%d", calls)}}, "same-token", nil
 	})
@@ -228,7 +233,7 @@ func TestUnitEcsFwCollectTokenPagesRejectsRepeatedToken(t *testing.T) {
 
 func TestUnitEcsFwCollectTokenPagesFailsWhenBudgetExhausted(t *testing.T) {
 	calls := 0
-	objects, _, err := ecsFwCollectTokenPages(context.Background(), 2, "", "Discover", func(token string) ([]map[string]interface{}, string, error) {
+	objects, _, err := ecsFwCollectTokenPages(context.Background(), 2, "", "Discover", "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
 		calls++
 		return []map[string]interface{}{{"ExecutionId": fmt.Sprintf("exec-%d", calls)}}, fmt.Sprintf("token-%d", calls), nil
 	})
@@ -243,7 +248,7 @@ func TestUnitEcsFwCollectTokenPagesStopsOnCancelledContext(t *testing.T) {
 	cancel()
 
 	calls := 0
-	objects, _, err := ecsFwCollectTokenPages(ctx, 10, "", "Discover", func(token string) ([]map[string]interface{}, string, error) {
+	objects, _, err := ecsFwCollectTokenPages(ctx, 10, "", "Discover", "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
 		calls++
 		return nil, "", nil
 	})
@@ -425,7 +430,7 @@ func TestUnitEcsReservedInstanceObject(t *testing.T) {
 
 func TestUnitEcsAutoProvisioningGroupsCollectPagesStopsAtTotalCount(t *testing.T) {
 	var pages []int64
-	objects, totalCount, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 2, autoProvisioningGroupsAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+	objects, totalCount, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 2, autoProvisioningGroupsAction, "AutoProvisioningGroupId", func(pageNumber int64) ([]map[string]interface{}, int64, error) {
 		pages = append(pages, pageNumber)
 		switch pageNumber {
 		case 1:
@@ -444,7 +449,7 @@ func TestUnitEcsAutoProvisioningGroupsCollectPagesStopsAtTotalCount(t *testing.T
 }
 
 func TestUnitEcsAutoProvisioningGroupsCollectPagesFailsWhenBudgetExhausted(t *testing.T) {
-	objects, totalCount, err := ecsFwCollectNumberedPages(context.Background(), 2, 1, 1, autoProvisioningGroupsAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+	objects, totalCount, err := ecsFwCollectNumberedPages(context.Background(), 2, 1, 1, autoProvisioningGroupsAction, "AutoProvisioningGroupId", func(pageNumber int64) ([]map[string]interface{}, int64, error) {
 		return []map[string]interface{}{{"AutoProvisioningGroupId": fmt.Sprintf("apg-%d", pageNumber)}}, 0, nil
 	})
 
@@ -454,7 +459,7 @@ func TestUnitEcsAutoProvisioningGroupsCollectPagesFailsWhenBudgetExhausted(t *te
 }
 
 func TestUnitEcsAutoProvisioningGroupsCollectPagesRejectsRepeatedPage(t *testing.T) {
-	objects, _, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 2, autoProvisioningGroupsAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+	objects, _, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 2, autoProvisioningGroupsAction, "AutoProvisioningGroupId", func(pageNumber int64) ([]map[string]interface{}, int64, error) {
 		return []map[string]interface{}{{"AutoProvisioningGroupId": "apg-1"}, {"AutoProvisioningGroupId": "apg-2"}}, 0, nil
 	})
 
@@ -467,7 +472,7 @@ func TestUnitEcsAutoProvisioningGroupsCollectPagesStopsOnCancelledContext(t *tes
 	cancel()
 
 	calls := 0
-	objects, _, err := ecsFwCollectNumberedPages(ctx, 10, 1, 2, autoProvisioningGroupsAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+	objects, _, err := ecsFwCollectNumberedPages(ctx, 10, 1, 2, autoProvisioningGroupsAction, "AutoProvisioningGroupId", func(pageNumber int64) ([]map[string]interface{}, int64, error) {
 		calls++
 		return nil, 0, nil
 	})
@@ -478,7 +483,7 @@ func TestUnitEcsAutoProvisioningGroupsCollectPagesStopsOnCancelledContext(t *tes
 }
 
 func TestUnitEcsReservedInstancesCollectPagesStopsOnShortPage(t *testing.T) {
-	objects, totalCount, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 2, reservedInstancesAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+	objects, totalCount, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 2, reservedInstancesAction, "ReservedInstanceId", func(pageNumber int64) ([]map[string]interface{}, int64, error) {
 		if pageNumber == 1 {
 			return []map[string]interface{}{{"ReservedInstanceId": "ri-1"}, {"ReservedInstanceId": "ri-2"}}, 0, nil
 		}
@@ -490,13 +495,60 @@ func TestUnitEcsReservedInstancesCollectPagesStopsOnShortPage(t *testing.T) {
 	assert.Equal(t, int64(3), totalCount, "a missing server total falls back to the number of rows read")
 }
 
-func TestUnitEcsReservedInstancesCollectPagesKeepsServerTotal(t *testing.T) {
-	_, totalCount, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 10, reservedInstancesAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+// A short page that leaves rows the server total promised must never be
+// accepted as a complete result.
+func TestUnitEcsReservedInstancesCollectPagesRejectsShortPageWithOutstandingRows(t *testing.T) {
+	objects, totalCount, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 10, reservedInstancesAction, "ReservedInstanceId", func(pageNumber int64) ([]map[string]interface{}, int64, error) {
 		return []map[string]interface{}{{"ReservedInstanceId": "ri-1"}}, 7, nil
 	})
 
-	assert.NoError(t, err)
-	assert.Equal(t, int64(7), totalCount)
+	assert.Error(t, err)
+	assert.Nil(t, objects)
+	assert.Equal(t, int64(0), totalCount)
+}
+
+func TestUnitEcsReservedInstancesCollectPagesRejectsEmptyPageWithOutstandingRows(t *testing.T) {
+	objects, _, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 10, reservedInstancesAction, "ReservedInstanceId", func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+		if pageNumber == 1 {
+			return []map[string]interface{}{{"ReservedInstanceId": "ri-1"}}, 2, nil
+		}
+		return nil, 2, nil
+	})
+
+	assert.Error(t, err)
+	assert.Nil(t, objects)
+}
+
+func TestUnitEcsReservedInstancesCollectPagesRejectsInconsistentTotal(t *testing.T) {
+	objects, _, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 1, reservedInstancesAction, "ReservedInstanceId", func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+		switch pageNumber {
+		case 1:
+			return []map[string]interface{}{{"ReservedInstanceId": "ri-1"}}, 3, nil
+		default:
+			return []map[string]interface{}{{"ReservedInstanceId": "ri-2"}}, 4, nil
+		}
+	})
+
+	assert.Error(t, err, "a total that changes between pages must be rejected")
+	assert.Nil(t, objects)
+}
+
+func TestUnitEcsReservedInstancesCollectPagesRejectsDuplicateIdentity(t *testing.T) {
+	objects, _, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 1, reservedInstancesAction, "ReservedInstanceId", func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+		return []map[string]interface{}{{"ReservedInstanceId": "ri-1"}}, 0, nil
+	})
+
+	assert.Error(t, err, "the same identity on two pages must not produce duplicate rows")
+	assert.Nil(t, objects)
+}
+
+func TestUnitEcsReservedInstancesCollectPagesRejectsMissingIdentity(t *testing.T) {
+	objects, _, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 10, reservedInstancesAction, "ReservedInstanceId", func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+		return []map[string]interface{}{{"ReservedInstanceName": "no-id"}}, 1, nil
+	})
+
+	assert.Error(t, err, "a record without an identity cannot be addressed")
+	assert.Nil(t, objects)
 }
 
 func TestUnitEcsDataSourceRequestHelpers(t *testing.T) {
@@ -619,4 +671,256 @@ func TestUnitEcsAutoProvisioningGroupsIdsLimit(t *testing.T) {
 
 	assert.False(t, validate(autoProvisioningGroupsMaxIds), "20 IDs are within the documented limit")
 	assert.True(t, validate(autoProvisioningGroupsMaxIds+1), "21 IDs exceed the documented limit")
+}
+
+func TestUnitEcsFwDecodeCountRejectsInvalidValues(t *testing.T) {
+	for _, value := range []interface{}{"1.5", json.Number("1.5"), -1, json.Number("-1"), 2.5, float32(2.5)} {
+		_, _, err := ecsFwDecodeCount(map[string]interface{}{"TotalCount": value}, "TotalCount", "Describe")
+		assert.Error(t, err, "value %v must not be a valid count", value)
+	}
+	assert.Equal(t, 0, ecsFwRemainingBudgetMillis(context.Background()), "a context without deadline leaves the SDK defaults in place")
+}
+
+// The transport receives the remaining read budget and the SDK retry loop is
+// off; every retry stays under the caller's own deadline.
+func TestUnitEcsFwRpcPostBoundsTransportWithReadBudget(t *testing.T) {
+	original := ecsFwRpcCall
+	defer func() { ecsFwRpcCall = original }()
+
+	var captured *util.RuntimeOptions
+	ecsFwRpcCall = func(client *connectivity.AliyunClient, action string, request map[string]interface{}, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
+		captured = runtime
+		return map[string]interface{}{}, nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+	_, err := ecsFwRpcPost(ctx, nil, "type", "Action", map[string]interface{}{})
+	require.NoError(t, err)
+	require.NotNil(t, captured)
+	require.NotNil(t, captured.Autoretry)
+	assert.False(t, *captured.Autoretry, "the SDK internal retries must be off")
+	require.NotNil(t, captured.ReadTimeout)
+	require.NotNil(t, captured.ConnectTimeout)
+	assert.Greater(t, *captured.ReadTimeout, 0)
+	assert.LessOrEqual(t, *captured.ReadTimeout, 90*1000)
+	assert.Greater(t, *captured.ConnectTimeout, 0)
+	assert.LessOrEqual(t, *captured.ConnectTimeout, 90*1000)
+}
+
+func TestUnitEcsFwRpcPostStopsWhenTheReadIsCancelledInFlight(t *testing.T) {
+	original := ecsFwRpcCall
+	defer func() { ecsFwRpcCall = original }()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	calls := 0
+	ecsFwRpcCall = func(client *connectivity.AliyunClient, action string, request map[string]interface{}, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
+		calls++
+		cancel()
+		return nil, context.Canceled
+	}
+
+	_, err := ecsFwRpcPost(ctx, nil, "type", "Action", map[string]interface{}{})
+	assert.Error(t, err)
+	assert.Equal(t, 1, calls, "a request cancelled in flight must not be retried")
+}
+
+func TestUnitEcsAutoProvisioningGroupsObjectRejectsMalformedNestedMembers(t *testing.T) {
+	_, err := autoProvisioningGroupObject(map[string]interface{}{
+		"AutoProvisioningGroupId": "apg-1",
+		"LaunchTemplateConfigs":   map[string]interface{}{"LaunchTemplateConfig": []interface{}{"not-an-object"}},
+	})
+	assert.Error(t, err, "a malformed launch template config must be reported")
+
+	_, err = autoProvisioningGroupObject(map[string]interface{}{
+		"AutoProvisioningGroupId": "apg-1",
+		"SuspendedProcesses":      map[string]interface{}{"SuspendedProcess": []interface{}{1}},
+	})
+	assert.Error(t, err, "a malformed suspended process must be reported")
+
+	_, err = autoProvisioningGroupObject(map[string]interface{}{
+		"AutoProvisioningGroupName": "no-id",
+	})
+	assert.Error(t, err, "a record without an identity must be reported")
+}
+
+func TestUnitEcsReservedInstanceObjectRejectsMalformedNestedMembers(t *testing.T) {
+	_, err := reservedInstanceObject(map[string]interface{}{
+		"ReservedInstanceId": "ri-1",
+		"OperationLocks":     map[string]interface{}{"OperationLock": []interface{}{"not-an-object"}},
+	})
+	assert.Error(t, err, "a malformed operation lock must be reported")
+
+	_, err = reservedInstanceObject(map[string]interface{}{
+		"ReservedInstanceName": "no-id",
+	})
+	assert.Error(t, err, "a record without an identity must be reported")
+}
+
+// The request-to-state tests below run the same load() the data source Read
+// uses: request construction, every page, record decoding and the final state.
+func TestUnitEcsAutoProvisioningGroupsLoadRequestToState(t *testing.T) {
+	original := ecsFwRpcCall
+	defer func() { ecsFwRpcCall = original }()
+
+	requests := make([]map[string]interface{}, 0)
+	ecsFwRpcCall = func(client *connectivity.AliyunClient, action string, request map[string]interface{}, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
+		snapshot := map[string]interface{}{}
+		for key, value := range request {
+			snapshot[key] = value
+		}
+		requests = append(requests, snapshot)
+		page, _ := request["PageNumber"].(int)
+		items := map[int]map[string]interface{}{
+			1: {"AutoProvisioningGroupId": "apg-a", "AutoProvisioningGroupName": "group-a", "Status": "active"},
+			2: {"AutoProvisioningGroupId": "apg-b", "AutoProvisioningGroupName": "group-b", "Status": "active"},
+		}
+		item, ok := items[page]
+		if !ok {
+			return nil, fmt.Errorf("unexpected page %d", page)
+		}
+		return map[string]interface{}{
+			"TotalCount": json.Number("2"),
+			"AutoProvisioningGroups": map[string]interface{}{
+				"AutoProvisioningGroup": []interface{}{item},
+			},
+		}, nil
+	}
+
+	model := autoProvisioningGroupsModel{
+		Ids:                       types.ListValueMust(types.StringType, []attr.Value{types.StringValue("apg-b"), types.StringValue("apg-b"), types.StringValue(" ")}),
+		AutoProvisioningGroupName: types.StringValue("group-b"),
+		Status:                    types.ListValueMust(types.StringType, []attr.Value{types.StringValue("active")}),
+		PageSize:                  types.Int64Value(1),
+	}
+
+	state, err := (&autoProvisioningGroupsDataSource{}).load(context.Background(), nil, "cn-hangzhou", model)
+	require.NoError(t, err)
+
+	require.Len(t, requests, 2, "the target on the second page must be read")
+	assert.Equal(t, "group-b", requests[0]["AutoProvisioningGroupName"])
+	assert.Equal(t, "apg-b", requests[0]["AutoProvisioningGroupId.1"], "duplicate and blank IDs are sent once")
+	assert.NotContains(t, requests[0], "AutoProvisioningGroupId.2")
+	assert.Equal(t, "active", requests[0]["AutoProvisioningGroupStatus.1"])
+	assert.Equal(t, 2, requests[1]["PageNumber"])
+
+	require.Len(t, state.Ids.Elements(), 2)
+	assert.Equal(t, types.StringValue("apg-a"), state.Ids.Elements()[0])
+	assert.Equal(t, types.StringValue("apg-b"), state.Ids.Elements()[1])
+	assert.Equal(t, int64(2), state.TotalCount.ValueInt64())
+	assert.Len(t, state.Groups.Elements(), 2)
+	assert.Equal(t, types.StringValue("group-b"), state.Names.Elements()[1])
+}
+
+func TestUnitEcsReservedInstancesLoadRequestToState(t *testing.T) {
+	original := ecsFwRpcCall
+	defer func() { ecsFwRpcCall = original }()
+
+	var request map[string]interface{}
+	ecsFwRpcCall = func(client *connectivity.AliyunClient, action string, value map[string]interface{}, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
+		request = map[string]interface{}{}
+		for key, item := range value {
+			request[key] = item
+		}
+		return map[string]interface{}{
+			"TotalCount": json.Number("1"),
+			"ReservedInstances": map[string]interface{}{
+				"ReservedInstance": []interface{}{
+					map[string]interface{}{
+						"ReservedInstanceId":   "ri-target",
+						"ReservedInstanceName": "reserved-b",
+						"Status":               "Active",
+						"InstanceAmount":       json.Number("2"),
+					},
+				},
+			},
+		}, nil
+	}
+
+	model := reservedInstancesModel{
+		ZoneId: types.StringValue("cn-hangzhou-k"),
+		Status: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("Active")}),
+	}
+
+	state, err := (&reservedInstancesDataSource{}).load(context.Background(), nil, "cn-hangzhou", "Zone", 1, 100, model)
+	require.NoError(t, err)
+	require.NotNil(t, request)
+	assert.Equal(t, "cn-hangzhou-k", request["ZoneId"])
+	assert.Equal(t, "Zone", request["Scope"], "zone_id without scope requests Scope = Zone")
+	assert.Equal(t, "Active", request["Status.1"])
+
+	require.Len(t, state.Ids.Elements(), 1)
+	assert.Equal(t, types.StringValue("ri-target"), state.Ids.Elements()[0])
+	assert.Equal(t, int64(1), state.TotalCount.ValueInt64())
+	require.Len(t, state.Instances.Elements(), 1)
+	attributes := state.Instances.Elements()[0].(types.Object).Attributes()
+	assert.Equal(t, types.Int64Value(2), attributes["instance_amount"])
+}
+
+func TestUnitEcsImagePipelineExecutionsLoadRequestToState(t *testing.T) {
+	original := ecsFwRpcCall
+	defer func() { ecsFwRpcCall = original }()
+
+	requests := make([]map[string]interface{}, 0)
+	ecsFwRpcCall = func(client *connectivity.AliyunClient, action string, request map[string]interface{}, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
+		snapshot := map[string]interface{}{}
+		for key, value := range request {
+			snapshot[key] = value
+		}
+		requests = append(requests, snapshot)
+		if _, ok := request["NextToken"]; !ok {
+			return map[string]interface{}{
+				"NextToken": "token-1",
+				"ImagePipelineExecution": map[string]interface{}{
+					"ImagePipelineExecutionSet": []interface{}{
+						map[string]interface{}{"ExecutionId": "exec-first", "Status": "SUCCESS"},
+					},
+				},
+			}, nil
+		}
+		return map[string]interface{}{
+			"ImagePipelineExecution": map[string]interface{}{
+				"ImagePipelineExecutionSet": []interface{}{
+					map[string]interface{}{"ExecutionId": "exec-target", "Status": "SUCCESS"},
+				},
+			},
+		}, nil
+	}
+
+	model := imagePipelineExecutionsModel{
+		ImagePipelineId: types.StringValue("pipeline-1"),
+		Status:          types.StringValue("SUCCESS, FAILED"),
+	}
+
+	state, err := (&imagePipelineExecutionsDataSource{}).load(context.Background(), nil, "cn-hangzhou", model)
+	require.NoError(t, err)
+
+	require.Len(t, requests, 2, "the continuation token must be followed")
+	assert.Equal(t, "pipeline-1", requests[0]["ImagePipelineId"])
+	assert.Equal(t, "SUCCESS,FAILED", requests[0]["Status"])
+	assert.Equal(t, "token-1", requests[1]["NextToken"])
+
+	require.Len(t, state.Ids.Elements(), 2)
+	assert.Equal(t, types.StringValue("exec-first"), state.Ids.Elements()[0])
+	assert.Equal(t, types.StringValue("exec-target"), state.Ids.Elements()[1])
+	assert.Equal(t, int64(2), state.TotalCount.ValueInt64())
+	assert.Equal(t, types.StringValue(""), state.NextToken)
+	assert.Len(t, state.Executions.Elements(), 2)
+}
+
+func TestUnitEcsImagePipelineExecutionsTagsRejectNull(t *testing.T) {
+	response := &datasource.SchemaResponse{}
+	(&imagePipelineExecutionsDataSource{}).Schema(context.Background(), datasource.SchemaRequest{}, response)
+	attribute, ok := response.Schema.Attributes["tags"].(schema.MapAttribute)
+	require.True(t, ok)
+	require.NotEmpty(t, attribute.Validators, "the executions tags attribute must validate its entries")
+
+	var mapResponse validator.MapResponse
+	for _, entry := range attribute.Validators {
+		entry.ValidateMap(context.Background(), validator.MapRequest{
+			ConfigValue: types.MapValueMust(types.StringType, map[string]attr.Value{"env": types.StringNull()}),
+			Path:        path.Root("tags"),
+		}, &mapResponse)
+	}
+	assert.True(t, mapResponse.Diagnostics.HasError(), "a null tag value must be rejected at the query entry")
 }
