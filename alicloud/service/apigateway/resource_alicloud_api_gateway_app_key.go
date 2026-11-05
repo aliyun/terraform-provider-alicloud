@@ -235,13 +235,23 @@ func (r *apiGatewayAppKeyResource) Read(ctx context.Context, req resource.ReadRe
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
-// Update is intentionally absent: every user-configurable attribute (app_id)
-// is marked RequiresReplace, so any change recreates the resource. The
-// route-designated Update API ResetSecretByAppKeyForInner (CloudAPI 2016-02-01)
-// could not be verified (parameters unavailable via metadata), and the
-// verified public equivalent ResetAppSecret (2016-07-14) would rotate a
-// server-generated secret in place, which the Framework Computed credentials
-// above deliberately avoid. See the implementation report.
+// Update is a no-op: every user-configurable attribute (app_id) is marked
+// RequiresReplace, so any change recreates the resource and the Framework
+// never invokes Update. The method exists only to satisfy the
+// resource.Resource interface. The route-designated Update API
+// ResetSecretByAppKeyForInner (CloudAPI 2016-02-01) could not be verified
+// (parameters unavailable via metadata), and the verified public equivalent
+// ResetAppSecret (2016-07-14) would rotate a server-generated secret in place,
+// which the Framework Computed credentials above deliberately avoid. See the
+// implementation report.
+func (r *apiGatewayAppKeyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan apiGatewayAppKeyResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+}
 
 func (r *apiGatewayAppKeyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state apiGatewayAppKeyResourceModel
