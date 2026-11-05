@@ -410,6 +410,26 @@ func checkDatabaseAccountName(resourceId, expected string) resource.TestCheckFun
 	}
 }
 
+// checkDatabaseDescription verifies through DescribeDatabases that the database
+// description is the expected value. It proves that a rejected update did not
+// reach the ModifyDBDescription call.
+func checkDatabaseDescription(resourceId, expected string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		object, err := polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient)).DescribePolarDbDatabase(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		if got := fmt.Sprint(object["DBDescription"]); got != expected {
+			return fmt.Errorf("expected database description %q, got %q for %s", expected, got, rs.Primary.ID)
+		}
+		return nil
+	}
+}
+
 // checkNoDatabaseAccountGrant verifies through DescribeDatabases that the
 // account is not authorized for the database.
 func checkNoDatabaseAccountGrant(resourceId, accountName string) resource.TestCheckFunc {
@@ -674,17 +694,20 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 			{
 				// The MySQL engine cannot re-grant an account on update, so changing
 				// account_name to an account that is not authorized for this database
-				// must fail explicitly instead of reporting a no-op success.
+				// must fail explicitly instead of reporting a no-op success. The
+				// description change proves the guard runs before the first write: if
+				// it ran later, ModifyDBDescription would have been sent.
 				Config: testAccConfig(map[string]interface{}{
-					"account_name": "${alicloud_polardb_account.second.account_name}",
+					"account_name":   "${alicloud_polardb_account.second.account_name}",
+					"db_description": name + "rejected",
 				}),
 				ExpectError: regexp.MustCompile(`"account_name" can only be changed`),
 				Check:       func(_ *terraform.State) error { return nil },
 			},
 			{
-				// The rejected update neither changed the state nor granted the other
-				// account: the plan is a no-op and the database still reports the
-				// configured account only.
+				// The rejected update did not reach any write and changed nothing:
+				// the plan is a no-op, the description is untouched in the API and the
+				// database still reports the configured account only.
 				Config: testAccConfig(privilegeConfig),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
@@ -696,6 +719,7 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 						"account_name":      name,
 						"account_privilege": "ReadOnly",
 					}),
+					checkDatabaseDescription(resourceId, name),
 					checkDatabaseAccountName(resourceId, name),
 					checkNoDatabaseAccountGrant(resourceId, name+"b"),
 				),

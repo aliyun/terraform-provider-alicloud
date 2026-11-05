@@ -289,19 +289,27 @@ func databaseOwnerEngine(objectRaw map[string]interface{}) bool {
 	return engine == "PostgreSQL" || engine == "Oracle"
 }
 
-// validateAccountNameEngine rejects an account_name change on an engine whose
-// update cannot re-grant the account: only PostgreSQL and Oracle send
-// GrantAccountPrivilege, so on the other engines the change would be accepted
-// without any request and the read would echo the new value. A response that
-// does not report the engine cannot prove the change is supported, so it is
-// rejected as well.
-func validateAccountNameEngine(objectRaw map[string]interface{}) error {
+// validateAccountNameChange accepts an account_name change when the engine can
+// re-grant the account (PostgreSQL/Oracle) or when the target account is already
+// authorized for the database, so no write is required and the state records a
+// real binding. Other changes would be accepted without any request and the read
+// would echo the new value, so they are rejected before the first write. A
+// response that does not report the engine cannot prove the change is
+// supported and is rejected as well.
+func validateAccountNameChange(objectRaw map[string]interface{}, accountName string) error {
 	if databaseOwnerEngine(objectRaw) {
 		return nil
 	}
 	engine := strings.TrimSpace(fmt.Sprint(objectRaw["Engine"]))
 	if engine == "" || engine == "<nil>" {
 		return fmt.Errorf("\"account_name\" cannot be changed: the database engine is not reported by DescribeDatabases, so the provider cannot confirm that the update re-grants the account")
+	}
+	if accounts, authoritative := databaseAccounts(objectRaw); authoritative {
+		if _, found := selectDatabaseAccount(accounts, strings.TrimSpace(accountName)); found {
+			// The target account is already authorized, so adopting it needs no
+			// write and the recorded state matches the database.
+			return nil
+		}
 	}
 	return fmt.Errorf("\"account_name\" can only be changed for PolarDB for PostgreSQL or PolarDB for PostgreSQL (Compatible with Oracle) databases: the %s engine does not re-grant the account on update", engine)
 }
@@ -369,7 +377,7 @@ func resourceDatabaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		if describeErr != nil {
 			return errs.WrapError(describeErr)
 		}
-		if err := validateAccountNameEngine(objectRaw); err != nil {
+		if err := validateAccountNameChange(objectRaw, fmt.Sprint(d.Get("account_name"))); err != nil {
 			return err
 		}
 	}
