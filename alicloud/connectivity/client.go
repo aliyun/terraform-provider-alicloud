@@ -3022,29 +3022,47 @@ func (client *AliyunClient) do(ctx context.Context, apiProductCode string, apiPa
 
 // requireContextJSONBody rejects the successful responses of the context-bound
 // path that carry no JSON object. The SDK decodes an empty body and a JSON null
-// body to the same empty map as "{}", so an empty object is the only signal
-// left that no document came back; every ECS RPC response carries at least its
-// RequestId. Collapsing that map to the response would hand the caller a zero
-// result, which silently replaces the state it already holds instead of
+// body to an empty object, which is indistinguishable from "{}" and is the only
+// signal left that no document came back; every ECS RPC response carries at
+// least its RequestId. Collapsing that to the response would hand the caller a
+// zero result, which silently replaces the state it already holds instead of
 // failing the read. A legitimate empty result keeps its non-empty object
 // ({"Instances": {"Instance": []}}), a failed call keeps its SDK error, and the
 // non-object body types never reach this check.
+//
+// The SDK may hand back either its transport wrapper (body, headers, status
+// code) or, for some shapes, the decoded body itself, so both are checked.
 func requireContextJSONBody(response map[string]interface{}, apiProductCode string) error {
 	if response == nil {
-		return fmt.Errorf("the %s API returned a successful response without a body", apiProductCode)
+		return emptyContextBodyError(apiProductCode)
 	}
-	rawBody, hasBody := response["body"]
-	if !hasBody {
+	if rawBody, hasBody := response["body"]; hasBody {
+		if rawBody == nil {
+			return emptyContextBodyError(apiProductCode)
+		}
+		body, ok := rawBody.(map[string]interface{})
+		if !ok {
+			// A binary, byte or string body is not a JSON document.
+			return nil
+		}
+		if len(body) == 0 {
+			return emptyContextBodyError(apiProductCode)
+		}
 		return nil
 	}
-	body, ok := rawBody.(map[string]interface{})
-	if !ok {
-		return nil
+	if _, wrapped := response["statusCode"]; wrapped {
+		// The transport wrapper without a body member: no document came back.
+		return emptyContextBodyError(apiProductCode)
 	}
-	if len(body) == 0 {
-		return fmt.Errorf("the %s API returned a successful response without a JSON object body; the request was not treated as an empty result", apiProductCode)
+	if len(response) == 0 {
+		// The already decoded body is an empty object.
+		return emptyContextBodyError(apiProductCode)
 	}
 	return nil
+}
+
+func emptyContextBodyError(apiProductCode string) error {
+	return fmt.Errorf("the %s API returned a successful response without a JSON object body; the request was not treated as an empty result", apiProductCode)
 }
 
 // applyOpenapiSignVersion writes the configured signature version (if any)

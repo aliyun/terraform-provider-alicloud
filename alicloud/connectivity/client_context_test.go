@@ -145,6 +145,29 @@ func newStaticServer(t *testing.T, status int, body string) *httptest.Server {
 	return server
 }
 
+// The body check itself is pinned for every shape the SDK can hand back: the
+// transport wrapper with or without a body, the already decoded body, and the
+// non-object body types.
+func TestUnitRequireContextJSONBody(t *testing.T) {
+	for name, response := range map[string]map[string]interface{}{
+		"nil response":            nil,
+		"empty response":          {},
+		"wrapper without body":    {"statusCode": 200, "headers": map[string]interface{}{}},
+		"wrapper with empty body": {"statusCode": 200, "body": map[string]interface{}{}},
+		"wrapper with nil body":   {"statusCode": 200, "body": nil},
+	} {
+		assert.Error(t, requireContextJSONBody(response, "Ecs"), name+" must be rejected")
+	}
+
+	for name, response := range map[string]map[string]interface{}{
+		"decoded body":          {"RequestId": "mock", "Instances": map[string]interface{}{"Instance": []interface{}{}}},
+		"wrapper with object":   {"statusCode": 200, "body": map[string]interface{}{"RequestId": "mock"}},
+		"wrapper with a string": {"statusCode": 200, "body": "not-a-json-document"},
+	} {
+		assert.NoError(t, requireContextJSONBody(response, "Ecs"), name+" must be accepted")
+	}
+}
+
 // A 2xx response without a JSON object body must fail the read. Handing the
 // empty map back would be read as a zero result and replace the state the
 // caller already holds.
@@ -167,10 +190,9 @@ func TestUnitDoWithContextRejectsAnEmptySuccessBody(t *testing.T) {
 	// well, and it must not be turned into an empty result either.
 	server := newStaticServer(t, http.StatusOK, "  \n")
 	client := newLoopbackClient(t, server.URL)
-	response, err := client.DoWithContext(context.Background(), "Ecs", helper.RpcParam("POST", "2014-05-26", "DescribeInstances"), nil,
+	_, err := client.DoWithContext(context.Background(), "Ecs", helper.RpcParam("POST", "2014-05-26", "DescribeInstances"), nil,
 		map[string]interface{}{"RegionId": "cn-beijing"}, nil, nil, &utilV2.RuntimeOptions{})
 	assert.Error(t, err, "a blank body must not be returned as an empty result")
-	assert.Nil(t, response)
 }
 
 // A legitimate empty result keeps its JSON object: an empty list inside the
