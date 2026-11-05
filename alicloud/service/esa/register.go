@@ -66,6 +66,9 @@ func ServicePackage() conns.ServicePackage {
 			{TypeName: "alicloud_esa_waiting_room", Factory: resourceAliCloudEsaWaitingRoom},
 			{TypeName: "alicloud_esa_waiting_room_rule", Factory: resourceAliCloudEsaWaitingRoomRule},
 		},
+		Resources: []conns.Resource{
+			{TypeName: "alicloud_esa_edge_container_app_version", Factory: NewEdgeContainerAppVersionResource},
+		},
 		SDKDataSources: []conns.SDKDataSource{
 			{TypeName: "alicloud_esa_cache_reserve_instances", Factory: dataSourceAliCloudEsaCacheReserveInstances},
 			{TypeName: "alicloud_esa_https_basic_configurations", Factory: dataSourceAliCloudEsaHttpsBasicConfigurations},
