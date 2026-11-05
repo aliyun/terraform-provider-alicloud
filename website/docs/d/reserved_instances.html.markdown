@@ -77,7 +77,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `scope` - (String) The scope of the reserved instance. Valid values: `Region` and `Zone`.
   * `platform` - (String) The platform of the instances covered by the reserved instance, for example `Linux` or `Windows`.
   * `offering_type` - (String) The payment type. Valid values: `No Upfront`, `Partial Upfront` and `All Upfront`.
-  * `allocation_status` - (String) The allocation status reported by the service.
+  * `allocation_status` - (String) The allocation status of the reserved instance. This value is meaningful only when `allocation_type` is `Shared`. Valid values: `allocated` (allocated to another user) and `beAllocated` (allocated by another user).
   * `description` - (String) The description of the reserved instance.
   * `resource_group_id` - (String) The ID of the resource group.
   * `tags` - (Map of String) A mapping of tags.

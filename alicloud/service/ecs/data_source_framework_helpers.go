@@ -126,27 +126,33 @@ func ecsFwSetRequestString(request map[string]interface{}, key string, value typ
 }
 
 // ecsFwApplyRepeatList writes a repeat-list filter in the 1-based
-// `Parameter.N` form used by the ECS RPC.
+// `Parameter.N` form using the shared convert helper.
 func ecsFwApplyRepeatList(request map[string]interface{}, parameter string, values []string) {
-	for i, value := range values {
-		request[fmt.Sprintf("%s.%d", parameter, i+1)] = value
+	raw := make([]interface{}, 0, len(values))
+	for _, value := range values {
+		raw = append(raw, value)
 	}
+	expandArrayToMap(request, raw, parameter)
 }
 
+// ecsFwApplyTags maps the Terraform tag map onto the `Tag.N.Key/Value` filter
+// using the shared tags helper.
 func ecsFwApplyTags(request map[string]interface{}, tags types.Map) {
 	if tags.IsNull() || tags.IsUnknown() {
 		return
 	}
-	count := 0
+	list := make([]map[string]interface{}, 0, len(tags.Elements()))
 	for key, value := range tags.Elements() {
 		stringValue, ok := value.(types.String)
 		if !ok {
 			continue
 		}
-		count++
-		request[fmt.Sprintf("Tag.%d.Key", count)] = key
-		request[fmt.Sprintf("Tag.%d.Value", count)] = stringValue.ValueString()
+		list = append(list, map[string]interface{}{
+			"Key":   key,
+			"Value": stringValue.ValueString(),
+		})
 	}
+	expandTagsToMap(request, list)
 }
 
 // ecsFwRpcPost sends one read-only ECS query with the shared retry policy:

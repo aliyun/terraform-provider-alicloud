@@ -61,9 +61,9 @@ The following attributes are exported in addition to the arguments listed above:
 * `groups` - (Computed, List of Object) A list of auto provisioning groups. Each element contains the following attributes:
   * `auto_provisioning_group_id` - (String) The ID of the auto provisioning group.
   * `auto_provisioning_group_name` - (String) The name of the auto provisioning group.
-  * `auto_provisioning_group_type` - (String) The type of the auto provisioning group. Valid values: `request`, `maintain` and `candidate`.
+  * `auto_provisioning_group_type` - (String) The delivery type. Valid values: `request` and `maintain`.
   * `status` - (String) The status of the auto provisioning group. Valid values: `submitted`, `active`, `deleted`, `delete-running` and `modifying`.
-  * `state` - (String) The lifecycle state reported by the service, for example `Active`.
+  * `state` - (String) The scheduling state of the auto provisioning group. Valid values: `fulfilled`, `pending-fulfillment`, `pending-termination` and `error`.
   * `region_id` - (String) The ID of the region.
   * `resource_group_id` - (String) The ID of the resource group.
   * `launch_template_id` - (String) The ID of the launch template.
