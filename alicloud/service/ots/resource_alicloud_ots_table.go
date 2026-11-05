@@ -91,7 +91,8 @@ func ResourceOtsTable() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"enable_stream": {
 							Type:     schema.TypeBool,
-							Required: true,
+							Optional: true,
+							Default:  false,
 						},
 						"expiration_time": {
 							Type:         schema.TypeInt,

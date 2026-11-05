@@ -124,7 +124,7 @@ The primary_key supports the following:
 ### `stream_specification`
 
 The stream_specification supports the following:
-* `enable_stream` - (Required, Bool, Available since v2.3.0) Whether to enable stream for the table. Setting it to `false`, or removing the `stream_specification` block, disables stream on the next apply. Changing this value updates the stream configuration without recreating the table.
+* `enable_stream` - (Optional, Bool, Available since v2.3.0) Whether to enable stream for the table. Defaults to `false`. Setting it to `false`, or removing the `stream_specification` block, disables stream on the next apply. Changing this value updates the stream configuration without recreating the table.
 * `expiration_time` - (Optional, Int, Available since v2.3.0) The retention period of stream records, in hours. Valid values: `1` to `168`. This parameter is required when `enable_stream` is `true`. Changing this value updates the retention period without recreating the table.
 
 ## Attributes Reference
