@@ -698,16 +698,10 @@ func resourceServerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 				objectDataLocalMap["HealthyThreshold"] = healthyThreshold1
 			}
 			healthCheckReq1, _ := jsonpath.Get("$[0].health_check_req", v)
-			if d.HasChange("health_check_config.0.health_check_req") && healthCheckReq1 == nil {
-				healthCheckReq1 = ""
-			}
 			if healthCheckReq1 != nil && (d.HasChange("health_check_config.0.health_check_req") || healthCheckReq1 != "") {
 				objectDataLocalMap["HealthCheckReq"] = healthCheckReq1
 			}
 			healthCheckExp1, _ := jsonpath.Get("$[0].health_check_exp", v)
-			if d.HasChange("health_check_config.0.health_check_exp") && healthCheckExp1 == nil {
-				healthCheckExp1 = ""
-			}
 			if healthCheckExp1 != nil && (d.HasChange("health_check_config.0.health_check_exp") || healthCheckExp1 != "") {
 				objectDataLocalMap["HealthCheckExp"] = healthCheckExp1
 			}
@@ -783,10 +777,7 @@ func resourceServerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	if !d.IsNewResource() && d.HasChange("health_check_config.0.health_check_req") {
 		update = true
 		jsonPathResult18, err := jsonpath.Get("$[0].health_check_req", d.Get("health_check_config"))
-		if err == nil {
-			if jsonPathResult18 == nil {
-				jsonPathResult18 = ""
-			}
+		if err == nil && jsonPathResult18 != nil && jsonPathResult18 != "" {
 			request["HealthCheckConfig.HealthCheckReq"] = jsonPathResult18
 		}
 	}
@@ -794,10 +785,7 @@ func resourceServerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	if !d.IsNewResource() && d.HasChange("health_check_config.0.health_check_exp") {
 		update = true
 		jsonPathResult19, err := jsonpath.Get("$[0].health_check_exp", d.Get("health_check_config"))
-		if err == nil {
-			if jsonPathResult19 == nil {
-				jsonPathResult19 = ""
-			}
+		if err == nil && jsonPathResult19 != nil && jsonPathResult19 != "" {
 			request["HealthCheckConfig.HealthCheckExp"] = jsonPathResult19
 		}
 	}
