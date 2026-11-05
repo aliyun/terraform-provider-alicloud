@@ -271,12 +271,6 @@ func ResourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"replica_count": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validators.IntBetween(1, 4),
-			},
 			"region_id": {
 				Type:     schema.TypeString,
 				Computed: true,
