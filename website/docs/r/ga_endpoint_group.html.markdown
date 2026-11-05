@@ -244,20 +244,15 @@ resource "alicloud_ga_endpoint_group" "default" {
   health_check_path     = "/healthCheck"
   health_check_host     = "www.example.com"
   health_check_port     = 80
-  enable                = true
   endpoint_configurations {
-    endpoint       = alicloud_eip_address.default.0.ip_address
-    type           = "PublicIp"
-    weight         = "20"
-    probe_port     = 80
-    probe_protocol = "tcp"
+    endpoint = alicloud_eip_address.default.0.ip_address
+    type     = "PublicIp"
+    weight   = "20"
   }
   endpoint_configurations {
-    endpoint       = alicloud_eip_address.default.1.ip_address
-    type           = "PublicIp"
-    weight         = "20"
-    probe_port     = 80
-    probe_protocol = "tcp"
+    endpoint = alicloud_eip_address.default.1.ip_address
+    type     = "PublicIp"
+    weight   = "20"
   }
 }
 ```
@@ -306,6 +301,8 @@ The following arguments are supported:
 * `enable` - (Optional, Bool, Available since v2.3.0) Specifies whether to enable delay detection for the endpoints in the endpoint group. Default value: `false`. The value applies to every endpoint in `endpoint_configurations`.
 
   -> **NOTE:** Delay detection is supported only for endpoints of type `Ip`, `Domain` or `PublicIp`. `probe_port` and `probe_protocol` take effect only when `enable` is set to `true`. The API does not return this argument, so it is not refreshed on import and must be set again after import.
+
+  -> **NOTE:** Delay detection requires an accelerator instance that supports the feature. If the instance does not support it, the API returns `NotSupport.Feature` and the instance must be upgraded first.
 * `access_log_record_customized_header_list` - (Optional, Set, Available since v2.3.0) The list of request headers that are recorded in the access log. You can specify up to 100 headers.
 
   -> **NOTE:** `access_log_record_customized_header_list` is valid only when the access log of the endpoint group is enabled. Attach the access log with `alicloud_ga_access_log` first. Because `alicloud_ga_access_log` depends on the endpoint group, the header list cannot be set by the same apply that creates the endpoint group: configure it in a later update (a create attempt with the header list returns an error).

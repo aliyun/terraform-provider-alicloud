@@ -1432,32 +1432,26 @@ func TestAccAliCloudGaEndpointGroup_probeAndAccessLog(t *testing.T) {
 					"health_check_path":     "/healthCheck",
 					"health_check_host":     "www.alicloud-provider.cn",
 					"health_check_port":     "60",
-					"enable":                "true",
 					"endpoint_configurations": []map[string]interface{}{
 						{
-							"endpoint":       "${alicloud_eip_address.default.0.ip_address}",
-							"type":           "PublicIp",
-							"weight":         "20",
-							"probe_port":     "80",
-							"probe_protocol": "tcp",
+							"endpoint": "${alicloud_eip_address.default.0.ip_address}",
+							"type":     "PublicIp",
+							"weight":   "20",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"accelerator_id":                           acctest.CHECKSET,
-						"listener_id":                              acctest.CHECKSET,
-						"endpoint_group_region":                    acctest.DefaultRegionToTest,
-						"name":                                     name,
-						"health_check_enabled":                     "true",
-						"health_check_protocol":                    "HTTP",
-						"health_check_path":                        "/healthCheck",
-						"health_check_host":                        "www.alicloud-provider.cn",
-						"health_check_port":                        "60",
-						"enable":                                   "true",
-						"endpoint_configurations.#":                "1",
-						"endpoint_configurations.0.probe_port":     "80",
-						"endpoint_configurations.0.probe_protocol": "tcp",
+						"accelerator_id":            acctest.CHECKSET,
+						"listener_id":               acctest.CHECKSET,
+						"endpoint_group_region":     acctest.DefaultRegionToTest,
+						"name":                      name,
+						"health_check_enabled":      "true",
+						"health_check_protocol":     "HTTP",
+						"health_check_path":         "/healthCheck",
+						"health_check_host":         "www.alicloud-provider.cn",
+						"health_check_port":         "60",
+						"endpoint_configurations.#": "1",
 					}),
 				),
 			},
@@ -1470,21 +1464,10 @@ func TestAccAliCloudGaEndpointGroup_probeAndAccessLog(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"health_check_host": "www.example.com",
-					"endpoint_configurations": []map[string]interface{}{
-						{
-							"endpoint":       "${alicloud_eip_address.default.0.ip_address}",
-							"type":           "PublicIp",
-							"weight":         "20",
-							"probe_port":     "8080",
-							"probe_protocol": "icmp",
-						},
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"health_check_host":                        "www.example.com",
-						"endpoint_configurations.0.probe_port":     "8080",
-						"endpoint_configurations.0.probe_protocol": "icmp",
+						"health_check_host": "www.example.com",
 					}),
 				),
 			},
@@ -1629,6 +1612,92 @@ func TestAccAliCloudGaEndpointGroup_endpointIpVersion(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGaEndpointGroup_probeAndEnable(t *testing.T) {
+	var v map[string]interface{}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_endpoint_group.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudGaEndpointGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ga.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeGaEndpointGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaEndpointGroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudGaEndpointGroupBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accelerator_id":        "${alicloud_ga_listener.default.accelerator_id}",
+					"listener_id":           "${alicloud_ga_listener.default.id}",
+					"endpoint_group_region": acctest.DefaultRegionToTest,
+					"name":                  name,
+					"enable":                "true",
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":       "${alicloud_eip_address.default.0.ip_address}",
+							"type":           "PublicIp",
+							"weight":         "20",
+							"probe_port":     "80",
+							"probe_protocol": "tcp",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accelerator_id":                           acctest.CHECKSET,
+						"listener_id":                              acctest.CHECKSET,
+						"endpoint_group_region":                    acctest.DefaultRegionToTest,
+						"enable":                                   "true",
+						"endpoint_configurations.#":                "1",
+						"endpoint_configurations.0.probe_port":     "80",
+						"endpoint_configurations.0.probe_protocol": "tcp",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable": "false",
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":       "${alicloud_eip_address.default.0.ip_address}",
+							"type":           "PublicIp",
+							"weight":         "20",
+							"probe_port":     "8080",
+							"probe_protocol": "icmp",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable":                                   "false",
+						"endpoint_configurations.0.probe_port":     "8080",
+						"endpoint_configurations.0.probe_protocol": "icmp",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable"},
 			},
 		},
 	})
