@@ -14,5 +14,11 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  ResourceFcv2Function,
 			},
 		},
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_fcv2_function_on_demand_config",
+				Factory:  NewFunctionOnDemandConfigResource,
+			},
+		},
 	}
 }

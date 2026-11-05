@@ -88,3 +88,47 @@ func (s *Service) Fcv2FunctionStateRefreshFunc(id string, field string, failStat
 }
 
 // DescribeFcv2Function >>> Encapsulated.
+
+// DescribeFunctionOnDemandConfig <<< Encapsulated get interface for the
+// FunctionOnDemandConfig. The id is serviceName:functionName:qualifier, where
+// qualifier is a service alias or "LATEST" (the API rejects bare versions).
+func (s *Service) DescribeFunctionOnDemandConfig(id string) (object map[string]interface{}, err error) {
+
+	client := s.client
+	var query map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 3 {
+		return object, errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+	}
+	serviceName := parts[0]
+	functionName := parts[1]
+	qualifier := parts[2]
+	action := fmt.Sprintf("/2021-04-06/services/%s/functions/%s/on-demand-config", serviceName, functionName)
+	query = make(map[string]*string)
+	query["qualifier"] = helper.StringPointer(qualifier)
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		object, err = client.RoaGet("FC-Open", "2021-04-06", action, query, nil, nil)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		logs.AddDebug(action, object, query)
+		return nil
+	})
+
+	if err != nil {
+		// FC-Open returns 404 once the on-demand config is gone; the tea-rpc
+		// client surfaces that as a *tea.SDKError whose StatusCode is 404, which
+		// errs.NotFoundError reaches through the wrapped ComplexError's Cause.
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return object, nil
+}
+
+// DescribeFunctionOnDemandConfig >>> Encapsulated.
