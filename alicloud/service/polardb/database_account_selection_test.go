@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -445,6 +446,39 @@ func TestUnitAliCloudPolarDbDatabase_waitAccountEmpowered(t *testing.T) {
 		}
 		if err := waitDatabaseAccountEmpowered(describe, "pc-1:db", "alice", 60*time.Second); err != nil {
 			t.Fatalf("expected the wait to retry the malformed account list, got %v", err)
+		}
+	})
+
+	t.Run("retries a missing database", func(t *testing.T) {
+		responses := []map[string]interface{}{nil, empowered("Empowered")}
+		calls := 0
+		describe := func(string) (map[string]interface{}, error) {
+			index := calls
+			if calls < len(responses)-1 {
+				calls++
+			}
+			if responses[index] == nil {
+				return nil, errs.GetNotFoundErrorFromString("the database does not exist")
+			}
+			return responses[index], nil
+		}
+		if err := waitDatabaseAccountEmpowered(describe, "pc-1:db", "alice", 60*time.Second); err != nil {
+			t.Fatalf("expected the wait to retry the missing database, got %v", err)
+		}
+	})
+
+	t.Run("retries while the privilege is removed", func(t *testing.T) {
+		responses := []map[string]interface{}{empowered("Removing"), empowered("Empowered")}
+		calls := 0
+		describe := func(string) (map[string]interface{}, error) {
+			index := calls
+			if calls < len(responses)-1 {
+				calls++
+			}
+			return responses[index], nil
+		}
+		if err := waitDatabaseAccountEmpowered(describe, "pc-1:db", "alice", 60*time.Second); err != nil {
+			t.Fatalf("expected the wait to retry the removing privilege, got %v", err)
 		}
 	})
 
