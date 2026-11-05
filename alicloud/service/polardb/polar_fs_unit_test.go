@@ -102,6 +102,79 @@ func TestUnitPolarDBPolarFsDBTypeValidation(t *testing.T) {
 		}
 	}
 }
+func TestUnitPolarDBPolarFsCustomBucketPathListRequest(t *testing.T) {
+	resourceSchema := ResourcePolarFs()
+	d := schema.TestResourceDataRaw(t, resourceSchema.Schema, map[string]interface{}{
+		"custom_bucket_path_list": []interface{}{
+			map[string]interface{}{"bucket": "pfs-first.oss-cn-beijing-internal.aliyuncs.com", "path": "/data"},
+			map[string]interface{}{"bucket": "second-bucket", "path": "/other"},
+		},
+	})
+	request := buildPolarDBPolarFsCreateRequest(d, "cn-beijing")
+	list, ok := request["CustomBucketPathList"].([]map[string]interface{})
+	if !ok || len(list) != 2 {
+		t.Fatalf("CustomBucketPathList was not expanded with both entries: %#v", request["CustomBucketPathList"])
+	}
+	pairs := make(map[string]string, len(list))
+	for _, entry := range list {
+		bucket, _ := entry["Bucket"].(string)
+		path, _ := entry["Path"].(string)
+		pairs[bucket] = path
+	}
+	if pairs["pfs-first.oss-cn-beijing-internal.aliyuncs.com"] != "/data" || pairs["second-bucket"] != "/other" {
+		t.Fatalf("CustomBucketPathList lost bucket/path pairing: %#v", list)
+	}
+
+	empty := schema.TestResourceDataRaw(t, resourceSchema.Schema, map[string]interface{}{
+		"custom_bucket_path_list": []interface{}{
+			map[string]interface{}{"bucket": "", "path": ""},
+		},
+	})
+	if _, ok := buildPolarDBPolarFsCreateRequest(empty, "cn-beijing")["CustomBucketPathList"]; ok {
+		t.Fatal("an empty custom_bucket_path_list entry must not be sent to CreatePolarFs")
+	}
+
+	unset := schema.TestResourceDataRaw(t, resourceSchema.Schema, map[string]interface{}{})
+	if _, ok := buildPolarDBPolarFsCreateRequest(unset, "cn-beijing")["CustomBucketPathList"]; ok {
+		t.Fatal("CustomBucketPathList must not be sent when custom_bucket_path_list is not configured")
+	}
+}
+func TestUnitPolarDBPolarFsCustomBucketPathListRead(t *testing.T) {
+	resourceSchema := ResourcePolarFs()
+	d := schema.TestResourceDataRaw(t, resourceSchema.Schema, map[string]interface{}{})
+	object := map[string]interface{}{
+		"CustomBucketPathList": []interface{}{
+			map[string]interface{}{"Bucket": "pfs-first.oss-cn-beijing-internal.aliyuncs.com", "Path": "/data"},
+		},
+	}
+	if err := flattenPolarDBPolarFsAttribute(d, object); err != nil {
+		t.Fatal(err)
+	}
+	list := d.Get("custom_bucket_path_list").(*schema.Set).List()
+	if len(list) != 1 {
+		t.Fatalf("custom_bucket_path_list was not read back: %#v", list)
+	}
+	entry := list[0].(map[string]interface{})
+	if entry["bucket"] != "pfs-first.oss-cn-beijing-internal.aliyuncs.com" || entry["path"] != "/data" {
+		t.Fatalf("custom_bucket_path_list lost bucket/path: %#v", entry)
+	}
+
+	empty := schema.TestResourceDataRaw(t, resourceSchema.Schema, map[string]interface{}{
+		"custom_bucket_path_list": []interface{}{
+			map[string]interface{}{"bucket": "stale", "path": "/stale"},
+		},
+	})
+	if err := flattenPolarDBPolarFsAttribute(empty, map[string]interface{}{"CustomBucketPathList": []interface{}{}}); err != nil {
+		t.Fatal(err)
+	}
+	if got := empty.Get("custom_bucket_path_list").(*schema.Set).Len(); got != 0 {
+		t.Fatalf("an empty API response must clear custom_bucket_path_list, got %d entries", got)
+	}
+
+	if _, err := flattenPolarDBPolarFsCustomBucketPathList("unexpected"); err == nil {
+		t.Fatal("an unexpected CustomBucketPathList payload must return an error")
+	}
+}
 func TestUnitRedactPolarDBSensitiveValue(t *testing.T) {
 	input := map[string]interface{}{
 		"CustomOssAk": "ak", "CustomOssSk": "sk",
