@@ -42,7 +42,7 @@ func TestAccAliCloudCmsSubscription_basic(t *testing.T) {
 				Config: testAccCmsSubscriptionConfigMinimal(name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "subscription_name", name),
-					resource.TestCheckResourceAttr(resourceId, "workspace", name),
+					resource.TestCheckResourceAttr(resourceId, "workspace", strings.ToLower(name)),
 					resource.TestCheckResourceAttr(resourceId, "enable", "true"),
 					resource.TestCheckResourceAttr(resourceId, "region_id", "cn-hangzhou"),
 					resource.TestCheckResourceAttrSet(resourceId, "user_id"),
@@ -242,8 +242,15 @@ func testAccCheckCmsSubscriptionDependenciesDestroy(s *terraform.State) error {
 }
 
 func testAccCmsSubscriptionDependence(name string) string {
+	// SLS project names only accept lowercase letters, digits and hyphens, so the
+	// dependency name cannot carry the mixed-case tf-testAcc prefix verbatim.
+	baseName := strings.ToLower(name)
 	return fmt.Sprintf(`
 variable "name" {
+  default = "%s"
+}
+
+variable "base_name" {
   default = "%s"
 }
 
@@ -252,14 +259,14 @@ provider "alicloud" {
 }
 
 resource "alicloud_log_project" "default" {
-  project_name = var.name
+  project_name = var.base_name
 }
 
 resource "alicloud_cms_workspace" "default" {
-  workspace_name = var.name
+  workspace_name = var.base_name
   sls_project    = alicloud_log_project.default.project_name
 }
-`, name)
+`, name, baseName)
 }
 
 func testAccCmsSubscriptionConfigMinimal(name string) string {
