@@ -5,9 +5,9 @@ import (
 )
 
 // ServicePackage returns the registration declaration of the Ga (Global
-// Accelerator) service. The 24 resource types and 20 data source types mirror
-// the registrations previously declared inline in the root provider package;
-// their implementations and factories now live in this product subpackage.
+// Accelerator) service. The SDKv2 resource and data source types mirror the
+// registrations previously declared inline in the root provider package; the
+// service extension pair is Framework-native.
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "Ga",
@@ -189,6 +189,18 @@ func ServicePackage() conns.ServicePackage {
 			{
 				TypeName: "alicloud_ga_endpoint_group_ip_address_cidr_blocks",
 				Factory:  DataSourceAliCloudGaEndpointGroupIpAddressCidrBlocks,
+			},
+		},
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_ga_service_extension",
+				Factory:  NewServiceExtensionResource,
+			},
+		},
+		DataSources: []conns.DataSource{
+			{
+				TypeName: "alicloud_ga_service_extensions",
+				Factory:  NewServiceExtensionsDataSource,
 			},
 		},
 	}
