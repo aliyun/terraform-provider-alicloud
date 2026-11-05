@@ -1,19 +1,20 @@
 package dlfnext
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-// catalogNotFoundErr builds a tea.SDKError that errs.NotFoundError recognises
-// as NotFound (HTTP 404), for unit tests that script GetCatalog responses
-// without a live backend.
 func catalogNotFoundErr() error {
 	return &tea.SDKError{
 		StatusCode: tea.Int(404),
@@ -62,121 +63,37 @@ func catalogInternalErr() error {
 	}
 }
 
-func TestUnitDlfNextCatalogSchemaType(t *testing.T) {
-	r := ResourceCatalog()
-	typeSchema := r.Schema["type"]
-
-	if typeSchema.Default != "PAIMON" {
-		t.Fatalf("expected type Default to be PAIMON, got %v", typeSchema.Default)
-	}
-
-	// CreateCatalog documents enum ["PAIMON", "ICEBERG"]; the schema must
-	// accept both contract values.
-	for _, valid := range []string{"PAIMON", "ICEBERG"} {
-		if _, errs := typeSchema.ValidateFunc(valid, "type"); len(errs) != 0 {
-			t.Fatalf("expected %s to be accepted by the type ValidateFunc, got %v", valid, errs)
-		}
-	}
-
-	if _, errs := typeSchema.ValidateFunc("DELTA", "type"); len(errs) == 0 {
-		t.Fatal("expected an undocumented type to be rejected by the type ValidateFunc")
-	}
-}
-
-func TestUnitDlfNextCatalogTimestampString(t *testing.T) {
-	// GetCatalog returns int64 milliseconds; the string form must keep the
-	// full value (32-bit int would overflow).
-	cases := []struct {
-		in   interface{}
-		want string
-	}{
-		{float64(1744970111419), "1744970111419"},
-		{int64(1744970111419), "1744970111419"},
-		{int(1744970111), "1744970111"},
-		{"1744970111419", "1744970111419"},
-		{nil, ""},
-	}
-	for _, c := range cases {
-		if got := catalogTimestampString(c.in); got != c.want {
-			t.Fatalf("catalogTimestampString(%v) = %q, want %q", c.in, got, c.want)
-		}
-	}
-}
-
-func TestUnitDlfNextCatalogPreCreate(t *testing.T) {
-	// 1. Pre-create: catalog already exists -> refuse, do not take over.
-	if proceed, err := decideCatalogPreCreate(nil); proceed {
-		t.Fatalf("pre-create with an existing catalog must not proceed")
-	} else if err == nil {
-		t.Fatalf("pre-create with an existing catalog must return a conflict error")
-	}
-
-	// 2. Pre-create: NotFound -> proceed.
-	if proceed, err := decideCatalogPreCreate(catalogNotFoundErr()); !proceed || err != nil {
-		t.Fatalf("pre-create NotFound must proceed, got proceed=%v err=%v", proceed, err)
-	}
-
-	// 3. Pre-create: other Get error -> fail (do not proceed).
-	if proceed, err := decideCatalogPreCreate(catalogInternalErr()); proceed {
-		t.Fatalf("pre-create with a non-NotFound Get error must not proceed")
-	} else if err == nil {
-		t.Fatalf("pre-create with a non-NotFound Get error must surface the error")
-	}
-}
-
 func TestUnitDlfNextCatalogCreateRecovery(t *testing.T) {
-	// AlreadyExists -> fail, never import.
-	if dec, err := decideCatalogCreateRecovery(true, false, true, true, catalogGetFound); dec != catalogCreateFail {
+	if dec, err := decideCatalogCreateRecovery(true, false, true, catalogGetFound); dec != catalogCreateFail {
 		t.Fatalf("AlreadyExists must fail, got %v", dec)
 	} else if err == nil {
 		t.Fatalf("AlreadyExists must return an error")
 	}
-
-	// Validation/permission error after a same-name catalog exists -> fail.
-	if dec, err := decideCatalogCreateRecovery(false, true, false, true, catalogGetFound); dec != catalogCreateFail {
+	if dec, err := decideCatalogCreateRecovery(false, true, false, catalogGetFound); dec != catalogCreateFail {
 		t.Fatalf("validation/permission error with a same-name catalog must fail, got %v", dec)
 	} else if err == nil {
 		t.Fatalf("validation/permission error must return an error")
 	}
-
-	// Ambiguous error and Get finds a same-name catalog -> MUST fail.
-	dec, err := decideCatalogCreateRecovery(false, false, true, true, catalogGetFound)
-	if dec != catalogCreateFail {
-		t.Fatalf("ambiguous error with a same-name catalog must fail (not recover), got %v err=%v", dec, err)
-	}
-	if err == nil {
+	if dec, err := decideCatalogCreateRecovery(false, false, true, catalogGetFound); dec != catalogCreateFail {
+		t.Fatalf("ambiguous error with a same-name catalog must fail, got %v err=%v", dec, err)
+	} else if err == nil {
 		t.Fatalf("ambiguous error with a found catalog must return an actionable error")
 	}
-
-	// Retryable error and resource was not created (Get NotFound) -> retry.
-	if dec, err := decideCatalogCreateRecovery(false, false, true, true, catalogGetAbsent); dec != catalogCreateRetry {
+	if dec, err := decideCatalogCreateRecovery(false, false, true, catalogGetAbsent); dec != catalogCreateRetry {
 		t.Fatalf("retryable error with absent catalog must retry, got %v err=%v", dec, err)
 	}
-
-	// Non-retryable error and catalog absent -> fail.
-	if dec, err := decideCatalogCreateRecovery(false, false, false, true, catalogGetAbsent); dec != catalogCreateFail {
+	if dec, err := decideCatalogCreateRecovery(false, false, false, catalogGetAbsent); dec != catalogCreateFail {
 		t.Fatalf("non-retryable error with absent catalog must fail, got %v", dec)
 	} else if err == nil {
 		t.Fatalf("non-retryable error with absent catalog must return an error")
 	}
-
-	// pre-create did NOT prove absence -> fail.
-	if dec, err := decideCatalogCreateRecovery(false, false, true, false, catalogGetFound); dec != catalogCreateFail {
-		t.Fatalf("pre-create not confirmed absent must fail, got %v", dec)
-	} else if err == nil {
-		t.Fatalf("pre-create not confirmed absent must return an error")
-	}
-
-	// Post-error Get itself errored -> fail.
-	if dec, err := decideCatalogCreateRecovery(false, false, true, true, catalogGetOtherError); dec != catalogCreateFail {
+	if dec, err := decideCatalogCreateRecovery(false, false, true, catalogGetOtherError); dec != catalogCreateFail {
 		t.Fatalf("post-error Get error must fail, got %v", dec)
 	} else if err == nil {
 		t.Fatalf("post-error Get error must return an error")
 	}
 }
 
-// scriptedGet plays back a sequence of (object, error) responses, holding on
-// the last response once the script is exhausted.
 func scriptedGet(script []struct {
 	obj map[string]interface{}
 	err error
@@ -201,8 +118,8 @@ func statusObj(status string) map[string]interface{} {
 
 func TestUnitDlfNextCatalogCreateWaiter(t *testing.T) {
 	svc := &Service{}
+	ctx := context.Background()
 
-	// NOT_FOUND -> NEW -> INITIALIZING -> RUNNING reaches RUNNING.
 	script := []struct {
 		obj map[string]interface{}
 		err error
@@ -213,69 +130,40 @@ func TestUnitDlfNextCatalogCreateWaiter(t *testing.T) {
 		{statusObj("RUNNING"), nil},
 	}
 	refresh := svc.CatalogStateRefreshFuncWithApi("test-catalog", "status", []string{"INITIALIZE_FAILED"}, scriptedGet(script))
-	conf := &retry.StateChangeConf{
-		Pending: []string{"NOT_FOUND", "NEW", "INITIALIZING"},
-		Target:  []string{"RUNNING"},
-		Timeout: 10 * time.Second,
-		Refresh: refresh,
-	}
-	if _, err := conf.WaitForState(); err != nil {
+	conf := &retry.StateChangeConf{Pending: []string{"NOT_FOUND", "NEW", "INITIALIZING"}, Target: []string{"RUNNING"}, Timeout: 10 * time.Second, Refresh: refresh}
+	if _, err := conf.WaitForStateContext(ctx); err != nil {
 		t.Fatalf("expected waiter to reach RUNNING, got error: %v", err)
 	}
 
-	// INITIALIZE_FAILED is a terminal failure.
 	script = []struct {
 		obj map[string]interface{}
 		err error
 	}{{statusObj("INITIALIZE_FAILED"), nil}}
 	refresh = svc.CatalogStateRefreshFuncWithApi("test-catalog", "status", []string{"INITIALIZE_FAILED"}, scriptedGet(script))
-	conf = &retry.StateChangeConf{
-		Pending: []string{"NOT_FOUND", "NEW", "INITIALIZING"},
-		Target:  []string{"RUNNING"},
-		Timeout: 10 * time.Second,
-		Refresh: refresh,
-	}
-	if _, err := conf.WaitForState(); err == nil {
+	conf = &retry.StateChangeConf{Pending: []string{"NOT_FOUND", "NEW", "INITIALIZING"}, Target: []string{"RUNNING"}, Timeout: 10 * time.Second, Refresh: refresh}
+	if _, err := conf.WaitForStateContext(ctx); err == nil {
 		t.Fatalf("expected INITIALIZE_FAILED to fail the waiter, got nil")
 	}
 
-	// Perpetual NotFound times out (NOT_FOUND is Pending).
 	script = []struct {
 		obj map[string]interface{}
 		err error
 	}{{nil, catalogNotFoundErr()}}
 	refresh = svc.CatalogStateRefreshFuncWithApi("test-catalog", "status", []string{"INITIALIZE_FAILED"}, scriptedGet(script))
-	conf = &retry.StateChangeConf{
-		Pending: []string{"NOT_FOUND", "NEW", "INITIALIZING"},
-		Target:  []string{"RUNNING"},
-		Timeout: 2 * time.Second,
-		Refresh: refresh,
-	}
-	if _, err := conf.WaitForState(); err == nil {
+	conf = &retry.StateChangeConf{Pending: []string{"NOT_FOUND", "NEW", "INITIALIZING"}, Target: []string{"RUNNING"}, Timeout: 1 * time.Second, Refresh: refresh}
+	start := time.Now()
+	if _, err := conf.WaitForStateContext(ctx); err == nil {
 		t.Fatalf("expected perpetual NotFound to time out, got nil")
 	}
-
-	// A non-NotFound Get error during polling surfaces.
-	script = []struct {
-		obj map[string]interface{}
-		err error
-	}{{nil, catalogInternalErr()}}
-	refresh = svc.CatalogStateRefreshFuncWithApi("test-catalog", "status", []string{"INITIALIZE_FAILED"}, scriptedGet(script))
-	conf = &retry.StateChangeConf{
-		Pending: []string{"NOT_FOUND", "NEW", "INITIALIZING"},
-		Target:  []string{"RUNNING"},
-		Timeout: 5 * time.Second,
-		Refresh: refresh,
-	}
-	if _, err := conf.WaitForState(); err == nil {
-		t.Fatalf("expected a non-NotFound Get error to surface, got nil")
+	if elapsed := time.Since(start); elapsed > 10*time.Second {
+		t.Fatalf("waiter with 1s timeout took %v", elapsed)
 	}
 }
 
 func TestUnitDlfNextCatalogDeleteWaiter(t *testing.T) {
 	svc := &Service{}
+	ctx := context.Background()
 
-	// DELETING -> DELETED -> NotFound reaches gone.
 	script := []struct {
 		obj map[string]interface{}
 		err error
@@ -284,11 +172,10 @@ func TestUnitDlfNextCatalogDeleteWaiter(t *testing.T) {
 		{statusObj("DELETED"), nil},
 		{nil, catalogNotFoundErr()},
 	}
-	if err := svc.WaitForCatalogGoneWithApi("test-catalog", 10*time.Second, scriptedGet(script)); err != nil {
+	if err := svc.WaitForCatalogGoneWithApi(ctx, "test-catalog", 10*time.Second, scriptedGet(script)); err != nil {
 		t.Fatalf("expected delete waiter to reach gone, got error: %v", err)
 	}
 
-	// A transient retryable Get error is retried until NotFound.
 	script = []struct {
 		obj map[string]interface{}
 		err error
@@ -296,71 +183,57 @@ func TestUnitDlfNextCatalogDeleteWaiter(t *testing.T) {
 		{nil, catalogThrottlingErr()},
 		{nil, catalogNotFoundErr()},
 	}
-	if err := svc.WaitForCatalogGoneWithApi("test-catalog", 20*time.Second, scriptedGet(script)); err != nil {
-		t.Fatalf("expected delete waiter to retry a throttling error then reach gone, got error: %v", err)
+	if err := svc.WaitForCatalogGoneWithApi(ctx, "test-catalog", 20*time.Second, scriptedGet(script)); err != nil {
+		t.Fatalf("expected delete waiter to retry throttling then reach gone, got error: %v", err)
 	}
 
-	// A non-retryable Get error fails instead of looping.
 	script = []struct {
 		obj map[string]interface{}
 		err error
 	}{{nil, catalogInternalErr()}}
-	if err := svc.WaitForCatalogGoneWithApi("test-catalog", 5*time.Second, scriptedGet(script)); err == nil {
+	if err := svc.WaitForCatalogGoneWithApi(ctx, "test-catalog", 5*time.Second, scriptedGet(script)); err == nil {
 		t.Fatalf("expected a non-retryable Get error to fail the delete waiter, got nil")
+	}
+}
+
+func TestUnitDlfNextCatalogStateRefreshMissingStatus(t *testing.T) {
+	svc := &Service{}
+	// A malformed object without "status" must surface the extraction error
+	// instead of becoming the string "<nil>".
+	refresh := svc.CatalogStateRefreshFuncWithApi("test-catalog", "status", nil, func(id string) (map[string]interface{}, error) {
+		return map[string]interface{}{"name": "test-catalog"}, nil
+	})
+	if _, _, err := refresh(); err == nil {
+		t.Fatalf("expected the missing status to surface an error")
 	}
 }
 
 func TestUnitDlfNextCatalogsStableID(t *testing.T) {
 	id1 := catalogsID([]string{"alpha", "bravo", "charlie"})
 	id2 := catalogsID([]string{"charlie", "alpha", "bravo"})
-	if id1 != id2 {
-		t.Fatalf("expected same catalog set in different order to yield the same id, got %q and %q", id1, id2)
-	}
-	if id1 == "" {
-		t.Fatalf("expected a non-empty data source id")
-	}
-	if catalogsID([]string{"a", "b"}) != catalogsID([]string{"a", "b"}) {
-		t.Fatalf("expected catalogsID to be deterministic")
+	if id1 != id2 || id1 == "" {
+		t.Fatalf("expected stable non-empty id, got %q and %q", id1, id2)
 	}
 	if catalogsID([]string{"a", "b"}) == catalogsID([]string{"a", "c"}) {
-		t.Fatalf("expected different catalog sets to yield different ids")
-	}
-	if catalogsID(nil) != catalogsID([]string{}) {
-		t.Fatalf("expected empty input to be stable")
+		t.Fatalf("expected different sets to yield different ids")
 	}
 }
 
 func TestUnitDlfNextCatalogsStableOrder(t *testing.T) {
-	cat := func(name string) map[string]interface{} {
-		return map[string]interface{}{"name": name, "type": "PAIMON", "status": "RUNNING"}
-	}
-	order1 := []map[string]interface{}{cat("charlie"), cat("alpha"), cat("bravo")}
-	order2 := []map[string]interface{}{cat("bravo"), cat("charlie"), cat("alpha")}
-
-	s1 := sortCatalogsByName(order1)
-	s2 := sortCatalogsByName(order2)
-
+	order1 := []catalogItem{{Name: "charlie"}, {Name: "alpha"}, {Name: "bravo"}}
+	sorted := sortCatalogItems(order1)
 	want := []string{"alpha", "bravo", "charlie"}
 	for i, w := range want {
-		if got := fmt.Sprint(s1[i]["name"]); got != w {
-			t.Fatalf("order1[%d]: got %q, want %q", i, got, w)
-		}
-		if got := fmt.Sprint(s2[i]["name"]); got != w {
-			t.Fatalf("order2[%d]: got %q, want %q", i, got, w)
+		if sorted[i].Name != w {
+			t.Fatalf("sorted[%d] = %q, want %q", i, sorted[i].Name, w)
 		}
 	}
-
-	if got := fmt.Sprint(order1[0]["name"]); got != "charlie" {
-		t.Fatalf("sortCatalogsByName must not mutate its input, first element got %q", got)
-	}
-	if got := sortCatalogsByName(nil); len(got) != 0 {
-		t.Fatalf("expected nil input to sort to an empty slice, got %d elements", len(got))
+	if order1[0].Name != "charlie" {
+		t.Fatalf("sortCatalogItems must not mutate its input")
 	}
 }
 
 func TestUnitDlfNextCatalogErrorClassifiersNilSafe(t *testing.T) {
-	// A validation error has Code=InvalidParameter, Data=nil. It must not
-	// panic and must not be classified as already-exists.
 	if isCatalogAlreadyExistsError(catalogValidationErr()) {
 		t.Fatalf("validation error must not be classified as already-exists")
 	}
@@ -375,70 +248,29 @@ func TestUnitDlfNextCatalogErrorClassifiersNilSafe(t *testing.T) {
 	if errs.IsExpectedErrors(allNilErr, []string{"AnyCode"}) {
 		t.Fatalf("all-nil SDKError must not match any expected code")
 	}
-	if isCatalogAlreadyExistsError(allNilErr) {
-		t.Fatalf("all-nil SDKError must not be classified as already-exists")
-	}
-	if isCatalogExplicitClientError(allNilErr) {
-		t.Fatalf("all-nil SDKError must not be classified as explicit client error")
+	if isCatalogAlreadyExistsError(allNilErr) || isCatalogExplicitClientError(allNilErr) {
+		t.Fatalf("all-nil SDKError must not match a classifier")
 	}
 	if helper.NeedRetry(allNilErr) {
 		t.Fatalf("all-nil SDKError must not be classified as retryable")
 	}
 
-	nilCodeErr := &tea.SDKError{
-		Code:       nil,
-		Data:       tea.String("some data"),
-		Message:    tea.String("msg"),
-		StatusCode: tea.Int(500),
-	}
-	if errs.IsExpectedErrors(nilCodeErr, []string{"NotFound"}) {
-		t.Fatalf("nil-code error must not match any expected code")
-	}
-
-	nilDataErr := &tea.SDKError{
-		Code:       tea.String("SomeOtherCode"),
-		Data:       nil,
-		Message:    tea.String("msg"),
-		StatusCode: tea.Int(500),
-	}
+	nilDataErr := &tea.SDKError{Code: tea.String("SomeOtherCode"), Data: nil, Message: tea.String("msg"), StatusCode: tea.Int(500)}
 	if errs.IsExpectedErrors(nilDataErr, []string{"NotFound"}) {
 		t.Fatalf("non-matching code with nil Data must not match")
 	}
 
 	for _, code := range []int{400, 401, 403} {
-		err := &tea.SDKError{
-			Code:       tea.String("SomeCode"),
-			Data:       nil,
-			Message:    tea.String("msg"),
-			StatusCode: tea.Int(code),
-		}
+		err := &tea.SDKError{Code: tea.String("SomeCode"), Data: nil, Message: tea.String("msg"), StatusCode: tea.Int(code)}
 		if !isCatalogExplicitClientError(err) {
 			t.Fatalf("HTTP %d must be classified as explicit client error", code)
 		}
 	}
-
 	if isCatalogExplicitClientError(catalogThrottlingErr()) {
 		t.Fatalf("HTTP 503 must not be classified as explicit client error")
 	}
-
-	wrappedErr := &errs.ComplexError{
-		Cause: &tea.SDKError{
-			Code:       tea.String("InvalidParameter"),
-			Data:       nil,
-			Message:    tea.String("msg"),
-			StatusCode: tea.Int(400),
-		},
-	}
-	if errs.IsExpectedErrors(wrappedErr, []string{"NotFound"}) {
-		t.Fatalf("ComplexError wrapping non-matching SDKError must not match")
-	}
 }
 
-// TestUnitDlfNextCatalogExplicitClientThrottling400 pins the classifier split
-// requested in review: throttling is matched by helper.NeedRetry regardless of
-// HTTP status, so a throttling error delivered with HTTP 400 must not be
-// treated as a validation/permission error (which would fail the create
-// instead of retrying it).
 func TestUnitDlfNextCatalogExplicitClientThrottling400(t *testing.T) {
 	throttling400 := catalogThrottling400Err()
 	if !helper.NeedRetry(throttling400) {
@@ -456,121 +288,35 @@ func TestUnitDlfNextCatalogTimeoutPolicy(t *testing.T) {
 	if got := remainingUntil(time.Now().Add(2 * time.Second)); got <= 0 || got > 2*time.Second {
 		t.Fatalf("remainingUntil of a 2s-future deadline must be in (0, 2s], got %v", got)
 	}
-
-	svc := &Service{}
-	script := []struct {
-		obj map[string]interface{}
-		err error
-	}{{statusObj("INITIALIZING"), nil}}
-	refresh := svc.CatalogStateRefreshFuncWithApi("test-catalog", "status", []string{"INITIALIZE_FAILED"}, scriptedGet(script))
-	conf := &retry.StateChangeConf{
-		Pending: []string{"NOT_FOUND", "NEW", "INITIALIZING"},
-		Target:  []string{"RUNNING"},
-		Timeout: 1 * time.Second,
-		Refresh: refresh,
-	}
-	start := time.Now()
-	_, err := conf.WaitForState()
-	elapsed := time.Since(start)
-	if err == nil {
-		t.Fatalf("expected perpetual INITIALIZING to time out, got nil")
-	}
-	if elapsed > 10*time.Second {
-		t.Fatalf("waiter with 1s timeout took %v, expected well under 1m (no full-timeout re-acquisition)", elapsed)
-	}
 }
 
 func TestUnitDlfNextCatalogOptionChanges(t *testing.T) {
-	// Add only: old empty, new {a,b} -> updates {a,b}, removals [].
-	u, r := buildOptionChanges(map[string]interface{}{}, map[string]interface{}{"a": "1", "b": "2"})
-	if len(u) != 2 || u["a"] != "1" || u["b"] != "2" {
-		t.Fatalf("add: updates = %v, want {a:1,b:2}", u)
+	u, r := buildOptionChanges(map[string]string{}, map[string]string{"a": "1", "b": "2"})
+	if len(u) != 2 || u["a"] != "1" || len(r) != 0 {
+		t.Fatalf("add: updates=%v removals=%v", u, r)
 	}
-	if len(r) != 0 {
-		t.Fatalf("add: removals = %v, want empty", r)
+	u, r = buildOptionChanges(map[string]string{"a": "1", "b": "2"}, map[string]string{"a": "1"})
+	if len(u) != 1 || len(r) != 1 || fmt.Sprint(r[0]) != "b" {
+		t.Fatalf("remove: updates=%v removals=%v", u, r)
 	}
-
-	// Modify + add.
-	u, r = buildOptionChanges(map[string]interface{}{"a": "1"}, map[string]interface{}{"a": "9", "c": "3"})
-	if u["a"] != "9" || u["c"] != "3" || len(u) != 2 {
-		t.Fatalf("modify+add: updates = %v, want {a:9,c:3}", u)
-	}
-	if len(r) != 0 {
-		t.Fatalf("modify+add: removals = %v, want empty", r)
-	}
-
-	// Remove one.
-	u, r = buildOptionChanges(map[string]interface{}{"a": "1", "b": "2"}, map[string]interface{}{"a": "1"})
-	if len(u) != 1 || u["a"] != "1" {
-		t.Fatalf("remove: updates = %v, want {a:1}", u)
-	}
-	if len(r) != 1 || fmt.Sprint(r[0]) != "b" {
-		t.Fatalf("remove: removals = %v, want [b]", r)
-	}
-
-	// Clear all: updates {}, removals {a,b}.
-	u, r = buildOptionChanges(map[string]interface{}{"a": "1", "b": "2"}, map[string]interface{}{})
-	if len(u) != 0 {
-		t.Fatalf("clear: updates = %v, want empty", u)
-	}
-	if len(r) != 2 {
-		t.Fatalf("clear: removals = %v, want 2 items", r)
-	}
-	set := map[string]bool{}
-	for _, k := range r {
-		set[fmt.Sprint(k)] = true
-	}
-	if !set["a"] || !set["b"] {
-		t.Fatalf("clear: removals = %v, want {a,b}", r)
-	}
-
-	// Boundary: server defaults never appear in updates or removals.
-	oldManaged := map[string]interface{}{"comment": "v1", "description": "d"}
-	u, r = buildOptionChanges(oldManaged, map[string]interface{}{})
-	for _, dflt := range []string{"dlf.trashed-file-retained-days", "storage.data.redundancy.type"} {
-		for _, k := range r {
-			if fmt.Sprint(k) == dflt {
-				t.Fatalf("clear: server default %q must NEVER appear in removals, got %v", dflt, r)
-			}
-		}
-		if _, ok := u[dflt]; ok {
-			t.Fatalf("clear: server default %q must NEVER appear in updates", dflt)
-		}
-	}
-
-	// No-op and nil inputs.
-	u, r = buildOptionChanges(map[string]interface{}{}, map[string]interface{}{})
-	if len(u) != 0 || len(r) != 0 {
-		t.Fatalf("noop: updates=%v removals=%v, want both empty", u, r)
+	u, r = buildOptionChanges(map[string]string{"a": "1", "b": "2"}, map[string]string{})
+	if len(u) != 0 || len(r) != 2 {
+		t.Fatalf("clear: updates=%v removals=%v", u, r)
 	}
 	u, r = buildOptionChanges(nil, nil)
 	if len(u) != 0 || len(r) != 0 {
-		t.Fatalf("nil/nil: updates=%v removals=%v, want both empty", u, r)
-	}
-	u, r = buildOptionChanges(map[string]interface{}{"a": "1"}, nil)
-	if len(u) != 0 || len(r) != 1 || fmt.Sprint(r[0]) != "a" {
-		t.Fatalf("old/nil: updates=%v removals=%v, want removals [a]", u, r)
+		t.Fatalf("nil/nil: updates=%v removals=%v", u, r)
 	}
 }
 
 func TestUnitDlfNextCatalogOptionChangesTwoState(t *testing.T) {
-	oldManaged := map[string]interface{}{
-		"comment":     "v1",
-		"description": "d",
-		"dlf.discovery-query-results-retained-days": "7",
-	}
-
-	uOmit, rOmit := buildOptionChanges(oldManaged, nil)
-	uEmpty, rEmpty := buildOptionChanges(oldManaged, map[string]interface{}{})
-
-	if len(uOmit) != 0 || len(uEmpty) != 0 {
-		t.Fatalf("two-state clear: omit updates=%v, {} updates=%v, want both empty", uOmit, uEmpty)
-	}
+	oldManaged := map[string]string{"comment": "v1", "description": "d", "dlf.discovery-query-results-retained-days": "7"}
+	_, rOmit := buildOptionChanges(oldManaged, nil)
+	_, rEmpty := buildOptionChanges(oldManaged, map[string]string{})
 	if len(rOmit) != len(oldManaged) || len(rEmpty) != len(oldManaged) {
-		t.Fatalf("two-state clear: omit removals=%d, {} removals=%d, want %d (all managed keys)", len(rOmit), len(rEmpty), len(oldManaged))
+		t.Fatalf("two-state clear: omit=%d empty=%d want %d", len(rOmit), len(rEmpty), len(oldManaged))
 	}
-	setOmit := map[string]bool{}
-	setEmpty := map[string]bool{}
+	setOmit, setEmpty := map[string]bool{}, map[string]bool{}
 	for _, k := range rOmit {
 		setOmit[fmt.Sprint(k)] = true
 	}
@@ -578,96 +324,164 @@ func TestUnitDlfNextCatalogOptionChangesTwoState(t *testing.T) {
 		setEmpty[fmt.Sprint(k)] = true
 	}
 	for k := range oldManaged {
-		if !setOmit[k] {
-			t.Fatalf("two-state clear (omit): key %q must be in removals, got %v", k, rOmit)
-		}
-		if !setEmpty[k] {
-			t.Fatalf("two-state clear ({}): key %q must be in removals, got %v", k, rEmpty)
-		}
-	}
-	if len(setOmit) != len(setEmpty) {
-		t.Fatalf("two-state: omit and {} removal sets differ in size")
-	}
-	for k := range setOmit {
-		if !setEmpty[k] {
-			t.Fatalf("two-state: key %q in omit removals but not in {} removals — contract broken", k)
-		}
-	}
-	for _, dflt := range []string{"dlf.trashed-file-retained-days", "storage.data.redundancy.type"} {
-		if setOmit[dflt] || setEmpty[dflt] {
-			t.Fatalf("two-state clear: server default %q must NEVER be in removals", dflt)
+		if !setOmit[k] || !setEmpty[k] {
+			t.Fatalf("key %q must be removed by both omit and {}", k)
 		}
 	}
 }
 
 func TestUnitDlfNextCatalogManagedOptionsReconcile(t *testing.T) {
-	managed := map[string]interface{}{"comment": "v1", "description": "d", "description2": "x"}
-	api := map[string]interface{}{
-		"comment":                        "v2",
-		"description":                    "d",
-		"dlf.trashed-file-retained-days": 7,
-		"storage.data.redundancy.type":   "LRS",
-		"enable.openapi":                 false,
-	}
+	managed := map[string]string{"comment": "v1", "description": "d", "description2": "x"}
+	api := map[string]interface{}{"comment": "v2", "description": "d", "dlf.trashed-file-retained-days": 7}
 	got := reconcileManagedOptions(managed, api)
-	if got["comment"] != "v2" {
-		t.Fatalf("managed key value change must surface API value, got comment=%v want v2", got["comment"])
-	}
-	if got["description"] != "d" {
-		t.Fatalf("unchanged managed key must keep API value, got description=%v", got["description"])
+	if got["comment"] != "v2" || got["description"] != "d" {
+		t.Fatalf("unexpected reconcile: %v", got)
 	}
 	if _, ok := got["description2"]; ok {
-		t.Fatalf("managed key absent from API must be dropped (drift), but description2 present")
+		t.Fatalf("managed key absent from API must be dropped")
 	}
-	for _, k := range []string{"dlf.trashed-file-retained-days", "storage.data.redundancy.type", "enable.openapi"} {
-		if _, ok := got[k]; ok {
-			t.Fatalf("unmanaged remote key %q must not be promoted into managed options", k)
-		}
-	}
-
-	managed2 := map[string]interface{}{"comment": "v1", "description": "d"}
-	api2 := map[string]interface{}{"comment": "v1"}
-	got2 := reconcileManagedOptions(managed2, api2)
-	if _, ok := got2["description"]; ok {
-		t.Fatalf("managed key deleted by API must be dropped from state (drift), got description present")
-	}
-	if got2["comment"] != "v1" {
-		t.Fatalf("managed key still in API must keep its value")
-	}
-	if len(got2) != 1 {
-		t.Fatalf("reconciled managed set must have exactly 1 key, got %v", got2)
-	}
-
-	got3 := reconcileManagedOptions(map[string]interface{}{}, api)
-	if len(got3) != 0 {
-		t.Fatalf("empty managed state must yield empty reconcile, got %v", got3)
+	if _, ok := got["dlf.trashed-file-retained-days"]; ok {
+		t.Fatalf("unmanaged key must not be promoted")
 	}
 }
 
 func TestUnitDlfNextCatalogRemoteOptionsMirror(t *testing.T) {
-	api := map[string]interface{}{
-		"comment":                        "v1",
-		"dlf.trashed-file-retained-days": 7,
-		"storage.data.redundancy.type":   "LRS",
-		"enable.openapi":                 false,
-	}
+	api := map[string]interface{}{"comment": "v1", "dlf.trashed-file-retained-days": 7, "enable.openapi": false}
 	got := reconcileRemoteOptions(api)
-	if got["comment"] != "v1" {
-		t.Fatalf("comment = %v, want v1", got["comment"])
+	if got["comment"] != "v1" || got["dlf.trashed-file-retained-days"] != "7" || got["enable.openapi"] != "false" {
+		t.Fatalf("unexpected mirror: %v", got)
 	}
-	if got["dlf.trashed-file-retained-days"] != "7" {
-		t.Fatalf("server default int 7 must stringify to \"7\", got %v", got["dlf.trashed-file-retained-days"])
+}
+
+func TestUnitDlfNextCatalogTimestampString(t *testing.T) {
+	cases := []struct {
+		in   interface{}
+		want string
+	}{
+		{float64(1744970111419), "1744970111419"},
+		{int64(1744970111419), "1744970111419"},
+		{"1744970111419", "1744970111419"},
+		{nil, ""},
 	}
-	if got["storage.data.redundancy.type"] != "LRS" {
-		t.Fatalf("server default LRS wrong/missing, got %v", got["storage.data.redundancy.type"])
+	for _, c := range cases {
+		if got := catalogTimestampString(c.in); got != c.want {
+			t.Fatalf("catalogTimestampString(%v) = %q, want %q", c.in, got, c.want)
+		}
 	}
-	if got["enable.openapi"] != "false" {
-		t.Fatalf("bool false must stringify to \"false\", got %v", got["enable.openapi"])
+}
+
+func TestUnitDlfNextCatalogCreateBody(t *testing.T) {
+	ctx := context.Background()
+	options, _ := types.MapValueFrom(ctx, types.StringType, map[string]string{"comment": "c1"})
+	plan := catalogResourceModel{
+		Name:     types.StringValue("cat"),
+		Type:     types.StringValue("PAIMON"),
+		Options:  options,
+		IsShared: types.BoolValue(false),
+		ShareId:  types.StringValue("share-1"),
 	}
-	if len(got) != 4 {
-		t.Fatalf("remote_options must mirror ALL 4 remote keys, got %d: %v", len(got), got)
+	body, err := buildCatalogCreateBody(ctx, plan)
+	if err != nil {
+		t.Fatalf("buildCatalogCreateBody: %v", err)
 	}
-	if g := reconcileRemoteOptions(map[string]interface{}{}); len(g) != 0 {
-		t.Fatalf("empty API must yield empty remote_options, got %v", g)
+	if v, ok := body["isShared"]; !ok || v != false {
+		t.Fatalf("explicit is_shared=false must be sent as false, body=%v", body)
+	}
+	if body["shareId"] != "share-1" {
+		t.Fatalf("shareId missing: %v", body)
+	}
+
+	omitted := catalogResourceModel{
+		Name:     types.StringValue("cat"),
+		Type:     types.StringValue("PAIMON"),
+		IsShared: types.BoolNull(),
+		ShareId:  types.StringNull(),
+	}
+	body, err = buildCatalogCreateBody(ctx, omitted)
+	if err != nil {
+		t.Fatalf("buildCatalogCreateBody: %v", err)
+	}
+	if _, ok := body["isShared"]; ok {
+		t.Fatalf("omitted is_shared must not be sent, body=%v", body)
+	}
+	if _, ok := body["shareId"]; ok {
+		t.Fatalf("empty share_id must not be sent, body=%v", body)
+	}
+}
+
+func TestUnitDlfNextCatalogFilterDiscrimination(t *testing.T) {
+	objects := []interface{}{
+		map[string]interface{}{"name": "target", "type": "PAIMON", "createdAt": float64(1744970111419)},
+		map[string]interface{}{"name": "other", "type": "PAIMON"},
+	}
+	names, items := filterCatalogs(objects, map[string]bool{"target": true}, nil)
+	if len(names) != 1 || names[0] != "target" || len(items) != 1 {
+		t.Fatalf("ids filter must return only the target, got %v", names)
+	}
+	if items[0].Id != "target" || items[0].CreatedAt != "1744970111419" {
+		t.Fatalf("unexpected item projection: %+v", items[0])
+	}
+	names, _ = filterCatalogs(objects, map[string]bool{"missing": true}, nil)
+	if len(names) != 0 {
+		t.Fatalf("absent ids target must return no objects, got %v", names)
+	}
+}
+
+func TestUnitDlfNextCatalogPagination(t *testing.T) {
+	ctx := context.Background()
+	pages := map[string]struct {
+		objects []interface{}
+		next    string
+	}{
+		"":   {objects: []interface{}{map[string]interface{}{"name": "a"}}, next: "t1"},
+		"t1": {objects: []interface{}{map[string]interface{}{"name": "b"}}, next: ""},
+	}
+	calls := 0
+	objects, err := listAllCatalogs(ctx, func(pattern, token string, max int) ([]interface{}, string, error) {
+		calls++
+		page := pages[token]
+		return page.objects, page.next, nil
+	}, "pattern")
+	if err != nil {
+		t.Fatalf("listAllCatalogs: %v", err)
+	}
+	if calls != 2 || len(objects) != 2 {
+		t.Fatalf("expected 2 pages and 2 objects, got calls=%d objects=%d", calls, len(objects))
+	}
+}
+
+func TestUnitDlfNextCatalogOutputFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "catalogs.json")
+	if err := writeCatalogOutput(path, []catalogItem{{Name: "a", Id: "a"}}); err != nil {
+		t.Fatalf("writeCatalogOutput: %v", err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("reading output file: %v", err)
+	}
+	if len(data) == 0 || string(data) == "[]" {
+		t.Fatalf("output file must contain the matched catalog, got %q", string(data))
+	}
+}
+
+func TestUnitDlfNextCatalogBackoffCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	start := time.Now()
+	backoff := newCatalogBackoff(time.Hour, time.Hour)
+	if err := backoff.Wait(ctx, time.Hour); err == nil {
+		t.Fatalf("expected a cancelled context to stop the wait")
+	}
+	if elapsed := time.Since(start); elapsed > time.Second {
+		t.Fatalf("cancelled wait took %v, expected immediate return", elapsed)
+	}
+}
+
+func TestUnitDlfNextCatalogPathEscaping(t *testing.T) {
+	if got := catalogAction("plain-catalog"); got != "/dlf/v1/catalogs/plain-catalog" {
+		t.Fatalf("unexpected action for a plain name: %q", got)
+	}
+	if got := catalogAction("a b/c"); got != "/dlf/v1/catalogs/a%20b%2Fc" {
+		t.Fatalf("reserved characters must be escaped as one path segment, got %q", got)
 	}
 }

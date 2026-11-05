@@ -2,19 +2,20 @@ package dlfnext
 
 import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 // ServicePackage returns the registration declaration of the DlfNext service.
-// The factories live in this package and are wired into the provider through
-// the registry.
+// Both public types are native Framework implementations.
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "DlfNext",
-		SDKResources: []conns.SDKResource{
-			{TypeName: "alicloud_dlf_next_catalog", Factory: ResourceCatalog},
+		Resources: []conns.Resource{
+			{TypeName: "alicloud_dlf_next_catalog", Factory: func() resource.Resource { return NewCatalogResource() }},
 		},
-		SDKDataSources: []conns.SDKDataSource{
-			{TypeName: "alicloud_dlf_next_catalogs", Factory: DataSourceCatalogs},
+		DataSources: []conns.DataSource{
+			{TypeName: "alicloud_dlf_next_catalogs", Factory: func() datasource.DataSource { return NewCatalogsDataSource() }},
 		},
 	}
 }

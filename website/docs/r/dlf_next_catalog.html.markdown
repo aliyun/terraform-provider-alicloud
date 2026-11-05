@@ -15,6 +15,8 @@ For information about DLF Next Catalog and how to use it, see [What is DLF Next 
 
 -> **NOTE:** Available since v2.3.0.
 
+-> **NOTE:** A catalog can only be dropped after all tables and user-created databases under it have been deleted, and those tables/databases must have been deleted at least 24 hours before the Delete call. Dropping a catalog that does not meet these conditions fails.
+
 ## Example Usage
 
 Basic Usage
@@ -29,7 +31,7 @@ terraform {
 }
 
 resource "alicloud_dlf_next_catalog" "default" {
-  name = "tf-demo-catalog"
+  name = "terraform-example"
   type = "PAIMON"
   options = {
     comment = "a sample paimon catalog"
@@ -41,35 +43,32 @@ resource "alicloud_dlf_next_catalog" "default" {
 
 The following arguments are supported:
 
-* `name` - (Required, ForceNew) The name of the catalog. The name must be unique within the region.
-* `type` - (Optional, ForceNew) The type of the catalog. Defaults to `PAIMON`. Valid values: `PAIMON`, `ICEBERG`. DLF 3.0 uses OmniCatalog as the unified catalog model; a `PAIMON` OmniCatalog is compatible with Paimon REST, Iceberg REST and HMS protocols and manages Paimon, Iceberg and Hive-compatible tables. `ICEBERG` is accepted because the CreateCatalog API documents it as an enum value; whether a specific account or region can create an Iceberg catalog depends on the DLF backend.
-* `options` - (Optional) The catalog configuration options managed by Terraform, as a map of key-value pairs. This field holds ONLY the option keys you declare in the configuration. The contract is **two-state**: `options = {k: v}` means Terraform manages those keys (updates are derived from the new managed set, removals from the previously-managed keys that are now absent); `options = {}` OR omitting `options` both mean the managed set is expected to be empty and any previously-managed keys are removed via AlterCatalog `removals`. This does not rely on the legacy SDK to distinguish an omitted block from an explicit empty map. On refresh, each managed key is reconciled against the value returned by GetCatalog, and a managed key the API no longer returns is dropped from state so a server-side deletion or an ignored update surfaces as drift in the next plan. Server-injected defaults and keys you never declared are NOT promoted into `options`; they remain visible in `remote_options`. A fresh `terraform import` cannot recover which remote options were originally user-configured, so `options` is empty after import — re-apply with the desired `options` block to adopt managed keys. AlterCatalog removals are derived only from the previously-managed keys that are now absent from `options`, so a clear or a partial removal can never delete a server default or an unmanaged key. Note: a small number of option keys (for example `dlf.discovery-query-results-retained-days`) are updatable through `options` but cannot be removed by setting `options = {}`; the DLF backend persists them across an AlterCatalog `removals` call. Terraform still sends the correct removal request, and `remote_options` keeps mirroring such a key at its last value so the drift between user intent (empty managed set) and the true remote picture is visible. This is a DLF API limitation, not Terraform behavior.
-* `is_shared` - (Optional, ForceNew) Whether the catalog is shared. The API has no documented default for `isShared`: omitting the argument does not send the field (the backend default applies), while `is_shared = false` sends an explicit `false`. The distinction is reliable here because the value is ForceNew and read before any refresh.
-* `share_id` - (Optional, ForceNew) The share ID of the catalog. A share ID is issued by DLF catalog sharing and cannot be created by this resource; set it only when sharing has already been configured for the catalog.
+* `name` - (Required, String, ForceNew) The name of the catalog. The name must be unique within the region.
+* `type` - (Optional, String, ForceNew) The type of the catalog. Default value: `PAIMON`. Valid values: `PAIMON`, `ICEBERG`. A `PAIMON` catalog is an OmniCatalog compatible with Paimon REST, Iceberg REST and HMS protocols and manages Paimon, Iceberg and Hive-compatible tables. `ICEBERG` is accepted because the CreateCatalog API documents it as an enum value; whether a specific account or region can create an Iceberg catalog depends on the DLF backend.
+* `options` - (Optional, Map) The catalog option keys managed by Terraform, as a map of key-value pairs. `options = {k = v}` manages those keys: an update writes the new values and removes previously-managed keys that are no longer present. `options = {}` and omitting `options` both mean the managed set is expected to be empty, so previously-managed keys are removed through AlterCatalog `removals`. Server-injected defaults and keys you never declared are never removed by this field; they remain visible in `remote_options`. A fresh import cannot recover which options were originally user-configured, so `options` is empty after import — re-apply the desired block to adopt managed keys.
+* `is_shared` - (Optional, Bool, ForceNew) Whether the catalog is shared. The API has no documented default for `isShared`: omitting the argument does not send the field (the backend default applies), while `is_shared = false` sends an explicit `false`.
+* `share_id` - (Optional, String, ForceNew) The share ID of the catalog. A share ID is issued by DLF catalog sharing and cannot be created by this resource; set it only when sharing has already been configured for the catalog.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The Terraform resource id, which is the catalog name. The catalog also has a separate server-generated id (of the form `clg-xxx`); that server id is not the Terraform resource id.
-* `remote_options` - The full read-only mirror of the options returned by GetCatalog, including server-injected defaults and keys Terraform does not manage. This field is computed and never drives an update; it exists so a fresh import (where `options` is empty) does not lose the remote picture, and so the complete remote options — including defaults you did not configure — remain inspectable. Because `options` only ever contains managed keys, AlterCatalog removals are computed from the managed set and can never reach into `remote_options` to delete a server default or an unmanaged key.
-* `region_id` - The region ID of the catalog.
-* `status` - The status of the catalog. Valid values: `NEW`, `INITIALIZING`, `INITIALIZE_FAILED`, `RUNNING`, `TERMINATED`, `DELETING`, `DELETE_FAILED`, `DELETED`, `STORAGE_RESTRICTED`.
-* `owner` - The owner of the catalog.
-* `created_at` - The creation time of the catalog, in milliseconds since the epoch, as a string (the raw 64-bit value would overflow a 32-bit int).
-* `created_by` - The creator of the catalog.
-* `updated_at` - The update time of the catalog, in milliseconds since the epoch, as a string.
-* `updated_by` - The updater of the catalog.
+* `id` - (String) The Terraform resource id, which is the catalog name.
+* `remote_options` - (Map) The full remote options returned by GetCatalog, including server-injected defaults and keys Terraform does not manage.
+* `status` - (String) The status of the catalog. Valid values: `NEW`, `INITIALIZING`, `INITIALIZE_FAILED`, `RUNNING`, `TERMINATED`, `DELETING`, `DELETE_FAILED`, `DELETED`, `STORAGE_RESTRICTED`.
+* `owner` - (String) The owner of the catalog.
+* `created_at` - (String) The creation time of the catalog, in milliseconds since the epoch, as a string (the raw 64-bit value would overflow a 32-bit int).
+* `created_by` - (String) The creator of the catalog.
+* `updated_at` - (String) The update time of the catalog, in milliseconds since the epoch, as a string.
+* `updated_by` - (String) The updater of the catalog.
 
 ## Import
 
-DLF Next Catalog can be imported using the catalog name. The Terraform resource id is the catalog name, e.g.
+DLF Next Catalog can be imported using the catalog name, e.g.
 
 ```shell
 $ terraform import alicloud_dlf_next_catalog.example <catalog_name>
 ```
-
-The catalog also has a separate server-generated id (of the form `clg-xxx`); that server id is not the Terraform resource id.
 
 ## RAM Permissions
 

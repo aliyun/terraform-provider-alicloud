@@ -1,381 +1,509 @@
 package dlfnext
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"net/url"
 	"strconv"
 	"time"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func ResourceCatalog() *schema.Resource {
-	return &schema.Resource{
-		Create: resourceCatalogCreate,
-		Read:   resourceCatalogRead,
-		Update: resourceCatalogUpdate,
-		Delete: resourceCatalogDelete,
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
-		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
-			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
-		},
-		Schema: map[string]*schema.Schema{
-			"name": {
-				Type:     schema.TypeString,
+const (
+	catalogTypeName = "alicloud_dlf_next_catalog"
+	// terraform-plugin-framework has no user-configurable resource timeouts.
+	catalogTimeout = 5 * time.Minute
+)
+
+var (
+	_ resource.Resource                = &catalogResource{}
+	_ resource.ResourceWithImportState = &catalogResource{}
+)
+
+func NewCatalogResource() resource.Resource {
+	return &catalogResource{}
+}
+
+type catalogResource struct {
+	fwadapt.ResourceBase
+}
+
+type catalogResourceModel struct {
+	Id            types.String `tfsdk:"id"`
+	Name          types.String `tfsdk:"name"`
+	Type          types.String `tfsdk:"type"`
+	Options       types.Map    `tfsdk:"options"`
+	RemoteOptions types.Map    `tfsdk:"remote_options"`
+	IsShared      types.Bool   `tfsdk:"is_shared"`
+	ShareId       types.String `tfsdk:"share_id"`
+	Status        types.String `tfsdk:"status"`
+	Owner         types.String `tfsdk:"owner"`
+	CreatedAt     types.String `tfsdk:"created_at"`
+	CreatedBy     types.String `tfsdk:"created_by"`
+	UpdatedAt     types.String `tfsdk:"updated_at"`
+	UpdatedBy     types.String `tfsdk:"updated_by"`
+}
+
+func (r *catalogResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = catalogTypeName
+}
+
+func (r *catalogResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Description: "Provides a DLF Next Catalog resource.",
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"name": schema.StringAttribute{
 				Required: true,
-				ForceNew: true,
-			},
-			"type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      "PAIMON",
-				ForceNew:     true,
-				ValidateFunc: validators.StringInSlice([]string{"PAIMON", "ICEBERG"}, false),
-			},
-			// options is the Terraform-managed option set. It is Optional and
-			// NOT Computed: it holds only the option keys the user declares in
-			// the configuration. Both options = {} and an omitted options block
-			// mean the managed set is empty; an Update derives updates from the
-			// new managed set and removals from oldManaged - newManaged.
-			// remote_options holds the full remote picture.
-			"options": {
-				Type:     schema.TypeMap,
-				Optional: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
 				},
+				Description: "The name of the catalog. The name must be unique within the region.",
 			},
-			// remote_options is the read-only, full mirror of the GetCatalog
-			// options map, including server-injected defaults and keys the user
-			// never declared. It is Computed and never drives Update; it exists
-			// so a fresh import (where options is empty) does not lose the
-			// remote picture. AlterCatalog removals are computed from
-			// oldManaged - newManaged and can never reach into remote_options
-			// to delete a server default or an unmanaged key.
-			"remote_options": {
-				Type:     schema.TypeMap,
-				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
+			"type": schema.StringAttribute{
+				Optional: true,
+				Default:  stringdefault.StaticString("PAIMON"),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
 				},
+				Validators: []validator.String{
+					stringvalidator.OneOf("PAIMON", "ICEBERG"),
+				},
+				Description: "The catalog type. Valid values: `PAIMON`, `ICEBERG`.",
 			},
-			"is_shared": {
-				Type:     schema.TypeBool,
+			"options": schema.MapAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+				Description: "The option keys managed by Terraform. Both `options = {}` and omitting `options` mean the managed set is empty.",
+			},
+			"remote_options": schema.MapAttribute{
+				Computed:    true,
+				ElementType: types.StringType,
+				Description: "The full remote options returned by GetCatalog, including server defaults and unmanaged keys.",
+			},
+			"is_shared": schema.BoolAttribute{
 				Optional: true,
-				ForceNew: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+				},
+				Description: "Whether the catalog is shared. Omitted means the field is not sent; `false` is sent explicitly.",
 			},
-			"share_id": {
-				Type:     schema.TypeString,
+			"share_id": schema.StringAttribute{
 				Optional: true,
-				ForceNew: true,
-			},
-			"region_id": {
-				Type:     schema.TypeString,
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+				Description: "The share ID issued by DLF catalog sharing.",
 			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"owner": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"created_at": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"created_by": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"updated_at": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"updated_by": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
+			"status":     schema.StringAttribute{Computed: true},
+			"owner":      schema.StringAttribute{Computed: true},
+			"created_at": schema.StringAttribute{Computed: true, Description: "Creation time in milliseconds since the epoch, as a string."},
+			"created_by": schema.StringAttribute{Computed: true},
+			"updated_at": schema.StringAttribute{Computed: true, Description: "Update time in milliseconds since the epoch, as a string."},
+			"updated_by": schema.StringAttribute{Computed: true},
 		},
 	}
 }
 
-func resourceCatalogCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	service := NewService(client)
-	name := d.Get("name").(string)
-	inputType := d.Get("type").(string)
+func (r *catalogResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan catalogResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	// Single deadline established at the START of Create, before the preflight
-	// Get, so the preflight, the POST retry, the post-error reconciliation Get
-	// and the status waiter all share one budget and the total Create cannot
-	// exceed the configured Create timeout.
-	deadline := time.Now().Add(d.Timeout(schema.TimeoutCreate))
+	service := NewService(r.Meta())
+	name := plan.Name.ValueString()
+	deadline := time.Now().Add(catalogTimeout)
 
-	// Pre-create existence check. CreateCatalog carries no idempotency token
-	// and the catalog name is unique within the region, so adopting a catalog
-	// that already exists would silently hijack a resource the user may not
-	// own. Refuse to create when the name is already taken and direct the user
-	// to `terraform import`. A non-NotFound error from the pre-check
-	// (auth/service/network) is a real failure: do not proceed.
-	_, preErr := service.DescribeCatalogWithRetryTimeout(name, remainingUntil(deadline))
-	if proceed, pErr := decideCatalogPreCreate(preErr); !proceed {
-		if pErr != nil {
-			return errs.WrapErrorf(pErr, "creating DlfNext Catalog %s", name)
-		}
-		return nil
+	// Pre-create existence check: CreateCatalog has no idempotency token and
+	// the name is unique, so an existing catalog must not be adopted.
+	if _, preErr := service.DescribeCatalogWithRetryTimeout(ctx, name, remainingUntil(deadline)); preErr == nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s", catalogTypeName),
+			"a DlfNext Catalog with this name already exists; run `terraform import "+catalogTypeName+".<name> <name>` to manage it instead of creating it",
+		)
+		return
+	} else if !errs.NotFoundError(preErr) {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: checking the catalog name", catalogTypeName),
+			errs.WrapErrorf(preErr, "checking DlfNext Catalog %s", name).Error(),
+		)
+		return
+	}
+
+	request, buildErr := buildCatalogCreateBody(ctx, plan)
+	if buildErr != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("Creating %s", catalogTypeName), buildErr.Error())
+		return
 	}
 
 	action := "/dlf/v1/catalogs"
-	var response map[string]interface{}
 	query := make(map[string]*string)
-	request := make(map[string]interface{})
+	var response map[string]interface{}
 	var err error
 
-	request["name"] = name
-	request["type"] = inputType
-	if v, ok := d.GetOk("options"); ok {
-		request["options"] = v
-	}
-	// is_shared is TypeBool, Optional, no Default: GetOkExists is the
-	// SDK-intended pattern for TypeBool (it distinguishes an explicit false
-	// from an omitted block, which d.GetOk cannot). is_shared is ForceNew and
-	// only read at Create (before any refresh), so the omit-vs-false
-	// distinction is reliable.
-	if v, ok := d.GetOkExists("is_shared"); ok {
-		request["isShared"] = v
-	}
-	if v, ok := d.GetOk("share_id"); ok {
-		request["shareId"] = v
-	}
-
-	// The POST retry shares the Create deadline and uses exponential backoff
-	// with jitter. A backend cleanup-quota / environment-capacity error is NOT
-	// retried: re-issuing CreateCatalog would add another catalog to the
-	// cleanup queue and worsen the quota pressure; it is surfaced clearly.
-	wait := catalogBackoffWait(3*time.Second, 30*time.Second)
-	err = retry.Retry(remainingUntil(deadline), func() *retry.RetryError {
-		response, err = client.RoaPost("DlfNext", "2025-03-10", action, query, nil, request, true)
-		if err != nil {
-			if isCatalogBackendCapacityError(err) {
-				return retry.NonRetryableError(fmt.Errorf("DLF backend capacity limit reached for catalog %s in this account/Region; CreateCatalog was not retried to avoid worsening the cleanup quota. Server message: %s. Wait for the backend to reap recently-created catalogs or use a different account/Region", name, err.Error()))
-			}
-			alreadyExists := isCatalogAlreadyExistsError(err)
-			explicitClient := isCatalogExplicitClientError(err)
-			retryable := helper.NeedRetry(err)
-			// Fail-closed ambiguous-create reconciliation. CreateCatalog has no
-			// idempotency token and no reliable unique request marker, so
-			// ownership of a same-name catalog found after an error can never
-			// be proven from attributes.
-			var getObs catalogGetObservation
-			if !alreadyExists && !explicitClient {
-				if _, gErr := service.DescribeCatalogWithRetryTimeout(name, remainingUntil(deadline)); gErr == nil {
-					getObs = catalogGetFound
-				} else if errs.NotFoundError(gErr) {
-					getObs = catalogGetAbsent
-				} else {
-					getObs = catalogGetOtherError
-				}
-			}
-			decision, dErr := decideCatalogCreateRecovery(alreadyExists, explicitClient, retryable, true, getObs)
-			switch decision {
-			case catalogCreateRetry:
-				wait()
-				return retry.RetryableError(err)
-			case catalogCreateFail:
-				if dErr != nil {
-					return retry.NonRetryableError(dErr)
-				}
-				return retry.NonRetryableError(err)
-			}
-			return retry.NonRetryableError(err)
+	// autoRetry is disabled: CreateCatalog is not idempotent and every failed
+	// attempt must be reconciled through the fail-closed GetCatalog policy
+	// below instead of being retried invisibly inside the ROA client.
+	backoff := newCatalogBackoff(3*time.Second, 30*time.Second)
+	err = retry.RetryContext(ctx, remainingUntil(deadline), func() *retry.RetryError {
+		response, err = r.Meta().RoaPost("DlfNext", "2025-03-10", action, query, nil, request, false)
+		if err == nil {
+			return nil
 		}
-		return nil
+		if isCatalogBackendCapacityError(err) {
+			return retry.NonRetryableError(fmt.Errorf("DLF backend capacity limit reached for catalog %s in this account/Region; CreateCatalog was not retried to avoid worsening the cleanup quota. Server message: %s. Wait for the backend to reap recently-created catalogs or use a different account/Region", name, err.Error()))
+		}
+		alreadyExists := isCatalogAlreadyExistsError(err)
+		explicitClient := isCatalogExplicitClientError(err)
+		retryable := needsRetry(err)
+		var getObs catalogGetObservation
+		if !alreadyExists && !explicitClient {
+			if _, gErr := service.DescribeCatalogWithRetryTimeout(ctx, name, remainingUntil(deadline)); gErr == nil {
+				getObs = catalogGetFound
+			} else if errs.NotFoundError(gErr) {
+				getObs = catalogGetAbsent
+			} else {
+				getObs = catalogGetOtherError
+			}
+		}
+		decision, dErr := decideCatalogCreateRecovery(alreadyExists, explicitClient, retryable, getObs)
+		if decision == catalogCreateRetry {
+			if waitErr := backoff.Wait(ctx, remainingUntil(deadline)); waitErr != nil {
+				return retry.NonRetryableError(waitErr)
+			}
+			return retry.RetryableError(err)
+		}
+		if dErr != nil {
+			return retry.NonRetryableError(dErr)
+		}
+		return retry.NonRetryableError(err)
 	})
 	logs.AddDebug(action, response, request)
-
 	if err != nil {
-		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_dlf_next_catalog", action, errs.AlibabaCloudSdkGoERROR)
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s", catalogTypeName),
+			errs.WrapErrorf(err, errs.DefaultErrorMsg, catalogTypeName, action, errs.AlibabaCloudSdkGoERROR).Error(),
+		)
+		return
 	}
 
-	d.SetId(name)
-
-	// CreateCatalog is asynchronous: it returns 200 before the catalog reaches
-	// RUNNING. Poll GetCatalog until RUNNING. A brief NotFound immediately
-	// after create is treated as Pending (eventual consistency), and
-	// INITIALIZE_FAILED is a terminal failure. This waiter's NotFound handling
-	// is distinct from the normal Read, which clears the TF id on NotFound.
+	// CreateCatalog is asynchronous. A brief NotFound is Pending (eventual
+	// consistency); INITIALIZE_FAILED is terminal.
 	stateConf := &retry.StateChangeConf{
 		Pending: []string{"NOT_FOUND", "NEW", "INITIALIZING"},
 		Target:  []string{"RUNNING"},
 		Timeout: remainingUntil(deadline),
-		Refresh: service.CatalogStateRefreshFuncWithApi(d.Id(), "status", []string{"INITIALIZE_FAILED"}, func(id string) (map[string]interface{}, error) {
-			return service.DescribeCatalogWithRetryTimeout(id, remainingUntil(deadline))
+		Refresh: service.CatalogStateRefreshFuncWithApi(name, "status", []string{"INITIALIZE_FAILED"}, func(id string) (map[string]interface{}, error) {
+			return service.DescribeCatalogWithRetryTimeout(ctx, id, remainingUntil(deadline))
 		}),
 	}
-	if _, err := stateConf.WaitForState(); err != nil {
-		return errs.WrapErrorf(err, "waiting for DlfNext Catalog %s to RUNNING", d.Id())
+	if _, err := stateConf.WaitForStateContext(ctx); err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: waiting for RUNNING", catalogTypeName),
+			errs.WrapErrorf(err, "waiting for DlfNext Catalog %s to RUNNING", name).Error(),
+		)
+		return
 	}
 
-	return resourceCatalogRead(d, meta)
+	model, readErr := r.readCatalog(ctx, name, plan)
+	if readErr != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("Reading %s after create", catalogTypeName), readErr.Error())
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
-func resourceCatalogRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	service := NewService(client)
+func (r *catalogResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state catalogResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	objectRaw, err := service.DescribeCatalog(d.Id())
+	model, err := r.readCatalog(ctx, state.Id.ValueString(), state)
 	if err != nil {
-		if !d.IsNewResource() && errs.NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_dlf_next_catalog DescribeCatalog Failed!!! %s", err)
-			d.SetId("")
-			return nil
+		if errs.NotFoundError(err) {
+			resp.State.RemoveResource(ctx)
+			return
 		}
-		return errs.WrapError(err)
+		resp.Diagnostics.AddError(fmt.Sprintf("Reading %s", catalogTypeName), err.Error())
+		return
 	}
-
-	d.Set("name", objectRaw["name"])
-	d.Set("type", objectRaw["type"])
-	d.Set("is_shared", objectRaw["isShared"])
-	d.Set("share_id", objectRaw["shareId"])
-	d.Set("region_id", objectRaw["regionId"])
-	d.Set("status", objectRaw["status"])
-	d.Set("owner", objectRaw["owner"])
-	d.Set("created_at", catalogTimestampString(objectRaw["createdAt"]))
-	d.Set("created_by", objectRaw["createdBy"])
-	d.Set("updated_at", catalogTimestampString(objectRaw["updatedAt"]))
-	d.Set("updated_by", objectRaw["updatedBy"])
-
-	// DLF does not flag which GetCatalog options are user-set versus
-	// backend-injected defaults, so the state is split into two fields with
-	// distinct ownership: remote_options mirrors the full remote set, while
-	// options holds only the keys Terraform manages. A managed key the API no
-	// longer returns is dropped from options so server-side drift surfaces in
-	// the next plan; new remote keys never get promoted into options, so
-	// AlterCatalog removals cannot delete a server default.
-	apiOptions := make(map[string]interface{})
-	if raw, ok := objectRaw["options"].(map[string]interface{}); ok {
-		apiOptions = raw
-	}
-	d.Set("remote_options", reconcileRemoteOptions(apiOptions))
-	d.Set("options", reconcileManagedOptions(d.Get("options").(map[string]interface{}), apiOptions))
-
-	return nil
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
-func resourceCatalogUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	catalog := d.Id()
-	action := fmt.Sprintf("/dlf/v1/catalogs/%s", catalog)
-	query := make(map[string]*string)
-	body := make(map[string]interface{})
-	var response map[string]interface{}
-	var err error
+func (r *catalogResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan, state catalogResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	if d.HasChange("options") {
-		// options is Optional and non-Computed; the SDK diff encodes user
-		// intent. options = {} makes newManaged empty so every
-		// previously-managed key is emitted as a removal; AlterCatalog deletes
-		// only managed keys, never server defaults or unmanaged keys.
-		oldRaw, newRaw := d.GetChange("options")
-		oldOptions, _ := oldRaw.(map[string]interface{})
-		newOptions, _ := newRaw.(map[string]interface{})
-
+	if !plan.Options.Equal(state.Options) {
+		oldOptions, diags := stringMapFromFramework(ctx, state.Options)
+		resp.Diagnostics.Append(diags...)
+		newOptions, diags := stringMapFromFramework(ctx, plan.Options)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		updates, removals := buildOptionChanges(oldOptions, newOptions)
 		if len(updates) > 0 || len(removals) > 0 {
-			body["updates"] = updates
+			id := state.Id.ValueString()
+			action := catalogAction(id)
+			query := make(map[string]*string)
+			body := map[string]interface{}{"updates": updates}
 			if len(removals) > 0 {
 				body["removals"] = removals
 			}
-
-			wait := catalogBackoffWait(3*time.Second, 30*time.Second)
-			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-				response, err = client.RoaPost("DlfNext", "2025-03-10", action, query, nil, body, true)
-				if err != nil {
-					if helper.NeedRetry(err) {
-						wait()
-						return retry.RetryableError(err)
+			backoff := newCatalogBackoff(3*time.Second, 30*time.Second)
+			var response map[string]interface{}
+			err := retry.RetryContext(ctx, catalogTimeout, func() *retry.RetryError {
+				var callErr error
+				response, callErr = r.Meta().RoaPost("DlfNext", "2025-03-10", action, query, nil, body, false)
+				if callErr != nil {
+					if needsRetry(callErr) {
+						if waitErr := backoff.Wait(ctx, catalogTimeout); waitErr != nil {
+							return retry.NonRetryableError(waitErr)
+						}
+						return retry.RetryableError(callErr)
 					}
-					return retry.NonRetryableError(err)
+					return retry.NonRetryableError(callErr)
 				}
 				return nil
 			})
 			logs.AddDebug(action, response, body)
-
 			if err != nil {
-				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+				resp.Diagnostics.AddError(
+					fmt.Sprintf("Updating %s", catalogTypeName),
+					errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR).Error(),
+				)
+				return
 			}
 		}
 	}
 
-	return resourceCatalogRead(d, meta)
+	model, err := r.readCatalog(ctx, state.Id.ValueString(), plan)
+	if err != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("Reading %s after update", catalogTypeName), err.Error())
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
-func resourceCatalogDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	service := NewService(client)
-	catalog := d.Id()
-	action := fmt.Sprintf("/dlf/v1/catalogs/%s", catalog)
+func (r *catalogResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state catalogResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	service := NewService(r.Meta())
+	id := state.Id.ValueString()
+	action := catalogAction(id)
 	query := make(map[string]*string)
-	var response map[string]interface{}
-	var err error
+	deadline := time.Now().Add(catalogTimeout)
 
-	// Single deadline shared by the DropCatalog retry and the WaitForGone poll
-	// so a Delete does not consume up to 2x the configured timeout.
-	deadline := time.Now().Add(d.Timeout(schema.TimeoutDelete))
-
-	wait := catalogBackoffWait(3*time.Second, 30*time.Second)
-	err = retry.Retry(remainingUntil(deadline), func() *retry.RetryError {
-		response, err = client.RoaDelete("DlfNext", "2025-03-10", action, query, nil, nil, true)
-		if err != nil {
-			// DropCatalog returns 403 "... is being created, can not be
-			// dropped" while the catalog is still in NEW/INITIALIZING.
-			// NeedRetry does not cover this (it is a 403), so retry it until
-			// the catalog is ready.
-			if helper.NeedRetry(err) || isCatalogBeingCreatedError(err) {
-				wait()
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
-	})
-	logs.AddDebug(action, response, nil)
-
-	if err != nil {
-		if errs.NotFoundError(err) {
+	backoff := newCatalogBackoff(3*time.Second, 30*time.Second)
+	err := retry.RetryContext(ctx, remainingUntil(deadline), func() *retry.RetryError {
+		var callErr error
+		_, callErr = r.Meta().RoaDelete("DlfNext", "2025-03-10", action, query, nil, nil, false)
+		if callErr == nil {
 			return nil
 		}
-		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		// DropCatalog returns 403 while the catalog is still being created.
+		if needsRetry(callErr) || isCatalogBeingCreatedError(callErr) {
+			if waitErr := backoff.Wait(ctx, remainingUntil(deadline)); waitErr != nil {
+				return retry.NonRetryableError(waitErr)
+			}
+			return retry.RetryableError(callErr)
+		}
+		return retry.NonRetryableError(callErr)
+	})
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return
+		}
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Deleting %s", catalogTypeName),
+			errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR).Error(),
+		)
+		return
 	}
 
-	// DropCatalog is asynchronous: it returns 200 while the catalog is still
-	// in DELETING/DELETED before finally returning 404. Poll GetCatalog until
-	// the catalog is gone so a subsequent apply does not observe a stale
-	// catalog (e.g. a re-create hitting a name-in-use error).
-	if goneErr := service.WaitForCatalogGoneWithApi(d.Id(), remainingUntil(deadline), func(id string) (map[string]interface{}, error) {
-		return service.DescribeCatalogWithRetryTimeout(id, remainingUntil(deadline))
-	}); goneErr != nil {
-		return errs.WrapErrorf(goneErr, "waiting for DlfNext Catalog %s to be deleted", d.Id())
+	if goneErr := service.WaitForCatalogGone(ctx, id, remainingUntil(deadline)); goneErr != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Deleting %s: waiting for the catalog to disappear", catalogTypeName),
+			errs.WrapErrorf(goneErr, "waiting for DlfNext Catalog %s to be deleted", id).Error(),
+		)
 	}
-
-	return nil
 }
 
-// remainingUntil returns the time left until deadline, clamped at 0 so a passed
-// deadline yields a zero (non-negative) duration for retry.Retry and the
-// deadline-aware Describe.
+func (r *catalogResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// readCatalog maps GetCatalog onto the model. managedState carries the
+// currently-managed option keys so Read reconciles only those keys.
+func (r *catalogResource) readCatalog(ctx context.Context, id string, managedState catalogResourceModel) (*catalogResourceModel, error) {
+	object, err := NewService(r.Meta()).DescribeCatalog(ctx, id)
+	if err != nil {
+		return nil, errs.WrapError(err)
+	}
+	managedNull := managedState.Options.IsNull()
+	managed, diags := stringMapFromFramework(ctx, managedState.Options)
+	if diags.HasError() {
+		return nil, fmt.Errorf("reading managed options from state: %v", diags)
+	}
+	model, err := catalogModelFromObject(ctx, object, managed, managedNull)
+	if err != nil {
+		return nil, err
+	}
+	model.Id = types.StringValue(stringValue(object["name"]))
+	return model, nil
+}
+
+// catalogModelFromObject maps the API object; remote_options mirrors all
+// remote keys and options keeps only the managed keys still present remotely.
+func catalogModelFromObject(ctx context.Context, object map[string]interface{}, managed map[string]string, managedNull bool) (*catalogResourceModel, error) {
+	apiOptions := map[string]interface{}{}
+	if raw, ok := object["options"].(map[string]interface{}); ok {
+		apiOptions = raw
+	}
+	remote := reconcileRemoteOptions(apiOptions)
+	remoteMap, diags := frameworkStringMap(ctx, remote)
+	if diags.HasError() {
+		return nil, fmt.Errorf("building remote_options: %v", diags)
+	}
+	// Preserve null when the user omitted options: framework treats null and
+	// an empty map as different, and writing {} for an omitted block would
+	// create a perpetual null-vs-{} diff.
+	optionsMap := types.MapNull(types.StringType)
+	if !managedNull {
+		reconciled := reconcileManagedOptions(managed, apiOptions)
+		optionsMap, diags = frameworkStringMap(ctx, reconciled)
+		if diags.HasError() {
+			return nil, fmt.Errorf("building options: %v", diags)
+		}
+	}
+	model := &catalogResourceModel{
+		Name:          stringOrNull(object["name"]),
+		Type:          stringOrNull(object["type"]),
+		Options:       optionsMap,
+		RemoteOptions: remoteMap,
+		IsShared:      boolOrNull(object["isShared"]),
+		ShareId:       stringOrNull(object["shareId"]),
+		Status:        stringOrNull(object["status"]),
+		Owner:         stringOrNull(object["owner"]),
+		CreatedAt:     types.StringValue(catalogTimestampString(object["createdAt"])),
+		CreatedBy:     stringOrNull(object["createdBy"]),
+		UpdatedAt:     types.StringValue(catalogTimestampString(object["updatedAt"])),
+		UpdatedBy:     stringOrNull(object["updatedBy"]),
+	}
+	return model, nil
+}
+
+// buildCatalogCreateBody builds the CreateCatalog body. It is pure so the
+// request shape (including the explicit-false isShared case) is unit-testable.
+func buildCatalogCreateBody(ctx context.Context, plan catalogResourceModel) (map[string]interface{}, error) {
+	body := map[string]interface{}{
+		"name": plan.Name.ValueString(),
+		"type": plan.Type.ValueString(),
+	}
+	options, diags := stringMapFromFramework(ctx, plan.Options)
+	if diags.HasError() {
+		return nil, fmt.Errorf("reading options: %v", diags)
+	}
+	if len(options) > 0 {
+		body["options"] = options
+	}
+	// is_shared has no documented default: omitting it must not send the field,
+	// while an explicit false must be sent as false.
+	if !plan.IsShared.IsNull() && !plan.IsUnknown() {
+		body["isShared"] = plan.IsShared.ValueBool()
+	}
+	if !plan.ShareId.IsNull() && !plan.ShareId.IsUnknown() && plan.ShareId.ValueString() != "" {
+		body["shareId"] = plan.ShareId.ValueString()
+	}
+	return body, nil
+}
+
+// needsRetry is helper.NeedRetry behind a local name so the retry policy reads
+// in one place.
+func needsRetry(err error) bool {
+	return helper.NeedRetry(err)
+}
+
+type catalogGetObservation int
+
+const (
+	catalogGetAbsent catalogGetObservation = iota
+	catalogGetFound
+	catalogGetOtherError
+)
+
+type catalogCreateDecision int
+
+const (
+	catalogCreateRetry catalogCreateDecision = iota
+	catalogCreateFail
+)
+
+// decideCatalogCreateRecovery encodes the fail-closed policy: a same-name
+// catalog found after an error is never adopted, because CreateCatalog has no
+// idempotency token and ownership cannot be proven from attributes.
+func decideCatalogCreateRecovery(postErrAlreadyExists, postErrExplicitClientError, postErrRetryable bool, getObs catalogGetObservation) (catalogCreateDecision, error) {
+	if postErrAlreadyExists {
+		return catalogCreateFail, fmt.Errorf("CreateCatalog returned an already-exists error; use `terraform import alicloud_dlf_next_catalog.<name> <name>` to manage it instead")
+	}
+	if postErrExplicitClientError {
+		return catalogCreateFail, fmt.Errorf("CreateCatalog returned a validation or permission error; the catalog was not created and an existing same-name catalog must not be adopted")
+	}
+	if getObs == catalogGetFound {
+		return catalogCreateFail, fmt.Errorf("CreateCatalog returned an ambiguous error and a catalog with this name already exists; this run cannot prove it created the catalog, so no state was written. Verify the remote catalog and run `terraform import alicloud_dlf_next_catalog.<name> <name>` if it was created by this run")
+	}
+	if getObs == catalogGetAbsent {
+		if postErrRetryable {
+			return catalogCreateRetry, nil
+		}
+		return catalogCreateFail, fmt.Errorf("CreateCatalog returned a non-retryable error and the catalog was not created")
+	}
+	return catalogCreateFail, fmt.Errorf("CreateCatalog errored and the post-error GetCatalog also failed; cannot disambiguate whether the catalog was created")
+}
+
+// catalogAction builds the catalog path with the name escaped as one path
+// segment so reserved characters cannot change the request path.
+func catalogAction(id string) string {
+	return "/dlf/v1/catalogs/" + url.PathEscape(id)
+}
+
+// remainingUntil clamps a passed deadline to zero.
 func remainingUntil(deadline time.Time) time.Duration {
 	r := time.Until(deadline)
 	if r < 0 {
@@ -384,9 +512,7 @@ func remainingUntil(deadline time.Time) time.Duration {
 	return r
 }
 
-// catalogTimestampString converts a GetCatalog millisecond timestamp into the
-// string form the schema exposes. The API returns int64 milliseconds, which
-// overflow a 32-bit int; TypeString avoids that and keeps the full value.
+// catalogTimestampString renders the int64 millisecond timestamp as a string.
 func catalogTimestampString(v interface{}) string {
 	switch t := v.(type) {
 	case nil:
@@ -404,93 +530,57 @@ func catalogTimestampString(v interface{}) string {
 	}
 }
 
-// catalogGetObservation summarises the observable GetCatalog(name) result
-// after a CreateCatalog POST that returned an error.
-type catalogGetObservation int
-
-const (
-	catalogGetAbsent     catalogGetObservation = iota // GetCatalog returned NotFound
-	catalogGetFound                                   // catalog exists; ownership cannot be proven from attributes -> fail
-	catalogGetOtherError                              // GetCatalog returned a non-NotFound error
-)
-
-// catalogCreateDecision is the ambiguous-create recovery verdict.
-type catalogCreateDecision int
-
-const (
-	catalogCreateRetry catalogCreateDecision = iota // the create did not land; safe to retry the POST
-	catalogCreateFail                               // surface the error; do not adopt
-)
-
-// decideCatalogPreCreate decides whether to proceed to CreateCatalog after the
-// pre-create Get(name). A nil error (catalog already exists) means the name is
-// taken: refuse and direct the user to import. A NotFound error means the name
-// is free: proceed. Any other error is a real failure: do not proceed.
-func decideCatalogPreCreate(preGetErr error) (proceed bool, err error) {
-	if preGetErr == nil {
-		return false, fmt.Errorf("a DlfNext Catalog with this name already exists; to manage an existing catalog, run `terraform import alicloud_dlf_next_catalog.<name> <name>` instead of creating it")
+func stringValue(v interface{}) string {
+	if v == nil {
+		return ""
 	}
-	if errs.NotFoundError(preGetErr) {
-		return true, nil
-	}
-	return false, preGetErr
+	return fmt.Sprint(v)
 }
 
-// decideCatalogCreateRecovery encodes the fail-closed ambiguous-create policy
-// as a pure function of observable inputs so it can be unit-tested without a
-// live backend. Policy: never take over a catalog just because a same-name
-// catalog exists after an error. CreateCatalog has no idempotency token, so
-// ownership can never be proven from attributes.
-//   - AlreadyExists or explicit client (validation/permission, 400/401/403)
-//     error: fail outright.
-//   - Retryable/ambiguous error with pre-create-proven absence:
-//   - catalog now exists: fail with an actionable import error; no state.
-//   - catalog absent: retry.
-//   - post-error Get errored: fail.
-//   - Any error where pre-create did not prove absence: fail.
-func decideCatalogCreateRecovery(postErrAlreadyExists, postErrExplicitClientError, postErrRetryable, preExistedConfirmedAbsent bool, getObs catalogGetObservation) (catalogCreateDecision, error) {
-	if postErrAlreadyExists {
-		return catalogCreateFail, fmt.Errorf("CreateCatalog returned an already-exists error; a catalog with this name already exists, use `terraform import alicloud_dlf_next_catalog.<name> <name>` to manage it instead")
+func stringOrNull(v interface{}) types.String {
+	if s, ok := v.(string); ok && s != "" {
+		return types.StringValue(s)
 	}
-	if postErrExplicitClientError {
-		return catalogCreateFail, fmt.Errorf("CreateCatalog returned a validation or permission error; the catalog was not created and an existing same-name catalog must not be adopted")
-	}
-	if !preExistedConfirmedAbsent {
-		return catalogCreateFail, fmt.Errorf("pre-create Get did not confirm the catalog was absent; refusing to create to avoid taking over an existing catalog")
-	}
-	switch getObs {
-	case catalogGetFound:
-		return catalogCreateFail, fmt.Errorf("CreateCatalog returned an ambiguous error (timeout, connection, or lost response) and a catalog with this name already exists. This run cannot prove it created the catalog, so it will not be adopted and no state was written. Check whether the remote catalog was created by this run; if so, run `terraform import alicloud_dlf_next_catalog.<name> <name>` to take over management")
-	case catalogGetAbsent:
-		if postErrRetryable {
-			return catalogCreateRetry, nil
-		}
-		return catalogCreateFail, fmt.Errorf("CreateCatalog returned a non-retryable error and the catalog was not created")
-	case catalogGetOtherError:
-		return catalogCreateFail, fmt.Errorf("CreateCatalog errored and the post-error GetCatalog also failed; cannot disambiguate whether the catalog was created")
-	default:
-		return catalogCreateFail, fmt.Errorf("unknown post-error GetCatalog observation")
-	}
+	return types.StringNull()
 }
 
-// reconcileRemoteOptions returns the full GetCatalog options map stringified,
-// for the read-only remote_options field. It mirrors every remote option
-// including server-injected defaults and unmanaged keys. Never drives Update.
-func reconcileRemoteOptions(apiOptions map[string]interface{}) map[string]interface{} {
-	surfaced := make(map[string]interface{})
+func boolOrNull(v interface{}) types.Bool {
+	if b, ok := v.(bool); ok {
+		return types.BoolValue(b)
+	}
+	return types.BoolNull()
+}
+
+func stringMapFromFramework(ctx context.Context, v types.Map) (map[string]string, diag.Diagnostics) {
+	out := map[string]string{}
+	if v.IsNull() || v.IsUnknown() {
+		return out, nil
+	}
+	diags := v.ElementsAs(ctx, &out, false)
+	return out, diags
+}
+
+func frameworkStringMap(ctx context.Context, m map[string]string) (types.Map, diag.Diagnostics) {
+	if m == nil {
+		m = map[string]string{}
+	}
+	return types.MapValueFrom(ctx, types.StringType, m)
+}
+
+// reconcileRemoteOptions mirrors every remote option, stringified.
+func reconcileRemoteOptions(apiOptions map[string]interface{}) map[string]string {
+	surfaced := make(map[string]string, len(apiOptions))
 	for k, v := range apiOptions {
 		surfaced[k] = fmt.Sprint(v)
 	}
 	return surfaced
 }
 
-// reconcileManagedOptions reconciles the currently-managed option keys against
-// the API response. For each managed key present in the API response the API
-// value is preferred; a managed key the API no longer returns is dropped so
-// drift surfaces. New remote keys are not promoted into the managed set.
-func reconcileManagedOptions(managedState, apiOptions map[string]interface{}) map[string]interface{} {
-	reconciled := make(map[string]interface{})
-	for k := range managedState {
+// reconcileManagedOptions keeps only managed keys still returned by the API;
+// a key the API no longer returns is dropped so drift surfaces.
+func reconcileManagedOptions(managed map[string]string, apiOptions map[string]interface{}) map[string]string {
+	reconciled := make(map[string]string, len(managed))
+	for k := range managed {
 		if av, exists := apiOptions[k]; exists {
 			reconciled[k] = fmt.Sprint(av)
 		}
@@ -498,16 +588,14 @@ func reconcileManagedOptions(managedState, apiOptions map[string]interface{}) ma
 	return reconciled
 }
 
-// buildOptionChanges computes the AlterCatalog request payload (updates map +
-// removals list) from the old and new managed option sets. removals are
-// derived ONLY from oldManaged - newManaged, never from remote_options or
-// server-injected defaults.
-func buildOptionChanges(oldManaged, newManaged map[string]interface{}) (updates map[string]interface{}, removals []interface{}) {
-	updates = make(map[string]interface{})
+// buildOptionChanges derives updates from the new managed set and removals
+// only from oldManaged - newManaged.
+func buildOptionChanges(oldManaged, newManaged map[string]string) (map[string]interface{}, []interface{}) {
+	updates := make(map[string]interface{}, len(newManaged))
 	for k, v := range newManaged {
 		updates[k] = v
 	}
-	removals = make([]interface{}, 0)
+	removals := make([]interface{}, 0)
 	for k := range oldManaged {
 		if _, exists := newManaged[k]; !exists {
 			removals = append(removals, k)

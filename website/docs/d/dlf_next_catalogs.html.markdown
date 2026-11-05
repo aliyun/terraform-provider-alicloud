@@ -27,7 +27,7 @@ terraform {
 }
 
 resource "alicloud_dlf_next_catalog" "default" {
-  name = "tf-demo-catalog"
+  name = "terraform-example"
   type = "PAIMON"
 }
 
@@ -44,31 +44,31 @@ output "first_catalog_name" {
 
 The following arguments are supported:
 
-* `catalog_name_pattern` - (Optional) A pattern to filter catalog names.
-* `name_regex` - (Optional) A regex string to filter results by catalog name.
-* `ids` - (Optional, Computed) A list of catalog names to filter results. The matched catalog names are also returned in `ids`.
-* `output_file` - (Optional) File name where to save data source results after running `terraform plan`.
+* `catalog_name_pattern` - (Optional, String) The catalog name pattern passed to the ListCatalogs `catalogNamePattern` query parameter. The DLF API definition does not document the pattern matching syntax, so treat it as a service-side name pattern and combine it with `name_regex` or `ids` when deterministic filtering is required.
+* `name_regex` - (Optional, String) A regex string to filter the returned catalog names.
+* `ids` - (Optional, List) A list of catalog names to filter. The matched catalog names are also returned in `ids`.
+* `output_file` - (Optional, String) File name where to save the data source results.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `ids` - A list of matched catalog names.
-* `names` - A list of matched catalog names.
-* `catalogs` - A list of DLF Next Catalogs. Each element contains the following attributes:
-  * `name` - The name of the catalog.
-  * `type` - The type of the catalog.
-  * `options` - The configuration options of the catalog.
-  * `is_shared` - Whether the catalog is shared.
-  * `share_id` - The share ID of the catalog.
-  * `id` - The catalog name, which is also the Terraform resource id of `alicloud_dlf_next_catalog`.
-  * `region_id` - The region ID of the catalog.
-  * `status` - The status of the catalog. Valid values: `NEW`, `INITIALIZING`, `INITIALIZE_FAILED`, `RUNNING`, `TERMINATED`, `DELETING`, `DELETE_FAILED`, `DELETED`, `STORAGE_RESTRICTED`.
-  * `owner` - The owner of the catalog.
-  * `created_at` - The creation time of the catalog, in milliseconds since the epoch, as a string.
-  * `created_by` - The creator of the catalog.
-  * `updated_at` - The update time of the catalog, in milliseconds since the epoch, as a string.
-  * `updated_by` - The updater of the catalog.
+* `id` - (String) The data source id derived from the matched catalog names.
+* `ids` - (List) A list of matched catalog names.
+* `names` - (List) A list of matched catalog names.
+* `catalogs` - (List) A list of DLF Next Catalogs. Each element contains the following attributes:
+  * `name` - (String) The name of the catalog.
+  * `type` - (String) The type of the catalog.
+  * `options` - (Map) The configuration options of the catalog.
+  * `is_shared` - (Bool) Whether the catalog is shared.
+  * `share_id` - (String) The share ID of the catalog.
+  * `id` - (String) The catalog name, which is also the Terraform resource id of `alicloud_dlf_next_catalog`.
+  * `status` - (String) The status of the catalog. Valid values: `NEW`, `INITIALIZING`, `INITIALIZE_FAILED`, `RUNNING`, `TERMINATED`, `DELETING`, `DELETE_FAILED`, `DELETED`, `STORAGE_RESTRICTED`.
+  * `owner` - (String) The owner of the catalog.
+  * `created_at` - (String) The creation time of the catalog, in milliseconds since the epoch, as a string.
+  * `created_by` - (String) The creator of the catalog.
+  * `updated_at` - (String) The update time of the catalog, in milliseconds since the epoch, as a string.
+  * `updated_by` - (String) The updater of the catalog.
 
 ## RAM Permissions
 
