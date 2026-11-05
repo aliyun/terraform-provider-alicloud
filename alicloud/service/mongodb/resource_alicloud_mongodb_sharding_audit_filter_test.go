@@ -156,21 +156,21 @@ func TestAccAliCloudMongodbShardingAuditFilter_basic0(t *testing.T) {
 			{
 				// Changing a real attribute stays an in-place update (the only ForceNew field,
 				// db_instance_id, is unchanged), and the framework then requires the follow-up plan to
-				// be empty. The update sets the mongos filter to the value the db role already carries
-				// from step 2, so both roles end up with the same filter: import has no role_type and
-				// can therefore only restore the merged view, which equals the per-role value only when
-				// every role shares it.
+				// be empty. This update changes role_type only: import has no role_type and can restore
+				// the merged filter view, which equals the per-role value only while every role keeps
+				// the same filter. The API accepts one role per ModifyAuditLogFilter call, so any filter
+				// change here would make the following import unverifiable.
 				Config: testAccConfig(map[string]interface{}{
 					"audit_status": "enable",
-					"filter":       "update,insert,delete",
-					"role_type":    "mongos",
+					"filter":       "admin,slow",
+					"role_type":    "db",
 					"service_type": "V2_Standard",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"audit_status": "enable",
-						"filter":       "update,insert,delete",
-						"role_type":    "mongos",
+						"filter":       "admin,slow",
+						"role_type":    "db",
 					}),
 				),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
