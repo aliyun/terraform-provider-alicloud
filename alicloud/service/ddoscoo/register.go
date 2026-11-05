@@ -48,5 +48,11 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  ResourceDdoscooWebCcRule,
 			},
 		},
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_ddoscoo_web_cache_custom_rule",
+				Factory:  NewWebCacheCustomRuleResource,
+			},
+		},
 	}
 }
