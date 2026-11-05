@@ -26,6 +26,14 @@ Create a PolarDB MySQL zonal cluster
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "db_cluster_nodes_configs" {
   description = "The advanced configuration for all nodes in the cluster except for the RW node, including db_node_class, hot_replica_mode, and imci_switch properties."
   type = map(object({
@@ -109,6 +117,12 @@ The following arguments are supported:
 
   -> **NOTE:** The latest time must be 30 minutes or more later than the start time. If PlannedStartTime is set but this parameter is not specified, the latest time to execute the target task defaults to the start time+30 minutes. For example, when the PlannedStartTime is set to 2021-01-14T09:00:00Z and this parameter is left blank, the target task will start executing at the latest on 2021-01-14T09:30:00Z.
 * `target_minor_version` - (Optional) The Version Code of the target version, whose parameter values can be obtained from the [DescribeDBClusterVersionZonal](https://www.alibabacloud.com/help/en/polardb/api-polardb-2017-08-01-describedbclusterversionzonal) interface.
+* `modify_type` - (Optional, Available since v2.3.0) The modification type when changing node class. Valid values are `Upgrade`, `Downgrade`. Default to `Upgrade`.
+* `period` - (Optional, Available since v2.3.0) The charging period of the cluster. It is valid when pay_type is `PrePaid`.
+* `period_unit` - (Optional, Computed, Available since v2.3.0) The unit of the charging period. It is valid when pay_type is `PrePaid`.
+* `auto_renew_status` - (Optional, Computed, Available since v2.3.0) The auto-renewal status of the cluster. It is valid when pay_type is `PrePaid`. Valid values are `AutoRenewal`, `Normal`, `NotRenewal`.
+* `storage_auto_scale` - (Optional, Available since v2.3.0) Whether to enable automatic storage scaling for the cluster.
+* `zone_id` - (Optional, ForceNew, Available since v2.3.0) The zone ID to launch the DB cluster.
 * `db_cluster_nodes_configs` - (Optional, Required) Map of node needs to be created after DB cluster was launched.
 * `cluster_version` - (Optional, ForceNew, Computed) current DB Cluster revision Version.
 * `storage_pay_type` - (Computed) The billing method of the storage. Valid values `Prepaid`.
@@ -122,6 +136,15 @@ The following attributes are exported:
 * `cluster_latest_version` - PolarDB zonal cluster latest version.
 * `db_cluster_nodes_attributes` - Cache of the relationship between node key and node ID for PolarDB zonal Cluster
 * `db_cluster_nodes_ids` - Cache of node ID for PolarDB zonal Cluster
+* `architecture` - (Computed, Available since v2.3.0) The architecture of the cluster.
+* `cluster_network_type` - (Computed, Available since v2.3.0) The network type of the cluster.
+* `hot_standby_cluster` - (Computed, Available since v2.3.0) The hot standby cluster status of the cluster.
+* `db_node_num` - (Computed, Available since v2.3.0) The number of DB nodes in the cluster.
+* `db_node_target_class` - (Computed, Available since v2.3.0) The target class of the DB node.
+* `zone_ids` - (Computed, Available since v2.3.0) The zone IDs of the cluster.
+* `db_node` - (Computed, Available since v2.3.0) List of DB nodes in the cluster.
+  * `target_class` - (Computed, Available since v2.3.0) The class of the node.
+  * `db_node_id` - (Computed, Available since v2.3.0) The ID of the node.
 * `region_id`  - PolarDB zonal cluster region
 
 ## Timeouts
