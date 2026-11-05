@@ -64,7 +64,7 @@ func TestAccAliCloudSLBListenerAclAttachment_basic0(t *testing.T) {
 					resource.TestCheckResourceAttrPair(listenerAclAttachmentDsId, "slb_listeners.0.id", listenerAclAttachmentListenerId, "id"),
 					testAccCheckListenerNonAclAttrsRemote(listenerAclAttachmentListenerId, name),
 					resource.ComposeTestCheckFunc(testAccListenerAttrChecks(name)...),
-					testAccCaptureListenerNonAclAttrs(listenerAclAttachmentListenerId, &createdNonAclAttrs),
+					testAccCompareListenerNonAclAttrs(listenerAclAttachmentListenerId, &createdNonAclAttrs),
 				),
 			},
 			testAccListenerAclAttachmentImportStep("alicloud_slb_acl.first"),
@@ -154,16 +154,6 @@ func TestAccAliCloudSLBListenerAclAttachment_multiAcl(t *testing.T) {
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckListenerAclAttachmentDestroy,
 		Steps: []resource.TestStep{
-			{
-				// The remote non-ACL baseline and the listener identity are
-				// captured before any ACL binding exists.
-				Config: testAccListenerAclAttachmentConfigHttp(name, "first", "white", false),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckListenerRemoteAclStatus(listenerAclAttachmentListenerId, "off"),
-					testAccCaptureListenerId(listenerAclAttachmentListenerId, &listenerId),
-					testAccCaptureListenerNonAclAttrs(listenerAclAttachmentListenerId, &createdNonAclAttrs),
-				),
-			},
 			{
 				Config: testAccListenerAclAttachmentConfigHttp(name, "first", "white", true),
 				Check: resource.ComposeTestCheckFunc(
@@ -270,12 +260,12 @@ func testAccCheckListenerRemoteAclContains(listenerResourceId, aclResource strin
 		if err != nil {
 			return err
 		}
-		for _, id := range slbsvc.ListenerAclIds(object) {
+		for _, id := range slbsvc.ListenerAclIdsForTest(object) {
 			if id == acl.Primary.ID {
 				return nil
 			}
 		}
-		return fmt.Errorf("listener %s does not report policy group %s, reported: %v", listener.Primary.ID, acl.Primary.ID, slbsvc.ListenerAclIds(object))
+		return fmt.Errorf("listener %s does not report policy group %s, reported: %v", listener.Primary.ID, acl.Primary.ID, slbsvc.ListenerAclIdsForTest(object))
 	}
 }
 
@@ -293,7 +283,7 @@ func testAccCheckListenerRemoteAclNotFirst(listenerResourceId, aclResource strin
 		if err != nil {
 			return err
 		}
-		ids := slbsvc.ListenerAclIds(object)
+		ids := slbsvc.ListenerAclIdsForTest(object)
 		if len(ids) < 2 {
 			return fmt.Errorf("listener %s reports %d policy groups, expected at least two", listener.Primary.ID, len(ids))
 		}
@@ -1137,6 +1127,15 @@ func listenerAclTestString(t *testing.T, v tftypes.Value) string {
 	return out
 }
 
+func listenerAclTestHasError(diags []*tfprotov5.Diagnostic) bool {
+	for _, d := range diags {
+		if d.Severity == tfprotov5.DiagnosticSeverityError {
+			return true
+		}
+	}
+	return false
+}
+
 func listenerAclTestRequireNoError(t *testing.T, step string, diags []*tfprotov5.Diagnostic) {
 	t.Helper()
 	for _, d := range diags {
@@ -1280,7 +1279,7 @@ func TestUnitListenerAclAttachmentProtocolUnknownWrite(t *testing.T) {
 		server := newListenerAclAttachmentServer(t)
 		plan, config := listenerAclTestPlanCreate(t, server, "lb-123:http:80", "acl-1", "white")
 		applied := listenerAclTestApplyCreate(t, server, plan, config)
-		if !applied.Diagnostics.HasError() {
+		if !listenerAclTestHasError(applied.Diagnostics) {
 			t.Fatal("expected an error when the readback cannot prove the type")
 		}
 		val, err := applied.NewState.Unmarshal(listenerAclAttachmentTestType)

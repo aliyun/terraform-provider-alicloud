@@ -11,3 +11,7 @@ var ListenerAclAttachmentConfirmTimeoutForTest = &listenerAclAttachmentConfirmTi
 // ListenerAclAttachmentPollIntervalForTest lets tests shorten the convergence
 // poll interval.
 var ListenerAclAttachmentPollIntervalForTest = &listenerAclAttachmentPollInterval
+
+// ListenerAclIdsForTest exposes the ACL identity extraction to the external
+// test package without exporting a production symbol.
+var ListenerAclIdsForTest = listenerAclIds
