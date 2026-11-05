@@ -12,6 +12,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -153,10 +154,20 @@ func ResourceOtsTable() *schema.Resource {
 }
 
 func resourceAliyunOtsTableCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+	raw := d.GetRawConfig()
+	if raw == cty.NilVal || raw.IsNull() || !raw.IsKnown() {
+		return nil
+	}
+	// Validation must wait until an unknown value (for example a reference to another
+	// resource attribute) is resolved; otherwise a valid configuration is rejected at plan time.
+	specs := raw.GetAttr("stream_specification")
+	if specs.IsNull() || !specs.IsKnown() || !specs.IsWhollyKnown() {
+		return nil
+	}
 	if v, ok := d.GetOk("stream_specification"); ok {
-		specs, _ := v.([]interface{})
-		if len(specs) > 0 && specs[0] != nil {
-			spec := specs[0].(map[string]interface{})
+		specList, _ := v.([]interface{})
+		if len(specList) > 0 && specList[0] != nil {
+			spec := specList[0].(map[string]interface{})
 			if enableStream, _ := spec["enable_stream"].(bool); enableStream {
 				expirationTime, _ := spec["expiration_time"].(int)
 				if expirationTime < 1 || expirationTime > 168 {

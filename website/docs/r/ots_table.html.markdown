@@ -16,7 +16,7 @@ you should use resource alicloud_ots_table's new field 'instance_name' and 'tabl
 
 -> **NOTE:** Available since v1.9.2.
 
--> **NOTE:** Import reads the current stream configuration back from the table. Add the `stream_specification` block to the configuration if Terraform should keep managing Stream after an import.
+-> **NOTE:** Import reads the current stream configuration back from the table. Add the `stream_specification` block to the configuration if Terraform should keep managing Stream after an import. If the table already has Stream enabled but the configuration does not contain a `stream_specification` block, the next apply disables Stream.
 
 ## Example Usage
 
