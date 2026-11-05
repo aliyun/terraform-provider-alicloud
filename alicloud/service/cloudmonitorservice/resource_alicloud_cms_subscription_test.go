@@ -170,16 +170,26 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 	resourceId := "alicloud_cms_subscription.default"
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc-cmssubscription-full-%d", rand)
-	var boundId, reboundId string
+	var boundId, reboundId, unboundId string
+	// Every subscription this test creates is recorded, including the one each
+	// replacement removes, so the destroy check covers the objects the final
+	// state no longer references.
+	var objects []cmsSubscriptionObject
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckCmsSubscriptionDependenciesDestroy,
+		CheckDestroy: func(s *terraform.State) error {
+			if err := testAccCheckCmsSubscriptionDependenciesDestroy(s); err != nil {
+				return err
+			}
+			return testAccCheckCmsSubscriptionRecordedDestroy(objects)
+		},
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCmsSubscriptionConfigComplete(name),
 				Check: resource.ComposeTestCheckFunc(
+					testAccCmsSubscriptionRecordObject(resourceId, &objects),
 					testAccCmsSubscriptionCaptureId(resourceId, &boundId),
 					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription"),
 					resource.TestCheckResourceAttr(resourceId, "enable", "true"),
@@ -208,6 +218,7 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 				// visible remotely.
 				Config: testAccCmsSubscriptionConfigCompleteUpdated(name),
 				Check: resource.ComposeTestCheckFunc(
+					testAccCmsSubscriptionRecordObject(resourceId, &objects),
 					testAccCmsSubscriptionCheckIdUnchanged(resourceId, &boundId),
 					resource.TestCheckResourceAttr(resourceId, "subscription_name", name+"-updated"),
 					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription updated"),
@@ -226,6 +237,7 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 				// and the service normalizes the cleared member to false.
 				Config: testAccCmsSubscriptionConfigCompleteLegacyOmitted(name),
 				Check: resource.ComposeTestCheckFunc(
+					testAccCmsSubscriptionRecordObject(resourceId, &objects),
 					testAccCmsSubscriptionCheckIdUnchanged(resourceId, &boundId),
 					resource.TestCheckResourceAttr(resourceId, "subscribe_legacy_event", "false"),
 					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription updated"),
@@ -243,9 +255,29 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 				// applied by creating a replacement subscription.
 				Config: testAccCmsSubscriptionConfigCompleteRebound(name),
 				Check: resource.ComposeTestCheckFunc(
+					testAccCmsSubscriptionRecordObject(resourceId, &objects),
 					testAccCmsSubscriptionCheckIdChanged(resourceId, &boundId),
 					testAccCmsSubscriptionCaptureId(resourceId, &reboundId),
 					resource.TestCheckResourceAttrPair(resourceId, "notify_strategy_id", "alicloud_cms_event_notify_policy.second", "uuid"),
+					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription updated"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
+				ImportStateVerify: true,
+			},
+			{
+				// Unbinding is a step of its own: the workspace stays, so the new
+				// identity proves the unbind replacement and nothing else.
+				Config: testAccCmsSubscriptionConfigCompleteUnbound(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCmsSubscriptionRecordObject(resourceId, &objects),
+					testAccCmsSubscriptionCheckIdChanged(resourceId, &reboundId),
+					testAccCmsSubscriptionCaptureId(resourceId, &unboundId),
+					resource.TestCheckResourceAttr(resourceId, "workspace", strings.ToLower(name)),
+					resource.TestCheckNoResourceAttr(resourceId, "notify_strategy_id"),
 					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription updated"),
 				),
 			},
@@ -260,7 +292,8 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 				// replacement must return a different identity.
 				Config: testAccCmsSubscriptionConfigCompleteOtherWorkspace(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCmsSubscriptionCheckIdChanged(resourceId, &reboundId),
+					testAccCmsSubscriptionRecordObject(resourceId, &objects),
+					testAccCmsSubscriptionCheckIdChanged(resourceId, &unboundId),
 					resource.TestCheckResourceAttr(resourceId, "workspace", strings.ToLower(name)+"-second"),
 					resource.TestCheckNoResourceAttr(resourceId, "notify_strategy_id"),
 					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription updated"),
@@ -274,6 +307,50 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 			},
 		},
 	})
+}
+
+// cmsSubscriptionObject is one subscription observed during a test.
+type cmsSubscriptionObject struct {
+	id        string
+	workspace string
+}
+
+func testAccCmsSubscriptionRecordObject(resourceId string, records *[]cmsSubscriptionObject) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		object := cmsSubscriptionObject{id: rs.Primary.ID, workspace: rs.Primary.Attributes["workspace"]}
+		for _, existing := range *records {
+			if existing == object {
+				return nil
+			}
+		}
+		*records = append(*records, object)
+		return nil
+	}
+}
+
+// testAccCheckCmsSubscriptionRecordedDestroy verifies every subscription the
+// test observed, including the object removed by each replacement, is gone.
+// The final state only carries the last object, so a replacement that leaked
+// its predecessor would otherwise go unnoticed.
+func testAccCheckCmsSubscriptionRecordedDestroy(records []cmsSubscriptionObject) error {
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	for _, object := range records {
+		object := object
+		check := func() (bool, error) {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			defer cancel()
+			_, err := cloudmonitorservice.NewCmsService(client).DescribeSubscription(ctx, object.id, object.workspace)
+			return subscriptionDestroyed(err)
+		}
+		if err := waitForCmsDependencyDestroy(check); err != nil {
+			return fmt.Errorf("subscription %s in workspace %s (created or replaced during this test) is not confirmed deleted: %s", object.id, object.workspace, err)
+		}
+	}
+	return nil
 }
 
 func testAccCmsSubscriptionCaptureId(resourceId string, captured *string) resource.TestCheckFunc {
@@ -351,9 +428,12 @@ func testAccCheckCmsSubscriptionDependenciesDestroy(s *terraform.State) error {
 			}
 		case "alicloud_cms_event_notify_policy":
 			uuid, workspace := rs.Primary.Attributes["uuid"], rs.Primary.Attributes["workspace"]
+			// The policy read is scoped by region as well: the same uuid can exist
+			// in another region and an unscoped read could answer for it.
 			query := map[string]*string{
 				"uuid":      helper.StringPointer(uuid),
 				"workspace": helper.StringPointer(workspace),
+				"regionId":  helper.StringPointer(client.RegionId),
 			}
 			check = func() (bool, error) {
 				_, err := client.RoaGet("Cms", "2024-03-30", "/api/eventbase/notify-policy", query, nil, nil)
@@ -391,7 +471,9 @@ func subscriptionDestroyed(err error) (bool, error) {
 // cmsDependencyDestroyed accepts only the documented absence code returned by
 // the dependency lookup itself. An authorization or server error is never a
 // deletion, even when its message or data happens to contain "NotFound", and
-// the code must match the contract for the object that was queried.
+// the code must match the contract for the object that was queried. The HTTP
+// status is read from the SDK error, or from the error payload when the product
+// gateway reports it there (SLS does).
 func cmsDependencyDestroyed(err error, codes ...string) (bool, error) {
 	if err == nil {
 		return false, nil
@@ -400,10 +482,13 @@ func cmsDependencyDestroyed(err error, codes ...string) (bool, error) {
 	if !ok {
 		return false, err
 	}
-	status := tea.IntValue(sdkErr.StatusCode)
-	code := tea.StringValue(sdkErr.Code)
+	status := cmsDependencyHTTPStatus(sdkErr)
+	code := cmsDependencyErrorCode(sdkErr)
 	if status == http.StatusUnauthorized || status == http.StatusForbidden || status >= http.StatusInternalServerError {
 		return false, fmt.Errorf("the dependency lookup was rejected with HTTP %d and code %q", status, code)
+	}
+	if status == 0 {
+		return false, fmt.Errorf("the dependency lookup returned code %q without a verifiable HTTP status", code)
 	}
 	for _, expected := range codes {
 		if code == expected {
@@ -411,6 +496,50 @@ func cmsDependencyDestroyed(err error, codes ...string) (bool, error) {
 		}
 	}
 	return false, fmt.Errorf("the dependency lookup returned code %q, which is not the documented absence code", code)
+}
+
+// cmsDependencyHTTPStatus returns the HTTP status of a dependency lookup. Some
+// product gateways (SLS) answer with a 200 envelope and put the real status in
+// the error payload, so a status inside that payload takes precedence over a
+// success status on the SDK error.
+func cmsDependencyHTTPStatus(sdkErr *tea.SDKError) int {
+	status := tea.IntValue(sdkErr.StatusCode)
+	if data := tea.StringValue(sdkErr.Data); data != "" {
+		var payload struct {
+			HttpCode   int `json:"httpCode"`
+			StatusCode int `json:"statusCode"`
+		}
+		if json.Unmarshal([]byte(data), &payload) == nil {
+			if payload.HttpCode >= http.StatusBadRequest {
+				return payload.HttpCode
+			}
+			if payload.StatusCode >= http.StatusBadRequest {
+				return payload.StatusCode
+			}
+		}
+	}
+	return status
+}
+
+// cmsDependencyErrorCode returns the error code from the SDK error, or from the
+// error payload when the code is only reported there.
+func cmsDependencyErrorCode(sdkErr *tea.SDKError) string {
+	if code := tea.StringValue(sdkErr.Code); code != "" {
+		return code
+	}
+	if data := tea.StringValue(sdkErr.Data); data != "" {
+		var payload struct {
+			ErrorCode string `json:"errorCode"`
+			Code      string `json:"Code"`
+		}
+		if json.Unmarshal([]byte(data), &payload) == nil {
+			if payload.ErrorCode != "" {
+				return payload.ErrorCode
+			}
+			return payload.Code
+		}
+	}
+	return ""
 }
 
 // waitForCmsDependencyDestroy polls because Cms and SLS delete asynchronously:
@@ -675,6 +804,36 @@ resource "alicloud_cms_subscription" "default" {
 `, testAccCmsSubscriptionSecondPolicyDependence(name))
 }
 
+// testAccCmsSubscriptionConfigCompleteUnbound keeps the workspace of the bound
+// subscription and removes the binding, so the replacement proves the unbind on
+// its own instead of sharing a step with the workspace move.
+func testAccCmsSubscriptionConfigCompleteUnbound(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_cms_subscription" "default" {
+  subscription_name = "${var.name}-updated"
+  workspace         = alicloud_cms_workspace.default.workspace_name
+  description       = "complete subscription updated"
+  enable            = true
+
+  filter_setting {
+    expression = "1 and 2"
+
+    conditions {
+      field = "labels.alertname"
+      op    = "EQ"
+      value = "HighCPUUsage"
+    }
+
+    conditions {
+      field = "labels.severity"
+      op    = "IN"
+      value = "P1"
+    }
+  }
+}
+`, testAccCmsSubscriptionCompleteDependence(name))
+}
+
 func testAccCmsSubscriptionConfigCompleteOtherWorkspace(name string) string {
 	return fmt.Sprintf(`%s
 resource "alicloud_cms_subscription" "default" {
@@ -897,7 +1056,14 @@ func (r *subscriptionUnitRecorder) bodiesFor(method string) []map[string]interfa
 func subscriptionUnitClient(t *testing.T, response func(method, path string, body map[string]interface{}) (int, interface{})) (*connectivity.AliyunClient, *subscriptionUnitRecorder) {
 	t.Helper()
 	recorder := &subscriptionUnitRecorder{response: response}
-	server := httptest.NewServer(http.HandlerFunc(recorder.handle))
+	return subscriptionUnitHTTPClient(t, http.HandlerFunc(recorder.handle)), recorder
+}
+
+// subscriptionUnitHTTPClient starts a local Cms endpoint with the given handler
+// so a test can also produce a transport-level failure.
+func subscriptionUnitHTTPClient(t *testing.T, handler http.Handler) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 
 	credential, err := credentials.NewCredential(new(credentials.Config).
@@ -918,7 +1084,7 @@ func subscriptionUnitClient(t *testing.T, response func(method, path string, bod
 		t.Fatal(err)
 	}
 	endpoints.Store("cms", endpoint)
-	return client, recorder
+	return client
 }
 
 func subscriptionUnitResource(t *testing.T, apiClient *connectivity.AliyunClient) fwresource.Resource {
@@ -1392,47 +1558,95 @@ func TestUnitCmsSubscriptionReadDropsRemovedBlocks(t *testing.T) {
 // TestUnitCmsSubscriptionUpdateEnableOnlySkipsBody proves a toggle-only update
 // does not rewrite the subscription body.
 func TestUnitCmsSubscriptionUpdateEnableOnlySkipsBody(t *testing.T) {
-	disabled := false
-	apiClient, recorder := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
-		if method == http.MethodPut {
-			disabled = true
-			return http.StatusOK, map[string]interface{}{"requestId": "req-1"}
-		}
-		return http.StatusOK, map[string]interface{}{"requestId": "req-2", "subscription": map[string]interface{}{
-			"subscriptionId":   "sub-1",
-			"subscriptionName": "name",
-			"workspace":        "ws-1",
-			"enable":           !disabled,
-		}}
-	})
-	r := subscriptionUnitResource(t, apiClient)
-	resourceSchema, objType := subscriptionUnitSchema(t, r)
-	stateValue := subscriptionUnitObject(t, objType, map[string]interface{}{
-		"id":                "sub-1",
-		"subscription_name": "name",
-		"workspace":         "ws-1",
-		"enable":            true,
-	})
-	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
-		"id":                "sub-1",
-		"subscription_name": "name",
-		"workspace":         "ws-1",
-		"enable":            false,
-	})
-
-	req := fwresource.UpdateRequest{
-		Plan:  tfsdk.Plan{Schema: resourceSchema, Raw: planValue},
-		State: tfsdk.State{Schema: resourceSchema, Raw: stateValue},
+	cases := map[string]struct {
+		fullResponse bool
+		wantError    bool
+	}{
+		// A read that carries the stored configuration and the target switch
+		// converges and keeps every confirmed member in state.
+		"fullResponse": {fullResponse: true, wantError: false},
+		// A response that only carries the name and the switch must not be
+		// accepted: accepting it would drop the description and the filter.
+		"partialResponse": {fullResponse: false, wantError: true},
 	}
-	resp := &fwresource.UpdateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: stateValue}}
-	r.Update(context.Background(), req, resp)
-	if resp.Diagnostics.HasError() {
-		t.Fatalf("Update returned diagnostics: %v", resp.Diagnostics)
-	}
+	for name, testCase := range cases {
+		t.Run(name, func(t *testing.T) {
+			var mu sync.Mutex
+			disabled := false
+			apiClient, recorder := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+				mu.Lock()
+				defer mu.Unlock()
+				if method == http.MethodPut {
+					disabled = true
+					return http.StatusOK, map[string]interface{}{"requestId": "req-1"}
+				}
+				subscription := map[string]interface{}{
+					"subscriptionId":   "sub-1",
+					"subscriptionName": "name",
+					"workspace":        "ws-1",
+					"enable":           !disabled,
+				}
+				if testCase.fullResponse {
+					subscription["description"] = "keep me"
+					subscription["filterSetting"] = map[string]interface{}{
+						"relation": "AND",
+						"conditions": []interface{}{
+							map[string]interface{}{"field": "labels.alertname", "op": "EQ", "value": "CPU"},
+						},
+					}
+				}
+				return http.StatusOK, map[string]interface{}{"requestId": "req-2", "subscription": subscription}
+			})
+			r := subscriptionUnitResource(t, apiClient)
+			resourceSchema, objType := subscriptionUnitSchema(t, r)
+			filterType := subscriptionUnitObjectType(t, objType, "filter_setting")
+			conditionType := subscriptionUnitObjectType(t, filterType, "conditions")
+			attributes := func(enable bool) map[string]interface{} {
+				return map[string]interface{}{
+					"id":                "sub-1",
+					"subscription_name": "name",
+					"workspace":         "ws-1",
+					"description":       "keep me",
+					"enable":            enable,
+					"filter_setting": []interface{}{
+						subscriptionUnitObject(t, filterType, map[string]interface{}{
+							"relation": "AND",
+							"conditions": []interface{}{
+								subscriptionUnitObject(t, conditionType, map[string]interface{}{"field": "labels.alertname", "op": "EQ", "value": "CPU"}),
+							},
+						}),
+					},
+				}
+			}
+			stateValue := subscriptionUnitObject(t, objType, attributes(true))
+			planValue := subscriptionUnitObject(t, objType, attributes(false))
 
-	puts := recorder.requests(http.MethodPut)
-	if len(puts) != 1 || !strings.HasSuffix(puts[0], "/disable") {
-		t.Fatalf("put requests = %v, want only the disable action", puts)
+			ctx, cancel := context.WithTimeout(context.Background(), 400*time.Millisecond)
+			defer cancel()
+			req := fwresource.UpdateRequest{
+				Plan:  tfsdk.Plan{Schema: resourceSchema, Raw: planValue},
+				State: tfsdk.State{Schema: resourceSchema, Raw: stateValue},
+			}
+			resp := &fwresource.UpdateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: stateValue}}
+			r.Update(ctx, req, resp)
+
+			puts := recorder.requests(http.MethodPut)
+			if len(puts) != 1 || !strings.HasSuffix(puts[0], "/disable") {
+				t.Fatalf("put requests = %v, want only the disable action", puts)
+			}
+			if got := subscriptionUnitStringAttribute(t, resp.State, "description").ValueString(); got != "keep me" {
+				t.Fatalf("state description = %q, want the confirmed configuration to survive", got)
+			}
+			if testCase.wantError {
+				if !resp.Diagnostics.HasError() {
+					t.Fatal("expected Update to fail while the read never returns the stored configuration")
+				}
+				return
+			}
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("Update returned diagnostics: %v", resp.Diagnostics)
+			}
+		})
 	}
 }
 
@@ -1850,6 +2064,26 @@ func TestUnitCmsSubscriptionEmptyConfigurationRejected(t *testing.T) {
 				})},
 			}),
 			wantError: true,
+		},
+		// A complementary pair whose values are only known after apply is not a
+		// plan-time conflict: the conflict check waits until both are known.
+		"dynamicExpressionAndRelation": {
+			attributes: base(map[string]interface{}{
+				"filter_setting": []interface{}{subscriptionUnitObject(t, filterType, map[string]interface{}{
+					"expression": subscriptionUnitUnknown{},
+					"relation":   subscriptionUnitUnknown{},
+				})},
+			}),
+			wantError: false,
+		},
+		"dynamicRelationWithKnownExpression": {
+			attributes: base(map[string]interface{}{
+				"filter_setting": []interface{}{subscriptionUnitObject(t, filterType, map[string]interface{}{
+					"expression": "1",
+					"relation":   subscriptionUnitUnknown{},
+				})},
+			}),
+			wantError: false,
 		},
 		// A block whose only member is resolved at apply is not empty: a dynamic
 		// value must not be mistaken for an omitted one.
@@ -2544,15 +2778,17 @@ func TestUnitCmsSubscriptionEmptyOptionalListRejected(t *testing.T) {
 	}
 	channelsPath := path.Root("agent_config").AtListIndex(0).AtName("routes").AtListIndex(0).AtName("channels").AtListIndex(0)
 	cases := map[string]struct {
-		validators []validator.List
-		element    attr.Type
+		validators    []validator.List
+		element       attr.Type
+		nullMember    attr.Value
+		unknownMember attr.Value
 	}{
-		"alertActionIds":     {listValidators(pushingBlock.NestedObject.Attributes, "alert_action_ids"), types.StringType},
-		"restoreActionIds":   {listValidators(pushingBlock.NestedObject.Attributes, "restore_action_ids"), types.StringType},
-		"workspaceUuids":     {listValidators(workspaceFilterBlock.NestedObject.Attributes, "workspace_uuids"), types.StringType},
-		"receivers":          {listValidators(channelBlock.NestedObject.Attributes, "receivers"), types.StringType},
-		"enabledSubChannels": {listValidators(channelBlock.NestedObject.Attributes, "enabled_sub_channels"), types.StringType},
-		"dayInWeek":          {listValidators(windowBlock.NestedObject.Attributes, "day_in_week"), types.Int64Type},
+		"alertActionIds":     {listValidators(pushingBlock.NestedObject.Attributes, "alert_action_ids"), types.StringType, types.StringNull(), types.StringUnknown()},
+		"restoreActionIds":   {listValidators(pushingBlock.NestedObject.Attributes, "restore_action_ids"), types.StringType, types.StringNull(), types.StringUnknown()},
+		"workspaceUuids":     {listValidators(workspaceFilterBlock.NestedObject.Attributes, "workspace_uuids"), types.StringType, types.StringNull(), types.StringUnknown()},
+		"receivers":          {listValidators(channelBlock.NestedObject.Attributes, "receivers"), types.StringType, types.StringNull(), types.StringUnknown()},
+		"enabledSubChannels": {listValidators(channelBlock.NestedObject.Attributes, "enabled_sub_channels"), types.StringType, types.StringNull(), types.StringUnknown()},
+		"dayInWeek":          {listValidators(windowBlock.NestedObject.Attributes, "day_in_week"), types.Int64Type, types.Int64Null(), types.Int64Unknown()},
 	}
 	for name, testCase := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -2571,6 +2807,23 @@ func TestUnitCmsSubscriptionEmptyOptionalListRejected(t *testing.T) {
 			}
 			if rejected(types.ListNull(testCase.element)) {
 				t.Fatal("an omitted list must be accepted")
+			}
+			// A null member satisfies the size validator but is dropped when the
+			// request is built, so the wire value would differ from the plan.
+			if !rejected(types.ListValueMust(testCase.element, []attr.Value{testCase.nullMember})) {
+				t.Fatal("a list whose only member is null must be rejected")
+			}
+			// A dynamic member is resolved before apply and must be accepted.
+			if rejected(types.ListValueMust(testCase.element, []attr.Value{testCase.unknownMember})) {
+				t.Fatal("a list with a dynamic member must be accepted")
+			}
+			if testCase.element == types.StringType {
+				if !rejected(types.ListValueMust(testCase.element, []attr.Value{types.StringValue("")})) {
+					t.Fatal("an empty string member must be rejected")
+				}
+				if rejected(types.ListValueMust(testCase.element, []attr.Value{types.StringValue("value")})) {
+					t.Fatal("a non-empty member must be accepted")
+				}
 			}
 		})
 	}
@@ -2662,5 +2915,334 @@ func TestUnitCmsSubscriptionDestroyCheckUsesStructuredSignal(t *testing.T) {
 	subscriptionTextual := fmt.Errorf("subscription not found")
 	if gone, err := subscriptionDestroyed(subscriptionTextual); gone || err == nil {
 		t.Fatalf("textual subscription not-found = (%t, %v), want (false, err)", gone, err)
+	}
+
+	// The SLS gateway returns the real HTTP status inside the error payload; a
+	// 403 there is a rejection even though the code is the documented one.
+	slsForbidden := &tea.SDKError{
+		StatusCode: tea.Int(http.StatusOK),
+		Code:       tea.String("ProjectNotExist"),
+		Data:       tea.String(`{"httpCode":403,"errorCode":"ProjectNotExist","message":"the caller is not authorized"}`),
+	}
+	if gone, err := cmsDependencyDestroyed(slsForbidden, "ProjectNotExist"); gone || err == nil {
+		t.Fatalf("SLS 403 payload = (%t, %v), want (false, err)", gone, err)
+	}
+	slsMissing := &tea.SDKError{
+		StatusCode: tea.Int(http.StatusOK),
+		Code:       tea.String("ProjectNotExist"),
+		Data:       tea.String(`{"httpCode":404,"errorCode":"ProjectNotExist"}`),
+	}
+	if gone, err := cmsDependencyDestroyed(slsMissing, "ProjectNotExist"); !gone || err != nil {
+		t.Fatalf("SLS 404 payload = (%t, %v), want (true, nil)", gone, err)
+	}
+	// A transport failure without any status is never a deletion.
+	if gone, err := cmsDependencyDestroyed(&tea.SDKError{Code: tea.String("ProjectNotExist")}, "ProjectNotExist"); gone || err == nil {
+		t.Fatalf("status-less error = (%t, %v), want (false, err)", gone, err)
+	}
+}
+
+// TestUnitCmsSubscriptionReadDropsBlocksWithoutMembers proves a response block
+// whose members are all empty is not written to state: keeping it would show a
+// block that the configuration does not declare. Refresh and a bare Import see
+// the same response and must agree.
+func TestUnitCmsSubscriptionReadDropsBlocksWithoutMembers(t *testing.T) {
+	apiClient, _ := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+		return http.StatusOK, map[string]interface{}{"requestId": "req", "subscription": map[string]interface{}{
+			"subscriptionId":   "sub-1",
+			"subscriptionName": "name",
+			"workspace":        "ws-1",
+			"filterSetting": map[string]interface{}{
+				"expression": "",
+				"relation":   "",
+				"conditions": []interface{}{},
+			},
+			"pushingSetting": map[string]interface{}{
+				"alertActionIds": []interface{}{},
+				"templateUuid":   "",
+			},
+			"workspaceFilterSetting": map[string]interface{}{
+				"workspaceUuids": []interface{}{},
+			},
+			"agentConfig": map[string]interface{}{
+				"agentUuid": "",
+				"routes":    []interface{}{map[string]interface{}{}},
+			},
+		}}
+	})
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	pushingType := subscriptionUnitObjectType(t, objType, "pushing_setting")
+
+	refreshed := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                "sub-1",
+		"subscription_name": "name",
+		"workspace":         "ws-1",
+		"pushing_setting": []interface{}{
+			subscriptionUnitObject(t, pushingType, map[string]interface{}{
+				"alert_action_ids": []interface{}{"previous"},
+			}),
+		},
+	})
+	imported := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":        "sub-1",
+		"workspace": "ws-1",
+	})
+
+	for name, stateValue := range map[string]tftypes.Value{"refresh": refreshed, "import": imported} {
+		req := fwresource.ReadRequest{State: tfsdk.State{Schema: resourceSchema, Raw: stateValue}}
+		resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: resourceSchema, Raw: stateValue}}
+		r.Read(context.Background(), req, resp)
+		if resp.Diagnostics.HasError() {
+			t.Fatalf("%s: Read returned diagnostics: %v", name, resp.Diagnostics)
+		}
+		for _, attribute := range []string{"filter_setting", "pushing_setting", "workspace_filter_setting", "agent_config"} {
+			var blocks types.List
+			if diags := resp.State.GetAttribute(context.Background(), path.Root(attribute), &blocks); diags.HasError() {
+				t.Fatalf("%s: reading %s: %v", name, attribute, diags)
+			}
+			if !blocks.IsNull() || len(blocks.Elements()) != 0 {
+				t.Fatalf("%s: %s = %v, want no block for an empty response object", name, attribute, blocks)
+			}
+		}
+	}
+}
+
+// TestUnitCmsSubscriptionReadStopsRetryingAfterCancellation proves a retryable
+// read failure does not produce another request once the operation is
+// cancelled: the SDK automatic retry is disabled, so no retry can outlive the
+// caller's context.
+func TestUnitCmsSubscriptionReadStopsRetryingAfterCancellation(t *testing.T) {
+	var mu sync.Mutex
+	gets := 0
+	apiClient, recorder := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+		mu.Lock()
+		gets++
+		mu.Unlock()
+		return http.StatusInternalServerError, map[string]interface{}{"Code": "InternalError", "Message": "code: 500, internal error"}
+	})
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	stateValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                "sub-1",
+		"subscription_name": "name",
+		"workspace":         "ws-1",
+	})
+	ctx, cancel := context.WithTimeout(context.Background(), 400*time.Millisecond)
+	defer cancel()
+	req := fwresource.ReadRequest{State: tfsdk.State{Schema: resourceSchema, Raw: stateValue}}
+	resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: resourceSchema, Raw: stateValue}}
+	r.Read(ctx, req, resp)
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected Read to fail while the service keeps returning a retryable error")
+	}
+	if calls := len(recorder.requests(http.MethodGet)); calls != 1 {
+		t.Fatalf("read requests = %d, want exactly one attempt: the cancelled operation must not retry", calls)
+	}
+	if gets != 1 {
+		t.Fatalf("handler calls = %d, want exactly one", gets)
+	}
+}
+
+// TestUnitCmsSubscriptionCreateDoesNotReplayTransportFailure proves a create
+// whose response is lost is not sent again: the request may already have
+// created the subscription and the API has no idempotency token, so the result
+// is reported as unknown instead of producing a second object.
+func TestUnitCmsSubscriptionCreateDoesNotReplayTransportFailure(t *testing.T) {
+	var mu sync.Mutex
+	posts := 0
+	apiClient := subscriptionUnitHTTPClient(t, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		mu.Lock()
+		posts++
+		mu.Unlock()
+		// Drop the connection without a response, as if the request had been
+		// accepted but its response never reached the client.
+		hijacker, ok := w.(http.Hijacker)
+		if !ok {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		connection, _, err := hijacker.Hijack()
+		if err == nil {
+			_ = connection.Close()
+		}
+	}))
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                subscriptionUnitUnknown{},
+		"subscription_name": "lost-response",
+		"workspace":         "ws-1",
+	})
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
+	r.Create(context.Background(), req, resp)
+
+	mu.Lock()
+	defer mu.Unlock()
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected Create to fail when the response is lost")
+	}
+	if posts != 1 {
+		t.Fatalf("create requests = %d, want exactly one: a lost response must not be replayed", posts)
+	}
+	if !strings.Contains(fmt.Sprint(resp.Diagnostics), "unknown") {
+		t.Fatalf("diagnostics = %v, want the unknown write outcome to be reported", resp.Diagnostics)
+	}
+}
+
+// TestUnitCmsSubscriptionUpdateExternalFixtures proves the pushing,
+// workspace-filter and agent blocks are written on update and cleared when the
+// configuration omits them. Their referenced objects have no Terraform
+// resource, so the request and the resulting state are the evidence; the mock
+// echoes the last body, which makes the request and the read distinguishable
+// from the create payload.
+func TestUnitCmsSubscriptionUpdateExternalFixtures(t *testing.T) {
+	var mu sync.Mutex
+	stored := map[string]interface{}{}
+	apiClient, recorder := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+		mu.Lock()
+		defer mu.Unlock()
+		if method == http.MethodPut {
+			stored = body
+			return http.StatusOK, map[string]interface{}{"requestId": "req-1"}
+		}
+		subscription := map[string]interface{}{
+			"subscriptionId":   subscriptionUnitServerId,
+			"subscriptionName": "fixtures",
+			"workspace":        "ws-1",
+			"enable":           true,
+		}
+		for key, value := range stored {
+			subscription[key] = value
+		}
+		return http.StatusOK, map[string]interface{}{"requestId": "req-2", "subscription": subscription}
+	})
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	pushingType := subscriptionUnitObjectType(t, objType, "pushing_setting")
+	workspaceFilterType := subscriptionUnitObjectType(t, objType, "workspace_filter_setting")
+	agentType := subscriptionUnitObjectType(t, objType, "agent_config")
+	routeType := subscriptionUnitObjectType(t, agentType, "routes")
+	channelType := subscriptionUnitObjectType(t, routeType, "channels")
+	windowType := subscriptionUnitObjectType(t, routeType, "effect_time_range")
+
+	externalBlocks := func(actionId, workspaceUuid, agentUuid, receiver string) map[string]interface{} {
+		return map[string]interface{}{
+			"pushing_setting": []interface{}{
+				subscriptionUnitObject(t, pushingType, map[string]interface{}{
+					"alert_action_ids":   []interface{}{actionId},
+					"restore_action_ids": []interface{}{actionId},
+					"template_uuid":      "template-" + actionId,
+					"response_plan_id":   "plan-" + actionId,
+				}),
+			},
+			"workspace_filter_setting": []interface{}{
+				subscriptionUnitObject(t, workspaceFilterType, map[string]interface{}{
+					"workspace_uuids": []interface{}{workspaceUuid},
+				}),
+			},
+			"agent_config": []interface{}{
+				subscriptionUnitObject(t, agentType, map[string]interface{}{
+					"agent_uuid": agentUuid,
+					"routes": []interface{}{
+						subscriptionUnitObject(t, routeType, map[string]interface{}{
+							"channels": []interface{}{
+								subscriptionUnitObject(t, channelType, map[string]interface{}{
+									"channel_type":         "WEBHOOK",
+									"receivers":            []interface{}{receiver},
+									"enabled_sub_channels": []interface{}{"EMAIL"},
+								}),
+							},
+							"effect_time_range": []interface{}{
+								subscriptionUnitObject(t, windowType, map[string]interface{}{
+									"time_zone":            "Asia/Shanghai",
+									"day_in_week":          []interface{}{float64(1)},
+									"start_time_in_minute": float64(0),
+									"end_time_in_minute":   float64(1439),
+								}),
+							},
+						}),
+					},
+				}),
+			},
+		}
+	}
+	attributes := func(extra map[string]interface{}) map[string]interface{} {
+		result := map[string]interface{}{
+			"id":                subscriptionUnitServerId,
+			"subscription_name": "fixtures",
+			"workspace":         "ws-1",
+		}
+		for key, value := range extra {
+			result[key] = value
+		}
+		return result
+	}
+
+	// The state carries the values that a previous read returned.
+	mu.Lock()
+	for key, value := range externalBlocks("action-1", "workspace-uuid-1", "agent-1", "receiver-1") {
+		stored[key] = value
+	}
+	stored["subscriptionName"] = "fixtures"
+	mu.Unlock()
+	stateValue := subscriptionUnitObject(t, objType, attributes(externalBlocks("action-1", "workspace-uuid-1", "agent-1", "receiver-1")))
+
+	update := func(planAttributes map[string]interface{}) *fwresource.UpdateResponse {
+		t.Helper()
+		planValue := subscriptionUnitObject(t, objType, planAttributes)
+		req := fwresource.UpdateRequest{
+			Plan:  tfsdk.Plan{Schema: resourceSchema, Raw: planValue},
+			State: tfsdk.State{Schema: resourceSchema, Raw: stateValue},
+		}
+		resp := &fwresource.UpdateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: stateValue}}
+		r.Update(context.Background(), req, resp)
+		if resp.Diagnostics.HasError() {
+			t.Fatalf("Update returned diagnostics: %v", resp.Diagnostics)
+		}
+		return resp
+	}
+
+	updated := update(attributes(externalBlocks("action-2", "workspace-uuid-2", "agent-2", "receiver-2")))
+	putBodies := recorder.bodiesFor(http.MethodPut)
+	if len(putBodies) != 1 {
+		t.Fatalf("update requests = %d, want one", len(putBodies))
+	}
+	body := putBodies[0]
+	if pushing, ok := body["pushingSetting"].(map[string]interface{}); !ok || fmt.Sprint(pushing["alertActionIds"]) != "[action-2]" || pushing["templateUuid"] != "template-action-2" {
+		t.Fatalf("unexpected pushingSetting payload: %v", body["pushingSetting"])
+	}
+	if filter, ok := body["workspaceFilterSetting"].(map[string]interface{}); !ok || fmt.Sprint(filter["workspaceUuids"]) != "[workspace-uuid-2]" {
+		t.Fatalf("unexpected workspaceFilterSetting payload: %v", body["workspaceFilterSetting"])
+	}
+	agent, ok := body["agentConfig"].(map[string]interface{})
+	if !ok || agent["agentUuid"] != "agent-2" || !strings.Contains(fmt.Sprint(agent["routes"]), "receiver-2") {
+		t.Fatalf("unexpected agentConfig payload: %v", body["agentConfig"])
+	}
+	if got := subscriptionUnitStringAttribute(t, updated.State, "subscription_name").ValueString(); got != "fixtures" {
+		t.Fatalf("state subscription_name = %q", got)
+	}
+
+	// Omitting the blocks clears them: the request must not carry them and the
+	// read-back state must not keep a block without members.
+	cleared := update(attributes(nil))
+	clearBodies := recorder.bodiesFor(http.MethodPut)
+	if len(clearBodies) != 2 {
+		t.Fatalf("update requests = %d, want two", len(clearBodies))
+	}
+	clearBody := clearBodies[1]
+	for _, key := range []string{"pushingSetting", "workspaceFilterSetting", "agentConfig"} {
+		if _, exists := clearBody[key]; exists {
+			t.Fatalf("clear request still carries %s: %v", key, clearBody[key])
+		}
+	}
+	for _, attribute := range []string{"pushing_setting", "workspace_filter_setting", "agent_config"} {
+		var blocks types.List
+		if diags := cleared.State.GetAttribute(context.Background(), path.Root(attribute), &blocks); diags.HasError() {
+			t.Fatalf("reading %s: %v", attribute, diags)
+		}
+		if !blocks.IsNull() || len(blocks.Elements()) != 0 {
+			t.Fatalf("%s = %v, want no block after clearing", attribute, blocks)
+		}
 	}
 }

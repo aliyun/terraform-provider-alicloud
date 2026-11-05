@@ -42,8 +42,10 @@ func subscriptionIsResourceNotFound(err error) bool {
 // workspace query parameter is optional on the API; it is forwarded when the
 // caller has it so that workspace-scoped subscriptions resolve consistently.
 // The caller's context carries the operation deadline shared by the request,
-// its retries and the polling loops; the retry loop runs in the caller's
-// goroutine so a cancelled call never races with a late response.
+// its retries and the polling loops: the SDK automatic retry is disabled so the
+// only request of one attempt leaves this loop, which checks the context before
+// every attempt and every backoff. A request already on the wire cannot be
+// aborted because the shared client does not accept a context.
 func (s *CmsService) DescribeSubscription(ctx context.Context, id, workspace string) (object map[string]interface{}, err error) {
 	client := s.client
 	action := fmt.Sprintf("/subscriptions/%s", id)
@@ -58,7 +60,7 @@ func (s *CmsService) DescribeSubscription(ctx context.Context, id, workspace str
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return nil, ctxErr
 		}
-		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+		response, err = client.RoaGetWithRetry("Cms", "2024-03-30", action, query, nil, nil, false)
 		if err == nil {
 			break
 		}

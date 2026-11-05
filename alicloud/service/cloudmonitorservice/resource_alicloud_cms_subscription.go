@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	stderrors "errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	logs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
@@ -255,6 +257,7 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 							ElementType: types.StringType,
 							Validators: []validator.List{
 								listvalidator.SizeAtLeast(1),
+								subscriptionListElementsValidator{},
 							},
 						},
 						"restore_action_ids": schema.ListAttribute{
@@ -262,6 +265,7 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 							ElementType: types.StringType,
 							Validators: []validator.List{
 								listvalidator.SizeAtLeast(1),
+								subscriptionListElementsValidator{},
 							},
 						},
 						"template_uuid": schema.StringAttribute{
@@ -290,6 +294,7 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 							ElementType: types.StringType,
 							Validators: []validator.List{
 								listvalidator.SizeAtLeast(1),
+								subscriptionListElementsValidator{},
 							},
 						},
 					},
@@ -326,6 +331,7 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 													ElementType: types.StringType,
 													Validators: []validator.List{
 														listvalidator.SizeAtLeast(1),
+														subscriptionListElementsValidator{},
 													},
 												},
 												"enabled_sub_channels": schema.ListAttribute{
@@ -333,6 +339,7 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 													ElementType: types.StringType,
 													Validators: []validator.List{
 														listvalidator.SizeAtLeast(1),
+														subscriptionListElementsValidator{},
 													},
 												},
 											},
@@ -356,6 +363,7 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 													Validators: []validator.List{
 														listvalidator.SizeAtLeast(1),
 														listvalidator.ValueInt64sAre(int64validator.Between(0, 6)),
+														subscriptionListElementsValidator{},
 													},
 												},
 												"start_time_in_minute": schema.Int64Attribute{
@@ -389,18 +397,20 @@ func (r *subscriptionResource) Create(ctx context.Context, req resource.CreateRe
 
 	action := "/subscriptions"
 	request := expandSubscriptionRequest(plan)
-	response, err := r.roaCall(ctx, action, request, func() (map[string]interface{}, error) {
+	response, err := r.roaCall(ctx, action, request, false, func() (map[string]interface{}, error) {
 		// The shared ROA client cannot attach the operation context to an
 		// already-issued HTTP request, so its own automatic retry is disabled
 		// here: every retry goes through roaCall, which observes the context
-		// before issuing the next attempt.
+		// before issuing the next attempt. CreateSubscription is replayed as
+		// well, because the API has no idempotency token: a request that already
+		// created the subscription would otherwise create a second, orphaned one.
 		return r.Meta().RoaPost("Cms", "2024-03-30", action, subscriptionQuery(plan.Workspace), nil, request, false)
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: calling CreateSubscription", subscriptionTypeName),
 			errs.WrapErrorf(err, errs.DefaultErrorMsg, subscriptionTypeName, action, errs.AlibabaCloudSdkGoERROR).Error()+
-				subscriptionUnknownWriteSuffix(ctx, fmt.Sprintf(" Check the workspace for a subscription named %q before retrying: a request already on the wire when the operation stopped may have created it.", plan.SubscriptionName.ValueString())),
+				subscriptionUnknownWriteSuffix(ctx, err, fmt.Sprintf(" Check the workspace for a subscription named %q before retrying: a request whose response was lost may already have created it.", plan.SubscriptionName.ValueString())),
 		)
 		return
 	}
@@ -528,31 +538,24 @@ func (r *subscriptionResource) Update(ctx context.Context, req resource.UpdateRe
 			)
 			return
 		}
-		object, err = r.waitSubscriptionEnable(ctx, id, state.Workspace, enable)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Updating %s: waiting for the subscription enabled state", subscriptionTypeName),
-				errs.WrapErrorf(err, errs.DefaultErrorMsg, subscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
-			)
-			return
-		}
 	}
 
 	action := fmt.Sprintf("/subscriptions/%s", id)
 	request := subscriptionRequestForConfig(plan, state)
 	removed := subscriptionRemovedPaths(plan, state)
 	if len(removed) == 0 && subscriptionRequestsEqual(expandSubscriptionRequest(state), request) {
-		// Only the enable/disable state changed: the body is untouched, so do not
-		// rewrite the configuration with a full-body update.
-		if object == nil {
-			object, err = NewCmsService(r.Meta()).DescribeSubscription(ctx, id, state.Workspace.ValueString())
-			if err != nil {
-				resp.Diagnostics.AddError(
-					fmt.Sprintf("Reading %s: calling GetSubscription", subscriptionTypeName),
-					errs.WrapErrorf(err, errs.DefaultErrorMsg, subscriptionTypeName, action, errs.AlibabaCloudSdkGoERROR).Error(),
-				)
-				return
-			}
+		// Only the enable/disable state changed: the body is untouched, so no
+		// body update is sent. The state is still rebuilt from a read that
+		// confirms the stored configuration together with the requested switch:
+		// a partial response that carries only the name and the switch must not
+		// overwrite the description and the filter blocks already in state.
+		object, err := r.waitSubscriptionUpdate(ctx, id, state.Workspace, expandSubscriptionRequest(state), nil, expectedEnable)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Reading %s: calling GetSubscription", subscriptionTypeName),
+				errs.WrapErrorf(err, errs.DefaultErrorMsg, subscriptionTypeName, action, errs.AlibabaCloudSdkGoERROR).Error(),
+			)
+			return
 		}
 		next, err := subscriptionState(object, state, r.Meta().RegionId)
 		if err != nil {
@@ -566,7 +569,7 @@ func (r *subscriptionResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	_, err = r.roaCall(ctx, action, request, func() (map[string]interface{}, error) {
+	_, err = r.roaCall(ctx, action, request, true, func() (map[string]interface{}, error) {
 		return r.Meta().RoaPut("Cms", "2024-03-30", action, subscriptionQuery(state.Workspace), nil, request, false)
 	})
 	if err != nil {
@@ -608,7 +611,7 @@ func (r *subscriptionResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	action := fmt.Sprintf("/subscriptions/%s", state.Id.ValueString())
 	var rawErr error
-	_, err := r.roaCall(ctx, action, subscriptionQuery(state.Workspace), func() (map[string]interface{}, error) {
+	_, err := r.roaCall(ctx, action, subscriptionQuery(state.Workspace), true, func() (map[string]interface{}, error) {
 		response, callErr := r.Meta().RoaDelete("Cms", "2024-03-30", action, subscriptionQuery(state.Workspace), nil, nil, false)
 		rawErr = callErr
 		return response, callErr
@@ -646,7 +649,10 @@ func (r *subscriptionResource) ImportState(ctx context.Context, req resource.Imp
 // The caller's context is checked before every attempt and every backoff, so no
 // request is issued after the deadline; an attempt already on the wire still
 // finishes and its response, including a created id, is returned to the caller.
-func (r *subscriptionResource) roaCall(ctx context.Context, action string, logPayload interface{}, call func() (map[string]interface{}, error)) (map[string]interface{}, error) {
+// replay reports whether the verb is safe to resend: PUT and DELETE are applied
+// at most once for the same payload, while CreateSubscription has no idempotency
+// token and is therefore sent exactly once.
+func (r *subscriptionResource) roaCall(ctx context.Context, action string, logPayload interface{}, replay bool, call func() (map[string]interface{}, error)) (map[string]interface{}, error) {
 	wait := subscriptionBackoff(ctx)
 	for {
 		if ctxErr := ctx.Err(); ctxErr != nil {
@@ -657,7 +663,7 @@ func (r *subscriptionResource) roaCall(ctx context.Context, action string, logPa
 			logs.AddDebug(action, response, logPayload)
 			return response, nil
 		}
-		if !subscriptionRetryable(err) {
+		if !replay || !subscriptionRetryable(err) {
 			logs.AddDebug(action, response, logPayload)
 			return response, err
 		}
@@ -682,14 +688,34 @@ func subscriptionRetryable(err error) bool {
 	return helper.NeedRetry(err)
 }
 
-// subscriptionUnknownWriteSuffix marks a failed write whose outcome cannot be
-// known: the shared connectivity client issues requests without a context, so a
-// request already on the wire when the operation stopped may still complete.
-func subscriptionUnknownWriteSuffix(ctx context.Context, detail string) string {
-	if ctx.Err() == nil {
+// subscriptionUnknownWriteSuffix marks a write whose outcome cannot be known:
+// the shared connectivity client issues requests without a context, so a
+// request already on the wire when the operation stopped may still complete,
+// and a transport failure or a server-side error can also follow an accepted
+// request whose response was lost. A definitive client-side rejection is not
+// reported as unknown.
+func subscriptionUnknownWriteSuffix(ctx context.Context, err error, detail string) string {
+	if !subscriptionWriteOutcomeUnknown(ctx, err) {
 		return ""
 	}
-	return fmt.Sprintf(" The operation stopped (%v) while a request may have been in flight, so the server-side result is unknown.", ctx.Err()) + detail
+	return " The server-side result of the write is unknown." + detail
+}
+
+func subscriptionWriteOutcomeUnknown(ctx context.Context, err error) bool {
+	if ctx.Err() != nil {
+		return true
+	}
+	var transportErr *url.Error
+	if stderrors.As(err, &transportErr) {
+		return true
+	}
+	var sdkErr *tea.SDKError
+	if stderrors.As(err, &sdkErr) {
+		status := tea.IntValue(sdkErr.StatusCode)
+		// 5xx and throttling responses do not prove the request was rejected.
+		return status >= http.StatusInternalServerError || status == http.StatusTooManyRequests
+	}
+	return false
 }
 
 func (r *subscriptionResource) setSubscriptionEnable(ctx context.Context, id string, workspace types.String, enable bool) error {
@@ -699,29 +725,10 @@ func (r *subscriptionResource) setSubscriptionEnable(ctx context.Context, id str
 	}
 	action := fmt.Sprintf("/subscriptions/%s/%s", id, suffix)
 
-	_, err := r.roaCall(ctx, action, action, func() (map[string]interface{}, error) {
+	_, err := r.roaCall(ctx, action, action, true, func() (map[string]interface{}, error) {
 		return r.Meta().RoaPut("Cms", "2024-03-30", action, subscriptionQuery(workspace), nil, nil, false)
 	})
 	return err
-}
-
-// waitSubscriptionEnable polls GetSubscription until the enabled state reported
-// by the service matches the requested one and returns that converged object.
-// The enable and disable operations return before the change is visible on the
-// read path.
-func (r *subscriptionResource) waitSubscriptionEnable(ctx context.Context, id string, workspace types.String, enable bool) (map[string]interface{}, error) {
-	for {
-		object, err := NewCmsService(r.Meta()).DescribeSubscription(ctx, id, workspace.ValueString())
-		if err != nil {
-			return nil, err
-		}
-		if current, ok := object["enable"].(bool); ok && current == enable {
-			return object, nil
-		}
-		if err := subscriptionSleep(ctx, 3*time.Second); err != nil {
-			return nil, err
-		}
-	}
 }
 
 // waitSubscriptionReadable polls GetSubscription until the freshly created
@@ -1504,11 +1511,17 @@ func flattenSubscriptionFilterSetting(raw interface{}) ([]subscriptionFilterSett
 	if err != nil {
 		return nil, err
 	}
-	return []subscriptionFilterSettingModel{{
+	block := subscriptionFilterSettingModel{
 		Expression: subscriptionStringStateValue(setting["expression"]),
 		Relation:   subscriptionStringStateValue(setting["relation"]),
 		Conditions: conditions,
-	}}, nil
+	}
+	// A block whose members are all empty carries no configuration: keeping it
+	// would show a block in state that the configuration does not declare.
+	if block.Expression.IsNull() && block.Relation.IsNull() && len(block.Conditions) == 0 {
+		return nil, nil
+	}
+	return []subscriptionFilterSettingModel{block}, nil
 }
 
 func flattenSubscriptionConditions(raw interface{}) ([]subscriptionConditionModel, error) {
@@ -1539,12 +1552,17 @@ func flattenSubscriptionPushingSetting(raw interface{}) ([]subscriptionPushingSe
 	if !present {
 		return nil, nil
 	}
-	return []subscriptionPushingSettingModel{{
+	block := subscriptionPushingSettingModel{
 		AlertActionIds:   subscriptionJSONStringList(setting["alertActionIds"]),
 		RestoreActionIds: subscriptionJSONStringList(setting["restoreActionIds"]),
 		TemplateUuid:     subscriptionStringStateValue(setting["templateUuid"]),
 		ResponsePlanId:   subscriptionStringStateValue(setting["responsePlanId"]),
-	}}, nil
+	}
+	if block.AlertActionIds.IsNull() && block.RestoreActionIds.IsNull() &&
+		block.TemplateUuid.IsNull() && block.ResponsePlanId.IsNull() {
+		return nil, nil
+	}
+	return []subscriptionPushingSettingModel{block}, nil
 }
 
 func flattenSubscriptionWorkspaceFilterSetting(raw interface{}) ([]subscriptionWorkspaceFilterModel, error) {
@@ -1555,9 +1573,13 @@ func flattenSubscriptionWorkspaceFilterSetting(raw interface{}) ([]subscriptionW
 	if !present {
 		return nil, nil
 	}
-	return []subscriptionWorkspaceFilterModel{{
+	block := subscriptionWorkspaceFilterModel{
 		WorkspaceUuids: subscriptionJSONStringList(setting["workspaceUuids"]),
-	}}, nil
+	}
+	if block.WorkspaceUuids.IsNull() {
+		return nil, nil
+	}
+	return []subscriptionWorkspaceFilterModel{block}, nil
 }
 
 func flattenSubscriptionAgentConfig(raw interface{}) ([]subscriptionAgentConfigModel, error) {
@@ -1572,10 +1594,14 @@ func flattenSubscriptionAgentConfig(raw interface{}) ([]subscriptionAgentConfigM
 	if err != nil {
 		return nil, err
 	}
-	return []subscriptionAgentConfigModel{{
+	block := subscriptionAgentConfigModel{
 		AgentUuid: subscriptionStringStateValue(config["agentUuid"]),
 		Routes:    routes,
-	}}, nil
+	}
+	if block.AgentUuid.IsNull() && len(block.Routes) == 0 {
+		return nil, nil
+	}
+	return []subscriptionAgentConfigModel{block}, nil
 }
 
 func flattenSubscriptionAgentRoutes(raw interface{}) ([]subscriptionAgentRouteModel, error) {
@@ -1597,6 +1623,10 @@ func flattenSubscriptionAgentRoutes(raw interface{}) ([]subscriptionAgentRouteMo
 		if err != nil {
 			return nil, err
 		}
+		if len(channels) == 0 && len(effectTimeRange) == 0 {
+			// A route with no usable member is not a configured block.
+			continue
+		}
 		routes = append(routes, subscriptionAgentRouteModel{
 			Channels:        channels,
 			EffectTimeRange: effectTimeRange,
@@ -1616,11 +1646,15 @@ func flattenSubscriptionAgentChannels(raw interface{}) ([]subscriptionAgentChann
 		if !ok {
 			return nil, fmt.Errorf("the response value of $.agentConfig.routes.channels[%d] has unexpected type %T", index, item)
 		}
-		channels = append(channels, subscriptionAgentChannelModel{
+		block := subscriptionAgentChannelModel{
 			ChannelType:        subscriptionStringStateValue(channel["channelType"]),
 			Receivers:          subscriptionJSONStringList(channel["receivers"]),
 			EnabledSubChannels: subscriptionJSONStringList(channel["enabledSubChannels"]),
-		})
+		}
+		if block.ChannelType.IsNull() && block.Receivers.IsNull() && block.EnabledSubChannels.IsNull() {
+			continue
+		}
+		channels = append(channels, block)
 	}
 	return channels, nil
 }
@@ -1633,12 +1667,17 @@ func flattenSubscriptionAgentEffectTimeRange(raw interface{}) ([]subscriptionAge
 	if !present {
 		return nil, nil
 	}
-	return []subscriptionAgentEffectTimeRangeModel{{
+	block := subscriptionAgentEffectTimeRangeModel{
 		TimeZone:          subscriptionStringStateValue(window["timeZone"]),
 		DayInWeek:         subscriptionJSONInt64List(window["dayInWeek"]),
 		StartTimeInMinute: subscriptionJSONInt64Value(window["startTimeInMinute"]),
 		EndTimeInMinute:   subscriptionJSONInt64Value(window["endTimeInMinute"]),
-	}}, nil
+	}
+	if block.TimeZone.IsNull() && block.DayInWeek.IsNull() &&
+		block.StartTimeInMinute.IsNull() && block.EndTimeInMinute.IsNull() {
+		return nil, nil
+	}
+	return []subscriptionAgentEffectTimeRangeModel{block}, nil
 }
 
 func subscriptionValueString(v types.String) string {
@@ -1773,11 +1812,14 @@ func subscriptionJSONInt64Value(v interface{}) types.Int64 {
 	return types.Int64Null()
 }
 
-// subscriptionBlockValidator rejects blocks that declare no member. A block
-// with no configured member is omitted from the request, dropped from the read
-// response and therefore cannot round-trip through apply. A member that is only
-// known after apply counts as declared, and an unknown nested collection cannot
-// be judged before apply, so neither is rejected here.
+// subscriptionBlockValidator rejects blocks that declare no member, and rejects
+// a filter_setting that sets both expression and relation. A block with no
+// configured member is omitted from the request, dropped from the read response
+// and therefore cannot round-trip through apply. A member that is only known
+// after apply counts as declared, and an unknown nested collection cannot be
+// judged before apply, so neither is rejected here. The expression/relation
+// conflict is only judged when both values are known: a dynamic configuration
+// resolves them at apply time, so an unknown pair is left to the service.
 type subscriptionBlockValidator struct{}
 
 func (v subscriptionBlockValidator) Description(ctx context.Context) string {
@@ -1794,9 +1836,11 @@ func (v subscriptionBlockValidator) ValidateResource(ctx context.Context, req re
 		if !ok {
 			continue
 		}
-		if subscriptionMemberDeclared(attributes, "expression") && subscriptionMemberDeclared(attributes, "relation") {
+		if subscriptionMemberKnown(attributes, "expression") && subscriptionMemberKnown(attributes, "relation") {
 			// The service ignores relation when expression is set, so a state
-			// that carried both could never match the read-back value.
+			// that carried both could never match the read-back value. The check
+			// waits until both values are known: a configuration that resolves
+			// them at apply time is not a plan-time conflict.
 			resp.Diagnostics.AddAttributeError(
 				path.Root("filter_setting").AtListIndex(i).AtName("relation"),
 				"Conflicting filter_setting members",
@@ -1943,6 +1987,13 @@ func subscriptionMemberDeclared(attributes map[string]attr.Value, name string) b
 	return ok && !value.IsNull()
 }
 
+// subscriptionMemberKnown reports whether an attribute carries a value that is
+// already known at plan time. An unknown value can still resolve to null.
+func subscriptionMemberKnown(attributes map[string]attr.Value, name string) bool {
+	value, ok := attributes[name]
+	return ok && !value.IsNull() && !value.IsUnknown()
+}
+
 // subscriptionNestedBlockDeclared reports whether a nested block list is
 // unknown or carries at least one element.
 func subscriptionNestedBlockDeclared(attributes map[string]attr.Value, name string) bool {
@@ -1955,6 +2006,47 @@ func subscriptionNestedBlockDeclared(attributes map[string]attr.Value, name stri
 	}
 	list, ok := value.(types.List)
 	return ok && len(list.Elements()) > 0
+}
+
+// subscriptionListElementsValidator rejects a null or empty member. A null
+// member satisfies the size validator but is dropped when the request is built,
+// so the value on the wire would differ from the configuration and the read
+// path could not round-trip it. An unknown member is resolved before apply and
+// is accepted here.
+type subscriptionListElementsValidator struct{}
+
+func (v subscriptionListElementsValidator) Description(ctx context.Context) string {
+	return "every list member must be a known, non-empty value"
+}
+
+func (v subscriptionListElementsValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v subscriptionListElementsValidator) ValidateList(ctx context.Context, req validator.ListRequest, resp *validator.ListResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	for index, element := range req.ConfigValue.Elements() {
+		if element.IsUnknown() {
+			continue
+		}
+		if element.IsNull() {
+			resp.Diagnostics.AddAttributeError(
+				req.Path.AtListIndex(index),
+				"Null list member",
+				"The list members must not be null: remove the member or provide a value.",
+			)
+			continue
+		}
+		if text, ok := element.(types.String); ok && text.ValueString() == "" {
+			resp.Diagnostics.AddAttributeError(
+				req.Path.AtListIndex(index),
+				"Empty list member",
+				"The list members must not be empty strings: remove the member to unset it.",
+			)
+		}
+	}
 }
 
 type subscriptionChannelValidator struct{}

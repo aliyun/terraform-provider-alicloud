@@ -16,9 +16,9 @@ For information about Cms Subscription and how to use it, see [What is Subscript
 
 -> **NOTE:** The subscription belongs to a Cms 2.0 workspace, and every request is sent to the endpoint of the region configured on the provider. Keep `workspace` and the provider `region` in the same region.
 
--> **NOTE:** Every optional block must configure at least one member. A block that is declared but empty is rejected during `terraform plan`, because the service neither stores nor returns an empty block. Optional strings and lists must not be set to an empty value either: omit the argument to clear a value, and the read path reports a cleared, omitted or empty value as null. A block whose only member is not known until apply (for example a value from another resource) is accepted, because it is resolved before the request is sent.
+-> **NOTE:** Every optional block must configure at least one member. A block that is declared but empty is rejected during `terraform plan`, because the service neither stores nor returns an empty block. Optional strings and lists must not be set to an empty value and list members must not be null: omit an argument to clear it and the read path reports a cleared, omitted or empty value as null. `relation` is the exception: it is computed by the service, so an omitted `relation` keeps the value the service stores instead of clearing it. A block whose only member is not known until apply (for example a value from another resource) is accepted, because it is resolved before the request is sent. `filter_setting` must not set both `expression` and `relation`; the conflict is reported when both values are known at plan time.
 
--> **NOTE:** Create, update, delete and enable/disable requests are retried by the provider only within the operation deadline: no new attempt is sent after the operation stops. The underlying client does not accept a context for an HTTP request that is already on the wire, so a request issued just before the operation stops may still complete on the server; when that happens the provider reports the server-side result as unknown and keeps the confirmed subscription identity in state.
+-> **NOTE:** Writes are retried by the provider only within the operation deadline: no new attempt is sent after the operation stops, and `CreateSubscription` is sent exactly once because the API has no idempotency token. The underlying client cannot abort an HTTP request that is already on the wire, so a create whose response is lost (transport failure or server error) may already have created the subscription: that error states the server-side result is unknown, and check the workspace for a subscription with the requested name before retrying. A subscription id confirmed before a later step fails is kept in state, so the object stays refreshable and destroyable. Updates and deletes are idempotent for the same payload and are retried on transient failures instead.
 
 ## Example Usage
 
@@ -85,7 +85,7 @@ The following arguments are supported:
 ### `filter_setting`
 
 * `conditions` - (Optional, List) The event conditions. At most 10 conditions are supported. The order is significant: `expression` refers to a condition by its one-based position in this list. See [`conditions`](#filter_setting-conditions) below.
-* `expression` - (Optional, String) The boolean expression over the conditions, for example `1 and 2 or 3`. Must not be set together with `relation`: the service ignores `relation` when `expression` is set, and the combination is rejected during `terraform plan`.
+* `expression` - (Optional, String) The boolean expression over the conditions, for example `1 and 2 or 3`. Must not be set together with `relation`: the service ignores `relation` when `expression` is set, and the combination is rejected during `terraform plan` when both values are known there.
 * `relation` - (Optional, String) The logical relation applied to all conditions when `expression` is empty. Valid values: `AND`, `OR`. The service echoes the relation it stores, so a configuration that omits this argument keeps the value read back from the service.
 
 ### `filter_setting-conditions`

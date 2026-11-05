@@ -2740,6 +2740,21 @@ func (client *AliyunClient) RoaGet(apiProductCode string, apiVersion string, pat
 	return client.roaRequest("GET", apiProductCode, apiVersion, "", pathName, query, headers, body, true)
 }
 
+// RoaGetWithRetry invoking ROA API request with GET method and an explicit
+// automatic retry policy.
+// parameters:
+//
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiVersion - API version
+//	pathName - Request path name
+//	query - API parameters in query
+//	headers - API parameters in headers
+//	body - API parameters in body
+//	autoRetry - whether to auto retry while the runtime has a 5xx error
+func (client *AliyunClient) RoaGetWithRetry(apiProductCode string, apiVersion string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
+	return client.roaRequest("GET", apiProductCode, apiVersion, "", pathName, query, headers, body, autoRetry)
+}
+
 // RoaDelete invoking ROA API request with DELETE method
 // parameters:
 //
