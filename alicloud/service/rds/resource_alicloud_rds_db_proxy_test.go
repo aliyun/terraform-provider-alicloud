@@ -18,21 +18,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-// Attributes that cannot be compared through an import:
-//   - effective_time, effective_specific_time, upgrade_time and switch_time are
-//     local scheduling settings that the proxy API does not return;
-//   - db_proxy_features is write-only configuration that DescribeDBProxy does
-//     not return;
-//   - resource_group_id is applied only when the proxy is created: the update
-//     path does not change it and Read does not restore it, so restoring it in
-//     Read without an in-place update would leave a permanent diff. That is
-//     pre-existing behavior unrelated to the attributes verified here.
-var dbProxyImportStateVerifyIgnore = []string{"effective_time", "effective_specific_time", "upgrade_time", "switch_time", "db_proxy_features", "resource_group_id"}
-
-// db_proxy_nodes is additionally empty after an import until it is configured
-// again, which is stated in the resource documentation.
-var dbProxyNodesImportStateVerifyIgnore = []string{"effective_time", "effective_specific_time", "upgrade_time", "switch_time", "db_proxy_features", "resource_group_id", "db_proxy_nodes"}
-
 func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 	var connection map[string]interface{}
 	var primary map[string]interface{}
@@ -141,10 +126,14 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 			},
 			{
 				// The migrated proxy has to survive an import with the same state.
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: dbProxyImportStateVerifyIgnore,
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// Attributes that an import cannot restore: the four timing settings are
+				// local scheduling policy, db_proxy_features is write-only, and
+				// resource_group_id is applied only at create (the update path does not
+				// change it and Read does not restore it).
+				ImportStateVerifyIgnore: []string{"effective_time", "effective_specific_time", "upgrade_time", "switch_time", "db_proxy_features", "resource_group_id"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -288,10 +277,14 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: dbProxyImportStateVerifyIgnore,
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// Attributes that an import cannot restore: the four timing settings are
+				// local scheduling policy, db_proxy_features is write-only, and
+				// resource_group_id is applied only at create (the update path does not
+				// change it and Read does not restore it).
+				ImportStateVerifyIgnore: []string{"effective_time", "effective_specific_time", "upgrade_time", "switch_time", "db_proxy_features", "resource_group_id"},
 			},
 			{
 				// Removing the attribute while it is Enabled stops Terraform from
@@ -311,10 +304,14 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: dbProxyImportStateVerifyIgnore,
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// Attributes that an import cannot restore: the four timing settings are
+				// local scheduling policy, db_proxy_features is write-only, and
+				// resource_group_id is applied only at create (the update path does not
+				// change it and Read does not restore it).
+				ImportStateVerifyIgnore: []string{"effective_time", "effective_specific_time", "upgrade_time", "switch_time", "db_proxy_features", "resource_group_id"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -328,10 +325,14 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: dbProxyImportStateVerifyIgnore,
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// Attributes that an import cannot restore: the four timing settings are
+				// local scheduling policy, db_proxy_features is write-only, and
+				// resource_group_id is applied only at create (the update path does not
+				// change it and Read does not restore it).
+				ImportStateVerifyIgnore: []string{"effective_time", "effective_specific_time", "upgrade_time", "switch_time", "db_proxy_features", "resource_group_id"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -364,10 +365,12 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 			{
 				// The block is not restored by an import until it is configured
 				// again, which is documented behavior, so only it is ignored here.
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: dbProxyNodesImportStateVerifyIgnore,
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// As above, plus db_proxy_nodes, which stays empty after an import
+				// until it is configured again.
+				ImportStateVerifyIgnore: []string{"effective_time", "effective_specific_time", "upgrade_time", "switch_time", "db_proxy_features", "resource_group_id", "db_proxy_nodes"},
 			},
 			{
 				// Removing the block stops Terraform from managing the node layout
@@ -386,10 +389,14 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: dbProxyImportStateVerifyIgnore,
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// Attributes that an import cannot restore: the four timing settings are
+				// local scheduling policy, db_proxy_features is write-only, and
+				// resource_group_id is applied only at create (the update path does not
+				// change it and Read does not restore it).
+				ImportStateVerifyIgnore: []string{"effective_time", "effective_specific_time", "upgrade_time", "switch_time", "db_proxy_features", "resource_group_id"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
