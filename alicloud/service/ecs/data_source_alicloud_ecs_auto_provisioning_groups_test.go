@@ -122,10 +122,10 @@ func TestAccAliCloudECSAutoProvisioningGroupsDataSource(t *testing.T) {
 			{
 				// Reading from the second page must return the rows that follow
 				// the first page, measured against the readable suffix of the
-				// total: total-1 rows, starting at the second smallest group ID.
+				// total: the two pages together cover the complete result once.
 				Config: autoProvisioningGroupsPagedConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					checkAutoProvisioningGroupsLaterPage(allResourceId, "data.alicloud_ecs_auto_provisioning_groups.second"),
+					checkAutoProvisioningGroupsLaterPage(allResourceId, "data.alicloud_ecs_auto_provisioning_groups.first", "data.alicloud_ecs_auto_provisioning_groups.second"),
 				),
 			},
 			{
@@ -266,8 +266,11 @@ func checkAutoProvisioningGroupsNameFilter(resourceId, allResourceId string) res
 }
 
 // checkAutoProvisioningGroupsLaterPage proves the read starts at the configured
-// page and measures completeness against the readable suffix of the total.
-func checkAutoProvisioningGroupsLaterPage(allResourceId, pageTwoId string) resource.TestCheckFunc {
+// page and measures completeness against the readable suffix of the total: page
+// 2 returns the rows the server did not return on page 1, and together the two
+// pages cover the complete result exactly once. It does not assume the server
+// returns the groups in ID order.
+func checkAutoProvisioningGroupsLaterPage(allResourceId, pageOneId, pageTwoId string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		total, err := autoProvisioningGroupsStateCount(state, allResourceId, "groups.#")
 		if err != nil {
@@ -284,25 +287,56 @@ func checkAutoProvisioningGroupsLaterPage(allResourceId, pageTwoId string) resou
 		if err != nil {
 			return err
 		}
-		if total <= 1 {
+		if total == 0 {
 			if rows != 0 {
-				return fmt.Errorf("page 2 of %d group(s) must be empty, got %d rows", total, rows)
+				return fmt.Errorf("page 2 of an empty account must be empty, got %d rows", rows)
+			}
+			return nil
+		}
+		firstRows, err := autoProvisioningGroupsStateCount(state, pageOneId, "groups.#")
+		if err != nil {
+			return err
+		}
+		if firstRows != 1 {
+			return fmt.Errorf("page 1 read %d rows with page_size = 1, want 1", firstRows)
+		}
+		if total == 1 {
+			if rows != 0 {
+				return fmt.Errorf("page 2 of %d group must be empty, got %d rows", total, rows)
 			}
 			return nil
 		}
 		if rows != total-1 {
 			return fmt.Errorf("page 2 read %d rows, want the %d rows that follow the first page", rows, total-1)
 		}
-		want, err := autoProvisioningGroupsStateAttribute(state, allResourceId, "ids.1")
+
+		covered := map[string]struct{}{}
+		firstId, err := autoProvisioningGroupsStateAttribute(state, pageOneId, "ids.0")
 		if err != nil {
 			return err
 		}
-		got, err := autoProvisioningGroupsStateAttribute(state, pageTwoId, "ids.0")
-		if err != nil {
-			return err
+		covered[firstId] = struct{}{}
+		for index := 0; index < rows; index++ {
+			id, err := autoProvisioningGroupsStateAttribute(state, pageTwoId, fmt.Sprintf("ids.%d", index))
+			if err != nil {
+				return err
+			}
+			if id == firstId {
+				return fmt.Errorf("page 2 returned %q, which page 1 already returned", id)
+			}
+			covered[id] = struct{}{}
 		}
-		if got != want {
-			return fmt.Errorf("page 2 starts at %q, want the second group %q", got, want)
+		if len(covered) != total {
+			return fmt.Errorf("pages 1 and 2 cover %d distinct groups, want %d", len(covered), total)
+		}
+		for index := 0; index < total; index++ {
+			id, err := autoProvisioningGroupsStateAttribute(state, allResourceId, fmt.Sprintf("ids.%d", index))
+			if err != nil {
+				return err
+			}
+			if _, ok := covered[id]; !ok {
+				return fmt.Errorf("the complete read returned %q but pages 1 and 2 did not", id)
+			}
 		}
 		return nil
 	}
