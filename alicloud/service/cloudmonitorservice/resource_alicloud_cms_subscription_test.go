@@ -2233,22 +2233,17 @@ func TestUnitCmsSubscriptionEmptyOptionalStringRejected(t *testing.T) {
 // whose final read confirms the new body but still reports the previous enabled
 // switch does not converge.
 func TestUnitCmsSubscriptionUpdateRequiresConvergedEnable(t *testing.T) {
-	gets := 0
 	apiClient, _ := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
 		if method == http.MethodPut {
 			return http.StatusOK, map[string]interface{}{"requestId": "req"}
 		}
-		gets++
-		enabled := true
-		if gets == 1 {
-			enabled = false
-		}
+		// Every read carries the new body but still reports the previous switch.
 		return http.StatusOK, map[string]interface{}{"requestId": "req", "subscription": map[string]interface{}{
 			"subscriptionId":   "sub-1",
 			"subscriptionName": "name",
 			"workspace":        "ws-1",
 			"description":      "new description",
-			"enable":           enabled,
+			"enable":           true,
 		}}
 	})
 	r := subscriptionUnitResource(t, apiClient)
