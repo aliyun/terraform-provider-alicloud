@@ -111,6 +111,12 @@ func ResourceEndpoint() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"scc_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validators.StringInSlice([]string{"on", "off"}, false),
+			},
 		},
 	}
 }
@@ -221,6 +227,9 @@ func resourceEndpointRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	d.Set("auto_add_new_nodes", autoAddNewNodes)
 	d.Set("read_write_mode", readWriteMode)
+	if err := d.Set("scc_mode", strings.ToLower(object.SccMode)); err != nil {
+		return errs.WrapError(err)
+	}
 
 	if err = polarDBService.RefreshEndpointConfig(d); err != nil {
 		return errs.WrapError(err)
@@ -292,7 +301,7 @@ func resourceEndpointUpdate(d *schema.ResourceData, meta interface{}) error {
 	dbClusterId := parts[0]
 	dbEndpointId := parts[1]
 
-	if d.HasChanges("nodes", "read_write_mode", "auto_add_new_nodes", "endpoint_config", "db_endpoint_description") {
+	if d.HasChanges("nodes", "read_write_mode", "auto_add_new_nodes", "endpoint_config", "db_endpoint_description", "scc_mode") {
 		modifyEndpointRequest := polardb.CreateModifyDBClusterEndpointRequest()
 		modifyEndpointRequest.RegionId = client.RegionId
 		modifyEndpointRequest.DBClusterId = dbClusterId
@@ -324,6 +333,11 @@ func resourceEndpointUpdate(d *schema.ResourceData, meta interface{}) error {
 		if d.HasChange("db_endpoint_description") {
 			modifyEndpointRequest.DBEndpointDescription = d.Get("db_endpoint_description").(string)
 			configItem["DBEndpointDescription"] = d.Get("db_endpoint_description").(string)
+		}
+		if d.HasChange("scc_mode") {
+			sccMode := strings.ToLower(d.Get("scc_mode").(string))
+			modifyEndpointRequest.SccMode = sccMode
+			configItem["SccMode"] = sccMode
 		}
 		if err := retry.Retry(8*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
