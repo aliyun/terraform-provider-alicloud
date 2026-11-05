@@ -138,7 +138,7 @@ func (r *resourceAttachmentResource) Create(ctx context.Context, req resource.Cr
 	err := retry.RetryContext(ctx, resourceAttachmentCreateTimeout, func() *retry.RetryError {
 		_, callErr := client.RpcPost("Ga", "2019-11-20", "AssociateResources", nil, request, true)
 		if callErr != nil {
-			if helper.NeedRetry(callErr) {
+			if errs.IsExpectedErrors(callErr, []string{"StateError.Accelerator"}) || helper.NeedRetry(callErr) {
 				if sleepErr := sleepWithContext(ctx, resourceAttachmentPollInterval); sleepErr != nil {
 					return retry.NonRetryableError(sleepErr)
 				}
@@ -263,7 +263,7 @@ func (r *resourceAttachmentResource) Delete(ctx context.Context, req resource.De
 			if isAcceleratorNotExist(callErr) {
 				return nil
 			}
-			if helper.NeedRetry(callErr) {
+			if errs.IsExpectedErrors(callErr, []string{"StateError.Accelerator"}) || helper.NeedRetry(callErr) {
 				if sleepErr := sleepWithContext(ctx, resourceAttachmentPollInterval); sleepErr != nil {
 					return retry.NonRetryableError(sleepErr)
 				}

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
@@ -35,7 +35,7 @@ func getResourceAttachment(ctx context.Context, client *connectivity.AliyunClien
 		var callErr error
 		response, callErr = client.RpcPost("Ga", "2019-11-20", "GetGlobalAcceleratorResources", nil, request, true)
 		if callErr != nil {
-			if isAcceleratorNotExist(callErr) {
+			if errs.IsExpectedErrors(callErr, []string{"NotExist.Accelerator"}) {
 				return retry.NonRetryableError(callErr)
 			}
 			if helper.NeedRetry(callErr) {
@@ -49,13 +49,17 @@ func getResourceAttachment(ctx context.Context, client *connectivity.AliyunClien
 		return nil
 	})
 	if err != nil {
-		if isAcceleratorNotExist(err) {
+		if errs.IsExpectedErrors(err, []string{"NotExist.Accelerator"}) {
 			return nil, nil
 		}
 		return nil, err
 	}
 
-	records, _ := response["AssociatedResources"].([]interface{})
+	rawRecords, exists := response["AssociatedResources"]
+	records, ok := rawRecords.([]interface{})
+	if exists && rawRecords != nil && !ok {
+		return nil, fmt.Errorf("unexpected AssociatedResources type %T in the GetGlobalAcceleratorResources response", rawRecords)
+	}
 	for _, item := range records {
 		record, ok := item.(map[string]interface{})
 		if !ok {
@@ -119,7 +123,7 @@ func waitResourceAttachmentDeleted(ctx context.Context, client *connectivity.Ali
 	return retry.RetryContext(ctx, resourceAttachmentDeleteTimeout, func() *retry.RetryError {
 		record, err := getResourceAttachment(ctx, client, acceleratorId, resourceType, resourceRegionId, resourceId)
 		if err != nil {
-			if isAcceleratorNotExist(err) {
+			if errs.IsExpectedErrors(err, []string{"NotExist.Accelerator"}) {
 				return nil
 			}
 			if helper.NeedRetry(err) {
@@ -169,11 +173,5 @@ func sleepWithContext(ctx context.Context, d time.Duration) error {
 // isAcceleratorNotExist reports the error returned when the accelerator itself
 // is gone, which also means its associations are gone.
 func isAcceleratorNotExist(err error) bool {
-	if err == nil {
-		return false
-	}
-	if e, ok := err.(*tea.SDKError); ok && e.Code != nil && *e.Code == "NotExist.Accelerator" {
-		return true
-	}
-	return strings.Contains(err.Error(), "NotExist.Accelerator")
+	return errs.IsExpectedErrors(err, []string{"NotExist.Accelerator"})
 }

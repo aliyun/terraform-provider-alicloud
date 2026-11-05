@@ -13,7 +13,7 @@ Provides a Global Accelerator (GA) Resource Attachment resource. It associates a
 
 For information about Global Accelerator (GA) Resource Attachment and how to use it, see [What is Resource Attachment](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-associateresources).
 
--> **NOTE:** Available since v2.1.0.
+-> **NOTE:** Available since v2.3.0.
 
 -> **NOTE:** The association API accepts only `cn-hangzhou` as the GA instance region, so configure the provider with `region = "cn-hangzhou"`.
 
@@ -57,18 +57,18 @@ resource "alicloud_ga_resource_attachment" "example" {
 
 The following arguments are supported:
 
-* `accelerator_id` - (Required, ForceNew) The ID of the GA instance. Changing this forces a new resource.
-* `associated_resource_type` - (Required, ForceNew) The type of the associated resource. Valid values: `WAF`. Changing this forces a new resource.
-* `associated_resource_region_id` - (Required, ForceNew) The region ID of the associated resource. Changing this forces a new resource.
-* `associated_resource_id` - (Required, ForceNew) The ID of the associated resource. For `WAF`, it is the ID of the Web Application Firewall instance. Changing this forces a new resource.
+* `accelerator_id` - (Required, ForceNew, String) The ID of the GA instance. Changing this forces a new resource.
+* `associated_resource_type` - (Required, ForceNew, String) The type of the associated resource. Valid values: `WAF`. Changing this forces a new resource.
+* `associated_resource_region_id` - (Required, ForceNew, String) The region ID of the associated resource. Changing this forces a new resource.
+* `associated_resource_id` - (Required, ForceNew, String) The ID of the associated resource. For `WAF`, it is the ID of the Web Application Firewall instance. Changing this forces a new resource.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The ID of the resource attachment, in the format `<accelerator_id>:<associated_resource_type>:<associated_resource_region_id>:<associated_resource_id>`.
-* `associated_mode` - The association mode. Valid values: `Associated` and `Managed`. The association API currently uses `Associated` (loosely coupled) for WAF.
-* `state` - The association state. Valid values: `active`, `binding`, `unBinding` and `wafRelease`. `wafRelease` means the associated WAF instance has been released.
+* `id` - (String) The ID of the resource attachment, in the format `<accelerator_id>:<associated_resource_type>:<associated_resource_region_id>:<associated_resource_id>`.
+* `associated_mode` - (String) The association mode. Valid values: `Associated` and `Managed`. The association API currently uses `Associated` (loosely coupled) for WAF.
+* `state` - (String) The association state. Valid values: `active`, `binding`, `unBinding` and `wafRelease`. `wafRelease` means the associated WAF instance has been released.
 
 ## Import
 

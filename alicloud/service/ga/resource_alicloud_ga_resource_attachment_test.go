@@ -80,7 +80,11 @@ func testAccCheckAliCloudGaResourceAttachmentDestroy(s *terraform.State) error {
 			}
 			return fmt.Errorf("checking resource attachment %s: %s", rs.Primary.ID, err)
 		}
-		records, _ := response["AssociatedResources"].([]interface{})
+		rawRecords := response["AssociatedResources"]
+		records, ok := rawRecords.([]interface{})
+		if rawRecords != nil && !ok {
+			return fmt.Errorf("unexpected AssociatedResources type %T for %s", rawRecords, rs.Primary.ID)
+		}
 		for _, item := range records {
 			record, ok := item.(map[string]interface{})
 			if !ok {
