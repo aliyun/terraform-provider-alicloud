@@ -277,7 +277,6 @@ func ResourceZonalCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			// --- governance attributes aligned with CloudSpec pre ---
 			"architecture": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -527,7 +526,7 @@ func resourceZonalClusterRead(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 	if err := d.Set("db_node", dbNodeMaps); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("db_node_num", len(objectObj.DBNodes))
 
