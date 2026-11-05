@@ -1196,14 +1196,14 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_version":                  "8.0",
-						"db_instance_class":               "mdb.shard.2x.xlarge.d",
-						"db_instance_storage":             "80",
-						"storage_type":                    "cloud_auto",
-						"provisioned_iops":                "2000",
-						"vswitch_id":                      acctest.CHECKSET,
-						"backup_time":                     "02:00Z-03:00Z",
-						"backup_period.#":                 "2",
+						"engine_version":      "8.0",
+						"db_instance_class":   "mdb.shard.2x.xlarge.d",
+						"db_instance_storage": "80",
+						"storage_type":        "cloud_auto",
+						"provisioned_iops":    "2000",
+						"vswitch_id":          acctest.CHECKSET,
+						"backup_time":         "02:00Z-03:00Z",
+						"backup_period.#":     "2",
 						// The shared attribute map seeds cross_backup_period with CHECKSET;
 						// a TypeSet must be checked by its element count, so replace the
 						// seeded value instead of keeping both keys.
