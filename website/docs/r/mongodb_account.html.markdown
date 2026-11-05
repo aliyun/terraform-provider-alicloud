@@ -16,6 +16,8 @@ For information about Mongodb Account and how to use it, see [What is Account](h
 
 -> **NOTE:** Available since v1.148.0.
 
+-> **NOTE:** The resource id is `<instance_id>:<db_name>:<account_name>`. The former `<instance_id>:<account_name>` id is still accepted when the account name is unique in the instance, and the id is upgraded to the database scoped form on the next read.
+
 ## Example Usage
 
 Basic Usage
@@ -103,19 +105,19 @@ The following arguments are supported:
   - `cs`: config server account.
   - `normal`: The replica set account. (The default value).
 
-  -> **NOTE:** When setting the account type to normal, the AccountName must be root. This selection does not create a new account; instead, Terraform will update the password for the existing root account.
+  -> **NOTE:** When setting the account type to normal without `roles`, the AccountName must be root. This selection does not create a new account; instead, Terraform will update the password for the existing root account. When `roles` is configured, a replica set `normal` account is created through `CreateAccount` with the configured roles.
 
-* `db_name` - (Optional, ForceNew, Computed, String, Available since v2.2.0) The database where the account resides. Defaults to `admin` when the account is created.
+* `db_name` - (Optional, ForceNew, Computed, String, Available since v2.3.0) The database where the account resides. Defaults to `admin` when the account is created.
 * `instance_id` - (Required, ForceNew) Instance Id
-* `roles` - (Optional, ForceNew, Set, Available since v2.2.0) The list of roles granted to the account. See [`roles`](#roles) below.
+* `roles` - (Optional, ForceNew, Set, Available since v2.3.0) The list of roles granted to the account. See [`roles`](#roles) below.
 
-  -> **NOTE:** `roles` are only supported when creating a config server account (`character_type = "cs"`), where `CreateAccount` requires them. Shard direct-connection accounts (`character_type = "db"`) have fixed privileges, and the API rejects a configured `roles` with the error code `InvalidRoles.NotSupported`. For replica set accounts (`character_type = "normal"`) this resource manages the existing `root` account through `ResetAccountPassword`, which does not accept roles.
+  -> **NOTE:** `roles` are supported for replica set accounts (`character_type = "normal"`) and config server accounts (`character_type = "cs"`), where `CreateAccount` requires them. Shard direct-connection accounts (`character_type = "db"`) have fixed privileges, and the API rejects a configured `roles` with the error code `InvalidRoles.NotSupported`.
 
 ### `roles`
 
 The roles supports the following:
-* `db_name` - (Optional, ForceNew, String, Available since v2.2.0) The database the role applies to.
-* `role` - (Optional, ForceNew, String, Available since v2.2.0) The role to grant.
+* `db_name` - (Optional, ForceNew, String, Available since v2.3.0) The database the role applies to. Required whenever a `roles` block is configured. It cannot contain `/`, `\`, `.`, spaces, `"` or `$`, cannot be `local`, and can be 1 to 63 characters long.
+* `role` - (Optional, ForceNew, String, Available since v2.3.0) The MongoDB role granted on that database, for example `read` or `readWrite`. Required whenever a `roles` block is configured.
 
 ## Attributes Reference
 
@@ -136,5 +138,3 @@ Mongodb Account can be imported using the id, which consists of instance_id, db_
 ```shell
 $ terraform import alicloud_mongodb_account.example <instance_id>:<db_name>:<account_name>
 ```
-
--> **NOTE:** Account names are unique per database. The former `<instance_id>:<account_name>` id is still accepted when that account name is unique in the instance; the id is upgraded to the database scoped form on the next read.

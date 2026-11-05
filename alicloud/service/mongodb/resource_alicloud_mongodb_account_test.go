@@ -18,11 +18,13 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mongodb"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	sdkTerraform "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	terraform "github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -650,16 +652,18 @@ resource "alicloud_mongodb_instance" "default7eOftZ" {
 
 // Test Mongodb Account. <<< Resource test cases, automatically generated.
 
-// TestAccAliCloudMongodbAccount_shardingAccountRoles covers the product decision
-// for CreateAccount roles: shard direct-connection (db) accounts reject roles
-// with InvalidRoles.NotSupported, config server (cs) accounts require and honor
-// custom roles.
-func TestAccAliCloudMongodbAccount_shardingAccountRoles(t *testing.T) {
+// TestAccAliCloudMongodbAccount_completeShardingAccountRoles covers the product
+// decision for CreateAccount roles: shard direct-connection (db) accounts reject
+// roles with InvalidRoles.NotSupported, config server (cs) accounts require and
+// honor custom roles.
+func TestAccAliCloudMongodbAccount_completeShardingAccountRoles(t *testing.T) {
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_roles_%d", rand)
 	dbAccountName := fmt.Sprintf("tf_db_%d", rand)
 	dbRolesAccountName := fmt.Sprintf("tf_dbr_%d", rand)
 	csAccountName := fmt.Sprintf("tf_cs_%d", rand)
+	emptyRolesAccountName := fmt.Sprintf("tf_er_%d", rand)
+	missingDbNameAccountName := fmt.Sprintf("tf_md_%d", rand)
 	dbResourceId := "alicloud_mongodb_account.db"
 	csResourceId := "alicloud_mongodb_account.cs"
 
@@ -670,26 +674,43 @@ func TestAccAliCloudMongodbAccount_shardingAccountRoles(t *testing.T) {
 			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckAccountDependenciesDestroyed,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccMongodbAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer1234!!!", false, false),
+				Config: testAccAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer1234!!!", false, false, ""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(dbResourceId, "account_name", dbAccountName),
 					resource.TestCheckResourceAttr(dbResourceId, "character_type", "db"),
 					resource.TestCheckResourceAttr(dbResourceId, "db_name", "admin"),
+					resource.TestCheckResourceAttr(dbResourceId, "account_description", name),
 					resource.TestCheckResourceAttrSet(dbResourceId, "instance_id"),
 					resource.TestCheckResourceAttrSet(dbResourceId, "status"),
 				),
 			},
 			{
+				ResourceName:            dbResourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "account_description"},
+			},
+			{
+				// The legacy two-part id is accepted and upgraded in place.
+				ResourceName:            dbResourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateIdFunc:       testAccAccountLegacyImportId(dbResourceId),
+				ImportStateVerifyIgnore: []string{"account_password", "account_description"},
+			},
+			{
 				// A shard direct-connection account must not carry roles; the API
-				// rejects the create with InvalidRoles.NotSupported.
-				Config:      testAccMongodbAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer1234!!!", true, false),
-				ExpectError: regexp.MustCompile("InvalidRoles.NotSupported"),
+				// rejects the create with InvalidRoles.NotSupported. This is the
+				// real service response, not a provider-side validation.
+				Config:      testAccAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer1234!!!", true, false, ""),
+				ExpectError: regexp.MustCompile("InvalidRoles\\.NotSupported"),
 			},
 			{
 				// Config server accounts require and honor custom roles.
-				Config: testAccMongodbAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer1234!!!", false, true),
+				Config: testAccAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer1234!!!", false, true, ""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(csResourceId, "account_name", csAccountName),
 					resource.TestCheckResourceAttr(csResourceId, "character_type", "cs"),
@@ -702,9 +723,19 @@ func TestAccAliCloudMongodbAccount_shardingAccountRoles(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccMongodbAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer12345!!!", false, true),
+				ResourceName:            csResourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password"},
+			},
+			{
+				Config: testAccAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer12345!!!", false, true, ""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(csResourceId, "roles.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(csResourceId, "roles.*", map[string]string{
+						"role":    "read",
+						"db_name": "admin",
+					}),
 				),
 			},
 			{
@@ -713,11 +744,86 @@ func TestAccAliCloudMongodbAccount_shardingAccountRoles(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"account_password"},
 			},
+			{
+				// An empty roles block is rejected at plan time.
+				Config:      testAccAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer12345!!!", false, true, testAccAccountRolesBlock(emptyRolesAccountName, "", "")),
+				ExpectError: regexp.MustCompile(`every roles block requires a non-empty "role"`),
+			},
+			{
+				// A role without its database is rejected at plan time.
+				Config:      testAccAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer12345!!!", false, true, testAccAccountRolesBlock(missingDbNameAccountName, "\n    role = \"read\"", "")),
+				ExpectError: regexp.MustCompile(`every roles block requires a non-empty "db_name"`),
+			},
 		},
 	})
 }
 
-func testAccMongodbAccountShardingRolesConfig(name, dbAccount, dbRolesAccount, csAccount, password string, withDbRoles, withCs bool) string {
+// TestAccAliCloudMongodbAccount_completeNormalAccountRoles covers replica set
+// accounts with custom roles, including the description update that must carry
+// the database name (C8).
+func TestAccAliCloudMongodbAccount_completeNormalAccountRoles(t *testing.T) {
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf_testacc_normal_%d", rand)
+	accountName := fmt.Sprintf("tf_n_%d", rand)
+	resourceId := "alicloud_mongodb_account.default"
+	description := fmt.Sprintf("desc_%d", rand)
+	updatedDescription := fmt.Sprintf("desc_upd_%d", rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			os.Setenv("ALICLOUD_REGION", "cn-shanghai")
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckAccountDependenciesDestroyed,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAccountNormalRolesConfig(name, accountName, "qwer1234!!!", ""),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "account_name", accountName),
+					resource.TestCheckResourceAttr(resourceId, "character_type", "normal"),
+					resource.TestCheckResourceAttr(resourceId, "db_name", "admin"),
+					resource.TestCheckResourceAttr(resourceId, "roles.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "roles.*", map[string]string{
+						"role":    "read",
+						"db_name": "admin",
+					}),
+					resource.TestCheckResourceAttrSet(resourceId, "instance_id"),
+					resource.TestCheckResourceAttrSet(resourceId, "status"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password"},
+			},
+			{
+				Config: testAccAccountNormalRolesConfig(name, accountName, "qwer1234!!!", description),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "account_description", description),
+					resource.TestCheckResourceAttr(resourceId, "roles.#", "1"),
+				),
+			},
+			{
+				Config: testAccAccountNormalRolesConfig(name, accountName, "qwer12345!!!", updatedDescription),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "account_description", updatedDescription),
+					resource.TestCheckResourceAttr(resourceId, "roles.#", "1"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password"},
+			},
+		},
+	})
+}
+
+func testAccAccountShardingRolesConfig(name, dbAccount, dbRolesAccount, csAccount, password string, withDbRoles, withCs bool, extra string) string {
 	dbRolesBlock := ""
 	if withDbRoles {
 		dbRolesBlock = fmt.Sprintf(`
@@ -765,10 +871,25 @@ resource "alicloud_mongodb_account" "db" {
 }
 %s
 %s
-`, testAccMongodbAccountShardingRolesDependence(name), dbAccount, password, name, dbRolesBlock, csBlock)
+%s
+`, testAccAccountShardingRolesDependence(name), dbAccount, password, name, dbRolesBlock, csBlock, extra)
 }
 
-func testAccMongodbAccountShardingRolesDependence(name string) string {
+func testAccAccountRolesBlock(accountName, roleBody, dbNameBody string) string {
+	return fmt.Sprintf(`
+resource "alicloud_mongodb_account" "invalid_roles" {
+  account_name     = "%s"
+  account_password = "qwer1234!!!"
+  instance_id      = alicloud_mongodb_sharding_instance.default.id
+  character_type   = "cs"
+  db_name          = "admin"
+
+  roles {%s%s}
+}
+`, accountName, roleBody, dbNameBody)
+}
+
+func testAccAccountShardingRolesDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
@@ -829,12 +950,120 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 `, name)
 }
 
-func unitMongodbAccountResourceSchema(t *testing.T) map[string]*schema.Schema {
+func testAccAccountNormalRolesConfig(name, accountName, password, description string) string {
+	descriptionLine := ""
+	if description != "" {
+		descriptionLine = fmt.Sprintf("\n  account_description = \"%s\"", description)
+	}
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+variable "zone_id" {
+  default = "cn-shanghai-b"
+}
+
+resource "alicloud_vpc" "default" {
+  cidr_block = "10.0.0.0/8"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id     = alicloud_vpc.default.id
+  zone_id    = var.zone_id
+  cidr_block = "10.0.0.0/24"
+}
+
+resource "alicloud_mongodb_instance" "default" {
+  engine_version      = "4.4"
+  storage_type        = "cloud_essd1"
+  vswitch_id          = alicloud_vswitch.default.id
+  vpc_id              = alicloud_vpc.default.id
+  storage_engine      = "WiredTiger"
+  network_type        = "VPC"
+  zone_id             = var.zone_id
+  db_instance_storage = "20"
+  db_instance_class   = "mdb.shard.4x.large.d"
+  name                = var.name
+}
+
+resource "alicloud_mongodb_account" "default" {
+  account_name     = "%s"
+  account_password = "%s"
+  instance_id      = alicloud_mongodb_instance.default.id
+  character_type   = "normal"
+  db_name          = "admin"%s
+
+  roles {
+    role    = "read"
+    db_name = "admin"
+  }
+}
+`, name, accountName, password, descriptionLine)
+}
+
+func testAccAccountLegacyImportId(resourceId string) resource.ImportStateIdFunc {
+	return func(state *terraform.State) (string, error) {
+		rs, ok := state.RootModule().Resources[resourceId]
+		if !ok {
+			return "", fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		return fmt.Sprintf("%s:%s", rs.Primary.Attributes["instance_id"], rs.Primary.Attributes["account_name"]), nil
+	}
+}
+
+// testAccCheckAccountDependenciesDestroyed verifies that the parent MongoDB
+// instance and the VPC/vSwitch created by the case are really gone. The account
+// resource itself cannot be deleted independently.
+func testAccCheckAccountDependenciesDestroyed(state *terraform.State) error {
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	mongodbService := mongodb.NewMongoDBService(client)
+	vpcService := vpc.NewVpcService(client)
+
+	instanceIds := make(map[string]struct{})
+	for _, rs := range state.RootModule().Resources {
+		if rs.Type != "alicloud_mongodb_account" {
+			continue
+		}
+		if instanceId := rs.Primary.Attributes["instance_id"]; instanceId != "" {
+			instanceIds[instanceId] = struct{}{}
+		}
+	}
+	for instanceId := range instanceIds {
+		if _, err := mongodbService.DescribeMongoDBShardingInstance(instanceId); err == nil {
+			return fmt.Errorf("parent MongoDB instance %s still exists after destroy", instanceId)
+		} else if !errs.NotFoundError(err) {
+			return fmt.Errorf("checking parent MongoDB instance %s: %v", instanceId, err)
+		}
+	}
+
+	for _, rs := range state.RootModule().Resources {
+		switch rs.Type {
+		case "alicloud_vpc":
+			if _, err := vpcService.DescribeVpc(rs.Primary.ID); err == nil {
+				return fmt.Errorf("vpc %s still exists after destroy", rs.Primary.ID)
+			} else if !errs.NotFoundError(err) {
+				return fmt.Errorf("checking vpc %s: %v", rs.Primary.ID, err)
+			}
+		case "alicloud_vswitch":
+			if _, err := vpcService.DescribeVSwitch(rs.Primary.ID); err == nil {
+				return fmt.Errorf("vswitch %s still exists after destroy", rs.Primary.ID)
+			} else if !errs.NotFoundError(err) {
+				return fmt.Errorf("checking vswitch %s: %v", rs.Primary.ID, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func unitAccountResourceSchema(t *testing.T) map[string]*schema.Schema {
 	t.Helper()
 	return acctest.Provider.ResourcesMap["alicloud_mongodb_account"].Schema
 }
 
-func unitMongodbAccountResourceData(t *testing.T, id string, attrs map[string]interface{}, changes map[string]interface{}) *schema.ResourceData {
+func unitAccountResourceData(t *testing.T, id string, attrs map[string]interface{}, changes map[string]interface{}) *schema.ResourceData {
 	t.Helper()
 	state := &sdkTerraform.InstanceState{ID: id, Attributes: map[string]string{}}
 	for k, v := range attrs {
@@ -844,27 +1073,97 @@ func unitMongodbAccountResourceData(t *testing.T, id string, attrs map[string]in
 	for k, v := range changes {
 		diff.Attributes[k] = &sdkTerraform.ResourceAttrDiff{Old: fmt.Sprint(attrs[k]), New: fmt.Sprint(v)}
 	}
-	d, err := schema.InternalMap(unitMongodbAccountResourceSchema(t)).Data(state, diff)
+	d, err := schema.InternalMap(unitAccountResourceSchema(t)).Data(state, diff)
 	if err != nil {
 		t.Fatalf("failed to build resource data: %v", err)
 	}
 	return d
 }
 
-func TestUnitMongodbAccountSchemaContract(t *testing.T) {
-	r := unitMongodbAccountResourceSchema(t)
+type accountApiCall struct {
+	Action string
+	Query  map[string]interface{}
+	Body   map[string]interface{}
+}
+
+func accountTestClient(t *testing.T) *connectivity.AliyunClient {
+	t.Helper()
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sweep.SharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+	}
+	return rawClient.(*connectivity.AliyunClient)
+}
+
+// patchAccountDoRequest records the action, query and body the provider passes
+// to the SDK, which is the last point before wire serialization.
+func patchAccountDoRequest(t *testing.T, calls *[]accountApiCall, responses map[string]interface{}) *gomonkey.Patches {
+	t.Helper()
+	return gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, query map[string]interface{}, body map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		*calls = append(*calls, accountApiCall{Action: *action, Query: query, Body: body})
+		if response, ok := responses[*action]; ok {
+			if responseErr, ok := response.(error); ok {
+				return nil, responseErr
+			}
+			return response.(map[string]interface{}), nil
+		}
+		return map[string]interface{}{}, nil
+	})
+}
+
+func accountApiCallByName(calls []accountApiCall, action string) *accountApiCall {
+	for i := range calls {
+		if calls[i].Action == action {
+			return &calls[i]
+		}
+	}
+	return nil
+}
+
+func accountDescribeResponse(instanceId, dbName, accountName, characterType, description string, roles []map[string]string) map[string]interface{} {
+	account := map[string]interface{}{
+		"DBInstanceId":  instanceId,
+		"AccountName":   accountName,
+		"DBName":        dbName,
+		"CharacterType": characterType,
+		"AccountStatus": "Available",
+	}
+	if description != "" {
+		account["AccountDescription"] = description
+	}
+	if len(roles) > 0 {
+		list := make([]interface{}, 0, len(roles))
+		for _, role := range roles {
+			list = append(list, map[string]interface{}{"Role": role["role"], "DBName": role["db_name"]})
+		}
+		account["Roles"] = map[string]interface{}{"Role": list}
+	}
+	return map[string]interface{}{"Accounts": map[string]interface{}{"Account": []interface{}{account}}}
+}
+
+func TestUnitAccountSchemaContract(t *testing.T) {
+	r := unitAccountResourceSchema(t)
+	assert.NotNil(t, r.CustomizeDiff, "roles members are validated at plan time")
 	assert.True(t, r["db_name"].ForceNew, "db_name is part of the account identity")
 	assert.True(t, r["db_name"].Computed)
 	assert.True(t, r["roles"].Computed, "roles are returned by DescribeAccounts")
 	assert.True(t, r["roles"].ForceNew)
 	assert.True(t, r["character_type"].ForceNew)
+	roleResource := r["roles"].Elem.(*schema.Resource)
+	// The breaking-change gate rejects newly added required attributes, so the
+	// members stay Optional and CustomizeDiff enforces them.
+	assert.True(t, roleResource.Schema["role"].Optional)
+	assert.True(t, roleResource.Schema["db_name"].Optional)
 	_, enumErrs := r["character_type"].ValidateFunc("cs", "character_type")
 	assert.Empty(t, enumErrs, "cs must be a valid character_type")
 	_, enumErrs = r["character_type"].ValidateFunc("db", "character_type")
 	assert.Empty(t, enumErrs, "db must be a valid character_type")
+	_, enumErrs = r["character_type"].ValidateFunc("normal", "character_type")
+	assert.Empty(t, enumErrs, "normal must be a valid character_type")
 }
 
-func TestUnitMongodbAccountDescribeRejectsInvalidId(t *testing.T) {
+func TestUnitAccountDescribeRejectsInvalidId(t *testing.T) {
 	service := &mongodb.MongodbServiceV2{}
 	if _, err := service.DescribeMongodbAccount("dds-1"); err == nil {
 		t.Fatal("expected an error for an id without an account name")
@@ -874,7 +1173,7 @@ func TestUnitMongodbAccountDescribeRejectsInvalidId(t *testing.T) {
 	}
 }
 
-func TestUnitMongodbAccountStateRefreshChecksFieldError(t *testing.T) {
+func TestUnitAccountStateRefreshChecksFieldError(t *testing.T) {
 	service := &mongodb.MongodbServiceV2{}
 	refresh := service.MongodbAccountStateRefreshFuncWithApi("dds-1:admin:acc", "AccountStatus", nil, func(id string) (map[string]interface{}, error) {
 		return map[string]interface{}{"DBName": "admin"}, nil
@@ -884,8 +1183,8 @@ func TestUnitMongodbAccountStateRefreshChecksFieldError(t *testing.T) {
 	}
 }
 
-func TestUnitMongodbAccountReadNotFoundClearsId(t *testing.T) {
-	d := unitMongodbAccountResourceData(t, "dds-1:acc", map[string]interface{}{
+func TestUnitAccountReadNotFoundClearsId(t *testing.T) {
+	d := unitAccountResourceData(t, "dds-1:acc", map[string]interface{}{
 		"instance_id":  "dds-1",
 		"account_name": "acc",
 	}, nil)
@@ -898,8 +1197,8 @@ func TestUnitMongodbAccountReadNotFoundClearsId(t *testing.T) {
 	assert.Equal(t, "", d.Id())
 }
 
-func TestUnitMongodbAccountReadSetsDatabaseScopedId(t *testing.T) {
-	d := unitMongodbAccountResourceData(t, "dds-1:acc1", map[string]interface{}{
+func TestUnitAccountReadSetsDatabaseScopedId(t *testing.T) {
+	d := unitAccountResourceData(t, "dds-1:acc1", map[string]interface{}{
 		"instance_id":  "dds-1",
 		"account_name": "acc1",
 	}, nil)
@@ -923,8 +1222,28 @@ func TestUnitMongodbAccountReadSetsDatabaseScopedId(t *testing.T) {
 	assert.Equal(t, 1, d.Get("roles").(*schema.Set).Len())
 }
 
-func TestUnitMongodbAccountReadPropagatesError(t *testing.T) {
-	d := unitMongodbAccountResourceData(t, "dds-1:acc", map[string]interface{}{
+func TestUnitAccountReadBuildsReversibleId(t *testing.T) {
+	d := unitAccountResourceData(t, "dds-1:acc1", map[string]interface{}{
+		"instance_id":  "dds-1",
+		"account_name": "acc1",
+	}, nil)
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&mongodb.MongodbServiceV2{}), "DescribeMongodbAccount", func(_ *mongodb.MongodbServiceV2, id string) (map[string]interface{}, error) {
+		return map[string]interface{}{
+			"DBInstanceId":  "dds-1",
+			"AccountName":   "acc1",
+			"DBName":        "app:logs",
+			"CharacterType": "db",
+			"AccountStatus": "Available",
+		}, nil
+	})
+	defer patches.Reset()
+
+	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountRead(d, &connectivity.AliyunClient{}))
+	assert.Equal(t, "dds-1:app%3Alogs:acc1", d.Id())
+}
+
+func TestUnitAccountReadPropagatesError(t *testing.T) {
+	d := unitAccountResourceData(t, "dds-1:acc", map[string]interface{}{
 		"instance_id":  "dds-1",
 		"account_name": "acc",
 	}, nil)
@@ -940,8 +1259,8 @@ func TestUnitMongodbAccountReadPropagatesError(t *testing.T) {
 	assert.Equal(t, "dds-1:acc", d.Id())
 }
 
-func TestUnitMongodbAccountUpdateDescriptionDescribeError(t *testing.T) {
-	d := unitMongodbAccountResourceData(t, "dds-1:admin:acc", map[string]interface{}{
+func TestUnitAccountUpdateDescriptionDescribeError(t *testing.T) {
+	d := unitAccountResourceData(t, "dds-1:admin:acc", map[string]interface{}{
 		"instance_id":  "dds-1",
 		"account_name": "acc",
 		"db_name":      "admin",
@@ -958,8 +1277,8 @@ func TestUnitMongodbAccountUpdateDescriptionDescribeError(t *testing.T) {
 	}
 }
 
-func TestUnitMongodbAccountUpdateShardDescriptionRejected(t *testing.T) {
-	d := unitMongodbAccountResourceData(t, "dds-1:admin:acc", map[string]interface{}{
+func TestUnitAccountUpdateShardDescriptionRejected(t *testing.T) {
+	d := unitAccountResourceData(t, "dds-1:admin:acc", map[string]interface{}{
 		"instance_id":  "dds-1",
 		"account_name": "acc",
 		"db_name":      "admin",
@@ -978,26 +1297,54 @@ func TestUnitMongodbAccountUpdateShardDescriptionRejected(t *testing.T) {
 	assert.Contains(t, err.Error(), "replica set")
 }
 
-func TestUnitMongodbAccountCreateRejectsRolesForReplicaSet(t *testing.T) {
-	d := schema.TestResourceDataRaw(t, unitMongodbAccountResourceSchema(t), map[string]interface{}{
-		"instance_id":      "dds-1",
-		"account_name":     "root",
-		"account_password": "YourPassword+12345",
-		"character_type":   "normal",
-		"db_name":          "admin",
+// TestUnitAccountCreateSendsRolesForReplicaSet proves that a replica set
+// account with custom roles reaches CreateAccount with the roles, the database
+// and the description in the request body (C1, C3-C5).
+func TestUnitAccountCreateSendsRolesForReplicaSet(t *testing.T) {
+	client := accountTestClient(t)
+	d := schema.TestResourceDataRaw(t, unitAccountResourceSchema(t), map[string]interface{}{
+		"instance_id":         "dds-1",
+		"account_name":        "normal_acc",
+		"account_password":    "YourPassword+12345",
+		"character_type":      "normal",
+		"db_name":             "admin",
+		"account_description": "normal description",
 		"roles": []interface{}{
 			map[string]interface{}{"role": "read", "db_name": "admin"},
 		},
 	})
-	err := mongodb.ResourceAliCloudMongodbAccountCreate(d, &connectivity.AliyunClient{})
-	if err == nil {
-		t.Fatal("expected roles on a replica set account to be rejected")
+	calls := make([]accountApiCall, 0)
+	responses := map[string]interface{}{
+		"CreateAccount":    map[string]interface{}{},
+		"DescribeAccounts": accountDescribeResponse("dds-1", "admin", "normal_acc", "normal", "normal description", []map[string]string{{"role": "read", "db_name": "admin"}}),
 	}
-	assert.Contains(t, err.Error(), "config server account")
+	patches := patchAccountDoRequest(t, &calls, responses)
+	defer patches.Reset()
+
+	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountCreate(d, client))
+	call := accountApiCallByName(calls, "CreateAccount")
+	if call == nil {
+		t.Fatal("expected a replica set account with roles to reach CreateAccount")
+	}
+	assert.Equal(t, "normal", fmt.Sprint(call.Body["CharacterType"]))
+	assert.Equal(t, "admin", fmt.Sprint(call.Body["DBName"]))
+	assert.Equal(t, "normal description", fmt.Sprint(call.Body["AccountDescription"]))
+	roles, ok := call.Body["Roles"].([]interface{})
+	if !ok || len(roles) != 1 {
+		t.Fatalf("expected one Role entry in the CreateAccount body, got %v", call.Body["Roles"])
+	}
+	role := roles[0].(map[string]interface{})
+	assert.Equal(t, "read", fmt.Sprint(role["Role"]))
+	assert.Equal(t, "admin", fmt.Sprint(role["DBName"]))
+	assert.Equal(t, "dds-1:admin:normal_acc", d.Id())
 }
 
-func TestUnitMongodbAccountCreateRejectsRolesForShardAccount(t *testing.T) {
-	d := schema.TestResourceDataRaw(t, unitMongodbAccountResourceSchema(t), map[string]interface{}{
+// TestUnitAccountCreateForwardsShardRolesToApi proves the provider no longer
+// rejects a shard account with roles locally: the request reaches CreateAccount
+// and the InvalidRoles.NotSupported response comes from the API.
+func TestUnitAccountCreateForwardsShardRolesToApi(t *testing.T) {
+	client := accountTestClient(t)
+	d := schema.TestResourceDataRaw(t, unitAccountResourceSchema(t), map[string]interface{}{
 		"instance_id":      "dds-1",
 		"account_name":     "shard_acc",
 		"account_password": "YourPassword+12345",
@@ -1007,15 +1354,218 @@ func TestUnitMongodbAccountCreateRejectsRolesForShardAccount(t *testing.T) {
 			map[string]interface{}{"role": "read", "db_name": "admin"},
 		},
 	})
-	err := mongodb.ResourceAliCloudMongodbAccountCreate(d, &connectivity.AliyunClient{})
+	calls := make([]accountApiCall, 0)
+	responses := map[string]interface{}{
+		"CreateAccount": &tea.SDKError{
+			Code:       helper.String("InvalidRoles.NotSupported"),
+			Data:       helper.String("InvalidRoles.NotSupported"),
+			Message:    helper.String("Roles is not supported for shard direct-connection account, whose privileges are fixed."),
+			StatusCode: tea.Int(400),
+		},
+	}
+	patches := patchAccountDoRequest(t, &calls, responses)
+	defer patches.Reset()
+
+	err := mongodb.ResourceAliCloudMongodbAccountCreate(d, client)
 	if err == nil {
-		t.Fatal("expected roles on a shard direct-connection account to be rejected")
+		t.Fatal("expected the CreateAccount rejection to be returned")
 	}
 	assert.Contains(t, err.Error(), "InvalidRoles.NotSupported")
+	call := accountApiCallByName(calls, "CreateAccount")
+	if call == nil {
+		t.Fatal("expected the shard account with roles to reach CreateAccount")
+	}
+	assert.Equal(t, "db", fmt.Sprint(call.Body["CharacterType"]))
+	roles, ok := call.Body["Roles"].([]interface{})
+	if !ok || len(roles) != 1 {
+		t.Fatalf("expected the roles to be forwarded to the API, got %v", call.Body["Roles"])
+	}
 }
 
-func TestUnitMongodbAccountCreateRequiresRolesForCsAccount(t *testing.T) {
-	d := schema.TestResourceDataRaw(t, unitMongodbAccountResourceSchema(t), map[string]interface{}{
+// TestUnitAccountCreateSendsCreateAccountPayload covers the config server
+// account payload: description, database, character type and roles (C1-C5).
+func TestUnitAccountCreateSendsCreateAccountPayload(t *testing.T) {
+	client := accountTestClient(t)
+	d := schema.TestResourceDataRaw(t, unitAccountResourceSchema(t), map[string]interface{}{
+		"instance_id":         "dds-1",
+		"account_name":        "cs_acc",
+		"account_password":    "YourPassword+12345",
+		"character_type":      "cs",
+		"db_name":             "appdb",
+		"account_description": "cs description",
+		"roles": []interface{}{
+			map[string]interface{}{"role": "readWrite", "db_name": "appdb"},
+		},
+	})
+	calls := make([]accountApiCall, 0)
+	responses := map[string]interface{}{
+		"CreateAccount":    map[string]interface{}{},
+		"DescribeAccounts": accountDescribeResponse("dds-1", "appdb", "cs_acc", "cs", "cs description", []map[string]string{{"role": "readWrite", "db_name": "appdb"}}),
+	}
+	patches := patchAccountDoRequest(t, &calls, responses)
+	defer patches.Reset()
+
+	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountCreate(d, client))
+	call := accountApiCallByName(calls, "CreateAccount")
+	if call == nil {
+		t.Fatal("expected a config server account to reach CreateAccount")
+	}
+	assert.Equal(t, "cs", fmt.Sprint(call.Body["CharacterType"]))
+	assert.Equal(t, "appdb", fmt.Sprint(call.Body["DBName"]))
+	assert.Equal(t, "cs description", fmt.Sprint(call.Body["AccountDescription"]))
+	roles, ok := call.Body["Roles"].([]interface{})
+	if !ok || len(roles) != 1 {
+		t.Fatalf("expected one Role entry in the CreateAccount body, got %v", call.Body["Roles"])
+	}
+	role := roles[0].(map[string]interface{})
+	assert.Equal(t, "readWrite", fmt.Sprint(role["Role"]))
+	assert.Equal(t, "appdb", fmt.Sprint(role["DBName"]))
+	assert.Equal(t, "dds-1:appdb:cs_acc", d.Id())
+}
+
+// TestUnitAccountCreateRootSendsResetPasswordDbName covers C6: the default
+// database is sent explicitly even when the configuration omits db_name.
+func TestUnitAccountCreateRootSendsResetPasswordDbName(t *testing.T) {
+	client := accountTestClient(t)
+	d := schema.TestResourceDataRaw(t, unitAccountResourceSchema(t), map[string]interface{}{
+		"instance_id":      "dds-1",
+		"account_name":     "root",
+		"account_password": "YourPassword+12345",
+	})
+	calls := make([]accountApiCall, 0)
+	responses := map[string]interface{}{
+		"ResetAccountPassword": map[string]interface{}{},
+		"DescribeAccounts":     accountDescribeResponse("dds-1", "admin", "root", "normal", "", nil),
+	}
+	patches := patchAccountDoRequest(t, &calls, responses)
+	defer patches.Reset()
+
+	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountCreate(d, client))
+	call := accountApiCallByName(calls, "ResetAccountPassword")
+	if call == nil {
+		t.Fatal("expected the replica set root account to use ResetAccountPassword")
+	}
+	assert.Equal(t, "admin", fmt.Sprint(call.Body["DBName"]))
+	_, hasRoles := call.Body["Roles"]
+	assert.False(t, hasRoles, "ResetAccountPassword must not carry roles")
+	assert.Equal(t, "dds-1:admin:root", d.Id())
+}
+
+// TestUnitAccountUpdatePasswordSendsDbName covers C7.
+func TestUnitAccountUpdatePasswordSendsDbName(t *testing.T) {
+	client := accountTestClient(t)
+	d := unitAccountResourceData(t, "dds-1:appdb:acc", map[string]interface{}{
+		"instance_id":      "dds-1",
+		"account_name":     "acc",
+		"db_name":          "appdb",
+		"character_type":   "db",
+		"account_password": "YourPassword+12345",
+	}, map[string]interface{}{
+		"account_password": "YourPassword+123456",
+	})
+	calls := make([]accountApiCall, 0)
+	responses := map[string]interface{}{
+		"ResetAccountPassword": map[string]interface{}{},
+		"DescribeAccounts":     accountDescribeResponse("dds-1", "appdb", "acc", "db", "", nil),
+	}
+	patches := patchAccountDoRequest(t, &calls, responses)
+	defer patches.Reset()
+
+	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountUpdate(d, client))
+	call := accountApiCallByName(calls, "ResetAccountPassword")
+	if call == nil {
+		t.Fatal("expected the password update to call ResetAccountPassword")
+	}
+	assert.Equal(t, "appdb", fmt.Sprint(call.Body["DBName"]))
+	assert.Equal(t, "db", fmt.Sprint(call.Body["CharacterType"]))
+}
+
+// TestUnitAccountUpdateDescriptionSendsDbName covers C8.
+func TestUnitAccountUpdateDescriptionSendsDbName(t *testing.T) {
+	client := accountTestClient(t)
+	d := unitAccountResourceData(t, "dds-1:appdb:acc", map[string]interface{}{
+		"instance_id":         "dds-1",
+		"account_name":        "acc",
+		"db_name":             "appdb",
+		"account_description": "before",
+	}, map[string]interface{}{
+		"account_description": "after",
+	})
+	calls := make([]accountApiCall, 0)
+	responses := map[string]interface{}{
+		"ModifyAccountDescription": map[string]interface{}{},
+		"DescribeAccounts":         accountDescribeResponse("dds-1", "appdb", "acc", "normal", "after", nil),
+	}
+	patches := patchAccountDoRequest(t, &calls, responses)
+	defer patches.Reset()
+
+	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountUpdate(d, client))
+	call := accountApiCallByName(calls, "ModifyAccountDescription")
+	if call == nil {
+		t.Fatal("expected the description update to call ModifyAccountDescription")
+	}
+	assert.Equal(t, "appdb", fmt.Sprint(call.Body["DBName"]))
+	assert.Equal(t, "after", fmt.Sprint(call.Body["AccountDescription"]))
+}
+
+// TestUnitAccountDescribeFiltersByIdentity covers QA-PR-07: the collection read
+// must return the requested account even when other accounts exist.
+func TestUnitAccountDescribeFiltersByIdentity(t *testing.T) {
+	client := accountTestClient(t)
+	calls := make([]accountApiCall, 0)
+	responses := map[string]interface{}{
+		"DescribeAccounts": map[string]interface{}{
+			"Accounts": map[string]interface{}{
+				"Account": []interface{}{
+					map[string]interface{}{"AccountName": "shared", "DBName": "dbA", "DBInstanceId": "dds-1", "AccountStatus": "Available"},
+					map[string]interface{}{"AccountName": "shared", "DBName": "dbB", "DBInstanceId": "dds-1", "AccountStatus": "Available"},
+				},
+			},
+		},
+	}
+	patches := patchAccountDoRequest(t, &calls, responses)
+	defer patches.Reset()
+	service := mongodb.NewMongodbServiceV2(client)
+
+	object, err := service.DescribeMongodbAccount("dds-1:dbB:shared")
+	assert.NoError(t, err)
+	assert.Equal(t, "dbB", fmt.Sprint(object["DBName"]), "the requested database must win over the first list entry")
+
+	if _, err := service.DescribeMongodbAccount("dds-1:dbC:shared"); err == nil || !errs.NotFoundError(err) {
+		t.Fatalf("expected NotFound when only other databases hold the account, got %v", err)
+	}
+
+	if _, err := service.DescribeMongodbAccount("dds-1:shared"); err == nil {
+		t.Fatal("expected an ambiguity error for a two-part id that matches two databases")
+	} else {
+		assert.Contains(t, err.Error(), "db_name")
+	}
+}
+
+// TestUnitAccountDescribeDecodesEscapedDatabase covers the reversible id for a
+// legal database name that contains a colon (QA-PR-02).
+func TestUnitAccountDescribeDecodesEscapedDatabase(t *testing.T) {
+	client := accountTestClient(t)
+	calls := make([]accountApiCall, 0)
+	responses := map[string]interface{}{
+		"DescribeAccounts": accountDescribeResponse("dds-1", "app:logs", "acc1", "db", "", nil),
+	}
+	patches := patchAccountDoRequest(t, &calls, responses)
+	defer patches.Reset()
+	service := mongodb.NewMongodbServiceV2(client)
+
+	object, err := service.DescribeMongodbAccount("dds-1:app%3Alogs:acc1")
+	assert.NoError(t, err)
+	assert.Equal(t, "acc1", fmt.Sprint(object["AccountName"]))
+	call := accountApiCallByName(calls, "DescribeAccounts")
+	if call == nil {
+		t.Fatal("expected DescribeAccounts to be called")
+	}
+	assert.Equal(t, "app:logs", fmt.Sprint(call.Body["DBName"]), "the escaped database must be decoded before the request")
+}
+
+func TestUnitAccountCreateRequiresRolesForCsAccount(t *testing.T) {
+	d := schema.TestResourceDataRaw(t, unitAccountResourceSchema(t), map[string]interface{}{
 		"instance_id":      "dds-1",
 		"account_name":     "cs_acc",
 		"account_password": "YourPassword+12345",
@@ -1029,7 +1579,7 @@ func TestUnitMongodbAccountCreateRequiresRolesForCsAccount(t *testing.T) {
 	assert.Contains(t, err.Error(), "required")
 }
 
-func TestUnitMongodbAccountDeleteNoop(t *testing.T) {
-	d := unitMongodbAccountResourceData(t, "dds-1:acc", map[string]interface{}{}, nil)
+func TestUnitAccountDeleteNoop(t *testing.T) {
+	d := unitAccountResourceData(t, "dds-1:acc", map[string]interface{}{}, nil)
 	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountDelete(d, &connectivity.AliyunClient{}))
 }

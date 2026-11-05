@@ -102,18 +102,17 @@ func (s *MongodbServiceV2) DescribeMongodbAccount(id string) (object map[string]
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	parts := strings.Split(id, ":")
-	if len(parts) != 2 && len(parts) != 3 {
-		return nil, errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d or %d, got %d", id, 2, 3, len(parts)))
+	instanceId, dbName, accountName, err := parseAccountId(id)
+	if err != nil {
+		return nil, errs.WrapError(err)
 	}
-	accountName := parts[len(parts)-1]
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["AccountName"] = accountName
-	request["DBInstanceId"] = parts[0]
+	request["DBInstanceId"] = instanceId
 	request["RegionId"] = client.RegionId
-	if len(parts) == 3 {
-		request["DBName"] = parts[1]
+	if dbName != "" {
+		request["DBName"] = dbName
 	}
 	action := "DescribeAccounts"
 
@@ -155,7 +154,7 @@ func (s *MongodbServiceV2) DescribeMongodbAccount(id string) (object map[string]
 		}
 		// Account names are only unique inside a database, so filter by the
 		// database scope as well whenever the caller supplied one.
-		if len(parts) == 3 && fmt.Sprint(account["DBName"]) != parts[1] {
+		if dbName != "" && fmt.Sprint(account["DBName"]) != dbName {
 			continue
 		}
 		matched = append(matched, account)
@@ -165,7 +164,7 @@ func (s *MongodbServiceV2) DescribeMongodbAccount(id string) (object map[string]
 		return object, errs.WrapErrorf(errs.NotFoundErr("Account", id), errs.NotFoundMsg, response)
 	}
 	if len(matched) > 1 {
-		return object, errs.WrapError(fmt.Errorf("found %d accounts named %s in instance %s, use id <instance_id>:<db_name>:<account_name> to identify the account", len(matched), accountName, parts[0]))
+		return object, errs.WrapError(fmt.Errorf("found %d accounts named %s in instance %s, use id <instance_id>:<db_name>:<account_name> to identify the account", len(matched), accountName, instanceId))
 	}
 
 	return matched[0], nil
