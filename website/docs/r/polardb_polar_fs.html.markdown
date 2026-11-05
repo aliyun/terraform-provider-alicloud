@@ -64,7 +64,7 @@ The following arguments are supported:
 * `accelerate_type` - (Optional, ForceNew, Available since v2.1.0) The acceleration type. Valid values: `juice` and `alluxio`.
 * `custom_bucket_path_list` - (Optional, ForceNew, Set, Available since v2.3.0) The OSS bucket and path pairs mounted by transparent acceleration (`accelerate_type = "alluxio"`). At least one entry is required when transparent acceleration is enabled. See [`custom_bucket_path_list`](#custom_bucket_path_list) below.
 
-### custom_bucket_path_list
+### `custom_bucket_path_list`
 
 The `custom_bucket_path_list` block supports the following:
 
