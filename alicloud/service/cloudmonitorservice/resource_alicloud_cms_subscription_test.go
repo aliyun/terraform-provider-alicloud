@@ -59,6 +59,14 @@ func TestAccAliCloudCmsSubscription_basic(t *testing.T) {
 				),
 			},
 			{
+				// A declared but empty optional block is rejected during plan,
+				// before any request is built. It is placed before a valid
+				// configuration so the post-test destroy still has one.
+				Config:      testAccCmsSubscriptionConfigEmptyBlock(name),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile("Empty pushing_setting block"),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
@@ -153,13 +161,6 @@ func TestAccAliCloudCmsSubscription_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
 				ImportStateVerify: true,
-			},
-			{
-				// A declared but empty optional block is rejected during plan,
-				// before any request is built.
-				Config:      testAccCmsSubscriptionConfigEmptyBlock(name),
-				PlanOnly:    true,
-				ExpectError: regexp.MustCompile("Empty pushing_setting block"),
 			},
 		},
 	})
