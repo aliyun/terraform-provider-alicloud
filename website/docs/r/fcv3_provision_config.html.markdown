@@ -147,8 +147,8 @@ resource "alicloud_fcv3_provision_config" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `always_allocate_cpu` - (Optional, Computed, Bool) Whether the CPU is always allocated. Defaults to `true`. If you omit the argument, the value returned by the service is kept and no diff is generated. Removing a previously configured argument keeps the last value.
-* `always_allocate_gpu` - (Optional, Computed, Bool) Whether to always assign GPU to function instance. Defaults to `true`. If you omit the argument, the value returned by the service is kept and no diff is generated. Removing a previously configured argument keeps the last value.
+* `always_allocate_cpu` - (Optional, Computed, Bool) Whether the CPU is always allocated. Defaults to `true`. If you omit the argument, the service-side value is used and no diff is generated. Removing the argument does not trigger an update.
+* `always_allocate_gpu` - (Optional, Computed, Bool) Whether to always assign GPU to function instance. Defaults to `true`. If you omit the argument, the service-side value is used and no diff is generated. Removing the argument does not trigger an update.
 * `function_name` - (Required, ForceNew) The name of the function. If this parameter is not specified, the provisioned configurations of all functions are listed.
 * `qualifier` - (Optional) The function alias or LATEST.
 * `scheduled_actions` - (Optional, List) Timing policy configuration See [`scheduled_actions`](#scheduled_actions) below.

@@ -283,6 +283,8 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 					}),
 				),
 			},
+			// current/current_error change asynchronously while the reserved
+			// instances become ready, so they are not compared on import.
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
