@@ -13,20 +13,22 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/scripts/collection-order/internal/coverage"
 	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func main() {
 	base := flag.String("base", "", "full merge-base SHA from resolve-change-range.sh")
 	head := flag.String("head", "", "full checked-out head SHA")
 	resourceName := flag.String("resource", "", "check one registered resource locally")
+	dataSourceName := flag.String("data-source", "", "check one registered data source locally")
 	flag.Parse()
-	if err := run(*base, *head, *resourceName); err != nil {
+	if err := run(*base, *head, *resourceName, *dataSourceName); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func run(base, head, resourceName string) error {
+func run(base, head, resourceName, dataSourceName string) error {
 	current, err := os.ReadFile("alicloud/provider.go")
 	if err != nil {
 		return err
@@ -36,6 +38,10 @@ func run(base, head, resourceName string) error {
 		return err
 	}
 	registry, err := coverage.RegistryUnion(current, registers)
+	if err != nil {
+		return err
+	}
+	dsRegistry, err := coverage.DataSourcesRegistryUnion(current, registers)
 	if err != nil {
 		return err
 	}
@@ -56,22 +62,49 @@ func run(base, head, resourceName string) error {
 			sources[path] = src
 		}
 	}
+	dsSources := map[string][]byte{}
+	for _, pattern := range []string{"alicloud/data_source_alicloud_*.go", "alicloud/service/*/data_source_*.go", "alicloud/provider/core/data_source_*.go"} {
+		files, err := filepath.Glob(pattern)
+		if err != nil {
+			return err
+		}
+		for _, path := range files {
+			if strings.HasSuffix(path, "_test.go") {
+				continue
+			}
+			src, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			dsSources[path] = src
+		}
+	}
 	var changed []string
 	before := registry
-	if resourceName != "" {
+	dsBefore := dsRegistry
+	if resourceName != "" || dataSourceName != "" {
 		if base != "" || head != "" {
-			return fmt.Errorf("use -resource or -base/-head, not both")
+			return fmt.Errorf("use -resource/-data-source or -base/-head, not both")
 		}
-		if registry[resourceName] == "" {
-			return fmt.Errorf("resource is not registered: %s", resourceName)
-		}
-		before = map[string]string{}
-		for name, constructor := range registry {
-			if name != resourceName {
-				before[name] = constructor
-			}
+		if resourceName != "" && dataSourceName != "" {
+			return fmt.Errorf("use -resource or -data-source, not both")
 		}
 		changed = []string{"alicloud/provider.go"}
+		if resourceName != "" {
+			if registry[resourceName] == "" {
+				return fmt.Errorf("resource is not registered: %s", resourceName)
+			}
+			before = withoutTarget(registry, resourceName)
+			// dsBefore stays dsRegistry: no data source is selected in
+			// resource single-entity mode.
+		} else {
+			if dsRegistry[dataSourceName] == "" {
+				return fmt.Errorf("data source is not registered: %s", dataSourceName)
+			}
+			dsBefore = withoutTarget(dsRegistry, dataSourceName)
+			// before stays registry: no resource is selected in data-source
+			// single-entity mode.
+		}
 	} else {
 		valid := regexp.MustCompile(`^[0-9a-f]{40}$`)
 		if !valid.MatchString(base) || !valid.MatchString(head) {
@@ -107,19 +140,49 @@ func run(base, head, resourceName string) error {
 		if err != nil {
 			return err
 		}
+		dsBefore, err = coverage.DataSourcesRegistryUnion(src, baseRegisters)
+		if err != nil {
+			return err
+		}
 	}
-	selected, err := coverage.Select(changed, before, registry, sources, func(path string) ([]byte, error) { return git("show", base+":"+path) })
+	oldSource := func(path string) ([]byte, error) { return git("show", base+":"+path) }
+	selected, err := coverage.Select(changed, before, registry, sources, oldSource)
+	if err != nil {
+		return err
+	}
+	dsSelected, err := coverage.SelectScope(changed, dsBefore, dsRegistry, dsSources, oldSource, coverage.DataSourceScope)
 	if err != nil {
 		return err
 	}
 	if resourceName != "" {
 		selected = map[string]string{resourceName: selected[resourceName]}
+		dsSelected = map[string]string{}
 	}
-	if len(selected) == 0 {
-		fmt.Println("TypeList Order Coverage: no directly changed resource implementations, tests or registrations.")
+	if dataSourceName != "" {
+		dsSelected = map[string]string{dataSourceName: dsSelected[dataSourceName]}
+		selected = map[string]string{}
+	}
+	if len(selected) == 0 && len(dsSelected) == 0 {
+		fmt.Println("TypeList Order Coverage: no directly changed resource or data source implementations, tests or registrations.")
 		return nil
 	}
 	provider := alicloud.Provider()
+	failed := false
+	failed = checkSelected(selected, registry, provider.ResourcesMap, coverage.ResourceScope) || failed
+	failed = checkSelected(dsSelected, dsRegistry, provider.DataSourcesMap, coverage.DataSourceScope) || failed
+	if failed {
+		return fmt.Errorf("TypeList Order Coverage failed; see scripts/collection-order/README.md")
+	}
+	return nil
+}
+
+// checkSelected runs the order-coverage Check over a scope's selected
+// implementations and reports per-entity results. The schema map and scope
+// pair so resources run against ResourcesMap with ResourceScope and data
+// sources against DataSourcesMap with DataSourceScope; the Check logic and
+// diagnostics are identical apart from the read-only waiver a data source's
+// order-insensitive Read lifecycle earns.
+func checkSelected(selected, registry map[string]string, schemas map[string]*schema.Resource, scope coverage.Scope) bool {
 	failed := false
 	checked := map[string]bool{}
 	for _, name := range coverage.Names(selected) {
@@ -134,9 +197,11 @@ func run(base, head, resourceName string) error {
 				aliases = append(aliases, alias)
 			}
 		}
-		r := provider.ResourcesMap[name]
+		r := schemas[name]
 		if r == nil {
-			return fmt.Errorf("resource missing from runtime schema: %s", name)
+			fmt.Fprintf(os.Stderr, "%s missing from runtime schema: %s\n", scope.Label(), name)
+			failed = true
+			continue
 		}
 		if len(coverage.Candidates(r)) == 0 {
 			fmt.Printf("%s: no configurable multi-member TypeList attributes\n", name)
@@ -149,7 +214,7 @@ func run(base, head, resourceName string) error {
 			failed = true
 			continue
 		}
-		// The suppressor unit net for a split-package resource may live in a
+		// The suppressor unit net for a split-package entity may live in a
 		// sibling *_unit_test.go file in the same package directory rather
 		// than the main *_test.go file that carries the TestAcc steps. Gather
 		// every Go test file in the same directory so resolveSuppressNet can
@@ -168,7 +233,7 @@ func run(base, head, resourceName string) error {
 				testSources[tf] = ts
 			}
 		}
-		issues := coverage.Check(path, src, testSources, name, r, aliases...)
+		issues := coverage.CheckScope(path, src, testSources, name, r, scope, aliases...)
 		for _, issue := range issues {
 			fmt.Fprintf(os.Stderr, "%s (%s): %s\n", name, path, issue)
 		}
@@ -178,10 +243,19 @@ func run(base, head, resourceName string) error {
 			fmt.Printf("%s: TypeList Order Coverage passed\n", name)
 		}
 	}
-	if failed {
-		return fmt.Errorf("TypeList Order Coverage failed; see scripts/collection-order/README.md")
+	return failed
+}
+
+// withoutTarget returns a copy of registry without the target entry, so a
+// single-entity check selects only that entity the way a diff would.
+func withoutTarget(registry map[string]string, target string) map[string]string {
+	out := make(map[string]string, len(registry))
+	for name, constructor := range registry {
+		if name != target {
+			out[name] = constructor
+		}
 	}
-	return nil
+	return out
 }
 
 func git(args ...string) ([]byte, error) {
