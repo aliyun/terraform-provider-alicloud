@@ -102,8 +102,8 @@ The ip_set_config supports the following:
 
 The ddos_config_list supports the following:
 
-* `ddos_id` - (Required) The ID of the DDoS protection instance.
-* `ddos_region_id` - (Required) The region ID of the DDoS protection instance. Valid values: `cn-hangzhou`, `ap-southeast-1`.
+* `ddos_id` - (Optional) The ID of the DDoS protection instance. Both `ddos_id` and `ddos_region_id` are required for each entry.
+* `ddos_region_id` - (Optional) The region ID of the DDoS protection instance. Valid values: `cn-hangzhou`, `ap-southeast-1`. Both `ddos_id` and `ddos_region_id` are required for each entry.
 
 **NOTE:** To detach all DDoS protection instances, set `ddos_config_list` to an empty list explicitly. Omitting the argument keeps the current associations.
 
