@@ -1550,3 +1550,56 @@ func (s *Service) DescribeEnsKeyPair(id string) (object map[string]interface{}, 
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
+
+// DescribeStorageVolume <<< Encapsulated get interface for Ens StorageVolume.
+func (s *Service) DescribeStorageVolume(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeStorageVolume"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["VolumeId"] = id
+	query["PageSize"] = "10"
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		logs.AddDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.StorageVolumes[*]", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.StorageVolumes[*]", response)
+	}
+	items, ok := v.([]interface{})
+	if !ok || len(items) == 0 {
+		return object, errs.WrapErrorf(errs.NotFoundErr("StorageVolume", id), errs.NotFoundMsg, response)
+	}
+	// VolumeId is the filter, so the array carries at most one entry; pick the
+	// entry whose StorageVolumeId matches in case the API matches loosely.
+	for _, raw := range items {
+		if obj, ok := raw.(map[string]interface{}); ok {
+			if vid, _ := obj["StorageVolumeId"].(string); vid == id {
+				return obj, nil
+			}
+		}
+	}
+	return object, errs.WrapErrorf(errs.NotFoundErr("StorageVolume", id), errs.NotFoundMsg, response)
+}
+
+// DescribeStorageVolume >>> Encapsulated.

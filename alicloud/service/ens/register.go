@@ -35,5 +35,8 @@ func ServicePackage() conns.ServicePackage {
 			{TypeName: "alicloud_ens_network_route_tables", Factory: DataSourceEnsNetworkRouteTables},
 			{TypeName: "alicloud_ens_security_groups", Factory: DataSourceEnsSecurityGroups},
 		},
+		Resources: []conns.Resource{
+			{TypeName: "alicloud_ens_storage_volume", Factory: NewEnsStorageVolumeResource},
+		},
 	}
 }
