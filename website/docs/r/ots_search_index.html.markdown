@@ -181,7 +181,7 @@ resource "alicloud_ots_instance" "default" {
 
 resource "alicloud_ots_table" "default" {
   instance_name = alicloud_ots_instance.default.name
-  table_name    = "tf_example_nested"
+  table_name    = "terraform_example_nested"
   time_to_live  = -1
   max_version   = 1
   primary_key {
@@ -242,7 +242,7 @@ The field_schema supports the following:
 * `field_type` - (Required, ForceNew, String) Specifies the type of the field. Valid values: `Text`, `Long`, `Double`, `Boolean`, `Keyword`, `FuzzyKeyword`, `Date`, `GeoPoint`, `Nested`, `Vector`.
 * `is_array` - (Optional, ForceNew, Bool) Specifies whether the value is an array. This parameter is not supported for `Nested` fields; setting it to `true` on a `Nested` field returns an error. It is not required for `Vector` fields because they are arrays by nature.
 * `index` - (Optional, ForceNew) Specifies whether to enable indexing for the column. Type: Boolean. This parameter is not supported for `Nested` fields; setting it to `false` on a `Nested` field returns an error.
-* `analyzer` - (Optional, ForceNew) Specifies the type of the analyzer that you want to use. If fieldType is set to Text, you can configure this parameter. Otherwise, the default analyzer type single-word tokenization is used. Configuring this parameter for a `Nested` field returns an error.
+* `analyzer` - (Optional, ForceNew, String) Specifies the type of the analyzer that you want to use. If fieldType is set to Text, you can configure this parameter. Otherwise, the default analyzer type single-word tokenization is used. Configuring this parameter for a `Nested` field returns an error.
 * `enable_sort_and_agg` - (Optional, ForceNew, Bool) Specifies whether to enable sorting and aggregation. Sorting can be enabled only for fields for which enable_sort_and_agg is set to true. `Text`, `FuzzyKeyword` and `Nested` fields do not support this parameter, but the sub-fields of a `Nested` field do.
 * `store` - (Optional, ForceNew) Specifies whether to store the value of the field in the search index. Type: Boolean. If you set store to true, you can read the value of the field from the search index without querying the data table. This improves query performance. This parameter is not supported for `Nested` fields; setting it to `true` on a `Nested` field returns an error.
 * `date_format_list` - (Optional, ForceNew, Set) Specifies the date formats supported by the field. This parameter is required for `Date` fields. Available since v2.3.0.
