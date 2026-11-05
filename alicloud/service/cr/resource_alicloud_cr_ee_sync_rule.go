@@ -27,6 +27,7 @@ func resourceAliCloudCrRepoSyncRule() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -51,7 +52,7 @@ func resourceAliCloudCrRepoSyncRule() *schema.Resource {
 			"repo_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
+				Computed: true,
 			},
 			"repo_sync_rule_id": {
 				Type:     schema.TypeString,
@@ -62,50 +63,68 @@ func resourceAliCloudCrRepoSyncRule() *schema.Resource {
 				Optional:     true,
 				ExactlyOneOf: []string{"sync_rule_name", "name"},
 				Computed:     true,
-				ForceNew:     true,
 			},
 			"sync_scope": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ForceNew:     true,
 				ValidateFunc: validators.StringInSlice([]string{"REPO", "NAMESPACE"}, false),
 			},
 			"sync_trigger": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ForceNew:     true,
 				ValidateFunc: validators.StringInSlice([]string{"INITIATIVE", "PASSIVE"}, false),
 			},
 			"tag_filter": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"target_instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"target_namespace_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"target_region_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"target_repo_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
+				Computed: true,
 			},
 			"target_user_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"cross_user": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"link_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"namespace_name_filter": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"priority": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validators.IntBetween(1, 5),
+			},
+			"repo_name_filter": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"sync_direction": {
 				Type:     schema.TypeString,
@@ -189,6 +208,18 @@ func resourceAliCloudCrRepoSyncRuleCreate(d *schema.ResourceData, meta interface
 
 	if v, ok := d.GetOk("target_user_id"); ok {
 		request["TargetUserId"] = v
+	}
+	if v, ok := d.GetOk("link_id"); ok {
+		request["LinkId"] = v
+	}
+	if v, ok := d.GetOk("priority"); ok {
+		request["Priority"] = v
+	}
+	if v, ok := d.GetOk("namespace_name_filter"); ok {
+		request["NamespaceNameFilter"] = v
+	}
+	if v, ok := d.GetOk("repo_name_filter"); ok {
+		request["RepoNameFilter"] = v
 	}
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -274,13 +305,98 @@ func resourceAliCloudCrRepoSyncRuleRead(d *schema.ResourceData, meta interface{}
 	if objectRaw["SyncDirection"] != nil {
 		d.Set("sync_direction", objectRaw["SyncDirection"])
 	}
+	if objectRaw["CrossUser"] != nil {
+		d.Set("cross_user", objectRaw["CrossUser"])
+	}
+	if objectRaw["LinkId"] != nil {
+		d.Set("link_id", objectRaw["LinkId"])
+	}
+	if objectRaw["Priority"] != nil {
+		d.Set("priority", objectRaw["Priority"])
+	}
+	if objectRaw["NamespaceNameFilter"] != nil {
+		d.Set("namespace_name_filter", objectRaw["NamespaceNameFilter"])
+	}
+	if objectRaw["RepoNameFilter"] != nil {
+		d.Set("repo_name_filter", objectRaw["RepoNameFilter"])
+	}
 
 	return nil
 }
 
 func resourceAliCloudCrRepoSyncRuleUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[INFO] Cannot update resource alicloud_cr_ee_sync_rule.")
-	return nil
+	client := meta.(*connectivity.AliyunClient)
+	action := "UpdateRepoSyncRule"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+
+	parts, err := helper.ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+
+	request["RegionId"] = client.RegionId
+	request["InstanceId"] = parts[0]
+	request["SyncRuleId"] = parts[2]
+
+	request["NamespaceName"] = d.Get("namespace_name")
+	request["SyncScope"] = d.Get("sync_scope")
+	request["SyncTrigger"] = d.Get("sync_trigger")
+	request["TagFilter"] = d.Get("tag_filter")
+	request["TargetInstanceId"] = d.Get("target_instance_id")
+	request["TargetRegionId"] = d.Get("target_region_id")
+	request["TargetNamespaceName"] = d.Get("target_namespace_name")
+
+	if v, ok := d.GetOk("sync_rule_name"); ok {
+		request["SyncRuleName"] = v
+	} else if v, ok := d.GetOk("name"); ok {
+		request["SyncRuleName"] = v
+	}
+
+	if v, ok := d.GetOk("repo_name"); ok {
+		request["RepoName"] = v
+	}
+	if v, ok := d.GetOk("target_repo_name"); ok {
+		request["TargetRepoName"] = v
+	}
+	if v, ok := d.GetOk("target_user_id"); ok {
+		request["TargetUserId"] = v
+	}
+	if v, ok := d.GetOk("link_id"); ok {
+		request["LinkId"] = v
+	}
+	if v, ok := d.GetOk("priority"); ok {
+		request["Priority"] = v
+	}
+	if v, ok := d.GetOk("namespace_name_filter"); ok {
+		request["NamespaceNameFilter"] = v
+	}
+	if v, ok := d.GetOk("repo_name_filter"); ok {
+		request["RepoNameFilter"] = v
+	}
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return resourceAliCloudCrRepoSyncRuleRead(d, meta)
 }
 
 func resourceAliCloudCrRepoSyncRuleDelete(d *schema.ResourceData, meta interface{}) error {

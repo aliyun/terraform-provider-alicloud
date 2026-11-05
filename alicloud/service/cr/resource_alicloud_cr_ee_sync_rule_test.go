@@ -54,6 +54,30 @@ func TestAccAliCloudCrRepoSyncRule_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":           "${alicloud_cr_ee_namespace.source.instance_id}",
+					"namespace_name":        "${alicloud_cr_ee_namespace.source.name}",
+					"sync_rule_name":        name + "-update",
+					"target_instance_id":    "${alicloud_cr_ee_namespace.target.instance_id}",
+					"target_namespace_name": "${alicloud_cr_ee_namespace.target.name}",
+					"target_region_id":      acctest.DefaultRegionToTest,
+					"tag_filter":            "v.*",
+					"sync_trigger":          "INITIATIVE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id":           acctest.CHECKSET,
+						"namespace_name":        acctest.CHECKSET,
+						"sync_rule_name":        name + "-update",
+						"target_instance_id":    acctest.CHECKSET,
+						"target_namespace_name": acctest.CHECKSET,
+						"target_region_id":      acctest.CHECKSET,
+						"tag_filter":            "v.*",
+						"sync_trigger":          "INITIATIVE",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -240,6 +264,8 @@ var AliCloudCrRepoSyncRuleMap0 = map[string]string{
 	"sync_trigger":      acctest.CHECKSET,
 	"sync_direction":    acctest.CHECKSET,
 	"rule_id":           acctest.CHECKSET,
+	"cross_user":        acctest.CHECKSET,
+	"priority":          acctest.CHECKSET,
 }
 
 func AliCloudCrRepoSyncRuleBasicDependence0(name string) string {
