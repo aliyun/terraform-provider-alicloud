@@ -1262,11 +1262,18 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 			},
 			{
 				// The explicit zero must survive an import: the API-backed switch is
-				// readable, so only the write-only selector is exempted.
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: append([]string{"cross_backup_type"}, mongodbInstanceImportStateVerifyIgnore...),
+				// readable. The cross log retention pair is exempted because the service
+				// stops reporting it once cross-region log backup is disabled (observed on
+				// this head: the imported state has no CrossLogRetentionType/Value), while
+				// the resource keeps the configured values by design.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: append([]string{
+					"cross_backup_type",
+					"cross_log_retention_type",
+					"cross_log_retention_value",
+				}, mongodbInstanceImportStateVerifyIgnore...),
 			},
 			{
 				// The delete branch of ModifyBackupPolicy locates the policy by its source
@@ -1294,11 +1301,73 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 			},
 			{
 				// Import after the policy is deleted still has to rebuild a usable
-				// resource state. The selector and the removed policy fields are
-				// write-only/retained values that a policy-less instance cannot report
-				// back, so this import compares the instance-level state and only those
-				// policy attributes are exempted; the enable/zero imports above keep them
-				// under full verification.
+				// resource state. Each exempted attribute has its own reason:
+				// - cross_backup_type: write-only selector, never returned by the API.
+				// - cross_backup_period, cross_retention_type/value, cross_log_retention_type/value
+				//   and enable_cross_log_backup: inputs of the policy that the delete removed;
+				//   the delete check above asserts the service no longer reports
+				//   CrossBackupPeriod, and the resource retains the configured values by
+				//   design (same guarded-read behavior as the zero step).
+				// - src_region / dest_region: the policy locator, retained from the
+				//   configuration for a subsequent delete and not reported once the policy
+				//   is gone.
+				// The enable/zero imports above keep the same attributes under full
+				// verification while the policy still exists.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: append([]string{
+					"cross_backup_type",
+					"cross_backup_period",
+					"cross_retention_type",
+					"cross_retention_value",
+					"cross_log_retention_type",
+					"cross_log_retention_value",
+					"src_region",
+					"dest_region",
+					"enable_cross_log_backup",
+				}, mongodbInstanceImportStateVerifyIgnore...),
+			},
+			{
+				// High-frequency backups need Flash snapshots with a minute-level
+				// interval. Apply the interval first: the service only accepts a
+				// retention for an interval that is already in effect.
+				Config: testAccConfig(map[string]interface{}{
+					"snapshot_backup_type": "Flash",
+					"backup_interval":      "15",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"snapshot_backup_type": "Flash",
+						"backup_interval":      "15",
+					}),
+				),
+			},
+			{
+				// With the minute-level interval in effect, the two high-frequency
+				// attributes must reach the service and be reported back. This replaces
+				// the ExpectError-only registration that could never reach the API.
+				Config: testAccConfig(map[string]interface{}{
+					"high_frequency_backup_retention": 7,
+					"preserve_one_each_hour":          true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"high_frequency_backup_retention": "7",
+						"preserve_one_each_hour":          "true",
+					}),
+					testAccCheckMongoDBInstanceCrossBackupPolicyValues(resourceId, nil, map[string]string{
+						"HighFrequencyBackupRetention": "7",
+						"PreserveOneEachHour":          "true",
+						"BackupInterval":               "15",
+						"SnapshotBackupType":           "Flash",
+					}),
+				),
+			},
+			{
+				// The high-frequency values are readable, so an import after enabling them
+				// keeps them under verification; only the policy attributes exempted for
+				// the deleted policy and the disabled log-backup pair are skipped.
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -1339,12 +1408,14 @@ func testAccCheckMongoDBInstanceCrossBackupPolicyValues(resourceId string, expec
 			return fmt.Errorf("failed to describe the backup policy of %s: %s", rs.Primary.ID, err)
 		}
 		rawPeriod := fmt.Sprint(policy["CrossBackupPeriod"])
-		gotPeriod := strings.Split(rawPeriod, ",")
-		sort.Strings(gotPeriod)
-		wantPeriod := append([]string(nil), expectPeriod...)
-		sort.Strings(wantPeriod)
-		if rawPeriod == "" || strings.Join(gotPeriod, ",") != strings.Join(wantPeriod, ",") {
-			return fmt.Errorf("DescribeBackupPolicy must report CrossBackupPeriod=%v, got %q (policy %#v)", wantPeriod, rawPeriod, policy)
+		if expectPeriod != nil {
+			gotPeriod := strings.Split(rawPeriod, ",")
+			sort.Strings(gotPeriod)
+			wantPeriod := append([]string(nil), expectPeriod...)
+			sort.Strings(wantPeriod)
+			if rawPeriod == "" || strings.Join(gotPeriod, ",") != strings.Join(wantPeriod, ",") {
+				return fmt.Errorf("DescribeBackupPolicy must report CrossBackupPeriod=%v, got %q (policy %#v)", wantPeriod, rawPeriod, policy)
+			}
 		}
 		for key, want := range expected {
 			got := ""
@@ -1420,15 +1491,14 @@ func testAccCheckMongoDBInstanceCrossLogBackupPolicy(resourceId string, expectEn
 // billing, and restore source) that cannot be exercised end to end in the
 // shared ACC environment. Following the established convention used by peer
 // resources, these attributes are set in a config that omits the required
-// `db_instance_class`, so the plan is rejected for that missing argument.
+// `db_instance_class`, so the plan is rejected for that missing argument; the
+// steps prove only that rejection and are not behavior coverage for any of the
+// attributes they list.
 //
-// The high-frequency backup attributes appear in these configs only because the
-// attribute set is complete. The plan fails before any update request is built, so
-// these steps prove the missing-argument rejection and nothing about those
-// attributes: they are not must-set, modify or behavior coverage. Their request
-// contract is asserted in
-// TestUnitAliCloudMongoDBInstanceBackupPolicyRequestSerialization, and a real
-// Flash + minute-level interval run is still unavailable in the shared ACC account.
+// The high-frequency backup attributes are not part of these configs: their
+// behavior is covered by TestAccAliCloudMongoDBInstance_crossBackup, which
+// switches the instance to Flash snapshots with a minute-level interval and
+// reads the values back from ModifyBackupPolicy/DescribeBackupPolicy.
 func TestAccAliCloudMongoDBInstance_validation(t *testing.T) {
 	resourceId := "alicloud_mongodb_instance.default"
 	acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(mongodbTestRegion())})
@@ -1459,35 +1529,26 @@ func TestAccAliCloudMongoDBInstance_validation(t *testing.T) {
 					"kms_encryption_context": map[string]string{"name": "value"},
 					"src_db_instance_id":     "src-instance-id",
 					"restore_time":           "2026-01-01T00:00:00Z",
-					// High-frequency backup only takes effect when the instance already runs
-					// Flash snapshots with a minute-level BackupInterval, which the shared ACC
-					// account cannot provision (local_ssd instance class). These two keys only
-					// complete the attribute set; the step is rejected for the missing instance
-					// class before any request is built and is not coverage for them.
-					"high_frequency_backup_retention": 3,
-					"preserve_one_each_hour":          true,
 				}),
 				ExpectError: regexp.MustCompile(`db_instance_class.*is required`),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_version":                  "4.2",
-					"db_instance_storage":             "20",
-					"vswitch_id":                      "${alicloud_vswitch.default.id}",
-					"instance_charge_type":            "PostPaid",
-					"period":                          "12",
-					"auto_renew":                      "false",
-					"auto_renew_duration":             "3",
-					"tde_status":                      "disabled",
-					"encryptor_name":                  "aes-256-cfb",
-					"encryption_key":                  "key-update",
-					"role_arn":                        "acs:ram::1234567890123456:role/example-update",
-					"kms_encrypted_password":          "kms-password-update",
-					"kms_encryption_context":          map[string]string{"name": "value-update"},
-					"src_db_instance_id":              "src-instance-id-update",
-					"restore_time":                    "2026-02-01T00:00:00Z",
-					"high_frequency_backup_retention": 7,
-					"preserve_one_each_hour":          false,
+					"engine_version":         "4.2",
+					"db_instance_storage":    "20",
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"instance_charge_type":   "PostPaid",
+					"period":                 "12",
+					"auto_renew":             "false",
+					"auto_renew_duration":    "3",
+					"tde_status":             "disabled",
+					"encryptor_name":         "aes-256-cfb",
+					"encryption_key":         "key-update",
+					"role_arn":               "acs:ram::1234567890123456:role/example-update",
+					"kms_encrypted_password": "kms-password-update",
+					"kms_encryption_context": map[string]string{"name": "value-update"},
+					"src_db_instance_id":     "src-instance-id-update",
+					"restore_time":           "2026-02-01T00:00:00Z",
 				}),
 				ExpectError: regexp.MustCompile(`db_instance_class.*is required`),
 			},

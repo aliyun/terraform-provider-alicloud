@@ -833,13 +833,16 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	// (values: update|delete), not a persistent state returned by DescribeBackupPolicy.
 	// Keep it out of Read so the config value is preserved after Update writes the
 	// configured value to state (same pattern as ssl_action).
-	// The remaining cross-region backup attributes are write-side as well: ModifyBackupPolicy
-	// accepts them, but DescribeBackupPolicy (called here without SrcRegion) does not return
-	// them, so a bare d.Set would overwrite the configured values with nil-derived zero/empty
-	// values right after enabling cross-region backup. Guard each Set the same way
-	// cross_backup_period is guarded above (skip when the response omits the key or returns
-	// an empty value); the guarded Set keeps the configured value Update already wrote to
-	// state, matching how ssl_action retains its configured value without a Read Set.
+	// The remaining cross-region backup attributes are written by ModifyBackupPolicy and
+	// reported back by DescribeBackupPolicy for an active policy, but the service omits a
+	// key once its feature is off (for example the cross log retention pair after
+	// cross-region log backup is disabled, or the whole cross block after the policy is
+	// deleted). A bare d.Set would overwrite the configured values with nil-derived
+	// zero/empty values in those states, so guard each Set the same way
+	// cross_backup_period is guarded above (skip when the response omits the key or
+	// returns an empty value); the guarded Set keeps the configured value Update already
+	// wrote to state, matching how ssl_action retains its configured value without a
+	// Read Set.
 	if v, ok := backupPolicy["CrossRetentionType"]; ok && fmt.Sprint(v) != "" {
 		d.Set("cross_retention_type", v)
 	}
