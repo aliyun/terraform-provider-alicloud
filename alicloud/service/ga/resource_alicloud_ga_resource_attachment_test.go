@@ -32,7 +32,7 @@ func TestAccAliCloudGaResourceAttachment_basic0(t *testing.T) {
 					resource.TestCheckResourceAttrPair(resourceId, "accelerator_id", "alicloud_ga_accelerator.default", "id"),
 					resource.TestCheckResourceAttr(resourceId, "associated_resource_type", "WAF"),
 					resource.TestCheckResourceAttr(resourceId, "associated_resource_region_id", "cn-hangzhou"),
-					resource.TestCheckResourceAttrPair(resourceId, "associated_resource_id", "data.alicloud_waf_instances.default", "instances.0.id"),
+					resource.TestCheckResourceAttrPair(resourceId, "associated_resource_id", "data.alicloud_wafv3_instances.default", "ids.0"),
 					resource.TestCheckResourceAttr(resourceId, "associated_mode", "Associated"),
 					resource.TestCheckResourceAttr(resourceId, "state", "active"),
 				),
@@ -107,9 +107,7 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_waf_instances" "default" {
-  status = 1
-}
+data "alicloud_wafv3_instances" "default" {}
 
 resource "alicloud_ga_accelerator" "default" {
   accelerator_name       = var.name
@@ -123,7 +121,7 @@ resource "alicloud_ga_resource_attachment" "default" {
   accelerator_id                = alicloud_ga_accelerator.default.id
   associated_resource_type      = "WAF"
   associated_resource_region_id = "cn-hangzhou"
-  associated_resource_id        = data.alicloud_waf_instances.default.instances.0.id
+  associated_resource_id        = data.alicloud_wafv3_instances.default.ids.0
 }
 `, name)
 }
@@ -138,9 +136,7 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_waf_instances" "default" {
-  status = 1
-}
+data "alicloud_wafv3_instances" "default" {}
 
 resource "alicloud_ga_accelerator" "default" {
   accelerator_name       = var.name
@@ -154,7 +150,7 @@ resource "alicloud_ga_resource_attachment" "default" {
   accelerator_id                = alicloud_ga_accelerator.default.id
   associated_resource_type      = "ECS"
   associated_resource_region_id = "cn-hangzhou"
-  associated_resource_id        = data.alicloud_waf_instances.default.instances.0.id
+  associated_resource_id        = data.alicloud_wafv3_instances.default.ids.0
 }
 `, name)
 }

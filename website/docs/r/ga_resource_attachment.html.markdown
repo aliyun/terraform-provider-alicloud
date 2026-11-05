@@ -17,6 +17,8 @@ For information about Global Accelerator (GA) Resource Attachment and how to use
 
 -> **NOTE:** The association API accepts only `cn-hangzhou` as the GA instance region, so configure the provider with `region = "cn-hangzhou"`.
 
+-> **NOTE:** The GA WAF integration uses a WAF 3.0 instance. The example below reads an existing instance through the `alicloud_wafv3_instances` data source; create one with `alicloud_wafv3_instance` first if the account does not have a WAF instance.
+
 ## Example Usage
 
 Basic Usage
@@ -34,9 +36,7 @@ provider "alicloud" {
   region = "cn-hangzhou"
 }
 
-data "alicloud_waf_instances" "example" {
-  status = 1
-}
+data "alicloud_wafv3_instances" "example" {}
 
 resource "alicloud_ga_accelerator" "example" {
   accelerator_name       = "terraform-example"
@@ -50,7 +50,7 @@ resource "alicloud_ga_resource_attachment" "example" {
   accelerator_id                = alicloud_ga_accelerator.example.id
   associated_resource_type      = "WAF"
   associated_resource_region_id = "cn-hangzhou"
-  associated_resource_id        = data.alicloud_waf_instances.example.instances.0.id
+  associated_resource_id        = data.alicloud_wafv3_instances.example.ids.0
 }
 ```
 
