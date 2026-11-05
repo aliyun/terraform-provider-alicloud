@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_esa_edge_container_app_version
 
-Provides a ESA Edge Container App Version resource. An edge container application version describes the container group (image, spec, probes, storage, environment variables, lifecycle hooks) to deploy for a given [edge container application](./esa_edge_container_app). The version is immutable once created; configuring `publish_env` publishes the version, and changing the publish parameters re-publishes it.
+Provides a ESA Edge Container App Version resource. An edge container application version describes the container group (image, spec, probes, storage, environment variables, lifecycle hooks) to deploy for a given [edge container application](./esa_edge_container_app.html.markdown). The version is immutable once created; configuring `publish_env` publishes the version, and changing the publish parameters re-publishes it.
 
 For information about ESA Edge Container App Version and how to use it, see [CreateEdgeContainerAppVersion](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateEdgeContainerAppVersion).
 
