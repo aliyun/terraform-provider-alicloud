@@ -675,6 +675,76 @@ func (s *Service) RealtimeComputeVariableStateRefreshFuncWithApi(id string, fiel
 
 // DescribeRealtimeComputeVariable >>> Encapsulated.
 
+// DescribeRealtimeComputeUdfArtifact <<< Encapsulated get interface for RealtimeCompute UdfArtifact.
+//
+// GetUdfArtifacts is a list endpoint filtered server-side by the udfArtifactName
+// query; $.data is the returned list. 990301 means the namespace or artifact is
+// gone and is surfaced as NotFound, matching the Variable resource. The Framework
+// alicloud_realtime_compute_udf_artifact resource and the ACC test harness
+// (ResourceCheckInitWithDescribeMethod) both read through this method.
+
+func (s *Service) DescribeRealtimeComputeUdfArtifact(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 3 {
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		return nil, err
+	}
+	namespace := parts[1]
+	udfArtifactName := parts[2]
+	query := map[string]*string{"udfArtifactName": helper.StringPointer(udfArtifactName)}
+	header := map[string]*string{"workspace": helper.StringPointer(parts[0])}
+
+	action := fmt.Sprintf("/api/v2/namespaces/%s/udfartifacts", namespace)
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RoaGet("ververica", "2022-07-18", action, query, header, nil)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, query)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"990301"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("UdfArtifact", id), errs.NotFoundMsg, response)
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	// ververica reports a missing namespace/artifact as success=false with errorCode
+	// 990301 in the body rather than a Go error; treat that as NotFound too.
+	if fmt.Sprint(response["success"]) == "false" {
+		if fmt.Sprint(response["errorCode"]) == "990301" {
+			return object, errs.WrapErrorf(errs.NotFoundErr("UdfArtifact", id), errs.NotFoundMsg, response)
+		}
+		return object, errs.WrapError(fmt.Errorf("GetUdfArtifacts failed for %s, response: %v", id, response))
+	}
+
+	v, err := jsonpath.Get("$.data", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.data", response)
+	}
+
+	arr, ok := v.([]interface{})
+	if !ok || len(arr) == 0 {
+		return object, errs.WrapErrorf(errs.NotFoundErr("UdfArtifact", id), errs.NotFoundMsg, response)
+	}
+	for _, item := range arr {
+		if m, ok := item.(map[string]interface{}); ok && fmt.Sprint(m["name"]) == udfArtifactName {
+			return m, nil
+		}
+	}
+	return object, errs.WrapErrorf(errs.NotFoundErr("UdfArtifact", id), errs.NotFoundMsg, response)
+}
+
+// DescribeRealtimeComputeUdfArtifact >>> Encapsulated.
+
 // QueryAvailableInstances queries bssopenapi BssOpenApi 2017-12-14 for a
 // subscription instance's renewal state. It is inlined here (mirroring the
 // root-package alicloud.BssOpenApiService.QueryAvailableInstances) so this
