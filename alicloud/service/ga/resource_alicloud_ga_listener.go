@@ -183,7 +183,7 @@ func ResourceAliCloudGaListener() *schema.Resource {
 						},
 						"endpoint_group_region": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 						},
 						"traffic_percentage": {
 							Type:         schema.TypeInt,
@@ -230,7 +230,7 @@ func ResourceAliCloudGaListener() *schema.Resource {
 									},
 									"weight": {
 										Type:         schema.TypeInt,
-										Required:     true,
+										Optional:     true,
 										ValidateFunc: validators.IntBetween(0, 255),
 									},
 									"endpoint": {
@@ -330,7 +330,7 @@ func ResourceAliCloudGaListener() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"endpoint_group_region": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 						},
 						"name": {
 							Type:         schema.TypeString,
@@ -973,9 +973,8 @@ func buildGaListenerEndpointGroupConfigurations(v interface{}) []map[string]inte
 		if !ok {
 			continue
 		}
-		config := map[string]interface{}{
-			"EndpointGroupRegion": m["endpoint_group_region"],
-		}
+		config := map[string]interface{}{}
+		setGaListenerParam(config, "EndpointGroupRegion", m["endpoint_group_region"])
 		setGaListenerParam(config, "EndpointGroupName", m["endpoint_group_name"])
 		setGaListenerParam(config, "EndpointGroupDescription", m["endpoint_group_description"])
 		setGaListenerParam(config, "TrafficPercentage", m["traffic_percentage"])
@@ -1074,9 +1073,8 @@ func buildGaListenerCustomRoutingEndpointGroupConfigurations(v interface{}) []ma
 		if !ok {
 			continue
 		}
-		config := map[string]interface{}{
-			"EndpointGroupRegion": m["endpoint_group_region"],
-		}
+		config := map[string]interface{}{}
+		setGaListenerParam(config, "EndpointGroupRegion", m["endpoint_group_region"])
 		setGaListenerParam(config, "Name", m["name"])
 		setGaListenerParam(config, "Description", m["description"])
 		setGaListenerParam(config, "DestinationConfigurations", buildGaListenerDestinationConfigurations(m["destination_configurations"]))
