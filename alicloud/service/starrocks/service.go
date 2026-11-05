@@ -4,6 +4,7 @@ package starrocks
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -303,10 +304,10 @@ func (s *Service) NodeGroupStateRefreshFuncWithApi(id string, field string, fail
 // or a CN group is a backend group depending on the run mode, and the instance
 // resource does not persist node group ids, so both component types are read and
 // returned together for attribute based matching.
-func (s *Service) DescribeBackendNodeGroups(instanceId string) ([]map[string]interface{}, error) {
+func (s *Service) DescribeBackendNodeGroups(instanceId string, timeout time.Duration) ([]map[string]interface{}, error) {
 	groups := make([]map[string]interface{}, 0)
 	for _, componentType := range []string{"BE", "CN"} {
-		items, err := s.describeNodeGroups(instanceId, componentType)
+		items, err := s.DescribeNodeGroupsByComponentType(instanceId, componentType, timeout)
 		if err != nil {
 			return nil, err
 		}
@@ -320,45 +321,79 @@ func (s *Service) DescribeBackendNodeGroups(instanceId string) ([]map[string]int
 	return groups, nil
 }
 
-func (s *Service) describeNodeGroups(clusterId, componentType string) ([]map[string]interface{}, error) {
+// DescribeNodeGroupsByComponentType lists every compute group of one component type.
+// The API paginates and a group on a later page is as real as one on the first page,
+// so the complete result set is read before a caller decides which group to use.
+func (s *Service) DescribeNodeGroupsByComponentType(clusterId, componentType string, timeout time.Duration) ([]map[string]interface{}, error) {
 	client := s.client
-	query := make(map[string]*string)
-	query["ClusterId"] = helper.StringPointer(clusterId)
-	query["RegionId"] = helper.StringPointer(client.RegionId)
-	query["PageNumber"] = helper.StringPointer("1")
-	query["PageSize"] = helper.StringPointer("100")
-	request := map[string]interface{}{"componentType": componentType}
 	action := fmt.Sprintf("/webapi/nodegroup/describeNodeGroups")
-	var response map[string]interface{}
-	var err error
-
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-		response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, request, true)
-		if err != nil {
-			if helper.NeedRetry(err) {
-				wait()
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
-	})
-	logs.AddDebug(action, response, request)
-	if err != nil {
-		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, clusterId, action, errs.AlibabaCloudSdkGoERROR)
-	}
-
-	v, err := jsonpath.Get("$.Data[*]", response)
-	if err != nil {
-		return nil, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, clusterId, "$.Data[*]", response)
-	}
-
+	const pageSize = 100
+	const maxPages = 100
 	items := make([]map[string]interface{}, 0)
-	for _, raw := range v.([]interface{}) {
-		if item, ok := raw.(map[string]interface{}); ok {
-			items = append(items, item)
+	for pageNumber := 1; ; pageNumber++ {
+		if pageNumber > maxPages {
+			return nil, errs.WrapErrorf(fmt.Errorf("more than %d pages of node groups", maxPages), errs.DefaultErrorMsg, clusterId, action, errs.AlibabaCloudSdkGoERROR)
+		}
+		query := make(map[string]*string)
+		query["ClusterId"] = helper.StringPointer(clusterId)
+		query["RegionId"] = helper.StringPointer(client.RegionId)
+		query["PageNumber"] = helper.StringPointer(strconv.Itoa(pageNumber))
+		query["PageSize"] = helper.StringPointer(strconv.Itoa(pageSize))
+		request := map[string]interface{}{"componentType": componentType}
+
+		budget := timeout
+		if budget <= 0 {
+			budget = time.Minute
+		}
+		var response map[string]interface{}
+		var err error
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(budget, func() *retry.RetryError {
+			response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, clusterId, action, errs.AlibabaCloudSdkGoERROR)
+		}
+
+		v, err := jsonpath.Get("$.Data[*]", response)
+		if err != nil {
+			return nil, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, clusterId, "$.Data[*]", response)
+		}
+		batch := make([]map[string]interface{}, 0)
+		for _, raw := range v.([]interface{}) {
+			if item, ok := raw.(map[string]interface{}); ok {
+				batch = append(batch, item)
+			}
+		}
+		items = append(items, batch...)
+
+		if len(batch) == 0 || len(batch) < pageSize {
+			break
+		}
+		if total, err := nodeGroupsTotal(response); err == nil && total > 0 && len(items) >= total {
+			break
 		}
 	}
 	return items, nil
+}
+
+func nodeGroupsTotal(response map[string]interface{}) (int, error) {
+	v, err := jsonpath.Get("$.Total", response)
+	if err != nil {
+		return 0, err
+	}
+	total, err := strconv.Atoi(fmt.Sprint(v))
+	if err != nil || total < 0 {
+		return 0, fmt.Errorf("invalid node group total %v", v)
+	}
+	return total, nil
 }

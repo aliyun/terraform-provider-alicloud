@@ -4,6 +4,7 @@ package starrocks_test
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -658,15 +659,17 @@ resource "alicloud_vswitch" "default106DkE" {
 }
 
 // TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize verifies that
-// increasing backend_node_groups.*.storage_size expands the backend node group
-// disks in place: the instance keeps its id and the new size is applied.
+// increasing backend_node_groups.*.storage_size expands the backend node group disks
+// in place without touching the other compute groups, and that shrinking still
+// replaces the instance.
 func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T) {
 	var v map[string]interface{}
 	var instanceId string
 	var backendNodeGroupId string
+	var otherComputeGroups map[string]string
 	resourceId := "alicloud_star_rocks_instance.default"
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tfaccstarrocks%d", rand)
+	name := fmt.Sprintf("tf-testAccStarRocks%d", rand)
 	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return starrocks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeInstance")
@@ -701,24 +704,40 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 		backendNodeGroupId = ""
 		return nil
 	}
-	// Read does not backfill node groups, so the state attribute mirrors the
-	// configuration. The remote disk size is resolved through the configured
-	// attributes instead, and the same node group must be the one resized.
-	configuredBackendGroups := func(groups []map[string]interface{}) []map[string]interface{} {
-		matches := make([]map[string]interface{}, 0)
-		for _, group := range groups {
-			if fmt.Sprint(group["SpecType"]) != "standard" ||
-				fmt.Sprint(group["Cu"]) != "8" ||
-				fmt.Sprint(group["DiskNumber"]) != "1" ||
-				fmt.Sprint(group["ResidentNodeNumber"]) != "3" ||
-				fmt.Sprint(group["StoragePerformanceLevel"]) != "pl1" {
-				continue
-			}
-			matches = append(matches, group)
+	logCleanupReferences := func(s *terraform.State) {
+		vpcId := ""
+		if resource, ok := s.RootModule().Resources["alicloud_vpc.defaultB21JUD"]; ok {
+			vpcId = resource.Primary.ID
 		}
-		return matches
+		vSwitchId := ""
+		if resource, ok := s.RootModule().Resources["alicloud_vswitch.default106DkE"]; ok {
+			vSwitchId = resource.Primary.ID
+		}
+		t.Logf("cleanup reference: instance=%s vpc=%s vswitch=%s", instanceId, vpcId, vSwitchId)
 	}
-	checkBackendNodeGroupStorageSize := func(expected int) resource.TestCheckFunc {
+	// captureGroups records every compute group so the next step can prove that only
+	// the targeted backend group was resized.
+	captureGroups := func(s *terraform.State) error {
+		instance, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		service := starrocks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+		snapshot := make(map[string]string)
+		for _, componentType := range []string{"FE", "BE", "CN"} {
+			groups, err := service.DescribeNodeGroupsByComponentType(instance.Primary.ID, componentType, time.Minute)
+			if err != nil {
+				return err
+			}
+			for _, group := range groups {
+				snapshot[componentType+"/"+fmt.Sprint(group["NodeGroupId"])] = fmt.Sprint(group["StorageSize"])
+			}
+		}
+		otherComputeGroups = snapshot
+		logCleanupReferences(s)
+		return nil
+	}
+	checkTargetStorageSize := func(expected int) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			instance, ok := s.RootModule().Resources[resourceId]
 			if !ok {
@@ -727,7 +746,7 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 			service := starrocks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 			deadline := time.Now().Add(5 * time.Minute)
 			for {
-				groups, err := service.DescribeBackendNodeGroups(instance.Primary.ID)
+				groups, err := service.DescribeBackendNodeGroups(instance.Primary.ID, time.Minute)
 				if err != nil {
 					return err
 				}
@@ -750,6 +769,46 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 			}
 		}
 	}
+	checkOtherComputeGroupsUnchanged := func() resource.TestCheckFunc {
+		return func(s *terraform.State) error {
+			instance, ok := s.RootModule().Resources[resourceId]
+			if !ok {
+				return fmt.Errorf("resource %s not found in state", resourceId)
+			}
+			if len(otherComputeGroups) == 0 {
+				return fmt.Errorf("no compute group snapshot was captured before the resizing step")
+			}
+			service := starrocks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+			current := make(map[string]string)
+			for _, componentType := range []string{"FE", "BE", "CN"} {
+				groups, err := service.DescribeNodeGroupsByComponentType(instance.Primary.ID, componentType, time.Minute)
+				if err != nil {
+					return err
+				}
+				for _, group := range groups {
+					current[componentType+"/"+fmt.Sprint(group["NodeGroupId"])] = fmt.Sprint(group["StorageSize"])
+				}
+			}
+			for key, size := range otherComputeGroups {
+				if strings.HasSuffix(key, "/"+backendNodeGroupId) {
+					continue
+				}
+				actual, ok := current[key]
+				if !ok {
+					return fmt.Errorf("compute group %s disappeared during the disk expansion", key)
+				}
+				if actual != size {
+					return fmt.Errorf("compute group %s changed from %s to %s GiB during the disk expansion", key, size, actual)
+				}
+			}
+			for key := range current {
+				if _, ok := otherComputeGroups[key]; !ok && !strings.HasSuffix(key, "/"+backendNodeGroupId) {
+					return fmt.Errorf("unexpected compute group %s appeared during the disk expansion", key)
+				}
+			}
+			return nil
+		}
+	}
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -762,10 +821,17 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 				Config: starRocksInstanceBackendNodeGroupsStorageSizeConfig(name, 200),
 				Check: resource.ComposeTestCheckFunc(
 					checkInstanceNotReplaced,
+					captureGroups,
 					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.#", "1"),
 					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.0.storage_size", "200"),
-					checkBackendNodeGroupStorageSize(200),
+					checkTargetStorageSize(200),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"admin_password", "auto_renew", "backend_node_groups", "cluster_zone_id", "duration", "frontend_node_groups", "observer_node_groups", "oss_accessing_role_name", "pricing_cycle", "promotion_option_no"},
 			},
 			{
 				Config: starRocksInstanceBackendNodeGroupsStorageSizeConfig(name, 300),
@@ -773,7 +839,8 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 					checkInstanceNotReplaced,
 					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.#", "1"),
 					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.0.storage_size", "300"),
-					checkBackendNodeGroupStorageSize(300),
+					checkTargetStorageSize(300),
+					checkOtherComputeGroupsUnchanged(),
 				),
 			},
 			{
@@ -795,11 +862,39 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 				Check: resource.ComposeTestCheckFunc(
 					checkInstanceReplaced,
 					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.0.storage_size", "200"),
-					checkBackendNodeGroupStorageSize(200),
+					checkTargetStorageSize(200),
+					func(s *terraform.State) error {
+						logCleanupReferences(s)
+						return nil
+					},
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"admin_password", "auto_renew", "backend_node_groups", "cluster_zone_id", "duration", "frontend_node_groups", "observer_node_groups", "oss_accessing_role_name", "pricing_cycle", "promotion_option_no"},
 			},
 		},
 	})
+}
+
+// configuredBackendGroups filters the backend groups down to the group the test
+// configuration describes. The zone is not part of the filter because the API does
+// not report a reliable zone for ECI based compute groups.
+func configuredBackendGroups(groups []map[string]interface{}) []map[string]interface{} {
+	matches := make([]map[string]interface{}, 0)
+	for _, group := range groups {
+		if fmt.Sprint(group["SpecType"]) != "standard" ||
+			fmt.Sprint(group["Cu"]) != "8" ||
+			fmt.Sprint(group["DiskNumber"]) != "1" ||
+			fmt.Sprint(group["ResidentNodeNumber"]) != "3" ||
+			fmt.Sprint(group["StoragePerformanceLevel"]) != "pl1" {
+			continue
+		}
+		matches = append(matches, group)
+	}
+	return matches
 }
 
 func starRocksInstanceBackendNodeGroupsStorageSizeConfig(name string, storageSize int) string {
@@ -812,26 +907,27 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_vpc" "defaultB21JUD" {
   cidr_block = "172.16.0.0/12"
+  vpc_name   = "tf-testAccStarRocks-vpc"
 }
 
 resource "alicloud_vswitch" "default106DkE" {
   vpc_id       = alicloud_vpc.defaultB21JUD.id
   cidr_block   = "172.16.1.0/24"
-  vswitch_name = "sr-test"
+  vswitch_name = "tf-testAccStarRocks-vswitch"
   zone_id      = "cn-hangzhou-i"
 }
 
 resource "alicloud_star_rocks_instance" "default" {
-  admin_password    = "1qaz@QAZ"
-  cluster_zone_id   = "cn-hangzhou-i"
-  instance_name     = var.name
-  duration          = 1
-  pay_type          = "postPaid"
-  vpc_id            = alicloud_vpc.defaultB21JUD.id
-  version           = "3.3"
-  run_mode          = "shared_data"
-  package_type      = "official"
-  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+  admin_password          = "1qaz@QAZ"
+  cluster_zone_id         = "cn-hangzhou-i"
+  instance_name           = var.name
+  duration                = 1
+  pay_type                = "postPaid"
+  vpc_id                  = alicloud_vpc.defaultB21JUD.id
+  version                 = "3.3"
+  run_mode                = "shared_data"
+  package_type            = "official"
+  resource_group_id       = data.alicloud_resource_manager_resource_groups.default.ids.0
   oss_accessing_role_name = "AliyunEMRStarRocksAccessingOSSRole"
   pricing_cycle           = "Month"
 

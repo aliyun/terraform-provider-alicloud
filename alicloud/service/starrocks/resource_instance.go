@@ -511,11 +511,13 @@ func resourceInstanceCustomizeDiff(_ context.Context, diff *schema.ResourceDiff,
 }
 
 // backendNodeGroupStorageSizeChangeForcesReplacement reports whether a storage_size
-// change cannot be applied in place. Removing the value is treated like a shrink:
-// the API has no way to detach or reduce a disk.
+// change cannot be applied in place. Removing the value is treated like a shrink
+// because the API cannot detach or reduce a disk, and adding a value to a group that
+// never had one cannot be compared with the remote size at plan time, so it keeps the
+// historical replacement semantics instead of silently skipping the resize.
 func backendNodeGroupStorageSizeChangeForcesReplacement(oldSize int, oldOk bool, newSize int, newOk bool) bool {
 	if !oldOk {
-		return false
+		return newOk
 	}
 	if !newOk {
 		return true
@@ -537,6 +539,21 @@ func backendNodeGroupStorageSize(raw interface{}) (int, bool) {
 
 func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	deadline := time.Now().Add(d.Timeout(schema.TimeoutUpdate))
+	starrocksService := NewService(client)
+
+	// Resolve every backend node group match before the first modifying call: an
+	// unmatched or ambiguous group has to fail while the instance is still untouched,
+	// name and resource group included.
+	var resizes []nodeGroupResize
+	if !d.IsNewResource() && d.HasChange("backend_node_groups") {
+		var err error
+		resizes, err = resourceInstanceResolveBackendNodeGroupResizes(d, starrocksService, deadline)
+		if err != nil {
+			return errs.WrapError(err)
+		}
+	}
+
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
@@ -560,8 +577,12 @@ func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	body = request
 	if update {
+		budget, budgetErr := remainingUpdateDuration(deadline)
+		if budgetErr != nil {
+			return errs.WrapError(budgetErr)
+		}
 		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+		err = retry.Retry(budget, func() *retry.RetryError {
 			response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 			if err != nil {
 				if helper.NeedRetry(err) {
@@ -595,8 +616,12 @@ func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	body = request
 	if update {
+		budget, budgetErr := remainingUpdateDuration(deadline)
+		if budgetErr != nil {
+			return errs.WrapError(budgetErr)
+		}
 		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+		err = retry.Retry(budget, func() *retry.RetryError {
 			response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 			if err != nil {
 				if helper.NeedRetry(err) {
@@ -613,16 +638,15 @@ func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("backend_node_groups") {
+	if d.HasChange("tags") {
 		starrocksService := NewService(client)
-		if err := resourceInstanceModifyBackendNodeGroupStorageSize(d, starrocksService); err != nil {
+		if err := starrocksService.SetResourceTags(d, "instance"); err != nil {
 			return errs.WrapError(err)
 		}
 	}
 
-	if d.HasChange("tags") {
-		starrocksService := NewService(client)
-		if err := starrocksService.SetResourceTags(d, "instance"); err != nil {
+	if len(resizes) > 0 {
+		if err := resourceInstanceApplyBackendNodeGroupResizes(d, starrocksService, resizes, deadline); err != nil {
 			return errs.WrapError(err)
 		}
 	}
@@ -630,29 +654,46 @@ func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	return resourceInstanceRead(d, meta)
 }
 
-// resourceInstanceModifyBackendNodeGroupStorageSize expands backend compute group
-// disks in place. The instance resource does not persist node group ids and the API
-// changes one node group per call, so every changed configuration entry is matched
-// to its remote group by the attributes that stay ForceNew. All matches are resolved
-// before the first modifying call: an unmatched or ambiguous entry fails without
-// touching any node group.
-func resourceInstanceModifyBackendNodeGroupStorageSize(d *schema.ResourceData, service *Service) error {
+// nodeGroupResize is one resolved in-place disk expansion.
+type nodeGroupResize struct {
+	index       int
+	nodeGroupId string
+	target      int
+}
+
+// remainingUpdateDuration returns the time left in the shared update budget. Every
+// step consumes the same budget so the number of node groups cannot extend the
+// configured timeout.
+func remainingUpdateDuration(deadline time.Time) (time.Duration, error) {
+	remaining := time.Until(deadline)
+	if remaining <= 0 {
+		return 0, fmt.Errorf("the update did not finish within the configured timeout")
+	}
+	return remaining, nil
+}
+
+// resourceInstanceResolveBackendNodeGroupResizes validates the whole backend node
+// group change without modifying anything. The instance resource does not persist
+// node group ids and the API changes one node group per call, so every changed
+// configuration entry is matched to its remote group by the attributes that stay
+// ForceNew. An unmatched or ambiguous entry fails here, before any modifying call.
+func resourceInstanceResolveBackendNodeGroupResizes(d *schema.ResourceData, service *Service, deadline time.Time) ([]nodeGroupResize, error) {
 	oldRaw, newRaw := d.GetChange("backend_node_groups")
 	oldGroups, _ := oldRaw.([]interface{})
 	newGroups, _ := newRaw.([]interface{})
 	if len(oldGroups) != len(newGroups) {
-		return fmt.Errorf("backend_node_groups can only be modified in place, got %d -> %d group(s)", len(oldGroups), len(newGroups))
+		return nil, fmt.Errorf("backend_node_groups can only be modified in place, got %d -> %d group(s)", len(oldGroups), len(newGroups))
 	}
 
-	groups, err := service.DescribeBackendNodeGroups(d.Id())
+	budget, err := remainingUpdateDuration(deadline)
 	if err != nil {
-		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DescribeNodeGroups", errs.AlibabaCloudSdkGoERROR)
+		return nil, err
+	}
+	groups, err := service.DescribeBackendNodeGroups(d.Id(), budget)
+	if err != nil {
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DescribeNodeGroups", errs.AlibabaCloudSdkGoERROR)
 	}
 
-	type nodeGroupResize struct {
-		nodeGroupId string
-		target      int
-	}
 	resizes := make([]nodeGroupResize, 0)
 	matchedIndex := make(map[string]int)
 	for i := range newGroups {
@@ -660,65 +701,108 @@ func resourceInstanceModifyBackendNodeGroupStorageSize(d *schema.ResourceData, s
 		newGroup, _ := newGroups[i].(map[string]interface{})
 		oldStorageSize, oldOk := backendNodeGroupStorageSize(oldGroup)
 		newStorageSize, newOk := backendNodeGroupStorageSize(newGroup)
-		if !oldOk {
-			continue
-		}
 		if backendNodeGroupStorageSizeChangeForcesReplacement(oldStorageSize, oldOk, newStorageSize, newOk) {
-			if !newOk {
-				return fmt.Errorf("backend_node_groups.%d storage_size cannot be removed in place, the instance has to be replaced", i)
+			switch {
+			case !newOk:
+				return nil, fmt.Errorf("backend_node_groups.%d storage_size cannot be removed in place, the instance has to be replaced", i)
+			case !oldOk:
+				return nil, fmt.Errorf("backend_node_groups.%d storage_size cannot be set in place without a previous value, the instance has to be replaced", i)
+			default:
+				return nil, fmt.Errorf("backend_node_groups.%d storage_size can only be expanded in place, got %d -> %d GiB", i, oldStorageSize, newStorageSize)
 			}
-			return fmt.Errorf("backend_node_groups.%d storage_size can only be expanded in place, got %d -> %d GiB", i, oldStorageSize, newStorageSize)
 		}
 		if !newOk || newStorageSize == oldStorageSize {
 			continue
 		}
 		nodeGroupId, err := matchBackendNodeGroup(groups, oldGroup)
 		if err != nil {
-			return fmt.Errorf("backend_node_groups.%d: %s", i, err)
+			return nil, fmt.Errorf("backend_node_groups.%d: %s", i, err)
 		}
 		if previous, ok := matchedIndex[nodeGroupId]; ok {
-			return fmt.Errorf("backend_node_groups.%d and backend_node_groups.%d resolve to the same node group %s", previous, i, nodeGroupId)
+			return nil, fmt.Errorf("backend_node_groups.%d and backend_node_groups.%d resolve to the same node group %s", previous, i, nodeGroupId)
 		}
 		matchedIndex[nodeGroupId] = i
-		resizes = append(resizes, nodeGroupResize{nodeGroupId: nodeGroupId, target: newStorageSize})
+		resizes = append(resizes, nodeGroupResize{index: i, nodeGroupId: nodeGroupId, target: newStorageSize})
 	}
+	return resizes, nil
+}
 
+// resourceInstanceApplyBackendNodeGroupResizes expands the resolved node groups. The
+// shared deadline covers the write retries and the RUNNING waits of every group.
+func resourceInstanceApplyBackendNodeGroupResizes(d *schema.ResourceData, service *Service, resizes []nodeGroupResize, deadline time.Time) error {
 	for _, resize := range resizes {
-		action := fmt.Sprintf("/webapi/resourceChange/modifyDiskSize")
-		request := make(map[string]interface{})
-		query := make(map[string]*string)
-		query["InstanceId"] = helper.StringPointer(d.Id())
-		query["NodeGroupId"] = helper.StringPointer(resize.nodeGroupId)
-		query["RegionId"] = helper.StringPointer(service.client.RegionId)
-		query["Target"] = helper.StringPointer(strconv.Itoa(resize.target))
-		if v, ok := d.GetOk("promotion_option_no"); ok {
-			query["PromotionOptionNo"] = helper.StringPointer(v.(string))
-		}
-		body := request
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-		var response map[string]interface{}
-		logErr := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			response, err = service.client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
-			if err != nil {
-				if helper.NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			return nil
-		})
-		logs.AddDebug(action, response, request)
-		if logErr != nil {
-			return errs.WrapErrorf(logErr, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
-		}
-		nodeGroupStateId := d.Id() + ":" + resize.nodeGroupId
-		stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, service.NodeGroupStateRefreshFunc(nodeGroupStateId, "Status", []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return errs.WrapErrorf(err, errs.IdMsg, nodeGroupStateId)
+		if err := resourceInstanceApplyBackendNodeGroupResize(d, service, resize, deadline); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+func resourceInstanceApplyBackendNodeGroupResize(d *schema.ResourceData, service *Service, resize nodeGroupResize, deadline time.Time) error {
+	action := fmt.Sprintf("/webapi/resourceChange/modifyDiskSize")
+	request := make(map[string]interface{})
+	query := make(map[string]*string)
+	query["InstanceId"] = helper.StringPointer(d.Id())
+	query["NodeGroupId"] = helper.StringPointer(resize.nodeGroupId)
+	query["RegionId"] = helper.StringPointer(service.client.RegionId)
+	query["Target"] = helper.StringPointer(strconv.Itoa(resize.target))
+	if v, ok := d.GetOk("promotion_option_no"); ok {
+		query["PromotionOptionNo"] = helper.StringPointer(v.(string))
+	}
+	body := request
+	var response map[string]interface{}
+	var err error
+	budget, budgetErr := remainingUpdateDuration(deadline)
+	if budgetErr != nil {
+		return budgetErr
+	}
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	logErr := retry.Retry(budget, func() *retry.RetryError {
+		response, err = service.client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				// The resize may already be applied even though the response was lost.
+				// Re-read the group before sending the billable change again so a retry
+				// cannot expand the same disk twice.
+				reached, checkErr := backendNodeGroupStorageSizeReached(service, d.Id(), resize.nodeGroupId, resize.target)
+				if checkErr == nil && reached {
+					return nil
+				}
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if logErr != nil {
+		return errs.WrapErrorf(logErr, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	nodeGroupStateId := d.Id() + ":" + resize.nodeGroupId
+	stateBudget, budgetErr := remainingUpdateDuration(deadline)
+	if budgetErr != nil {
+		return budgetErr
+	}
+	stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, stateBudget, 20*time.Second, service.NodeGroupStateRefreshFunc(nodeGroupStateId, "Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, nodeGroupStateId)
+	}
+	return nil
+}
+
+// backendNodeGroupStorageSizeReached reports whether the remote group already has at
+// least the requested disk size, which makes a repeated resize unnecessary.
+func backendNodeGroupStorageSizeReached(service *Service, instanceId, nodeGroupId string, target int) (bool, error) {
+	object, err := service.DescribeNodeGroup(instanceId + ":" + nodeGroupId)
+	if err != nil {
+		return false, err
+	}
+	current, err := strconv.Atoi(fmt.Sprint(object["StorageSize"]))
+	if err != nil {
+		return false, err
+	}
+	return current >= target, nil
 }
 
 // matchBackendNodeGroup resolves the single remote backend node group described by
