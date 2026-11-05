@@ -114,7 +114,6 @@ resource "alicloud_ga_accelerator" "default" {
   description            = var.name
   bandwidth_billing_type = "CDT"
   payment_type           = "PayAsYouGo"
-  bandwidth              = 200
 }
 
 resource "alicloud_ga_resource_attachment" "default" {
@@ -143,7 +142,6 @@ resource "alicloud_ga_accelerator" "default" {
   description            = var.name
   bandwidth_billing_type = "CDT"
   payment_type           = "PayAsYouGo"
-  bandwidth              = 200
 }
 
 resource "alicloud_ga_resource_attachment" "default" {

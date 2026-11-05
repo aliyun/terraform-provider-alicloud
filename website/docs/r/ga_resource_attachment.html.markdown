@@ -43,7 +43,6 @@ resource "alicloud_ga_accelerator" "example" {
   description            = "terraform-example"
   bandwidth_billing_type = "CDT"
   payment_type           = "PayAsYouGo"
-  bandwidth              = 200
 }
 
 resource "alicloud_ga_resource_attachment" "example" {
