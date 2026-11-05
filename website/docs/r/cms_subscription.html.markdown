@@ -18,7 +18,7 @@ For information about Cms Subscription and how to use it, see [What is Subscript
 
 -> **NOTE:** Every optional block must configure at least one member. A block that is declared but empty is rejected during `terraform plan`, because the service neither stores nor returns an empty block. Optional strings and lists must not be set to an empty value and list members must not be null: omit an argument to clear it and the read path reports a cleared, omitted or empty value as null. `relation` is the exception: it is computed by the service, so an omitted `relation` keeps the value the service stores instead of clearing it. A block whose only member is not known until apply (for example a value from another resource) is accepted, because it is resolved before the request is sent. `filter_setting` must not set both `expression` and `relation`; the conflict is reported when both values are known at plan time.
 
--> **NOTE:** Writes and reads are retried by the provider only within the operation deadline: every request carries the remaining operation budget into the HTTP transport, so its response cannot outlive the deadline, and no new attempt is sent after the operation stops. `CreateSubscription` has no idempotency token, so it is sent once; only a rejection that proves the request was not processed is retried (HTTP 429 or an explicit throttling error code). A server error (5xx) or a lost response may follow a request the service already accepted: that error states the server-side result is unknown, and check the workspace for a subscription with the requested name before retrying. An operation cancelled before its deadline stops new attempts but cannot abort a request already on the wire, which still ends at the deadline. A subscription id confirmed before a later step fails is kept in state, so the object stays refreshable and destroyable. Updates and deletes are idempotent for the same payload and are retried on transient failures instead.
+-> **NOTE:** Writes and reads are retried by the provider only within the operation deadline: every request carries the remaining operation budget into the HTTP transport (rounded up to whole seconds and never more than the configured client connect and read timeouts together), so a response cannot outlive the operation, and no new attempt is sent after the operation stops. `CreateSubscription` has no idempotency token, so it is sent once; only a rejection that proves the request was not processed is retried (HTTP 429 or an explicit throttling error code). A server error (5xx) or a lost response may follow a request the service already accepted: that error states the server-side result is unknown, and check the workspace for a subscription with the requested name before retrying. An operation canceled before its deadline stops new attempts but cannot abort a request already on the wire, which still ends at the deadline. A subscription id confirmed before a later step fails is kept in state, so the object stays refreshable and destroyable. Updates and deletes are idempotent for the same payload and are retried on transient failures instead.
 
 ## Example Usage
 
@@ -97,17 +97,17 @@ The following arguments are supported:
 ### `pushing_setting`
 
 * `alert_action_ids` - (Optional, List) The IDs of the action integrations triggered when an alert fires. Use the action integration IDs configured in the Cms 2.0 console for the same workspace; Cms does not expose a Terraform resource for them.
-* `restore_action_ids` - (Optional, List) The IDs of the action integrations triggered when an alert recovers. Use the action integration IDs configured in the Cms 2.0 console for the same workspace.
-* `template_uuid` - (Optional, String) The UUID of the message template configured in the Cms 2.0 console for the same workspace.
-* `response_plan_id` - (Optional, String) The ID of the response plan configured in the Cms 2.0 console for the same workspace.
+* `restore_action_ids` - (Optional, List) The IDs of the action integrations triggered when an alert recovers. Use the action integration IDs configured in the Cms 2.0 console for the same workspace; Cms does not expose a Terraform resource for them.
+* `template_uuid` - (Optional, String) The UUID of the message template configured in the Cms 2.0 console for the same workspace. Cms does not expose a Terraform resource for message templates, so obtain the UUID from the console or the OpenAPI.
+* `response_plan_id` - (Optional, String) The ID of the response plan configured in the Cms 2.0 console for the same workspace. Cms does not expose a Terraform resource for response plans, so obtain the ID from the console or the OpenAPI.
 
 ### `workspace_filter_setting`
 
-* `workspace_uuids` - (Optional, List) The UUIDs of the workspaces included in the subscription. Use workspace UUIDs of the Cms 2.0 workspaces in the same region.
+* `workspace_uuids` - (Optional, List) The UUIDs of the workspaces included in the subscription. `alicloud_cms_workspace` exports the workspace name but not its UUID, and Cms exposes no Terraform resource for the UUID, so obtain it from the console or the OpenAPI.
 
 ### `agent_config`
 
-* `agent_uuid` - (Optional, String) The unique identifier of the agent.
+* `agent_uuid` - (Optional, String) The unique identifier of the agent. Cms does not expose a Terraform resource for agents, so obtain the identifier from the console or the OpenAPI.
 * `routes` - (Optional, List) The routing configuration of the agent. See [`routes`](#agent_config-routes) below.
 
 ### `agent_config-routes`

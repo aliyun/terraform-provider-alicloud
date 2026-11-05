@@ -2850,9 +2850,9 @@ func (client *AliyunClient) roaRequest(method string, apiProductCode string, api
 
 // RoaWithContext invokes one ROA request bounded by the caller's context
 // deadline. The shared client cannot attach a context to a request, so the
-// remaining operation budget is handed to the SDK runtime as the HTTP read
-// timeout: the actual transport aborts a response that does not arrive before
-// the deadline instead of letting the request outlive the operation.
+// remaining operation budget is handed to the SDK runtime as the HTTP timeouts:
+// the actual transport aborts a response that does not arrive before the
+// deadline instead of letting the request outlive the operation.
 // parameters:
 //
 //	ctx - operation context; its deadline bounds the request
@@ -2868,22 +2868,12 @@ func (client *AliyunClient) RoaWithContext(ctx context.Context, method string, a
 	runtime := &util.RuntimeOptions{}
 	runtime.SetAutoretry(autoRetry)
 	if deadline, ok := ctx.Deadline(); ok {
-		remaining := time.Until(deadline)
-		if remaining <= 0 {
-			if err := ctx.Err(); err != nil {
-				return nil, err
+		timeout, err := roaContextTimeout(deadline, client.teaRoaSdkConfig)
+		if err != nil {
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return nil, ctxErr
 			}
-			return nil, context.DeadlineExceeded
-		}
-		// The SDK sets the HTTP client timeout to connect+read. The two timeouts
-		// are sized so that their sum is the remaining operation budget, capped
-		// by the client read timeout the provider configured: the request can
-		// never outlive the operation and never becomes more permissive than the
-		// configured read timeout either. The extra millisecond keeps a
-		// sub-millisecond remainder from disabling the timeout entirely.
-		timeout := int(remaining/time.Millisecond) + 1
-		if configured := tea.IntValue(client.teaRoaSdkConfig.ReadTimeout); configured > 0 && configured < timeout {
-			timeout = configured
+			return nil, err
 		}
 		connect := tea.IntValue(client.teaRoaSdkConfig.ConnectTimeout)
 		if connect < 0 {
@@ -2896,6 +2886,27 @@ func (client *AliyunClient) RoaWithContext(ctx context.Context, method string, a
 		runtime.SetReadTimeout(timeout - connect)
 	}
 	return client.roaRequestWithRuntime(method, apiProductCode, apiVersion, "", pathName, query, headers, body, runtime)
+}
+
+// roaContextTimeout returns the whole-request HTTP timeout, in milliseconds,
+// for a request that has to finish before deadline. The SDK sets the HTTP client
+// timeout to connect+read and keys its pooled client by those two values, so a
+// per-call millisecond budget would allocate a client, and a connection pool,
+// for nearly every request. Rounding the budget up to whole seconds bounds the
+// number of distinct pooled clients while still aborting the response within a
+// second of the deadline. The budget never exceeds the configured connect and
+// read timeouts together, which is what the client applied before the operation
+// deadline was propagated to the transport.
+func roaContextTimeout(deadline time.Time, config roa.Config) (int, error) {
+	remaining := time.Until(deadline)
+	if remaining <= 0 {
+		return 0, context.DeadlineExceeded
+	}
+	timeout := int64(remaining+time.Second-1) / int64(time.Second) * 1000
+	if configured := int64(tea.IntValue(config.ConnectTimeout)) + int64(tea.IntValue(config.ReadTimeout)); configured > 0 && configured < timeout {
+		timeout = configured
+	}
+	return int(timeout), nil
 }
 
 func (client *AliyunClient) roaRequestWithRuntime(method string, apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, runtime *util.RuntimeOptions) (map[string]interface{}, error) {

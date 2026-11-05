@@ -358,6 +358,9 @@ func testAccCmsSubscriptionRecordPolicy(resourceId string, records *[]cmsSubscri
 // code and wait as the final destroy check.
 func testAccCmsSubscriptionCheckRecordedPoliciesDestroyed(records *[]cmsSubscriptionPolicy) resource.TestCheckFunc {
 	return func(*terraform.State) error {
+		if len(*records) == 0 {
+			return fmt.Errorf("no notification policy identity was recorded, so its deletion cannot be verified")
+		}
 		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
 		for _, object := range *records {
 			uuid, workspace := object.uuid, object.workspace
