@@ -644,6 +644,22 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_options(t *testing
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"target_value":              "20.1",
+					"metric_name":               "CpuUtilization",
+					"disable_scale_in":          "false",
+					"estimated_instance_warmup": "200",
+					"alarm_options":             acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alarm_options.#": "0",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
