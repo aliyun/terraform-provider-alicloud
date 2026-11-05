@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_dbfs_service_linked_role
 
-~> **NOTE:** This resource has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://www.alibabacloud.com/help/en/dbfs/).
+-> **DEPRECATED:** This resource has been deprecated from v1.279.0.
 
 Using this data source can create Dbfs service-linked roles(SLR). Dbfs may need to access another Alibaba Cloud service to implement a specific feature. In this case, Dbfs must assume a specific service-linked role, which is a Resource Access Management (RAM) role, to obtain permissions to access another Alibaba Cloud service. 
 

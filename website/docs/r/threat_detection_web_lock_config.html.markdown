@@ -35,7 +35,7 @@ resource "alicloud_threat_detection_web_lock_config" "default" {
   mode                = "whitelist"
   local_backup_dir    = "/usr/local/aegis/bak"
   dir                 = "/tmp/"
-  defense_mode        = "audit"
+  defence_mode        = "audit"
 }
 ```
 
@@ -44,7 +44,7 @@ resource "alicloud_threat_detection_web_lock_config" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `defense_mode` - (Required, ForceNew) Protection mode. Value:-**block**: Intercept-**audit**: Alarm
+* `defence_mode` - (Required, ForceNew) Protection mode. Value:-**block**: Intercept-**audit**: Alarm
 * `dir` - (Required, ForceNew) Specify the protection directory.
 * `exclusive_dir` - (ForceNew, Optional) Specify a directory address that does not require Web tamper protection (I. E. Excluded directories).> The protection Mode **Mode** is set to **blacklist**, you need to configure this parameter.
 * `exclusive_file` - (ForceNew, Optional) Specify files that do not need to enable tamper protection for web pages (that is, exclude files).> The protection Mode **Mode** is set to **blacklist**, you need to configure this parameter.

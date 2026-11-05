@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_dbfs_auto_snap_shot_policy
 
-~> **NOTE:** This resource has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://www.alibabacloud.com/help/en/dbfs/).
+-> **DEPRECATED:** This resource has been deprecated from v1.279.0.
 
 Provides a Dbfs Auto Snap Shot Policy resource.
 

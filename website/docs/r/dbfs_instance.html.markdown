@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_dbfs_instance
 
-~> **NOTE:** This resource has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://www.alibabacloud.com/help/en/dbfs/).
+-> **DEPRECATED:** This resource has been deprecated from v1.279.0.
 
 Provides a DBFS Dbfs Instance resource. An instance of a database file system is equivalent to a file system and can store data of file types.
 
