@@ -40,52 +40,129 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
+				// Create with explicit false values: they must reach the API instead
+				// of falling back to the server defaults (skip_nodes_with_system_pods
+				// and scale_up_from_zero default to true).
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_id":                "${alicloud_cs_managed_kubernetes.default.id}",
-					"cool_down_duration":        "10m",
-					"unneeded_duration":         "10m",
-					"utilization_threshold":     "0.5",
-					"gpu_utilization_threshold": "0.5",
-					"scan_interval":             "30s",
-					"scale_down_enabled":        "true",
-					"expander":                  "random",
-					"scaler_type":               "cluster-autoscaler",
+					"cluster_id":                    "${alicloud_cs_managed_kubernetes.default.id}",
+					"cool_down_duration":            "10m",
+					"unneeded_duration":             "10m",
+					"utilization_threshold":         "0.5",
+					"gpu_utilization_threshold":     "0.5",
+					"scan_interval":                 "30s",
+					"scale_down_enabled":            "true",
+					"expander":                      "random",
+					"scaler_type":                   "cluster-autoscaler",
+					"skip_nodes_with_system_pods":   "false",
+					"skip_nodes_with_local_storage": "false",
+					"daemonset_eviction_for_nodes":  "false",
+					"recycle_node_deletion_enabled": "false",
+					"scale_up_from_zero":            "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_id":                acctest.CHECKSET,
-						"cool_down_duration":        acctest.CHECKSET,
-						"unneeded_duration":         acctest.CHECKSET,
-						"utilization_threshold":     acctest.CHECKSET,
-						"gpu_utilization_threshold": acctest.CHECKSET,
-						"scan_interval":             acctest.CHECKSET,
-						"scale_down_enabled":        acctest.CHECKSET,
-						"expander":                  acctest.CHECKSET,
-						"scaler_type":               acctest.CHECKSET,
+						"cluster_id":                    acctest.CHECKSET,
+						"cool_down_duration":            acctest.CHECKSET,
+						"unneeded_duration":             acctest.CHECKSET,
+						"utilization_threshold":         acctest.CHECKSET,
+						"gpu_utilization_threshold":     acctest.CHECKSET,
+						"scan_interval":                 acctest.CHECKSET,
+						"scale_down_enabled":            acctest.CHECKSET,
+						"expander":                      acctest.CHECKSET,
+						"scaler_type":                   acctest.CHECKSET,
+						"skip_nodes_with_system_pods":   "false",
+						"skip_nodes_with_local_storage": "false",
+						"daemonset_eviction_for_nodes":  "false",
+						"recycle_node_deletion_enabled": "false",
+						"scale_up_from_zero":            "false",
 					}),
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"scaler_type"},
+			},
+			{
+				// false -> true for the same batch of boolean arguments.
 				Config: testAccConfig(map[string]interface{}{
 					"skip_nodes_with_system_pods":   "true",
-					"skip_nodes_with_local_storage": "false",
-					"daemonset_eviction_for_nodes":  "false",
+					"skip_nodes_with_local_storage": "true",
+					"daemonset_eviction_for_nodes":  "true",
 					"max_graceful_termination_sec":  "14400",
 					"min_replica_count":             "0",
-					"recycle_node_deletion_enabled": "false",
+					"recycle_node_deletion_enabled": "true",
 					"scale_up_from_zero":            "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"skip_nodes_with_system_pods":   acctest.CHECKSET,
-						"skip_nodes_with_local_storage": acctest.CHECKSET,
-						"daemonset_eviction_for_nodes":  acctest.CHECKSET,
-						"max_graceful_termination_sec":  acctest.CHECKSET,
-						"min_replica_count":             acctest.CHECKSET,
-						"recycle_node_deletion_enabled": acctest.CHECKSET,
-						"scale_up_from_zero":            acctest.CHECKSET,
+						"skip_nodes_with_system_pods":   "true",
+						"skip_nodes_with_local_storage": "true",
+						"daemonset_eviction_for_nodes":  "true",
+						"max_graceful_termination_sec":  "14400",
+						"min_replica_count":             "0",
+						"recycle_node_deletion_enabled": "true",
+						"scale_up_from_zero":            "true",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"scaler_type"},
+			},
+			{
+				// Removing the arguments leaves the last applied values in place and
+				// must not produce a persistent diff.
+				Config: testAccConfig(map[string]interface{}{
+					"skip_nodes_with_system_pods":   acctest.REMOVEKEY,
+					"skip_nodes_with_local_storage": acctest.REMOVEKEY,
+					"daemonset_eviction_for_nodes":  acctest.REMOVEKEY,
+					"recycle_node_deletion_enabled": acctest.REMOVEKEY,
+					"scale_up_from_zero":            acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"skip_nodes_with_system_pods":   "true",
+						"skip_nodes_with_local_storage": "true",
+						"daemonset_eviction_for_nodes":  "true",
+						"recycle_node_deletion_enabled": "true",
+						"scale_up_from_zero":            "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"scaler_type"},
+			},
+			{
+				// true -> false again, proving both directions reach the API.
+				Config: testAccConfig(map[string]interface{}{
+					"skip_nodes_with_system_pods":   "false",
+					"skip_nodes_with_local_storage": "false",
+					"daemonset_eviction_for_nodes":  "false",
+					"recycle_node_deletion_enabled": "false",
+					"scale_up_from_zero":            "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"skip_nodes_with_system_pods":   "false",
+						"skip_nodes_with_local_storage": "false",
+						"daemonset_eviction_for_nodes":  "false",
+						"recycle_node_deletion_enabled": "false",
+						"scale_up_from_zero":            "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"scaler_type"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -111,6 +188,12 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"scaler_type"},
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"expander": "priority",
 				}),
@@ -119,6 +202,12 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 						"expander": acctest.CHECKSET,
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"scaler_type"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -131,6 +220,14 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"scaler_type"},
+			},
+			{
+				// Import always reads the default cluster-autoscaler addon, so no
+				// import step follows the goatscaler switch.
 				Config: testAccConfig(map[string]interface{}{
 					"scaler_type": "goatscaler",
 				}),
