@@ -10,6 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
+	sdkCredentials "github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	ossv2 "github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/fc-go-sdk"
@@ -143,4 +147,146 @@ func TestUnitOssV2ClientTimeoutsKeepSdkDefaultsWhenUnset(t *testing.T) {
 	if assert.NotNil(t, cfg.ReadWriteTimeout) {
 		assert.Equal(t, 2500*time.Millisecond, *cfg.ReadWriteTimeout)
 	}
+}
+
+// getSdkConfig is shared by the legacy alibaba-cloud-sdk-go clients. Its
+// sdk-level timeout follows the provider client_read_timeout, and a
+// non-positive value keeps the 30s fallback so zero-config callers (e.g. the
+// sweeper client) do not drop to the SDK's own default. The per-client
+// SetReadTimeout calls in the With*Client closures take precedence at request
+// time, so this test covers the shared config field only.
+func TestUnitLegacySdkConfigUsesClientReadTimeout(t *testing.T) {
+	testCases := []struct {
+		name      string
+		timeoutMs int
+		want      time.Duration
+	}{
+		{name: "provider read timeout is converted to a duration", timeoutMs: 45000, want: 45 * time.Second},
+		{name: "sub-second read timeout is preserved", timeoutMs: 1500, want: 1500 * time.Millisecond},
+		{name: "unset read timeout keeps the 30s fallback", timeoutMs: 0, want: 30 * time.Second},
+		{name: "negative read timeout keeps the 30s fallback", timeoutMs: -1500, want: 30 * time.Second},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			client := &AliyunClient{
+				config: &Config{
+					RegionId:          "cn-beijing",
+					Protocol:          "HTTPS",
+					ClientReadTimeout: tc.timeoutMs,
+				},
+			}
+
+			assert.Equal(t, tc.want, client.getSdkConfig().Timeout)
+		})
+	}
+}
+
+// The public client constructors forward the raw provider timeouts to the
+// client-level setters, which the SDK checks before the shared config value.
+func TestUnitLegacyVpcClientUsesClientTimeouts(t *testing.T) {
+	for _, name := range []string{"HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy"} {
+		t.Setenv(name, "")
+	}
+
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").
+		SetAccessKeyId("access-key").
+		SetAccessKeySecret("secret-key"))
+	require.NoError(t, err)
+
+	var endpoints sync.Map
+	endpoints.Store("vpc", "vpc.unit-test.aliyuncs.com")
+
+	testCases := []struct {
+		name         string
+		readTimeout  int
+		connectTimer int
+		wantRead     time.Duration
+		wantConnect  time.Duration
+	}{
+		{name: "provider timeouts reach the client", readTimeout: 45000, connectTimer: 2500, wantRead: 45 * time.Second, wantConnect: 2500 * time.Millisecond},
+		{name: "unset timeouts leave the client-level fields unset", readTimeout: 0, connectTimer: 0, wantRead: 0, wantConnect: 0},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			client := &AliyunClient{
+				accountId: "1234567890",
+				config: &Config{
+					RegionId:             "cn-beijing",
+					Protocol:             "HTTPS",
+					Credential:           credential,
+					ClientReadTimeout:    tc.readTimeout,
+					ClientConnectTimeout: tc.connectTimer,
+					Endpoints:            &endpoints,
+					SignVersion:          &sync.Map{},
+				},
+			}
+
+			var gotRead, gotConnect time.Duration
+			_, err := client.WithVpcClient(func(c *vpc.Client) (interface{}, error) {
+				gotRead = c.GetReadTimeout()
+				gotConnect = c.GetConnectTimeout()
+				return nil, nil
+			})
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.wantRead, gotRead)
+			assert.Equal(t, tc.wantConnect, gotConnect)
+		})
+	}
+}
+
+// A legacy client built from getSdkConfig must stop waiting for a stalled
+// response once the configured read timeout elapses. The sdk client is built
+// directly from the config because most With*Client closures also call
+// SetReadTimeout, which would mask the shared config value.
+func TestUnitLegacySdkClientUsesClientReadTimeout(t *testing.T) {
+	for _, name := range []string{"HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy"} {
+		t.Setenv(name, "")
+	}
+
+	var arrived atomic.Bool
+	release := make(chan struct{})
+	var releaseOnce sync.Once
+	releaseFn := func() { releaseOnce.Do(func() { close(release) }) }
+	// Safety valve so a run without the wiring cannot hang the binary: the
+	// elapsed-time assertion below is what fails in that run.
+	go func() {
+		time.Sleep(12 * time.Second)
+		releaseFn()
+	}()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		arrived.Store(true)
+		<-release
+	}))
+	defer server.Close()
+	defer releaseFn()
+
+	client := &AliyunClient{
+		config: &Config{
+			RegionId:          "cn-beijing",
+			Protocol:          "HTTP",
+			ClientReadTimeout: 500,
+		},
+	}
+	sdkClient, err := sdk.NewClientWithOptions("cn-beijing", client.getSdkConfig(), sdkCredentials.NewAccessKeyCredential("access-key", "secret-key"))
+	require.NoError(t, err)
+
+	request := requests.NewCommonRequest()
+	request.Method = http.MethodGet
+	request.Scheme = "http"
+	request.Domain = strings.TrimPrefix(server.URL, "http://")
+	request.Version = "2014-05-26"
+	request.ApiName = "DescribeRegions"
+	request.Product = "Ecs"
+
+	start := time.Now()
+	_, err = sdkClient.ProcessCommonRequest(request)
+	elapsed := time.Since(start)
+
+	assert.True(t, arrived.Load(), "the request should physically reach the stalled server")
+	assert.Error(t, err, "a stalled response must surface as an error once the configured read timeout elapses")
+	assert.Less(t, elapsed, 10*time.Second, "the request must respect the configured read timeout instead of the sdk default")
 }

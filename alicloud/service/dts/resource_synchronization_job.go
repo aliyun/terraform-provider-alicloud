@@ -22,7 +22,7 @@ func ResourceSynchronizationJob() *schema.Resource {
 		Update: resourceSynchronizationJobUpdate,
 		Delete: resourceSynchronizationJobDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: resourceSynchronizationJobImport,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Update: schema.DefaultTimeout(10 * time.Minute),
@@ -466,6 +466,12 @@ func resourceSynchronizationJobCreate(d *schema.ResourceData, meta interface{}) 
 
 	return resourceSynchronizationJobUpdate(d, meta)
 }
+func resourceSynchronizationJobImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	client := meta.(*connectivity.AliyunClient)
+	dtsService := NewService(client)
+	return importJob(d, dtsService.DescribeDtsSynchronizationJob)
+}
+
 func resourceSynchronizationJobRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dtsService := NewService(client)
@@ -477,6 +483,9 @@ func resourceSynchronizationJobRead(d *schema.ResourceData, meta interface{}) er
 			return nil
 		}
 		return errs.WrapError(err)
+	}
+	if err := validateJobIdentity(d.Id(), object); err != nil {
+		return err
 	}
 	migrationModeObj := object["MigrationMode"].(map[string]interface{})
 	destinationEndpointObj := object["DestinationEndpoint"].(map[string]interface{})
