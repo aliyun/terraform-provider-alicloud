@@ -1,0 +1,458 @@
+package scdn
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func ResourceScdnDomain() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceScdnDomainCreate,
+		Read:   resourceScdnDomainRead,
+		Update: resourceScdnDomainUpdate,
+		Delete: resourceScdnDomainDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(11 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Update: schema.DefaultTimeout(11 * time.Minute),
+		},
+		DeprecationMessage: "This resource has been deprecated since v1.219.0 and will be removed in the future.",
+		Schema: map[string]*schema.Schema{
+			"biz_name": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Deprecated:   "Attribute biz_name has been deprecated and suggest removing it from your template.",
+				ValidateFunc: validation.StringInSlice([]string{"download", "image", "scdn", "video"}, false),
+			},
+			"cert_infos": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cert_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"cert_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"upload", "cas", "free"}, false),
+						},
+						"ssl_pri": {
+							Type:      schema.TypeString,
+							Optional:  true,
+							Sensitive: true,
+						},
+						"ssl_protocol": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
+						},
+						"ssl_pub": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"check_url": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"domain_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"force_set": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"sources": {
+				Type:     schema.TypeSet,
+				Required: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"content": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"enabled": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"port": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+						"priority": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"type": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"offline", "online"}, false),
+			},
+		},
+	}
+}
+
+func resourceScdnDomainCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "AddScdnDomain"
+	request := make(map[string]interface{})
+	var err error
+	if v, ok := d.GetOk("check_url"); ok {
+		request["CheckUrl"] = v
+	}
+	request["DomainName"] = d.Get("domain_name")
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	sourcesMaps := make([]map[string]interface{}, 0)
+	for _, sources := range d.Get("sources").(*schema.Set).List() {
+		sourcesArg := sources.(map[string]interface{})
+		sourcesMap := map[string]interface{}{}
+		sourcesMap["Content"] = sourcesArg["content"]
+		sourcesMap["Enabled"] = sourcesArg["enabled"]
+		sourcesMap["Port"] = sourcesArg["port"]
+		sourcesMap["Priority"] = sourcesArg["priority"]
+		sourcesMap["Type"] = sourcesArg["type"]
+		sourcesMaps = append(sourcesMaps, sourcesMap)
+	}
+	if v, err := convert.ConvertArrayObjectToJsonString(sourcesMaps); err == nil {
+		request["Sources"] = v
+	} else {
+		return errs.WrapError(err)
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_scdn_domain", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(request["DomainName"]))
+	scdnService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, scdnService.ScdnDomainStateRefreshFunc(d.Id(), []string{"configure_failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	return resourceScdnDomainUpdate(d, meta)
+}
+func resourceScdnDomainRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	scdnService := NewService(client)
+	object, err := scdnService.DescribeScdnDomain(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_scdn_domain scdnService.DescribeScdnDomain Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	d.Set("domain_name", d.Id())
+	d.Set("resource_group_id", object["ResourceGroupId"])
+	if v, ok := object["Sources"].(map[string]interface{})["Source"].([]interface{}); ok {
+		source := make([]map[string]interface{}, 0)
+		for _, val := range v {
+			item := val.(map[string]interface{})
+			temp := map[string]interface{}{
+				"content":  item["Content"],
+				"enabled":  item["Enabled"],
+				"port":     item["Port"],
+				"priority": item["Priority"],
+				"type":     item["Type"],
+			}
+
+			source = append(source, temp)
+		}
+		if err := d.Set("sources", source); err != nil {
+			return errs.WrapError(err)
+		}
+	}
+	d.Set("status", object["DomainStatus"])
+	describeScdnDomainCertificateInfoObject, err := scdnService.DescribeScdnDomainCertificateInfo(d.Id())
+	if err != nil {
+		return errs.WrapError(err)
+	}
+
+	if certInfosMap, ok := describeScdnDomainCertificateInfoObject["CertInfos"].(map[string]interface{}); ok && certInfosMap != nil {
+		if certInfoList, ok := certInfosMap["CertInfo"]; ok && certInfoList != nil {
+			certInfosMaps := make([]map[string]interface{}, 0)
+			for _, certInfoListItem := range certInfoList.([]interface{}) {
+				if certInfoListItemMap, ok := certInfoListItem.(map[string]interface{}); ok {
+					certInfoListItemMap["cert_name"] = certInfoListItemMap["CertName"]
+					certInfoListItemMap["cert_type"] = certInfoListItemMap["CertType"]
+					certInfoListItemMap["ssl_pri"] = certInfoListItemMap["SslPri"]
+					certInfoListItemMap["ssl_protocol"] = certInfoListItemMap["SslProtocol"]
+					certInfoListItemMap["ssl_pub"] = certInfoListItemMap["SslPub"]
+					certInfosMaps = append(certInfosMaps, certInfoListItemMap)
+				}
+			}
+			d.Set("cert_infos", certInfosMaps)
+		}
+	}
+
+	return nil
+}
+func resourceScdnDomainUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	scdnService := NewService(client)
+	var response map[string]interface{}
+	var err error
+	d.Partial(true)
+
+	update := false
+	setScdnDomainCertificateReq := map[string]interface{}{
+		"DomainName": d.Id(),
+	}
+	if d.HasChange("ssl_protocol") {
+		update = true
+	}
+	if v, ok := d.GetOk("ssl_protocol"); ok {
+		setScdnDomainCertificateReq["SSLProtocol"] = v
+	}
+	if d.HasChange("cert_name") {
+		update = true
+		if v, ok := d.GetOk("cert_name"); ok {
+			setScdnDomainCertificateReq["CertName"] = v
+		}
+	}
+	if d.HasChange("cert_type") {
+		update = true
+		if v, ok := d.GetOk("cert_type"); ok {
+			setScdnDomainCertificateReq["CertType"] = v
+		}
+	}
+	if d.HasChange("ssl_pri") {
+		update = true
+		if v, ok := d.GetOk("ssl_pri"); ok {
+			setScdnDomainCertificateReq["SSLPri"] = v
+		}
+	}
+	if d.HasChange("ssl_pub") {
+		update = true
+		if v, ok := d.GetOk("ssl_pub"); ok {
+			setScdnDomainCertificateReq["SSLPub"] = v
+		}
+	}
+	if update {
+		if v, ok := d.GetOk("force_set"); ok {
+			setScdnDomainCertificateReq["ForceSet"] = v
+		}
+		action := "SetScdnDomainCertificate"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("scdn", "2017-11-15", action, nil, setScdnDomainCertificateReq, false)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, setScdnDomainCertificateReq)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		stateConf := helper.BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, scdnService.ScdnDomainStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
+	}
+	update = false
+	updateScdnDomainReq := map[string]interface{}{
+		"DomainName": d.Id(),
+	}
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		update = true
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			updateScdnDomainReq["ResourceGroupId"] = v
+		}
+	}
+	if d.HasChange("sources") {
+		update = true
+		sourcesMaps := make([]map[string]interface{}, 0)
+		for _, sources := range d.Get("sources").(*schema.Set).List() {
+			sourcesArg := sources.(map[string]interface{})
+			sourcesMap := map[string]interface{}{}
+			sourcesMap["Content"] = sourcesArg["content"]
+			sourcesMap["Enabled"] = sourcesArg["enabled"]
+			sourcesMap["Port"] = sourcesArg["port"]
+			sourcesMap["Priority"] = sourcesArg["priority"]
+			sourcesMap["Type"] = sourcesArg["type"]
+			sourcesMaps = append(sourcesMaps, sourcesMap)
+		}
+		if v, err := convert.ConvertArrayObjectToJsonString(sourcesMaps); err == nil {
+			updateScdnDomainReq["Sources"] = v
+		} else {
+			return errs.WrapError(err)
+		}
+	}
+	if update {
+		action := "UpdateScdnDomain"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("scdn", "2017-11-15", action, nil, updateScdnDomainReq, false)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"ServiceBusy"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, updateScdnDomainReq)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		stateConf := helper.BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, scdnService.ScdnDomainStateRefreshFunc(d.Id(), []string{"configure_failed"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
+	}
+	if d.HasChange("status") {
+		object, err := scdnService.DescribeScdnDomain(d.Id())
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		target := d.Get("status").(string)
+		if object["DomainStatus"].(string) != target {
+			if target == "offline" {
+				request := map[string]interface{}{
+					"DomainName": d.Id(),
+				}
+				action := "StopScdnDomain"
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+					response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, false)
+					if err != nil {
+						if helper.NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				logs.AddDebug(action, response, request)
+				if err != nil {
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+				}
+				stateConf := helper.BuildStateConf([]string{}, []string{"offline"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, scdnService.ScdnDomainStateRefreshFunc(d.Id(), []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+				}
+			}
+			if target == "online" {
+				request := map[string]interface{}{
+					"DomainName": d.Id(),
+				}
+				action := "StartScdnDomain"
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+					response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, false)
+					if err != nil {
+						if helper.NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				logs.AddDebug(action, response, request)
+				if err != nil {
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+				}
+				stateConf := helper.BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, scdnService.ScdnDomainStateRefreshFunc(d.Id(), []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+				}
+			}
+		}
+	}
+	d.Partial(false)
+	return resourceScdnDomainRead(d, meta)
+}
+func resourceScdnDomainDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	scdnService := NewService(client)
+	action := "DeleteScdnDomain"
+	var response map[string]interface{}
+	var err error
+	request := map[string]interface{}{
+		"DomainName": d.Id(),
+	}
+
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 2*time.Second, scdnService.ScdnDomainStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+	return nil
+}

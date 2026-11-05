@@ -7,7 +7,7 @@ description: |-
     Provides a list of ots instances to the user.
 ---
 
-# alicloud\_ots\_instances
+# alicloud_ots_instances
 
 This data source provides the ots instances of the current Alibaba Cloud user.
 
@@ -58,11 +58,9 @@ The following attributes are exported in addition to the arguments listed above:
   * `resource_group_id` - (Available since v1.221.0) The resource group the instance belongs to.
   * `network_type_acl` - (Available since v1.221.0) The set of network types that are allowed access. Possible values: `CLASSIC`, `VPC`, `INTERNET`.
   * `network_source_acl` - (Available since v1.221.0) The set of request sources that are allowed access. Possible values: `TRUST_PROXY`.
-  * `network` - (Removed since v1.221.0) The network type of the instance. Possible values: `NORMAL`, `VPC`, `VPC_CONSOLE`.
   * `policy` - (Available since v1.221.0) instance policy, json string.
   * `policy_version` - (Available since v1.221.0) instance policy version.
   * `description` - The description of the instance.
   * `table_quota` - (Available since v1.221.0) The instance quota which indicating the maximum number of tables.
-  * `entity_quota` - (Removed since v1.221.0) The instance quota which indicating the maximum number of tables.
   * `tags` - The tags of the instance.
 	

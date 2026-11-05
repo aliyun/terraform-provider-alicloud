@@ -237,14 +237,14 @@ The additional_api_descriptions supports the following:
 * `api_name` - (Optional) The API name, such as ListApiMcpServers.  
 * `api_override_json` - (Optional, JsonString) API structure definition information. You can use this parameter to directly modify the API description and parameter list. You can obtain the API definition information from an API endpoint such as https://api.aliyun.com/meta/v1/products/Ecs/versions/2014-05-26/apis/DescribeInstances/api.json.  
 
--> **NOTE:** Note that required parameters must not be removed; otherwise, calls by the large model will continuously fail due to missing required parameters.>  
+  -> **NOTE:** Note that required parameters must not be removed; otherwise, calls by the large model will continuously fail due to missing required parameters.>
 
 * `api_version` - (Optional) API version information, typically in date format, such as 2014-05-26.  
 * `const_parameters` - (Optional, Set) Constant configuration information. When the MCP Server needs to fix certain tool parameters to specific values, you can configure this parameter to enforce those fixed values.  
 Parameters configured as constants will not be returned as tool parameters through the MCP protocol. Large models cannot define these parameters. During execution, the MCP Server merges these constant values into the API call parameters.   See [`const_parameters`](#additional_api_descriptions-const_parameters) below.
 * `enable_output_schema` - (Optional) By default, this feature is disabled, and the MCP Server returns only the structure definition of input parameters. When enabled, the MCP Server returns the output parameter structure definition via the MCP protocol.  
 
--> **NOTE:** The output parameter structure may be complex. Enabling this feature significantly increases the MCP context size. Use this feature with caution.>  
+  -> **NOTE:** The output parameter structure may be complex. Enabling this feature significantly increases the MCP context size. Use this feature with caution.>
 
 * `execute_cli_command` - (Optional) Call interception. When this parameter is enabled, the MCP Server returns the complete CLI command name instead of directly executing the API call. Use this option when the API call is long-running or requires interaction with local files. The MCP Server enforces theoretical time limits for single-tool invocations:  
   - SSE protocol: up to 30 minutes  

@@ -7,15 +7,15 @@ description: |-
   Provides a collection of ECI Image Cache to the specified filters.
 ---
 
-# alicloud\_eci\_image\_caches
+# alicloud_eci_image_caches
 
 Provides a collection of ECI Image Cache to the specified filters.
 
-~> **NOTE:** Available in 1.90.0+.
+-> **NOTE:** Available since v1.90.0.
 
 ## Example Usage
 
- ```
+```terraform
 data "alicloud_eci_image_caches" "example" {
   ids = ["imc-bp1ef0dyp7ldhb1d****"]
 }
@@ -41,21 +41,22 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
- * `ids` - A list ids of ECI Image Cache.
- * `names` - A list of ECI Image Cache names.
- * `caches` - A list of caches. Each element contains the following attributes:
-   * `id` - The ID of the ECI Image Cache.
-   * `container_group_id` - The id of container group. 
-   * `expire_date_time` - The time of expired.
-   * `image_cache_id` - The id of the ECI Image Cache.
-   * `image_cache_name` - The name of the ECI Image Cache.
-   * `images` - The list of cached images.
-   * `progress` - The progress of ECI Image Cache.
-   * `snapshot_id` - The id of snapshot.
-   * `status` - The status of ECI Image Cache.
-   * `events` - Image cache pulls image event information.
-     * `first_timestamp` - Start time.   
-     * `last_timestamp` - End time.   
-     * `count` - Number of events.   
-     * `name` - The name of event.   
-     * `type` - The type of event.  
+* `ids` - A list ids of ECI Image Cache.
+* `names` - A list of ECI Image Cache names.
+* `caches` - A list of caches. Each element contains the following attributes:
+  * `id` - The ID of the ECI Image Cache.
+  * `container_group_id` - The id of container group.
+  * `expire_date_time` - The time of expired.
+  * `image_cache_id` - The id of the ECI Image Cache.
+  * `image_cache_name` - The name of the ECI Image Cache.
+  * `images` - The list of cached images.
+  * `progress` - The progress of ECI Image Cache.
+  * `snapshot_id` - The id of snapshot.
+  * `status` - The status of ECI Image Cache.
+  * `events` - Image cache pulls image event information.
+    * `first_timestamp` - Start time.
+    * `last_timestamp` - End time.
+    * `count` - Number of events.
+    * `message` - The content of the event.
+    * `name` - The name of event.
+    * `type` - The type of event.

@@ -6,10 +6,12 @@ triggers:
     paths:
       - '.aoneci/acctest-terraform-basic.yml'
       - 'alicloud/*.go'
+      - 'alicloud/service/**/*.go'
   push:
     paths:
       - '.aoneci/acctest-terraform-basic.yml'
       - 'alicloud/*.go'
+      - 'alicloud/service/**/*.go'
 jobs:
   BreakingChange:
     steps:

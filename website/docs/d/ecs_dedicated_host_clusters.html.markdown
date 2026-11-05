@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Ecs Dedicated Host Clusters of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.146.0+.
+-> **NOTE:** Available since v1.146.0.
 
 ## Example Usage
 
@@ -59,15 +59,15 @@ output "ecs_dedicated_host_cluster_id_5" {
 
 The following arguments are supported:
 
-* `dedicated_host_cluster_ids` - (Optional, ForceNew) The IDs of dedicated host clusters.
-* `dedicated_host_cluster_name` - (Optional, ForceNew) The name of the dedicated host cluster.
-* `ids` - (Optional, ForceNew, Computed)  A list of Dedicated Host Cluster IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Dedicated Host Cluster name.
+* `dedicated_host_cluster_ids` - (Optional) The IDs of dedicated host clusters.
+* `dedicated_host_cluster_name` - (Optional) The name of the dedicated host cluster.
+* `ids` - (Optional, Computed)  A list of Dedicated Host Cluster IDs.
+* `name_regex` - (Optional) A regex string to filter results by Dedicated Host Cluster name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `zone_id` - (Optional, ForceNew) The zone ID of the dedicated host cluster.
-* `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
+* `zone_id` - (Optional) The zone ID of the dedicated host cluster.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

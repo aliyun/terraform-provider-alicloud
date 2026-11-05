@@ -61,9 +61,9 @@ The following arguments are supported:
 
 More complex filters can be expressed using one or more `filter` sub-blocks,
 which take the following arguments:
-* `key` - (Required) The key of the field to filter by, as defined by
+* `key` - (Optional) The key of the field to filter by, as defined by
   [Alibaba Cloud API](https://www.alibabacloud.com/help/en/doc-detail/124791.htm).
-* `values` - (Required) Set of values that are accepted for the given field.
+* `values` - (Optional) Set of values that are accepted for the given field.
 
 ## Attributes Reference
 
@@ -103,4 +103,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `virtual_border_router_name` - The name of VBR. Length is from 2 to 128 characters, must start with a letter or the Chinese at the beginning can contain numbers, the underscore character (_) and dash (-). But do not start with http:// or https:// at the beginning.
   * `vlan_id` - The VLAN ID of the VBR. Value range: 0~2999.
   * `vlan_interface_id` - The ID of the Router Interface.
-* `tags` - The tags of the Virtual Border Router.
+  * `tags` - The tags of the Virtual Border Router.

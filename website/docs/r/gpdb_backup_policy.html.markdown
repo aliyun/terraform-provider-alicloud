@@ -98,7 +98,8 @@ Terraform cannot destroy resource `alicloud_gpdb_backup_policy`. Terraform will 
 The following arguments are supported:
 * `backup_retention_period` - (Optional) Data backup retention days.
 * `db_instance_id` - (Required, ForceNew) The instance ID.
--> **NOTE:**  You can call the [DescribeDBInstances](~~ 86911 ~~) operation to view the details of all AnalyticDB PostgreSQL instances in the target region, including the instance ID.
+
+  -> **NOTE:**  You can call the [DescribeDBInstances](~~ 86911 ~~) operation to view the details of all AnalyticDB PostgreSQL instances in the target region, including the instance ID.
 * `enable_recovery_point` - (Optional) Whether to enable automatic recovery points. Value Description:
   - **true**: enabled.
   - **false**: Closed.

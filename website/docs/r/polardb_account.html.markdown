@@ -16,6 +16,8 @@ For information about Polar Db Account and how to use it, see [What is Account](
 
 -> **NOTE:** Available since v1.67.0.
 
+-> **NOTE:** The `account_password_wo` and `account_password_wo_version` arguments require Terraform v1.11.0 or later.
+
 -> **NOTE:** The DynamoDB type account does not support deletion. When destroying the Terraform resource, the DynamoDB account will be removed from state but not deleted from the cloud.
 
 ## Example Usage
@@ -77,14 +79,16 @@ The following arguments are supported:
   - Consists of lowercase letters, numbers, or underscores.
   - The length is 2 to 16 characters.
   - You cannot use some reserved usernames, such as root and admin.
-* `account_password` - (Optional) The account password. You have to specify one of `account_password` and `kms_encrypted_password` fields. Must  meet the following requirements:
+* `account_password` - (Optional) The account password. It conflicts with `kms_encrypted_password` and `account_password_wo`, and one of `account_password`, `kms_encrypted_password` and `account_password_wo` must be set. Must  meet the following requirements:
   - Contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.
   - Be 8 to 32 characters in length.
   - Special characters include !@#$%^&*()_+-=.
+* `account_password_wo` - (Optional, Available since v2.0.0-beta5) The write-only password of the account. It is only sent to the server when the resource is created or the `account_password_wo_version` changes and is never stored in the state or plan. It requires Terraform v1.11.0 or later and must be used together with `account_password_wo_version`. It conflicts with `account_password` and `kms_encrypted_password`, and one of `account_password`, `kms_encrypted_password` and `account_password_wo` must be set.
+* `account_password_wo_version` - (Optional, Available since v2.0.0-beta5) The version of the write-only password. The write-only password is re-sent to the server only when this argument changes, so it must be changed whenever `account_password_wo` changes.
 * `account_password_valid_time` - (Optional, Available since v1.265.0) The time when the password for the database account expires.
 * `account_type` - (Optional, ForceNew) The account type. Default value:`Normal`. Valid values: `Normal`, `Super`.
 * `db_cluster_id` - (Required, ForceNew) The cluster ID.
-* `kms_encrypted_password` - (Optional) An KMS encrypts password used to a db account. If the `account_password` is filled in, this field will be ignored.
+* `kms_encrypted_password` - (Optional) An KMS encrypts password used to a db account. It conflicts with `account_password` and `account_password_wo`, and one of `account_password`, `kms_encrypted_password` and `account_password_wo` must be set.
 * `kms_encryption_context` - (Optional) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 
 ## Attributes Reference

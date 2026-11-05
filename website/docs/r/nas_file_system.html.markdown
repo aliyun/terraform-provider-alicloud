@@ -85,44 +85,48 @@ resource "alicloud_nas_file_system" "cpfs" {
 ## Argument Reference
 
 The following arguments are supported:
+* `auto_upgrade_config` - (Optional, Computed, List, Available since v2.1.0) The automatic capacity expansion configuration. Only cpfsse file systems support this feature. See [`auto_upgrade_config`](#auto_upgrade_config) below.
+
 * `capacity` - (Optional, Computed, Int, Available since v1.140.0) File system capacity.
 
   Unit: GiB, required and valid when FileSystemType = extreme or cpfs.
 
   For optional values, please refer to the actual specifications on the purchase page:
-    - [Fast NAS Pay-As-You-Go Page](https://common-buy.aliyun.com/?commodityCode=nas_extreme_post#/buy)
-    - [Fast NAS Package Monthly Purchase Page](https://common-buy.aliyun.com/?commodityCode=nas_extreme#/buy)
-    - [Parallel File System CPFS Pay-As-You-Go Purchase Page](https://common-buy.aliyun.com/?commodityCode=nas_cpfs_post#/buy)
-    - [Parallel File System CPFS Package Monthly Purchase Page](https://common-buy.aliyun.com/?commodityCode=cpfs#/buy)
+  - [Fast NAS Pay-As-You-Go Page](https://common-buy.aliyun.com/?commodityCode=nas_extreme_post#/buy)
+  - [Fast NAS Package Monthly Purchase Page](https://common-buy.aliyun.com/?commodityCode=nas_extreme#/buy)
+  - [Parallel File System CPFS Pay-As-You-Go Purchase Page](https://common-buy.aliyun.com/?commodityCode=nas_cpfs_post#/buy)
+  - [Parallel File System CPFS Package Monthly Purchase Page](https://common-buy.aliyun.com/?commodityCode=cpfs#/buy)
 
 * `description` - (Optional) File system description.
 
   Restrictions:
-    - 2~128 English or Chinese characters in length.
-    - Must start with upper and lower case letters or Chinese, and cannot start with 'http://' and 'https'.
-    - Can contain numbers, colons (:), underscores (_), or dashes (-).
+  - 2~128 English or Chinese characters in length.
+  - Must start with upper and lower case letters or Chinese, and cannot start with 'http://' and 'https'.
+  - Can contain numbers, colons (:), underscores (_), or dashes (-).
+
+  -> **NOTE:** For `standard` file system types, the NAS server writes `description` asynchronously after the file system is created. The Provider waits for this field to be persisted before the first read so that the value is correctly populated in state.
 
 * `encrypt_type` - (Optional, ForceNew, Computed, Int, Available since v1.121.2) Whether the file system is encrypted.
 
   Use the KMS service hosting key to encrypt and store the file system disk data. When reading and writing encrypted data, there is no need to decrypt it.
 
   Value:
-    - 0 (default): not encrypted.
-    - 1: NAS managed key. NAS managed keys are supported when FileSystemType = standard or extreme.
-    - 2: User management key. You can manage keys only when FileSystemType = extreme.
+  - 0 (default): not encrypted.
+  - 1: NAS managed key. NAS managed keys are supported when FileSystemType = standard or extreme.
+  - 2: User management key. You can manage keys only when FileSystemType = extreme.
 
 * `file_system_type` - (Optional, ForceNew, Computed, Available since v1.140.0) File system type.
 
   Value:
-    - standard (default): Universal NAS
-    - extreme: extreme NAS
-    - cpfs: file storage CPFS
-    - cpfsse: file storage CPFS Smart Edition
+  - standard (default): Universal NAS
+  - extreme: extreme NAS
+  - cpfs: file storage CPFS
+  - cpfsse: file storage CPFS Smart Edition
 
   -> **NOTE:** Whether the network fields `vpc_id` and `vswitch_id` must be configured depends on `file_system_type`. Only CPFS file systems create a resource inside a VPC; for `standard` and `extreme` these fields are reserved by the interface and have not taken effect, so they should be left unset. The configuration rule for each `file_system_type` is as follows:
-    - `standard` / `extreme`: do not configure `vpc_id` or `vswitch_id` (reserved by the interface, not effective).
-    - `cpfs`: both `vpc_id` and `vswitch_id` are required.
-    - `cpfsse`: `vpc_id` is required; `vswitch_id` is not required.
+  - `standard` / `extreme`: do not configure `vpc_id` or `vswitch_id` (reserved by the interface, not effective).
+  - `cpfs`: both `vpc_id` and `vswitch_id` are required.
+  - `cpfsse`: `vpc_id` is required; `vswitch_id` is not required.
 
 * `keytab` - (Optional, Available since v1.248.0) String of keytab file content encrypted by base64
 
@@ -141,9 +145,9 @@ The following arguments are supported:
 * `options` - (Optional, Computed, List, Available since v1.248.0) Option. See [`options`](#options) below.
 
 * `protocol_type` - (Required, ForceNew) File transfer protocol type.
-    - When FileSystemType = standard, the values are NFS and SMB.
-    - When FileSystemType = extreme, the value is NFS.
-    - When FileSystemType = cpfs, the value is cpfs.
+  - When FileSystemType = standard, the values are NFS and SMB.
+  - When FileSystemType = extreme, the value is NFS.
+  - When FileSystemType = cpfs, the value is cpfs.
 
 * `recycle_bin` - (Optional, Computed, List) Recycle Bin See [`recycle_bin`](#recycle_bin) below.
 
@@ -152,6 +156,8 @@ The following arguments are supported:
 * `redundancy_vswitch_ids` - (Optional, ForceNew, List, Available since v1.267.0) Redundancy vSwitch ID list. Only set when the file system's storage redundancy type is Zone-Redundant Storage (ZRS), and must set vSwitch IDs from three different availability zones under the same VPC.
 
 * `resource_group_id` - (Optional, Computed, Available since v1.236.0) The ID of the resource group.
+
+  -> **NOTE:** For `standard` file system types, the NAS server writes `resource_group_id` asynchronously after the file system is created. The Provider waits for this field to be persisted before the first read so that the value is correctly populated in state.
 
 * `smb_acl` - (Optional, Computed, List, Available since v1.248.0) SMB ACL See [`smb_acl`](#smb_acl) below.
 
@@ -162,25 +168,26 @@ The following arguments are supported:
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `storage_type` - (Required, ForceNew) The storage type.
-    - When FileSystemType = standard, the values are Performance, Capacity, and Premium.
-    - When FileSystemType = extreme, the value is standard or advance.
-    - When FileSystemType = cpfs, the values are advance_100(100MB/s/TiB baseline) and advance_200(200MB/s/TiB baseline).
+  - When FileSystemType = standard, the values are Performance, Capacity, Premium, and Agentic.
+  - When FileSystemType = extreme, the value is standard or advance.
+  - When FileSystemType = cpfs, the values are advance_100(100MB/s/TiB baseline) and advance_200(200MB/s/TiB baseline).
+  - When storage_type = Agentic, the general-purpose NAS features `recycle_bin`, `nfs_acl` and `smb_acl` are not supported and must be omitted; Agentic file systems are currently in whitelist mode and you must submit a ticket to apply for the feature before use.
 
 * `tags` - (Optional, Map, Available since v1.153.0) Label information collection.
 
-* `vswitch_id` - (Optional, ForceNew, Available since v1.153.0) The ID of the switch.
+* `vswitch_id` - (Optional, ForceNew, Computed, Available since v1.153.0) The ID of the switch.
 
   This parameter must be configured when FileSystemType = cpfs. When the FileSystemType is standard or extreme, this parameter is reserved for the interface and has not taken effect yet. You do not need to configure it.
 
-  -> **NOTE:** This `vswitch_id` configures the network of the CPFS file system itself and is different from `vswitch_id` in [`alicloud_nas_mount_target`](nas_mount_target.html), which specifies the vSwitch of the mount target used by clients to access a NAS file system. A mount target still requires its own `vswitch_id` regardless of `file_system_type`.
+  -> **NOTE:** This `vswitch_id` configures the network of the CPFS file system itself and is different from `vswitch_id` in [`alicloud_nas_mount_target`](nas_mount_target.html.markdown), which specifies the vSwitch of the mount target used by clients to access a NAS file system. A mount target still requires its own `vswitch_id` regardless of `file_system_type`.
 
-  -> **NOTE:** For `standard` or `extreme` file systems, do not set `vswitch_id`. Since this field is not `Computed`, a value configured on these file system types cannot be read back from the API, which produces a permanent diff on every plan and, because the field is `ForceNew`, forces the file system to be destroyed and recreated. If you previously configured `vswitch_id` on a `standard` or `extreme` file system, remove it from the configuration before upgrading.
+  -> **NOTE:** For `standard` or `extreme` file systems, `vswitch_id` is reserved by the interface and has no effect; the NAS API does not return it for these file system types, so any configured value is suppressed from the plan diff and will not force a replacement. It is still recommended to leave it unset for `standard` or `extreme` file systems.
 
-* `vpc_id` - (Optional, ForceNew, Available since v1.153.0) The ID of the VPC network.
+* `vpc_id` - (Optional, ForceNew, Computed, Available since v1.153.0) The ID of the VPC network.
 
   This parameter must be configured when FileSystemType = cpfs. When the FileSystemType is standard or extreme, this parameter is reserved for the interface and has not taken effect yet. You do not need to configure it.
 
-  -> **NOTE:** For `standard` or `extreme` file systems, do not set `vpc_id`. Since this field is not `Computed`, a value configured on these file system types cannot be read back from the API, which produces a permanent diff on every plan and, because the field is `ForceNew`, forces the file system to be destroyed and recreated. If you previously configured `vpc_id` on a `standard` or `extreme` file system, remove it from the configuration before upgrading.
+  -> **NOTE:** For `standard` or `extreme` file systems, `vpc_id` is reserved by the interface and has no effect; the NAS API does not return it for these file system types, so any configured value is suppressed from the plan diff and will not force a replacement. It is still recommended to leave it unset for `standard` or `extreme` file systems.
 
 * `zone_id` - (Optional, ForceNew, Computed) The zone ID.
 
@@ -192,6 +199,21 @@ The following arguments are supported:
 
   -> **NOTE:** We recommend that the file system and the ECS instance belong to the same zone to avoid cross-zone latency.
 
+### `auto_upgrade_config`
+
+The auto_upgrade_config supports the following:
+* `capacity_used_ratio` - (Optional, Computed, Int, Available since v2.1.0) The capacity usage threshold. Valid values: 1 to 99. Unit: percent.
+
+* `enabled` - (Optional, Computed, Bool, Available since v2.1.0) Whether to enable automatic capacity expansion.
+
+* `step` - (Optional, Computed, Int, Available since v2.1.0) The capacity expansion step. Unit: GiB.
+
+* `time` - (Optional, Computed, Int, Available since v2.1.0) The duration threshold. Unit: minutes.
+
+  -> **NOTE:** Automatic capacity expansion is a modify-time feature: it is applied through the NAS ModifyFileSystem API after the file system has been created.
+
+  -> **NOTE:** This block is Optional and Computed. Removing the entire block from the configuration does **not** disable automatic capacity expansion or send a disable request to the server; the previous server value is retained as a computed value and the plan stays stable. To disable automatic capacity expansion, set `enabled = false` explicitly. When only `enabled` is configured, the other attributes (`capacity_used_ratio`, `step`, `time`) become computed and are read back from the server.
+
 ### `nfs_acl`
 
 The nfs_acl supports the following:
@@ -201,8 +223,8 @@ The nfs_acl supports the following:
 
 The options supports the following:
 * `enable_oplock` - (Optional, Computed, Available since v1.248.0) Whether to enable the OpLock function. Value:
-    - true: On.
-    - false: does not turn on.
+  - true: On.
+  - false: does not turn on.
 
   -> **NOTE:** Description Only file systems of the SMB protocol type are supported.
 
@@ -217,32 +239,32 @@ The recycle_bin supports the following:
 
 The smb_acl supports the following:
 * `enable_anonymous_access` - (Optional, Computed, Available since v1.248.0) Whether to allow anonymous access.
-    - true: Allow anonymous access.
-    - false (default): Anonymous access is not allowed.
+  - true: Allow anonymous access.
+  - false (default): Anonymous access is not allowed.
 
 * `enabled` - (Optional, Computed, Available since v1.248.0) Whether SMB ACL is enabled
 
 * `encrypt_data` - (Optional, Available since v1.248.0) Whether transmission encryption is enabled.
-    - true: Enables encryption in transit.
-    - false (default): Transport encryption is not enabled.
+  - true: Enables encryption in transit.
+  - false (default): Transport encryption is not enabled.
 
 * `home_dir_path` - (Optional, Available since v1.248.0) The user directory home path for each user. The file path format is as follows:
-    - A forward slash (/) or backslash (\) as a separator.
-    - Each paragraph cannot contain ":|? *.
-    - The length of each segment ranges from 0 to 255.
-    - The total length range is 0~32767.
+  - A forward slash (/) or backslash (\) as a separator.
+  - Each paragraph cannot contain ":|? *.
+  - The length of each segment ranges from 0 to 255.
+  - The total length range is 0~32767.
 
   For example, if the user directory is/home, the file system will automatically create A directory of/home/A when user A logs in. Skip if/home/A already exists.
 
   -> **NOTE:** Explain that user A needs to have the permission to create A directory, otherwise the/home/A directory cannot be created.
 
 * `reject_unencrypted_access` - (Optional, Available since v1.248.0) Whether to reject non-encrypted clients.
-    - true: Deny non-encrypted clients.
-    - false (default): Non-encrypted clients are not rejected.
+  - true: Deny non-encrypted clients.
+  - false (default): Non-encrypted clients are not rejected.
 
 * `super_admin_sid` - (Optional, Available since v1.248.0) The ID of the Super User. The ID rules are as follows:
-    - Must start with S and no other letters can appear after the S at the beginning.
-    - At least three dashes (-) apart.
+  - Must start with S and no other letters can appear after the S at the beginning.
+  - At least three dashes (-) apart.
 
   Such as S-1-5-22 or S-1-5-22-23.
 

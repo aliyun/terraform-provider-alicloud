@@ -1,0 +1,289 @@
+package smartag
+
+import (
+	"fmt"
+	"regexp"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func dataSourceAlicloudSmartagFlowLogs() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceAlicloudSmartagFlowLogsRead,
+		Schema: map[string]*schema.Schema{
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Active", "Inactive"}, false),
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"page_number": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"page_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  helper.PageSizeLarge,
+			},
+			"logs": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"active_aging": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"flow_log_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"flow_log_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"inactive_aging": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"logstore_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"netflow_server_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"netflow_server_port": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"netflow_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"output_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"project_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"sls_region_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"total_sag_num": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceAlicloudSmartagFlowLogsRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "DescribeFlowLogs"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("status"); ok {
+		request["Status"] = v
+	}
+	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
+		request["PageSize"] = v.(int)
+	} else {
+		request["PageSize"] = helper.PageSizeLarge
+	}
+	if v, ok := d.GetOk("page_number"); ok && v.(int) > 0 {
+		request["PageNumber"] = v.(int)
+	} else {
+		request["PageNumber"] = 1
+	}
+	var objects []interface{}
+	var flowLogNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		flowLogNameRegex = r
+	}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+	var response map[string]interface{}
+	var err error
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("Smartag", "2018-03-13", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_smartag_flow_logs", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.FlowLogs.FlowLogSetType", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.FlowLogs.FlowLogSetType", response)
+		}
+		result, _ := resp.([]interface{})
+		if helper.IsPagingRequest(d) {
+			objects = result
+			break
+		}
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if flowLogNameRegex != nil && !flowLogNameRegex.MatchString(fmt.Sprint(item["Name"])) {
+				continue
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["FlowLogId"])]; !ok {
+					continue
+				}
+			}
+			objects = append(objects, item)
+		}
+
+		if len(result) < request["PageSize"].(int) {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, v := range objects {
+		object := v.(map[string]interface{})
+
+		active_agingVal, err := convert.FormatInt(object["ActiveAging"])
+		if err != nil {
+			return err
+		}
+
+		inactive_agingVal, err := convert.FormatInt(object["InactiveAging"])
+		if err != nil {
+			return err
+		}
+
+		netflow_server_portVal, err := convert.FormatInt(object["NetflowServerPort"])
+		if err != nil {
+			return err
+		}
+
+		total_sag_numVal, err := convert.FormatInt(object["TotalSagNum"])
+		if err != nil {
+			return err
+		}
+		mapping := map[string]interface{}{
+			"active_aging":        active_agingVal,
+			"description":         object["Description"],
+			"id":                  fmt.Sprint(object["FlowLogId"]),
+			"flow_log_id":         fmt.Sprint(object["FlowLogId"]),
+			"flow_log_name":       object["Name"],
+			"inactive_aging":      inactive_agingVal,
+			"logstore_name":       object["LogstoreName"],
+			"netflow_server_ip":   object["NetflowServerIp"],
+			"netflow_server_port": netflow_server_portVal,
+			"netflow_version":     object["NetflowVersion"],
+			"output_type":         object["OutputType"],
+			"project_name":        object["ProjectName"],
+			"resource_group_id":   object["ResourceGroupId"],
+			"sls_region_id":       object["SlsRegionId"],
+			"status":              object["Status"],
+			"total_sag_num":       total_sag_numVal,
+		}
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["Name"])
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("logs", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

@@ -54,26 +54,26 @@ resource "alicloud_esa_rate_plan_instance" "default" {
 The following arguments are supported:
 * `auto_pay` - (Optional) Specifies whether to enable auto payment.
 
--> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `auto_renew` - (Optional) Auto-renewal:
   - `true`: Enable auto-renewal.
   - `false`: Disable auto-renewal.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `coverage` - (Optional) The service locations for the websites that can be associated with the plan. Multiple values are separated by commas (,). Valid values:
   - `domestic`: the Chinese mainland.
   - `overseas`: outside the Chinese mainland.
   - `global`: global.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `payment_type` - (Optional, ForceNew, Computed) The billing method. Valid values:
   - `Subscription`: subscription.
 * `period` - (Optional, Int) Subscription period (in months).
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `plan_name` - (Optional) Package name.  
 
@@ -91,7 +91,7 @@ For International site accounts:
   - `NS`
   - `CNAME`
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 
 ## Attributes Reference

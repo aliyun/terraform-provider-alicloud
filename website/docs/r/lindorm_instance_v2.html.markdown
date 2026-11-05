@@ -123,7 +123,7 @@ The default value is false
 
 * `cloud_storage_size` - (Optional, Int) The Sales page storage type supports cloud storage and local sites. If you select cloud storage, this parameter is required.
 
--> **NOTE:**  Cloud storage capacity in GB
+  -> **NOTE:**  Cloud storage capacity in GB
 
 * `cloud_storage_type` - (Optional, ForceNew) Cloud storage type, the sales page storage type supports cloud storage and local sites. If you select cloud storage, this parameter is required.
 
@@ -134,7 +134,7 @@ Enumeration value:
 * `deletion_protection` - (Optional, Computed) Whether to enable deletion protection
 * `duration` - (Optional, Int, Available since v1.262.0) The specified duration when the resource is purchased. Only the subscription instances are valid.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `engine_list` - (Required, Set) Engine List See [`engine_list`](#engine_list) below.
 * `instance_alias` - (Required) Instance name
@@ -145,7 +145,7 @@ Enumeration value:
   - `POSTPAY`: Postpay mode
 * `pricing_cycle` - (Optional, Available since v1.262.0) Purchase duration unit: Month, Year
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `primary_vswitch_id` - (Optional, ForceNew) Primary zone VswitchId
 * `primary_zone_id` - (Optional, ForceNew) Primary zone ZoneID

@@ -1,0 +1,276 @@
+package sae_test
+
+import (
+	"fmt"
+	"log"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sae"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+func testSweepSaeNamespace(region string) error {
+	prefixes := []string{
+		"tftestacc",
+	}
+	rawClient, err := sweep.SharedClientForRegionWithBackendRegions(region, true, connectivity.SaeSupportRegions)
+	if err != nil {
+		return errs.WrapErrorf(err, "Error getting AliCloud client.")
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	request := make(map[string]*string)
+
+	request["ContainCustom"] = helper.StringPointer(strconv.FormatBool(true))
+	action := "/pop/v1/sam/namespace/describeNamespaceList"
+	response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
+	if err != nil {
+		log.Printf("[ERROR] %s got an error: %s", action, err)
+		return nil
+	}
+	resp, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Data", response)
+	}
+	namespace, _ := resp.([]interface{})
+
+	for _, v := range namespace {
+		// item namespace
+		item := v.(map[string]interface{})
+
+		skip := true
+		for _, prefix := range prefixes {
+			app_name := ""
+			if val, exist := item["NamespaceName"]; exist {
+				app_name = val.(string)
+			}
+			if strings.Contains(strings.ToLower(app_name), strings.ToLower(prefix)) {
+				skip = false
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Sae Namespace: %s", item["NamespaceName"])
+			continue
+		}
+
+		action := "/pop/v1/paas/namespace"
+		request = map[string]*string{
+			"NamespaceId": helper.StringPointer(fmt.Sprint(item["NamespaceId"])),
+		}
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(10*time.Minute, func() *retry.RetryError {
+			response, err = client.RoaDelete("sae", "2019-05-06", action, request, nil, nil, false)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil && !errs.IsExpectedErrors(err, []string{"Namespace.AppExists"}) {
+			return errs.WrapError(err)
+		}
+		log.Printf("[INFO] Delete Sae Namespace success: %v ", item["NamespaceName"])
+	}
+	return nil
+}
+
+func TestAccAliCloudSAENamespace_basic0(t *testing.T) {
+	var v map[string]interface{}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
+	resourceId := "alicloud_sae_namespace.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudSAENamespaceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return sae.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSaeNamespace")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 100)
+	name := fmt.Sprintf("tf-testacc%ssaenamespace%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudSAENamespaceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_name":            name,
+					"namespace_id":              fmt.Sprintf("%s:tftest%d", acctest.DefaultRegionToTest, rand),
+					"namespace_description":     "tftestaccdescription",
+					"enable_micro_registration": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"namespace_name":            name,
+						"namespace_id":              fmt.Sprintf("%s:tftest%d", acctest.DefaultRegionToTest, rand),
+						"namespace_description":     "tftestaccdescription",
+						"enable_micro_registration": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_name": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"namespace_name":        name + "update",
+						"namespace_description": "tftestaccdescription",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_description": "tftestaccdescriptionupdate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"namespace_name":        name + "update",
+						"namespace_description": "tftestaccdescriptionupdate",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_name":        name + "updateall",
+					"namespace_description": "tftestaccdescriptionupdateall",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"namespace_name":        name + "updateall",
+						"namespace_description": "tftestaccdescriptionupdateall",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_micro_registration": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_micro_registration": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudSAENamespace_basic1(t *testing.T) {
+	var v map[string]interface{}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
+	resourceId := "alicloud_sae_namespace.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudSAENamespaceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return sae.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSaeNamespace")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 100)
+	name := fmt.Sprintf("tf-testacc%ssaenamespace%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudSAENamespaceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_name":            name,
+					"namespace_short_id":        fmt.Sprintf("tftest%d", rand),
+					"namespace_description":     "tftestaccdescription",
+					"enable_micro_registration": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"namespace_name":            name,
+						"namespace_short_id":        acctest.CHECKSET,
+						"namespace_description":     "tftestaccdescription",
+						"enable_micro_registration": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_name": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"namespace_name":        name + "update",
+						"namespace_description": "tftestaccdescription",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_description": "tftestaccdescriptionupdate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"namespace_name":        name + "update",
+						"namespace_description": "tftestaccdescriptionupdate",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_name":        name + "updateall",
+					"namespace_description": "tftestaccdescriptionupdateall",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"namespace_name":        name + "updateall",
+						"namespace_description": "tftestaccdescriptionupdateall",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_micro_registration": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_micro_registration": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AlicloudSAENamespaceMap0 = map[string]string{
+	"namespace_id":              acctest.CHECKSET,
+	"namespace_short_id":        acctest.CHECKSET,
+	"enable_micro_registration": acctest.CHECKSET,
+}
+
+func AlicloudSAENamespaceBasicDependence0(name string) string {
+	return fmt.Sprintf(` 
+	variable "name" {
+  		default = "%s"
+	}
+`, name)
+}

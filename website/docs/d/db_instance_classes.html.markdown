@@ -53,10 +53,10 @@ The following arguments are supported:
   * **rds_serverless_public_cn**: The instance is a subscription serverless instance. This value is available on the China site (aliyun.com).
   * **rds_serverless_public_intl**: The instance is a subscription serverless instance. This value is available on the International site (alibabacloud.com).
 
--> **NOTE**: The field `db_instance_id` will be ignored when `commodity_code` is not a read-only type.
+  -> **NOTE**: The field `db_instance_id` will be ignored when `commodity_code` is not a read-only type.
 * `db_instance_id` - (Optional, Available in v1.166.0+) The ID of the instance.
 
--> **NOTE**: The field `db_instance_id` will be ignored when `commodity_code` is not a read-only type.
+  -> **NOTE**: The field `db_instance_id` will be ignored when `commodity_code` is not a read-only type.
 * `multi_zone` - (Optional, Available in v1.48.0+) Whether to show multi available zone. Default false to not show multi availability zone.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform apply`).
 
@@ -71,7 +71,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `sub_zone_ids` - A list of sub zone ids which in the id - e.g If `id` is `cn-beijing-MAZ5(a,b)`, `sub_zone_ids` will be `["cn-beijing-a", "cn-beijing-b"]`.
   * `instance_class` - DB Instance available class.
   * `price` - Unit price of instance specifications.
-  * `storage_range` - DB Instance available storage range.
+  * `storage_range` - A list of DB Instance available storage range.
     * `min` - DB Instance available storage min value.
     * `max` - DB Instance available storage max value.
     * `step` - DB Instance available storage increase step.

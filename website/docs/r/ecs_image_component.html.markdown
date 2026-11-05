@@ -57,7 +57,7 @@ The following arguments are supported:
 
   Default value: Build.
 
--> **NOTE:**  Build components can only be used in build templates and test components can only be used in test templates.
+  -> **NOTE:**  Build components can only be used in build templates and test components can only be used in test templates.
 
 * `component_version` - (Optional, ForceNew, Available since v1.235.0) The component version number, which is used in conjunction with the component name, is in the format of major.minor.patch and is a non-negative integer.
 
@@ -66,7 +66,7 @@ The following arguments are supported:
 * `description` - (Optional, ForceNew) Description information. It must be 2 to 256 characters in length and cannot start with http:// or https.
 * `image_component_name` - (Optional, ForceNew, Computed) The component name. It must be 2 to 128 characters in length and start with an uppercase letter or a Chinese character. It cannot start with http:// or https. Can contain Chinese, English, numbers, half-length colons (:), underscores (_), half-length periods (.), or dashes (-).
 
--> **NOTE:**  When 'Name' is not set, the 'ImageComponentId' return value is used by default.
+  -> **NOTE:**  When 'Name' is not set, the 'ImageComponentId' return value is used by default.
 
 * `resource_group_id` - (Optional, Computed) The ID of the enterprise resource group to which the created image component belongs.
 * `system_type` - (Optional, ForceNew, Computed) The operating system supported by the component.

@@ -78,7 +78,6 @@ The following arguments are supported:
 * `dead_letter_exchange` - (Optional) The dead-letter exchange.
 * `dead_letter_routing_key` - (Optional) The dead-letter routing key.
 * `auto_expire_state` - (Optional) The auto-expiration time for the queue.
-* `exclusive_state` - (Removed since v1.266.0) Field `exclusive_state` has been removed from provider version 1.266.0.
 
 ## Attributes Reference
 

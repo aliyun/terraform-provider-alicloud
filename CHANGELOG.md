@@ -1,25 +1,90 @@
-## 1.294.0 (Unreleased)
-## 1.293.0 (September 11, 2026)
+## 1.295.0 (Unreleased)
 
+ENHANCEMENTS:
+
+- resource/alicloud_nlb_server_group: support ip_version_affinity_mode. ([#10705](https://github.com/aliyun/terraform-provider-alicloud/issues/10705))
+- resource/alicloud_nas_file_system: support Agentic storage type; skip general-purpose NAS recycle bin/ACL calls on Agentic file systems. ([#10730](https://github.com/aliyun/terraform-provider-alicloud/issues/10730))
+
+## 1.294.0 (October 8, 2026)
+
+- **New Resource:** `alicloud_realtime_compute_variable` ([#10556](https://github.com/aliyun/terraform-provider-alicloud/issues/10556))
+- **New Resource:** `alicloud_kvcachestore_kv_cache_store` ([#10578](https://github.com/aliyun/terraform-provider-alicloud/issues/10578))
+- **New Data Source:** `alicloud_kvcachestore_kv_cache_stores` ([#10578](https://github.com/aliyun/terraform-provider-alicloud/issues/10578))
+- **New Data Source:** `alicloud_ess_eci_scaling_configurations` ([#10604](https://github.com/aliyun/terraform-provider-alicloud/issues/10604))
+- **New Data Source:** `alicloud_apig_secrets` ([#10639](https://github.com/aliyun/terraform-provider-alicloud/issues/10639))
+- **New Data Source:** `alicloud_realtime_compute_variables` ([#10669](https://github.com/aliyun/terraform-provider-alicloud/issues/10669))
+
+ENHANCEMENTS:
+
+- resource/alicloud_ess_alb_server_group_attachment: retry ScalingActivityInProgress errors. ([#10316](https://github.com/aliyun/terraform-provider-alicloud/issues/10316))
+- resource/alicloud_ga_accelerator: support Anycast ip_set_config and bandwidth; data-source/alicloud_ga_accelerators: expose ip_set_config and bandwidth; data-source/alicloud_ga_endpoint_groups: expose IpTarget vpc_id, vswitch_ids, enable_proxy_protocol and sub_address. ([#10345](https://github.com/aliyun/terraform-provider-alicloud/issues/10345))
+- resource/alicloud_milvus_instance: support auto_renew, is_multi_az_storage, load_replicas, promotion_no, expire_time, order_id, running_time, components.pay_type, components.data_disk and security_group_ids; mark components.disk_size_type as ForceNew. ([#10347](https://github.com/aliyun/terraform-provider-alicloud/issues/10347))
+- resource/alicloud_ecd_desktop_group: support pay_type and make end_user_ids optional; resource/alicloud_ecd_desktop_group and data-source/alicloud_ecd_desktop_groups: remove misleading sensitive flags. ([#10562](https://github.com/aliyun/terraform-provider-alicloud/issues/10562))
+- docs: correct alicloud_milvus_instance attribute version annotations to v1.294.0. ([#10605](https://github.com/aliyun/terraform-provider-alicloud/issues/10605))
+- data-source/alicloud_polardb_endpoints: retry DescribeDBClusterEndpoints on transient connection resets. ([#10609](https://github.com/aliyun/terraform-provider-alicloud/issues/10609))
+- resource/alicloud_polardb_cluster_endpoint: support scc_mode. ([#10617](https://github.com/aliyun/terraform-provider-alicloud/issues/10617))
+- resource/alicloud_pai_workspace_workspace: add actionable hints for create-time name conflicts. ([#10658](https://github.com/aliyun/terraform-provider-alicloud/issues/10658))
+- docs: add Network Proxy guidance and clean up provider configuration documentation. ([#10660](https://github.com/aliyun/terraform-provider-alicloud/issues/10660))
+- resource/alicloud_esa_certificate: support digicert_single and digicert_wildcard certificate types. ([#10661](https://github.com/aliyun/terraform-provider-alicloud/issues/10661))
+- docs: clarify console display semantics for alicloud_network_acl name and description fields. ([#10663](https://github.com/aliyun/terraform-provider-alicloud/issues/10663))
+- resource/alicloud_instance: support cpu_options accelerators for vQAT. ([#10668](https://github.com/aliyun/terraform-provider-alicloud/issues/10668))
+
+BUG FIXES:
+
+- resource/alicloud_vpc_dhcp_options_set_attachment: use the configured delete timeout for state refresh. ([#10510](https://github.com/aliyun/terraform-provider-alicloud/issues/10510))
+- resource/alicloud_ecd_desktop_group: fix perpetual diffs from reordered end_user_ids and prevent replacement for API-returned directory_id. ([#10562](https://github.com/aliyun/terraform-provider-alicloud/issues/10562))
+- provider: enable SDK auto-retry and evict idle connections to prevent resets on pooled sessions. ([#10635](https://github.com/aliyun/terraform-provider-alicloud/issues/10635))
+- resource/alicloud_cs_kubernetes, resource/alicloud_cs_managed_kubernetes and resource/alicloud_cs_serverless_kubernetes: return kubeconfig errors and guard nil responses to prevent panics. ([#10652](https://github.com/aliyun/terraform-provider-alicloud/issues/10652))
+- data-source/alicloud_cdn_service: remove the silent ModifyCdnService call from the read path. ([#10666](https://github.com/aliyun/terraform-provider-alicloud/issues/10666))
+- resource/alicloud_vpc_dhcp_options_set_attachment: tolerate OperationFailed.AttachmentNotExist during deletion. ([#10671](https://github.com/aliyun/terraform-provider-alicloud/issues/10671))
+- resource/alicloud_kvstore_instance, resource/alicloud_redis_tair_instance, resource/alicloud_mongodb_instance and resource/alicloud_rocketmq_instance: return an error when destroying PrePaid instances instead of silently removing them from Terraform state. ([#10672](https://github.com/aliyun/terraform-provider-alicloud/issues/10672))
+- resource/alicloud_cloud_monitor_service_metric_alarm_rule: suppress JSON-equivalent resources diffs caused by API-side key reordering. ([#10679](https://github.com/aliyun/terraform-provider-alicloud/issues/10679))
+
+## 1.293.0 (September 17, 2026)
+
+- **New Resource:** `alicloud_event_bridge_event_streaming` ([#10243](https://github.com/aliyun/terraform-provider-alicloud/issues/10243))
 - **New Resource:** `alicloud_cms_dataset` ([#10454](https://github.com/aliyun/terraform-provider-alicloud/issues/10454))
+- **New Resource:** `alicloud_apig_secret` ([#10462](https://github.com/aliyun/terraform-provider-alicloud/issues/10462))
 - **New Resource:** `alicloud_cr_instance_customized_domain` ([#10485](https://github.com/aliyun/terraform-provider-alicloud/issues/10485))
+- **New Resource:** `alicloud_ims_user` ([#10515](https://github.com/aliyun/terraform-provider-alicloud/issues/10515))
+- **New Resource:** `alicloud_ssl_certificates_service_pca_cert_sync` ([#10554](https://github.com/aliyun/terraform-provider-alicloud/issues/10554))
 - **New Data Source:** `alicloud_cms_datasets` ([#10454](https://github.com/aliyun/terraform-provider-alicloud/issues/10454))
 - **New Data Source:** `alicloud_esa_lists` ([#10477](https://github.com/aliyun/terraform-provider-alicloud/issues/10477))
 
 ENHANCEMENTS:
 
+- resource/alicloud_polardb_cluster: support distributed pg. ([#10231](https://github.com/aliyun/terraform-provider-alicloud/issues/10231))
 - resource/alicloud_realtime_compute_vvp_instance: support auto_renew for subscription instance. ([#10277](https://github.com/aliyun/terraform-provider-alicloud/issues/10277))
+- docs: correct instance_metadata_tags available version annotation to v1.291.0. ([#10297](https://github.com/aliyun/terraform-provider-alicloud/issues/10297))
+- resource/alicloud_cr_endpoint_acl_policy: normalize endpoint_type to the documented Internet case at the API boundary, accept Internet in config and import IDs, fail fast on malformed import IDs; data-source/alicloud_cr_endpoint_acl_policies: same normalization; data-source/alicloud_cr_endpoint_acl_service: same normalization. ([#10379](https://github.com/aliyun/terraform-provider-alicloud/issues/10379))
+- resource/alicloud_instance: support enable_network_encryption. ([#10417](https://github.com/aliyun/terraform-provider-alicloud/issues/10417))
+- data-source/alicloud_cloud_firewall_nat_firewalls: expose status and region_no output fields. ([#10418](https://github.com/aliyun/terraform-provider-alicloud/issues/10418))
 - resource/alicloud_ecs_snapshot: add configurable wait_until policy. ([#10425](https://github.com/aliyun/terraform-provider-alicloud/issues/10425))
 - alicloud: deprecate tags schema helpers without Elem and add WithElements variants. ([#10463](https://github.com/aliyun/terraform-provider-alicloud/issues/10463))
 - testcase: upgrade tea-rpc to v1.3.4 and add nil list element regression test. ([#10475](https://github.com/aliyun/terraform-provider-alicloud/issues/10475))
 - resource/alicloud_nlb_listener: remove idle_timeout validation upper bound and test 3600. ([#10489](https://github.com/aliyun/terraform-provider-alicloud/issues/10489))
 - resource/alicloud_ecs_auto_snapshot_policy: support association type and target tags; data-source/alicloud_ecs_auto_snapshot_policies: support association type and target tags. ([#10498](https://github.com/aliyun/terraform-provider-alicloud/issues/10498))
+- service: Added retry strategy for DescribePvtzZoneBasic, DescribePvtzZoneAttachment. ([#10500](https://github.com/aliyun/terraform-provider-alicloud/issues/10500))
+- resource/alicloud_ess_alarm: add Throttling.User retry to Read, Update, and Delete paths. ([#10503](https://github.com/aliyun/terraform-provider-alicloud/issues/10503))
+- resource/alicloud_oos_parameter: support the write-only attribute value_wo. ([#10505](https://github.com/aliyun/terraform-provider-alicloud/issues/10505))
+- data-source/alicloud_privatelink_service: Improves the invoking api method. ([#10512](https://github.com/aliyun/terraform-provider-alicloud/issues/10512))
+- resource/alicloud_ims_user: wrap API errors with errs.WrapErrorf. ([#10516](https://github.com/aliyun/terraform-provider-alicloud/issues/10516))
+- data-source/alicloud_log_service: remove redundant service activation calls. ([#10555](https://github.com/aliyun/terraform-provider-alicloud/issues/10555))
+- docs: add SQLServer 2022/2025 version to RDS documentation. ([#10563](https://github.com/aliyun/terraform-provider-alicloud/issues/10563))
+- resource/alicloud_ssl_certificates_service_pca_cert: upload_flag supports Computed. ([#10564](https://github.com/aliyun/terraform-provider-alicloud/issues/10564))
+- docs: add framework action alicloud_ssl_certificates_service_pca_cert_sync. ([#10567](https://github.com/aliyun/terraform-provider-alicloud/issues/10567))
+- resource/alicloud_ros_stack_group: Changed the field parameters from TypeList to TypeSet. ([#10569](https://github.com/aliyun/terraform-provider-alicloud/issues/10569))
+- resource/alicloud_polardb_cluster: tolerate Rebooting status during parameter updates. ([#10571](https://github.com/aliyun/terraform-provider-alicloud/issues/10571))
 
 BUG FIXES:
 
 - resource/alicloud_alikafka_sasl_user: Fixed the error of resource not found during creation; resource/alicloud_alikafka_sasl_acl: Fixed the error of resource not found during creation. ([#10362](https://github.com/aliyun/terraform-provider-alicloud/issues/10362))
+- resource/alicloud_kvstore_instance: preserve node_type selection and fix acceptance failures. ([#10416](https://github.com/aliyun/terraform-provider-alicloud/issues/10416))
 - resource/alicloud_alb_server_group: Fixed health_check_template_id invalid error. ([#10432](https://github.com/aliyun/terraform-provider-alicloud/issues/10432))
 - resource/alicloud_nlb_listener: reject empty strings in certificate_ids and ca_certificate_ids. ([#10473](https://github.com/aliyun/terraform-provider-alicloud/issues/10473))
+- resource/alicloud_db_database: confirm deletion; resource/alicloud_db_account_privilege: verify parent; resource/alicloud_rds_account: handle NotFound. ([#10530](https://github.com/aliyun/terraform-provider-alicloud/issues/10530))
+- provider: make incrementalWait retry backoff exponential with jitter. ([#10553](https://github.com/aliyun/terraform-provider-alicloud/issues/10553))
+- resource/alicloud_elasticsearch_instance: Fixed the panic error caused by kibana_private_security_group_id. ([#10583](https://github.com/aliyun/terraform-provider-alicloud/issues/10583))
 
 ## 1.292.0 (September 8, 2026)
 

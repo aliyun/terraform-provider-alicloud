@@ -11,11 +11,11 @@ description: |-
 
 This data source provides Ecs Capacity Reservation available to the user.
 
--> **NOTE:** Available in 1.195.0+
+-> **NOTE:** Available since v1.195.0
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_ecs_capacity_reservations" "default" {
   ids           = ["${alicloud_ecs_capacity_reservation.default.id}"]
   name_regex    = alicloud_ecs_capacity_reservation.default.name
@@ -31,15 +31,15 @@ output "alicloud_ecs_capacity_reservation_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `instance_type` - (ForceNew,Optional) Instance type. Currently, you can only set the capacity reservation service for one instance type. 
-* `payment_type` - (ForceNew,Optional) The payment type of the resource. value range `PostPaid`, `PrePaid`.
-* `platform` - (ForceNew,Optional) platform of the capacity reservation , value range `windows`, `linux`, `all`.
-* `resource_group_id` - (ForceNew,Optional) The resource group id.
-* `status` - (ForceNew,Optional) The status of the capacity reservation. value range `All`, `Pending`, `Preparing`, `Prepared`, `Active`, `Released`.
-* `tags` - (ForceNew,Optional) The tag of the resource.
-* `ids` - (Optional, ForceNew, Computed) A list of Capacity Reservation IDs.
-* `capacity_reservation_names` - (Optional, ForceNew) The name of the Capacity Reservation. You can specify at most 10 names.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
+* `instance_type` - (Optional) Instance type. Currently, you can only set the capacity reservation service for one instance type.
+* `payment_type` - (Optional) The payment type of the resource. value range `PostPaid`, `PrePaid`.
+* `platform` - (Optional) platform of the capacity reservation , value range `windows`, `linux`, `all`.
+* `resource_group_id` - (Optional) The resource group id.
+* `status` - (Optional) The status of the capacity reservation. value range `All`, `Pending`, `Preparing`, `Prepared`, `Active`, `Released`.
+* `tags` - (Optional) The tag of the resource.
+* `ids` - (Optional, Computed) A list of Capacity Reservation IDs.
+* `capacity_reservation_ids` - (Optional) A list of Capacity Reservation IDs.
+* `name_regex` - (Optional) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -62,7 +62,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `start_time` -  time of the capacity reservation which become active
   * `start_time_type` - The capacity is scheduled to take effect. Possible values:-Now: Effective immediately.-Later: the specified time takes effect.
   * `status` - The status of the capacity reservation.
-  * `tags` - A mapping of tags to assign to the Capacity Reservation.
+  * `tags` - (Optional) A mapping of tags to assign to the Capacity Reservation.
   * `time_slot` - This parameter is under test and is not yet open for use.
   * `zone_ids` - The ID of the zone in the region to which the capacity reservation service belongs. Currently, it is only supported to create a capacity reservation service in one zone.
   * `id` - The ID of the Capacity Reservation.

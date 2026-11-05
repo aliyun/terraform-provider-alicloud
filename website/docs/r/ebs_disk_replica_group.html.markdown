@@ -61,13 +61,14 @@ The following arguments are supported:
 * `destination_region_id` - (Required, ForceNew) The ID of the region to which the disaster recovery site belongs.
 * `destination_zone_id` - (Required, ForceNew) The ID of the zone to which the disaster recovery site belongs.
 * `disk_replica_group_name` - (Optional, Available since v1.245.0) Consistent replication group name.
+* `enable_rtc` - (Optional, Computed) Whether to enable replication time control. Default value: false.
 * `one_shot` - (Optional, Available since v1.245.0) Whether to synchronize immediately. Value range:
   - true: Start data synchronization immediately.
   - false: Data Synchronization starts after the RPO time period.
 
 Default value: false.
 * `pair_ids` - (Optional, Set, Available since v1.245.0) List of replication pair IDs contained in a consistent replication group.
-* `rpo` - (Optional, ForceNew, Int) The RPO value set by the consistency group in seconds. Currently only 900 seconds are supported.
+* `rpo` - (Optional, Computed, Int) The RPO value set by the consistency group in seconds. Currently only 900 seconds are supported.
 * `resource_group_id` - (Optional, Computed, Available since v1.245.0) resource group ID of enterprise
 * `reverse_replicate` - (Optional, Available since v1.245.0) Specifies whether to enable the reverse replication sub-feature. Valid values: true and false. Default value: true.
 * `source_region_id` - (Required, ForceNew) The ID of the region to which the production site belongs.

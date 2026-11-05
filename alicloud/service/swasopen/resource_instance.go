@@ -1,0 +1,379 @@
+package swasopen
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func ResourceInstance() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceInstanceCreate,
+		Read:   resourceInstanceRead,
+		Update: resourceInstanceUpdate,
+		Delete: resourceInstanceDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"auto_renew_period": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntInSlice([]int{1, 12, 24, 3, 36, 6}),
+			},
+			"data_disk_size": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(0, 16380),
+			},
+			"image_id": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"instance_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"password": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"payment_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Subscription"}, false),
+			},
+			"period": {
+				Type:         schema.TypeInt,
+				Required:     true,
+				ValidateFunc: validation.IntInSlice([]int{1, 12, 24, 3, 36, 6}),
+			},
+			"plan_id": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Resetting", "Running", "Stopped", "Upgrading"}, false),
+			},
+		},
+	}
+}
+
+func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "CreateInstances"
+	request := make(map[string]interface{})
+	var err error
+	request["Amount"] = 1
+	if v, ok := d.GetOkExists("auto_renew"); ok {
+		request["AutoRenew"] = v
+	}
+	if v, ok := d.GetOk("auto_renew_period"); ok {
+		request["AutoRenewPeriod"] = v
+	}
+	if v, ok := d.GetOk("data_disk_size"); ok {
+		request["DataDiskSize"] = v
+	}
+	request["ImageId"] = d.Get("image_id")
+	if v, ok := d.GetOk("payment_type"); ok {
+		request["ChargeType"] = convertSimpleApplicationServerInstancePaymentTypeRequest(v.(string))
+	}
+	request["Period"] = d.Get("period")
+	request["PlanId"] = d.Get("plan_id")
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = helper.BuildClientToken("CreateInstances")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_simple_application_server_instance", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["InstanceIds"].([]interface{})[0]))
+
+	swasOpenService := NewSwasOpenService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	return resourceInstanceUpdate(d, meta)
+}
+func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	swasOpenService := NewSwasOpenService(client)
+	object, err := swasOpenService.DescribeSimpleApplicationServerInstance(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_simple_application_server_instance swasOpenService.DescribeSimpleApplicationServerInstance Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	d.Set("image_id", object["ImageId"])
+	d.Set("instance_name", object["InstanceName"])
+	d.Set("payment_type", convertSimpleApplicationServerInstancePaymentTypeResponse(object["ChargeType"]))
+	d.Set("plan_id", object["PlanId"])
+	d.Set("status", object["Status"])
+	return nil
+}
+func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	swasOpenService := NewSwasOpenService(client)
+	var err error
+	var response map[string]interface{}
+	d.Partial(true)
+
+	update := false
+	request := map[string]interface{}{
+		"InstanceId": d.Id(),
+	}
+	if !d.IsNewResource() && d.HasChange("image_id") {
+		update = true
+	}
+	request["ImageId"] = d.Get("image_id")
+	request["RegionId"] = client.RegionId
+	if update {
+		action := "ResetSystem"
+		request["ClientToken"] = helper.BuildClientToken("ResetSystem")
+		wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
+	}
+	update = false
+	upgradeInstanceReq := map[string]interface{}{
+		"InstanceId": d.Id(),
+	}
+	if !d.IsNewResource() && d.HasChange("plan_id") {
+		update = true
+	}
+	upgradeInstanceReq["PlanId"] = d.Get("plan_id")
+	upgradeInstanceReq["RegionId"] = client.RegionId
+	if update {
+		action := "UpgradeInstance"
+		request["ClientToken"] = helper.BuildClientToken("UpgradeInstance")
+		wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, upgradeInstanceReq, true)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, upgradeInstanceReq)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
+	}
+	update = false
+	updateInstanceAttributeReq := map[string]interface{}{
+		"InstanceId": d.Id(),
+	}
+	updateInstanceAttributeReq["RegionId"] = client.RegionId
+	if d.HasChange("instance_name") {
+		update = true
+		if v, ok := d.GetOk("instance_name"); ok {
+			updateInstanceAttributeReq["InstanceName"] = v
+		}
+	}
+	if d.HasChange("password") {
+		update = true
+		if v, ok := d.GetOk("password"); ok {
+			updateInstanceAttributeReq["Password"] = v
+		}
+	}
+	if update {
+		action := "UpdateInstanceAttribute"
+		request["ClientToken"] = helper.BuildClientToken("UpdateInstanceAttribute")
+		wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, updateInstanceAttributeReq, true)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, updateInstanceAttributeReq)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
+	}
+	if d.HasChange("status") {
+		object, err := swasOpenService.DescribeSimpleApplicationServerInstance(d.Id())
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		target := d.Get("status").(string)
+		if object["Status"].(string) != target {
+			if target == "Resetting" {
+				request := map[string]interface{}{
+					"InstanceId": d.Id(),
+				}
+				request["RegionId"] = client.RegionId
+				action := "RebootInstance"
+				request["ClientToken"] = helper.BuildClientToken("RebootInstance")
+				wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+					response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
+					if err != nil {
+						if errs.IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || helper.NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				logs.AddDebug(action, response, request)
+				if err != nil {
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+				}
+				stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+				}
+			}
+			if target == "Running" {
+				request := map[string]interface{}{
+					"InstanceId": d.Id(),
+				}
+				request["RegionId"] = client.RegionId
+				action := "StartInstance"
+				request["ClientToken"] = helper.BuildClientToken("StartInstance")
+				wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+					response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
+					if err != nil {
+						if errs.IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || helper.NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				logs.AddDebug(action, response, request)
+				if err != nil {
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+				}
+				stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+				}
+			}
+			if target == "Stopped" {
+				request := map[string]interface{}{
+					"InstanceId": d.Id(),
+				}
+				request["RegionId"] = client.RegionId
+				action := "StopInstance"
+				request["ClientToken"] = helper.BuildClientToken("StopInstance")
+				wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+					response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
+					if err != nil {
+						if errs.IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "Throttling.User"}) || helper.NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				logs.AddDebug(action, response, request)
+				if err != nil {
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+				}
+				stateConf := helper.BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+				}
+			}
+		}
+	}
+	d.Partial(false)
+	return resourceInstanceRead(d, meta)
+}
+func resourceInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+	return errs.WrapError(errs.Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
+}
+func convertSimpleApplicationServerInstancePaymentTypeRequest(source interface{}) interface{} {
+	switch source {
+	case "Subscription":
+		return "PrePaid"
+	}
+	return source
+}
+func convertSimpleApplicationServerInstancePaymentTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "PrePaid":
+		return "Subscription"
+	}
+	return source
+}

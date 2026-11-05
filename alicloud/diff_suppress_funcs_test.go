@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -1521,42 +1521,58 @@ func TestUnitCommonVpcTypeResourceDiffSuppressFunc(t *testing.T) {
 	}
 }
 
-func TestUnitCommonWhiteIpListDiffSuppressFunc(t *testing.T) {
+func TestUnitNasFileSystemVpcDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name        string
-		oldValue    string
-		newValue    string
-		expected    bool
-		description string
+		name           string
+		fileSystemType string
+		expected       bool
+		description    string
 	}{
 		{
-			name:        "Same_IPs_Different_Order",
-			oldValue:    "192.168.1.1,192.168.1.2,192.168.1.3",
-			newValue:    "192.168.1.3,192.168.1.1,192.168.1.2",
-			expected:    true,
-			description: "Same IPs in different order should suppress diff",
+			name:           "Standard_Suppress",
+			fileSystemType: "standard",
+			expected:       true,
+			description:    "standard file system should suppress vpc_id/vswitch_id diff (API does not return them)",
 		},
 		{
-			name:        "Different_IPs",
-			oldValue:    "192.168.1.1,192.168.1.2",
-			newValue:    "192.168.1.3,192.168.1.4",
-			expected:    false,
-			description: "Different IPs should not suppress diff",
+			name:           "Extreme_Suppress",
+			fileSystemType: "extreme",
+			expected:       true,
+			description:    "extreme file system should suppress vpc_id/vswitch_id diff (API does not return them)",
 		},
 		{
-			name:        "Different_Count",
-			oldValue:    "192.168.1.1,192.168.1.2",
-			newValue:    "192.168.1.1",
-			expected:    false,
-			description: "Different count of IPs should not suppress diff",
+			name:           "Cpfs_NoSuppress",
+			fileSystemType: "cpfs",
+			expected:       false,
+			description:    "cpfs file system should not suppress diff (API returns VpcId/VSwitchId)",
+		},
+		{
+			name:           "Cpfsse_NoSuppress",
+			fileSystemType: "cpfsse",
+			expected:       false,
+			description:    "cpfsse file system should not suppress diff",
+		},
+		{
+			name:           "Empty_NoSuppress",
+			fileSystemType: "",
+			expected:       false,
+			description:    "unknown file system type should not suppress diff",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{}, map[string]interface{}{})
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"file_system_type": {Type: schema.TypeString},
+				"vpc_id":           {Type: schema.TypeString},
+				"vswitch_id":       {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"file_system_type": tc.fileSystemType,
+				"vpc_id":           "vpc-123456",
+				"vswitch_id":       "vsw-123456",
+			})
 
-			result := whiteIpListDiffSuppressFunc("key", tc.oldValue, tc.newValue, d)
+			result := nasFileSystemVpcDiffSuppressFunc("vpc_id", "", "vpc-123456", d)
 			assert.Equal(t, tc.expected, result, tc.description)
 		})
 	}
@@ -2599,8 +2615,8 @@ func TestUnitCommonPolardbAndCreationDiffSuppressFunc(t *testing.T) {
 			name:             "PostgreSQL_Normal",
 			dbType:           "PostgreSQL",
 			creationCategory: "Normal",
-			expected:         true,
-			description:      "Non-MySQL should suppress diff",
+			expected:         false,
+			description:      "Normal category must preserve the diff independently of database type",
 		},
 	}
 
@@ -3899,46 +3915,6 @@ func TestUnitCommonSagClientUserPasswordSuppressFunc(t *testing.T) {
 	}
 }
 
-func TestUnitCommonSelectdbPostPaidDiffSuppressFunc(t *testing.T) {
-	testCases := []struct {
-		name        string
-		paymentType string
-		expected    bool
-		description string
-	}{
-		{
-			name:        "Subscription",
-			paymentType: "Subscription",
-			expected:    false,
-			description: "Subscription should not suppress diff",
-		},
-		{
-			name:        "PayAsYouGo",
-			paymentType: "PayAsYouGo",
-			expected:    true,
-			description: "PayAsYouGo should suppress diff",
-		},
-		{
-			name:        "Empty",
-			paymentType: "",
-			expected:    true,
-			description: "Empty payment_type should suppress diff",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-				"payment_type": {Type: schema.TypeString},
-			}, map[string]interface{}{
-				"payment_type": tc.paymentType,
-			})
-			result := selectdbPostPaidDiffSuppressFunc("key", "old", "new", d)
-			assert.Equal(t, tc.expected, result, tc.description)
-		})
-	}
-}
-
 func TestUnitCommonCmsClientInfoSuppressFunc(t *testing.T) {
 	escalationSchema := map[string]*schema.Schema{
 		"statistics":          {Type: schema.TypeString},
@@ -4139,166 +4115,6 @@ func TestUnitCommonCmsClientCriticalSuppressFunc(t *testing.T) {
 				"escalations_critical": tc.items,
 			})
 			result := cmsClientCriticalSuppressFunc("key", "old", "new", d)
-			assert.Equal(t, tc.expected, result, tc.description)
-		})
-	}
-}
-
-func TestUnitCommonAlikafkaInstanceConfigDiffSuppressFunc(t *testing.T) {
-	testCases := []struct {
-		name        string
-		old         string
-		new         string
-		expected    bool
-		description string
-	}{
-		{
-			name:        "New_Empty",
-			old:         `{"key":"value"}`,
-			new:         "",
-			expected:    true,
-			description: "Empty new value should suppress diff",
-		},
-		{
-			name:        "Old_Empty",
-			old:         "",
-			new:         `{"key":"value"}`,
-			expected:    false,
-			description: "Empty old value should not suppress diff",
-		},
-		{
-			name:        "Old_Invalid_JSON",
-			old:         "invalid json",
-			new:         `{"key":"value"}`,
-			expected:    false,
-			description: "Invalid old JSON should not suppress diff",
-		},
-		{
-			name:        "New_Invalid_JSON",
-			old:         `{"key":"value"}`,
-			new:         "invalid json",
-			expected:    false,
-			description: "Invalid new JSON should not suppress diff",
-		},
-		{
-			name:        "Same_Values",
-			old:         `{"key":"value","other":"data"}`,
-			new:         `{"key":"value"}`,
-			expected:    true,
-			description: "New is subset of old with same values should suppress diff",
-		},
-		{
-			name:        "Different_Values",
-			old:         `{"key":"old_value"}`,
-			new:         `{"key":"new_value"}`,
-			expected:    false,
-			description: "Different values for same key should not suppress diff",
-		},
-		{
-			name:        "New_Key_Not_In_Old",
-			old:         `{"other":"value"}`,
-			new:         `{"key":"value"}`,
-			expected:    true,
-			description: "New key not in old map should suppress diff",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{}, map[string]interface{}{})
-			result := alikafkaInstanceConfigDiffSuppressFunc("key", tc.old, tc.new, d)
-			assert.Equal(t, tc.expected, result, tc.description)
-		})
-	}
-}
-
-func TestUnitCommonPayTypePostPaidDiffSuppressFunc(t *testing.T) {
-	testCases := []struct {
-		name        string
-		payType     string
-		expected    bool
-		description string
-	}{
-		{
-			name:        "PostPaid",
-			payType:     "PostPaid",
-			expected:    true,
-			description: "PostPaid pay_type should suppress diff",
-		},
-		{
-			name:        "postpaid_lowercase",
-			payType:     "postpaid",
-			expected:    true,
-			description: "postpaid (lowercase) should suppress diff",
-		},
-		{
-			name:        "PrePaid",
-			payType:     "PrePaid",
-			expected:    false,
-			description: "PrePaid should not suppress diff",
-		},
-		{
-			name:        "Empty",
-			payType:     "",
-			expected:    false,
-			description: "Empty pay_type should not suppress diff",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-				"pay_type": {Type: schema.TypeString},
-			}, map[string]interface{}{
-				"pay_type": tc.payType,
-			})
-			result := payTypePostPaidDiffSuppressFunc("key", "old", "new", d)
-			assert.Equal(t, tc.expected, result, tc.description)
-		})
-	}
-}
-
-func TestUnitCommonEngineDiffSuppressFunc(t *testing.T) {
-	testCases := []struct {
-		name        string
-		engine      string
-		expected    bool
-		description string
-	}{
-		{
-			name:        "BDS_Engine",
-			engine:      "bds",
-			expected:    true,
-			description: "bds engine should suppress diff",
-		},
-		{
-			name:        "BDS_Engine_Uppercase",
-			engine:      "BDS",
-			expected:    true,
-			description: "BDS engine (uppercase) should suppress diff",
-		},
-		{
-			name:        "Other_Engine",
-			engine:      "mysql",
-			expected:    false,
-			description: "Other engine should not suppress diff",
-		},
-		{
-			name:        "Empty_Engine",
-			engine:      "",
-			expected:    false,
-			description: "Empty engine should not suppress diff",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-				"engine": {Type: schema.TypeString},
-			}, map[string]interface{}{
-				"engine": tc.engine,
-			})
-			result := engineDiffSuppressFunc("key", "old", "new", d)
 			assert.Equal(t, tc.expected, result, tc.description)
 		})
 	}

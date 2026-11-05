@@ -68,7 +68,8 @@ The following arguments are supported:
 * `ecr_id` - (Required, ForceNew) The ECR ID.
 * `vpc_id` - (Required, ForceNew) The VPC ID.
 * `vpc_owner_id` - (Optional, ForceNew) The ID of the Alibaba Cloud account that owns the VPC.
--> **NOTE:** If you want to connect to a network instance that belongs to a different account, `vpc_owner_id` is required.
+
+  -> **NOTE:** If you want to connect to a network instance that belongs to a different account, `vpc_owner_id` is required.
 
 ## Attributes Reference
 

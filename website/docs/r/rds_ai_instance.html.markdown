@@ -67,7 +67,7 @@ The following arguments are supported:
 * `auth_config_list` - (Optional, Set) Authentication information list. See [`auth_config_list`](#auth_config_list) below.
 * `ca_type` - (Optional) The type of the certificate. Currently, only `custom` is supported. A custom certificate is used.
 
--> **NOTE:**  When `ssl_enabled` is set to `1`, this parameter must be configured.
+  -> **NOTE:**  When `ssl_enabled` is set to `1`, this parameter must be configured.
 
 * `db_instance_name` - (Optional, ForceNew) The ID of the RDS PostgreSQL database instance accessed by the AI application.
   supports only **newly purchased empty RDS PostgreSQL instances**. The major version is `17`, and the minor version is **20250630 or later**.>
@@ -79,13 +79,13 @@ The following arguments are supported:
   - `true`: Yes.
   - `false` (default): No.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `public_endpoint_enabled` - (Optional, Bool) Whether to enable the public network connection address. Valid values:
   - `true` (default): Yes.
   - `false`: No.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `public_network_access_enabled` - (Optional, Bool) Whether to enable the public network NAT gateway. Valid values:
   - `true`: Yes.
@@ -96,11 +96,11 @@ The following arguments are supported:
   - `0`: Closed
 * `server_cert` - (Optional) Customize the certificate content.
 
--> **NOTE:**  When `ca_type` is set to `custom`, this parameter must be configured.
+  -> **NOTE:**  When `ca_type` is set to `custom`, this parameter must be configured.
 
 * `server_key` - (Optional) The certificate private key.
 
--> **NOTE:**  When `ca_type` is set to `custom`, this parameter must be configured.
+  -> **NOTE:**  When `ca_type` is set to `custom`, this parameter must be configured.
 
 * `status` - (Optional) The status of the instance. Valid values: `Running`, `Stopped`.
 * `storage_config_list` - (Optional, Set) A list of storage configurations. See [`storage_config_list`](#storage_config_list) below.

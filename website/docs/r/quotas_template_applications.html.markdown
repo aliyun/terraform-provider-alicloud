@@ -66,29 +66,35 @@ Terraform cannot destroy resource `alicloud_quotas_template_applications`. Terra
 
 The following arguments are supported:
 * `aliyun_uids` - (Required, ForceNew) The list of Alibaba Cloud accounts (primary accounts) of the resource directory members to which the quota is applied.
--> **NOTE:**  Only 50 members can apply for quota increase in batch at a time. For more information about the members of the resource directory, see [Query the list of all members in the resource directory](~~ 604207 ~~).
+
+  -> **NOTE:**  Only 50 members can apply for quota increase in batch at a time. For more information about the members of the resource directory, see [Query the list of all members in the resource directory](~~ 604207 ~~).
 * `desire_value` - (Required, ForceNew) The value of the quota request.
--> **NOTE:**  The quota request is approved by the technical support of each cloud service. If you want to increase the chance of passing, please fill in a reasonable application value and detailed application reasons when applying for quota.
+
+  -> **NOTE:**  The quota request is approved by the technical support of each cloud service. If you want to increase the chance of passing, please fill in a reasonable application value and detailed application reasons when applying for quota.
 * `dimensions` - (Optional, ForceNew) Quota dimension. See [`dimensions`](#dimensions) below.
 * `effective_time` - (Optional, ForceNew) The UTC time when the quota takes effect. This parameter applies only to the equity quota (WhiteListLabel).
--> **NOTE:**  If the current account does not select the effective time, the default is the submission time.
+
+  -> **NOTE:**  If the current account does not select the effective time, the default is the submission time.
 * `env_language` - (Optional) The language of the quota application result notification. Value:
   - zh (default): Chinese.
   - en: English.
 * `expire_time` - (Optional, ForceNew) The UTC time when the quota expires. This parameter applies only to the equity quota (WhiteListLabel).
--> **NOTE:**  If No Expiration Time is selected for the current account, the expiration time is 99 years from the effective time of the current quota.
+
+  -> **NOTE:**  If No Expiration Time is selected for the current account, the expiration time is 99 years from the effective time of the current quota.
 * `notice_type` - (Optional) Whether to send notification of quota application result. Value:
   - 0 (default): No.
   - 3: Yes.
 * `product_code` - (Required, ForceNew) Cloud service name abbreviation.
--> **NOTE:**  For more information about cloud services that support quota centers, see [Cloud services that support quota centers](~~ 182368 ~~).
+
+  -> **NOTE:**  For more information about cloud services that support quota centers, see [Cloud services that support quota centers](~~ 182368 ~~).
 * `quota_action_code` - (Required, ForceNew) The quota ID.
 * `quota_category` - (Required, ForceNew) The quota type. Value:
   - CommonQuota (default): Generic quota.
   - FlowControl:API rate quota.
   - WhiteListLabel: Equity quota.
 * `reason` - (Required, ForceNew) Reason for quota application.
--> **NOTE:**  The quota request is approved by the technical support of each cloud service. If you want to increase the chance of passing, please fill in a reasonable application value and detailed application reasons when applying for quota.
+
+  -> **NOTE:**  The quota request is approved by the technical support of each cloud service. If you want to increase the chance of passing, please fill in a reasonable application value and detailed application reasons when applying for quota.
 
 ### `dimensions`
 
@@ -100,27 +106,35 @@ The dimensions supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `quota_application_details` - List of quota application details.
-  * `aliyun_uid` - Alibaba Cloud account (primary account).
-  * `application_id` - The ID of the quota promotion request.
-  * `approve_value` - The approved quota value of the quota increase request.
-  * `audit_reason` - Approval comments on quota increase applications.
-  * `env_language` - The language of the quota alert notification. Value: zh: Chinese, en: English.
-  * `notice_type` - Whether to notify the quota increase application result. Value: 0: No, 3: Yes.
-  * `period` - Quota calculation period.
-    * `period_unit` - Quota calculation cycle unit.
-    * `period_value` - The quota calculation period value.
-  * `dimensions` - Quota dimension.
-  * `quota_arn` - Quota ARN.
-  * `quota_description` - The quota description.
-  * `quota_name` - The quota name.
-  * `quota_unit` - Quota unit.
-  * `reason` - The reason for the quota increase application.
-  * `status` - The approval status of the quota promotion application. Value:
+* `quota_application_details` - List of quota application details. Each element contains the following attributes:
+
+### `quota_application_details`
+
+The quota_application_details supports the following attributes:
+* `aliyun_uid` - Alibaba Cloud account (primary account).
+* `application_id` - The ID of the quota promotion request.
+* `approve_value` - The approved quota value of the quota increase request.
+* `audit_reason` - Approval comments on quota increase applications.
+* `dimensions` - Quota dimension.
+* `env_language` - The language of the quota alert notification. Value: zh: Chinese, en: English.
+* `notice_type` - Whether to notify the quota increase application result. Value: 0: No, 3: Yes.
+* `period` - Quota calculation period. See [`period`](#quota_application_detailsperiod) below.
+* `quota_arn` - Quota ARN.
+* `quota_description` - The quota description.
+* `quota_name` - The quota name.
+* `quota_unit` - Quota unit.
+* `reason` - The reason for the quota increase application.
+* `status` - The approval status of the quota promotion application. Value:
   - Disagree: reject.
   - Approve: approved.
   - Process: under review.
   - Cancel: Closed.
+
+### `quota_application_details.period`
+
+The period supports the following attributes:
+* `period_unit` - Quota calculation cycle unit.
+* `period_value` - The quota calculation period value.
 
 ## Timeouts
 
