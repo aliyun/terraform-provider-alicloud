@@ -1848,16 +1848,17 @@ func (s *Service) ModifyDBClusterAccessWhitelist(d *schema.ResourceData) error {
 			request := polardb.CreateModifyDBClusterAccessWhitelistRequest()
 			request.RegionId = s.client.RegionId
 			request.DBClusterId = d.Id()
-			request.SecurityIps = ipstr
 			request.DBClusterIPArrayName = pack["db_cluster_ip_array_name"].(string)
+			request.SecurityIps = ipstr
 			request.ModifyMode = "Delete"
+			request.WhiteListType = pack["white_list_type"].(string)
 			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 			err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 				raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 					return polarDBClient.ModifyDBClusterAccessWhitelist(request)
 				})
 				if err != nil {
-					if helper.NeedRetry(err) {
+					if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"LockTimeout"}) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -1878,23 +1879,27 @@ func (s *Service) ModifyDBClusterAccessWhitelist(d *schema.ResourceData) error {
 			//ips expand string list
 			ipList := convert.ExpandStringList(pack["security_ips"].(*schema.Set).List())
 			ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
+			request := polardb.CreateModifyDBClusterAccessWhitelistRequest()
+			request.RegionId = s.client.RegionId
+			request.DBClusterId = d.Id()
+			request.DBClusterIPArrayName = pack["db_cluster_ip_array_name"].(string)
+			request.ModifyMode = pack["modify_mode"].(string)
 			// default disable connect from outside
 			if ipstr == "" {
 				ipstr = LOCAL_HOST_IP
 			}
-			request := polardb.CreateModifyDBClusterAccessWhitelistRequest()
-			request.RegionId = s.client.RegionId
-			request.DBClusterId = d.Id()
 			request.SecurityIps = ipstr
-			request.DBClusterIPArrayName = pack["db_cluster_ip_array_name"].(string)
-			request.ModifyMode = pack["modify_mode"].(string)
+			request.WhiteListType = pack["white_list_type"].(string)
+			if v, ok := pack["db_cluster_ip_array_attribute"]; ok && v.(string) != "" {
+				request.DBClusterIPArrayAttribute = v.(string)
+			}
 			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 			err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 				raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 					return polarDBClient.ModifyDBClusterAccessWhitelist(request)
 				})
 				if err != nil {
-					if helper.NeedRetry(err) {
+					if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"LockTimeout"}) {
 						wait()
 						return retry.RetryableError(err)
 					}

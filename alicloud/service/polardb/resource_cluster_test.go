@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -865,6 +866,34 @@ func TestAccAliCloudPolarDBCluster_UpdatePrePaid(t *testing.T) {
 						"auto_renew_period": "2",
 					}),
 				),
+			},
+			{
+				// The previous step already left duration=2/period_unit=Month in
+				// the API, so this step must move the values to exercise the new
+				// ModifyAutoRenewAttribute branch. auto_renew_period is removed from
+				// the accumulated configuration because it and duration/period_unit
+				// write the same API value and a conflicting pair is rejected at
+				// plan time.
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_status":    "AutoRenewal",
+					"auto_renew_period": REMOVEKEY,
+					"duration":          "6",
+					"period_unit":       "Month",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status": "AutoRenewal",
+						"duration":       "6",
+						"period_unit":    "Month",
+					}),
+				),
+			},
+			{
+				// The applied auto-renewal values must be readable after import.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "imci_switch", "sub_category", "period", "auto_renew_period"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1894,23 +1923,48 @@ func TestAccAliCloudPolarDBClusterSENormalEqualCreate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"standby_az": "cn-hangzhou-i",
+					"standby_az":                  "cn-hangzhou-i",
+					"zone_type":                   "Standby",
+					"is_switch_over_for_disaster": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"standby_az": "cn-hangzhou-i",
+						"standby_az":                  "cn-hangzhou-i",
+						"zone_type":                   "Standby",
+						"is_switch_over_for_disaster": "false",
 					}),
 				),
 			},
 			{
+				// QA03: import after the first standby-zone change. zone_type and
+				// is_switch_over_for_disaster are write-only ModifyDBClusterPrimaryZone
+				// parameters the Describe API does not return, so they are the only
+				// ignored fields.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "proxy_type", "proxy_class", "db_node_num", "zone_type", "is_switch_over_for_disaster"},
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
-					"standby_az": "cn-hangzhou-k",
+					"standby_az":                  "cn-hangzhou-k",
+					"zone_type":                   "Standby",
+					"is_switch_over_for_disaster": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"standby_az": "cn-hangzhou-k",
+						"standby_az":                  "cn-hangzhou-k",
+						"zone_type":                   "Standby",
+						"is_switch_over_for_disaster": "false",
 					}),
 				),
+			},
+			{
+				// QA03: import after the second standby-zone change.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "proxy_type", "proxy_class", "db_node_num", "zone_type", "is_switch_over_for_disaster"},
 			},
 		},
 	})
@@ -2870,6 +2924,424 @@ func resourcePolarDBClusterTDEOracleConfigDependence(name string) string {
 	// (db_type/db_version/db_node_class) is supplied by the test step config.
 	return resourcePolarDBClusterTDEPostgreSQLConfigDependence(name)
 }
+
+func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
+	var v *sdkpolardb.DescribeDBClusterAttributeResponse
+	name := "tf-testAccPolarDBClusterArchitecture"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":           CHECKSET,
+		"db_node_class":         CHECKSET,
+		"vswitch_id":            CHECKSET,
+		"db_type":               CHECKSET,
+		"db_version":            CHECKSET,
+		"architecture":          CHECKSET,
+		"cluster_network_type":  CHECKSET,
+		"storage_auto_scale":    CHECKSET,
+		"storage_type":          CHECKSET,
+		"storage_space":         CHECKSET,
+		"storage_upper_bound":   CHECKSET,
+		"deploy_unit":           CHECKSET,
+		"db_cluster_ip_array.#": CHECKSET,
+	}
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return polardb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourcePolarDBClusterSENormalArchitectureConfigDependence)
+
+	// plannedFlashingOffTime is the planned flash time of the node-class change.
+	// It is carried by the same update as the class change (ModifyDBNodeClass
+	// rejects it on its own) and must be in the future when the update runs, so
+	// the offset covers the cluster creation and the import steps before it.
+	plannedFlashingOffTime := time.Now().Add(45 * time.Minute).UTC().Format("2006-01-02T15:04:05Z")
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			// The SENormal architecture/storage matrix is only sold in
+			// cn-hangzhou; other default regions return InvalidZoneID.NotFound.
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+
+		IDRefreshName: resourceId,
+		// tags and global_security_group_list are Optional (not Computed) and only
+		// populated by Read, so the refresh-only state gains "0"/"0" keys that the
+		// applied state does not have; the ID-only test cannot be equal for them.
+		IDRefreshIgnore: []string{"tags", "global_security_group_list"},
+
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":              "MySQL",
+					"db_version":           "8.0",
+					"pay_type":             "PostPaid",
+					"db_node_count":        "2",
+					"db_node_class":        "${local.create_node_class}",
+					"vswitch_id":           "${local.vswitch_id}",
+					"zone_id":              "${local.zone_id}",
+					"creation_category":    "SENormal",
+					"architecture":         "X86",
+					"cluster_network_type": "VPC",
+					"storage_type":         "ESSDPL1",
+					"storage_space":        50,
+					"storage_auto_scale":   "Enable",
+					"storage_upper_bound":  "200",
+					"description":          "${var.name}",
+					// DescribeDBClusterTDE reports EncryptNewTables="OFF" while the
+					// schema field is Optional (not Computed), so it must be stated
+					// explicitly or the OFF=>"" drift fails the post-apply plan check.
+					"encrypt_new_tables": "OFF",
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"architecture":         "X86",
+						"cluster_network_type": "VPC",
+						"storage_auto_scale":   "Enable",
+						"storage_type":         "ESSDPL1",
+						"storage_space":        "50",
+						"storage_upper_bound":  "200",
+						"deploy_unit":          CHECKSET,
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "db_cluster_ip_array.*", map[string]string{
+						"db_cluster_ip_array_name": "default",
+					}),
+				),
+			},
+			{
+				// Schema-path entries silence the coverage gate; the indexed entries
+				// are what ImportStateVerify prefix-matches for set elements.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.0.modify_mode", "db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.modify_mode", "db_cluster_ip_array.1.white_list_type"},
+			},
+			{
+				// Node class change. The option is rejected on its own because
+				// ModifyDBNodeClass is the only consumer. Automatic storage scaling
+				// is disabled while storage_upper_bound stays at 300: the API only
+				// reports the bound while scaling is enabled, so this is the state
+				// that the import steps below have to converge.
+				//
+				// planned_flashing_off_time is deliberately not sent here: a real
+				// update with 2026-11-05T11:27:28Z was rejected by
+				// ModifyDBNodeClass with InvalidPlannedStartTime.Malformed
+				// ("The specified parameter PlannedStartTime is not valid",
+				// request 01A1AB5E-5F51-5D2F-81BB-F5CE5A0B202A), so the write path
+				// cannot be exercised end to end until the product fixes the
+				// contract. Setting it alone is still rejected at plan time.
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_class":       "${local.upgrade_node_class}",
+					"storage_auto_scale":  "Disable",
+					"storage_upper_bound": "300",
+					"encrypt_new_tables":  "OFF",
+					// Add a user-managed hidden IP array to verify the write path
+					// sends DBClusterIPArrayAttribute=hidden and the Read path (F2)
+					// keeps it in state so the attribute converges instead of being
+					// dropped. The default array is redeclared so it is not removed.
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}, {
+						"db_cluster_ip_array_name":      "tftesthid",
+						"db_cluster_ip_array_attribute": "hidden",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_auto_scale":  "Disable",
+						"storage_type":        "ESSDPL1",
+						"storage_upper_bound": "300",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "db_cluster_ip_array.*", map[string]string{
+						"db_cluster_ip_array_name":      "tftesthid",
+						"db_cluster_ip_array_attribute": "hidden",
+					}),
+				),
+			},
+			{
+				// QA03: every successful configuration step is followed by an
+				// independent import. planned_flashing_off_time and the write-only
+				// set members are not returned by the Describe API, so they are the
+				// only ignored fields here.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.0.modify_mode", "db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.modify_mode", "db_cluster_ip_array.1.white_list_type", "storage_upper_bound", "planned_flashing_off_time"},
+			},
+			{
+				// Import with automatic storage scaling disabled: the bound is not
+				// reported by the API, so only the attributes the API returns can
+				// be compared. ImportStatePersist cannot be used here: with
+				// terraform-plugin-testing v1.16.0 it runs `terraform import` in the
+				// main working directory, and the address is still present in the
+				// applied state ("Resource already managed by Terraform"). The
+				// imported state is therefore verified through ImportStateCheck
+				// only, and convergence of the following apply is checked by the
+				// framework's post-apply plan.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// storage_upper_bound is not reported while automatic storage
+				// scaling is disabled; apply-time convergence is covered by step 3.
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "storage_upper_bound"},
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected 1 imported state, got %d", len(states))
+					}
+					attrs := states[0].Attributes
+					if attrs["storage_auto_scale"] != "Disable" {
+						return fmt.Errorf("imported storage_auto_scale = %q, want Disable", attrs["storage_auto_scale"])
+					}
+					if attrs["db_cluster_ip_array.#"] != "2" {
+						return fmt.Errorf("imported db_cluster_ip_array.# = %q, want 2", attrs["db_cluster_ip_array.#"])
+					}
+					foundHidden := false
+					for key, value := range attrs {
+						if strings.HasSuffix(key, ".db_cluster_ip_array_name") && value == "tftesthid" {
+							foundHidden = true
+						}
+					}
+					if !foundHidden {
+						return fmt.Errorf("imported state is missing the user managed hidden whitelist group")
+					}
+					return nil
+				},
+			},
+			{
+				// Convergence while auto scaling stays disabled: the applied state
+				// already holds the 300 GB bound, so re-applying the same
+				// configuration plans no change and the value is kept even though
+				// the API does not report it.
+				Config: testAccConfig(map[string]interface{}{
+					"encrypt_new_tables":  "OFF",
+					"storage_auto_scale":  "Disable",
+					"storage_upper_bound": "300",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_auto_scale":  "Disable",
+						"storage_upper_bound": "300",
+					}),
+				),
+			},
+			{
+				// QA03: import after the disabled-hold step.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.0.modify_mode", "db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.modify_mode", "db_cluster_ip_array.1.white_list_type", "storage_upper_bound"},
+			},
+			// IR06 has no framework-supported way to prove a persisted import
+			// for this resource:
+			//   - ImportStatePersist runs `terraform import` in the main working
+			//     directory (plugin-testing v1.16.0), where the address is still
+			//     in the applied state, and fails with "Resource already managed
+			//     by Terraform";
+			//   - a plannable import removes the resource from a copied state and
+			//     re-imports it, but the framework then requires a no-op plan. The
+			//     imported state lacks Optional attributes with defaults
+			//     (modify_type) and the computed cn_node_ids/dn_node_ids, so the
+			//     plan is always an in-place update even though the fields under
+			//     change converge. Running it with ExpectNonEmptyPlan would hide
+			//     exactly the difference it is supposed to prove.
+			// The disabled-state import above therefore verifies the imported
+			// attribute values directly, and the step after this comment proves
+			// the applied state converges while the bound is unreported.
+			// See the implementation report for the recorded plan difference.
+			{
+				// Re-enable automatic storage scaling: ModifyDBCluster sends both
+				// StorageAutoScale and the configured StorageUpperBound, and the
+				// bound is reported again by the API, so the value is verified end
+				// to end instead of only through the suppressed-diff path.
+				Config: testAccConfig(map[string]interface{}{
+					"storage_auto_scale":  "Enable",
+					"storage_upper_bound": "300",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_auto_scale":  "Enable",
+						"storage_upper_bound": "300",
+					}),
+				),
+			},
+			{
+				// QA03: import after the re-enable step. The bound is reported again,
+				// so only the write-only set members are ignored here.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.0.modify_mode", "db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.modify_mode", "db_cluster_ip_array.1.white_list_type"},
+			},
+			{
+				// QA01: hiding a whitelist group that is already visible is not
+				// supported by ModifyDBClusterAccessWhitelist, so the plan must
+				// reject it instead of producing no diff and ignoring the value.
+				// These CustomizeDiff negatives run before the schema-validation
+				// negatives below: acctest.ResourceTestAccConfig accumulates the
+				// step configs, so their invalid values would otherwise abort the
+				// plan before CustomizeDiff is reached.
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "hidden",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}, {
+						"db_cluster_ip_array_name":      "tftesthid",
+						"db_cluster_ip_array_attribute": "hidden",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				ExpectError: regexp.MustCompile(`db_cluster_ip_array_attribute cannot be set to hidden for the existing "default" group`),
+			},
+			{
+				// QA01: the API cannot make a hidden group visible again either.
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}, {
+						"db_cluster_ip_array_name":      "tftesthid",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				ExpectError: regexp.MustCompile(`db_cluster_ip_array_attribute cannot be removed from the "tftesthid" group`),
+			},
+			{
+				// QA02: planned_flashing_off_time is only sent by ModifyDBNodeClass,
+				// so setting it without a db_node_class change is rejected instead of
+				// being stored without taking effect.
+				Config: testAccConfig(map[string]interface{}{
+					"planned_flashing_off_time": plannedFlashingOffTime,
+				}),
+				ExpectError: regexp.MustCompile(`planned_flashing_off_time is an option of the db_node_class update`),
+			},
+			{
+				// QA02: db_node_type is only sent by ModifyDBNodeClass together with
+				// a class change.
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_class":             "${local.upgrade_node_class}",
+					"db_node_type":              "DLNode",
+					"planned_flashing_off_time": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile(`db_node_type is an option of the db_node_class update`),
+			},
+			{
+				// QA02: zone_type is only sent by ModifyDBClusterPrimaryZone together
+				// with a standby_az change.
+				Config: testAccConfig(map[string]interface{}{
+					"zone_type":    "Standby",
+					"db_node_type": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile(`zone_type is an option of the standby_az update`),
+			},
+			{
+				// The nested block only supports IP whitelists; security groups are
+				// managed by the top-level security_group_ids attribute.
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "SecurityGroup",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				ExpectError: regexp.MustCompile(`expected db_cluster_ip_array\.\d+\.white_list_type to be one of \[IP\]`),
+			},
+			{
+				// The contract minimum for StorageUpperBound is 20.
+				Config: testAccConfig(map[string]interface{}{
+					"storage_upper_bound": "10",
+				}),
+				ExpectError: regexp.MustCompile(`expected storage_upper_bound to be in the range \(20 - 64000\)`),
+			},
+			{
+				// ModifyDBNodeClass only accepts DLNode for AI node class changes.
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_type": "Primary",
+				}),
+				ExpectError: regexp.MustCompile(`expected db_node_type to be one of \[DLNode\]`),
+			},
+			{
+				// Only the standby zone can be moved in place; a Primary switch
+				// cannot converge with the ForceNew zone_id and is rejected.
+				Config: testAccConfig(map[string]interface{}{
+					"zone_type": "Primary",
+				}),
+				ExpectError: regexp.MustCompile(`expected zone_type to be one of \[Standby\]`),
+			},
+			{
+				// Restore a valid configuration after the negative steps so the
+				// final destroy runs with accepted values instead of the rejected
+				// ones from the expectations above.
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_type":              REMOVEKEY,
+					"zone_type":                 REMOVEKEY,
+					"planned_flashing_off_time": REMOVEKEY,
+					"storage_auto_scale":        "Disable",
+					"storage_upper_bound":       "300",
+					"encrypt_new_tables":        "OFF",
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}, {
+						"db_cluster_ip_array_name":      "tftesthid",
+						"db_cluster_ip_array_attribute": "hidden",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_auto_scale":  "Disable",
+						"storage_upper_bound": "300",
+					}),
+				),
+			},
+			{
+				// QA03: import after the final restore step.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.0.modify_mode", "db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.modify_mode", "db_cluster_ip_array.1.white_list_type", "storage_upper_bound"},
+			},
+		},
+	})
+}
+
 func resourcePolarDBClusterConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -3130,6 +3602,70 @@ func resourcePolarDBClusterSENormalConfigDependence(name string) string {
 	  db_version = "8.0"
       pay_type   = "PostPaid"
 	  category   = "SENormal"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+		status = "OK"
+	}
+
+	resource "alicloud_security_group" "default" {
+		count = 2
+		name   = var.name
+		vpc_id = alicloud_vpc.default.id
+	}
+
+`, name)
+}
+
+// resourcePolarDBClusterSENormalArchitectureConfigDependence derives the create
+// zone, the create class and the upgrade class from
+// DescribeDBClusterAvailableResources instead of assuming that the first zone of
+// an unfiltered list sells both classes. The upgrade lookup is restricted to the
+// zone that sells the create class, so an environment that does not sell both
+// classes in one zone fails explicitly instead of mixing zones.
+func resourcePolarDBClusterSENormalArchitectureConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_vpcs" "default" {
+		name_regex = "^default-NODELETING$"
+	}
+
+	resource "alicloud_vpc" "default" {
+		vpc_name = var.name
+	}
+
+	data "alicloud_polardb_node_classes" "create" {
+		db_type       = "MySQL"
+		db_version    = "8.0"
+		pay_type      = "PostPaid"
+		category      = "SENormal"
+		db_node_class = "polar.mysql.x4.large.c"
+	}
+
+	data "alicloud_polardb_node_classes" "upgrade" {
+		db_type       = "MySQL"
+		db_version    = "8.0"
+		pay_type      = "PostPaid"
+		category      = "SENormal"
+		db_node_class = "polar.mysql.x4.xlarge.c"
+		zone_id       = data.alicloud_polardb_node_classes.create.classes.0.zone_id
+	}
+
+	resource "alicloud_vswitch" "default" {
+		zone_id = data.alicloud_polardb_node_classes.create.classes.0.zone_id
+		vpc_id = alicloud_vpc.default.id
+		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
+	}
+
+	locals {
+		vpc_id = alicloud_vpc.default.id
+		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
+		zone_id = data.alicloud_polardb_node_classes.create.classes.0.zone_id
+		create_node_class = data.alicloud_polardb_node_classes.create.classes.0.supported_engines.0.available_resources.0.db_node_class
+		upgrade_node_class = data.alicloud_polardb_node_classes.upgrade.classes.0.supported_engines.0.available_resources.0.db_node_class
 	}
 
 	data "alicloud_resource_manager_resource_groups" "default" {
