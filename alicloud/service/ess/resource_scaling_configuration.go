@@ -540,7 +540,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 						"category": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validators.StringInSlice([]string{"all", "cloud", "cloud_auto", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"all", "cloud", "cloud_auto", "cloud_regional_disk_auto", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
 							// DataDisk.N.Category is mutually exclusive with
 							// DataDisk.N.Categories per disk; suppress the singular diff
 							// for this disk when its plural categories is configured, so a
@@ -2315,11 +2315,22 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 		d.Set("system_disk_bursting_enabled", v)
 	}
 
-	if sg, ok := d.GetOk("security_group_id"); ok && sg.(string) != "" {
-		d.Set("security_group_id", response["SecurityGroupId"])
+	// The singular instance type and security group are only refreshed when the
+	// configuration sets them, so a plural-only configuration is never forced to
+	// adopt the singular form. During import there is no configuration at all,
+	// and skipping the backfill would drop readable remote values from the
+	// imported state.
+	rawConfigForImport := d.GetRawConfig()
+	importRead := rawConfigForImport.IsNull() || !rawConfigForImport.IsKnown()
+	if sg, ok := d.GetOk("security_group_id"); (ok && sg.(string) != "") || importRead {
+		if v := response["SecurityGroupId"]; v != nil && fmt.Sprint(v) != "" {
+			d.Set("security_group_id", v)
+		}
 	}
-	if instanceType, ok := d.GetOk("instance_type"); ok && instanceType.(string) != "" {
-		d.Set("instance_type", response["InstanceType"])
+	if instanceType, ok := d.GetOk("instance_type"); (ok && instanceType.(string) != "") || importRead {
+		if v := response["InstanceType"]; v != nil && fmt.Sprint(v) != "" {
+			d.Set("instance_type", v)
+		}
 	}
 	userData := d.Get("user_data")
 	if userData.(string) != "" {

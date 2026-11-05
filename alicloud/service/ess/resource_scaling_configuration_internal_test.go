@@ -1,133 +1,207 @@
 package ess
 
 import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"sync"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-// TestUnitOptionalComputedRequestMatrix asserts the serialized request keys for
-// the Optional+Computed attributes: an omitted value contributes no key, an
-// explicit (including zero) value contributes the key, and a removed value
-// contributes nothing so the server keeps its own state.
-func TestUnitOptionalComputedRequestMatrix(t *testing.T) {
-	zero := 0
-	two := 2
-	hundred := 100
-	on := true
-	off := false
+// scalingConfigurationUnitTestServer serves the ESS actions the resource issues
+// during a create/update unit test. Captured forms are grouped by action so a
+// test can assert the exact parameters the provider serialized.
+type scalingConfigurationUnitTestServer struct {
+	mutex    sync.Mutex
+	requests map[string][]map[string]string
+}
 
-	omitted := map[string]interface{}{}
-	addOptionalComputedRequestFields(omitted, optionalComputedRequestFields{})
-	if len(omitted) != 0 {
-		t.Fatalf("omitted attributes must serialize nothing, got %#v", omitted)
-	}
+func newScalingConfigurationUnitTestServer(t *testing.T) *scalingConfigurationUnitTestServer {
+	t.Helper()
+	return &scalingConfigurationUnitTestServer{requests: map[string][]map[string]string{}}
+}
 
-	explicitZero := map[string]interface{}{}
-	addOptionalComputedRequestFields(explicitZero, optionalComputedRequestFields{
-		LoadBalancerWeight: &zero,
-		Ipv6AddressCount:   &zero,
-		Cpu:                &zero,
-		Memory:             &zero,
-	})
-	for _, key := range []string{"LoadBalancerWeight", "Ipv6AddressCount", "Cpu", "Memory"} {
-		value, ok := explicitZero[key]
-		if !ok {
-			t.Fatalf("%s must be serialized when explicitly configured as zero", key)
+func (s *scalingConfigurationUnitTestServer) handler(t *testing.T) http.HandlerFunc {
+	t.Helper()
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("cannot parse the provider request: %s", err)
 		}
-		if string(value.(requests.Integer)) != "0" {
-			t.Fatalf("%s must serialize 0, got %s", key, value)
+		form := make(map[string]string, len(r.Form))
+		for key, values := range r.Form {
+			form[key] = values[0]
 		}
-	}
+		action := r.Form.Get("Action")
+		s.mutex.Lock()
+		s.requests[action] = append(s.requests[action], form)
+		s.mutex.Unlock()
 
-	explicitValues := map[string]interface{}{}
-	addOptionalComputedRequestFields(explicitValues, optionalComputedRequestFields{
-		LoadBalancerWeight: &hundred,
-		Cpu:                &two,
-		Memory:             &two,
-	})
-	if string(explicitValues["LoadBalancerWeight"].(requests.Integer)) != "100" {
-		t.Fatalf("LoadBalancerWeight must serialize 100, got %v", explicitValues["LoadBalancerWeight"])
-	}
-	if string(explicitValues["Cpu"].(requests.Integer)) != "2" {
-		t.Fatalf("Cpu must serialize 2, got %v", explicitValues["Cpu"])
-	}
-
-	// Removal yields nil pointers (the attribute is no longer configured), so the
-	// builder must resend nothing and leave the server value untouched.
-	removed := map[string]interface{}{}
-	addOptionalComputedRequestFields(removed, optionalComputedRequestFields{})
-	if len(removed) != 0 {
-		t.Fatalf("removed attributes must resend nothing, got %#v", removed)
-	}
-
-	burstingOn := map[string]interface{}{}
-	addOptionalComputedRequestFields(burstingOn, optionalComputedRequestFields{SystemDiskBursting: &on})
-	if v, ok := burstingOn["SystemDisk.BurstingEnabled"]; !ok || v != true {
-		t.Fatalf("explicit true bursting must be serialized, got %#v", burstingOn)
-	}
-	burstingOff := map[string]interface{}{}
-	addOptionalComputedRequestFields(burstingOff, optionalComputedRequestFields{SystemDiskBursting: &off})
-	if v, ok := burstingOff["SystemDisk.BurstingEnabled"]; !ok || v != false {
-		t.Fatalf("explicit false bursting must be serialized, got %#v", burstingOff)
+		w.Header().Set("Content-Type", "application/json")
+		switch action {
+		case "CreateScalingConfiguration":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"ScalingConfigurationId": "asc-unit-test"})
+		case "DescribeScalingConfigurations":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"ScalingConfigurations": map[string]interface{}{
+					"ScalingConfiguration": []interface{}{map[string]interface{}{
+						"ScalingConfigurationId": "asc-unit-test",
+						"ScalingGroupId":         "asg-unit-test",
+						"LifecycleState":         "Active",
+						"InstanceType":           "ecs.g6.large",
+						"SecurityGroupId":        "sg-unit-test",
+					}},
+				},
+			})
+		default:
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"RequestId": "unit-test"})
+		}
 	}
 }
 
-// TestUnitBurstingRequestMatrix asserts that an explicitly configured false is
-// sent (so the remote value can be turned off) while an omitted value is not.
-func TestUnitBurstingRequestMatrix(t *testing.T) {
-	omitted := map[string]interface{}{}
-	putBurstingRequest(omitted, false, false)
-	if _, ok := omitted["BurstingEnabled"]; ok {
-		t.Fatalf("omitted bursting must not be serialized, got %#v", omitted)
-	}
+func (s *scalingConfigurationUnitTestServer) captured(action string) []map[string]string {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return append([]map[string]string(nil), s.requests[action]...)
+}
 
-	disabled := map[string]interface{}{}
-	putBurstingRequest(disabled, false, true)
-	if v, ok := disabled["BurstingEnabled"]; !ok || v != false {
-		t.Fatalf("explicit false bursting must be serialized, got %#v", disabled)
+func applyScalingConfigurationUnitTest(t *testing.T, server *scalingConfigurationUnitTestServer, previous *sdktf.InstanceState, raw map[string]interface{}) {
+	t.Helper()
+	client := essScalingConfigurationUnitTestClient(t, server.handler(t))
+	scalingConfigurationResource := resourceAlicloudEssScalingConfiguration()
+	config := sdktf.NewResourceConfigRaw(raw)
+	diff, err := scalingConfigurationResource.Diff(context.Background(), previous, config, client)
+	if err != nil {
+		t.Fatalf("diff failed: %s", err)
 	}
-
-	enabled := map[string]interface{}{}
-	putBurstingRequest(enabled, true, false)
-	if v, ok := enabled["BurstingEnabled"]; !ok || v != true {
-		t.Fatalf("true bursting must be serialized, got %#v", enabled)
+	if diff == nil {
+		t.Fatal("expected a diff for the unit test configuration")
+	}
+	if _, diags := scalingConfigurationResource.Apply(context.Background(), previous, diff, client); diags.HasError() {
+		t.Fatalf("apply reported errors: %v", diags)
 	}
 }
 
-// TestUnitPrivatePoolAndSchedulerRequest asserts the block request shapes,
-// including empty and nil blocks that must contribute no keys.
-func TestUnitPrivatePoolAndSchedulerRequest(t *testing.T) {
-	empty := map[string]interface{}{}
-	buildPrivatePoolOptionsRequest(empty, nil)
-	buildPrivatePoolOptionsRequest(empty, []interface{}{})
-	buildPrivatePoolOptionsRequest(empty, []interface{}{nil})
-	buildPrivatePoolOptionsRequest(empty, []interface{}{map[string]interface{}{}})
-	if len(empty) != 0 {
-		t.Fatalf("empty private pool blocks must serialize nothing, got %#v", empty)
+func assertRequestKeyAbsent(t *testing.T, action string, request map[string]string, keys ...string) {
+	t.Helper()
+	for _, key := range keys {
+		if value, ok := request[key]; ok {
+			t.Fatalf("%s must not serialize %s, got %q", action, key, value)
+		}
+	}
+}
+
+// TestUnitEssScalingConfigurationCreateRequestMatrix proves through the public
+// resource entry (Diff + Apply + real client serialization) that omitted
+// Optional+Computed attributes contribute no request key, while explicitly
+// configured values, including a legal explicit false, are serialized.
+func TestUnitEssScalingConfigurationCreateRequestMatrix(t *testing.T) {
+	t.Run("omitted attributes serialize no keys", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, &sdktf.InstanceState{}, map[string]interface{}{
+			"scaling_group_id":  "asg-unit-test",
+			"instance_type":     "ecs.g6.large",
+			"security_group_id": "sg-unit-test",
+		})
+		creates := server.captured("CreateScalingConfiguration")
+		if len(creates) != 1 {
+			t.Fatalf("expected one CreateScalingConfiguration request, got %d", len(creates))
+		}
+		assertRequestKeyAbsent(t, "CreateScalingConfiguration", creates[0],
+			"Cpu", "Memory", "LoadBalancerWeight", "Ipv6AddressCount",
+			"SystemDisk.BurstingEnabled", "PrivatePoolOptions.MatchCriteria",
+			"PrivatePoolOptions.Id", "SchedulerOptions")
+	})
+
+	t.Run("explicit values including false are serialized", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, &sdktf.InstanceState{}, map[string]interface{}{
+			"scaling_group_id":             "asg-unit-test",
+			"instance_type":                "ecs.g6.large",
+			"security_group_id":            "sg-unit-test",
+			"cpu":                          2,
+			"memory":                       4,
+			"load_balancer_weight":         50,
+			"system_disk_bursting_enabled": false,
+			"private_pool_options":         []interface{}{map[string]interface{}{}},
+			"scheduler_options":            []interface{}{map[string]interface{}{}},
+		})
+		creates := server.captured("CreateScalingConfiguration")
+		if len(creates) != 1 {
+			t.Fatalf("expected one CreateScalingConfiguration request, got %d", len(creates))
+		}
+		request := creates[0]
+		for key, want := range map[string]string{
+			"Cpu":                        "2",
+			"Memory":                     "4",
+			"LoadBalancerWeight":         "50",
+			"SystemDisk.BurstingEnabled": "false",
+		} {
+			if got := request[key]; got != want {
+				t.Fatalf("%s = %q, expected %q", key, got, want)
+			}
+		}
+		assertRequestKeyAbsent(t, "CreateScalingConfiguration", request,
+			"PrivatePoolOptions.MatchCriteria", "PrivatePoolOptions.Id", "SchedulerOptions")
+	})
+}
+
+// TestUnitEssScalingConfigurationUpdateRequestMatrix proves that an unrelated
+// update and an attribute removal resend nothing for the removed
+// Optional+Computed attributes, while an explicit false is still sent.
+func TestUnitEssScalingConfigurationUpdateRequestMatrix(t *testing.T) {
+	previousState := func() *sdktf.InstanceState {
+		return &sdktf.InstanceState{
+			ID: "asc-unit-test",
+			Attributes: map[string]string{
+				"id":                           "asc-unit-test",
+				"scaling_group_id":             "asg-unit-test",
+				"instance_type":                "ecs.g6.large",
+				"security_group_id":            "sg-unit-test",
+				"cpu":                          "2",
+				"memory":                       "4",
+				"load_balancer_weight":         "50",
+				"system_disk_bursting_enabled": "true",
+				"scaling_configuration_name":   "old-name",
+			},
+		}
 	}
 
-	filled := map[string]interface{}{}
-	buildPrivatePoolOptionsRequest(filled, []interface{}{map[string]interface{}{
-		"match_criteria": "Target",
-		"pool_id":        "pp-123",
-	}})
-	if filled["PrivatePoolOptions.MatchCriteria"] != "Target" || filled["PrivatePoolOptions.Id"] != "pp-123" {
-		t.Fatalf("private pool must serialize dotted keys, got %#v", filled)
-	}
+	t.Run("removal and unrelated update serialize no stale keys", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, previousState(), map[string]interface{}{
+			"scaling_group_id":           "asg-unit-test",
+			"instance_type":              "ecs.g6.large",
+			"security_group_id":          "sg-unit-test",
+			"scaling_configuration_name": "new-name",
+		})
+		modifies := server.captured("ModifyScalingConfiguration")
+		if len(modifies) != 1 {
+			t.Fatalf("expected one ModifyScalingConfiguration request, got %d", len(modifies))
+		}
+		request := modifies[0]
+		if got := request["ScalingConfigurationName"]; got != "new-name" {
+			t.Fatalf("ScalingConfigurationName = %q, expected new-name", got)
+		}
+		assertRequestKeyAbsent(t, "ModifyScalingConfiguration", request,
+			"Cpu", "Memory", "LoadBalancerWeight", "SystemDisk.BurstingEnabled")
+	})
 
-	emptyScheduler := map[string]interface{}{}
-	buildSchedulerOptionsRequest(emptyScheduler, []interface{}{map[string]interface{}{}})
-	if len(emptyScheduler) != 0 {
-		t.Fatalf("empty scheduler block must serialize nothing, got %#v", emptyScheduler)
-	}
-
-	scheduler := map[string]interface{}{}
-	buildSchedulerOptionsRequest(scheduler, []interface{}{map[string]interface{}{
-		"managed_private_space_id": "mps-123",
-	}})
-	object, ok := scheduler["SchedulerOptions"].(map[string]interface{})
-	if !ok || object["ManagedPrivateSpaceId"] != "mps-123" {
-		t.Fatalf("scheduler options must serialize as an object, got %#v", scheduler)
-	}
+	t.Run("explicit false is sent on update", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, previousState(), map[string]interface{}{
+			"scaling_group_id":             "asg-unit-test",
+			"instance_type":                "ecs.g6.large",
+			"security_group_id":            "sg-unit-test",
+			"system_disk_bursting_enabled": false,
+		})
+		modifies := server.captured("ModifyScalingConfiguration")
+		if len(modifies) != 1 {
+			t.Fatalf("expected one ModifyScalingConfiguration request, got %d", len(modifies))
+		}
+		if got := modifies[0]["SystemDisk.BurstingEnabled"]; got != "false" {
+			t.Fatalf("SystemDisk.BurstingEnabled = %q, expected false", got)
+		}
+	})
 }
