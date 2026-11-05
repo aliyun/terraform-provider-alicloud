@@ -5260,18 +5260,19 @@ func TestUnitRedisTairInstanceWaitsForDeferredOrderTransition(t *testing.T) {
 
 // TestUnitRedisTairInstanceDeferredOrderAcceptedByIdentity covers a deferred change whose
 // response returns the new order id: that id is the proof of the accepted order, so the waiter
-// does not depend on the previous order's completed flag at all.
+// neither polls on the previous order's completed flag nor claims the values are visible. The
+// fixture keeps reporting an incomplete order, which the old flag-based wait could never finish.
 func TestUnitRedisTairInstanceDeferredOrderAcceptedByIdentity(t *testing.T) {
 	var requests []map[string]string
 	describes := 0
-	client := tairInstanceDeferredFixtureClient(t, &requests, &describes, "20722623431", func(int) bool { return true })
+	client := tairInstanceDeferredFixtureClient(t, &requests, &describes, "20722623431", func(int) bool { return false })
 
 	if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(tairInstanceDeferredFixtureData(t), client); err != nil {
 		t.Fatalf("update failed: %v", err)
 	}
 	assert.Len(t, requests, 1)
 	assert.Equal(t, "MaintainTime", requests[0]["EffectiveTime"])
-	assert.LessOrEqual(t, describes, 1, "the accepted order id is the proof; the stale completed flag is not polled")
+	assert.LessOrEqual(t, describes, 1, "the accepted order id is the proof; an incomplete order does not block the deferred update")
 }
 
 // tairInstanceTransformRetryFixtureClient fails the first TransformInstanceChargeType call
@@ -5597,12 +5598,19 @@ func findTairInstanceIdByName(client *connectivity.AliyunClient, name string) (s
 			found = id
 		}
 		collected += len(items)
-		if len(items) == 0 {
+		total, totalErr := strconv.Atoi(fmt.Sprint(response["TotalCount"]))
+		if totalErr != nil {
+			// Without a total the page size is the only stop condition.
+			if len(items) < pageSize {
+				break
+			}
+			continue
+		}
+		if collected >= total {
 			break
 		}
-		total, err := strconv.Atoi(fmt.Sprint(response["TotalCount"]))
-		if err != nil || collected >= total {
-			break
+		if len(items) == 0 {
+			return "", fmt.Errorf("empty page %d while %d of %d instances were returned", page, collected, total)
 		}
 	}
 	return found, nil

@@ -1812,13 +1812,13 @@ func waitTairInstanceSpecApplied(d *schema.ResourceData, service RedisServiceV2,
 		if orderId != "" {
 			return nil
 		}
-		return waitTairInstanceOrderTransition(d, service)
+		return waitTairInstanceOrderTransition(d, service, tairInstanceOrderTransitionWindow)
 	}
 	if len(expected) == 0 {
 		// No compared attribute changed, so the flag alone would have to prove completion; an
 		// initial true may still describe the previous order, so a transition is required here
 		// as well.
-		return waitTairInstanceOrderTransition(d, service)
+		return waitTairInstanceOrderTransition(d, service, tairInstanceOrderTransitionWindow)
 	}
 	refresh := func() (interface{}, string, error) {
 		object, err := service.DescribeRedisTairInstance(d.Id())
@@ -1838,10 +1838,19 @@ func waitTairInstanceSpecApplied(d *schema.ResourceData, service RedisServiceV2,
 	return err
 }
 
+// tairInstanceOrderTransitionWindow bounds the observation of an order transition. A deferred
+// change without an order id cannot be verified once this window expires, so the update fails
+// explicitly instead of blocking for the whole update timeout.
+const tairInstanceOrderTransitionWindow = 2 * time.Minute
+
 // waitTairInstanceOrderTransition waits until the order submitted by this request is observed in
 // progress and then completed. An initial completed flag is not accepted as proof: while the new
 // order is not registered yet it still describes the previous order.
-func waitTairInstanceOrderTransition(d *schema.ResourceData, service RedisServiceV2) error {
+func waitTairInstanceOrderTransition(d *schema.ResourceData, service RedisServiceV2, window time.Duration) error {
+	timeout := window
+	if configured := d.Timeout(schema.TimeoutUpdate); configured < timeout {
+		timeout = configured
+	}
 	observedInProgress := false
 	refresh := func() (interface{}, string, error) {
 		object, err := service.DescribeRedisTairInstance(d.Id())
@@ -1860,9 +1869,11 @@ func waitTairInstanceOrderTransition(d *schema.ResourceData, service RedisServic
 		}
 		return object, "true", nil
 	}
-	stateConf := helper.BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, refresh)
-	_, err := stateConf.WaitForState()
-	return err
+	stateConf := helper.BuildStateConf([]string{}, []string{"true"}, timeout, 3*time.Second, refresh)
+	if _, err := stateConf.WaitForState(); err != nil {
+		return fmt.Errorf("the change could not be verified: the API returned no order id and no order transition was observed within %s", timeout)
+	}
+	return nil
 }
 
 // configuredTopLevelKeys returns the top-level attributes the user actually configured.
