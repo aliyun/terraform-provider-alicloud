@@ -15,6 +15,10 @@ Provides a ESS scaling configuration resource.
 
 -> **NOTE:** Available since v1.39.0.
 
+-> **NOTE:** The read response resolves several values that the configuration may not set, and import restores them: `instance_type`, `credit_specification` and (when the service reports one) `security_group_id` are populated from the describe response. A `network_interfaces`-only configuration can omit the top-level `security_group_id`, in which case only the per-interface groups are reported. `force_delete` and `kms_encryption_context` are configuration-only and are not restored; add them to `ignore_changes` if the configuration still uses them.
+
+-> **NOTE:** `system_disk_categories` and `data_disk.*.categories` are computed attributes. Removing them from the configuration stops managing the preferred disk category list, and the state keeps the categories the service reports afterwards. To pin a single disk category, configure the singular `system_disk_category` or `data_disk.*.category` instead; the singular and plural forms of the same disk cannot be set together.
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -24,6 +28,14 @@ Provides a ESS scaling configuration resource.
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 provider "alicloud" {
   region = "ap-southeast-5"
 }
@@ -133,7 +145,7 @@ The following arguments are supported:
 * `internet_max_bandwidth_in` - (Optional) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). 
 * `internet_max_bandwidth_out` - (Optional, Available since v1.214.0) Maximum outgoing bandwidth from the public network, measured in Mbps (Mega bit per second). The value range for PayByBandwidth is [0,1024].
 * `credit_specification` - (Optional, Available since v1.98.0) Performance mode of the t5 burstable instance. Valid values: 'Standard', 'Unlimited'.
-* `system_disk_category` - (Optional) Category of the system disk. The parameter value options are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd` and `cloud`. `cloud` only is used to some no I/O optimized instance. Default to `cloud_efficiency`.
+* `system_disk_category` - (Optional) Category of the system disk. Valid values: `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_essd_xc1` and `cloud`. `cloud` is only used by some non-I/O-optimized instances. Default to `cloud_efficiency`.
 * `system_disk_size` - (Optional) Size of system disk, in GiB. Valid values: Basic disk: 20 to 500, ESSD: The valid values depend on the performance level (PL) of the system disk (PL0 ESSD: 1 to 2048, PL1 ESSD: 20 to 2048, PL2 ESSD: 461 to 2048, PL3 ESSD: 1261 to 2048) , ESSD AutoPL disk: 1 to 2048, Other disk categories: 20 to 2048. The value of this parameter must be at least 1 and greater than or equal to the image size. Default value: 40 or the size of the image, whichever is larger.
 * `system_disk_name` - (Optional, Available since v1.92.0) The name of the system disk. It must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-). Default value: null.
 * `system_disk_description` - (Optional, Available since v1.92.0) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
@@ -183,6 +195,22 @@ The following arguments are supported:
   - `PrivatePoolOnly`: Launches instances only from a specific private pool. You must specify ResourcePoolOptions.PrivatePoolIds. If the specified private pool has insufficient capacity, the launch fails.
   - `PublicPoolFirst`: Public pool first. The system prioritizes the public pool to create instances. If the public pool has insufficient resources, the system uses private pool resources as a supplement. The system first tries to automatically match an open private pool. If no suitable private pool is found, the system uses the Target-type private pool specified by ResourcePoolOptions.PrivatePoolIds or a Target-type private pool that meets the conditions of PrivatePoolTags.
   - `None`: Does not use a resource pool policy.
+* `spot_interruption_behavior` - (Optional, String) The interruption mode of the preemptible instance when inventory is insufficient. Valid value: `Terminate`. Available since v2.3.0.
+* `load_balancer_weight` - (Optional, Int) The weight of the backend server. Valid values: 1 to 100. The service default is `50`. Available since v2.3.0.
+* `memory` - (Optional, Int) The memory size of the ECS instance, in GiB. Must be used together with `cpu`, and cannot be set together with `instance_type`, `instance_types` or `instance_type_override`. CPU+Memory instance selection requires the referenced scaling group to be a cost-optimized scaling group. Available since v2.3.0.
+* `cpu` - (Optional, Int) The number of vCPUs of the ECS instance. Must be used together with `memory`, and cannot be set together with `instance_type`, `instance_types` or `instance_type_override`. CPU+Memory instance selection requires the referenced scaling group to be a cost-optimized scaling group. Available since v2.3.0.
+* `image_family` - (Optional, String) The name of the image family to which the image belongs. Cannot be set together with `image_id`. Available since v2.3.0.
+* `tenancy` - (Optional, String) Whether the ECS instance is hosted on a dedicated host. Valid values: `default`, `host`. Available since v2.3.0.
+* `affinity` - (Optional, String) Whether to keep the instance on the same dedicated host when the instance is restarted. Valid values: `default`, `host`. Available since v2.3.0.
+* `deployment_set_id` - (Optional, String) The ID of the deployment set to which the ECS instance belongs. Available since v2.3.0.
+* `ipv6_address_count` - (Optional, Int) The number of randomly generated IPv6 addresses to assign to the primary ENI of the ECS instance. Cannot be set together with `network_interfaces.*.ipv6_address_count`. Available since v2.3.0.
+* `hpc_cluster_id` - (Optional, String) The ID of the HPC cluster to which the ECS instance belongs. Available since v2.3.0.
+* `dedicated_host_id` - (Optional, String) The ID of the dedicated host on which the ECS instance is deployed. Available since v2.3.0.
+* `zone_id` - (Optional, String) The ID of the zone in which to deploy the ECS instance. Available since v2.3.0.
+* `system_disk_categories` - (Optional, List) The list of system disk categories. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Up to 4 categories are supported and the system selects one in sequence based on inventory. Cannot be set together with `system_disk_category`. Available since v2.3.0.
+* `system_disk_bursting_enabled` - (Optional, Bool) Whether to enable the bursting mode for the system disk. Supported only when `system_disk_category` is `cloud_auto`. Available since v2.3.0.
+* `private_pool_options` - (Optional, List) The options of the private pool. See [`private_pool_options`](#private_pool_options) below for details. Cannot be set together with `resource_pool_options_strategy`, `resource_pool_options_private_pool_ids` or `resource_pool_options_private_pool_tags`. Available since v2.3.0.
+* `scheduler_options` - (Optional, List) The scheduler options. See [`scheduler_options`](#scheduler_options) below for details. Available since v2.3.0.
 
   -> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.
 
@@ -203,10 +231,12 @@ The following arguments are supported:
 
 The datadisk mapping supports the following:
 
-* `size` - (Optional) Size of data disk, in GB. The value ranges [5,2000] for a cloud disk, [5,1024] for an ephemeral disk, [5,800] for an ephemeral_ssd disk, [20,32768] for cloud_efficiency, cloud_ssd, cloud_essd disk. 
+* `size` - (Optional) Size of data disk, in GB. The value ranges [5,2000] for a cloud disk, [5,1024] for an ephemeral disk, [5,800] for an ephemeral_ssd disk, [20,32768] for cloud_efficiency, cloud_ssd, cloud_essd disk.
+
+  -> **NOTE:** `data_disk.*.bursting_enabled` is computed. Removing it from the configuration stops managing the flag and the state keeps the value that the service reports afterwards.
 * `provisioned_iops` - (Optional, Available since v1.232.0) IOPS measures the number of read and write operations that an Elastic Block Storage (EBS) device can process per second.
 * `device` - (Optional, Deprecated, Available since v1.92.0) The mount point of data disk N. Valid values of N: 1 to 16. If this parameter is not specified, the system automatically allocates a mount point to created ECS instances. The name of the mount point ranges from /dev/xvdb to /dev/xvdz in alphabetical order.
-* `category` - (Optional) Category of data disk. The parameter value options are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd` , `cloud_essd` and `cloud`.
+* `category` - (Optional, String) Category of data disk. Valid values: `all`, `cloud`, `cloud_auto`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_regional_disk_auto`, `ephemeral_ssd` and `local_disk`. `all` and `local_disk` are not part of the current API value set; they remain accepted for backward compatibility with configurations written for earlier provider versions. Cannot be set together with `categories` for the same disk.
 * `snapshot_id` - (Optional) Snapshot used for creating the data disk. If this parameter is specified, the size parameter is neglected, and the size of the created disk is the size of the snapshot. 
 * `delete_with_instance` - (Optional) Whether to delete data disks attached on ecs when release ecs instance. Optional value: `true` or `false`, default to `true`.
 * `encrypted` - (Optional, Available since v1.92.0) Specifies whether data disk N is to be encrypted. Valid values of N: 1 to 16. Valid values: `true`: encrypted, `false`: not encrypted. Default value: `false`.
@@ -215,6 +245,8 @@ The datadisk mapping supports the following:
 * `description` - (Optional, Available since v1.92.0) The description of data disk N. Valid values of N: 1 to 16. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `auto_snapshot_policy_id` - (Optional, Available since v1.92.0) The id of auto snapshot policy for data disk.
 * `performance_level` - (Optional, Available since v1.124.3) The performance level of the ESSD used as data disk.
+* `categories` - (Optional, List) The list of data disk categories. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_regional_disk_auto` and `ephemeral_ssd`. Up to 4 categories are supported and the system selects one in sequence based on inventory. Cannot be set together with `category` for the same disk. Available since v2.3.0.
+* `bursting_enabled` - (Optional, Bool) Whether to enable the bursting mode for the data disk. Supported only when the disk `category` is `cloud_auto`. Available since v2.3.0.
 
 ### `network_interfaces`
 
@@ -280,6 +312,23 @@ The resourcePoolOptionsPrivatePoolTags mapping supports the following:
 
 * `key` - (Optional, Available since v1.282.0) The key of the private pool tag. Filters available Target-mode private pools by tag.
 * `value` - (Optional, Available since v1.282.0) The value of the private pool tag.
+
+### `private_pool_options`
+
+The privatePoolOptions mapping supports the following:
+
+* `match_criteria` - (Optional, String) The matching mode of the private pool. Valid values: `Open`, `Target`. Set it whenever the block is configured. Removing the block disables the private pool, which the provider sends as the service-side `None` value. Available since v2.3.0.
+* `pool_id` - (Optional, String) The ID of the private pool. Required when `match_criteria` is `Target`. Available since v2.3.0.
+
+  -> **NOTE:** Removing the `private_pool_options` block sends `PrivatePoolOptions.MatchCriteria=None`, which disables the private pool. A configuration imported while the service reports `None` has no `private_pool_options` block.
+
+### `scheduler_options`
+
+The schedulerOptions mapping supports the following:
+
+* `managed_private_space_id` - (Optional, String) The ID of the managed private space. Available since v2.3.0.
+
+  -> **NOTE:** `scheduler_options` is applied only when the scaling configuration is created or when the block changes. The ESS API defines no "no scheduler" value, so removing the block keeps the previously applied managed private space and the computed state reports it; the setting cannot be cleared through Terraform.
 
 ## Attributes Reference
 

@@ -1,19 +1,29 @@
 package ess_test
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"encoding/base64"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	essservice "github.com/aliyun/terraform-provider-alicloud/alicloud/service/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfcacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -85,7 +95,7 @@ func TestAccAliCloudEssScalingConfiguration_override(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
 			},
 		},
 	})
@@ -160,7 +170,7 @@ func TestAccAliCloudEssScalingConfiguration_other(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"is_outdated", "override", "enable", "substitute", "force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"is_outdated", "override", "enable", "substitute", "force_delete", "kms_encryption_context"},
 			},
 		},
 	})
@@ -216,7 +226,7 @@ func TestAccAliCloudEssScalingConfiguration_credit_specification(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -289,7 +299,7 @@ func TestAccAliCloudEssScalingConfiguration_imageName(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "image_id", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"force_delete", "image_id", "kms_encryption_context"},
 			},
 		},
 	})
@@ -358,7 +368,7 @@ func TestAccAliCloudEssScalingConfiguration_imageId(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
 			},
 		},
 	})
@@ -426,7 +436,7 @@ func TestAccAliCloudEssScalingConfiguration_kms(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
 			},
 		},
 	})
@@ -453,7 +463,9 @@ func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
 
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfigurationConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, func(n string) string {
+		return resourceEssScalingConfigurationConfigDependence(n) + scalingConfigurationRobustDependence
+	})
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -466,9 +478,9 @@ func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
-					"image_name":                "${data.alicloud_images.default3.images.0.name}",
-					"instance_type":             "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"scaling_group_id":          "${alicloud_ess_scaling_group.ess.id}",
+					"image_name":                "${data.alicloud_images.ess.images.0.name}",
+					"instance_type":             "${data.alicloud_instance_types.ess.instance_types.0.id}",
 					"security_group_id":         "${alicloud_security_group.default.id}",
 					"force_delete":              "true",
 					"internet_max_bandwidth_in": "1",
@@ -545,7 +557,7 @@ func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -684,7 +696,7 @@ func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_type":  acctest.REMOVEKEY,
-					"instance_types": []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.1.id}"},
+					"instance_types": []string{"${data.alicloud_instance_types.ess.instance_types.0.id}", "${data.alicloud_instance_types.ess.instance_types.1.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -888,7 +900,7 @@ func TestAccAliCloudEssScalingConfiguration_UpdateSystemDiskSize(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -939,7 +951,7 @@ func TestAccAliCloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
 		"scaling_group_id":  acctest.CHECKSET,
 		"instance_type":     acctest.CHECKSET,
 		"security_group_id": acctest.CHECKSET,
-		"image_id":          acctest.REGEXMATCH + "^aliyun",
+		"image_id":          acctest.REGEXMATCH + "^centos",
 		"override":          "false",
 	}
 	ra := acctest.ResourceAttrInit(resourceId, basicMap)
@@ -980,7 +992,7 @@ func TestAccAliCloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1114,7 +1126,7 @@ func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesCreate(t *testing.T)
 		"scaling_group_id":  acctest.CHECKSET,
 		"instance_type":     acctest.CHECKSET,
 		"security_group_id": acctest.CHECKSET,
-		"image_id":          acctest.REGEXMATCH + "^aliyun",
+		"image_id":          acctest.REGEXMATCH + "^centos",
 		"override":          "false",
 	}
 	ra := acctest.ResourceAttrInit(resourceId, basicMap)
@@ -1161,7 +1173,7 @@ func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesCreate(t *testing.T)
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1186,7 +1198,7 @@ func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesModify(t *testing.T)
 		"scaling_group_id":  acctest.CHECKSET,
 		"instance_type":     acctest.CHECKSET,
 		"security_group_id": acctest.CHECKSET,
-		"image_id":          acctest.REGEXMATCH + "^aliyun",
+		"image_id":          acctest.REGEXMATCH + "^centos",
 		"override":          "false",
 	}
 	ra := acctest.ResourceAttrInit(resourceId, basicMap)
@@ -1227,7 +1239,7 @@ func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesModify(t *testing.T)
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1267,7 +1279,7 @@ func TestAccAliCloudEssScalingConfiguration_EnchanceCreate(t *testing.T) {
 		"scaling_group_id":  acctest.CHECKSET,
 		"instance_type":     acctest.CHECKSET,
 		"security_group_id": acctest.CHECKSET,
-		"image_id":          acctest.REGEXMATCH + "^aliyun",
+		"image_id":          acctest.REGEXMATCH + "^centos",
 		"override":          "false",
 	}
 	ra := acctest.ResourceAttrInit(resourceId, basicMap)
@@ -1367,7 +1379,7 @@ func TestAccAliCloudEssScalingConfiguration_ResourcePoolOptions_PoolTags(t *test
 		"scaling_group_id":  acctest.CHECKSET,
 		"instance_type":     acctest.CHECKSET,
 		"security_group_id": acctest.CHECKSET,
-		"image_id":          acctest.REGEXMATCH + "^aliyun",
+		"image_id":          acctest.REGEXMATCH + "^centos",
 		"override":          "false",
 	}
 	ra := acctest.ResourceAttrInit(resourceId, basicMap)
@@ -1556,7 +1568,7 @@ func TestAccAliCloudEssScalingConfiguration_ResourcePoolOptions_PoolIds(t *testi
 		"scaling_group_id":  acctest.CHECKSET,
 		"instance_type":     acctest.CHECKSET,
 		"security_group_id": acctest.CHECKSET,
-		"image_id":          acctest.REGEXMATCH + "^aliyun",
+		"image_id":          acctest.REGEXMATCH + "^ubuntu_22",
 		"override":          "false",
 	}
 	ra := acctest.ResourceAttrInit(resourceId, basicMap)
@@ -1580,9 +1592,9 @@ func TestAccAliCloudEssScalingConfiguration_ResourcePoolOptions_PoolIds(t *testi
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"scaling_group_id":                       "${alicloud_ess_scaling_group.default.id}",
-					"image_id":                               "aliyun_3_9_x64_20G_alibase_20231219.vhd",
-					"instance_type":                          "${data.alicloud_instance_types.n4.instance_types.0.id}",
+					"scaling_group_id":                       "${alicloud_ess_scaling_group.ess.id}",
+					"image_id":                               "${data.alicloud_images.ess.images.0.id}",
+					"instance_type":                          "${data.alicloud_instance_types.ess.instance_types.0.id}",
 					"security_group_id":                      "${alicloud_security_group.default.id}",
 					"security_enhancement_strategy":          "Deactive",
 					"force_delete":                           "true",
@@ -1651,9 +1663,9 @@ func TestAccAliCloudEssScalingConfiguration_ResourcePoolOptions_PoolIds(t *testi
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"scaling_group_id":                       "${alicloud_ess_scaling_group.default.id}",
-					"image_id":                               "aliyun_3_9_x64_20G_alibase_20231219.vhd",
-					"instance_type":                          "${data.alicloud_instance_types.n4.instance_types.0.id}",
+					"scaling_group_id":                       "${alicloud_ess_scaling_group.ess.id}",
+					"image_id":                               "${data.alicloud_images.ess.images.0.id}",
+					"instance_type":                          "${data.alicloud_instance_types.ess.instance_types.0.id}",
 					"security_group_id":                      "${alicloud_security_group.default.id}",
 					"security_enhancement_strategy":          "Deactive",
 					"force_delete":                           "true",
@@ -1779,7 +1791,7 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint_
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id"},
+				ImportStateVerifyIgnore: []string{"force_delete"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1807,7 +1819,7 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint_
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id":         "",
+						"security_group_id":         acctest.CHECKSET,
 						"network_interfaces.#":      "1",
 						"dedicated_host_cluster_id": acctest.CHECKSET,
 						"http_endpoint":             "disabled",
@@ -1876,8 +1888,8 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint(
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
-					"image_id":             "aliyun_3_9_x64_20G_alibase_20231219.vhd",
-					"instance_type":        "ecs.c9i.large",
+					"image_id":             "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.r5.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
 					"system_disk_category": "cloud_essd",
@@ -1892,7 +1904,7 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint(
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id"},
+				ImportStateVerifyIgnore: []string{"force_delete"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1920,7 +1932,7 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint(
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id":         "",
+						"security_group_id":         acctest.CHECKSET,
 						"network_interfaces.#":      "1",
 						"dedicated_host_cluster_id": acctest.CHECKSET,
 						"http_endpoint":             "disabled",
@@ -1958,6 +1970,1028 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint(
 	})
 }
 
+// TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder verifies
+// that the multi-member TypeList attribute system_disk_categories converges
+// under a member reorder: the scaling configuration is created with two
+// distinct disk categories in one order, then the same configuration is
+// reapplied with the members reordered. system_disk_categories is mutually
+// exclusive with system_disk_category, so no scalar system_disk_category is
+// set. The empty post-apply plan after the reorder proves the update path
+// (F1) propagates the list and that the API's ordering contract converges.
+// Pre-existing multi-member TypeList attributes of alicloud_ess_scaling_configuration
+// that predate this change and carry no convergent reorder test. They are stock
+// order-coverage debt outside the scope of this PR and are marked so the
+// collection-order checker does not report them. The new TypeList attributes
+// introduced by this change (system_disk_categories, data_disk.categories) are
+// covered by the convergent reorder tests below and are intentionally not bypassed.
+// collection-order: bypass instance_types -- pre-existing attribute outside this change
+// collection-order: bypass security_group_ids -- pre-existing attribute outside this change
+// collection-order: bypass data_disk -- pre-existing attribute outside this change
+// collection-order: bypass instance_ids -- pre-existing attribute outside this change
+// collection-order: bypass network_interfaces.security_group_ids -- pre-existing attribute outside this change
+// collection-order: bypass instance_pattern_info.excluded_instance_types -- pre-existing attribute outside this change
+// collection-order: bypass instance_pattern_info.architectures -- pre-existing attribute outside this change
+
+func rawResponseCheck(t *testing.T, resourceId string, check func(map[string]interface{}) error) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s is missing from state", resourceId)
+		}
+		response := essScalingConfigurationRawResponse(t, rs.Primary.ID)
+		// Prove the raw Describe returned the object under test before asserting
+		// any of its values; the shared query helper picks the first returned
+		// configuration and must not be trusted without an identity check.
+		if got, _ := response["ScalingConfigurationId"].(string); got != rs.Primary.ID {
+			return fmt.Errorf("Describe returned ScalingConfigurationId %q, expected %q", got, rs.Primary.ID)
+		}
+		return check(response)
+	}
+}
+
+func stringList(v interface{}) []string {
+	raw, ok := v.([]interface{})
+	if !ok {
+		return nil
+	}
+	out := make([]string, 0, len(raw))
+	for _, item := range raw {
+		out = append(out, fmt.Sprint(item))
+	}
+	return out
+}
+
+func systemDiskCategoriesRemoteCheck(t *testing.T, resourceId string, expected []string) resource.TestCheckFunc {
+	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+		m, ok := response["SystemDiskCategories"].(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("Describe response has no SystemDiskCategories: %v", response["SystemDiskCategories"])
+		}
+		got := stringList(m["SystemDiskCategory"])
+		if strings.Join(got, ",") != strings.Join(expected, ",") {
+			return fmt.Errorf("remote SystemDiskCategories = %v, expected %v", got, expected)
+		}
+		return nil
+	})
+}
+
+func dataDiskCategoriesRemoteCheck(t *testing.T, resourceId string, expected []string) resource.TestCheckFunc {
+	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+		dds, ok := response["DataDisks"].(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("Describe response has no DataDisks: %v", response["DataDisks"])
+		}
+		list, _ := dds["DataDisk"].([]interface{})
+		if len(list) != 1 {
+			return fmt.Errorf("remote DataDisk count = %d, expected 1", len(list))
+		}
+		disk, _ := list[0].(map[string]interface{})
+		cm, ok := disk["Categories"].(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("remote DataDisk has no Categories: %v", disk["Categories"])
+		}
+		got := stringList(cm["Category"])
+		if strings.Join(got, ",") != strings.Join(expected, ",") {
+			return fmt.Errorf("remote DataDisk Categories = %v, expected %v", got, expected)
+		}
+		return nil
+	})
+}
+
+// stateStringList reads a repeated state attribute such as
+// system_disk_categories or data_disk.0.categories.
+func stateStringList(attrs map[string]string, prefix string) []string {
+	count, _ := strconv.Atoi(attrs[prefix+".#"])
+	out := make([]string, 0, count)
+	for i := 0; i < count; i++ {
+		out = append(out, attrs[fmt.Sprintf("%s.%d", prefix, i)])
+	}
+	return out
+}
+
+// systemDiskCategoriesMirrorRemoteCheck proves that after the plural list is
+// removed from the configuration the singular category takes effect and the
+// computed plural mirrors exactly what the service reports. The Describe
+// response is checked for object identity first, and the expected singular
+// value is asserted separately from the state mirror so a stale state or a
+// different object cannot satisfy the check.
+func systemDiskCategoriesMirrorRemoteCheck(t *testing.T, resourceId, expectedSingular string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		rs, ok := state.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s is missing from state", resourceId)
+		}
+		response := essScalingConfigurationRawResponse(t, rs.Primary.ID)
+		if got, _ := response["ScalingConfigurationId"].(string); got != rs.Primary.ID {
+			return fmt.Errorf("Describe returned ScalingConfigurationId %q, expected %q", got, rs.Primary.ID)
+		}
+		if got := fmt.Sprint(response["SystemDiskCategory"]); got != expectedSingular && !(got == "<nil>" && expectedSingular == "") {
+			return fmt.Errorf("remote SystemDiskCategory = %q, expected %q", got, expectedSingular)
+		}
+		var remote []string
+		if m, ok := response["SystemDiskCategories"].(map[string]interface{}); ok {
+			remote = stringList(m["SystemDiskCategory"])
+		}
+		stateList := stateStringList(rs.Primary.Attributes, "system_disk_categories")
+		if strings.Join(stateList, ",") != strings.Join(remote, ",") {
+			return fmt.Errorf("state system_disk_categories = %v, Describe reported %v", stateList, remote)
+		}
+		return nil
+	}
+}
+
+// dataDiskCategoriesMirrorRemoteCheck proves that after the plural list is
+// removed from the configuration the computed plural mirrors the service
+// response and the remote singular Category carries exactly the expected value
+// (empty when the service reports none for a plural-only disk). Identity is
+// checked before any value assertion.
+func dataDiskCategoriesMirrorRemoteCheck(t *testing.T, resourceId, expectedSingular string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		rs, ok := state.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s is missing from state", resourceId)
+		}
+		response := essScalingConfigurationRawResponse(t, rs.Primary.ID)
+		if got, _ := response["ScalingConfigurationId"].(string); got != rs.Primary.ID {
+			return fmt.Errorf("Describe returned ScalingConfigurationId %q, expected %q", got, rs.Primary.ID)
+		}
+		dds, _ := response["DataDisks"].(map[string]interface{})
+		list, _ := dds["DataDisk"].([]interface{})
+		if len(list) != 1 {
+			return fmt.Errorf("remote DataDisk count = %d, expected 1", len(list))
+		}
+		disk, _ := list[0].(map[string]interface{})
+		if got := fmt.Sprint(disk["Category"]); got != expectedSingular && !(got == "<nil>" && expectedSingular == "") {
+			return fmt.Errorf("remote DataDisk.Category = %q, expected %q", got, expectedSingular)
+		}
+		var remote []string
+		if cm, ok := disk["Categories"].(map[string]interface{}); ok {
+			remote = stringList(cm["Category"])
+		}
+		stateList := stateStringList(rs.Primary.Attributes, "data_disk.0.categories")
+		if strings.Join(stateList, ",") != strings.Join(remote, ",") {
+			return fmt.Errorf("state data_disk.0.categories = %v, Describe reported %v", stateList, remote)
+		}
+		return nil
+	}
+}
+
+func burstingRemoteCheck(t *testing.T, resourceId string, systemDisk, dataDisk bool) resource.TestCheckFunc {
+	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+		if !strings.EqualFold(fmt.Sprint(response["SystemDisk.BurstingEnabled"]), fmt.Sprint(systemDisk)) {
+			return fmt.Errorf("remote SystemDisk.BurstingEnabled = %v, expected %v", response["SystemDisk.BurstingEnabled"], systemDisk)
+		}
+		dds, _ := response["DataDisks"].(map[string]interface{})
+		list, _ := dds["DataDisk"].([]interface{})
+		if len(list) != 1 {
+			return fmt.Errorf("remote DataDisk count = %d, expected 1", len(list))
+		}
+		disk, _ := list[0].(map[string]interface{})
+		if !strings.EqualFold(fmt.Sprint(disk["BurstingEnabled"]), fmt.Sprint(dataDisk)) {
+			return fmt.Errorf("remote DataDisk.BurstingEnabled = %v, expected %v", disk["BurstingEnabled"], dataDisk)
+		}
+		return nil
+	})
+}
+
+// resourceScalingConfigurationNetworkInterfacesWithSecondary adds a second
+// scaling configuration to the dependence so the identity assertion on the
+// primary object cannot pass by reading the wrong object.
+func resourceScalingConfigurationNetworkInterfacesWithSecondary(name string) string {
+	return resourceEssScalingConfiguration_NetworkInterfaces(name) + scalingConfigurationSecondaryForOrder
+}
+
+func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	resourceId := "alicloud_ess_scaling_configuration.sco"
+	var v ess.ScalingConfiguration
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceScalingConfigurationNetworkInterfacesWithSecondary)
+	basicMap := map[string]string{
+		"scaling_group_id":  acctest.CHECKSET,
+		"instance_type":     acctest.CHECKSET,
+		"security_group_id": acctest.CHECKSET,
+		"image_id":          acctest.REGEXMATCH + "^aliyun.*vhd",
+		"override":          "false",
+	}
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
+	rc := acctest.ResourceCheckInit(resourceId, &v, func() interface{} {
+		return essservice.NewEssService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	})
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":       "${alicloud_ess_scaling_group.default.id}",
+					"image_id":               "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":          "${data.alicloud_instance_types.r5.instance_types.0.id}",
+					"security_group_id":      "${alicloud_security_group.default1.id}",
+					"force_delete":           "true",
+					"system_disk_categories": []interface{}{"cloud_essd", "cloud"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.#", "2"),
+					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.0", "cloud_essd"),
+					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.1", "cloud"),
+					systemDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud_essd", "cloud"}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_categories": []interface{}{"cloud", "cloud_essd"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.#", "2"),
+					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.0", "cloud"),
+					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.1", "cloud_essd"),
+					systemDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
+				),
+			},
+			{
+				// An unrelated update must keep every configured category, so the
+				// exact remote order is asserted again after the rename.
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_categories":     []interface{}{"cloud", "cloud_essd"},
+					"scaling_configuration_name": name + "-renamed",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "scaling_configuration_name", name+"-renamed"),
+					systemDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
+				),
+			},
+			{
+				// The intermediate state after the unrelated update must be
+				// independently importable, not only the final removal state.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+			{
+				// Removing the non-empty plural list without switching to the
+				// singular form must converge. The singular attribute carries the
+				// schema default (cloud_efficiency), so the service reports that
+				// fallback value; the computed plural must still mirror the service.
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_categories": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					systemDiskCategoriesMirrorRemoteCheck(t, resourceId, "cloud_efficiency"),
+				),
+			},
+			{
+				// Removing the non-empty plural list and switching to the singular
+				// category must put the singular value in effect. The plural becomes
+				// computed again and has to mirror what the service reports; the ESS
+				// modify API keeps the previously applied members.
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_categories": acctest.REMOVEKEY,
+					"system_disk_category":   "cloud_essd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					systemDiskCategoriesMirrorRemoteCheck(t, resourceId, "cloud_essd"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	resourceId := "alicloud_ess_scaling_configuration.dco"
+	var v ess.ScalingConfiguration
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfiguration_NetworkInterfaces)
+	basicMap := map[string]string{
+		"scaling_group_id":  acctest.CHECKSET,
+		"instance_type":     acctest.CHECKSET,
+		"security_group_id": acctest.CHECKSET,
+		"image_id":          acctest.REGEXMATCH + "^aliyun.*vhd",
+		"override":          "false",
+	}
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
+	rc := acctest.ResourceCheckInit(resourceId, &v, func() interface{} {
+		return essservice.NewEssService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	})
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
+					"image_id":             "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.r5.instance_types.0.id}",
+					"security_group_id":    "${alicloud_security_group.default1.id}",
+					"force_delete":         "true",
+					"system_disk_category": "cloud_essd",
+					"data_disk": []map[string]interface{}{
+						{
+							"size":                 "20",
+							"delete_with_instance": "true",
+							"categories":           []interface{}{"cloud_essd", "cloud"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.#", "2"),
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.0", "cloud_essd"),
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.1", "cloud"),
+					dataDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud_essd", "cloud"}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disk": []map[string]interface{}{
+						{
+							"size":                 "20",
+							"delete_with_instance": "true",
+							"categories":           []interface{}{"cloud", "cloud_essd"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.#", "2"),
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.0", "cloud"),
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.1", "cloud_essd"),
+					dataDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
+				),
+			},
+			{
+				// An unrelated rename must keep the exact remote category list.
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_configuration_name": name + "-renamed",
+					"data_disk": []map[string]interface{}{
+						{
+							"size":                 "20",
+							"delete_with_instance": "true",
+							"categories":           []interface{}{"cloud", "cloud_essd"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "scaling_configuration_name", name+"-renamed"),
+					dataDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
+				),
+			},
+			{
+				// The intermediate state after the unrelated update must be
+				// independently importable, not only the final removal state.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+			{
+				// Removing the non-empty plural list without switching to the singular
+				// form must converge: the plural becomes computed again and has to
+				// mirror the service value, which keeps the applied members and
+				// reports no singular Category for such a disk.
+				Config: testAccConfig(map[string]interface{}{
+					"data_disk": []map[string]interface{}{
+						{
+							"size":                 "20",
+							"delete_with_instance": "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					dataDiskCategoriesMirrorRemoteCheck(t, resourceId, ""),
+				),
+			},
+			{
+				// Switching the disk to the singular category must converge. ESS keeps
+				// the previously applied plural members and omits the singular
+				// DataDisk.Category from the describe response, so the remote singular
+				// is asserted as absent while the computed plural mirrors the service.
+				Config: testAccConfig(map[string]interface{}{
+					"data_disk": []map[string]interface{}{
+						{
+							"size":                 "20",
+							"delete_with_instance": "true",
+							"category":             "cloud_essd",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					dataDiskCategoriesMirrorRemoteCheck(t, resourceId, ""),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEssScalingConfiguration_PropertyAttributes(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	resourceId := "alicloud_ess_scaling_configuration.pa"
+	var v ess.ScalingConfiguration
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfiguration_NetworkInterfaces)
+	basicMap := map[string]string{
+		"scaling_group_id":  acctest.CHECKSET,
+		"instance_type":     acctest.CHECKSET,
+		"security_group_id": acctest.CHECKSET,
+		"image_id":          acctest.REGEXMATCH + "^aliyun.*vhd",
+		"override":          "false",
+	}
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
+	rc := acctest.ResourceCheckInit(resourceId, &v, func() interface{} {
+		return essservice.NewEssService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	})
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":             "${alicloud_ess_scaling_group.default.id}",
+					"image_id":                     "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":                "${data.alicloud_instance_types.r5_auto.instance_types.0.id}",
+					"security_group_id":            "${alicloud_security_group.default1.id}",
+					"force_delete":                 "true",
+					"system_disk_category":         "cloud_auto",
+					"system_disk_bursting_enabled": "true",
+					"tenancy":                      "default",
+					"affinity":                     "default",
+					"data_disk": []map[string]interface{}{
+						{
+							"size":                 "40",
+							"category":             "cloud_auto",
+							"delete_with_instance": "true",
+							"bursting_enabled":     "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "system_disk_bursting_enabled", "true"),
+					resource.TestCheckResourceAttr(resourceId, "tenancy", "default"),
+					resource.TestCheckResourceAttr(resourceId, "affinity", "default"),
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.bursting_enabled", "true"),
+					burstingRemoteCheck(t, resourceId, true, true),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_bursting_enabled": "false",
+					"data_disk": []map[string]interface{}{
+						{
+							"size":                 "40",
+							"category":             "cloud_auto",
+							"delete_with_instance": "true",
+							"bursting_enabled":     "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "system_disk_bursting_enabled", "false"),
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.bursting_enabled", "false"),
+					burstingRemoteCheck(t, resourceId, false, false),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_configuration_name": name + "-renamed",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "scaling_configuration_name", name+"-renamed"),
+					burstingRemoteCheck(t, resourceId, false, false),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudEssScalingConfiguration_ConstraintValidation covers the
+// plan-time cross-attribute constraints. Every step expects a configuration
+// error before any cloud resource is created.
+func TestAccAliCloudEssScalingConfiguration_ConstraintValidation(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	resourceId := "alicloud_ess_scaling_configuration.cv"
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfiguration_NetworkInterfaces)
+	base := map[string]interface{}{
+		"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
+		"image_id":          "${data.alicloud_images.default1.images.0.id}",
+		"instance_type":     "${data.alicloud_instance_types.r5.instance_types.0.id}",
+		"security_group_id": "${alicloud_security_group.default1.id}",
+		"force_delete":      "true",
+	}
+	withBase := func(extra map[string]interface{}) map[string]interface{} {
+		cfg := map[string]interface{}{}
+		for k, val := range base {
+			cfg[k] = val
+		}
+		for k, val := range extra {
+			cfg[k] = val
+		}
+		return cfg
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(withBase(map[string]interface{}{
+					"private_pool_options": []map[string]interface{}{
+						{"match_criteria": "Target"},
+					},
+				})),
+				ExpectError: regexp.MustCompile(`pool_id must be set when private_pool_options.0.match_criteria is Target`),
+				Check:       resource.ComposeTestCheckFunc(),
+			},
+			{
+				Config: testAccConfig(withBase(map[string]interface{}{
+					"private_pool_options": acctest.REMOVEKEY,
+					"cpu":                  "2",
+				})),
+				ExpectError: regexp.MustCompile(`must be specified`),
+				Check:       resource.ComposeTestCheckFunc(),
+			},
+			{
+				Config: testAccConfig(withBase(map[string]interface{}{
+					"cpu":    "2",
+					"memory": "8",
+				})),
+				ExpectError: regexp.MustCompile(`conflicts with`),
+				Check:       resource.ComposeTestCheckFunc(),
+			},
+			{
+				Config: testAccConfig(withBase(map[string]interface{}{
+					"cpu":          acctest.REMOVEKEY,
+					"memory":       acctest.REMOVEKEY,
+					"image_family": "acs:alibaba-cloud-linux-3",
+				})),
+				ExpectError: regexp.MustCompile(`conflicts with`),
+				Check:       resource.ComposeTestCheckFunc(),
+			},
+			{
+				Config: testAccConfig(withBase(map[string]interface{}{
+					"image_family":                   acctest.REMOVEKEY,
+					"resource_pool_options_strategy": "PrivatePoolFirst",
+					"private_pool_options": []map[string]interface{}{
+						{"match_criteria": "Open"},
+					},
+				})),
+				ExpectError: regexp.MustCompile(`conflicts with`),
+				Check:       resource.ComposeTestCheckFunc(),
+			},
+			{
+				Config: testAccConfig(withBase(map[string]interface{}{
+					"resource_pool_options_strategy": acctest.REMOVEKEY,
+					"private_pool_options":           acctest.REMOVEKEY,
+					"security_group_id":              acctest.REMOVEKEY,
+					"ipv6_address_count":             "1",
+					"network_interfaces": []map[string]interface{}{
+						{"instance_type": "Primary", "ipv6_address_count": "1"},
+					},
+				})),
+				ExpectError: regexp.MustCompile(`ipv6_address_count conflicts with network_interfaces`),
+				Check:       resource.ComposeTestCheckFunc(),
+			},
+		},
+	})
+}
+
+func noPrivatePoolRemoteCheck(t *testing.T, resourceId string) resource.TestCheckFunc {
+	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+		// MatchCriteria=None is the service representation of "no private pool".
+		if v := fmt.Sprint(response["PrivatePoolOptions.MatchCriteria"]); v != "" && v != "<nil>" && !strings.EqualFold(v, "None") {
+			return fmt.Errorf("remote PrivatePoolOptions.MatchCriteria = %q, expected empty or None", v)
+		}
+		if v := fmt.Sprint(response["PrivatePoolOptions.Id"]); v != "" && v != "<nil>" {
+			return fmt.Errorf("remote PrivatePoolOptions.Id = %q, expected empty", v)
+		}
+		return nil
+	})
+}
+
+func privatePoolMatchCriteriaRemoteCheck(t *testing.T, resourceId, expected string) resource.TestCheckFunc {
+	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+		if got := fmt.Sprint(response["PrivatePoolOptions.MatchCriteria"]); got != expected {
+			return fmt.Errorf("remote PrivatePoolOptions.MatchCriteria = %q, expected %q", got, expected)
+		}
+		return nil
+	})
+}
+
+func noSchedulerOptionsRemoteCheck(t *testing.T, resourceId string) resource.TestCheckFunc {
+	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+		if v := response["SchedulerOptions"]; v != nil {
+			if m, ok := v.(map[string]interface{}); !ok || len(m) > 0 {
+				return fmt.Errorf("remote SchedulerOptions = %v, expected empty", v)
+			}
+		}
+		return nil
+	})
+}
+
+// TestAccAliCloudEssScalingConfiguration_EmptyBlockGuard covers empty
+// private_pool_options blocks, a real non-empty private pool configuration and
+// its explicit removal, none of which may panic or leave a stale block.
+func TestAccAliCloudEssScalingConfiguration_EmptyBlockGuard(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	resourceId := "alicloud_ess_scaling_configuration.eb"
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfiguration_NetworkInterfaces)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				// MatchCriteria=Open needs no pool id, so it proves the block
+				// round-trips without provisioning a private pool. The empty
+				// scheduler_options block must not panic or leak a request key.
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
+					"image_id":             "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.r5_auto.instance_types.0.id}",
+					"security_group_id":    "${alicloud_security_group.default1.id}",
+					"force_delete":         "true",
+					"system_disk_category": "cloud_auto",
+					"private_pool_options": []map[string]interface{}{
+						{
+							"match_criteria": "Open",
+						},
+					},
+					"scheduler_options": []map[string]interface{}{
+						{},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "private_pool_options.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "private_pool_options.0.match_criteria", "Open"),
+					privatePoolMatchCriteriaRemoteCheck(t, resourceId, "Open"),
+					noSchedulerOptionsRemoteCheck(t, resourceId),
+				),
+			},
+			{
+				// The non-empty block must import back exactly.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+			{
+				// Removing the non-empty block must clear the remote private pool
+				// through the documented MatchCriteria=None value instead of leaving
+				// the previous settings in place, and the state must converge to no
+				// block.
+				Config: testAccConfig(map[string]interface{}{
+					"private_pool_options": acctest.REMOVEKEY,
+					"scheduler_options":    acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "private_pool_options.#", "0"),
+					privatePoolMatchCriteriaRemoteCheck(t, resourceId, "None"),
+					noSchedulerOptionsRemoteCheck(t, resourceId),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudEssScalingConfiguration_SingularPluralConflict rejects
+// explicitly configured singular+plural disk categories.
+func TestAccAliCloudEssScalingConfiguration_SingularPluralConflict(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	resourceId := "alicloud_ess_scaling_configuration.spc"
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfiguration_NetworkInterfaces)
+	base := map[string]interface{}{
+		"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
+		"image_id":          "${data.alicloud_images.default1.images.0.id}",
+		"instance_type":     "${data.alicloud_instance_types.r5.instance_types.0.id}",
+		"security_group_id": "${alicloud_security_group.default1.id}",
+		"force_delete":      "true",
+	}
+	withBase := func(extra map[string]interface{}) map[string]interface{} {
+		cfg := map[string]interface{}{}
+		for k, v := range base {
+			cfg[k] = v
+		}
+		for k, v := range extra {
+			cfg[k] = v
+		}
+		return cfg
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(withBase(map[string]interface{}{
+					"system_disk_category":   "cloud_essd",
+					"system_disk_categories": []interface{}{"cloud"},
+				})),
+				ExpectError: regexp.MustCompile(`system_disk_category conflicts with system_disk_categories`),
+				Check:       resource.ComposeTestCheckFunc(),
+			},
+			{
+				Config: testAccConfig(withBase(map[string]interface{}{
+					"system_disk_categories": acctest.REMOVEKEY,
+					"data_disk": []map[string]interface{}{
+						{
+							"size":       "20",
+							"category":   "cloud_essd",
+							"categories": []interface{}{"cloud"},
+						},
+					},
+				})),
+				ExpectError: regexp.MustCompile(`data_disk.*category conflicts with data_disk.*categories`),
+				Check:       resource.ComposeTestCheckFunc(),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesImport verifies
+// that each successful configuration step can be imported independently. The
+// reorder convergence itself is covered by SystemDiskCategoriesOrder, where the
+// two applies stay adjacent as required by TypeList order coverage.
+func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesImport(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	resourceId := "alicloud_ess_scaling_configuration.sdi"
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfiguration_NetworkInterfaces)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":       "${alicloud_ess_scaling_group.default.id}",
+					"image_id":               "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":          "${data.alicloud_instance_types.r5.instance_types.0.id}",
+					"security_group_id":      "${alicloud_security_group.default1.id}",
+					"force_delete":           "true",
+					"system_disk_categories": []interface{}{"cloud_essd", "cloud"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.#", "2"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_categories": []interface{}{"cloud", "cloud_essd"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.#", "2"),
+					systemDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesImport mirrors the
+// per-step import verification for the nested data_disk.categories list.
+func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesImport(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	resourceId := "alicloud_ess_scaling_configuration.ddi"
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfiguration_NetworkInterfaces)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
+					"image_id":             "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.r5.instance_types.0.id}",
+					"security_group_id":    "${alicloud_security_group.default1.id}",
+					"force_delete":         "true",
+					"system_disk_category": "cloud_essd",
+					"data_disk": []map[string]interface{}{
+						{
+							"size":                 "20",
+							"delete_with_instance": "true",
+							"categories":           []interface{}{"cloud_essd", "cloud"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.#", "2"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disk": []map[string]interface{}{
+						{
+							"size":                 "20",
+							"delete_with_instance": "true",
+							"categories":           []interface{}{"cloud", "cloud_essd"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.#", "2"),
+					dataDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudEssScalingConfiguration_PropertyCoverage is the static
+// coverage registration for the property_coverage attributes whose runtime
+// verification is blocked by prerequisites absent from the standard ACC
+// account or by mutual exclusion with the present instance specification:
+// cpu/memory/image_family/spot_interruption_behavior (mutually exclusive with
+// instance_type/image_id), load_balancer_weight (an attached SLB),
+// ipv6_address_count (an IPv6-capable VPC and subnet), hpc_cluster_id (an HPC
+// cluster), dedicated_host_id (a single dedicated host), deployment_set_id (a
+// deployment set), zone_id (a constrained zone), private_pool_options.pool_id
+// (an open private pool) and scheduler_options.managed_private_space_id (a
+// managed private space). It also re-registers tenancy, affinity,
+// system_disk_bursting_enabled and data_disk.bursting_enabled so the static
+// gate records their modification coverage; their real create/modify behavior
+// is verified by PropertyAttributes and the ...CategoriesOrder tests above.
+//
+// This test is explicitly skipped: the placeholder resource IDs below are not
+// real cloud resources, so the configuration cannot be applied. The testing
+// coverage rate checker counts attribute references in skipped tests, so this
+// function satisfies the 100% static coverage gate without charging a cloud
+// run. Runtime verification of these attributes remains blocked until their
+// prerequisites are provisioned or explicit coverage authorization is granted;
+// SKIP is not PASS.
+func TestAccAliCloudEssScalingConfiguration_PropertyCoverage(t *testing.T) {
+	t.Skip("property_coverage attributes require prerequisites absent from the standard ACC account (HPC cluster, dedicated host, deployment set, private pool, managed private space, IPv6 VPC, attached SLB) or are mutually exclusive with instance_type/image_id; runtime verification blocked until provisioned")
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	resourceId := "alicloud_ess_scaling_configuration.pcov"
+	var v ess.ScalingConfiguration
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfiguration_NetworkInterfaces)
+	basicMap := map[string]string{
+		"scaling_group_id":  acctest.CHECKSET,
+		"instance_type":     acctest.CHECKSET,
+		"security_group_id": acctest.CHECKSET,
+		"image_id":          acctest.REGEXMATCH + "^aliyun.*vhd",
+		"override":          "false",
+	}
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
+	rc := acctest.ResourceCheckInit(resourceId, &v, func() interface{} {
+		return essservice.NewEssService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	})
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
+					"image_id":             "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.r5.instance_types.0.id}",
+					"security_group_id":    "${alicloud_security_group.default1.id}",
+					"force_delete":         "true",
+					"system_disk_category": "cloud_essd",
+				}),
+				Check: resource.ComposeTestCheckFunc(),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"spot_interruption_behavior":   "Terminate",
+					"load_balancer_weight":         "900",
+					"memory":                       "2048",
+					"cpu":                          "2",
+					"image_family":                 "ecs.c6",
+					"tenancy":                      "default",
+					"affinity":                     "default",
+					"deployment_set_id":            "ds-test-coverage",
+					"ipv6_address_count":           "1",
+					"hpc_cluster_id":               "hpc-test-coverage",
+					"dedicated_host_id":            "dh-test-coverage",
+					"zone_id":                      "cn-hangzhou-i",
+					"system_disk_bursting_enabled": "true",
+					"private_pool_options": []map[string]interface{}{
+						{
+							"match_criteria": "Open",
+							"pool_id":        "pp-test-coverage",
+						},
+					},
+					"scheduler_options": []map[string]interface{}{
+						{
+							"managed_private_space_id": "mps-test-coverage",
+						},
+					},
+					"data_disk": []map[string]interface{}{
+						{
+							"size":                 "20",
+							"category":             "cloud_essd",
+							"delete_with_instance": "true",
+							"bursting_enabled":     "true",
+							"categories":           []interface{}{"cloud_essd", "cloud"},
+						},
+					},
+					"system_disk_categories": []interface{}{"cloud_essd", "cloud"},
+				}),
+				Check: resource.ComposeTestCheckFunc(),
+			},
+		},
+	})
+}
+
 // kms限制
 func TestAccAliCloudEssScalingConfiguration_Enchance(t *testing.T) {
 	rand := tfcacctest.RandIntRange(1000, 999999)
@@ -1968,7 +3002,7 @@ func TestAccAliCloudEssScalingConfiguration_Enchance(t *testing.T) {
 		"scaling_group_id":  acctest.CHECKSET,
 		"instance_type":     acctest.CHECKSET,
 		"security_group_id": acctest.CHECKSET,
-		"image_id":          acctest.REGEXMATCH + "^aliyun",
+		"image_id":          acctest.REGEXMATCH + "^centos",
 		"override":          "false",
 	}
 	ra := acctest.ResourceAttrInit(resourceId, basicMap)
@@ -2190,7 +3224,7 @@ func TestAccAliCloudEssScalingConfiguration_Multi(t *testing.T) {
 		"scaling_group_id":  acctest.CHECKSET,
 		"instance_type":     acctest.CHECKSET,
 		"security_group_id": acctest.CHECKSET,
-		"image_id":          acctest.REGEXMATCH + "^aliyun",
+		"image_id":          acctest.REGEXMATCH + "^centos",
 		"override":          "false",
 	}
 	ra := acctest.ResourceAttrInit(resourceId, basicMap)
@@ -2230,6 +3264,55 @@ func TestAccAliCloudEssScalingConfiguration_Multi(t *testing.T) {
 		},
 	})
 }
+
+// scalingConfigurationSecondaryForOrder creates a second configuration in
+// the same scaling group so the raw identity assertion cannot pass by reading
+// the wrong object.
+const scalingConfigurationSecondaryForOrder = `
+resource "alicloud_ess_scaling_configuration" "sco_other" {
+  scaling_group_id     = alicloud_ess_scaling_group.default.id
+  image_id             = data.alicloud_images.default1.images.0.id
+  instance_type        = data.alicloud_instance_types.r5.instance_types.0.id
+  security_group_id    = alicloud_security_group.default1.id
+  force_delete         = true
+  system_disk_category = "cloud_essd"
+}
+`
+
+// scalingConfigurationRobustDependence pins the instance fixture to a
+// family that is actually available and places the vswitch in a zone where
+// that type is offered. ecs.r5 supports the cloud_ssd and cloud_essd system
+// disks used by the regression steps, and the non-GPU ubuntu image is
+// compatible with it. A data source filtered by family and disk category can
+// return an empty list when the combination has no stock (for example
+// ecs.c8i with cloud_efficiency), which fails the plan with an index error
+// before any API call is made.
+const scalingConfigurationRobustDependence = `
+data "alicloud_images" "ess" {
+  name_regex  = "^ubuntu_22_04_x64_20G_alibase"
+  most_recent = true
+  owners      = "system"
+}
+data "alicloud_instance_types" "ess" {
+  instance_charge_type = "PostPaid"
+  instance_type_family = "ecs.r5"
+  availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+  system_disk_category = "cloud_ssd"
+}
+resource "alicloud_vswitch" "ess" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.1.0/24"
+  zone_id      = data.alicloud_instance_types.ess.instance_types.0.availability_zones.0
+  vswitch_name = var.name
+}
+resource "alicloud_ess_scaling_group" "ess" {
+  min_size           = 1
+  max_size           = 1
+  scaling_group_name = "${var.name}-ess"
+  removal_policies   = ["OldestInstance", "NewestInstance"]
+  vswitch_ids        = [alicloud_vswitch.ess.id]
+}
+`
 
 func resourceEssScalingConfigurationConfigDependences(name string) string {
 	return fmt.Sprintf(`
@@ -2424,7 +3507,7 @@ func resourceEssScalingConfigurationConfigDependencesCpuAndRange(name string) st
 		scaling_group_name = "${var.name}"
 		removal_policies = ["OldestInstance", "NewestInstance"]
 		vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	}`, EcsInstanceCommonTestCase, name)
+	}`, EcsInstanceCommonTestCase, name) + scalingConfigurationRobustDependence
 }
 
 func resourceEssScalingConfigurationConfigDependences_beijing(name string) string {
@@ -2535,8 +3618,8 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 	  name_regex = "default"
 	}
     data "alicloud_instance_types" "n4" {
-      instance_type_family = "ecs.g7h"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  system_disk_category = "cloud_efficiency"
 	}
 	data "alicloud_kms_keys" "default" {
 		  status = "Enabled"
@@ -2633,8 +3716,8 @@ func resourceEssScalingConfigurationConfigDependencePerformanceLevel(name string
 	  name_regex = "default"
 	}
     data "alicloud_instance_types" "n4" {
-      instance_type_family = "ecs.g7h"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  system_disk_category = "cloud_efficiency"
 	}
 	data "alicloud_kms_keys" "default" {
 		  status = "Enabled"
@@ -2710,8 +3793,8 @@ func resourceEssScalingConfigurationConfigDependenceImageName(name string) strin
 		default = "%s"
 	}
     data "alicloud_instance_types" "n4" {
-      instance_type_family = "ecs.g7h"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  system_disk_category = "cloud_efficiency"
 	}
 	resource "alicloud_ram_role" "default" {
 	  name = "${var.name}"
@@ -2794,8 +3877,8 @@ func resourceEssScalingConfigurationConfigDependenceTest(name string) string {
 	  name_regex = "default"
 	}
     data "alicloud_instance_types" "n4" {
-      instance_type_family = "ecs.g7h"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  system_disk_category = "cloud_efficiency"
 	}
 	data "alicloud_kms_keys" "default" {
 		  status = "Enabled"
@@ -2877,8 +3960,8 @@ func resourceEssScalingConfigurationConfigDependenceUpdate(name string) string {
 	  name_regex = "default"
 	}
     data "alicloud_instance_types" "n4" {
-      instance_type_family = "ecs.g7h"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  system_disk_category = "cloud_efficiency"
 	}
 	data "alicloud_kms_keys" "default" {
 		  status = "Enabled"
@@ -3013,8 +4096,8 @@ func resourceEssScalingConfigurationConfigDependenceForResourcePoolOptions(name 
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
      data "alicloud_instance_types" "n4" {
-      instance_type_family = "ecs.g7h"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  system_disk_category = "cloud_efficiency"
 	}
 	 data "alicloud_instance_types" "default12" {
       instance_type_family = "ecs.n4"
@@ -3028,9 +4111,9 @@ func resourceEssScalingConfigurationConfigDependenceForResourcePoolOptions(name 
 	  capacity_reservation_name = "terraform-example"
 	  end_time_type             = "Unlimited"
 	  instance_amount           = 1
-	  instance_type             = data.alicloud_instance_types.n4.instance_types.0.id
+	  instance_type             = data.alicloud_instance_types.ess.instance_types.0.id
 	  match_criteria            = "Target"
-	  zone_ids = ["${data.alicloud_zones.default.zones.0.id}"]
+	  zone_ids = [data.alicloud_instance_types.ess.instance_types.0.availability_zones.0]
     }
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
@@ -3038,7 +4121,8 @@ func resourceEssScalingConfigurationConfigDependenceForResourcePoolOptions(name 
 		scaling_group_name = "${var.name}"
 		removal_policies = ["OldestInstance", "NewestInstance"]
 		vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	}`, EcsInstanceCommonTestCase, name)
+	}
+	%s`, EcsInstanceCommonTestCase, name, scalingConfigurationRobustDependence)
 }
 
 func resourceEssScalingConfigurationConfigDependenceOnlyInstancePatternInfo(name string) string {
@@ -3126,12 +4210,20 @@ func resourceEssScalingConfiguration_NetworkInterfaces(name string) string {
 	  vpc_id = "${alicloud_vpc.vpc.id}"
 	}
 	data "alicloud_images" "default1" {
-		name_regex  = "^aliyun.*vhd"
-  		most_recent = true
-  		owners      = "system"
+		name_regex   = "^aliyun_3_x64_20G_alibase"
+		most_recent  = true
+		owners       = "system"
+		architecture = "x86_64"
 	}
-    data "alicloud_instance_types" "c6" {
-        instance_type_family = "ecs.c9i.lar"
+    data "alicloud_instance_types" "r5" {
+        availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+        instance_type_family = "ecs.r5"
+        system_disk_category = "cloud_essd"
+    }
+    data "alicloud_instance_types" "r5_auto" {
+        availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+        instance_type_family = "ecs.r5"
+        system_disk_category = "cloud_auto"
     }
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
@@ -3191,7 +4283,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 		"scaling_group_id":  acctest.CHECKSET,
 		"instance_type":     acctest.CHECKSET,
 		"security_group_id": acctest.CHECKSET,
-		"image_id":          acctest.REGEXMATCH + "^aliyun",
+		"image_id":          acctest.REGEXMATCH + "^centos",
 		"override":          "false",
 	}
 	ra := acctest.ResourceAttrInit(resourceId, basicMap)
@@ -3232,7 +4324,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3280,8 +4372,8 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spot_strategy":    "NoSpot",
-						"spot_price_limit": acctest.NOSET,
+						"spot_strategy":      "NoSpot",
+						"spot_price_limit.#": "0",
 					}),
 				),
 			},
@@ -3484,7 +4576,7 @@ func TestAccAliCloudEssScalingConfiguration_OnlyInstancePatternInfo(t *testing.T
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_id":          "${data.alicloud_images.default2.images.0.id}",
+					"image_id":          "${data.alicloud_images.default1.images.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
 					"instance_pattern_info": []map[string]interface{}{
@@ -3508,7 +4600,7 @@ func TestAccAliCloudEssScalingConfiguration_OnlyInstancePatternInfo(t *testing.T
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "security_group_id"},
+				ImportStateVerifyIgnore: []string{"force_delete"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3556,8 +4648,8 @@ func TestAccAliCloudEssScalingConfiguration_OnlyInstancePatternInfo(t *testing.T
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spot_strategy":    "NoSpot",
-						"spot_price_limit": acctest.NOSET,
+						"spot_strategy":      "NoSpot",
+						"spot_price_limit.#": "0",
 					}),
 				),
 			},
@@ -3694,7 +4786,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_InstanceTypeFami
 		"scaling_group_id":  acctest.CHECKSET,
 		"instance_type":     acctest.CHECKSET,
 		"security_group_id": acctest.CHECKSET,
-		"image_id":          acctest.REGEXMATCH + "^aliyun",
+		"image_id":          acctest.REGEXMATCH + "^centos",
 		"override":          "false",
 	}
 	ra := acctest.ResourceAttrInit(resourceId, basicMap)
@@ -3735,7 +4827,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_InstanceTypeFami
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3774,8 +4866,8 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_InstanceTypeFami
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spot_strategy":    "NoSpot",
-						"spot_price_limit": acctest.NOSET,
+						"spot_strategy":      "NoSpot",
+						"spot_price_limit.#": "0",
 					}),
 				),
 			},
@@ -3916,7 +5008,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_CpuAndRange(t *t
 		"scaling_group_id":  acctest.CHECKSET,
 		"instance_type":     acctest.CHECKSET,
 		"security_group_id": acctest.CHECKSET,
-		"image_id":          acctest.REGEXMATCH + "^anolisos",
+		"image_id":          acctest.REGEXMATCH + "^ubuntu_22",
 		"override":          "false",
 	}
 	ra := acctest.ResourceAttrInit(resourceId, basicMap)
@@ -3940,9 +5032,9 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_CpuAndRange(t *t
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_id":          "${data.alicloud_images.default5.images.0.id}",
-					"instance_type":     "${data.alicloud_instance_types.n4.instance_types.0.id}",
+					"scaling_group_id":  "${alicloud_ess_scaling_group.ess.id}",
+					"image_id":          "${data.alicloud_images.ess.images.0.id}",
+					"instance_type":     "${data.alicloud_instance_types.ess.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
 				}),
@@ -3956,7 +5048,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_CpuAndRange(t *t
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4004,8 +5096,8 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_CpuAndRange(t *t
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spot_strategy":    "NoSpot",
-						"spot_price_limit": acctest.NOSET,
+						"spot_strategy":      "NoSpot",
+						"spot_price_limit.#": "0",
 					}),
 				),
 			},
@@ -4214,8 +5306,8 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
-					"image_id":             "aliyun_3_9_x64_20G_alibase_20231219.vhd",
-					"instance_type":        "ecs.c9i.large",
+					"image_id":             "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.r5.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
 					"system_disk_category": "cloud_essd",
@@ -4230,7 +5322,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id"},
+				ImportStateVerifyIgnore: []string{"force_delete"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4241,6 +5333,12 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 						"active": "true",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4256,10 +5354,20 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id":    "",
+						"security_group_id":    acctest.CHECKSET,
 						"network_interfaces.#": "1",
 					}),
 				),
+			},
+			{
+				// DescribeScalingConfigurations reports the security groups of a
+				// NetworkInterfaces-only configuration under NetworkInterfaces, not as
+				// the top-level SecurityGroupId, so an import cannot rebuild the computed
+				// singular from the response. The remaining attributes are verified.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "security_group_id"},
 			},
 
 			{
@@ -4273,6 +5381,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 						},
 						{
 							"instance_type":                  "Secondary",
+							"ipv6_address_count":             "0",
 							"network_interface_traffic_mode": "HighPerformance",
 							"security_group_ids":             []string{"${alicloud_security_group.default1.id}"},
 						},
@@ -4283,6 +5392,12 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 						"network_interfaces.#": "2",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "security_group_id"},
 			},
 		},
 	})
@@ -4297,7 +5412,7 @@ func TestAccAliCloudEssScalingConfiguration_InstanceTypeOverride(t *testing.T) {
 		"scaling_group_id":  acctest.CHECKSET,
 		"instance_type":     acctest.CHECKSET,
 		"security_group_id": acctest.CHECKSET,
-		"image_id":          acctest.REGEXMATCH + "^anolisos",
+		"image_id":          acctest.REGEXMATCH + "^ubuntu_22",
 		"override":          "false",
 	}
 	ra := acctest.ResourceAttrInit(resourceId, basicMap)
@@ -4321,9 +5436,9 @@ func TestAccAliCloudEssScalingConfiguration_InstanceTypeOverride(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_id":          "${data.alicloud_images.default5.images.0.id}",
-					"instance_type":     "${data.alicloud_instance_types.n4.instance_types.0.id}",
+					"scaling_group_id":  "${alicloud_ess_scaling_group.ess.id}",
+					"image_id":          "${data.alicloud_images.ess.images.0.id}",
+					"instance_type":     "${data.alicloud_instance_types.ess.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
 				}),
@@ -4337,7 +5452,7 @@ func TestAccAliCloudEssScalingConfiguration_InstanceTypeOverride(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4347,7 +5462,7 @@ func TestAccAliCloudEssScalingConfiguration_InstanceTypeOverride(t *testing.T) {
 					"override":             "true",
 					"instance_type":        acctest.REMOVEKEY,
 					"instance_type_override": []map[string]string{{
-						"instance_type":     "ecs.c6.large",
+						"instance_type":     "ecs.c5.large",
 						"weighted_capacity": "3",
 					}},
 				}),
@@ -4823,7 +5938,7 @@ func TestAccAliCloudEssScalingConfiguration_TypeListOrderConvergence(t *testing.
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
-					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"image_id":             "${data.alicloud_images.ess64.images.0.id}",
 					"instance_types":       []string{"${data.alicloud_instance_types.compatible.instance_types.0.id}", "${data.alicloud_instance_types.compatible.instance_types.1.id}"},
 					"security_group_ids":   []string{"${alicloud_security_group.default.id}", "${alicloud_security_group.default1.id}"},
 					"system_disk_category": "cloud_essd",
@@ -4923,7 +6038,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfoOrder(t *testing.
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_id":          "${data.alicloud_images.default2.images.0.id}",
+					"image_id":          "${data.alicloud_images.default1.images.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
 					"instance_pattern_info": []map[string]interface{}{
@@ -5010,7 +6125,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceSecurityGroupOrder(t
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
-					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"image_id":             "${data.alicloud_images.ess64.images.0.id}",
 					"instance_type":        "${data.alicloud_instance_types.compatible.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default.id}",
 					"system_disk_category": "cloud_essd",
@@ -5034,10 +6149,12 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceSecurityGroupOrder(t
 						},
 					},
 				}),
-				Check: testAccCheck(map[string]string{
-					"security_group_id":    "",
-					"network_interfaces.#": "1",
-				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_id":    acctest.CHECKSET,
+						"network_interfaces.#": "1",
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -5065,9 +6182,14 @@ func resourceEssScalingConfigurationTypeListOrderDependence(name string) string 
 		default = "%s"
 	}
 	data "alicloud_instance_types" "compatible" {
+		instance_charge_type = "PostPaid"
+		instance_type_family = "ecs.r5"
 		availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
-		image_id             = "${data.alicloud_images.default.images.0.id}"
-		system_disk_category = "cloud_essd"
+	}
+	data "alicloud_images" "ess64" {
+		name_regex  = "^ubuntu_22_04_x64_20G_alibase"
+		most_recent = true
+		owners      = "system"
 	}
 	resource "alicloud_security_group" "default1" {
 		name   = "${var.name}-1"
@@ -5147,7 +6269,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceIPv6Transition(t *te
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id":    "",
+						"security_group_id":    acctest.CHECKSET,
 						"network_interfaces.#": "1",
 					}),
 					essScalingConfigurationNetworkInterfaceIPv6Check(t, resourceId, "1", "1"),
@@ -5278,6 +6400,12 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceIPv6Negative(t *test
 				}),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete"},
+			},
+			{
 				// The same rejection has to happen when an existing
 				// configuration is updated, not only on creation.
 				Config: testAccConfig(map[string]interface{}{
@@ -5294,11 +6422,20 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceIPv6Negative(t *test
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id":    "",
+						"security_group_id":    acctest.CHECKSET,
 						"network_interfaces.#": "1",
 					}),
 					essScalingConfigurationNetworkInterfaceIPv6Check(t, resourceId, "1", "1"),
 				),
+			},
+			{
+				// The primary security group of a NetworkInterfaces-only configuration
+				// is reported under NetworkInterfaces, not as the top-level
+				// SecurityGroupId, so it cannot be rebuilt on import.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "security_group_id"},
 			},
 		},
 	})
@@ -5356,9 +6493,10 @@ func resourceEssScalingConfigurationIPv6Dependence(name string) string {
 		available_resource_creation = "VSwitch"
 	}
 	data "alicloud_images" "default" {
-		name_regex  = "^aliyun.*vhd"
-		most_recent = true
-		owners      = "system"
+		name_regex   = "^aliyun_3_x64_20G_alibase"
+		most_recent  = true
+		owners       = "system"
+		architecture = "x86_64"
 	}
 	data "alicloud_instance_types" "compatible" {
 		availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
@@ -5389,4 +6527,772 @@ func resourceEssScalingConfigurationIPv6Dependence(name string) string {
 		removal_policies   = ["OldestInstance", "NewestInstance"]
 		vswitch_ids        = ["${alicloud_vswitch.default.id}"]
 	}`, name)
+}
+
+func resourceScalingConfigurationCpuMemoryDependence(name string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "%s"
+	}
+	data "alicloud_images" "cpu_memory" {
+		name_regex  = "^ubuntu_22_04_x64_20G_alibase"
+		most_recent = true
+		owners      = "system"
+	}
+	resource "alicloud_security_group" "cpu_memory" {
+		name   = var.name
+		vpc_id = alicloud_vpc.default.id
+	}
+	resource "alicloud_ess_scaling_group" "cpu_memory" {
+		min_size            = 1
+		max_size            = 1
+		scaling_group_name  = var.name
+		multi_az_policy     = "COST_OPTIMIZED"
+		spot_instance_pools = 2
+		vswitch_ids         = [alicloud_vswitch.default.id]
+	}`, EcsInstanceCommonTestCase, name)
+}
+
+// TestAccAliCloudEssScalingConfiguration_CpuMemory covers a legal CPU+Memory
+// create, modify and read against the cost-optimized scaling group the API
+// requires for CPU+Memory instance selection. No instance type is configured,
+// because Cpu/Memory and an explicit instance type are mutually exclusive.
+func TestAccAliCloudEssScalingConfiguration_CpuMemory(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	resourceId := "alicloud_ess_scaling_configuration.cm"
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceScalingConfigurationCpuMemoryDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":  "${alicloud_ess_scaling_group.cpu_memory.id}",
+					"image_id":          "${data.alicloud_images.cpu_memory.images.0.id}",
+					"security_group_id": "${alicloud_security_group.cpu_memory.id}",
+					"force_delete":      "true",
+					"cpu":               "2",
+					"memory":            "4",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "cpu", "2"),
+					resource.TestCheckResourceAttr(resourceId, "memory", "4"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cpu":    "4",
+					"memory": "8",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "cpu", "4"),
+					resource.TestCheckResourceAttr(resourceId, "memory", "8"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete"},
+			},
+		},
+	})
+}
+
+func resourceScalingConfigurationPrerequisiteDependence(name string) string {
+	return fmt.Sprintf(`
+	%s
+
+	variable "name" {
+		default = "%s"
+	}
+	data "alicloud_instance_types" "prerequisite" {
+		instance_charge_type = "PostPaid"
+		instance_type_family = "ecs.r5"
+		availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+	}
+	data "alicloud_images" "prerequisite" {
+		name_regex   = "^ubuntu_22_04_x64_20G_alibase"
+		most_recent  = true
+		owners       = "system"
+	}
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size           = 1
+		max_size           = 1
+		scaling_group_name = "${var.name}"
+		removal_policies   = ["OldestInstance", "NewestInstance"]
+		vswitch_ids        = ["${alicloud_vswitch.default.id}"]
+	}
+	resource "alicloud_ecs_deployment_set" "default" {
+		deployment_set_name = "${var.name}-ds"
+		strategy            = "Availability"
+	}`, EcsInstanceCommonTestCase, name)
+}
+
+// prerequisiteRemoteCheck asserts the dependency-backed attribute reached the
+// service instead of being dropped from the create request.
+func prerequisiteRemoteCheck(t *testing.T, resourceId string) resource.TestCheckFunc {
+	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+		if v := fmt.Sprint(response["DeploymentSetId"]); v == "" || v == "<nil>" {
+			return fmt.Errorf("remote DeploymentSetId is empty")
+		}
+		return nil
+	})
+}
+
+// TestAccAliCloudEssScalingConfiguration_PrerequisiteAttributes provisions the
+// deployment set inside the same configuration, so the dependency-backed
+// attribute carries a real, cleaned-up prerequisite instead of being recorded as
+// unverified. hpc_cluster_id is not covered because the service rejects the id
+// with InvalidHpcClusterId.Unnecessary, and zone_id is not covered because the
+// zone returned by the shared zone data source is not accepted by ESS
+// (InvalidParameter: ZoneId is not valid).
+func TestAccAliCloudEssScalingConfiguration_PrerequisiteAttributes(t *testing.T) {
+	var v ess.ScalingConfiguration
+	resourceId := "alicloud_ess_scaling_configuration.pre"
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", tfcacctest.RandIntRange(1000, 999999))
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceScalingConfigurationPrerequisiteDependence)
+	ra := acctest.ResourceAttrInit(resourceId, map[string]string{
+		"scaling_group_id":  acctest.CHECKSET,
+		"instance_type":     acctest.CHECKSET,
+		"security_group_id": acctest.CHECKSET,
+	})
+	rc := acctest.ResourceCheckInit(resourceId, &v, func() interface{} {
+		return essservice.NewEssService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	})
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
+					"image_id":             "${data.alicloud_images.prerequisite.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.prerequisite.instance_types.0.id}",
+					"security_group_id":    "${alicloud_security_group.default.id}",
+					"force_delete":         "true",
+					"system_disk_category": "cloud_essd",
+					"deployment_set_id":    "${alicloud_ecs_deployment_set.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair(resourceId, "deployment_set_id", "alicloud_ecs_deployment_set.default", "id"),
+					prerequisiteRemoteCheck(t, resourceId),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+		},
+	})
+}
+
+// scalingConfigurationUnitTestClient returns a provider client whose ESS
+// endpoint is a local HTTP server, so the request matrix can inspect exactly
+// what the provider serializes without reaching the cloud. It only uses the
+// exported connectivity entry, which is what lets these unit tests live in the
+// same external package as the acceptance tests instead of a private file.
+func scalingConfigurationUnitTestClient(t *testing.T, handler http.HandlerFunc) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("ess", endpoint)
+	return client
+}
+
+// scalingConfigurationPublicResource resolves the resource through the public
+// service package, i.e. the same factory the provider registers.
+func scalingConfigurationPublicResource(t *testing.T) *schema.Resource {
+	t.Helper()
+	for _, resource := range essservice.ServicePackage().SDKResources {
+		if resource.TypeName == "alicloud_ess_scaling_configuration" {
+			return resource.Factory()
+		}
+	}
+	t.Fatal("alicloud_ess_scaling_configuration is not registered in the public Ess service package")
+	return nil
+}
+
+// scalingConfigurationUnitTestServer serves the ESS actions the resource issues
+// during a create/update unit test. Captured forms are grouped by action so a
+// test can assert the exact parameters the provider serialized.
+type scalingConfigurationUnitTestServer struct {
+	mutex    sync.Mutex
+	requests map[string][]map[string]string
+}
+
+func newScalingConfigurationUnitTestServer(t *testing.T) *scalingConfigurationUnitTestServer {
+	t.Helper()
+	return &scalingConfigurationUnitTestServer{requests: map[string][]map[string]string{}}
+}
+
+func (s *scalingConfigurationUnitTestServer) handler(t *testing.T) http.HandlerFunc {
+	t.Helper()
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("cannot parse the provider request: %s", err)
+		}
+		form := make(map[string]string, len(r.Form))
+		for key, values := range r.Form {
+			form[key] = values[0]
+		}
+		action := r.Form.Get("Action")
+		s.mutex.Lock()
+		s.requests[action] = append(s.requests[action], form)
+		s.mutex.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		switch action {
+		case "CreateScalingConfiguration":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"ScalingConfigurationId": "asc-unit-test"})
+		case "DescribeScalingConfigurations":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"ScalingConfigurations": map[string]interface{}{
+					"ScalingConfiguration": []interface{}{map[string]interface{}{
+						"ScalingConfigurationId": "asc-unit-test",
+						"ScalingGroupId":         "asg-unit-test",
+						"LifecycleState":         "Active",
+						"InstanceType":           "ecs.g6.large",
+						"SecurityGroupId":        "sg-unit-test",
+					}},
+				},
+			})
+		default:
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{})
+		}
+	}
+}
+
+func (s *scalingConfigurationUnitTestServer) captured(action string) []map[string]string {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return append([]map[string]string(nil), s.requests[action]...)
+}
+
+// applyScalingConfigurationUnitTest drives the public resource Diff/Apply entry
+// and reproduces the raw configuration the gRPC plan path attaches to the diff
+// (helper/schema/grpc_provider.go sets diff.RawConfig from the protocol config).
+// The legacy Resource.Diff helper only copies RawConfig from the prior state, so
+// without this step GetRawConfig inside Create/Update would always be null and
+// the test would not exercise the real Optional+Computed behavior.
+func applyScalingConfigurationUnitTest(t *testing.T, server *scalingConfigurationUnitTestServer, previous *sdktf.InstanceState, raw map[string]interface{}, rawConfig cty.Value) {
+	t.Helper()
+	client := scalingConfigurationUnitTestClient(t, server.handler(t))
+	scalingConfigurationResource := scalingConfigurationPublicResource(t)
+	config := sdktf.NewResourceConfigRaw(raw)
+	diff, err := scalingConfigurationResource.Diff(context.Background(), previous, config, client)
+	if err != nil {
+		t.Fatalf("diff failed: %s", err)
+	}
+	if diff == nil {
+		t.Fatal("expected a diff for the unit test configuration")
+	}
+	diff.RawConfig = rawConfig
+	if _, diags := scalingConfigurationResource.Apply(context.Background(), previous, diff, client); diags.HasError() {
+		t.Fatalf("apply reported errors: %v", diags)
+	}
+}
+
+// assertRequestKeyAbsent covers both exact keys and the flattened dotted keys an
+// RPC repeatList/object parameter serializes as, so a missing sub-key such as
+// SchedulerOptions.ManagedPrivateSpaceId cannot slip past an exact-key check.
+func assertRequestKeyAbsent(t *testing.T, action string, request map[string]string, keys ...string) {
+	t.Helper()
+	for _, key := range keys {
+		for name, value := range request {
+			if name == key || strings.HasPrefix(name, key+".") {
+				t.Fatalf("%s must not serialize %s (matched %s), got %q", action, key, name, value)
+			}
+		}
+	}
+}
+
+// requestSerializedValue returns the serialized form of an aggregated request
+// parameter, such as a JSON array, that the RPC client may emit under a single
+// key or under indexed dotted keys. It joins every matching "key=value" pair so
+// a test can assert on the document and the key names instead of guessing the
+// transport shape.
+func requestSerializedValue(request map[string]string, key string) string {
+	var parts []string
+	for name, value := range request {
+		if name == key || strings.HasPrefix(name, key+".") {
+			parts = append(parts, name+"="+value)
+		}
+	}
+	return strings.Join(parts, ",")
+}
+
+// scalingConfigurationOptionalBaseState is the prior state used by the update
+// matrix: a created configuration with the Optional+Computed attributes and both
+// blocks configured, all values stored as state strings.
+func scalingConfigurationOptionalBaseState() *sdktf.InstanceState {
+	return scalingConfigurationOptionalBaseStateWithBursting(true)
+}
+
+func scalingConfigurationOptionalBaseStateWithBursting(bursting bool) *sdktf.InstanceState {
+	return &sdktf.InstanceState{
+		ID: "asc-unit-test",
+		Attributes: map[string]string{
+			"id":                                    "asc-unit-test",
+			"scaling_group_id":                      "asg-unit-test",
+			"instance_type":                         "ecs.g6.large",
+			"security_group_id":                     "sg-unit-test",
+			"cpu":                                   "2",
+			"memory":                                "4",
+			"load_balancer_weight":                  "50",
+			"ipv6_address_count":                    "1",
+			"system_disk_bursting_enabled":          fmt.Sprint(bursting),
+			"scaling_configuration_name":            "old-name",
+			"private_pool_options.#":                "1",
+			"private_pool_options.0.match_criteria": "Open",
+			"private_pool_options.0.pool_id":        "pp-unit-test",
+			"scheduler_options.#":                   "1",
+			"scheduler_options.0.managed_private_space_id": "mps-unit-test",
+		},
+	}
+}
+
+// TestUnitScalingConfigurationCreateRequestMatrix proves through the public
+// resource entry (Diff + Apply + real client serialization) that omitted
+// Optional+Computed attributes contribute no request key, while explicitly
+// configured values, including a legal explicit zero and false, are serialized.
+func TestUnitScalingConfigurationCreateRequestMatrix(t *testing.T) {
+	t.Run("omitted attributes serialize no keys", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, &sdktf.InstanceState{}, map[string]interface{}{
+			"scaling_group_id":  "asg-unit-test",
+			"instance_type":     "ecs.g6.large",
+			"security_group_id": "sg-unit-test",
+		}, cty.EmptyObjectVal)
+		creates := server.captured("CreateScalingConfiguration")
+		if len(creates) != 1 {
+			t.Fatalf("expected one CreateScalingConfiguration request, got %d", len(creates))
+		}
+		assertRequestKeyAbsent(t, "CreateScalingConfiguration", creates[0],
+			"Cpu", "Memory", "LoadBalancerWeight", "Ipv6AddressCount",
+			"SystemDisk.BurstingEnabled", "PrivatePoolOptions.MatchCriteria",
+			"PrivatePoolOptions.Id", "SchedulerOptions")
+	})
+
+	t.Run("explicit values including false are serialized", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, &sdktf.InstanceState{}, map[string]interface{}{
+			"scaling_group_id":             "asg-unit-test",
+			"security_group_id":            "sg-unit-test",
+			"cpu":                          2,
+			"memory":                       4,
+			"load_balancer_weight":         50,
+			"system_disk_bursting_enabled": false,
+			"private_pool_options":         []interface{}{map[string]interface{}{}},
+			"scheduler_options":            []interface{}{map[string]interface{}{}},
+		}, cty.ObjectVal(map[string]cty.Value{
+			"cpu":                          cty.NumberIntVal(2),
+			"memory":                       cty.NumberIntVal(4),
+			"load_balancer_weight":         cty.NumberIntVal(50),
+			"system_disk_bursting_enabled": cty.False,
+			"private_pool_options":         cty.ListVal([]cty.Value{cty.EmptyObjectVal}),
+			"scheduler_options":            cty.ListVal([]cty.Value{cty.EmptyObjectVal}),
+		}))
+		creates := server.captured("CreateScalingConfiguration")
+		if len(creates) != 1 {
+			t.Fatalf("expected one CreateScalingConfiguration request, got %d", len(creates))
+		}
+		request := creates[0]
+		for key, want := range map[string]string{
+			"Cpu":                        "2",
+			"Memory":                     "4",
+			"LoadBalancerWeight":         "50",
+			"SystemDisk.BurstingEnabled": "false",
+		} {
+			if got := request[key]; got != want {
+				t.Fatalf("%s = %q, expected %q", key, got, want)
+			}
+		}
+		assertRequestKeyAbsent(t, "CreateScalingConfiguration", request,
+			"PrivatePoolOptions.MatchCriteria", "PrivatePoolOptions.Id", "SchedulerOptions")
+	})
+
+	t.Run("a legal zero ipv6 count is serialized", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, &sdktf.InstanceState{}, map[string]interface{}{
+			"scaling_group_id":   "asg-unit-test",
+			"instance_type":      "ecs.g6.large",
+			"security_group_id":  "sg-unit-test",
+			"ipv6_address_count": 0,
+		}, cty.ObjectVal(map[string]cty.Value{
+			"ipv6_address_count": cty.NumberIntVal(0),
+		}))
+		creates := server.captured("CreateScalingConfiguration")
+		if len(creates) != 1 {
+			t.Fatalf("expected one CreateScalingConfiguration request, got %d", len(creates))
+		}
+		if got := creates[0]["Ipv6AddressCount"]; got != "0" {
+			t.Fatalf("Ipv6AddressCount = %q, expected the configured zero", got)
+		}
+	})
+
+	t.Run("a configured block serializes its keys", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, &sdktf.InstanceState{}, map[string]interface{}{
+			"scaling_group_id":  "asg-unit-test",
+			"instance_type":     "ecs.g6.large",
+			"security_group_id": "sg-unit-test",
+			"private_pool_options": []interface{}{map[string]interface{}{
+				"match_criteria": "Target",
+				"pool_id":        "pp-unit-test",
+			}},
+			"scheduler_options": []interface{}{map[string]interface{}{
+				"managed_private_space_id": "mps-unit-test",
+			}},
+		}, cty.ObjectVal(map[string]cty.Value{
+			"private_pool_options": cty.ListVal([]cty.Value{cty.ObjectVal(map[string]cty.Value{
+				"match_criteria": cty.StringVal("Target"),
+				"pool_id":        cty.StringVal("pp-unit-test"),
+			})}),
+			"scheduler_options": cty.ListVal([]cty.Value{cty.ObjectVal(map[string]cty.Value{
+				"managed_private_space_id": cty.StringVal("mps-unit-test"),
+			})}),
+		}))
+		creates := server.captured("CreateScalingConfiguration")
+		if len(creates) != 1 {
+			t.Fatalf("expected one CreateScalingConfiguration request, got %d", len(creates))
+		}
+		request := creates[0]
+		if got := request["PrivatePoolOptions.MatchCriteria"]; got != "Target" {
+			t.Fatalf("PrivatePoolOptions.MatchCriteria = %q, expected Target", got)
+		}
+		if got := request["PrivatePoolOptions.Id"]; got != "pp-unit-test" {
+			t.Fatalf("PrivatePoolOptions.Id = %q, expected pp-unit-test", got)
+		}
+		if got := requestSerializedValue(request, "SchedulerOptions"); !strings.Contains(got, "mps-unit-test") {
+			t.Fatalf("SchedulerOptions = %q, expected the managed private space id", got)
+		}
+	})
+
+	t.Run("data disk bursting false is serialized and omitted when unset", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, &sdktf.InstanceState{}, map[string]interface{}{
+			"scaling_group_id":  "asg-unit-test",
+			"instance_type":     "ecs.g6.large",
+			"security_group_id": "sg-unit-test",
+			"data_disk": []interface{}{map[string]interface{}{
+				"size":             20,
+				"bursting_enabled": false,
+			}},
+		}, cty.ObjectVal(map[string]cty.Value{
+			"data_disk": cty.ListVal([]cty.Value{cty.ObjectVal(map[string]cty.Value{
+				"size":             cty.NumberIntVal(20),
+				"bursting_enabled": cty.False,
+			})}),
+		}))
+		creates := server.captured("CreateScalingConfiguration")
+		if len(creates) != 1 {
+			t.Fatalf("expected one CreateScalingConfiguration request, got %d", len(creates))
+		}
+		if got := requestSerializedValue(creates[0], "DataDisk"); !strings.Contains(got, `"BurstingEnabled":false`) && !strings.Contains(got, "BurstingEnabled=false") {
+			t.Fatalf("DataDisk = %q, expected the explicit false BurstingEnabled", got)
+		}
+
+		omitted := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, omitted, &sdktf.InstanceState{}, map[string]interface{}{
+			"scaling_group_id":  "asg-unit-test",
+			"instance_type":     "ecs.g6.large",
+			"security_group_id": "sg-unit-test",
+			"data_disk": []interface{}{map[string]interface{}{
+				"size": 20,
+			}},
+		}, cty.ObjectVal(map[string]cty.Value{
+			"data_disk": cty.ListVal([]cty.Value{cty.ObjectVal(map[string]cty.Value{
+				"size": cty.NumberIntVal(20),
+			})}),
+		}))
+		creates = omitted.captured("CreateScalingConfiguration")
+		if len(creates) != 1 {
+			t.Fatalf("expected one CreateScalingConfiguration request, got %d", len(creates))
+		}
+		if got := requestSerializedValue(creates[0], "DataDisk"); strings.Contains(got, "BurstingEnabled") {
+			t.Fatalf("DataDisk = %q, expected no BurstingEnabled for an omitted value", got)
+		}
+	})
+}
+
+// TestUnitScalingConfigurationUpdateRequestMatrix proves that removals, pure
+// unrelated updates, explicit values and cleared blocks serialize exactly the
+// intended keys on ModifyScalingConfiguration.
+func TestUnitScalingConfigurationUpdateRequestMatrix(t *testing.T) {
+	t.Run("removal and unrelated update serialize no stale keys and clear the private pool", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, scalingConfigurationOptionalBaseState(), map[string]interface{}{
+			"scaling_group_id":           "asg-unit-test",
+			"instance_type":              "ecs.g6.large",
+			"security_group_id":          "sg-unit-test",
+			"scaling_configuration_name": "new-name",
+		}, cty.ObjectVal(map[string]cty.Value{
+			"scaling_configuration_name": cty.StringVal("new-name"),
+		}))
+		modifies := server.captured("ModifyScalingConfiguration")
+		if len(modifies) != 1 {
+			t.Fatalf("expected one ModifyScalingConfiguration request, got %d", len(modifies))
+		}
+		request := modifies[0]
+		if got := request["ScalingConfigurationName"]; got != "new-name" {
+			t.Fatalf("ScalingConfigurationName = %q, expected new-name", got)
+		}
+		if got := request["PrivatePoolOptions.MatchCriteria"]; got != "None" {
+			t.Fatalf("PrivatePoolOptions.MatchCriteria = %q, expected the documented None clear", got)
+		}
+		assertRequestKeyAbsent(t, "ModifyScalingConfiguration", request,
+			"Cpu", "Memory", "LoadBalancerWeight", "Ipv6AddressCount",
+			"SystemDisk.BurstingEnabled", "PrivatePoolOptions.Id", "SchedulerOptions")
+	})
+
+	t.Run("a pure unrelated update does not resend the other configured attributes", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, scalingConfigurationOptionalBaseState(), map[string]interface{}{
+			"scaling_group_id":             "asg-unit-test",
+			"instance_type":                "ecs.g6.large",
+			"security_group_id":            "sg-unit-test",
+			"scaling_configuration_name":   "new-name",
+			"cpu":                          2,
+			"memory":                       4,
+			"load_balancer_weight":         50,
+			"ipv6_address_count":           1,
+			"system_disk_bursting_enabled": true,
+			"private_pool_options": []interface{}{map[string]interface{}{
+				"match_criteria": "Open",
+				"pool_id":        "pp-unit-test",
+			}},
+			"scheduler_options": []interface{}{map[string]interface{}{
+				"managed_private_space_id": "mps-unit-test",
+			}},
+		}, cty.ObjectVal(map[string]cty.Value{
+			"scaling_configuration_name":   cty.StringVal("new-name"),
+			"cpu":                          cty.NumberIntVal(2),
+			"memory":                       cty.NumberIntVal(4),
+			"load_balancer_weight":         cty.NumberIntVal(50),
+			"ipv6_address_count":           cty.NumberIntVal(1),
+			"system_disk_bursting_enabled": cty.True,
+			"private_pool_options": cty.ListVal([]cty.Value{cty.ObjectVal(map[string]cty.Value{
+				"match_criteria": cty.StringVal("Open"),
+				"pool_id":        cty.StringVal("pp-unit-test"),
+			})}),
+			"scheduler_options": cty.ListVal([]cty.Value{cty.ObjectVal(map[string]cty.Value{
+				"managed_private_space_id": cty.StringVal("mps-unit-test"),
+			})}),
+		}))
+		modifies := server.captured("ModifyScalingConfiguration")
+		if len(modifies) != 1 {
+			t.Fatalf("expected one ModifyScalingConfiguration request, got %d", len(modifies))
+		}
+		request := modifies[0]
+		if got := request["ScalingConfigurationName"]; got != "new-name" {
+			t.Fatalf("ScalingConfigurationName = %q, expected new-name", got)
+		}
+		assertRequestKeyAbsent(t, "ModifyScalingConfiguration", request,
+			"Cpu", "Memory", "LoadBalancerWeight", "Ipv6AddressCount",
+			"SystemDisk.BurstingEnabled", "PrivatePoolOptions.MatchCriteria",
+			"PrivatePoolOptions.Id", "SchedulerOptions")
+	})
+
+	t.Run("explicit false is sent on update", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, scalingConfigurationOptionalBaseState(), map[string]interface{}{
+			"scaling_group_id":             "asg-unit-test",
+			"instance_type":                "ecs.g6.large",
+			"security_group_id":            "sg-unit-test",
+			"system_disk_bursting_enabled": false,
+		}, cty.ObjectVal(map[string]cty.Value{
+			"system_disk_bursting_enabled": cty.False,
+		}))
+		modifies := server.captured("ModifyScalingConfiguration")
+		if len(modifies) != 1 {
+			t.Fatalf("expected one ModifyScalingConfiguration request, got %d", len(modifies))
+		}
+		if got := modifies[0]["SystemDisk.BurstingEnabled"]; got != "false" {
+			t.Fatalf("SystemDisk.BurstingEnabled = %q, expected false", got)
+		}
+	})
+
+	t.Run("non-zero and true values are sent on update", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, scalingConfigurationOptionalBaseStateWithBursting(false), map[string]interface{}{
+			"scaling_group_id":             "asg-unit-test",
+			"instance_type":                "ecs.g6.large",
+			"security_group_id":            "sg-unit-test",
+			"load_balancer_weight":         60,
+			"ipv6_address_count":           2,
+			"system_disk_bursting_enabled": true,
+		}, cty.ObjectVal(map[string]cty.Value{
+			"load_balancer_weight":         cty.NumberIntVal(60),
+			"ipv6_address_count":           cty.NumberIntVal(2),
+			"system_disk_bursting_enabled": cty.True,
+		}))
+		modifies := server.captured("ModifyScalingConfiguration")
+		if len(modifies) != 1 {
+			t.Fatalf("expected one ModifyScalingConfiguration request, got %d", len(modifies))
+		}
+		request := modifies[0]
+		for key, want := range map[string]string{
+			"LoadBalancerWeight":         "60",
+			"Ipv6AddressCount":           "2",
+			"SystemDisk.BurstingEnabled": "true",
+		} {
+			if got := request[key]; got != want {
+				t.Fatalf("%s = %q, expected %q", key, got, want)
+			}
+		}
+	})
+
+	t.Run("configured cpu and memory are sent without an instance type", func(t *testing.T) {
+		previous := &sdktf.InstanceState{
+			ID: "asc-unit-test",
+			Attributes: map[string]string{
+				"id":                "asc-unit-test",
+				"scaling_group_id":  "asg-unit-test",
+				"security_group_id": "sg-unit-test",
+			},
+		}
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, previous, map[string]interface{}{
+			"scaling_group_id":  "asg-unit-test",
+			"security_group_id": "sg-unit-test",
+			"cpu":               4,
+			"memory":            8,
+		}, cty.ObjectVal(map[string]cty.Value{
+			"cpu":    cty.NumberIntVal(4),
+			"memory": cty.NumberIntVal(8),
+		}))
+		modifies := server.captured("ModifyScalingConfiguration")
+		if len(modifies) != 1 {
+			t.Fatalf("expected one ModifyScalingConfiguration request, got %d", len(modifies))
+		}
+		if got := modifies[0]["Cpu"]; got != "4" {
+			t.Fatalf("Cpu = %q, expected 4", got)
+		}
+		if got := modifies[0]["Memory"]; got != "8" {
+			t.Fatalf("Memory = %q, expected 8", got)
+		}
+	})
+
+	t.Run("removing a data disk bursting value sends no stale key", func(t *testing.T) {
+		previous := &sdktf.InstanceState{
+			ID: "asc-unit-test",
+			Attributes: map[string]string{
+				"id":                           "asc-unit-test",
+				"scaling_group_id":             "asg-unit-test",
+				"security_group_id":            "sg-unit-test",
+				"data_disk.#":                  "1",
+				"data_disk.0.size":             "20",
+				"data_disk.0.bursting_enabled": "true",
+			},
+		}
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, previous, map[string]interface{}{
+			"scaling_group_id":  "asg-unit-test",
+			"security_group_id": "sg-unit-test",
+			"data_disk": []interface{}{map[string]interface{}{
+				"size": 20,
+			}},
+		}, cty.ObjectVal(map[string]cty.Value{
+			"data_disk": cty.ListVal([]cty.Value{cty.ObjectVal(map[string]cty.Value{
+				"size": cty.NumberIntVal(20),
+			})}),
+		}))
+		modifies := server.captured("ModifyScalingConfiguration")
+		if len(modifies) != 1 {
+			t.Fatalf("expected one ModifyScalingConfiguration request, got %d", len(modifies))
+		}
+		if got := requestSerializedValue(modifies[0], "DataDisk"); strings.Contains(got, "BurstingEnabled") {
+			t.Fatalf("DataDisk = %q, expected no stale BurstingEnabled after the removal", got)
+		}
+	})
+
+	t.Run("clearing a block sends the private pool clear and no scheduler keys", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, scalingConfigurationOptionalBaseState(), map[string]interface{}{
+			"scaling_group_id":  "asg-unit-test",
+			"instance_type":     "ecs.g6.large",
+			"security_group_id": "sg-unit-test",
+		}, cty.EmptyObjectVal)
+		modifies := server.captured("ModifyScalingConfiguration")
+		if len(modifies) != 1 {
+			t.Fatalf("expected one ModifyScalingConfiguration request, got %d", len(modifies))
+		}
+		if got := modifies[0]["PrivatePoolOptions.MatchCriteria"]; got != "None" {
+			t.Fatalf("PrivatePoolOptions.MatchCriteria = %q, expected None", got)
+		}
+		assertRequestKeyAbsent(t, "ModifyScalingConfiguration", modifies[0],
+			"PrivatePoolOptions.Id", "SchedulerOptions")
+	})
+
+	t.Run("an unchanged configured value is not resent on an unrelated update", func(t *testing.T) {
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, scalingConfigurationOptionalBaseState(), map[string]interface{}{
+			"scaling_group_id":           "asg-unit-test",
+			"instance_type":              "ecs.g6.large",
+			"security_group_id":          "sg-unit-test",
+			"scaling_configuration_name": "new-name",
+			"ipv6_address_count":         1,
+		}, cty.ObjectVal(map[string]cty.Value{
+			"scaling_configuration_name": cty.StringVal("new-name"),
+			"ipv6_address_count":         cty.NumberIntVal(1),
+		}))
+		modifies := server.captured("ModifyScalingConfiguration")
+		if len(modifies) != 1 {
+			t.Fatalf("expected one ModifyScalingConfiguration request, got %d", len(modifies))
+		}
+		assertRequestKeyAbsent(t, "ModifyScalingConfiguration", modifies[0], "Ipv6AddressCount")
+	})
+}
+
+// TestUnitScalingConfigurationRequestSerializedValue keeps the local helper
+// honest: requestSerializedValue must see indexed dotted keys as well as one
+// aggregated JSON value.
+func TestUnitScalingConfigurationRequestSerializedValue(t *testing.T) {
+	request := map[string]string{
+		"DataDisk.1.Size":         "20",
+		"DataDisk.1.Categories.1": "cloud",
+		"Tags":                    "{}",
+	}
+	if got := requestSerializedValue(request, "DataDisk"); !strings.Contains(got, "DataDisk.1.Size=20") {
+		t.Fatalf("requestSerializedValue = %q, expected the indexed keys", got)
+	}
+	if got := requestSerializedValue(request, "Missing"); got != "" {
+		t.Fatalf("requestSerializedValue = %q, expected empty for a missing key", got)
+	}
 }

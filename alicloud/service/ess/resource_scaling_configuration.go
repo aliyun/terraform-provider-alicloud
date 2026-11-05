@@ -1,6 +1,7 @@
 package ess
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"regexp"
@@ -15,6 +16,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
@@ -78,12 +80,227 @@ func (c *essResponseValues) boolValue(v interface{}) bool {
 	return value
 }
 
+// rawConfigValueIsSet reports whether the attribute is explicitly present in the
+// user configuration. Optional+Computed attributes cannot distinguish an omitted
+// value from an explicit zero value through Get/GetOkExists, because both return
+// the zero value and (for Computed) may echo prior state, so the raw
+// configuration is the only reliable source of the configured intent.
+func rawConfigValueIsSet(raw cty.Value, name string) bool {
+	if raw.IsNull() || !raw.IsKnown() || !raw.Type().IsObjectType() || !raw.Type().HasAttribute(name) {
+		return false
+	}
+	v := raw.GetAttr(name)
+	return v.IsKnown() && !v.IsNull()
+}
+
+// rawConfigListElementIsSet reports, for each element of a list block, whether
+// the given attribute is explicitly present in the user configuration.
+func rawConfigListElementIsSet(raw cty.Value, block, attr string) []bool {
+	if raw.IsNull() || !raw.IsKnown() || !raw.Type().IsObjectType() || !raw.Type().HasAttribute(block) {
+		return nil
+	}
+	list := raw.GetAttr(block)
+	if list.IsNull() || !list.IsKnown() {
+		return nil
+	}
+	elemIsSet := func(elem cty.Value) bool {
+		if elem.IsNull() || !elem.IsKnown() || !elem.Type().IsObjectType() || !elem.Type().HasAttribute(attr) {
+			return false
+		}
+		v := elem.GetAttr(attr)
+		return v.IsKnown() && !v.IsNull()
+	}
+	if list.Type().IsSetType() {
+		flags := make([]bool, 0, list.LengthInt())
+		for it := list.ElementIterator(); it.Next(); {
+			_, elem := it.Element()
+			flags = append(flags, elemIsSet(elem))
+		}
+		return flags
+	}
+	length := list.LengthInt()
+	flags := make([]bool, length)
+	for i := 0; i < length; i++ {
+		flags[i] = elemIsSet(list.Index(cty.NumberIntVal(int64(i))))
+	}
+	return flags
+}
+
+// rawConfigListElementHasBoth reports whether any element of a list/set block
+// configures both attributes at the same time.
+func rawConfigListElementHasBoth(raw cty.Value, block, first, second string) bool {
+	if raw.IsNull() || !raw.IsKnown() || !raw.Type().IsObjectType() || !raw.Type().HasAttribute(block) {
+		return false
+	}
+	list := raw.GetAttr(block)
+	if list.IsNull() || !list.IsKnown() {
+		return false
+	}
+	isSet := func(elem cty.Value, name string) bool {
+		if elem.IsNull() || !elem.IsKnown() || !elem.Type().IsObjectType() || !elem.Type().HasAttribute(name) {
+			return false
+		}
+		v := elem.GetAttr(name)
+		return v.IsKnown() && !v.IsNull()
+	}
+	if list.Type().IsSetType() {
+		for it := list.ElementIterator(); it.Next(); {
+			_, elem := it.Element()
+			if isSet(elem, first) && isSet(elem, second) {
+				return true
+			}
+		}
+		return false
+	}
+	length := list.LengthInt()
+	for i := 0; i < length; i++ {
+		elem := list.Index(cty.NumberIntVal(int64(i)))
+		if isSet(elem, first) && isSet(elem, second) {
+			return true
+		}
+	}
+	return false
+}
+
+// optionalComputedRequestFields carries the configured intent for attributes
+// whose schema is Optional+Computed, where the zero value alone cannot tell a
+// configured value from an omitted one.
+type optionalComputedRequestFields struct {
+	LoadBalancerWeight *int
+	Memory             *int
+	Cpu                *int
+	Ipv6AddressCount   *int
+	SystemDiskBursting *bool
+}
+
+func (f optionalComputedRequestFields) any() bool {
+	return f.LoadBalancerWeight != nil || f.Memory != nil || f.Cpu != nil ||
+		f.Ipv6AddressCount != nil || f.SystemDiskBursting != nil
+}
+
+// addOptionalComputedRequestFields writes only the attributes the user
+// configured. A nil pointer means "omitted": nothing is serialized, so the
+// server keeps its own value instead of receiving a stale state value.
+func addOptionalComputedRequestFields(request map[string]interface{}, f optionalComputedRequestFields) {
+	if f.LoadBalancerWeight != nil {
+		request["LoadBalancerWeight"] = requests.NewInteger(*f.LoadBalancerWeight)
+	}
+	if f.Memory != nil {
+		request["Memory"] = requests.NewInteger(*f.Memory)
+	}
+	if f.Cpu != nil {
+		request["Cpu"] = requests.NewInteger(*f.Cpu)
+	}
+	if f.Ipv6AddressCount != nil {
+		request["Ipv6AddressCount"] = requests.NewInteger(*f.Ipv6AddressCount)
+	}
+	if f.SystemDiskBursting != nil {
+		request["SystemDisk.BurstingEnabled"] = *f.SystemDiskBursting
+	}
+}
+
+func optionalIntField(d *schema.ResourceData, raw cty.Value, name string, changed bool) *int {
+	if !changed || !rawConfigValueIsSet(raw, name) {
+		return nil
+	}
+	v := d.Get(name).(int)
+	return &v
+}
+
+func optionalBoolField(d *schema.ResourceData, raw cty.Value, name string, changed bool) *bool {
+	if !changed || !rawConfigValueIsSet(raw, name) {
+		return nil
+	}
+	v := d.Get(name).(bool)
+	return &v
+}
+
+// buildPrivatePoolOptionsRequest maps the private pool block to the dotted
+// request keys. An empty or nil block contributes no keys at all.
+func buildPrivatePoolOptionsRequest(request map[string]interface{}, block []interface{}) {
+	if len(block) == 0 {
+		return
+	}
+	item, ok := block[0].(map[string]interface{})
+	if !ok || item == nil {
+		return
+	}
+	if mc, ok := item["match_criteria"].(string); ok && mc != "" {
+		request["PrivatePoolOptions.MatchCriteria"] = mc
+	}
+	if pid, ok := item["pool_id"].(string); ok && pid != "" {
+		request["PrivatePoolOptions.Id"] = pid
+	}
+}
+
+// buildSchedulerOptionsRequest maps the scheduler block to the JSON object the
+// API contract expects. An empty or nil block contributes no key.
+func buildSchedulerOptionsRequest(request map[string]interface{}, block []interface{}) {
+	if len(block) == 0 {
+		return
+	}
+	item, ok := block[0].(map[string]interface{})
+	if !ok || item == nil {
+		return
+	}
+	if mps, ok := item["managed_private_space_id"].(string); ok && mps != "" {
+		request["SchedulerOptions"] = map[string]interface{}{"ManagedPrivateSpaceId": mps}
+	}
+}
+
+// putBurstingRequest writes the bursting flag only when the user configured it.
+// An explicit false must still be sent so the remote value can be turned off,
+// while a removed value must not resend the stale state value.
+func putBurstingRequest(target map[string]interface{}, enabled, configured bool) {
+	if configured {
+		target["BurstingEnabled"] = enabled
+	}
+}
+
+// validateScalingConfigurationConstraints enforces the ESS constraints that
+// cannot be expressed with structural schema flags alone.
+func validateScalingConfigurationConstraints(_ context.Context, diff *schema.ResourceDiff, _ interface{}) error {
+	raw := diff.GetRawConfig()
+
+	if v, ok := diff.GetOk("private_pool_options"); ok {
+		if list, ok := v.([]interface{}); ok && len(list) > 0 {
+			if item, ok := list[0].(map[string]interface{}); ok && item != nil {
+				if mc, _ := item["match_criteria"].(string); strings.EqualFold(strings.TrimSpace(mc), "Target") {
+					if pid, _ := item["pool_id"].(string); strings.TrimSpace(pid) == "" {
+						return fmt.Errorf("private_pool_options.0.pool_id must be set when private_pool_options.0.match_criteria is Target")
+					}
+				}
+			}
+		}
+	}
+
+	if rawConfigValueIsSet(raw, "system_disk_category") && rawConfigValueIsSet(raw, "system_disk_categories") {
+		return fmt.Errorf("system_disk_category conflicts with system_disk_categories; configure only one of them")
+	}
+	if rawConfigListElementHasBoth(raw, "data_disk", "category", "categories") {
+		return fmt.Errorf("data_disk.*.category conflicts with data_disk.*.categories; configure only one of them per disk")
+	}
+
+	if rawConfigValueIsSet(raw, "ipv6_address_count") {
+		if flags := rawConfigListElementIsSet(raw, "network_interfaces", "ipv6_address_count"); len(flags) > 0 {
+			for _, set := range flags {
+				if set {
+					return fmt.Errorf("ipv6_address_count conflicts with network_interfaces.*.ipv6_address_count")
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliyunEssScalingConfigurationCreate,
-		Read:   resourceAliyunEssScalingConfigurationRead,
-		Update: resourceAliyunEssScalingConfigurationUpdate,
-		Delete: resourceAliyunEssScalingConfigurationDelete,
+		Create:        resourceAliyunEssScalingConfigurationCreate,
+		Read:          resourceAliyunEssScalingConfigurationRead,
+		Update:        resourceAliyunEssScalingConfigurationUpdate,
+		Delete:        resourceAliyunEssScalingConfigurationDelete,
+		CustomizeDiff: validateScalingConfigurationConstraints,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -141,6 +358,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"instance_type": {
 				Type:          schema.TypeString,
 				Optional:      true,
+				Computed:      true,
 				ValidateFunc:  validators.StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
 				ConflictsWith: []string{"instance_types", "instance_type_override"},
 			},
@@ -165,6 +383,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"security_group_id": {
 				Type:          schema.TypeString,
 				Optional:      true,
+				Computed:      true,
 				ConflictsWith: []string{"security_group_ids"},
 			},
 			"security_group_ids": {
@@ -267,7 +486,26 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      DiskCloudEfficiency,
-				ValidateFunc: validators.StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_ssd", "cloud_essd", "cloud_efficiency", "cloud_essd_xc1"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"cloud", "cloud_auto", "ephemeral_ssd", "cloud_ssd", "cloud_essd", "cloud_efficiency", "cloud_essd_xc1"}, false),
+				// SystemDisk.Category is mutually exclusive with SystemDiskCategories in
+				// the ESS API. system_disk_category carries a schema default, so d.Get is
+				// non-empty even when the user only configures system_disk_categories; a
+				// Describe response created from the plural returns no singular category,
+				// which would otherwise produce a perpetual drift. Suppress the singular
+				// diff only for a user-configured plural list: the read path mirrors the
+				// remote singular into the computed plural, and that mirrored value must
+				// not hide a later singular change.
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					raw := d.GetRawConfig()
+					if !rawConfigValueIsSet(raw, "system_disk_categories") {
+						return false
+					}
+					categories := raw.GetAttr("system_disk_categories")
+					if categories.IsNull() || !categories.IsKnown() {
+						return false
+					}
+					return categories.LengthInt() > 0
+				},
 			},
 			"security_enhancement_strategy": {
 				Type:         schema.TypeString,
@@ -312,7 +550,22 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 						"category": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validators.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"all", "cloud", "cloud_auto", "cloud_regional_disk_auto", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
+							// DataDisk.N.Category is mutually exclusive with
+							// DataDisk.N.Categories per disk; suppress the singular diff
+							// for this disk when its plural categories is configured, so a
+							// Describe response that omits the singular (created from the
+							// plural) does not drift against a configured singular value.
+							DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+								// k is like "data_disk.<index>.category"
+								parts := strings.Split(k, ".")
+								if len(parts) >= 3 && parts[0] == "data_disk" {
+									if cats, ok := d.GetOk(fmt.Sprintf("data_disk.%s.categories", parts[1])); ok && len(cats.([]interface{})) > 0 {
+										return true
+									}
+								}
+								return false
+							},
 						},
 						"snapshot_id": {
 							Type:     schema.TypeString,
@@ -352,6 +605,21 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 						"performance_level": {
 							Type:     schema.TypeString,
 							Optional: true,
+						},
+						"categories": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"bursting_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							// The service keeps the previous value when the parameter is
+							// omitted, so the attribute is computed as well: a removed
+							// value mirrors the service instead of producing a diff that
+							// can never be applied.
+							Computed: true,
 						},
 					},
 				},
@@ -620,10 +888,11 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				},
 			},
 			"resource_pool_options_strategy": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validators.StringInSlice([]string{"PrivatePoolFirst", "PrivatePoolOnly", "None"}, false),
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ValidateFunc:  validators.StringInSlice([]string{"PrivatePoolFirst", "PrivatePoolOnly", "None"}, false),
+				ConflictsWith: []string{"private_pool_options"},
 			},
 			"resource_pool_options_private_pool_ids": {
 				Type:     schema.TypeSet,
@@ -631,14 +900,14 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				ConflictsWith: []string{"resource_pool_options_private_pool_tags"},
+				ConflictsWith: []string{"resource_pool_options_private_pool_tags", "private_pool_options"},
 				MaxItems:      int(MaxResourcePoolOptionsPrivatePoolIds),
 				MinItems:      int(MinResourcePoolOptionsPrivatePoolIds),
 			},
 			"resource_pool_options_private_pool_tags": {
 				Optional:      true,
 				Type:          schema.TypeSet,
-				ConflictsWith: []string{"resource_pool_options_private_pool_ids"},
+				ConflictsWith: []string{"resource_pool_options_private_pool_ids", "private_pool_options"},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"key": {
@@ -651,6 +920,120 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 						},
 					},
 				},
+			},
+			"spot_interruption_behavior": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"load_balancer_weight": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"memory": {
+				Type:          schema.TypeInt,
+				Optional:      true,
+				Computed:      true,
+				RequiredWith:  []string{"cpu"},
+				ConflictsWith: []string{"instance_type", "instance_types", "instance_type_override"},
+			},
+			"cpu": {
+				Type:          schema.TypeInt,
+				Optional:      true,
+				Computed:      true,
+				RequiredWith:  []string{"memory"},
+				ConflictsWith: []string{"instance_type", "instance_types", "instance_type_override"},
+			},
+			"image_family": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"image_id"},
+			},
+			"tenancy": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"affinity": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"deployment_set_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"ipv6_address_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"hpc_cluster_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"dedicated_host_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"private_pool_options": {
+				Optional:      true,
+				Type:          schema.TypeList,
+				MaxItems:      1,
+				ConflictsWith: []string{"resource_pool_options_strategy", "resource_pool_options_private_pool_ids", "resource_pool_options_private_pool_tags"},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"match_criteria": {
+							Type:     schema.TypeString,
+							Optional: true,
+							// None is the service representation of "no private pool" and is
+							// what the provider sends when the block is removed, so it is not
+							// accepted as user input: configuring it would make the block
+							// unrepresentable in state and the plan would never converge.
+							ValidateFunc: validators.StringInSlice([]string{"Open", "Target"}, false),
+						},
+						"pool_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"scheduler_options": {
+				Optional: true,
+				Type:     schema.TypeList,
+				MaxItems: 1,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"managed_private_space_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"system_disk_categories": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"system_disk_bursting_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}
@@ -672,8 +1055,10 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	instanceTypeOverrides := d.Get("instance_type_override").(*schema.Set).List()
 
 	instancePatternInfos := d.Get("instance_pattern_info").(*schema.Set).List()
-	if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) && (instanceTypeOverrides == nil || len(instanceTypeOverrides) == 0) && (instancePatternInfos == nil || len(instancePatternInfos) == 0) {
-		return errs.WrapError(errs.Error("instance_type or instance_types or instance_type_override or instance_pattern_info must be assigned"))
+	cpu := d.Get("cpu").(int)
+	memory := d.Get("memory").(int)
+	if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) && (instanceTypeOverrides == nil || len(instanceTypeOverrides) == 0) && (instancePatternInfos == nil || len(instancePatternInfos) == 0) && !(cpu > 0 && memory > 0) {
+		return errs.WrapError(errs.Error("instance_type, instance_types, instance_type_override, instance_pattern_info, or cpu with memory must be assigned"))
 	}
 
 	request["ImageId"] = d.Get("image_id")
@@ -775,8 +1160,15 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 		request["SystemDisk.ProvisionedIops"] = v
 	}
 
-	if v := d.Get("system_disk_category").(string); v != "" {
-		request["SystemDisk.Category"] = d.Get("system_disk_category")
+	// SystemDisk.Category is mutually exclusive with SystemDiskCategories in the ESS API.
+	// Send the singular category only when the plural categories is not configured, otherwise
+	// the API rejects the request with InvalidParameter.Conflict. Note system_disk_category
+	// has a schema default, so d.Get is non-empty even when the user only sets categories;
+	// the check must use the raw configuration because the plural is also computed.
+	if !rawConfigValueIsSet(d.GetRawConfig(), "system_disk_categories") {
+		if v := d.Get("system_disk_category").(string); v != "" {
+			request["SystemDisk.Category"] = d.Get("system_disk_category")
+		}
 	}
 	if v, ok := d.GetOk("security_enhancement_strategy"); ok && v.(string) != "" {
 		request["SecurityEnhancementStrategy"] = v
@@ -841,6 +1233,51 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("http_endpoint"); ok && v.(string) != "" {
 		request["HttpEndpoint"] = v
 	}
+	if v, ok := d.GetOk("spot_interruption_behavior"); ok && v.(string) != "" {
+		request["SpotInterruptionBehavior"] = v
+	}
+	rawConfig := d.GetRawConfig()
+	addOptionalComputedRequestFields(request, optionalComputedRequestFields{
+		LoadBalancerWeight: optionalIntField(d, rawConfig, "load_balancer_weight", true),
+		Memory:             optionalIntField(d, rawConfig, "memory", true),
+		Cpu:                optionalIntField(d, rawConfig, "cpu", true),
+	})
+	if v, ok := d.GetOk("image_family"); ok && v.(string) != "" {
+		request["ImageFamily"] = v
+	}
+	if v, ok := d.GetOk("tenancy"); ok && v.(string) != "" {
+		request["Tenancy"] = v
+	}
+	if v, ok := d.GetOk("affinity"); ok && v.(string) != "" {
+		request["Affinity"] = v
+	}
+	if v, ok := d.GetOk("deployment_set_id"); ok && v.(string) != "" {
+		request["DeploymentSetId"] = v
+	}
+	addOptionalComputedRequestFields(request, optionalComputedRequestFields{
+		Ipv6AddressCount: optionalIntField(d, rawConfig, "ipv6_address_count", true),
+	})
+	if v, ok := d.GetOk("hpc_cluster_id"); ok && v.(string) != "" {
+		request["HpcClusterId"] = v
+	}
+	if v, ok := d.GetOk("dedicated_host_id"); ok && v.(string) != "" {
+		request["DedicatedHostId"] = v
+	}
+	if v, ok := d.GetOk("zone_id"); ok && v.(string) != "" {
+		request["ZoneId"] = v
+	}
+	if v, ok := d.GetOk("private_pool_options"); ok {
+		buildPrivatePoolOptionsRequest(request, v.([]interface{}))
+	}
+	if v, ok := d.GetOk("system_disk_categories"); ok && len(v.([]interface{})) > 0 {
+		request["SystemDiskCategories"] = v
+	}
+	addOptionalComputedRequestFields(request, optionalComputedRequestFields{
+		SystemDiskBursting: optionalBoolField(d, rawConfig, "system_disk_bursting_enabled", true),
+	})
+	if v, ok := d.GetOk("scheduler_options"); ok {
+		buildSchedulerOptionsRequest(request, v.([]interface{}))
+	}
 	if v, ok := d.GetOk("user_data"); ok {
 		_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
 		if base64DecodeError == nil {
@@ -860,15 +1297,20 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("data_disk"); ok {
 		disksMaps := make([]map[string]interface{}, 0)
 		disks := v.([]interface{})
+		rawDataDiskBursting := rawConfigListElementIsSet(rawConfig, "data_disk", "bursting_enabled")
 
-		for _, rew := range disks {
+		for idx, rew := range disks {
 			disksMap := make(map[string]interface{})
 			item := rew.(map[string]interface{})
 			disksMap["Size"] = item["size"].(int)
 			disksMap["ProvisionedIops"] = item["provisioned_iops"].(int)
 
+			// DataDisk.N.Category is mutually exclusive with DataDisk.N.Categories in the ESS API;
+			// send the singular only when the plural is not configured for this disk.
 			if category, ok := item["category"].(string); ok && category != "" {
-				disksMap["Category"] = category
+				if cats, ok := item["categories"].([]interface{}); !ok || len(cats) == 0 {
+					disksMap["Category"] = category
+				}
 			}
 			if snapshotId, ok := item["snapshot_id"].(string); ok && snapshotId != "" {
 				disksMap["SnapshotId"] = snapshotId
@@ -892,6 +1334,12 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 			}
 			if performanceLevel, ok := item["performance_level"].(string); ok && performanceLevel != "" {
 				disksMap["PerformanceLevel"] = performanceLevel
+			}
+			if categories, ok := item["categories"].([]interface{}); ok && len(categories) > 0 {
+				disksMap["Categories"] = categories
+			}
+			if burstingEnabled, ok := item["bursting_enabled"].(bool); ok {
+				putBurstingRequest(disksMap, burstingEnabled, idx < len(rawDataDiskBursting) && rawDataDiskBursting[idx])
 			}
 			disksMaps = append(disksMaps, disksMap)
 		}
@@ -1125,6 +1573,7 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	request := map[string]interface{}{
 		"ScalingConfigurationId": d.Id(),
 	}
+	rawConfig := d.GetRawConfig()
 	update := false
 	if d.HasChange("resource_pool_options_private_pool_ids") {
 		if v, ok := d.GetOk("resource_pool_options_private_pool_ids"); ok {
@@ -1209,7 +1658,13 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if d.HasChange("system_disk_category") {
-		request["SystemDisk.Category"] = d.Get("system_disk_category")
+		// SystemDisk.Category is mutually exclusive with SystemDiskCategories; skip the
+		// singular when the plural is configured so ModifyScalingConfiguration does not conflict.
+		// The check must use the raw configuration: the read path mirrors the remote singular
+		// into the computed plural, which must not hide an explicit singular update.
+		if !rawConfigValueIsSet(rawConfig, "system_disk_categories") {
+			request["SystemDisk.Category"] = d.Get("system_disk_category")
+		}
 		update = true
 	}
 
@@ -1295,12 +1750,86 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		update = true
 	}
 
+	if d.HasChange("spot_interruption_behavior") {
+		request["SpotInterruptionBehavior"] = d.Get("spot_interruption_behavior")
+		update = true
+	}
+	optionalFields := optionalComputedRequestFields{
+		LoadBalancerWeight: optionalIntField(d, rawConfig, "load_balancer_weight", d.HasChange("load_balancer_weight")),
+		Memory:             optionalIntField(d, rawConfig, "memory", d.HasChange("memory")),
+		Cpu:                optionalIntField(d, rawConfig, "cpu", d.HasChange("cpu")),
+		SystemDiskBursting: optionalBoolField(d, rawConfig, "system_disk_bursting_enabled", d.HasChange("system_disk_bursting_enabled")),
+	}
+	if optionalFields.any() {
+		addOptionalComputedRequestFields(request, optionalFields)
+		update = true
+	}
+	if d.HasChange("image_family") {
+		request["ImageFamily"] = d.Get("image_family")
+		update = true
+	}
+	if d.HasChange("tenancy") {
+		request["Tenancy"] = d.Get("tenancy")
+		update = true
+	}
+	if d.HasChange("affinity") {
+		request["Affinity"] = d.Get("affinity")
+		update = true
+	}
+	if d.HasChange("deployment_set_id") {
+		request["DeploymentSetId"] = d.Get("deployment_set_id")
+		update = true
+	}
+	if v := optionalIntField(d, rawConfig, "ipv6_address_count", d.HasChange("ipv6_address_count")); v != nil {
+		addOptionalComputedRequestFields(request, optionalComputedRequestFields{Ipv6AddressCount: v})
+		update = true
+	}
+	if d.HasChange("hpc_cluster_id") {
+		request["HpcClusterId"] = d.Get("hpc_cluster_id")
+		update = true
+	}
+	if d.HasChange("dedicated_host_id") {
+		request["DedicatedHostId"] = d.Get("dedicated_host_id")
+		update = true
+	}
+	if d.HasChange("zone_id") {
+		request["ZoneId"] = d.Get("zone_id")
+		update = true
+	}
+	if d.HasChange("private_pool_options") {
+		if v, ok := d.GetOk("private_pool_options"); ok && len(v.([]interface{})) > 0 {
+			buildPrivatePoolOptionsRequest(request, v.([]interface{}))
+		} else {
+			// ModifyScalingConfiguration keeps the previously applied private pool
+			// settings when the parameter is omitted. MatchCriteria=None is the
+			// documented "do not use a private pool" value, so a removed block must
+			// send it explicitly instead of silently preserving the remote value.
+			request["PrivatePoolOptions.MatchCriteria"] = "None"
+		}
+		update = true
+	}
+	if d.HasChange("scheduler_options") {
+		if v, ok := d.GetOk("scheduler_options"); ok {
+			buildSchedulerOptionsRequest(request, v.([]interface{}))
+		}
+		// SchedulerOptions has no documented "no scheduler" value: the parameter is
+		// an object that only carries ManagedPrivateSpaceId. Omitting it keeps the
+		// previously applied value, and the Optional+Computed schema reflects that
+		// retained value without a perpetual diff. A removal therefore issues no
+		// write at all instead of an empty ModifyScalingConfiguration call.
+		if _, ok := request["SchedulerOptions"]; ok {
+			update = true
+		}
+	}
+
 	hasChangeInstanceType := d.HasChange("instance_type")
 	hasChangeInstanceTypes := d.HasChange("instance_types")
 	hasChangeInstanceTypeOverrides := d.HasChange("instance_type_override")
 	typeOverride := d.Get("instance_type_override")
 
-	if (hasChangeInstanceType || hasChangeInstanceTypes) && (!hasChangeInstanceTypeOverrides || len(typeOverride.(*schema.Set).List()) == 0) {
+	cpuValue := d.Get("cpu").(int)
+	memoryValue := d.Get("memory").(int)
+	if (hasChangeInstanceType || hasChangeInstanceTypes) && (!hasChangeInstanceTypeOverrides || len(typeOverride.(*schema.Set).List()) == 0) && !(cpuValue > 0 && memoryValue > 0) {
 		instanceType := d.Get("instance_type").(string)
 		instanceTypes := d.Get("instance_types").([]interface{})
 		if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) {
@@ -1374,7 +1903,10 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 			sgs := convert.ExpandStringList(securityGroupIds)
 			request["SecurityGroupIds"] = sgs
 		}
-		if securityGroupId != "" {
+		// security_group_id is computed, so a value mirrored by Read is not a
+		// user change; sending it together with NetworkInterfaces is rejected by
+		// the API. Send it only when the configuration sets the singular.
+		if rawConfigValueIsSet(rawConfig, "security_group_id") && securityGroupId != "" {
 			request["SecurityGroupId"] = securityGroupId
 		}
 		update = true
@@ -1531,12 +2063,12 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		if ok {
 			disks := dds.([]interface{})
 			dataDisks := make([]map[string]interface{}, 0, len(disks))
-			for _, e := range disks {
+			rawDataDiskBursting := rawConfigListElementIsSet(rawConfig, "data_disk", "bursting_enabled")
+			for idx, e := range disks {
 				pack := e.(map[string]interface{})
-				dataDisks = append(dataDisks, map[string]interface{}{
+				dataDiskMap := map[string]interface{}{
 					"Size":                 pack["size"],
 					"ProvisionedIops":      pack["provisioned_iops"],
-					"Category":             pack["category"],
 					"SnapshotId":           pack["snapshot_id"],
 					"DeleteWithInstance":   pack["delete_with_instance"],
 					"Device":               pack["device"],
@@ -1546,7 +2078,18 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 					"Description":          pack["description"],
 					"AutoSnapshotPolicyId": pack["auto_snapshot_policy_id"],
 					"PerformanceLevel":     pack["performance_level"],
-				})
+				}
+				if categories, ok := pack["categories"].([]interface{}); ok && len(categories) > 0 {
+					dataDiskMap["Categories"] = categories
+				} else {
+					// DataDisk.N.Category is mutually exclusive with Categories; send the singular
+					// only when the plural is not configured for this disk.
+					dataDiskMap["Category"] = pack["category"]
+				}
+				if burstingEnabled, ok := pack["bursting_enabled"].(bool); ok {
+					putBurstingRequest(dataDiskMap, burstingEnabled, idx < len(rawDataDiskBursting) && rawDataDiskBursting[idx])
+				}
+				dataDisks = append(dataDisks, dataDiskMap)
 			}
 			request["DataDisk"] = dataDisks
 		}
@@ -1570,6 +2113,13 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 
 	if d.HasChange("system_disk_kms_key_id") {
 		request["SystemDisk.KMSKeyId"] = d.Get("system_disk_kms_key_id")
+		update = true
+	}
+
+	if d.HasChange("system_disk_categories") {
+		if v, ok := d.GetOk("system_disk_categories"); ok && len(v.([]interface{})) > 0 {
+			request["SystemDiskCategories"] = v
+		}
 		update = true
 	}
 
@@ -1752,12 +2302,77 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("spot_strategy", response["SpotStrategy"])
 	d.Set("dedicated_host_cluster_id", response["DedicatedHostClusterId"])
 	d.Set("http_endpoint", response["HttpEndpoint"])
-
-	if sg, ok := d.GetOk("security_group_id"); ok && sg.(string) != "" {
-		d.Set("security_group_id", response["SecurityGroupId"])
+	d.Set("spot_interruption_behavior", response["SpotInterruptionBehavior"])
+	if v := response["LoadBalancerWeight"]; v != nil {
+		d.Set("load_balancer_weight", v)
 	}
-	if instanceType, ok := d.GetOk("instance_type"); ok && instanceType.(string) != "" {
-		d.Set("instance_type", response["InstanceType"])
+	if v := response["Memory"]; v != nil {
+		d.Set("memory", v)
+	}
+	if v := response["Cpu"]; v != nil {
+		d.Set("cpu", v)
+	}
+	d.Set("image_family", response["ImageFamily"])
+	d.Set("tenancy", response["Tenancy"])
+	d.Set("affinity", response["Affinity"])
+	d.Set("deployment_set_id", response["DeploymentSetId"])
+	if v := response["Ipv6AddressCount"]; v != nil {
+		d.Set("ipv6_address_count", v)
+	}
+	d.Set("hpc_cluster_id", response["HpcClusterId"])
+	d.Set("dedicated_host_id", response["DedicatedHostId"])
+	d.Set("zone_id", response["ZoneId"])
+	// DescribeScalingConfigurations returns the private pool settings as the
+	// top-level dotted keys PrivatePoolOptions.MatchCriteria and
+	// PrivatePoolOptions.Id (the same shape as the request parameter), not as a
+	// nested PrivatePoolOptions object.
+	privatePoolMatchCriteria, _ := response["PrivatePoolOptions.MatchCriteria"].(string)
+	privatePoolId, _ := response["PrivatePoolOptions.Id"].(string)
+	// MatchCriteria=None is the service representation of "no private pool", so it
+	// must leave the block unset instead of surfacing a one-item block that the
+	// configuration cannot express. An absent pair of keys means the configuration
+	// never used a private pool and the block is left exactly as configured, which
+	// keeps an explicitly configured empty block from drifting.
+	if privatePoolId != "" || (privatePoolMatchCriteria != "" && !strings.EqualFold(privatePoolMatchCriteria, "None")) {
+		d.Set("private_pool_options", []map[string]interface{}{{
+			"match_criteria": privatePoolMatchCriteria,
+			"pool_id":        privatePoolId,
+		}})
+	} else if strings.EqualFold(privatePoolMatchCriteria, "None") {
+		d.Set("private_pool_options", []map[string]interface{}{})
+	}
+	if v := response["SchedulerOptions"]; v != nil {
+		if m, ok := v.(map[string]interface{}); ok {
+			result := make([]map[string]interface{}, 0, 1)
+			item := map[string]interface{}{
+				"managed_private_space_id": m["ManagedPrivateSpaceId"],
+			}
+			result = append(result, item)
+			d.Set("scheduler_options", result)
+		}
+	}
+	if v := response["SystemDiskCategories"]; v != nil {
+		if m, ok := v.(map[string]interface{}); ok {
+			if cats, ok := m["SystemDiskCategory"].([]interface{}); ok {
+				d.Set("system_disk_categories", cats)
+			}
+		}
+	}
+	if v := response["SystemDisk.BurstingEnabled"]; v != nil {
+		d.Set("system_disk_bursting_enabled", v)
+	}
+
+	// instance_type and security_group_id are Optional+Computed: ESS resolves the
+	// instance type, and reports the primary security group only when the
+	// configuration sets one at the top level. A network_interfaces-only
+	// configuration can omit the top-level value, in which case the groups are
+	// reported per interface only. Both fields are backfilled only from a
+	// non-empty response value so an ENI-only refresh does not invent one.
+	if v := response["SecurityGroupId"]; v != nil && fmt.Sprint(v) != "" {
+		d.Set("security_group_id", v)
+	}
+	if v := response["InstanceType"]; v != nil && fmt.Sprint(v) != "" {
+		d.Set("instance_type", v)
 	}
 	userData := d.Get("user_data")
 	if userData.(string) != "" {
@@ -1822,6 +2437,14 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 				"description":             r["Description"],
 				"auto_snapshot_policy_id": r["AutoSnapshotPolicyId"],
 				"performance_level":       r["PerformanceLevel"],
+				"bursting_enabled":        values.boolValue(r["BurstingEnabled"]),
+			}
+			if categories, ok := r["Categories"]; ok && categories != nil {
+				if cm, ok := categories.(map[string]interface{}); ok {
+					if cats, ok := cm["Category"].([]interface{}); ok {
+						l["categories"] = cats
+					}
+				}
 			}
 			result = append(result, l)
 		}
