@@ -3,6 +3,7 @@ package realtimecompute_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -219,6 +220,13 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_ha0(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceId, "ha", "true"),
 					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "1"),
 				),
+			},
+			{
+				// Every successful create or update configuration is followed by its own import
+				// comparison, including this no-op re-apply.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				// ha is immutable at the product: changing it has to replace the namespace, which
@@ -1985,6 +1993,7 @@ func vvpNamespaceCreateRecoveryTestServer(t *testing.T) (*httptest.Server, func(
 	t.Helper()
 	var mu sync.Mutex
 	var actions []string
+	created := false
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = r.ParseForm()
 		action := r.FormValue("Action")
@@ -1993,8 +2002,20 @@ func vvpNamespaceCreateRecoveryTestServer(t *testing.T) (*httptest.Server, func(
 		mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
 		if action == "CreateNamespace" {
+			mu.Lock()
+			created = true
+			mu.Unlock()
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, `{"RequestId":"mock","Code":"InternalError","Message":"mock create failure"}`)
+			return
+		}
+		mu.Lock()
+		present := created
+		mu.Unlock()
+		if !present {
+			// The ownership guard reads the identity before the write; it must not exist yet, so the
+			// adoption after the uncertain create proves the object belongs to this request.
+			fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[]}`)
 			return
 		}
 		fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"ResourceUsed":{"Cpu":0,"Cu":0,"MemoryGB":0},"Tags":[]}]}`)
@@ -2211,5 +2232,233 @@ func TestUnitRealtimeComputeVvpDefaultWorkspaceDestroyKeepsWaitingWhileWorkspace
 	}
 	if elapsed > 30*time.Second {
 		t.Fatalf("the wait took %s, which is not bounded", elapsed)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceInFlightRequestHonoursBudget pins the HTTP-level half of the
+// operation budget: a request that is already in flight has to stop at the remaining deadline or at
+// a lifecycle cancellation. The retry loop alone only stops new attempts, so these cases point the
+// client at a server that never answers.
+func TestUnitRealtimeComputeVvpNamespaceInFlightRequestHonoursBudget(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	t.Cleanup(server.Close)
+	client := vvpNamespaceTestClient(t, server.URL)
+
+	t.Run("remaining deadline bounds the request", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
+		defer cancel()
+		started := time.Now()
+		_, err := client.RpcPostWithContext(ctx, "foasconsole", "2019-06-01", "CreateNamespace", nil, map[string]interface{}{}, true)
+		if err == nil {
+			t.Fatalf("a hung request must not report success")
+		}
+		if elapsed := time.Since(started); elapsed > 3*time.Second {
+			t.Fatalf("the hung request returned after %s; the remaining budget was not applied to the HTTP attempt", elapsed)
+		}
+	})
+
+	t.Run("cancellation interrupts the request", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			time.Sleep(150 * time.Millisecond)
+			cancel()
+		}()
+		started := time.Now()
+		_, err := client.RpcPostWithContext(ctx, "foasconsole", "2019-06-01", "CreateNamespace", nil, map[string]interface{}{}, true)
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("error = %v, want context.Canceled", err)
+		}
+		if elapsed := time.Since(started); elapsed > 3*time.Second {
+			t.Fatalf("the cancelled request returned after %s", elapsed)
+		}
+	})
+}
+
+// TestUnitRealtimeComputeVvpNamespaceUpdateInFlightWriteHonoursBudget drives the public Update path
+// against a write that never answers: the update must stop at its budget, keep the namespace in
+// state and never reach the stages after the write.
+func TestUnitRealtimeComputeVvpNamespaceUpdateInFlightWriteHonoursBudget(t *testing.T) {
+	var mu sync.Mutex
+	reads := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		if r.FormValue("Action") == "ModifyNamespaceSpec" {
+			<-r.Context().Done()
+			return
+		}
+		mu.Lock()
+		reads++
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":1,"MemoryGB":4},"ResourceUsed":{"Cpu":1,"Cu":1,"MemoryGB":4},"Tags":[]}]}`)
+	}))
+	t.Cleanup(server.Close)
+
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	stateValue := vvpNamespaceUpdateTestValue(t, sch, "1s", 1, 4)
+	planValue := vvpNamespaceUpdateTestValue(t, sch, "1s", 2, 8)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	req := fwresource.UpdateRequest{
+		Plan:  tfsdk.Plan{Schema: sch, Raw: planValue},
+		State: tfsdk.State{Schema: sch, Raw: stateValue},
+	}
+	resp := &fwresource.UpdateResponse{State: tfsdk.State{Schema: sch, Raw: stateValue}}
+
+	started := time.Now()
+	res.Update(ctx, req, resp)
+	if elapsed := time.Since(started); elapsed > 4*time.Second {
+		t.Fatalf("the update returned after %s; the in-flight write was not bounded by timeouts.update", elapsed)
+	}
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("a hung write must be reported, got no diagnostics")
+	}
+	if resp.State.Raw.IsNull() {
+		t.Fatalf("the update dropped the namespace from state")
+	}
+	var id types.String
+	resp.State.GetAttribute(context.Background(), path.Root("id"), &id)
+	if id.ValueString() != "inst-unit:demo" {
+		t.Fatalf("state id = %q, want inst-unit:demo", id.ValueString())
+	}
+	var spec types.List
+	resp.State.GetAttribute(context.Background(), path.Root("resource_spec"), &spec)
+	if spec.IsNull() || len(spec.Elements()) != 1 {
+		t.Fatalf("state resource_spec = %v, want one element", spec)
+	}
+	attrs := spec.Elements()[0].(types.Object).Attributes()
+	if cpu := attrs["cpu"].(types.Int64).ValueInt64(); cpu != 1 {
+		t.Fatalf("state resource_spec.cpu = %d, want the previous 1", cpu)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if reads != 0 {
+		t.Fatalf("the update reached %d read stage(s) after the hung write; later stages must not run", reads)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceCreateRefusesExistingIdentity pins the ownership guard: when the
+// identity already exists before the request, Create reports it and never sends CreateNamespace, so
+// the recovery path cannot adopt a namespace that belongs to someone else.
+func TestUnitRealtimeComputeVvpNamespaceCreateRefusesExistingIdentity(t *testing.T) {
+	var mu sync.Mutex
+	creates := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		if r.FormValue("Action") == "CreateNamespace" {
+			mu.Lock()
+			creates++
+			mu.Unlock()
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"ResourceUsed":{"Cpu":0,"Cu":0,"MemoryGB":0},"Tags":[]}]}`)
+	}))
+	t.Cleanup(server.Close)
+
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	planValue := vvpNamespaceCreateTestValue(t, sch, "1m", 2, 8)
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: sch, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: sch}}
+	res.Create(context.Background(), req, resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("creating an identity that already exists must be reported")
+	}
+	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+	if !strings.Contains(detail, "already exists") {
+		t.Fatalf("expected an already-exists diagnostic, got %q", detail)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if creates != 0 {
+		t.Fatalf("CreateNamespace was sent %d time(s); an existing identity must not be written again", creates)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceReadWalksPagesAndScopesToParent covers the documented pagination
+// and the parent scope of DescribeNamespaces: a same-name namespace under another workspace is not
+// this resource, and a match on a later page is still found. Exhausting the pages is a positive
+// not-found.
+func TestUnitRealtimeComputeVvpNamespaceReadWalksPagesAndScopesToParent(t *testing.T) {
+	cases := []struct {
+		name      string
+		pages     map[string]string
+		totalPage int
+		wantCPU   int64
+		wantGone  bool
+		wantErr   bool
+	}{
+		{
+			name: "match on the second page after a same-name row of another parent",
+			pages: map[string]string{
+				"1": `{"RequestId":"mock","TotalCount":2,"TotalPage":2,"PageIndex":1,"PageSize":1,"Namespaces":[{"InstanceId":"other-instance","Namespace":"demo","Status":"SUCCESS","Ha":false,"ResourceSpec":{"Cpu":8,"MemoryGB":32},"Tags":[]}]}`,
+				"2": `{"RequestId":"mock","TotalCount":2,"TotalPage":2,"PageIndex":2,"PageSize":1,"Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"Tags":[]}]}`,
+			},
+			totalPage: 2,
+			wantCPU:   2,
+		},
+		{
+			name: "no page carries this identity",
+			pages: map[string]string{
+				"1": `{"RequestId":"mock","TotalCount":2,"TotalPage":2,"PageIndex":1,"PageSize":1,"Namespaces":[{"InstanceId":"other-instance","Namespace":"demo","Status":"SUCCESS","Ha":false,"ResourceSpec":{"Cpu":8,"MemoryGB":32},"Tags":[]}]}`,
+				"2": `{"RequestId":"mock","TotalCount":2,"TotalPage":2,"PageIndex":2,"PageSize":1,"Namespaces":[{"InstanceId":"other-instance-2","Namespace":"demo","Status":"SUCCESS","Ha":false,"ResourceSpec":{"Cpu":8,"MemoryGB":32},"Tags":[]}]}`,
+			},
+			totalPage: 2,
+			wantGone:  true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var mu sync.Mutex
+			var pages []string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_ = r.ParseForm()
+				page := r.FormValue("DescribeNamespacesRequest.PageIndex")
+				mu.Lock()
+				pages = append(pages, page)
+				mu.Unlock()
+				body, ok := tc.pages[page]
+				if !ok {
+					body = `{"RequestId":"mock","TotalCount":0,"TotalPage":0,"PageIndex":1,"PageSize":1,"Namespaces":[]}`
+				}
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprint(w, body)
+			}))
+			t.Cleanup(server.Close)
+
+			res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+			value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+			req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+			resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+			res.Read(context.Background(), req, resp)
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("unexpected diagnostics: %v", resp.Diagnostics)
+			}
+			if tc.wantGone {
+				if !resp.State.Raw.IsNull() {
+					t.Fatalf("a namespace that exists under another parent must not be adopted")
+				}
+			} else {
+				if resp.State.Raw.IsNull() {
+					t.Fatalf("the read dropped a namespace that exists on a later page")
+				}
+				var spec types.List
+				resp.State.GetAttribute(context.Background(), path.Root("resource_spec"), &spec)
+				if spec.IsNull() || len(spec.Elements()) != 1 {
+					t.Fatalf("state resource_spec = %v, want one element", spec)
+				}
+				attrs := spec.Elements()[0].(types.Object).Attributes()
+				if cpu := attrs["cpu"].(types.Int64).ValueInt64(); cpu != tc.wantCPU {
+					t.Fatalf("state resource_spec.cpu = %d, want %d", cpu, tc.wantCPU)
+				}
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			if len(pages) < tc.totalPage {
+				t.Fatalf("DescribeNamespaces pages requested = %v, want at least %d", pages, tc.totalPage)
+			}
+		})
 	}
 }
