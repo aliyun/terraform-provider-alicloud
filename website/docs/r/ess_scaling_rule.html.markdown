@@ -24,6 +24,14 @@ For information about ess scaling rule, see [CreateScalingRule](https://www.alib
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 provider "alicloud" {
   region = "ap-southeast-5"
 }
@@ -150,6 +158,7 @@ The following arguments are supported:
 * `hybrid_monitor_namespace` - (Optional, Available since v1.245.0) The ID of the Hybrid Cloud Monitoring metric repository.
 * `metric_type` - (Optional, Available since v1.245.0) The type of the metric. Valid values: system, custom, hybrid.
 * `hybrid_metrics` - (Optional, Available since v1.245.0) The Hybrid Cloud Monitoring metrics. See [`hybrid_metrics`](#hybrid_metrics) below.
+* `alarm_options` - (Optional, List, Available since v2.3.0) The alarm options of the target tracking scaling rule. This block is write-only: the value is sent on create and update but not read back from the server. See [`alarm_options`](#alarm_options) below.
 
 
 ### `step_adjustment`
@@ -184,6 +193,14 @@ The alarmDimension mapping supports the following:
 
 * `dimension_key` - (Optional) The dimension key of the metric.
 * `dimension_value` - (Optional, ForceNew) The dimension value of the metric.
+
+### `alarm_options`
+
+The alarmOptions mapping supports the following. It takes effect only when `scaling_rule_type` is `TargetTrackingScalingRule`.
+
+* `period` - (Optional, Int, Available since v2.3.0) The period used to collect statistics for the metric of the target tracking scaling rule, in seconds. Valid values: `15`, `60`, `120`, `300`, `900`. Defaults to `60`.
+
+An empty `alarm_options {}` block uses the default period `60`. Removing a previously configured `alarm_options` block is not a state-only change: the next update sends `AlarmOptions.Period=60`, so the period of the alarm rule goes back to the default instead of keeping the old value. The provider does not read the applied period back, so Terraform cannot detect out-of-band changes to it: the configured block stays in state and adding or removing the block shows up in the plan, but the value actually used by the alarm rule has to be checked through the API. `terraform import` cannot populate the block.
 
 
 ## Attributes Reference

@@ -2,13 +2,22 @@ package ess_test
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	essservice "github.com/aliyun/terraform-provider-alicloud/alicloud/service/ess"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfcacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -552,6 +561,417 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_dimension(t *testi
 			},
 		},
 	})
+}
+
+// testAccCheckEssScalingRuleAlarmPeriod reads the alarm rule the service keeps
+// for a target tracking scaling rule and checks its statistics period. The
+// provider never reads alarm_options back, so this independent read is the only
+// way to prove the configured period reached the service.
+func testAccCheckEssScalingRuleAlarmPeriod(expect string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources["alicloud_ess_scaling_rule.default"]
+		if !ok {
+			return fmt.Errorf("alicloud_ess_scaling_rule.default is missing from state")
+		}
+		service := essservice.NewEssService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+		deadline := time.Now().Add(4 * time.Minute)
+		last := "not read yet"
+		for {
+			object, err := service.DescribeEssScalingRuleWithAlarm(rs.Primary.ID)
+			if err != nil {
+				return fmt.Errorf("DescribeEssScalingRuleWithAlarm(%s): %v", rs.Primary.ID, err)
+			}
+			alarms, _ := object["Alarms"].(map[string]interface{})
+			list, _ := alarms["Alarm"].([]interface{})
+			if len(list) == 0 {
+				last = "no alarm rule returned"
+			} else if alarm, ok := list[0].(map[string]interface{}); ok {
+				if period, ok := alarm["Period"]; ok {
+					last = fmt.Sprintf("%v", period)
+				} else {
+					last = "alarm rule has no Period"
+				}
+			}
+			if last == expect {
+				return nil
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("expected the remote statistics period %q, last observation %q", expect, last)
+			}
+			time.Sleep(5 * time.Second)
+		}
+	}
+}
+
+func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_options(t *testing.T) {
+	var v ess.ScalingRule
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	resourceId := "alicloud_ess_scaling_rule.default"
+	basicMap := map[string]string{
+		"scaling_group_id":          acctest.CHECKSET,
+		"scaling_rule_type":         "TargetTrackingScalingRule",
+		"metric_name":               "CpuUtilization",
+		"target_value":              "20.1",
+		"disable_scale_in":          "false",
+		"estimated_instance_warmup": "200",
+		"alarm_options.#":           "1",
+		"alarm_options.0.period":    "300",
+	}
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
+	rc := acctest.ResourceCheckInit(resourceId, &v, func() interface{} {
+		return essservice.NewEssService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	})
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssTargetTrackingScalingRuleAlarmOptions-%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, testAccEssTargetTrackingScalingRuleConfig)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		// module name
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckEssScalingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"target_value":              "20.1",
+					"metric_name":               "CpuUtilization",
+					"disable_scale_in":          "false",
+					"estimated_instance_warmup": "200",
+					"alarm_options": []map[string]interface{}{
+						{
+							"period": 300,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+					testAccCheckEssScalingRuleAlarmPeriod("300"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"alarm_options"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"target_value":              "25.5",
+					"metric_name":               "CpuUtilization",
+					"disable_scale_in":          "false",
+					"estimated_instance_warmup": "200",
+					"alarm_options": []map[string]interface{}{
+						{
+							"period": 300,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"target_value": "25.5",
+					}),
+					testAccCheckEssScalingRuleAlarmPeriod("300"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"alarm_options"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"target_value":              "25.5",
+					"metric_name":               "CpuUtilization",
+					"disable_scale_in":          "false",
+					"estimated_instance_warmup": "200",
+					"alarm_options": []map[string]interface{}{
+						{
+							"period": 15,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alarm_options.#":        "1",
+						"alarm_options.0.period": "15",
+					}),
+					testAccCheckEssScalingRuleAlarmPeriod("15"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"alarm_options"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"target_value":              "25.5",
+					"metric_name":               "CpuUtilization",
+					"disable_scale_in":          "false",
+					"estimated_instance_warmup": "200",
+					"alarm_options": []map[string]interface{}{
+						{},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alarm_options.#":        "1",
+						"alarm_options.0.period": "60",
+					}),
+					testAccCheckEssScalingRuleAlarmPeriod("60"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"alarm_options"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"target_value":              "25.5",
+					"metric_name":               "CpuUtilization",
+					"disable_scale_in":          "false",
+					"estimated_instance_warmup": "200",
+					"alarm_options": []map[string]interface{}{
+						{
+							"period": 300,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alarm_options.#":        "1",
+						"alarm_options.0.period": "300",
+					}),
+					testAccCheckEssScalingRuleAlarmPeriod("300"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"alarm_options"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"target_value":              "25.5",
+					"metric_name":               "CpuUtilization",
+					"disable_scale_in":          "false",
+					"estimated_instance_warmup": "200",
+					"alarm_options":             acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alarm_options.#":        "0",
+						"alarm_options.0.period": acctest.REMOVEKEY,
+					}),
+					testAccCheckEssScalingRuleAlarmPeriod("60"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"alarm_options"},
+			},
+		},
+	})
+}
+
+// scalingRuleRequestRecorder captures the RPC requests the scaling rule
+// lifecycle sends so the tests can assert the request-level parameters.
+type scalingRuleRequestRecorder struct {
+	t     *testing.T
+	mu    sync.Mutex
+	calls []url.Values
+}
+
+func (r *scalingRuleRequestRecorder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if err := req.ParseForm(); err != nil {
+		r.t.Errorf("parse scaling rule request: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	r.mu.Lock()
+	r.calls = append(r.calls, req.Form)
+	r.mu.Unlock()
+	switch req.Form.Get("Action") {
+	case "CreateScalingRule", "ModifyScalingRule":
+		_, _ = w.Write([]byte(`{"RequestId":"mock","ScalingRuleId":"asr-mock"}`))
+	case "DescribeScalingRules":
+		_, _ = w.Write([]byte(`{"RequestId":"mock","ScalingRules":{"ScalingRule":[{"ScalingRuleId":"asr-mock","ScalingGroupId":"asg-mock","ScalingRuleType":"TargetTrackingScalingRule","MetricName":"CpuUtilization","TargetValue":20.1,"DisableScaleIn":false}]}}`))
+	default:
+		_, _ = w.Write([]byte(`{"RequestId":"mock"}`))
+	}
+}
+
+func (r *scalingRuleRequestRecorder) callsFor(action string) []url.Values {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var found []url.Values
+	for _, call := range r.calls {
+		if call.Get("Action") == action {
+			found = append(found, call)
+		}
+	}
+	return found
+}
+
+func newScalingRuleTestClient(t *testing.T, recorder http.Handler) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(recorder)
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	t.Setenv("NO_PROXY", "127.0.0.1,localhost")
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("ess", strings.TrimPrefix(server.URL, "http://"))
+	return client
+}
+
+func essScalingRuleResource(t *testing.T) *schema.Resource {
+	t.Helper()
+	for _, registered := range essservice.ServicePackage().SDKResources {
+		if registered.TypeName == "alicloud_ess_scaling_rule" {
+			return registered.Factory()
+		}
+	}
+	t.Fatal("alicloud_ess_scaling_rule is not registered in the ess service package")
+	return nil
+}
+
+// TestUnitAliCloudEssScalingRuleAlarmOptionsRequest proves at the request level
+// how alarm_options is encoded: the period is sent on create, on a period
+// change and on removal, and an update of an unrelated field does not send the
+// parameter at all.
+func TestUnitAliCloudEssScalingRuleAlarmOptionsRequest(t *testing.T) {
+	recorder := &scalingRuleRequestRecorder{t: t}
+	client := newScalingRuleTestClient(t, recorder)
+	res := essScalingRuleResource(t)
+
+	createData := schema.TestResourceDataRaw(t, res.Schema, map[string]interface{}{
+		"scaling_group_id":          "asg-mock",
+		"scaling_rule_type":         "TargetTrackingScalingRule",
+		"metric_name":               "CpuUtilization",
+		"target_value":              20.1,
+		"disable_scale_in":          false,
+		"estimated_instance_warmup": 200,
+		"alarm_options": []interface{}{
+			map[string]interface{}{"period": 300},
+		},
+	})
+	if err := res.Create(createData, client); err != nil {
+		t.Fatalf("create scaling rule: %v", err)
+	}
+	creates := recorder.callsFor("CreateScalingRule")
+	if len(creates) != 1 {
+		t.Fatalf("expected exactly one CreateScalingRule call, got %d", len(creates))
+	}
+	if got := creates[0].Get("AlarmOptions.Period"); got != "300" {
+		t.Fatalf("CreateScalingRule AlarmOptions.Period = %q, want 300", got)
+	}
+
+	newUpdateData := func(diff map[string]*sdktf.ResourceAttrDiff) *schema.ResourceData {
+		state := &sdktf.InstanceState{
+			ID: "asr-mock",
+			Attributes: map[string]string{
+				"scaling_group_id":          "asg-mock",
+				"scaling_rule_type":         "TargetTrackingScalingRule",
+				"metric_name":               "CpuUtilization",
+				"target_value":              "20.1",
+				"disable_scale_in":          "false",
+				"estimated_instance_warmup": "200",
+				"alarm_options.#":           "1",
+				"alarm_options.0.period":    "300",
+			},
+		}
+		instanceDiff := sdktf.NewInstanceDiff()
+		for key, attr := range diff {
+			instanceDiff.Attributes[key] = attr
+		}
+		data, err := schema.InternalMap(res.Schema).Data(state, instanceDiff)
+		if err != nil {
+			t.Fatalf("build update resource data: %v", err)
+		}
+		data.SetId("asr-mock")
+		return data
+	}
+
+	updatePeriod := func(period string) {
+		data := newUpdateData(map[string]*sdktf.ResourceAttrDiff{
+			"alarm_options.#":        {Old: "1", New: "1"},
+			"alarm_options.0.period": {Old: "300", New: period},
+		})
+		if err := res.Update(data, client); err != nil {
+			t.Fatalf("update period to %s: %v", period, err)
+		}
+	}
+	updatePeriod("15")
+	// An empty block falls back to the schema default 60.
+	updatePeriod("60")
+
+	removeData := newUpdateData(map[string]*sdktf.ResourceAttrDiff{
+		"alarm_options.#":        {Old: "1", New: "0"},
+		"alarm_options.0.period": {Old: "300", New: ""},
+	})
+	if err := res.Update(removeData, client); err != nil {
+		t.Fatalf("remove alarm_options: %v", err)
+	}
+
+	unrelatedData := newUpdateData(map[string]*sdktf.ResourceAttrDiff{
+		"target_value": {Old: "20.1", New: "25.5"},
+	})
+	if err := res.Update(unrelatedData, client); err != nil {
+		t.Fatalf("update unrelated field: %v", err)
+	}
+
+	modifies := recorder.callsFor("ModifyScalingRule")
+	wantPeriods := []string{"15", "60", "60", ""}
+	if len(modifies) != len(wantPeriods) {
+		t.Fatalf("expected %d ModifyScalingRule calls, got %d", len(wantPeriods), len(modifies))
+	}
+	for i, want := range wantPeriods {
+		got := modifies[i].Get("AlarmOptions.Period")
+		if got != want {
+			t.Fatalf("ModifyScalingRule call %d AlarmOptions.Period = %q, want %q", i+1, got, want)
+		}
+	}
+	// The second call is the empty block (default 60), the third call is the
+	// removal: both must send the parameter explicitly. The fourth call updates
+	// an unrelated field and must not send AlarmOptions.Period at all.
+	if modifies[3].Get("AlarmOptions.Period") != "" {
+		t.Fatalf("an unrelated update must not send AlarmOptions.Period, got %q", modifies[3].Get("AlarmOptions.Period"))
+	}
 }
 
 func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_hybrid_metrics_update(t *testing.T) {

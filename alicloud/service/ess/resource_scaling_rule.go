@@ -237,6 +237,21 @@ func resourceAlicloudEssScalingRule() *schema.Resource {
 					},
 				},
 			},
+			"alarm_options": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"period": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Default:      60,
+							ValidateFunc: validation.IntInSlice([]int{15, 60, 120, 300, 900}),
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -448,6 +463,20 @@ func resourceAliyunEssScalingRuleUpdate(d *schema.ResourceData, meta interface{}
 		if d.HasChange("hybrid_monitor_namespace") {
 			request["HybridMonitorNamespace"] = d.Get("hybrid_monitor_namespace")
 		}
+		if d.HasChange("alarm_options") {
+			// AlarmOptions is write-only, so a removed block has to be reset
+			// explicitly; fall back to the schema default instead of dropping it.
+			period := 60
+			if v, ok := d.GetOk("alarm_options"); ok {
+				alarmOptionsList := v.([]interface{})
+				if len(alarmOptionsList) > 0 {
+					if p, ok := alarmOptionsList[0].(map[string]interface{})["period"].(int); ok {
+						period = p
+					}
+				}
+			}
+			request["AlarmOptions.Period"] = requests.NewInteger(period)
+		}
 		if d.HasChange("hybrid_metrics") {
 			hybridMetrics := make([]map[string]interface{}, 0)
 			for _, e := range d.Get("hybrid_metrics").([]interface{}) {
@@ -619,6 +648,15 @@ func buildAlicloudEssScalingRuleArgs(d *schema.ResourceData, meta interface{}) (
 		}
 		if hybridMonitorNamespace, exist := d.GetOk("hybrid_monitor_namespace"); exist && hybridMonitorNamespace.(string) != "" {
 			request["HybridMonitorNamespace"] = hybridMonitorNamespace.(string)
+		}
+		if v, ok := d.GetOk("alarm_options"); ok {
+			alarmOptionsList := v.([]interface{})
+			if len(alarmOptionsList) > 0 {
+				pack := alarmOptionsList[0].(map[string]interface{})
+				if period, ok := pack["period"]; ok {
+					request["AlarmOptions.Period"] = requests.NewInteger(period.(int))
+				}
+			}
 		}
 		hM, ok := d.GetOk("hybrid_metrics")
 		if ok {
