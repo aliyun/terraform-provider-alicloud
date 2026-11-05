@@ -762,7 +762,7 @@ resource "alicloud_slb_listener_acl_attachment" "default" {
 func testAccListenerAclAttachmentConfigMissingListener(name string) string {
 	return fmt.Sprintf(`%s
 resource "alicloud_slb_listener_acl_attachment" "default" {
-  listener_id = "lb-notexist000000:http:80"
+  listener_id = "lb-mock:http:80"
   acl_id      = alicloud_slb_acl.first.id
   acl_type    = "white"
 }
@@ -828,7 +828,7 @@ resource "alicloud_slb_listener_acl_attachment" "default" {
 func testAccListenerAclAttachmentConfigCombinedAcl() string {
 	return `
 resource "alicloud_slb_listener_acl_attachment" "default" {
-  listener_id = "lb-notexist000000:http:80"
+  listener_id = "lb-mock:http:80"
   acl_id      = "acl-notexist1,acl-notexist2"
   acl_type    = "white"
 }
@@ -840,7 +840,7 @@ resource "alicloud_slb_listener_acl_attachment" "default" {
 func testAccListenerAclAttachmentConfigInvalidListenerPort() string {
 	return `
 resource "alicloud_slb_listener_acl_attachment" "default" {
-  listener_id = "lb-notexist000000:http:65536"
+  listener_id = "lb-mock:http:65536"
   acl_id      = "acl-notexist1"
   acl_type    = "white"
 }
@@ -852,7 +852,7 @@ resource "alicloud_slb_listener_acl_attachment" "default" {
 func testAccListenerAclAttachmentConfigInvalidListenerProtocol() string {
 	return `
 resource "alicloud_slb_listener_acl_attachment" "default" {
-  listener_id = "lb-notexist000000:smtp:80"
+  listener_id = "lb-mock:smtp:80"
   acl_id      = "acl-notexist1"
   acl_type    = "white"
 }
