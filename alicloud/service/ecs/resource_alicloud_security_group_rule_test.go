@@ -6,6 +6,7 @@ import (
 
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -84,6 +85,39 @@ func TestAccAliCloudECSSecurityGroupRuleBasic(t *testing.T) {
 		},
 	})
 
+}
+
+func TestAccAliCloudECSSecurityGroupRuleCidrIp(t *testing.T) {
+	resourceId := "alicloud_security_group_rule.test"
+	name := tfacctest.RandString(4)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckSecurityGroupRuleCidrIpDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: hclSecurityGroupRuleSingleCidrIp(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "cidr_ip", "192.168.0.0/16"),
+					resource.TestCheckResourceAttr(resourceId, "type", "ingress"),
+					resource.TestCheckResourceAttr(resourceId, "ip_protocol", "tcp"),
+					resource.TestCheckResourceAttr(resourceId, "nic_type", "intranet"),
+					resource.TestCheckResourceAttr(resourceId, "policy", "accept"),
+					resource.TestCheckResourceAttr(resourceId, "port_range", "80/80"),
+					resource.TestCheckResourceAttr(resourceId, "priority", "1"),
+					resource.TestCheckResourceAttrSet(resourceId, "security_group_id"),
+					resource.TestCheckResourceAttrSet(resourceId, "security_group_rule_id"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
 }
 
 func TestAccAliCloudECSSecurityGroupRuleEgress(t *testing.T) {
@@ -742,6 +776,30 @@ func testAccCheckSecurityGroupRuleDestroy(s *terraform.State) error {
 	return nil
 }
 
+// testAccCheckSecurityGroupRuleCidrIpDestroy fails when the rule can still be
+// read back, so the test proves the object was really removed instead of only
+// accepting any non-NotFound read result like the legacy shared checker.
+func testAccCheckSecurityGroupRuleCidrIpDestroy(s *terraform.State) error {
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	ecsService := ecssvc.NewService(client)
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_security_group_rule" {
+			continue
+		}
+		_, err := ecsService.DescribeSecurityGroupRule(rs.Primary.ID)
+		if err == nil {
+			return WrapError(fmt.Errorf("security group rule %s still exists after destroy", rs.Primary.ID))
+		}
+		if !NotFoundError(err) {
+			return WrapError(err)
+		}
+		log.Printf("[DEBUG] post-destroy read-back confirmed security group rule %s is gone", rs.Primary.ID)
+	}
+
+	return nil
+}
+
 func hclSecurityGroupRuleBasic(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -838,6 +896,35 @@ resource "alicloud_security_group_rule" "test" {
   security_group_id = alicloud_security_group.test.0.id
   cidr_ip           = "0.0.0.0/0"
   description       = "abcd"
+}
+`, name)
+}
+
+func hclSecurityGroupRuleSingleCidrIp(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccSGRSingleCidr%s"
+}
+
+data "alicloud_vpcs" "test" {
+  name_regex = "^default-NODELETING$"
+}
+
+resource "alicloud_security_group" "test" {
+  vpc_id              = data.alicloud_vpcs.test.ids.0
+  security_group_name = var.name
+}
+
+resource "alicloud_security_group_rule" "test" {
+  type              = "ingress"
+  ip_protocol       = "tcp"
+  nic_type          = "intranet"
+  policy            = "accept"
+  port_range        = "80/80"
+  priority          = 1
+  security_group_id = alicloud_security_group.test.id
+  cidr_ip           = "192.168.0.0/16"
+  description       = "single cidr"
 }
 `, name)
 }
@@ -1268,6 +1355,9 @@ func TestUnitECSSecurityGroupRuleCidrIpValidation(t *testing.T) {
 		{"", true, "", ""},
 		{"192.168.0.0/16,10.0.0.0/8", false, "multiple CIDRs are not supported", ""},
 		{"192.168.0.0/16 10.0.0.0/8", false, "multiple CIDRs are not supported", ""},
+		{"10.0.0.0/8 ", false, "must be a single IPv4 address or CIDR block", "multiple CIDRs"},
+		{" 10.0.0.0/8", false, "must be a single IPv4 address or CIDR block", "multiple CIDRs"},
+		{"10.0.0.0/8, ", false, "must be a single IPv4 address or CIDR block", "multiple CIDRs"},
 		{"::/0", false, "use ipv6_cidr_ip", ""},
 		{"2001:db8::1", false, "use ipv6_cidr_ip", ""},
 		{"::ffff:10.0.0.1", false, "use ipv6_cidr_ip", ""},

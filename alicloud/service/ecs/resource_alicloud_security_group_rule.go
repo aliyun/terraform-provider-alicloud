@@ -47,7 +47,10 @@ func validateSecurityGroupRuleCidrIp(v interface{}, k string) ([]string, []error
 	if ip := net.ParseIP(value); ip != nil && ip.To4() != nil {
 		return nil, nil
 	}
-	if strings.ContainsAny(value, ", \t\r\n") {
+	// Only a real list (two or more non-empty values) deserves the split
+	// advice; a single value with stray commas or surrounding blanks is a
+	// formatting error and must not be described as multiple CIDRs.
+	if len(strings.Fields(strings.ReplaceAll(value, ",", " "))) > 1 {
 		return nil, []error{fmt.Errorf("%q must be a single IPv4 address or CIDR block; multiple CIDRs are not supported in one alicloud_security_group_rule, define one resource per CIDR, got %q", k, value)}
 	}
 	return nil, []error{fmt.Errorf("%q must be a single IPv4 address or CIDR block, for example \"10.0.0.0/8\", got %q", k, value)}
