@@ -424,7 +424,7 @@ func mongoDBGovernanceReadInstance(d *schema.ResourceData, client *connectivity.
 		} else {
 			values := make([]map[string]interface{}, 0)
 			for _, keyItem := range mongoDBGovernanceMapList(mongoDBGovernancePick(response, "PerformanceKeys", "performanceKeys")) {
-				for _, valueItem := range mongoDBGovernanceMapList(keyItem["PerformanceValues"]) {
+				for _, valueItem := range mongoDBGovernanceMapList(mongoDBGovernancePick(keyItem, "PerformanceValues", "Values", "values")) {
 					values = append(values, map[string]interface{}{
 						"value": fmt.Sprint(valueItem["Value"]),
 						"date":  fmt.Sprint(valueItem["Date"]),
@@ -440,10 +440,23 @@ func mongoDBGovernanceUpdateInstance(d *schema.ResourceData, client *connectivit
 	id := d.Id()
 
 	if d.HasChange("ai_gateway") {
-		oldRaw, _ := d.GetChange("ai_gateway")
-		{
-			oldList, _ := oldRaw.([]interface{})
-			newList, _ := d.Get("ai_gateway").([]interface{})
+		oldRaw, newRaw := d.GetChange("ai_gateway")
+		oldList, _ := oldRaw.([]interface{})
+		newList, _ := newRaw.([]interface{})
+		oldClass, newClass := "", ""
+		if len(oldList) > 0 {
+			if oldMap, ok := oldList[0].(map[string]interface{}); ok {
+				oldClass, _ = oldMap["db_instance_class"].(string)
+			}
+		}
+		if len(newList) > 0 {
+			if newMap, ok := newList[0].(map[string]interface{}); ok {
+				newClass, _ = newMap["db_instance_class"].(string)
+			}
+		}
+		// effective_time is an action parameter, not gateway state, so only a
+		// class change or block removal/add re-creates the gateway.
+		if oldClass != newClass {
 			if len(oldList) > 0 {
 				request := map[string]interface{}{"DBInstanceId": id}
 				if oldMap, ok := oldList[0].(map[string]interface{}); ok {

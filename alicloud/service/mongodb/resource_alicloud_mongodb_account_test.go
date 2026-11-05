@@ -670,6 +670,12 @@ func TestAccAliCloudMongoDBAccount_governance(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "privilege", "privilege_reset_type", "force_destroy"},
+			},
 		},
 	})
 }

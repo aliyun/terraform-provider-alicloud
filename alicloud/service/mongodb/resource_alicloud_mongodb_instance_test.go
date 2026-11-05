@@ -1260,6 +1260,13 @@ func TestAccAliCloudMongoDBInstance_governance(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "ssl_action", "effective_time", "order_type", "parameters",
+					"ai_performance_key", "ai_performance_start_time", "ai_performance_end_time", "ai_performance_interval"},
+			},
 		},
 	})
 }
