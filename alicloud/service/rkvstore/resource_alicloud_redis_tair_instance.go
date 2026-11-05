@@ -1743,16 +1743,28 @@ func tairInstanceSpecAppliedAttributes(d *schema.ResourceData, request map[strin
 	if v, ok := request["StorageType"].(string); ok && v != "" && d.HasChange("storage_performance_level") {
 		expected["StorageType"] = v
 	}
+	if v, ok := request["ReadOnlyCount"].(int); ok && d.HasChange("read_only_count") {
+		expected["ReadOnlyCount"] = v
+	}
+	if v, ok := request["SlaveReadOnlyCount"].(int); ok && d.HasChange("slave_read_only_count") {
+		expected["SlaveReadOnlyCount"] = v
+	}
+	if v, ok := request["NodeType"].(string); ok && v != "" && d.HasChange("node_type") {
+		// The request carries the schema value; the response value is normalized by
+		// tairInstanceAttributesApplied before it is compared.
+		expected["NodeType"] = v
+	}
 	return expected
 }
 
 // tairInstanceAttributesApplied reports whether the response carries every compared attribute
-// with the requested value. An attribute the response does not carry is not compared.
+// with the requested value. A compared attribute the response does not carry yet has not been
+// observed as applied, so it keeps the waiter pending instead of releasing it early.
 func tairInstanceAttributesApplied(object map[string]interface{}, expected map[string]interface{}) bool {
 	for field, want := range expected {
-		value := object[field]
-		if value == nil {
-			continue
+		value, ok := object[field]
+		if !ok || value == nil {
+			return false
 		}
 		switch wanted := want.(type) {
 		case int:
@@ -1761,7 +1773,11 @@ func tairInstanceAttributesApplied(object map[string]interface{}, expected map[s
 				return false
 			}
 		case string:
-			if fmt.Sprint(value) != wanted {
+			actual := fmt.Sprint(value)
+			if field == "NodeType" {
+				actual = fmt.Sprint(convertRedisTairInstanceInstancesDBInstanceAttributeNodeTypeResponse(value))
+			}
+			if actual != wanted {
 				return false
 			}
 		}
@@ -1773,16 +1789,16 @@ func tairInstanceAttributesApplied(object map[string]interface{}, expected map[s
 // Waiting on IsOrderCompleted alone has an early-release window: the flag remains true from the
 // previous order until the new one is registered, so a poll taken right after the request can
 // release the update before the change happens. A specification change therefore also requires
-// the applied values to be visible. A deferred change (EffectiveTime=MaintainTime or
-// ForceUpgrade=false) is not observable in the instance attributes right away and only waits for
-// the order status.
+// the applied values to be visible. Only a change deferred to the maintenance window
+// (EffectiveTime=MaintainTime) is not observable right away and waits for the order status
+// alone; ForceUpgrade only controls whether the change may be forced, not when it runs.
 func waitTairInstanceSpecApplied(d *schema.ResourceData, service RedisServiceV2, request map[string]interface{}) error {
 	expected := tairInstanceSpecAppliedAttributes(d, request)
+	// Only EffectiveTime=MaintainTime moves the change to the maintenance window. ForceUpgrade
+	// only controls whether the change may be forced, so an immediate change must still be
+	// verified against the instance attributes when the user disabled the forced upgrade.
 	deferred := false
 	if v, ok := request["EffectiveTime"].(string); ok && v == "MaintainTime" {
-		deferred = true
-	}
-	if v, ok := request["ForceUpgrade"].(bool); ok && !v {
 		deferred = true
 	}
 	if deferred || len(expected) == 0 {
