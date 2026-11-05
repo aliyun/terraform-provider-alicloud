@@ -274,9 +274,18 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 	}
 
 	if e, ok := err.(*tea.SDKError); ok {
+		// tea.StringValue keeps this nil-safe: a backend error can carry Code
+		// with Data unset (or all pointers nil), and dereferencing them would
+		// panic the plugin process. The empty-code guard on HasPrefix matters
+		// because strings.HasPrefix(code, "") is always true.
+		codeVal := tea.StringValue(e.Code)
+		dataVal := tea.StringValue(e.Data)
 		for _, code := range expectCodes {
 			// The second statement aims to match the tea sdk history bug
-			if *e.Code == code || strings.HasPrefix(code, *e.Code) || strings.Contains(*e.Data, code) {
+			if codeVal == code || (codeVal != "" && strings.HasPrefix(code, codeVal)) {
+				return true
+			}
+			if dataVal != "" && strings.Contains(dataVal, code) {
 				return true
 			}
 		}

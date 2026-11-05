@@ -43,13 +43,17 @@ func NeedRetry(err error) bool {
 	codeRegex := regexp.MustCompile("^code: 5[\\d]{2}")
 
 	if e, ok := err.(*tea.SDKError); ok {
-		if strings.Contains(*e.Message, "code: 500, 您已开通过") {
+		// tea.StringValue keeps classification nil-safe: an SDK error can
+		// carry a status code while Code/Message are unset.
+		msg := tea.StringValue(e.Message)
+		code := tea.StringValue(e.Code)
+		if strings.Contains(msg, "code: 500, 您已开通过") {
 			return false
 		}
-		if strings.Contains(*e.Message, "Client.Timeout") {
+		if strings.Contains(msg, "Client.Timeout") {
 			return true
 		}
-		if *e.Code == ServiceUnavailable || *e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(*e.Code) || codeRegex.MatchString(*e.Message) {
+		if code == ServiceUnavailable || code == "Rejected.Throttling" || throttlingRegex.MatchString(code) || codeRegex.MatchString(msg) {
 			return true
 		}
 	}
