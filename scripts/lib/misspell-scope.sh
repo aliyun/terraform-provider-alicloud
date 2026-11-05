@@ -10,10 +10,10 @@ run_misspell_scoped() {
   if [ $status -eq 0 ]; then
     return 0
   fi
-  # misspell -error exits 1 only when it reported misspellings. Any other
-  # status, an empty finding list, or a failing filter is a tool failure and
-  # must not be reported as an accepted exception.
-  if [ $status -ne 1 ]; then
+  # misspell -error exits 2 when it reported misspellings (its documented
+  # -error contract). Any other status, an empty finding list, or a failing
+  # filter is a tool failure and must not be reported as an accepted exception.
+  if [ $status -ne 2 ]; then
     printf '%s\n' "$output"
     echo "misspell failed with exit status ${status}; the spelling check did not complete."
     return 1

@@ -27,7 +27,7 @@ case "$mode" in
       printf '%s\n' \
         "$last:76:263: \"CANCELLING\" is a misspelling of \"CANCELING\"" \
         "$last:76:280: \"CANCELLED\" is a misspelling of \"CANCELED\""
-      exit 1
+      exit 2
     fi
     exit 0
     ;;
@@ -36,15 +36,19 @@ case "$mode" in
       printf '%s\n' \
         "$last:76:263: \"CANCELLING\" is a misspelling of \"CANCELING\"" \
         "$last:90:3: \"cancelling\" is a misspelling of \"canceling\""
-      exit 1
+      exit 2
     fi
     exit 0
     ;;
   unrelated)
     printf '%s\n' "website/docs/d/other.html.markdown:1:1: \"cancelling\" is a misspelling of \"canceling\""
-    exit 1
+    exit 2
     ;;
   empty)
+    exit 2
+    ;;
+  usage)
+    echo "misspell: flag provided but not defined"
     exit 1
     ;;
   crash)
@@ -82,6 +86,7 @@ expect "strict prose in the same page rejected" fail prose run_misspell_scoped "
 expect "strict unrelated file rejected" fail unrelated run_misspell_scoped "$other_doc"
 expect "strict empty tool failure rejected" fail empty run_misspell_scoped "$enum_doc"
 expect "strict tool crash rejected" fail crash run_misspell_scoped "$enum_doc"
+expect "strict usage error rejected" fail usage run_misspell_scoped "$enum_doc"
 
 # changed-docs mode: newline separated document list
 expect "changed docs multi-line list accepted" pass literals run_misspell_changed_docs "$(printf '%s\n%s' "$enum_doc" "$other_doc")"
