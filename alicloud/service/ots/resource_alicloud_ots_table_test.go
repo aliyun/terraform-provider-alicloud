@@ -814,12 +814,20 @@ type otsUnitStream struct {
 	expiration int32
 }
 
+type otsUnitFailure struct {
+	path    string
+	code    string
+	message string
+	times   int
+}
+
 // otsUnitGateway replays the OTS REST and Tablestore endpoints so the resource entry points can be
 // exercised without a cloud account and every serialized request can be asserted.
 type otsUnitGateway struct {
-	mu     sync.Mutex
-	stream otsUnitStream
-	calls  []otsUnitCall
+	mu       sync.Mutex
+	stream   otsUnitStream
+	calls    []otsUnitCall
+	failures []*otsUnitFailure
 }
 
 func (g *otsUnitGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -831,7 +839,13 @@ func (g *otsUnitGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	g.mu.Lock()
 	g.calls = append(g.calls, otsUnitCall{path: r.URL.Path, body: body})
 	stream := g.stream
+	failure := g.takeFailureLocked(r.URL.Path)
 	g.mu.Unlock()
+
+	if failure != nil {
+		writeOtsUnitError(w, failure.code, failure.message)
+		return
+	}
 
 	switch r.URL.Path {
 	case "/v2/openapi/getinstance":
@@ -875,15 +889,30 @@ func (g *otsUnitGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (g *otsUnitGateway) last(path string) []byte {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	for i := len(g.calls) - 1; i >= 0; i-- {
-		if g.calls[i].path == path {
-			return g.calls[i].body
+func (g *otsUnitGateway) takeFailureLocked(path string) *otsUnitFailure {
+	for _, failure := range g.failures {
+		if failure.path == path && failure.times > 0 {
+			failure.times--
+			return failure
 		}
 	}
 	return nil
+}
+
+func (g *otsUnitGateway) bodies(path string) [][]byte {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	var result [][]byte
+	for _, call := range g.calls {
+		if call.path == path {
+			result = append(result, call.body)
+		}
+	}
+	return result
+}
+
+func (g *otsUnitGateway) count(path string) int {
+	return len(g.bodies(path))
 }
 
 func (g *otsUnitGateway) paths() []string {
@@ -894,6 +923,16 @@ func (g *otsUnitGateway) paths() []string {
 		paths = append(paths, call.path)
 	}
 	return paths
+}
+
+func writeOtsUnitError(w http.ResponseWriter, code, message string) {
+	payload, err := proto.Marshal(&otsprotocol.Error{Code: proto.String(code), Message: proto.String(message)})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusForbidden)
+	_, _ = w.Write(payload)
 }
 
 func writeOtsUnitProto(w http.ResponseWriter, message proto.Message) {
@@ -1033,10 +1072,7 @@ func TestUnitAliCloudOtsTableStreamCreate(t *testing.T) {
 			t.Fatalf("Create with stream: %s (requests: %v)", err, gateway.paths())
 		}
 
-		payload := new(otsprotocol.CreateTableRequest)
-		if err := proto.Unmarshal(gateway.last("/CreateTable"), payload); err != nil {
-			t.Fatalf("decode CreateTable payload: %s", err)
-		}
+		payload := otsUnitCreateTablePayload(t, gateway)
 		if payload.GetStreamSpec() == nil {
 			t.Fatalf("CreateTable payload has no stream_spec")
 		}
@@ -1066,10 +1102,7 @@ func TestUnitAliCloudOtsTableStreamCreate(t *testing.T) {
 			t.Fatalf("Create without stream: %s (requests: %v)", err, gateway.paths())
 		}
 
-		payload := new(otsprotocol.CreateTableRequest)
-		if err := proto.Unmarshal(gateway.last("/CreateTable"), payload); err != nil {
-			t.Fatalf("decode CreateTable payload: %s", err)
-		}
+		payload := otsUnitCreateTablePayload(t, gateway)
 		if payload.GetStreamSpec() != nil {
 			t.Fatalf("CreateTable payload stream_spec = %#v, want omitted", payload.GetStreamSpec())
 		}
@@ -1085,21 +1118,48 @@ func TestUnitAliCloudOtsTableStreamCreate(t *testing.T) {
 			t.Fatalf("Create with disabled stream: %s (requests: %v)", err, gateway.paths())
 		}
 
-		payload := new(otsprotocol.CreateTableRequest)
-		if err := proto.Unmarshal(gateway.last("/CreateTable"), payload); err != nil {
-			t.Fatalf("decode CreateTable payload: %s", err)
-		}
+		payload := otsUnitCreateTablePayload(t, gateway)
 		if payload.GetStreamSpec() != nil {
 			t.Fatalf("CreateTable payload stream_spec = %#v, want omitted", payload.GetStreamSpec())
 		}
 	})
 }
 
+func otsUnitCreateTablePayload(t *testing.T, gateway *otsUnitGateway) *otsprotocol.CreateTableRequest {
+	t.Helper()
+	bodies := gateway.bodies("/CreateTable")
+	if len(bodies) != 1 {
+		t.Fatalf("CreateTable calls = %d, want exactly 1 (requests: %v)", len(bodies), gateway.paths())
+	}
+	payload := new(otsprotocol.CreateTableRequest)
+	if err := proto.Unmarshal(bodies[0], payload); err != nil {
+		t.Fatalf("decode CreateTable payload: %s", err)
+	}
+	return payload
+}
+
+func otsUnitUpdateTablePayloads(t *testing.T, gateway *otsUnitGateway) []*otsprotocol.UpdateTableRequest {
+	t.Helper()
+	bodies := gateway.bodies("/UpdateTable")
+	if len(bodies) == 0 {
+		t.Fatalf("UpdateTable was not called (requests: %v)", gateway.paths())
+	}
+	payloads := make([]*otsprotocol.UpdateTableRequest, 0, len(bodies))
+	for i, body := range bodies {
+		payload := new(otsprotocol.UpdateTableRequest)
+		if err := proto.Unmarshal(body, payload); err != nil {
+			t.Fatalf("decode UpdateTable payload %d: %s", i, err)
+		}
+		payloads = append(payloads, payload)
+	}
+	return payloads
+}
+
 func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 	unitResource := ots.ResourceOtsTable()
 	schemaMap := schema.InternalMap(unitResource.Schema)
 
-	update := func(t *testing.T, gateway *otsUnitGateway, server *httptest.Server, oldStream, newSpec []interface{}) *schema.ResourceData {
+	update := func(t *testing.T, gateway *otsUnitGateway, server *httptest.Server, oldStream, newSpec []interface{}) (*schema.ResourceData, error) {
 		t.Helper()
 		oldData := schema.TestResourceDataRaw(t, unitResource.Schema, otsUnitRaw(oldStream))
 		oldData.SetId(otsUnitResourceId)
@@ -1114,10 +1174,7 @@ func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 			t.Fatalf("build resource data: %s", err)
 		}
 		d.SetId(otsUnitResourceId)
-		if err := unitResource.Update(d, newOtsUnitClient(t, server)); err != nil {
-			t.Fatalf("Update: %s (requests: %v)", err, gateway.paths())
-		}
-		return d
+		return d, unitResource.Update(d, newOtsUnitClient(t, server))
 	}
 
 	t.Run("retention update sends the new value only", func(t *testing.T) {
@@ -1125,12 +1182,21 @@ func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 		server := httptest.NewServer(gateway)
 		defer server.Close()
 
-		d := update(t, gateway, server, otsUnitStreamConfig(true, 24), otsUnitStreamConfig(true, 168))
-
-		payload := new(otsprotocol.UpdateTableRequest)
-		if err := proto.Unmarshal(gateway.last("/UpdateTable"), payload); err != nil {
-			t.Fatalf("decode UpdateTable payload: %s", err)
+		d, err := update(t, gateway, server, otsUnitStreamConfig(true, 24), otsUnitStreamConfig(true, 168))
+		if err != nil {
+			t.Fatalf("Update: %s (requests: %v)", err, gateway.paths())
 		}
+
+		payloads := otsUnitUpdateTablePayloads(t, gateway)
+		if len(payloads) != 1 {
+			t.Fatalf("UpdateTable calls = %d, want exactly 1", len(payloads))
+		}
+		for i, payload := range payloads {
+			if payload.GetTableOptions() != nil {
+				t.Fatalf("UpdateTable call %d must not send table_options", i)
+			}
+		}
+		payload := payloads[len(payloads)-1]
 		if payload.GetStreamSpec() == nil {
 			t.Fatalf("UpdateTable payload has no stream_spec")
 		}
@@ -1140,13 +1206,56 @@ func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 		if got := payload.GetStreamSpec().GetExpirationTime(); got != 168 {
 			t.Fatalf("UpdateTable payload expiration_time = %d, want 168", got)
 		}
-		if payload.GetTableOptions() != nil {
-			t.Fatalf("stream-only update must not send table_options")
-		}
 
 		stream := otsUnitStateStream(t, d)
 		if !stream.enabled || stream.expiration != 168 {
 			t.Fatalf("state stream = %#v, want enabled with 168", stream)
+		}
+	})
+
+	t.Run("transient quota exhaustion is retried", func(t *testing.T) {
+		gateway := &otsUnitGateway{
+			stream: otsUnitStream{enabled: true, expiration: 24},
+			failures: []*otsUnitFailure{{
+				path:    "/UpdateTable",
+				code:    "OTSQuotaExhausted",
+				message: "Table operations are too frequent.",
+				times:   1,
+			}},
+		}
+		server := httptest.NewServer(gateway)
+		defer server.Close()
+
+		d, err := update(t, gateway, server, otsUnitStreamConfig(true, 24), otsUnitStreamConfig(true, 168))
+		if err != nil {
+			t.Fatalf("Update with a transient quota error: %s (requests: %v)", err, gateway.paths())
+		}
+		if calls := gateway.count("/UpdateTable"); calls != 2 {
+			t.Fatalf("UpdateTable calls = %d, want 2 so the transient error is retried", calls)
+		}
+		if stream := otsUnitStateStream(t, d); !stream.enabled || stream.expiration != 168 {
+			t.Fatalf("state stream = %#v, want enabled with 168", stream)
+		}
+	})
+
+	t.Run("permanent quota exhaustion fails fast", func(t *testing.T) {
+		gateway := &otsUnitGateway{
+			stream: otsUnitStream{enabled: true, expiration: 24},
+			failures: []*otsUnitFailure{{
+				path:    "/UpdateTable",
+				code:    "OTSQuotaExhausted",
+				message: "Number of tables exceeds the upper limit.",
+				times:   1,
+			}},
+		}
+		server := httptest.NewServer(gateway)
+		defer server.Close()
+
+		if _, err := update(t, gateway, server, otsUnitStreamConfig(true, 24), otsUnitStreamConfig(true, 168)); err == nil {
+			t.Fatalf("Update with a permanent quota error succeeded, want failure")
+		}
+		if calls := gateway.count("/UpdateTable"); calls != 1 {
+			t.Fatalf("UpdateTable calls = %d, want 1 so the permanent error is not retried", calls)
 		}
 	})
 
@@ -1155,20 +1264,25 @@ func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 		server := httptest.NewServer(gateway)
 		defer server.Close()
 
-		d := update(t, gateway, server, otsUnitStreamConfig(true, 12), nil)
+		d, err := update(t, gateway, server, otsUnitStreamConfig(true, 12), nil)
+		if err != nil {
+			t.Fatalf("Update: %s (requests: %v)", err, gateway.paths())
+		}
 
-		payload := new(otsprotocol.UpdateTableRequest)
-		if err := proto.Unmarshal(gateway.last("/UpdateTable"), payload); err != nil {
-			t.Fatalf("decode UpdateTable payload: %s", err)
-		}
-		if payload.GetStreamSpec() == nil {
-			t.Fatalf("UpdateTable payload has no stream_spec")
-		}
-		if payload.GetStreamSpec().GetEnableStream() {
-			t.Fatalf("UpdateTable payload enable_stream = true, want false")
-		}
-		if payload.GetStreamSpec().ExpirationTime != nil {
-			t.Fatalf("UpdateTable payload expiration_time = %d, want omitted", payload.GetStreamSpec().GetExpirationTime())
+		payloads := otsUnitUpdateTablePayloads(t, gateway)
+		for i, payload := range payloads {
+			if payload.GetTableOptions() != nil {
+				t.Fatalf("UpdateTable call %d must not send table_options", i)
+			}
+			if payload.GetStreamSpec() == nil {
+				t.Fatalf("UpdateTable call %d has no stream_spec", i)
+			}
+			if payload.GetStreamSpec().GetEnableStream() {
+				t.Fatalf("UpdateTable call %d enable_stream = true, want false", i)
+			}
+			if payload.GetStreamSpec().ExpirationTime != nil {
+				t.Fatalf("UpdateTable call %d expiration_time = %d, want omitted", i, payload.GetStreamSpec().GetExpirationTime())
+			}
 		}
 
 		if stream := otsUnitStateStream(t, d); stream.enabled {

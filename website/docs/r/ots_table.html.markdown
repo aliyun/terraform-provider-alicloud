@@ -39,8 +39,13 @@ variable "name" {
   default = "terraform-ex"
 }
 
+resource "random_integer" "default" {
+  min = 10
+  max = 99
+}
+
 resource "alicloud_ots_instance" "default" {
-  name        = var.name
+  name        = "${var.name}${random_integer.default.result}"
   description = var.name
   accessed_by = "Any"
   tags = {

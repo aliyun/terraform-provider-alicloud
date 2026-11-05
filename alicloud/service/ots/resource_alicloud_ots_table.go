@@ -2,6 +2,7 @@ package ots
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -195,6 +196,18 @@ func suppressOtsStreamSpecificationDiff(k, old, new string, d *schema.ResourceDa
 	}
 	// Only the transition from an absent block is a no-op; an existing enabled block must still be disabled.
 	return old == "" || old == "0"
+}
+
+// isOtsTransientQuotaError matches the retryable quota variant documented for table operations.
+// The same error code also reports permanent exhaustion, such as the number of tables reaching
+// its limit, which must keep failing fast.
+func isOtsTransientQuotaError(err error) bool {
+	var otsErr *tablestore.OtsError
+	if !errors.As(err, &otsErr) {
+		return false
+	}
+	return otsErr.Code == tablestore.QUOTA_EXHAUSTED &&
+		strings.Contains(otsErr.Message, "Table operations are too frequent.")
 }
 
 func expandOtsStreamSpecification(specs []interface{}) *tablestore.StreamSpecification {
@@ -458,7 +471,7 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 				return tableStoreClient.UpdateTable(request)
 			})
 			if err != nil {
-				if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) {
+				if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) || isOtsTransientQuotaError(err) {
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
