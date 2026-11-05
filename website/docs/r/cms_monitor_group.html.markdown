@@ -26,6 +26,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "alicloud_cms_monitor_group" "example" {
   monitor_group_name = "tf-example-accmonitorgroup"
 }
@@ -47,7 +55,7 @@ resource "alicloud_cms_monitor_group" "default2" {
 
 The following arguments are supported:
 
-* `contact_groups` - (Optional) The alert group to which alert notifications will be sent.
+* `contact_groups` - (Optional) A list of alarm contact group names. Use a list even for one group, for example `contact_groups = [alicloud_cms_alarm_contact_group.default.id]`. On `alicloud_cms_group_metric_rule`, the argument with the same name takes a string.
 * `monitor_group_name` - (Optional) The name of the application group.
 * `resource_group_id` - (Optional, Available since v1.141.0) The ID of the resource group.
 * `resource_group_name` - (Optional, Available since v1.141.0) The name of the resource group.
