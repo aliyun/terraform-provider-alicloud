@@ -8,6 +8,12 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "ThreatDetection",
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_threat_detection_unknown_threat_detect_strategy",
+				Factory:  NewUnknownThreatDetectStrategyResource,
+			},
+		},
 		SDKResources: []conns.SDKResource{
 			{
 				TypeName: "alicloud_security_center_group",
