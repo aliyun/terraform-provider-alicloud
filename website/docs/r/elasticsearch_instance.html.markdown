@@ -101,10 +101,14 @@ The following arguments are supported:
 * `kibana_whitelist` - (Optional, Computed, List) The list of IP addresses in the whitelist. This parameter is available when whiteIpGroup is empty and modifies the default group's whitelist.
 * `master_configuration` - (Optional, Computed, Set, Available since v1.267.0) Configuration information for Elasticsearch dedicated master nodes. See [`master_configuration`](#master_configuration) below.
 * `order_action_type` - (Optional, Available since v1.267.0) Configuration change type. Valid values:
-  - upgrade (default): Upgrade configuration
-  - downgrade: Downgrade configuration.
+  - UPGRADE (default): Upgrade configuration
+  - DOWNGRADE: Downgrade configuration.
 
   -> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
+
+  -> **NOTE:** This parameter is sent to the configuration change API as the lowercase value `upgrade` or `downgrade`. It applies to both the `data_node_configuration` block and the deprecated `data_node_spec`, `data_node_amount`, `master_node_spec`, `client_node_spec`, `warm_node_spec` and `kibana_node_spec` fields. Set it to `DOWNGRADE` when reducing a specification or a node count; otherwise the API keeps its default upgrade behaviour.
+
+  -> **NOTE:** When `data_node_amount` or `data_node_configuration.0.amount` is reduced with `order_action_type = "DOWNGRADE"`, the provider first sends `orderActionType=downgrade` to the configuration change API. If the instance cannot reduce data nodes that way, the provider removes the nodes with the `ShrinkNode` API instead (the same applies to `warm_node_amount` and `warm_node_configuration.0.amount` with cold nodes). Nodes to be removed must not hold data; migrate the data of these nodes to other nodes first, otherwise the update fails and reports how many data-free nodes were found.
 
 * `password` - (Optional) The access password for the instance. It must be 8 to 32 characters in length and contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters (!@#$%^&*()_+-=).  
 * `password_wo` - (Optional, Available since v2.2.0) The write-only password of the account. It is only sent to the server when the resource is created or the `password_wo_version` changes and is never stored in the state or plan.

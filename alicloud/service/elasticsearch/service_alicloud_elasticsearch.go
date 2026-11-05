@@ -3,6 +3,7 @@ package elasticsearch
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -626,6 +627,138 @@ func setRenewalInstance(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
+// orderActionTypeQuery returns the value of orderActionType to send to
+// UpdateInstance. The API documents lowercase values (upgrade/downgrade) while
+// the schema keeps the historical uppercase enumeration.
+func orderActionTypeQuery(d *schema.ResourceData) (string, bool) {
+	v, ok := d.GetOk("order_action_type")
+	if !ok || v.(string) == "" {
+		return "", false
+	}
+	return strings.ToLower(v.(string)), true
+}
+
+func applyOrderActionType(query map[string]*string, d *schema.ResourceData) {
+	if v, ok := orderActionTypeQuery(d); ok {
+		query["orderActionType"] = helper.StringPointer(v)
+	}
+}
+
+// isNodeAmountDowngradeNotSupported reports whether UpdateInstance rejected the
+// change because the instance cannot reduce its data node count through the
+// configuration change API and requires ShrinkNode instead.
+func isNodeAmountDowngradeNotSupported(err error) bool {
+	return errs.IsExpectedErrors(err, []string{"NotSupportDowngradingInDetail"})
+}
+
+// isAmountDecreased reports whether the configured node count was reduced.
+func isAmountDecreased(d *schema.ResourceData, amountKey string) bool {
+	oldRaw, newRaw := d.GetChange(amountKey)
+	oldAmount, _ := oldRaw.(int)
+	newAmount, _ := newRaw.(int)
+	return newAmount > 0 && oldAmount > newAmount
+}
+
+// ShrinkNodesIfDecreased handles a node count decrease that UpdateInstance
+// cannot apply. It only acts when the user explicitly requested a downgrade, so
+// unset order_action_type keeps the previous behaviour, and it never removes
+// nodes that still hold data.
+func (s *ElasticsearchService) ShrinkNodesIfDecreased(d *schema.ResourceData, nodeType, amountKey string) (bool, error) {
+	if !isAmountDecreased(d, amountKey) {
+		return false, nil
+	}
+	if v, ok := orderActionTypeQuery(d); !ok || v != "downgrade" {
+		return false, nil
+	}
+	oldRaw, newRaw := d.GetChange(amountKey)
+	oldAmount, _ := oldRaw.(int)
+	newAmount, _ := newRaw.(int)
+	if err := s.ShrinkElasticsearchNodes(d.Id(), nodeType, oldAmount-newAmount); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// ShrinkElasticsearchNodes removes nodes through the ShrinkNode API. For
+// deployments that require an explicit node list, nodes are resolved with
+// GetSuggestShrinkableNodes, which only returns nodes without data, so a cluster
+// that still holds data fails before any node is removed.
+func (s *ElasticsearchService) ShrinkElasticsearchNodes(id, nodeType string, count int) error {
+	client := s.client
+	action := "ShrinkNode"
+
+	instance, err := s.DescribeElasticsearchInstance(id)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+
+	query := map[string]*string{
+		"clientToken": helper.StringPointer(helper.BuildClientToken(action)),
+		"nodeType":    helper.StringPointer(nodeType),
+	}
+	var body interface{}
+	// ACK architecture instances accept the node count only and reject host in
+	// the request body; ShrinkNode itself refuses nodes that still hold data.
+	if archType, _ := instance["archType"].(string); archType == "public" {
+		query["count"] = helper.StringPointer(strconv.Itoa(count))
+	} else {
+		suggestQuery := map[string]*string{
+			"nodeType": helper.StringPointer(nodeType),
+			"count":    helper.StringPointer(strconv.Itoa(count)),
+		}
+		suggestResponse, err := client.RoaGetWithApiName("elasticsearch", "2017-06-13", "GetSuggestShrinkableNodes", fmt.Sprintf("/openapi/instances/%s/suggest-shrinkable-nodes", id), suggestQuery, nil, nil)
+		logs.AddDebug("GetSuggestShrinkableNodes", suggestResponse, suggestQuery)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "GetSuggestShrinkableNodes", errs.AlibabaCloudSdkGoERROR)
+		}
+		items, ok := suggestResponse["Result"].([]interface{})
+		if !ok {
+			return errs.WrapError(fmt.Errorf("unexpected GetSuggestShrinkableNodes response for Elasticsearch instance %s: missing Result", id))
+		}
+		if len(items) < count {
+			return errs.WrapError(fmt.Errorf("only %d of the %d %s nodes requested for removal hold no data; migrate the data of the remaining nodes to other nodes before reducing the node count of Elasticsearch instance %s", len(items), count, nodeType, id))
+		}
+		nodes := make([]map[string]interface{}, 0, count)
+		for _, item := range items[:count] {
+			node, _ := item.(map[string]interface{})
+			entry := map[string]interface{}{"nodeType": nodeType}
+			if v, _ := node["host"].(string); v != "" {
+				entry["host"] = v
+			}
+			if v, ok := node["port"].(float64); ok {
+				entry["port"] = int(v)
+			}
+			if v, _ := node["zoneId"].(string); v != "" {
+				entry["zoneId"] = v
+			}
+			nodes = append(nodes, entry)
+		}
+		body = nodes
+	}
+
+	var response map[string]interface{}
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RoaPostWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s/actions/shrink", id), query, nil, body, false)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, body)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	if result, ok := response["Result"].(bool); ok && !result {
+		return errs.WrapError(fmt.Errorf("failed to shrink %d %s nodes of Elasticsearch instance %s", count, nodeType, id))
+	}
+	return nil
+}
+
 func updateDataNodeAmount(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
@@ -636,6 +769,7 @@ func updateDataNodeAmount(d *schema.ResourceData, meta interface{}) error {
 	requestQuery := map[string]*string{
 		"clientToken": helper.StringPointer(helper.BuildClientToken(action)),
 	}
+	applyOrderActionType(requestQuery, d)
 	content := make(map[string]interface{})
 	content["nodeAmount"] = d.Get("data_node_amount").(int)
 
@@ -655,6 +789,15 @@ func updateDataNodeAmount(d *schema.ResourceData, meta interface{}) error {
 	})
 
 	logs.AddDebug(action, response, content)
+	if err != nil && isNodeAmountDowngradeNotSupported(err) {
+		shrinked, shrinkErr := elasticsearchService.ShrinkNodesIfDecreased(d, "WORKER", "data_node_amount")
+		if shrinkErr != nil {
+			return errs.WrapError(shrinkErr)
+		}
+		if shrinked {
+			err = nil
+		}
+	}
 	if err != nil && !errs.IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
 		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
@@ -689,6 +832,7 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 	requestQuery := map[string]*string{
 		"clientToken": helper.StringPointer(helper.BuildClientToken(action)),
 	}
+	applyOrderActionType(requestQuery, d)
 
 	// retry
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
@@ -749,6 +893,7 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 	requestQuery := map[string]*string{
 		"clientToken": helper.StringPointer(helper.BuildClientToken(action)),
 	}
+	applyOrderActionType(requestQuery, d)
 
 	// retry
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
@@ -875,6 +1020,7 @@ func updateClientNode(d *schema.ResourceData, meta interface{}) error {
 	requestQuery := map[string]*string{
 		"clientToken": helper.StringPointer(helper.BuildClientToken(action)),
 	}
+	applyOrderActionType(requestQuery, d)
 
 	// retry
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
@@ -929,6 +1075,9 @@ func updateWarmNode(d *schema.ResourceData, meta interface{}) error {
 	}
 	request := elasticsearch.CreateUpdateInstanceRequest()
 	request.ClientToken = helper.BuildClientToken(request.GetActionName())
+	if v, ok := orderActionTypeQuery(d); ok {
+		request.OrderActionType = v
+	}
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
@@ -941,6 +1090,24 @@ func updateWarmNode(d *schema.ResourceData, meta interface{}) error {
 		return elasticsearchClient.UpdateInstance(request)
 	})
 
+	if err != nil && isNodeAmountDowngradeNotSupported(err) {
+		shrinked, shrinkErr := elasticsearchService.ShrinkNodesIfDecreased(d, "WORKER_WARM", "warm_node_amount")
+		if shrinkErr != nil {
+			return errs.WrapError(shrinkErr)
+		}
+		if shrinked {
+			// The node count now matches the configuration, so re-applying the
+			// request only carries the remaining changes. The previous request
+			// was rejected, so it needs a fresh client token.
+			request.ClientToken = helper.BuildClientToken(request.GetActionName())
+			raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+				return elasticsearchClient.UpdateInstance(request)
+			})
+			if err != nil && errs.IsExpectedErrors(err, []string{"MustChangeOneResource"}) {
+				err = nil
+			}
+		}
+	}
 	if err != nil && !errs.IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
 		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
@@ -973,6 +1140,7 @@ func updateKibanaNode(d *schema.ResourceData, meta interface{}) error {
 	requestQuery := map[string]*string{
 		"clientToken": helper.StringPointer(helper.BuildClientToken(action)),
 	}
+	applyOrderActionType(requestQuery, d)
 
 	// retry
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)

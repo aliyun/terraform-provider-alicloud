@@ -5025,3 +5025,281 @@ resource "alicloud_vswitch" "defaultAislbK" {
 
 `, name)
 }
+
+// Case downgrade: deprecated flat fields and the configuration block must both
+// send orderActionType=downgrade, and a data node count reduction must shrink
+// the cluster instead of failing with NotSupportDowngradingInDetail.
+func TestAccAliCloudElasticsearchInstance_downgradeLegacyFields(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMapDowngrade)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeElasticsearchInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccEsDowngrade%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependenceDowngrade)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_count":          "1",
+					"description":         name,
+					"vswitch_id":          "${alicloud_vswitch.default.id}",
+					"version":             "7.10.0_with_X-Pack",
+					"instance_category":   "x-pack",
+					"password":            "Admain@123",
+					"payment_type":        "PayAsYouGo",
+					"data_node_spec":      "elasticsearch.sn2ne.large",
+					"data_node_amount":    "3",
+					"data_node_disk_size": "20",
+					"data_node_disk_type": "cloud_ssd",
+					"kibana_node_spec":    "elasticsearch.sn1ne.large",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_count":          "1",
+						"description":         name,
+						"payment_type":        "PayAsYouGo",
+						"data_node_spec":      "elasticsearch.sn2ne.large",
+						"data_node_amount":    "3",
+						"data_node_disk_size": "20",
+						"data_node_disk_type": "cloud_ssd",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "order_action_type", "password", "update_strategy", "kibana_whitelist"},
+			},
+			{
+				// AC1: downgrade the data node specification through the
+				// deprecated flat field.
+				Config: testAccConfig(map[string]interface{}{
+					"order_action_type": "DOWNGRADE",
+					"data_node_spec":    "elasticsearch.sn1ne.large",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"order_action_type": "DOWNGRADE",
+						"data_node_spec":    "elasticsearch.sn1ne.large",
+						"data_node_amount":  "3",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "order_action_type", "password", "update_strategy", "kibana_whitelist"},
+			},
+			{
+				// AC2: reduce the data node count. v3 control planes apply it
+				// through UpdateInstance, other clusters through ShrinkNode.
+				Config: testAccConfig(map[string]interface{}{
+					"order_action_type": "DOWNGRADE",
+					"data_node_amount":  "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"order_action_type": "DOWNGRADE",
+						"data_node_spec":    "elasticsearch.sn1ne.large",
+						"data_node_amount":  "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "order_action_type", "password", "update_strategy", "kibana_whitelist"},
+			},
+			{
+				// AC3: upgrade regression with an explicit configuration change
+				// type.
+				Config: testAccConfig(map[string]interface{}{
+					"order_action_type": "UPGRADE",
+					"data_node_spec":    "elasticsearch.sn2ne.large",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"order_action_type": "UPGRADE",
+						"data_node_spec":    "elasticsearch.sn2ne.large",
+						"data_node_amount":  "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "order_action_type", "password", "update_strategy", "kibana_whitelist"},
+			},
+		},
+	})
+}
+
+// Case downgrade: the configuration block carries orderActionType=downgrade and
+// a reduced data_node_configuration.0.amount must shrink the cluster.
+func TestAccAliCloudElasticsearchInstance_downgradeConfiguration(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMapDowngrade)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeElasticsearchInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccEsDowngrade%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependenceDowngrade)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_count":   "1",
+					"description":  name,
+					"vswitch_id":   "${alicloud_vswitch.default.id}",
+					"version":      "7.10.0_with_X-Pack",
+					"password":     "Admain@123",
+					"payment_type": "PayAsYouGo",
+					"data_node_configuration": []map[string]interface{}{
+						{
+							"disk_type": "cloud_ssd",
+							"spec":      "elasticsearch.sn2ne.large",
+							"disk":      "20",
+							"amount":    "3",
+						},
+					},
+					"kibana_configuration": []map[string]interface{}{
+						{
+							"amount": "1",
+							"spec":   "elasticsearch.sn1ne.large",
+							"disk":   "0",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_count":                          "1",
+						"description":                         name,
+						"payment_type":                        "PayAsYouGo",
+						"data_node_configuration.#":           "1",
+						"data_node_configuration.0.spec":      "elasticsearch.sn2ne.large",
+						"data_node_configuration.0.amount":    "3",
+						"data_node_configuration.0.disk":      "20",
+						"data_node_configuration.0.disk_type": "cloud_ssd",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "order_action_type", "password", "update_strategy", "kibana_whitelist"},
+			},
+			{
+				// AC1: downgrade the data node specification through the
+				// configuration block.
+				Config: testAccConfig(map[string]interface{}{
+					"order_action_type": "DOWNGRADE",
+					"data_node_configuration": []map[string]interface{}{
+						{
+							"disk_type": "cloud_ssd",
+							"spec":      "elasticsearch.sn1ne.large",
+							"disk":      "20",
+							"amount":    "3",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"order_action_type":                "DOWNGRADE",
+						"data_node_configuration.0.spec":   "elasticsearch.sn1ne.large",
+						"data_node_configuration.0.amount": "3",
+						"data_node_configuration.0.disk":   "20",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "order_action_type", "password", "update_strategy", "kibana_whitelist"},
+			},
+			{
+				// AC2: reduce the data node count.
+				Config: testAccConfig(map[string]interface{}{
+					"order_action_type": "DOWNGRADE",
+					"data_node_configuration": []map[string]interface{}{
+						{
+							"disk_type": "cloud_ssd",
+							"spec":      "elasticsearch.sn1ne.large",
+							"disk":      "20",
+							"amount":    "2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"order_action_type":                "DOWNGRADE",
+						"data_node_configuration.0.spec":   "elasticsearch.sn1ne.large",
+						"data_node_configuration.0.amount": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "order_action_type", "password", "update_strategy", "kibana_whitelist"},
+			},
+		},
+	})
+}
+
+var AlicloudElasticsearchInstanceMapDowngrade = map[string]string{
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+}
+
+func AlicloudElasticsearchInstanceBasicDependenceDowngrade(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_vpc" "default" {
+  description = "es-instance-downgrade-test"
+  vpc_name    = var.name
+  cidr_block  = "10.0.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = "cn-hangzhou-i"
+  description  = "es-instance-downgrade-test"
+  cidr_block   = "10.0.1.0/24"
+  vswitch_name = var.name
+}
+`, name)
+}
