@@ -18,7 +18,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -84,9 +83,9 @@ func (r *catalogResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"type": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
-				Default:  stringdefault.StaticString("PAIMON"),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
 					stringvalidator.OneOf("PAIMON", "ICEBERG"),
@@ -108,6 +107,7 @@ func (r *catalogResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Computed: true,
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
+					boolplanmodifier.UseStateForUnknown(),
 				},
 				Description: "Whether the catalog is shared. Omitted means the field is not sent; `false` is sent explicitly.",
 			},
@@ -116,6 +116,7 @@ func (r *catalogResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 				Description: "The share ID issued by DLF catalog sharing.",
 			},
@@ -199,10 +200,7 @@ func (r *catalogResource) Create(ctx context.Context, req resource.CreateRequest
 			}
 			return retry.RetryableError(err)
 		}
-		if dErr != nil {
-			return retry.NonRetryableError(dErr)
-		}
-		return retry.NonRetryableError(err)
+		return retry.NonRetryableError(dErr)
 	})
 	logs.AddDebug(action, response, request)
 	if err != nil {
@@ -212,6 +210,12 @@ func (r *catalogResource) Create(ctx context.Context, req resource.CreateRequest
 		)
 		return
 	}
+
+	// The catalog now exists. Record the identity before waiting so a waiter or
+	// read failure leaves a tracked (tainted) resource instead of an orphan.
+	pending := plan
+	pending.Id = types.StringValue(name)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &pending)...)
 
 	// CreateCatalog is asynchronous. A brief NotFound is Pending (eventual
 	// consistency); INITIALIZE_FAILED is terminal.
@@ -266,6 +270,7 @@ func (r *catalogResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	deadline := time.Now().Add(catalogTimeout)
 	if !plan.Options.Equal(state.Options) {
 		oldOptions, diags := stringMapFromFramework(ctx, state.Options)
 		resp.Diagnostics.Append(diags...)
@@ -285,12 +290,12 @@ func (r *catalogResource) Update(ctx context.Context, req resource.UpdateRequest
 			}
 			backoff := newCatalogBackoff(3*time.Second, 30*time.Second)
 			var response map[string]interface{}
-			err := retry.RetryContext(ctx, catalogTimeout, func() *retry.RetryError {
+			err := retry.RetryContext(ctx, remainingUntil(deadline), func() *retry.RetryError {
 				var callErr error
 				response, callErr = r.Meta().RoaPost("DlfNext", "2025-03-10", action, query, nil, body, false)
 				if callErr != nil {
 					if needsRetry(callErr) {
-						if waitErr := backoff.Wait(ctx, catalogTimeout); waitErr != nil {
+						if waitErr := backoff.Wait(ctx, remainingUntil(deadline)); waitErr != nil {
 							return retry.NonRetryableError(waitErr)
 						}
 						return retry.RetryableError(callErr)
@@ -435,7 +440,7 @@ func catalogModelFromObject(ctx context.Context, object map[string]interface{}, 
 func buildCatalogCreateBody(ctx context.Context, plan catalogResourceModel) (map[string]interface{}, error) {
 	body := map[string]interface{}{
 		"name": plan.Name.ValueString(),
-		"type": plan.Type.ValueString(),
+		"type": effectiveCatalogType(plan.Type),
 	}
 	options, diags := stringMapFromFramework(ctx, plan.Options)
 	if diags.HasError() {
@@ -502,6 +507,14 @@ func decideCatalogCreateRecovery(postErrAlreadyExists, postErrExplicitClientErro
 // segment so reserved characters cannot change the request path.
 func catalogAction(id string) string {
 	return "/dlf/v1/catalogs/" + url.PathEscape(id)
+}
+
+// effectiveCatalogType applies the PAIMON default when type is omitted.
+func effectiveCatalogType(v types.String) string {
+	if v.IsNull() || v.IsUnknown() || v.ValueString() == "" {
+		return "PAIMON"
+	}
+	return v.ValueString()
 }
 
 // remainingUntil clamps a passed deadline to zero.

@@ -67,8 +67,14 @@ func (s *Service) DescribeCatalogWithRetryTimeout(ctx context.Context, id string
 	return response, nil
 }
 
-// ListCatalogs lists one page of catalogs.
+// ListCatalogs lists one page of catalogs with a one-minute retry budget.
 func (s *Service) ListCatalogs(ctx context.Context, catalogNamePattern string, pageToken string, maxResults int) (objects []interface{}, nextToken string, err error) {
+	return s.ListCatalogsWithTimeout(ctx, catalogNamePattern, pageToken, maxResults, 1*time.Minute)
+}
+
+// ListCatalogsWithTimeout lists one page of catalogs with a caller-supplied
+// retry budget (the data source shares one deadline across all pages).
+func (s *Service) ListCatalogsWithTimeout(ctx context.Context, catalogNamePattern string, pageToken string, maxResults int, timeout time.Duration) (objects []interface{}, nextToken string, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -90,11 +96,11 @@ func (s *Service) ListCatalogs(ctx context.Context, catalogNamePattern string, p
 	}
 
 	backoff := newCatalogBackoff(3*time.Second, 30*time.Second)
-	err = retry.RetryContext(ctx, 1*time.Minute, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		response, err = client.RoaGet("DlfNext", "2025-03-10", action, query, nil, nil)
 		if err != nil {
 			if helper.NeedRetry(err) {
-				if waitErr := backoff.Wait(ctx, 1*time.Minute); waitErr != nil {
+				if waitErr := backoff.Wait(ctx, timeout); waitErr != nil {
 					return retry.NonRetryableError(waitErr)
 				}
 				return retry.RetryableError(err)

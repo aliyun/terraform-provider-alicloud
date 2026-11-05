@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
@@ -127,8 +128,9 @@ func (d *catalogsDataSource) Read(ctx context.Context, req datasource.ReadReques
 		pattern = model.CatalogNamePattern.ValueString()
 	}
 	service := NewService(d.Meta())
+	deadline := time.Now().Add(catalogTimeout)
 	objects, err := listAllCatalogs(ctx, func(pattern string, token string, max int) ([]interface{}, string, error) {
-		return service.ListCatalogs(ctx, pattern, token, max)
+		return service.ListCatalogsWithTimeout(ctx, pattern, token, max, remainingUntil(deadline))
 	}, pattern)
 	if err != nil {
 		resp.Diagnostics.AddError("Listing "+catalogsDataSourceTypeName, errs.WrapError(err).Error())

@@ -407,6 +407,16 @@ func TestUnitDlfNextCatalogCreateBody(t *testing.T) {
 	if _, ok := body["shareId"]; ok {
 		t.Fatalf("empty share_id must not be sent, body=%v", body)
 	}
+
+	// An omitted type falls back to PAIMON.
+	noType := catalogResourceModel{Name: types.StringValue("cat"), Type: types.StringNull(), IsShared: types.BoolNull()}
+	body, err = buildCatalogCreateBody(ctx, noType)
+	if err != nil {
+		t.Fatalf("buildCatalogCreateBody: %v", err)
+	}
+	if body["type"] != "PAIMON" {
+		t.Fatalf("omitted type must default to PAIMON, body=%v", body)
+	}
 }
 
 func TestUnitDlfNextCatalogFilterDiscrimination(t *testing.T) {

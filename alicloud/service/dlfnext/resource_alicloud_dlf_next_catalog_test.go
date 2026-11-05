@@ -3,6 +3,7 @@ package dlfnext_test
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -64,6 +65,13 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 				),
 			},
 			{
+				// Omitting is_shared/share_id after the complete create must not
+				// plan a replacement: the computed values keep their state.
+				Config:             testAccDlfNextCatalogConfig(catalogName, map[string]string{"comment": "c1", "description": "d1", "dlf.discovery-query-results-retained-days": "7"}, false),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -75,7 +83,7 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 					"comment":     "c1",
 					"description": "d1",
 					"dlf.discovery-query-results-retained-days": "7",
-				}, "  catalog_name_pattern = alicloud_dlf_next_catalog.default.name\n  output_file = \"catalogs.json\""),
+				}, "  catalog_name_pattern = alicloud_dlf_next_catalog.default.name\n  output_file = \"/tmp/dlf-next-catalogs.json\""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.alicloud_dlf_next_catalogs.default", "catalogs.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_dlf_next_catalogs.default", "catalogs.0.name", catalogName),
@@ -83,6 +91,7 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_dlf_next_catalogs.default", "catalogs.0.id", catalogName),
 					resource.TestCheckResourceAttr("data.alicloud_dlf_next_catalogs.default", "names.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_dlf_next_catalogs.default", "names.0", catalogName),
+					testAccDlfNextCatalogsOutputFileContents("/tmp/dlf-next-catalogs.json", catalogName),
 				),
 			},
 			{
@@ -294,6 +303,19 @@ func catalogCleanupBackendCapacity(err error) bool {
 	return false
 }
 
+func testAccDlfNextCatalogsOutputFileContents(path, want string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("reading output_file %s: %s", path, err)
+		}
+		if !strings.Contains(string(data), want) {
+			return fmt.Errorf("output_file %s does not contain %q: %s", path, want, string(data))
+		}
+		return nil
+	}
+}
+
 func testAccAlicloudDlfNextCatalogRemoteOptionSet(resourceId, key, want string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceId]
@@ -339,6 +361,10 @@ func testAccAlicloudDlfNextCatalogRemoteOptionAbsent(resourceId, key string) res
 // testAccDlfNextCatalogCompleteConfig renders the complete resource config with
 // quoted dotted option keys and an explicit is_shared = false.
 func testAccDlfNextCatalogCompleteConfig(catalogName string, options map[string]string) string {
+	return testAccDlfNextCatalogConfig(catalogName, options, true)
+}
+
+func testAccDlfNextCatalogConfig(catalogName string, options map[string]string, includeIsShared bool) string {
 	keys := make([]string, 0, len(options))
 	for k := range options {
 		keys = append(keys, k)
@@ -356,13 +382,17 @@ func testAccDlfNextCatalogCompleteConfig(catalogName string, options map[string]
 		b.WriteString("\n  }")
 		block = b.String()
 	}
+	isSharedLine := ""
+	if includeIsShared {
+		isSharedLine = "  is_shared = false"
+	}
 	return fmt.Sprintf(`
 resource "alicloud_dlf_next_catalog" "default" {
-  name      = %q
-  type      = "PAIMON"
-  is_shared = false
+  name = %q
+  type = "PAIMON"
 %s
-}`, catalogName, block)
+%s
+}`, catalogName, isSharedLine, block)
 }
 
 // testAccDlfNextCatalogWithDataSource renders the resource and a data source
