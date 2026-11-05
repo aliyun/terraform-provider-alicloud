@@ -68,7 +68,7 @@ The following arguments are supported:
 * `comment` - (Optional, ForceNew) The remark of the bucket. 0 to 128 characters in length. Changing this field recreates the resource, because the ENS API exposes no in-place update for the bucket comment.
 * `bucket_acl` - (Optional) The access control list of the bucket. Valid values: `private`, `public-read`, `public-read-write`. Defaults to `private`. Updatable in place via PutBucketAcl.
 * `ens_region_id` - (Optional, ForceNew) The node region id. Required when `logical_bucket_type` is `sink`. Write-only: not returned by GetBucketInfo, so the configured value is preserved in state and cannot be read back or imported.
-* `dispatch_scope` - (Optional, ForceNew) The dispatch scope of a global (`standard`) bucket. Valid values: `domestic`, `oversea`. Write-only: not returned by GetBucketInfo, so the configured value is preserved in state and cannot be read back or imported.
+* `dispatch_scope` - (Optional, ForceNew) The dispatch scope. Valid values: `domestic`, `oversea`. Optional for a global (`standard`) bucket; specifies the dispatch scope when explicit control is needed. Write-only: not returned by GetBucketInfo, so the configured value is preserved in state and cannot be read back or imported.
 
 ## Attributes Reference
 

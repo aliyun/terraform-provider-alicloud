@@ -29,10 +29,11 @@ const ensBucketTypeName = "alicloud_ens_bucket"
 // write/read is wrapped in an incremental retry. These match the ENS package's
 // existing test setup helper durations.
 const (
-	ensBucketPutTimeout    = 2 * time.Minute
-	ensBucketReadyTimeout  = 3 * time.Minute
-	ensBucketAclTimeout    = 2 * time.Minute
-	ensBucketDeleteTimeout = 1 * time.Minute
+	ensBucketPutTimeout        = 2 * time.Minute
+	ensBucketReadyTimeout      = 3 * time.Minute
+	ensBucketAclTimeout        = 2 * time.Minute
+	ensBucketDeleteTimeout     = 2 * time.Minute
+	ensBucketDeleteWaitTimeout = 5 * time.Minute
 )
 
 var (
@@ -136,8 +137,9 @@ func (r *ensBucketResource) Schema(ctx context.Context, req resource.SchemaReque
 			},
 			"dispatch_scope": schema.StringAttribute{
 				Optional: true,
-				Description: "The dispatch scope. Valid values: `domestic` and `oversea`. Required for a global (`standard`) bucket. " +
-					"Write-only: not returned by GetBucketInfo, so the configured value is preserved in state.",
+				Description: "The dispatch scope. Valid values: `domestic` and `oversea`. Optional for a global (`standard`) bucket; " +
+					"specifies the dispatch scope when explicit control is needed. Write-only: not returned by GetBucketInfo, " +
+					"so the configured value is preserved in state.",
 				Validators: []validator.String{
 					stringvalidator.OneOf("domestic", "oversea"),
 				},
@@ -166,6 +168,21 @@ func (r *ensBucketResource) Create(ctx context.Context, req resource.CreateReque
 	var plan ensBucketResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// R4.17: a sink (single-node) bucket requires ens_region_id. PutBucket
+	// rejects a sink request without EnsRegionId (EnsRegionIdIsMandatory), so
+	// surface the missing argument locally before the request is built — a
+	// clear diagnostic instead of an opaque API rejection at runtime. Only
+	// enforces when the user explicitly set logical_bucket_type=sink; the
+	// standard default needs no ens_region_id.
+	if plan.LogicalBucketType.ValueString() == "sink" && (plan.EnsRegionId.IsNull() || plan.EnsRegionId.ValueString() == "") {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: missing ens_region_id", ensBucketTypeName),
+			"`ens_region_id` is required when `logical_bucket_type` is `sink` (single-node bucket). "+
+				"Set it to the ENS node region id where the sink bucket is created.",
+		)
 		return
 	}
 
@@ -267,13 +284,16 @@ func (r *ensBucketResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
+	bucketName := state.BucketName.ValueString()
+	var info map[string]interface{}
+
 	// Only bucket_acl is updatable in place; every other mutable attribute is
 	// ForceNew, so reaching Update means the ACL changed.
 	if !plan.BucketAcl.Equal(state.BucketAcl) {
 		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		if err := retry.Retry(ensBucketAclTimeout, func() *retry.RetryError {
 			_, e := r.Meta().RpcPost("Ens", "2017-11-10", "PutBucketAcl", nil, map[string]interface{}{
-				"BucketName": state.BucketName.ValueString(),
+				"BucketName": bucketName,
 				"BucketAcl":  plan.BucketAcl.ValueString(),
 			}, true)
 			if e != nil {
@@ -291,21 +311,51 @@ func (r *ensBucketResource) Update(ctx context.Context, req resource.UpdateReque
 			)
 			return
 		}
+		// PutBucketAcl is eventually consistent: GetBucketInfo can lag behind the
+		// write (return the previous ACL, omit it, or report it stale), so wait
+		// for the service to converge on the applied ACL before reading the full
+		// state. This keeps the in-place ACL update from desyncing from the plan
+		// and lets a later refresh/import observe the converged value.
+		converged, waitErr := waitEnsBucketAcl(r.Meta(), bucketName, plan.BucketAcl.ValueString())
+		if waitErr != nil {
+			// Convergence timed out. PutBucketAcl succeeded, so the override
+			// below trusts the applied value; re-read for the other fields.
+			got, gErr := getEnsBucket(r.Meta(), bucketName)
+			if gErr != nil {
+				resp.Diagnostics.AddError(
+					fmt.Sprintf("Reading %s: calling GetBucketInfo", ensBucketTypeName),
+					errs.WrapErrorf(gErr, "Reading %s: calling GetBucketInfo", ensBucketTypeName).Error(),
+				)
+				return
+			}
+			info = got
+		} else {
+			info = converged
+		}
+	} else {
+		got, gErr := getEnsBucket(r.Meta(), bucketName)
+		if gErr != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Reading %s: calling GetBucketInfo", ensBucketTypeName),
+				errs.WrapErrorf(gErr, "Reading %s: calling GetBucketInfo", ensBucketTypeName).Error(),
+			)
+			return
+		}
+		info = got
 	}
 
-	info, err := getEnsBucket(r.Meta(), state.BucketName.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Reading %s: calling GetBucketInfo", ensBucketTypeName),
-			errs.WrapErrorf(err, "Reading %s: calling GetBucketInfo", ensBucketTypeName).Error(),
-		)
-		return
-	}
 	if info == nil {
 		resp.State.RemoveResource(ctx)
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, ensBucketState(info, plan))...)
+	result := ensBucketState(info, plan)
+	// PutBucketAcl applied plan.BucketAcl when the ACL changed. GetBucketInfo is
+	// eventually consistent, so trust the applied value over a potentially stale
+	// read-back to guarantee the new state matches the plan.
+	if !plan.BucketAcl.IsNull() && !plan.BucketAcl.IsUnknown() && plan.BucketAcl.ValueString() != "" {
+		result.BucketAcl = plan.BucketAcl
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, result)...)
 }
 
 func (r *ensBucketResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -408,12 +458,56 @@ func waitEnsBucketReady(client *connectivity.AliyunClient, bucketName string) (m
 	return info, nil
 }
 
+// waitEnsBucketAcl polls GetBucketInfo until the reported BucketAcl matches the
+// expected value and returns the converged BucketInfo. PutBucketAcl is
+// eventually consistent: a read-back right after the write can return the
+// previous ACL, omit it, or report it stale, so the caller waits for the
+// service to converge before mapping the state (and so a later refresh/import
+// observes the applied ACL). Transient failures keep polling; only a
+// non-retryable error aborts. Returns the converged info, or an error if the
+// ACL never converges within the timeout (the caller then trusts the applied
+// value via the override).
+func waitEnsBucketAcl(client *connectivity.AliyunClient, bucketName, expectedAcl string) (map[string]interface{}, error) {
+	var info map[string]interface{}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err := retry.Retry(ensBucketAclTimeout, func() *retry.RetryError {
+		got, e := getEnsBucket(client, bucketName)
+		if e != nil {
+			if helper.NeedRetry(e) {
+				wait()
+				return retry.RetryableError(e)
+			}
+			return retry.NonRetryableError(e)
+		}
+		if got == nil {
+			wait()
+			return retry.RetryableError(fmt.Errorf("bucket %s is not visible via GetBucketInfo yet", bucketName))
+		}
+		if v, ok := got["BucketAcl"].(string); ok && v == expectedAcl {
+			info = got
+			return nil
+		}
+		wait()
+		return retry.RetryableError(fmt.Errorf("bucket %s ACL has not converged to %s yet", bucketName, expectedAcl))
+	})
+	if err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
 // waitEnsBucketDeleted polls GetBucketInfo until the bucket reports NoSuchBucket.
 // ENS deletes buckets asynchronously after DeleteBucket returns, so without
 // this wait a refresh immediately after destroy would still observe the bucket.
 func waitEnsBucketDeleted(client *connectivity.AliyunClient, bucketName string) error {
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
-	return retry.Retry(ensBucketReadyTimeout, func() *retry.RetryError {
+	// ENS deletes buckets asynchronously and GetBucketInfo is eventually
+	// consistent across replicas: a single NoSuchBucket read can be served by a
+	// fresh replica while a stale replica still reports the bucket. Require two
+	// consecutive absent reads before declaring deletion, so a refresh right
+	// after destroy is far less likely to observe a resurrected bucket.
+	confirmed := 0
+	return retry.Retry(ensBucketDeleteWaitTimeout, func() *retry.RetryError {
 		got, e := getEnsBucket(client, bucketName)
 		if e != nil {
 			// Transient failures (throttling, ServiceUnavailable) keep polling;
@@ -425,8 +519,14 @@ func waitEnsBucketDeleted(client *connectivity.AliyunClient, bucketName string) 
 			return retry.NonRetryableError(e)
 		}
 		if got == nil {
-			return nil
+			confirmed++
+			if confirmed >= 2 {
+				return nil
+			}
+			wait()
+			return retry.RetryableError(fmt.Errorf("bucket %s deletion not yet confirmed stable", bucketName))
 		}
+		confirmed = 0
 		wait()
 		return retry.RetryableError(fmt.Errorf("bucket %s is still deleting", bucketName))
 	})
@@ -438,6 +538,14 @@ func waitEnsBucketDeleted(client *connectivity.AliyunClient, bucketName string) 
 // desyncs from a config that relied on the API default. Write-only fields
 // (EnsRegionId, DispatchScope) are not returned by GetBucketInfo, so they are
 // preserved from the prior model passed by the caller.
+//
+// BucketAcl additionally preserves the prior value when GetBucketInfo returns
+// no ACL: right after PutBucketAcl the read-back can be eventually consistent
+// and omit BucketAcl, so defaulting to "private" would lose a non-default ACL
+// the user just applied and trigger an inconsistent-result-after-apply. A known
+// prior value (the planned ACL in Create/Update, the stored ACL in Read) is
+// trusted in that window; the API default is used only when neither the API nor
+// the prior value supplies one.
 func ensBucketState(info map[string]interface{}, prior ensBucketResourceModel) ensBucketResourceModel {
 	str := func(key string) types.String {
 		if v, ok := info[key].(string); ok && v != "" {
@@ -451,13 +559,26 @@ func ensBucketState(info map[string]interface{}, prior ensBucketResourceModel) e
 		}
 		return types.StringValue(def)
 	}
+	// strDefaultOrPrior returns the API value for key when present; otherwise it
+	// preserves a known prior value, falling back to def only when neither the
+	// API nor a known prior value supplies one. Used for BucketAcl so an
+	// eventually-consistent GetBucketInfo does not erase a just-applied ACL.
+	strDefaultOrPrior := func(key, def string, priorVal types.String) types.String {
+		if v, ok := info[key].(string); ok && v != "" {
+			return types.StringValue(v)
+		}
+		if !priorVal.IsNull() && !priorVal.IsUnknown() && priorVal.ValueString() != "" {
+			return priorVal
+		}
+		return types.StringValue(def)
+	}
 	bucketName := str("BucketName")
 	return ensBucketResourceModel{
 		Id:                bucketName,
 		BucketName:        bucketName,
 		LogicalBucketType: strDefault("LogicalBucketType", "standard"),
 		Comment:           str("Comment"),
-		BucketAcl:         strDefault("BucketAcl", "private"),
+		BucketAcl:         strDefaultOrPrior("BucketAcl", "private", prior.BucketAcl),
 		EnsRegionId:       prior.EnsRegionId,
 		DispatchScope:     prior.DispatchScope,
 		CreateTime:        str("CreateTime"),
