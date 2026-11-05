@@ -37,10 +37,11 @@ terraform {
 }
 
 data "alicloud_polardb_node_classes" "default" {
-  db_type    = "MySQL"
-  db_version = "8.0"
-  pay_type   = "PostPaid"
-  category   = "Normal"
+  db_type       = "MySQL"
+  db_version    = "8.0"
+  pay_type      = "PostPaid"
+  category      = "Normal"
+  db_node_class = "polar.mysql.x4.medium"
 }
 
 resource "alicloud_vpc" "default" {
@@ -69,6 +70,8 @@ resource "alicloud_polardb_endpoint" "default" {
   endpoint_type = "Custom"
 }
 ```
+
+-> **NOTE:** The example filters `alicloud_polardb_node_classes` by a general-purpose node class so that the cluster can be created in the selected zone. Replace `polar.mysql.x4.medium` with a node class that is available for purchase in your region and zone.
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_endpoint&spm=docs.r.polardb_endpoint.example&intl_lang=EN_US)
 
