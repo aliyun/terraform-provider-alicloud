@@ -109,6 +109,7 @@ data "alicloud_images" "default" {
   name_regex  = "^ubuntu"
   most_recent = true
   owners      = "system"
+  architecture = "x86_64"
 }
 
 resource "alicloud_vpc" "default" {
