@@ -53,14 +53,23 @@ func ResourceCluster() *schema.Resource {
 				}
 			}
 			if payType, ok := d.GetOk("pay_type"); ok && payType.(string) == "PrePaid" {
-				if unit, ok := d.GetOk("period_unit"); ok {
-					if duration, ok := d.GetOk("duration"); ok {
+				// Validate only values that come from the configuration. After a
+				// read, duration/period_unit hold whatever ModifyAutoRenewAttribute
+				// reports (for example a 24-month renewal that is only expressible
+				// through auto_renew_period), and a plan must not be blocked by a
+				// value the user never configured.
+				if polardbConfigHasAttribute(d, "duration") || polardbConfigHasAttribute(d, "period_unit") {
+					unit := d.Get("period_unit").(string)
+					if unit == "" {
+						unit = string(Month)
+					}
+					if duration := d.Get("duration").(string); duration != "" {
 						valid := map[string]map[string]bool{
 							"Month": {"1": true, "2": true, "3": true, "6": true, "12": true},
 							"Year":  {"1": true, "2": true, "3": true},
 						}
-						if !valid[unit.(string)][duration.(string)] {
-							return fmt.Errorf("duration %q is not valid for period_unit %q: Month supports 1, 2, 3, 6, 12 and Year supports 1, 2, 3", duration.(string), unit.(string))
+						if !valid[unit][duration] {
+							return fmt.Errorf("duration %q is not valid for period_unit %q: Month supports 1, 2, 3, 6, 12 and Year supports 1, 2, 3", duration, unit)
 						}
 					}
 				}
@@ -458,13 +467,13 @@ func ResourceCluster() *schema.Resource {
 				ValidateFunc: validators.IntBetween(20, 64000),
 				// DescribeDBClusterAttribute only reports StorageUpperBound while
 				// automatic storage scaling is enabled, and ModifyDBCluster does not
-				// apply it while scaling is disabled. Suppressing the diff in both
-				// directions therefore keeps an imported/refreshed empty value from
-				// planning a change, and does not pretend that a bound edited while
-				// disabled was applied: the configured value is sent by the update
-				// that re-enables storage_auto_scale.
+				// apply it while scaling is disabled. Suppressing the diff unless
+				// scaling is explicitly enabled therefore covers both an imported
+				// empty value and a cluster whose API never reports the field, and
+				// does not pretend that a bound edited while disabled was applied:
+				// the configured value is sent by the update that enables scaling.
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) == "Disable" {
+					if v, ok := d.GetOk("storage_auto_scale"); !ok || v.(string) != "Enable" {
 						return true
 					}
 					return false
@@ -2005,11 +2014,12 @@ func resourceClusterRead(d *schema.ResourceData, meta interface{}) error {
 			inDBClusterIPArrays = append(inDBClusterIPArrays, e.(map[string]interface{}))
 		}
 	}
-	// Collect the whitelist array names declared in the configuration. A hidden
-	// array is system-internal and should not leak into state when the user did
-	// not configure it, but a user-managed hidden array (attribute "hidden" with
-	// a matching configured name) must be preserved so the group does not get
-	// dropped from state and cause a non-convergent plan.
+	// Collect the whitelist array names present in the resource data (the
+	// configuration during apply, the state during import). A hidden array is
+	// system-internal and should not leak into state when the user did not
+	// declare it, but a user-managed hidden array (attribute "hidden" with a
+	// matching name) must be preserved so the group does not get dropped from
+	// state and cause a non-convergent plan.
 	configuredArrayNames := make(map[string]bool)
 	for _, temp := range inDBClusterIPArrays {
 		if name, ok := temp["db_cluster_ip_array_name"].(string); ok && name != "" {
@@ -2336,7 +2346,7 @@ func resourceClusterRead(d *schema.ResourceData, meta interface{}) error {
 	if clusterInfo["StorageAutoScale"] != nil {
 		d.Set("storage_auto_scale", clusterInfo["StorageAutoScale"])
 	}
-	if clusterInfo["StorageUpperBound"] != nil {
+	if rawBound := clusterInfo["StorageUpperBound"]; rawBound != nil {
 		// Per the OpenAPI contract (CreateDBCluster/ModifyDBCluster),
 		// StorageUpperBound is a standard-version cluster parameter whose unit is
 		// GB, and StorageAutoScale is documented as a standard-version feature.
@@ -2344,8 +2354,11 @@ func resourceClusterRead(d *schema.ResourceData, meta interface{}) error {
 		// so StorageUpperBound is absent in their DescribeDBClusterAttribute
 		// response and the nil check above skips it. When present the value is
 		// already in GB, matching the schema unit.
-		resultStorageUpperBound, _ := clusterInfo["StorageUpperBound"].(json.Number).Int64()
-		d.Set("storage_upper_bound", resultStorageUpperBound)
+		if resultStorageUpperBound, ok := rawBound.(json.Number); ok {
+			if bound, err := resultStorageUpperBound.Int64(); err == nil {
+				d.Set("storage_upper_bound", bound)
+			}
+		}
 	}
 	if clusterInfo["DynamoDB"] != nil {
 		d.Set("enable_dynamodb", convertPolarDBEnableDynamoDBReadResponse(clusterInfo["DynamoDB"].(string)))

@@ -870,11 +870,15 @@ func TestAccAliCloudPolarDBCluster_UpdatePrePaid(t *testing.T) {
 			{
 				// The previous step already left duration=2/period_unit=Month in
 				// the API, so this step must move the values to exercise the new
-				// ModifyAutoRenewAttribute branch.
+				// ModifyAutoRenewAttribute branch. auto_renew_period is removed from
+				// the accumulated configuration because it and duration/period_unit
+				// write the same API value and a conflicting pair is rejected at
+				// plan time.
 				Config: testAccConfig(map[string]interface{}{
-					"renewal_status": "AutoRenewal",
-					"duration":       "6",
-					"period_unit":    "Month",
+					"renewal_status":    "AutoRenewal",
+					"auto_renew_period": REMOVEKEY,
+					"duration":          "6",
+					"period_unit":       "Month",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -3105,6 +3109,22 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"storage_auto_scale":  "Disable",
+						"storage_upper_bound": "300",
+					}),
+				),
+			},
+			{
+				// Re-enable automatic storage scaling: ModifyDBCluster sends both
+				// StorageAutoScale and the configured StorageUpperBound, and the
+				// bound is reported again by the API, so the value is verified end
+				// to end instead of only through the suppressed-diff path.
+				Config: testAccConfig(map[string]interface{}{
+					"storage_auto_scale":  "Enable",
+					"storage_upper_bound": "300",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_auto_scale":  "Enable",
 						"storage_upper_bound": "300",
 					}),
 				),
