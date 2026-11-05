@@ -421,6 +421,10 @@ func resourceDatabaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	// semantics; user-configured account_privilege is create-only (ForceNew).
 	request["AccountPrivilege"] = "DBOwner"
 	if update && enableGrantAccountPrivilege1 {
+		// The grant retry and the post-grant wait share one Update deadline:
+		// otherwise the wait would start a second full TimeoutUpdate after the
+		// grant already consumed part of the budget.
+		grantDeadline := time.Now().Add(d.Timeout(schema.TimeoutUpdate))
 		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
@@ -441,7 +445,7 @@ func resourceDatabaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		// previous account list, or the account before its grant is empowered, and
 		// the read would then clear the managed account state for a change that is
 		// still in flight.
-		if err := waitDatabaseAccountEmpowered(polarDbServiceV2.DescribePolarDbDatabase, d.Id(), fmt.Sprint(request["AccountName"]), d.Timeout(schema.TimeoutUpdate)); err != nil {
+		if err := waitDatabaseAccountEmpowered(polarDbServiceV2.DescribePolarDbDatabase, d.Id(), fmt.Sprint(request["AccountName"]), remainingUntil(grantDeadline)); err != nil {
 			return errs.WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
@@ -454,14 +458,14 @@ func resourceDatabaseUpdate(d *schema.ResourceData, meta interface{}) error {
 // is listed with PrivilegeStatus=Empowered, so the read that follows an update
 // observes a completed grant instead of a pending one. A missing account list,
 // an absent account and a non-terminal PrivilegeStatus are retried within the
-// update budget; other errors are returned immediately.
+// remaining update budget; other errors are returned immediately.
 func waitDatabaseAccountEmpowered(describe func(string) (map[string]interface{}, error), id, accountName string, timeout time.Duration) error {
 	accountName = strings.TrimSpace(accountName)
 	if accountName == "" {
 		return nil
 	}
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	return retry.Retry(timeout, func() *retry.RetryError {
+	return retry.RetryContext(context.Background(), timeout, func() *retry.RetryError {
 		objectRaw, err := describe(id)
 		if err != nil {
 			if errs.NotFoundError(err) {
@@ -488,6 +492,15 @@ func waitDatabaseAccountEmpowered(describe func(string) (map[string]interface{},
 			return retry.RetryableError(fmt.Errorf("account %q has PrivilegeStatus %q on database %s, waiting for Empowered", accountName, status, id))
 		}
 	})
+}
+
+// remainingUntil returns the time left before deadline and never a negative
+// duration, so a stage that starts after the deadline gets no fresh budget.
+func remainingUntil(deadline time.Time) time.Duration {
+	if remaining := time.Until(deadline); remaining > 0 {
+		return remaining
+	}
+	return 0
 }
 
 func resourceDatabaseDelete(d *schema.ResourceData, meta interface{}) error {

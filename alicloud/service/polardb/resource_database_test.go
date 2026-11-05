@@ -355,23 +355,23 @@ resource "alicloud_polardb_account" "update" {
 // underscores, and account names are limited to 2-16 characters. The standard
 // tf-testAcc prefix therefore cannot be used literally: new cases use the
 // compatible lower-case form tf_testacc and keep derived account names short.
-const polarDBDatabaseTestResourceId = "alicloud_polardb_database.default"
+const databaseTestResourceId = "alicloud_polardb_database.default"
 
-func polarDBDatabaseTestPreCheck(t *testing.T) {
+func databaseTestPreCheck(t *testing.T) {
 	acctest.PreCheck(t)
 }
 
-func polarDBDatabaseTestServiceFunc() func() interface{} {
+func databaseTestServiceFunc() func() interface{} {
 	return func() interface{} {
 		return polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
 }
 
-// polarDBDatabaseAccountRecord returns the Accounts.Account entry of the given
+// databaseAccountRecord returns the Accounts.Account entry of the given
 // account from a DescribeDatabases response. The account is matched by name
 // only: the API does not guarantee list order, so a first-entry fallback could
 // observe another account's records.
-func polarDBDatabaseAccountRecord(object map[string]interface{}, accountName string) map[string]interface{} {
+func databaseAccountRecord(object map[string]interface{}, accountName string) map[string]interface{} {
 	if accountName == "" {
 		return nil
 	}
@@ -402,7 +402,7 @@ func checkDatabaseAccountPrivilege(resourceId, accountName, expected string) res
 		if err != nil {
 			return err
 		}
-		record := polarDBDatabaseAccountRecord(object, accountName)
+		record := databaseAccountRecord(object, accountName)
 		if record == nil {
 			return fmt.Errorf("account %q not returned by DescribeDatabases for %s; Accounts=%v", accountName, rs.Primary.ID, object["Accounts"])
 		}
@@ -425,7 +425,7 @@ func checkDatabaseAccountName(resourceId, expected string) resource.TestCheckFun
 		if err != nil {
 			return err
 		}
-		record := polarDBDatabaseAccountRecord(object, expected)
+		record := databaseAccountRecord(object, expected)
 		if record == nil {
 			return fmt.Errorf("account %q not returned by DescribeDatabases for %s; Accounts=%v", expected, rs.Primary.ID, object["Accounts"])
 		}
@@ -494,7 +494,7 @@ func checkNoDatabaseAccountGrant(resourceId, accountName string) resource.TestCh
 		if err != nil {
 			return err
 		}
-		if record := polarDBDatabaseAccountRecord(object, accountName); record != nil {
+		if record := databaseAccountRecord(object, accountName); record != nil {
 			return fmt.Errorf("expected account %q not to be authorized for %s, got %v", accountName, rs.Primary.ID, record)
 		}
 		return nil
@@ -515,7 +515,7 @@ func checkDatabaseAccountEmpowered(resourceId, accountName string) resource.Test
 		if err != nil {
 			return err
 		}
-		record := polarDBDatabaseAccountRecord(object, accountName)
+		record := databaseAccountRecord(object, accountName)
 		if record == nil {
 			return fmt.Errorf("account %q not returned by DescribeDatabases for %s; Accounts=%v", accountName, rs.Primary.ID, object["Accounts"])
 		}
@@ -526,17 +526,17 @@ func checkDatabaseAccountEmpowered(resourceId, accountName string) resource.Test
 	}
 }
 
-func polarDBDatabaseCheck(resourceId string, checkMap map[string]string) acctest.ResourceAttrMapUpdate {
+func databaseCheck(resourceId string, checkMap map[string]string) acctest.ResourceAttrMapUpdate {
 	rac := acctest.ResourceAttrCheckInit(
-		acctest.ResourceCheckInitWithDescribeMethod(resourceId, new(map[string]interface{}), polarDBDatabaseTestServiceFunc(), "DescribePolarDbDatabase"),
+		acctest.ResourceCheckInitWithDescribeMethod(resourceId, new(map[string]interface{}), databaseTestServiceFunc(), "DescribePolarDbDatabase"),
 		acctest.ResourceAttrInit(resourceId, checkMap),
 	)
 	return rac.ResourceAttrMapUpdateSet()
 }
 
-func polarDBDatabaseDestroyCheck(resourceId string, checkMap map[string]string) resource.TestCheckFunc {
+func databaseDestroyCheck(resourceId string, checkMap map[string]string) resource.TestCheckFunc {
 	rac := acctest.ResourceAttrCheckInit(
-		acctest.ResourceCheckInitWithDescribeMethod(resourceId, new(map[string]interface{}), polarDBDatabaseTestServiceFunc(), "DescribePolarDbDatabase"),
+		acctest.ResourceCheckInitWithDescribeMethod(resourceId, new(map[string]interface{}), databaseTestServiceFunc(), "DescribePolarDbDatabase"),
 		acctest.ResourceAttrInit(resourceId, checkMap),
 	)
 	return rac.CheckResourceDestroy()
@@ -596,7 +596,7 @@ func waitDatabaseAccountPrivilege(resourceId, accountName, expected string) reso
 		for {
 			object, err := polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient)).DescribePolarDbDatabase(rs.Primary.ID)
 			if err == nil {
-				if record := polarDBDatabaseAccountRecord(object, accountName); record != nil {
+				if record := databaseAccountRecord(object, accountName); record != nil {
 					last = fmt.Sprint(record["AccountPrivilege"])
 					if last == expected {
 						return nil
@@ -626,7 +626,7 @@ func waitDatabaseAccountAbsent(resourceId, accountName string) resource.TestChec
 		for {
 			object, err := polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient)).DescribePolarDbDatabase(rs.Primary.ID)
 			if err == nil {
-				record := polarDBDatabaseAccountRecord(object, accountName)
+				record := databaseAccountRecord(object, accountName)
 				if record == nil {
 					return nil
 				}
@@ -647,8 +647,8 @@ func waitDatabaseAccountAbsent(resourceId, accountName string) resource.TestChec
 // the ForceNew attribute, and the drift signalled when the configured account's
 // grant disappears.
 func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
-	resourceId := polarDBDatabaseTestResourceId
-	testAccCheck := polarDBDatabaseCheck(resourceId, AliCloudPolarDbDatabaseMap11854)
+	resourceId := databaseTestResourceId
+	testAccCheck := databaseCheck(resourceId, AliCloudPolarDbDatabaseMap11854)
 	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, aliCloudPolarDbDatabaseMySQLDependence)
@@ -660,9 +660,9 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 		"db_description":    name,
 	}
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { polarDBDatabaseTestPreCheck(t) },
+		PreCheck:                 func() { databaseTestPreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             polarDBDatabaseDestroyCheck(resourceId, AliCloudPolarDbDatabaseMap11854),
+		CheckDestroy:             databaseDestroyCheck(resourceId, AliCloudPolarDbDatabaseMap11854),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(privilegeConfig),
@@ -732,6 +732,19 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 					}),
 					checkDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
 				),
+			},
+			{
+				// The replacement recreated the database, so the imported state must
+				// recover the database identity again while the account fields, which
+				// an import cannot know, stay empty.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name":        name,
+					"db_description": name,
+					"engine":         "MySQL",
+				}),
 			},
 			{
 				// The MySQL engine cannot re-grant an account on update, so changing
@@ -838,6 +851,18 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 				),
 			},
 			{
+				// This replacement starts the legacy scenario, so the imported state
+				// must again expose the database identity with empty account fields.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name":        name,
+					"db_description": name,
+					"engine":         "MySQL",
+				}),
+			},
+			{
 				// Legacy configuration that only manages account_name: dropping the
 				// privilege key is a no-op for the database, and the check revokes the
 				// grant so the next refresh must expose the lost binding even though no
@@ -876,8 +901,8 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 // proves the value is unrecoverable, and a plan-only step proves that keeping it
 // in the configuration plans a replacement.
 func TestAccAliCloudPolarDbDatabase_accountPrivilegePostgreSQL(t *testing.T) {
-	resourceId := polarDBDatabaseTestResourceId
-	testAccCheck := polarDBDatabaseCheck(resourceId, AliCloudPolarDbDatabaseMap11854)
+	resourceId := databaseTestResourceId
+	testAccCheck := databaseCheck(resourceId, AliCloudPolarDbDatabaseMap11854)
 	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, aliCloudPolarDbDatabasePostgreSQLDependence)
@@ -888,9 +913,9 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegePostgreSQL(t *testing.T) {
 		"account_privilege": "ReadOnly",
 	}
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { polarDBDatabaseTestPreCheck(t) },
+		PreCheck:                 func() { databaseTestPreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             polarDBDatabaseDestroyCheck(resourceId, AliCloudPolarDbDatabaseMap11854),
+		CheckDestroy:             databaseDestroyCheck(resourceId, AliCloudPolarDbDatabaseMap11854),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(privilegeConfig),
@@ -941,15 +966,15 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegePostgreSQL(t *testing.T) {
 // creation without collate/ctype (default "C"), the account_privilege grant and
 // the account_name update served by GrantAccountPrivilege.
 func TestAccAliCloudPolarDbDatabase_oracleAccountPrivilege(t *testing.T) {
-	resourceId := polarDBDatabaseTestResourceId
-	testAccCheck := polarDBDatabaseCheck(resourceId, AliCloudPolarDbDatabaseMap11854)
+	resourceId := databaseTestResourceId
+	testAccCheck := databaseCheck(resourceId, AliCloudPolarDbDatabaseMap11854)
 	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, aliCloudPolarDbDatabaseOracleDependence)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { polarDBDatabaseTestPreCheck(t) },
+		PreCheck:                 func() { databaseTestPreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             polarDBDatabaseDestroyCheck(resourceId, AliCloudPolarDbDatabaseMap11854),
+		CheckDestroy:             databaseDestroyCheck(resourceId, AliCloudPolarDbDatabaseMap11854),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1012,7 +1037,7 @@ func TestAccAliCloudPolarDbDatabase_oracleAccountPrivilege(t *testing.T) {
 // so accepting the combination would silently ignore it.
 func TestAccAliCloudPolarDbDatabase_accountPrivilegeRequiresAccountName(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { polarDBDatabaseTestPreCheck(t) },
+		PreCheck:                 func() { databaseTestPreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
@@ -1055,7 +1080,7 @@ resource "alicloud_polardb_database" "default" {
 }
 `, rand, name)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { polarDBDatabaseTestPreCheck(t) },
+		PreCheck:                 func() { databaseTestPreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{

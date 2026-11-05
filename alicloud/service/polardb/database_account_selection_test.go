@@ -27,13 +27,13 @@ func databaseAccountResponseForEngine(engine string, records ...map[string]inter
 	return response
 }
 
-// TestUnitAliCloudPolarDbDatabase_accountSelection covers the multi-account
+// TestUnitDatabaseAccountSelection covers the multi-account
 // DescribeDatabases responses consumed by the resource read path. The configured
 // account must be selected by name regardless of list order, and an unknown or
 // empty account name must never fall back to the first entry: that entry may
 // belong to another account, and binding its privilege to the ForceNew
 // account_privilege would plan a spurious database replacement.
-func TestUnitAliCloudPolarDbDatabase_accountSelection(t *testing.T) {
+func TestUnitDatabaseAccountSelection(t *testing.T) {
 	accountA := map[string]interface{}{"AccountName": "alice", "AccountPrivilege": "ReadOnly", "PrivilegeStatus": "Empowered"}
 	accountB := map[string]interface{}{"AccountName": "bob", "AccountPrivilege": "ReadWrite", "PrivilegeStatus": "Empowered"}
 
@@ -141,12 +141,12 @@ func TestUnitAliCloudPolarDbDatabase_accountSelection(t *testing.T) {
 	}
 }
 
-// TestUnitAliCloudPolarDbDatabase_refreshAccountState covers the state effect of
+// TestUnitDatabaseRefreshAccountState covers the state effect of
 // the resource read path, not only the account selection helper. A legal empty
 // account list proves that the last grant was revoked and must clear the stale
 // ForceNew privilege; a missing or malformed block cannot prove that and keeps
 // the recorded value.
-func TestUnitAliCloudPolarDbDatabase_refreshAccountState(t *testing.T) {
+func TestUnitDatabaseRefreshAccountState(t *testing.T) {
 	accountA := map[string]interface{}{"AccountName": "alice", "AccountPrivilege": "ReadOnly"}
 	accountB := map[string]interface{}{"AccountName": "bob", "AccountPrivilege": "ReadWrite"}
 
@@ -271,11 +271,11 @@ func TestUnitAliCloudPolarDbDatabase_refreshAccountState(t *testing.T) {
 	}
 }
 
-// TestUnitAliCloudPolarDbDatabase_createKeepsAccountStateDuringRead covers the
+// TestUnitDatabaseCreateKeepsAccountState covers the
 // create-time read: a create can observe an eventually consistent account list,
 // so the configured identity and privilege must survive until a later refresh
 // can prove the removal.
-func TestUnitAliCloudPolarDbDatabase_createKeepsAccountStateDuringRead(t *testing.T) {
+func TestUnitDatabaseCreateKeepsAccountState(t *testing.T) {
 	d := schema.TestResourceDataRaw(t, ResourceDatabase().Schema, map[string]interface{}{
 		"account_name":      "alice",
 		"account_privilege": "ReadOnly",
@@ -290,12 +290,12 @@ func TestUnitAliCloudPolarDbDatabase_createKeepsAccountStateDuringRead(t *testin
 	}
 }
 
-// TestUnitAliCloudPolarDbDatabase_accountNameChange covers the guard that
+// TestUnitDatabaseAccountNameChange covers the guard that
 // rejects an account_name change on engines whose update does not re-grant the
 // account. Accepting such a change would send no request, and the read would
 // bind the new account's privilege to the ForceNew account_privilege after the
 // plan, so every change on these engines is rejected.
-func TestUnitAliCloudPolarDbDatabase_accountNameChange(t *testing.T) {
+func TestUnitDatabaseAccountNameChange(t *testing.T) {
 	tests := []struct {
 		name     string
 		response map[string]interface{}
@@ -339,10 +339,10 @@ func TestUnitAliCloudPolarDbDatabase_accountNameChange(t *testing.T) {
 	}
 }
 
-// TestUnitAliCloudPolarDbDatabase_importKeepsAccountStateEmpty proves that an
+// TestUnitDatabaseImportKeepsAccountStateEmpty proves that an
 // imported database carries no account identity and therefore no account
 // selection is attempted from the list position.
-func TestUnitAliCloudPolarDbDatabase_importKeepsAccountStateEmpty(t *testing.T) {
+func TestUnitDatabaseImportKeepsAccountStateEmpty(t *testing.T) {
 	accountB := map[string]interface{}{"AccountName": "bob", "AccountPrivilege": "ReadWrite"}
 	d := schema.TestResourceDataRaw(t, ResourceDatabase().Schema, map[string]interface{}{})
 	refreshDatabaseAccountState(d, databaseAccountResponse(accountB))
@@ -354,11 +354,11 @@ func TestUnitAliCloudPolarDbDatabase_importKeepsAccountStateEmpty(t *testing.T) 
 	}
 }
 
-// TestUnitAliCloudPolarDbDatabase_createRequiresAccountName covers the
+// TestUnitDatabaseCreateRequiresAccountName covers the
 // apply-time guard: an account_name that is unknown at plan time can resolve to
 // an empty string when Create runs. The guard must reject the request before any
 // client call, so an empty client is never dereferenced here.
-func TestUnitAliCloudPolarDbDatabase_createRequiresAccountName(t *testing.T) {
+func TestUnitDatabaseCreateRequiresAccountName(t *testing.T) {
 	d := schema.TestResourceDataRaw(t, ResourceDatabase().Schema, map[string]interface{}{
 		"db_cluster_id":     "pc-database-guard-only",
 		"db_name":           "tf_testacc_guard",
@@ -377,11 +377,11 @@ func TestUnitAliCloudPolarDbDatabase_createRequiresAccountName(t *testing.T) {
 	}
 }
 
-// TestUnitAliCloudPolarDbDatabase_waitAccountEmpowered covers the post-grant
+// TestUnitDatabaseWaitAccountEmpowered covers the post-grant
 // wait: it must only return once the account is listed with
 // PrivilegeStatus=Empowered, keep waiting while the status is transitional or
 // the account list is not yet visible, and surface other errors immediately.
-func TestUnitAliCloudPolarDbDatabase_waitAccountEmpowered(t *testing.T) {
+func TestUnitDatabaseWaitAccountEmpowered(t *testing.T) {
 	empowered := func(status string) map[string]interface{} {
 		return databaseAccountResponseForEngine("PostgreSQL", map[string]interface{}{
 			"AccountName":     "alice",
@@ -489,6 +489,42 @@ func TestUnitAliCloudPolarDbDatabase_waitAccountEmpowered(t *testing.T) {
 		}
 		if err := waitDatabaseAccountEmpowered(describe, "pc-1:db", "  ", time.Second); err != nil {
 			t.Fatalf("expected no wait for an empty account name, got %v", err)
+		}
+	})
+}
+
+// TestUnitDatabaseRemainingBudget covers the shared Update budget: the post-grant
+// wait only receives the time left before the deadline the grant retry already
+// started from, so a grant that consumed the budget cannot hand the wait a fresh
+// full TimeoutUpdate.
+func TestUnitDatabaseRemainingBudget(t *testing.T) {
+	t.Run("a future deadline keeps only the remaining time", func(t *testing.T) {
+		budget := 2 * time.Second
+		remaining := remainingUntil(time.Now().Add(budget))
+		if remaining <= 0 || remaining > budget {
+			t.Fatalf("expected a positive remaining budget within %s, got %s", budget, remaining)
+		}
+	})
+
+	t.Run("an expired deadline leaves no fresh budget", func(t *testing.T) {
+		if remaining := remainingUntil(time.Now().Add(-time.Second)); remaining != 0 {
+			t.Fatalf("expected no remaining budget after the deadline, got %s", remaining)
+		}
+	})
+
+	t.Run("a wait started after the deadline fails without a new budget", func(t *testing.T) {
+		describe := func(string) (map[string]interface{}, error) {
+			return databaseAccountResponseForEngine("PostgreSQL", map[string]interface{}{
+				"AccountName":     "alice",
+				"PrivilegeStatus": "Empowering",
+			}), nil
+		}
+		started := time.Now()
+		if err := waitDatabaseAccountEmpowered(describe, "pc-1:db", "alice", remainingUntil(started.Add(-time.Millisecond))); err == nil {
+			t.Fatal("expected the wait to fail once the shared Update deadline has passed")
+		}
+		if elapsed := time.Since(started); elapsed > 2*time.Second {
+			t.Fatalf("expected the wait to stop with the shared budget, got %s", elapsed)
 		}
 	})
 }
