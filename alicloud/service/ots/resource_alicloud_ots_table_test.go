@@ -459,6 +459,44 @@ func TestAccAliCloudOtsTable_withTableByOKEncryption(t *testing.T) {
 	})
 }
 
+// wireLogDescribeTable reads the table back through the provider service and
+// logs the primary-key schema the OTS service actually returned, so the
+// DescribeTable wire for the new options is locatable in the acceptance log.
+func wireLogDescribeTable(t *testing.T, resourceId string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		response, err := ots.NewService(client).DescribeOtsTable(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		for index, key := range response.TableMeta.SchemaEntry {
+			name, keyType, option := "", "", "nil"
+			if key.Name != nil {
+				name = *key.Name
+			}
+			if key.Type != nil {
+				keyType = fmt.Sprintf("%d", int(*key.Type))
+			}
+			if key.Option != nil {
+				switch *key.Option {
+				case tablestore.AUTO_INCREMENT:
+					option = "AUTO_INCREMENT"
+				case tablestore.NONE:
+					option = "NONE"
+				default:
+					option = fmt.Sprintf("%d", int(*key.Option))
+				}
+			}
+			t.Logf("OTS_WIRE describe_table table=%s primary_key[%d] name=%s type=%s option=%s", rs.Primary.ID, index, name, keyType, option)
+		}
+		return nil
+	}
+}
+
 func TestAccAliCloudOtsTable_withAutoIncrementPrimaryKey(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
@@ -519,6 +557,7 @@ func TestAccAliCloudOtsTable_withAutoIncrementPrimaryKey(t *testing.T) {
 						"max_version":                   "1",
 						"deviation_cell_version_in_sec": "86400",
 					}),
+					wireLogDescribeTable(t, resourceId),
 				),
 			},
 			{
@@ -585,6 +624,7 @@ func TestAccAliCloudOtsTable_withLocalTxn(t *testing.T) {
 						"max_version":                   "1",
 						"deviation_cell_version_in_sec": "86400",
 					}),
+					wireLogDescribeTable(t, resourceId),
 				),
 			},
 			{
