@@ -437,26 +437,37 @@ func parseFieldSchema(fsMap map[string]interface{}) (*tablestore.FieldSchema, er
 		}
 		fieldSchema.FieldType = vv
 	}
-	if v, ok := fsMap["is_array"]; ok {
+	// Nested fields only carry FieldSchemas; the server rejects index, is_array,
+	// store, enable_sort_and_agg and virtual-column attributes on them.
+	isNested := fieldSchema.FieldType == tablestore.FieldType_NESTED
+	if isNested {
+		if v, ok := fsMap["enable_sort_and_agg"].(bool); ok && v {
+			return nil, errs.WrapError(fmt.Errorf("field %q of type Nested does not support enable_sort_and_agg", fieldName))
+		}
+		if v, ok := fsMap["is_virtual_field"].(bool); ok && v {
+			return nil, errs.WrapError(fmt.Errorf("field %q of type Nested cannot be a virtual field", fieldName))
+		}
+	}
+	if v, ok := fsMap["is_array"]; ok && !isNested {
 		isArray := v.(bool)
 		fieldSchema.IsArray = &isArray
 	}
-	if v, ok := fsMap["index"]; ok {
+	if v, ok := fsMap["index"]; ok && !isNested {
 		index := v.(bool)
 		fieldSchema.Index = &index
 	}
-	if v, ok := fsMap["analyzer"]; ok && fsMap["analyzer"] != "" {
+	if v, ok := fsMap["analyzer"]; ok && fsMap["analyzer"] != "" && !isNested {
 		analyzer, err := ConvertSearchIndexAnalyzerTypeString(SearchIndexAnalyzerTypeString(v.(string)))
 		if err != nil {
 			return nil, errs.WrapError(err)
 		}
 		fieldSchema.Analyzer = &analyzer
 	}
-	if v, ok := fsMap["enable_sort_and_agg"]; ok {
+	if v, ok := fsMap["enable_sort_and_agg"]; ok && !isNested {
 		enableSortAndAgg := v.(bool)
 		fieldSchema.EnableSortAndAgg = &enableSortAndAgg
 	}
-	if v, ok := fsMap["store"]; ok {
+	if v, ok := fsMap["store"]; ok && !isNested {
 		store := v.(bool)
 		fieldSchema.Store = &store
 	}
@@ -469,7 +480,7 @@ func parseFieldSchema(fsMap map[string]interface{}) (*tablestore.FieldSchema, er
 			fieldSchema.DateFormats = dateFormats
 		}
 	}
-	if v, ok := fsMap["is_virtual_field"]; ok {
+	if v, ok := fsMap["is_virtual_field"]; ok && !isNested {
 		isVirtualField := v.(bool)
 		fieldSchema.IsVirtualField = &isVirtualField
 	}
