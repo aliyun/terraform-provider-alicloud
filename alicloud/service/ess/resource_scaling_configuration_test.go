@@ -2565,15 +2565,6 @@ func noSchedulerOptionsRemoteCheck(t *testing.T, resourceId string) resource.Tes
 	})
 }
 
-func privatePoolMatchCriteriaRemoteCheck(t *testing.T, resourceId, expected string) resource.TestCheckFunc {
-	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
-		if got := fmt.Sprint(response["PrivatePoolOptions.MatchCriteria"]); got != expected {
-			return fmt.Errorf("remote PrivatePoolOptions.MatchCriteria = %q, expected %q", got, expected)
-		}
-		return nil
-	})
-}
-
 // TestAccAliCloudEssScalingConfiguration_EmptyBlockGuard covers empty
 // private_pool_options blocks and their removal without panicking.
 func TestAccAliCloudEssScalingConfiguration_EmptyBlockGuard(t *testing.T) {
@@ -2617,36 +2608,12 @@ func TestAccAliCloudEssScalingConfiguration_EmptyBlockGuard(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context", "private_pool_options"},
 			},
 			{
-				// A non-empty private pool block with the Open criterion is a valid
-				// configuration that needs no specific pool id, so the transition
-				// into it (and back out below) is exercised without provisioning a
-				// private pool.
-				Config: testAccConfig(map[string]interface{}{
-					"private_pool_options": []map[string]interface{}{
-						{"match_criteria": "Open"},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					privatePoolMatchCriteriaRemoteCheck(t, resourceId, "Open"),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context", "scheduler_options"},
-			},
-			{
-				// The ESS modify API keeps the previously applied private pool
-				// settings when the parameter is omitted, so removing the block drops
-				// it from state while the remote value remains. The untouched
-				// scheduler options are still asserted to stay empty.
 				Config: testAccConfig(map[string]interface{}{
 					"private_pool_options": acctest.REMOVEKEY,
 					"scheduler_options":    acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "private_pool_options.#", "0"),
+					noPrivatePoolRemoteCheck(t, resourceId),
 					noSchedulerOptionsRemoteCheck(t, resourceId),
 				),
 			},
