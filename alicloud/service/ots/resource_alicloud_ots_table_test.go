@@ -4,6 +4,7 @@ package ots_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
@@ -147,6 +148,168 @@ func TestAccAliCloudOtsTable_basic(t *testing.T) {
 						"deviation_cell_version_in_sec": "86400",
 					}),
 				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudOtsTable_stream(t *testing.T) {
+	var v *tablestore.DescribeTableResponse
+
+	resourceId := "alicloud_ots_table.default"
+	ra := acctest.ResourceAttrInit(resourceId, otsTableBasicMap)
+	serviceFunc := func() interface{} {
+		return ots.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("testAcc%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceOtsTableConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": "${alicloud_ots_instance.default.name}",
+					"table_name":    "${var.name}",
+					"primary_key": []map[string]interface{}{
+						{
+							"name": "pk1",
+							"type": "Integer",
+						},
+					},
+					"time_to_live": "-1",
+					"max_version":  "1",
+					"stream_specification": []map[string]interface{}{
+						{
+							"enable_stream":   true,
+							"expiration_time": 24,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"stream_specification.#":                 "1",
+						"stream_specification.0.enable_stream":   "true",
+						"stream_specification.0.expiration_time": "24",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stream_specification": []map[string]interface{}{
+						{
+							"enable_stream":   true,
+							"expiration_time": 168,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"stream_specification.0.expiration_time": "168",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stream_specification": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"stream_specification.0.enable_stream":   acctest.REMOVEKEY,
+						"stream_specification.0.expiration_time": acctest.REMOVEKEY,
+						"stream_specification.#":                 "0",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stream_specification": []map[string]interface{}{
+						{
+							"enable_stream":   true,
+							"expiration_time": 12,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"stream_specification.#":                 "1",
+						"stream_specification.0.enable_stream":   "true",
+						"stream_specification.0.expiration_time": "12",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stream_specification": []map[string]interface{}{
+						{
+							"enable_stream": false,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"stream_specification.0.enable_stream":   acctest.REMOVEKEY,
+						"stream_specification.0.expiration_time": acctest.REMOVEKEY,
+						"stream_specification.#":                 "0",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stream_specification": []map[string]interface{}{
+						{
+							"enable_stream": true,
+						},
+					},
+				}),
+				ExpectError: regexp.MustCompile("expiration_time"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stream_specification": []map[string]interface{}{
+						{
+							"enable_stream":   true,
+							"expiration_time": 169,
+						},
+					},
+				}),
+				ExpectError: regexp.MustCompile("expiration_time"),
 			},
 		},
 	})
