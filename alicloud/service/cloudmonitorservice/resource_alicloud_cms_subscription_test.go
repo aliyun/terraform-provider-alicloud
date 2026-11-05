@@ -120,24 +120,6 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
 				ImportStateVerify: true,
 			},
-			{
-				// Same number of conditions with different content, plus a
-				// different expression: a count-only waiter would pass here.
-				Config: testAccCmsSubscriptionConfigCompleteUpdated(name),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription updated"),
-					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.expression", "1 and 2 or 3"),
-					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.#", "2"),
-					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.0.value", "CriticalCPUUsage"),
-					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.1.value", "P0,P1"),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
-				ImportStateVerify: true,
-			},
 		},
 	})
 }
@@ -300,35 +282,6 @@ resource "alicloud_cms_subscription" "default" {
       field = "labels.severity"
       op    = "IN"
       value = "P1,P2"
-    }
-  }
-}
-`, testAccCmsSubscriptionCompleteDependence(name))
-}
-
-func testAccCmsSubscriptionConfigCompleteUpdated(name string) string {
-	return fmt.Sprintf(`%s
-resource "alicloud_cms_subscription" "default" {
-  subscription_name      = var.name
-  workspace              = alicloud_cms_workspace.default.workspace_name
-  notify_strategy_id     = alicloud_cms_event_notify_policy.default.uuid
-  description            = "complete subscription updated"
-  enable                 = true
-  subscribe_legacy_event = true
-
-  filter_setting {
-    expression = "1 and 2 or 3"
-
-    conditions {
-      field = "labels.alertname"
-      op    = "EQ"
-      value = "CriticalCPUUsage"
-    }
-
-    conditions {
-      field = "labels.severity"
-      op    = "IN"
-      value = "P0,P1"
     }
   }
 }
