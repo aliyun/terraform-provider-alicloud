@@ -123,6 +123,7 @@ data "alicloud_zones" "default" {
 }
 data "alicloud_instance_types" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  image_id          = "${data.alicloud_images.default.images.0.id}"
 }
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu"
