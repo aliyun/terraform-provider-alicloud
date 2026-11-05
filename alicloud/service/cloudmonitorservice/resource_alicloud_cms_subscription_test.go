@@ -50,8 +50,15 @@ func TestAccAliCloudCmsSubscription_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
+				ResourceName: resourceId,
+				ImportState:  true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources[resourceId]
+					if !ok {
+						return "", fmt.Errorf("resource %s not found in state", resourceId)
+					}
+					return fmt.Sprintf("%s:%s", rs.Primary.Attributes["workspace"], rs.Primary.ID), nil
+				},
 				ImportStateVerify: true,
 			},
 		},

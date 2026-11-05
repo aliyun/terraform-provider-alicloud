@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
@@ -502,8 +503,20 @@ func (r *cmsSubscriptionResource) Delete(ctx context.Context, req resource.Delet
 	}
 }
 
+// ImportState accepts <workspace>:<subscription_id> because every subscription
+// request, including the read used to refresh imported state, is scoped by its
+// workspace.
 func (r *cmsSubscriptionResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	parts := strings.SplitN(req.ID, ":", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		resp.Diagnostics.AddError(
+			"Invalid import ID",
+			fmt.Sprintf("Expected an import ID in the form <workspace>:<subscription_id>, got %q.", req.ID),
+		)
+		return
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace"), parts[0])...)
 }
 
 func (r *cmsSubscriptionResource) setCmsSubscriptionEnable(id string, workspace types.String, enable bool) error {

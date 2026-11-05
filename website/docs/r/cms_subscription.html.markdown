@@ -135,8 +135,8 @@ The following attributes are exported:
 
 ## Import
 
-Cms Subscription can be imported using the id, e.g.
+Cms Subscription can be imported using the workspace and the id, separated by a colon, e.g.
 
 ```shell
-$ terraform import alicloud_cms_subscription.example <id>
+$ terraform import alicloud_cms_subscription.example <workspace>:<id>
 ```
