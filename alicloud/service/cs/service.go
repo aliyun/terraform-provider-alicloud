@@ -1361,6 +1361,23 @@ func setCerts(d *schema.ResourceData, meta interface{}, skipSetCertificateAuthor
 	csClient := CsClient{roaClient}
 	kubeConfig, err := csClient.DescribeClusterKubeConfigWithExpiration(d.Id(), 0)
 	if err != nil {
+		// Legacy computed credentials are best-effort. A caller allowed to
+		// manage a cluster need not be allowed to obtain its credentials; this
+		// read also runs during refresh before destroy. Explicit file outputs
+		// still require credentials, as does the separate credential data source.
+		if isKubeconfigPermissionDenied(err) {
+			required := false
+			for _, field := range []string{"kube_config", "client_cert", "client_key", "cluster_ca_cert"} {
+				if value, ok := d.GetOk(field); ok && value.(string) != "" {
+					required = true
+					break
+				}
+			}
+			if !required {
+				log.Printf("[WARN] Kubeconfig access denied for cluster %s; continuing refresh without optional credentials", d.Id())
+				return nil
+			}
+		}
 		return errs.WrapError(fmt.Errorf("failed to get kubeconfig for cluster %s: %s", d.Id(), err))
 	}
 	m, err := FlattenAlicloudCSCertificate(kubeConfig)
@@ -1410,6 +1427,19 @@ func setCerts(d *schema.ResourceData, meta interface{}, skipSetCertificateAuthor
 	}
 
 	return nil
+}
+
+// Match the SDK error code, not arbitrary text in diagnostics or request IDs.
+func isKubeconfigPermissionDenied(err error) bool {
+	for {
+		wrapped, ok := err.(*errs.ComplexError)
+		if !ok {
+			break
+		}
+		err = wrapped.Cause
+	}
+	sdkError, ok := err.(*tea.SDKError)
+	return ok && tea.StringValue(sdkError.Code) == "StatusForbidden"
 }
 
 type AckServiceV2 struct {
