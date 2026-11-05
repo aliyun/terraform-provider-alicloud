@@ -1516,6 +1516,26 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 				),
 			},
 			{
+				// Keep the same per-step import contract for the interval change: the
+				// high-frequency values and the 60-minute interval are readable, so the
+				// import verifies them; only the policy attributes exempted for the
+				// deleted policy are skipped.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: append([]string{
+					"cross_backup_type",
+					"cross_backup_period",
+					"cross_retention_type",
+					"cross_retention_value",
+					"cross_log_retention_type",
+					"cross_log_retention_value",
+					"src_region",
+					"dest_region",
+					"enable_cross_log_backup",
+				}, mongodbInstanceImportStateVerifyIgnore...),
+			},
+			{
 				// A second high-frequency combination: the default one-day retention and
 				// the hourly sparse switch turned off. The API readback proves both
 				// transitions reach the service instead of being replayed from state
