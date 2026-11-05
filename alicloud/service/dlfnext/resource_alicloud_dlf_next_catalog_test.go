@@ -75,7 +75,7 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 					"comment":     "c1",
 					"description": "d1",
 					"dlf.discovery-query-results-retained-days": "7",
-				}, `output_file = "catalogs.json"`),
+				}, "  catalog_name_pattern = alicloud_dlf_next_catalog.default.name\n  output_file = \"catalogs.json\""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.alicloud_dlf_next_catalogs.default", "catalogs.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_dlf_next_catalogs.default", "catalogs.0.name", catalogName),
@@ -92,7 +92,7 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 					"comment":     "c1",
 					"description": "d1",
 					"dlf.discovery-query-results-retained-days": "7",
-				}, fmt.Sprintf("ids = [\"%s\"]", catalogName)),
+				}, fmt.Sprintf("  ids = [\"%s\"]", catalogName)),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.alicloud_dlf_next_catalogs.default", "catalogs.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_dlf_next_catalogs.default", "catalogs.0.name", catalogName),
@@ -103,7 +103,7 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 					"comment":     "c1",
 					"description": "d1",
 					"dlf.discovery-query-results-retained-days": "7",
-				}, fmt.Sprintf("name_regex = \"^%s$\"", catalogName)),
+				}, fmt.Sprintf("  name_regex = \"^%s$\"", catalogName)),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.alicloud_dlf_next_catalogs.default", "catalogs.#", "1"),
 				),
@@ -113,7 +113,7 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 					"comment":     "c1",
 					"description": "d1",
 					"dlf.discovery-query-results-retained-days": "7",
-				}, "name_regex = \"^no-such-dlf-catalog-.*$\""),
+				}, "  name_regex = \"^no-such-dlf-catalog-.*$\""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.alicloud_dlf_next_catalogs.default", "catalogs.#", "0"),
 				),
@@ -241,7 +241,8 @@ func testAccDlfNextCatalogBestEffortCleanup(t *testing.T, catalogName string) {
 	}
 	client := meta.(*connectivity.AliyunClient)
 	service := dlfnext.NewService(client)
-	ctx := t.Context()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
 
 	if _, err := service.DescribeCatalog(ctx, catalogName); err != nil {
 		if errs.NotFoundError(err) {
@@ -365,10 +366,10 @@ resource "alicloud_dlf_next_catalog" "default" {
 // testAccDlfNextCatalogWithDataSource renders the resource and a data source
 // with the extra filter line. The resource block is complete so every step
 // keeps the same managed configuration.
-func testAccDlfNextCatalogWithDataSource(catalogName string, options map[string]string, filterLine string) string {
+func testAccDlfNextCatalogWithDataSource(catalogName string, options map[string]string, dataSourceLines string) string {
 	return testAccDlfNextCatalogCompleteConfig(catalogName, options) + fmt.Sprintf(`
 data "alicloud_dlf_next_catalogs" "default" {
-  %s
+%s
 }
-`, filterLine)
+`, dataSourceLines)
 }
