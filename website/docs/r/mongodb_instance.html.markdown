@@ -148,6 +148,7 @@ The following arguments are supported:
 * `cross_backup_type` - (Optional, String, Available since v2.3.0) The policy for geo-redundant backups. Valid values:
   - `update`: Create or modify the geo-redundancy policy.
   - `delete`: Delete the geo-redundant policy. **NOTE:** A delete must carry the same `src_region` and `dest_region` as the policy to remove; the retention, backup period and cross-region log backup switch parameters do not apply to `delete`.
+
   -> **NOTE:** This argument is a write-only action selector. It selects the operation sent to the service and is not reported back by the backup policy API, so Terraform keeps the configured value in state. An imported instance does not have it: set it again before you modify or delete an existing geo-redundant policy. Changing another geo-redundant attribute while this argument stays `delete` still sends a delete, which is located by `src_region` and `dest_region`.
 * `cross_retention_type` - (Optional, String, Available since v2.3.0) The retention policy for geo-redundant backups. Valid values: `delay`, `never`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`.
 * `cross_retention_value` - (Optional, Int, Available since v2.3.0) The number of days to retain geo-redundant backups. Valid values: `3` to `1825`. **NOTE:** This parameter is required when `cross_retention_type` is set to `delay`.
