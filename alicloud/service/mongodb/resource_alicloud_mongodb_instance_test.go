@@ -1204,6 +1204,10 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 						"vswitch_id":                      acctest.CHECKSET,
 						"backup_time":                     "02:00Z-03:00Z",
 						"backup_period.#":                 "2",
+						// The shared attribute map seeds cross_backup_period with CHECKSET;
+						// a TypeSet must be checked by its element count, so replace the
+						// seeded value instead of keeping both keys.
+						"cross_backup_period":             acctest.REMOVEKEY,
 						"cross_backup_period.#":           "2",
 						"cross_backup_type":               "update",
 						"cross_retention_type":            "delay",
