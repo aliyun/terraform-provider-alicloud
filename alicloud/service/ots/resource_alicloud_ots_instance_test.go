@@ -94,21 +94,35 @@ func testSweepOtsInstances(region string) error {
 			return tableStoreClient.ListTable()
 		})
 		if err != nil {
-			log.Printf("[ERROR] List OTS Instance %s table stores got an error: %#v.", name, err)
+			if isOtsObjectNotExist(err) {
+				continue
+			}
+			return fmt.Errorf("error listing tables of OTS instance %s: %s", name, err)
 		}
 		tables, _ := raw.(*tablestore.ListTableResponse)
-		if tables != nil && len(tables.TableNames) > 0 {
-			for _, t := range tables.TableNames {
-				sweepTunnelsInTable(client, name, t)
-				req := new(tablestore.DeleteTableRequest)
-				req.TableName = t
-				if _, err := client.WithTableStoreClient(name, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
-					return tableStoreClient.DeleteTable(req)
-				}); err != nil {
-					log.Printf("[ERROR] Delete OTS Instance %s table store %s got an error: %#v.", name, t, err)
-				}
+		if tables == nil {
+			return fmt.Errorf("empty ListTable response for OTS instance %s", name)
+		}
+		for _, t := range tables.TableNames {
+			// A search index must be deleted before its table, otherwise DeleteTable is rejected.
+			if err := sweepSearchIndexesInTable(client, name, t); err != nil {
+				return err
 			}
-			time.Sleep(30 * time.Second)
+			if err := sweepTunnelsInTable(client, name, t); err != nil {
+				return err
+			}
+			req := new(tablestore.DeleteTableRequest)
+			req.TableName = t
+			if _, err := client.WithTableStoreClient(name, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+				return tableStoreClient.DeleteTable(req)
+			}); err != nil && !isOtsObjectNotExist(err) {
+				return fmt.Errorf("error deleting table %s of OTS instance %s: %s", t, name, err)
+			}
+		}
+		if len(tables.TableNames) > 0 {
+			if err := waitForOtsTablesDeleted(client, name); err != nil {
+				return err
+			}
 		}
 		log.Printf("[INFO] Deleting OTS Instance: %s", name)
 		req := sdkots.CreateDeleteInstanceRequest()
@@ -116,15 +130,83 @@ func testSweepOtsInstances(region string) error {
 		_, err = client.WithOtsClient(func(otsClient *sdkots.Client) (interface{}, error) {
 			return otsClient.DeleteInstance(req)
 		})
-		if err != nil {
-			log.Printf("[ERROR] Failed to delete OTS Instance (%s): %s", name, err)
+		if err != nil && !isOtsObjectNotExist(err) {
+			return fmt.Errorf("error deleting OTS instance %s: %s", name, err)
 		}
 	}
 
 	return nil
 }
 
-func sweepTunnelsInTable(client *connectivity.AliyunClient, instanceName string, tableName string) {
+func isOtsObjectNotExist(err error) bool {
+	return err != nil && strings.HasPrefix(err.Error(), "OTSObjectNotExist")
+}
+
+func sweepSearchIndexesInTable(client *connectivity.AliyunClient, instanceName string, tableName string) error {
+	deadline := time.Now().Add(2 * time.Minute)
+	for {
+		raw, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			return tableStoreClient.ListSearchIndex(&tablestore.ListSearchIndexRequest{
+				TableName: tableName,
+			})
+		})
+		if err != nil {
+			if isOtsObjectNotExist(err) {
+				return nil
+			}
+			return fmt.Errorf("error listing search indexes of table %s in OTS instance %s: %s", tableName, instanceName, err)
+		}
+		indexes, _ := raw.(*tablestore.ListSearchIndexResponse)
+		if indexes == nil {
+			return fmt.Errorf("empty ListSearchIndex response for table %s in OTS instance %s", tableName, instanceName)
+		}
+		if len(indexes.IndexInfo) == 0 {
+			return nil
+		}
+		for _, index := range indexes.IndexInfo {
+			if index == nil || index.IndexName == "" {
+				continue
+			}
+			if _, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+				return tableStoreClient.DeleteSearchIndex(&tablestore.DeleteSearchIndexRequest{
+					TableName: tableName,
+					IndexName: index.IndexName,
+				})
+			}); err != nil && !isOtsObjectNotExist(err) {
+				return fmt.Errorf("error deleting search index %s of table %s in OTS instance %s: %s", index.IndexName, tableName, instanceName, err)
+			}
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("timeout waiting for search indexes of table %s in OTS instance %s to be deleted", tableName, instanceName)
+		}
+		time.Sleep(5 * time.Second)
+	}
+}
+
+func waitForOtsTablesDeleted(client *connectivity.AliyunClient, instanceName string) error {
+	deadline := time.Now().Add(2 * time.Minute)
+	for {
+		raw, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			return tableStoreClient.ListTable()
+		})
+		if err != nil {
+			if isOtsObjectNotExist(err) {
+				return nil
+			}
+			return fmt.Errorf("error listing tables of OTS instance %s while waiting for deletion: %s", instanceName, err)
+		}
+		tables, _ := raw.(*tablestore.ListTableResponse)
+		if tables == nil || len(tables.TableNames) == 0 {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("timeout waiting for tables %v of OTS instance %s to be deleted", tables.TableNames, instanceName)
+		}
+		time.Sleep(5 * time.Second)
+	}
+}
+
+func sweepTunnelsInTable(client *connectivity.AliyunClient, instanceName string, tableName string) error {
 	log.Printf("[INFO] Deleting OTS Tunnels, instance: %s, table: %s", instanceName, tableName)
 	raw, err := client.WithTableStoreTunnelClient(instanceName, func(tunnelClient otsTunnel.TunnelClient) (interface{}, error) {
 		return tunnelClient.ListTunnel(&otsTunnel.ListTunnelRequest{
@@ -132,8 +214,7 @@ func sweepTunnelsInTable(client *connectivity.AliyunClient, instanceName string,
 		})
 	})
 	if err != nil {
-		log.Printf("[ERROR] List OTS Tunnel failed, instance: %s, table: %s, error: %#v", instanceName, tableName, err)
-		return
+		return fmt.Errorf("error listing tunnels of table %s in OTS instance %s: %s", tableName, instanceName, err)
 	}
 
 	tunnels, _ := raw.(*otsTunnel.ListTunnelResponse)
@@ -144,11 +225,12 @@ func sweepTunnelsInTable(client *connectivity.AliyunClient, instanceName string,
 					TableName:  tableName,
 					TunnelName: t.TunnelName,
 				})
-			}); err != nil {
-				log.Printf("[ERROR] Delete OTS Tunnel failed, instance: %s, table: %s, tunnel: %s, error: %#v", instanceName, tableName, t.TunnelName, err)
+			}); err != nil && !isOtsObjectNotExist(err) {
+				return fmt.Errorf("error deleting tunnel %s of table %s in OTS instance %s: %s", t.TunnelName, tableName, instanceName, err)
 			}
 		}
 	}
+	return nil
 }
 
 func TestAccAliCloudOtsInstance_basic(t *testing.T) {

@@ -320,7 +320,7 @@ func TestAccAliCloudOtsSearchIndex_complete(t *testing.T) {
 						"field_schema.2.vector_options.0.metric_type": "cosine",
 						"field_schema.3.field_type":                   "FuzzyKeyword",
 						"field_schema.4.field_type":                   "Nested",
-						"field_schema.4.sub_field_schemas.#":          "2",
+						"field_schema.4.sub_field_schemas.#":          "7",
 						"field_schema.5.date_format_list.#":           "2",
 						"field_schema.6.is_virtual_field":             "true",
 						"field_schema.6.source_field_name":            "pk2",
@@ -505,6 +505,82 @@ func TestAccAliCloudOtsSearchIndex_invalidSchema(t *testing.T) {
     }`),
 				ExpectError: regexp.MustCompile("does not support analyzer"),
 			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name = "col1"
+      field_type = "Nested"
+      sub_field_schemas {
+        field_name = "nested_date"
+        field_type = "Date"
+      }
+    }`),
+				ExpectError: regexp.MustCompile(`field "nested_date" of type Date requires date_format_list`),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name = "col1"
+      field_type = "Nested"
+      sub_field_schemas {
+        field_name = "nested_vector"
+        field_type = "Vector"
+      }
+    }`),
+				ExpectError: regexp.MustCompile(`field "nested_vector" of type Vector requires vector_options`),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name = "col1"
+      field_type = "Nested"
+      sub_field_schemas {
+        field_name       = "nested_virtual"
+        field_type       = "Keyword"
+        is_virtual_field = true
+      }
+    }`),
+				ExpectError: regexp.MustCompile(`virtual field "nested_virtual" requires source_field_name`),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name = "col1"
+      field_type = "Nested"
+      sub_field_schemas {
+        field_name        = "nested_virtual"
+        field_type        = "Keyword"
+        source_field_name = "pk2"
+      }
+    }`),
+				ExpectError: regexp.MustCompile(`field "nested_virtual" sets source_field_name but is_virtual_field is not true`),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name = "col1"
+      field_type = "Nested"
+      sub_field_schemas {
+        field_name          = "nested_text"
+        field_type          = "Text"
+        enable_sort_and_agg = true
+      }
+    }`),
+				ExpectError: regexp.MustCompile(`field "nested_text" of type TEXT does not support enable_sort_and_agg`),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name = "col1"
+      field_type = "Nested"
+      sub_field_schemas {
+        field_name          = "nested_fuzzy"
+        field_type          = "FuzzyKeyword"
+        enable_sort_and_agg = true
+      }
+    }`),
+				ExpectError: regexp.MustCompile(`field "nested_fuzzy" of type FUZZY_KEYWORD does not support enable_sort_and_agg`),
+			},
 		},
 	})
 }
@@ -603,11 +679,42 @@ resource "alicloud_ots_search_index" "default" {
         field_name          = "nested_long"
         field_type          = "Long"
         enable_sort_and_agg = true
+        store               = true
       }
       sub_field_schemas {
         field_name = "nested_text"
         field_type = "Text"
         analyzer   = "SingleWord"
+      }
+      sub_field_schemas {
+        field_name = "nested_keyword_array"
+        field_type = "Keyword"
+        is_array   = true
+      }
+      sub_field_schemas {
+        field_name = "nested_keyword_noindex"
+        field_type = "Keyword"
+        index      = false
+      }
+      sub_field_schemas {
+        field_name       = "nested_date"
+        field_type       = "Date"
+        date_format_list = ["yyyy-MM-dd HH:mm:ss", "epoch_millis"]
+      }
+      sub_field_schemas {
+        field_name = "nested_vector"
+        field_type = "Vector"
+        vector_options {
+          data_type   = "float32"
+          dimension   = 4
+          metric_type = "cosine"
+        }
+      }
+      sub_field_schemas {
+        field_name        = "nested_virtual"
+        field_type        = "Keyword"
+        is_virtual_field  = true
+        source_field_name = "pk2"
       }
     }
     field_schema {
@@ -678,13 +785,18 @@ func checkSearchIndexSchemaFields() resource.TestCheckFunc {
 		walk(resp.Schema.FieldSchemas)
 
 		expectedFieldTypes := map[string]tablestore.FieldType{
-			"vector_col":      tablestore.FieldType_VECTOR,
-			"fuzzy_col":       tablestore.FieldType_FUZZY_KEYWORD,
-			"nested_col":      tablestore.FieldType_NESTED,
-			"nested_long":     tablestore.FieldType_LONG,
-			"nested_text":     tablestore.FieldType_TEXT,
-			"date_col":        tablestore.FieldType_DATE,
-			"virtual_keyword": tablestore.FieldType_KEYWORD,
+			"vector_col":             tablestore.FieldType_VECTOR,
+			"fuzzy_col":              tablestore.FieldType_FUZZY_KEYWORD,
+			"nested_col":             tablestore.FieldType_NESTED,
+			"nested_long":            tablestore.FieldType_LONG,
+			"nested_text":            tablestore.FieldType_TEXT,
+			"nested_keyword_array":   tablestore.FieldType_KEYWORD,
+			"nested_keyword_noindex": tablestore.FieldType_KEYWORD,
+			"nested_date":            tablestore.FieldType_DATE,
+			"nested_vector":          tablestore.FieldType_VECTOR,
+			"nested_virtual":         tablestore.FieldType_KEYWORD,
+			"date_col":               tablestore.FieldType_DATE,
+			"virtual_keyword":        tablestore.FieldType_KEYWORD,
 		}
 		for name, expectedFieldType := range expectedFieldTypes {
 			fieldSchema, ok := fields[name]
@@ -730,6 +842,65 @@ func checkSearchIndexSchemaFields() resource.TestCheckFunc {
 			if _, ok := expectedDateFormats[dateFormat]; !ok {
 				return fmt.Errorf("date_col has unexpected date format %s", dateFormat)
 			}
+		}
+
+		nestedLong := fields["nested_long"]
+		if nestedLong.Store == nil || !*nestedLong.Store {
+			return fmt.Errorf("nested_long store is not enabled")
+		}
+		if nestedLong.EnableSortAndAgg == nil || !*nestedLong.EnableSortAndAgg {
+			return fmt.Errorf("nested_long enable_sort_and_agg is not enabled")
+		}
+
+		nestedText := fields["nested_text"]
+		if nestedText.Analyzer == nil || *nestedText.Analyzer != tablestore.Analyzer_SingleWord {
+			return fmt.Errorf("nested_text analyzer is not SingleWord")
+		}
+
+		nestedKeywordArray := fields["nested_keyword_array"]
+		if nestedKeywordArray.IsArray == nil || !*nestedKeywordArray.IsArray {
+			return fmt.Errorf("nested_keyword_array is_array is not enabled")
+		}
+
+		nestedKeywordNoIndex := fields["nested_keyword_noindex"]
+		if nestedKeywordNoIndex.Index != nil && *nestedKeywordNoIndex.Index {
+			return fmt.Errorf("nested_keyword_noindex is unexpectedly indexed")
+		}
+
+		nestedDateFormats := fields["nested_date"].DateFormats
+		expectedNestedDateFormats := map[string]struct{}{
+			"yyyy-MM-dd HH:mm:ss": {},
+			"epoch_millis":        {},
+		}
+		if len(nestedDateFormats) != len(expectedNestedDateFormats) {
+			return fmt.Errorf("nested_date date formats are %v", nestedDateFormats)
+		}
+		for _, dateFormat := range nestedDateFormats {
+			if _, ok := expectedNestedDateFormats[dateFormat]; !ok {
+				return fmt.Errorf("nested_date has unexpected date format %s", dateFormat)
+			}
+		}
+
+		nestedVector := fields["nested_vector"]
+		if nestedVector.VectorOptions == nil {
+			return fmt.Errorf("nested_vector has no vector options in DescribeSearchIndex response")
+		}
+		if nestedVector.VectorOptions.Dimension == nil || *nestedVector.VectorOptions.Dimension != 4 {
+			return fmt.Errorf("nested_vector dimension is not 4")
+		}
+		if nestedVector.VectorOptions.VectorDataType == nil || *nestedVector.VectorOptions.VectorDataType != tablestore.VectorDataType_FLOAT_32 {
+			return fmt.Errorf("nested_vector data type is not float32")
+		}
+		if nestedVector.VectorOptions.VectorMetricType == nil || *nestedVector.VectorOptions.VectorMetricType != tablestore.VectorMetricType_COSINE {
+			return fmt.Errorf("nested_vector metric type is not cosine")
+		}
+
+		nestedVirtual := fields["nested_virtual"]
+		if nestedVirtual.IsVirtualField == nil || !*nestedVirtual.IsVirtualField {
+			return fmt.Errorf("nested_virtual is not marked as a virtual field")
+		}
+		if len(nestedVirtual.SourceFieldNames) != 1 || nestedVirtual.SourceFieldNames[0] != "pk2" {
+			return fmt.Errorf("nested_virtual source field names are %v", nestedVirtual.SourceFieldNames)
 		}
 
 		return nil
