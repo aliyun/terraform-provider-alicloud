@@ -2,14 +2,12 @@ package vpc_test
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -224,30 +222,6 @@ func TestAccAliCloudVpcIpv6Gateway_basic0(t *testing.T) {
 	})
 }
 
-// wireCaptureWriter tees the provider's standard log output to stderr and keeps
-// the API request/response blocks emitted by logs.AddDebug for the given actions.
-// The provider runs in the test process, so this surfaces the actual request
-// payloads and responses into the ACC log.
-type wireCaptureWriter struct {
-	mu      *sync.Mutex
-	lines   *[]string
-	actions []string
-	tee     io.Writer
-}
-
-func (w wireCaptureWriter) Write(p []byte) (int, error) {
-	s := string(p)
-	for _, action := range w.actions {
-		if strings.Contains(s, action) {
-			w.mu.Lock()
-			*w.lines = append(*w.lines, strings.TrimSpace(s))
-			w.mu.Unlock()
-			break
-		}
-	}
-	return w.tee.Write(p)
-}
-
 // TestAccAliCloudVpcIpv6Gateway_validationBoundary covers the API length
 // contract for ipv6_gateway_name (0-128) and description (0-256): values that
 // the OpenAPI accepts, such as a digit-leading name with a dot and a
@@ -255,20 +229,9 @@ func (w wireCaptureWriter) Write(p []byte) (int, error) {
 // length upper bounds are enforced at plan time.
 func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 	// The provider emits API request/response debug output only when DEBUG
-	// contains "terraform". Capture those blocks and re-emit them through the
-	// test log so the ACC run carries the actual Create/Modify payloads and the
-	// matching responses.
+	// contains "terraform"; enable it for this test so the ACC log carries the
+	// actual Create/Modify payloads and responses.
 	t.Setenv("DEBUG", "terraform")
-	var wireMu sync.Mutex
-	var wireLines []string
-	previousLogWriter := log.Writer()
-	log.SetOutput(wireCaptureWriter{
-		mu:      &wireMu,
-		lines:   &wireLines,
-		actions: []string{"CreateIpv6Gateway", "ModifyIpv6GatewayAttribute"},
-		tee:     previousLogWriter,
-	})
-	defer log.SetOutput(previousLogWriter)
 
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VpcIpv6GatewaySupportRegions)
@@ -456,15 +419,6 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 			},
 		},
 	})
-
-	wireMu.Lock()
-	captured := append([]string(nil), wireLines...)
-	wireMu.Unlock()
-	t.Logf("WIRE_CAPTURE_BEGIN count=%d", len(captured))
-	for _, line := range captured {
-		t.Log(line)
-	}
-	t.Log("WIRE_CAPTURE_END")
 }
 
 var Ipv6GatewayMapValidation = map[string]string{
