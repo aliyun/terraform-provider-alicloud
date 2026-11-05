@@ -2,7 +2,8 @@ package maxcompute
 
 import "github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
 
-// ServicePackage registers the maxcompute service's SDK v2 resources and data sources.
+// ServicePackage registers the maxcompute service's SDK v2 resources and data
+// sources, plus the package's Framework data sources.
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "MaxCompute",
@@ -19,6 +20,9 @@ func ServicePackage() conns.ServicePackage {
 		SDKDataSources: []conns.SDKDataSource{
 			{TypeName: "alicloud_maxcompute_projects", Factory: dataSourceAliCloudMaxComputeProjects},
 			{TypeName: "alicloud_maxcompute_service", Factory: dataSourceAlicloudMaxcomputeService},
+		},
+		DataSources: []conns.DataSource{
+			{TypeName: "alicloud_max_compute_job", Factory: NewMaxComputeJobDataSource},
 		},
 	}
 }
