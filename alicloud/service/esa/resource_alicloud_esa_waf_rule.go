@@ -2487,6 +2487,38 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 	_ = json.Unmarshal([]byte(jsonString), &request)
 
 	if update && enableBatchUpdateWafRules1 {
+		// BatchUpdateWafRules replaces the whole rule list of the ruleset
+		// with the Configs array (full replacement semantics). Sending only
+		// the rule being updated would wipe out every other rule in the same
+		// ruleset, so fetch the current ruleset, keep the unchanged rules and
+		// replace only the rule managed by this resource.
+		rulesetObjectId := fmt.Sprintf("%v:%v", d.Get("ruleset_id"), parts[0])
+		rulesetRaw, ferr := esaServiceV2.DescribeEsaWafRuleset(rulesetObjectId)
+		if ferr != nil {
+			return errs.WrapError(ferr)
+		}
+		mergedConfigs := make([]interface{}, 0)
+		replaced := false
+		for _, rule := range convert.ConvertToInterfaceArray(rulesetRaw["Rules"]) {
+			ruleMap, ok := rule.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if fmt.Sprint(ruleMap["Id"]) == parts[1] {
+				mergedConfigs = append(mergedConfigs, configsDataList)
+				replaced = true
+			} else {
+				mergedConfigs = append(mergedConfigs, ruleMap)
+			}
+		}
+		if !replaced {
+			mergedConfigs = append(mergedConfigs, configsDataList)
+		}
+		mergedConfigsJson, merr := json.Marshal(mergedConfigs)
+		if merr != nil {
+			return errs.WrapError(merr)
+		}
+		request["Configs"] = string(mergedConfigsJson)
 		wait := helper.IncrementalWait(5*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)

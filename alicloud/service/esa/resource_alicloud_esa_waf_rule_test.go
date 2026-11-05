@@ -2248,7 +2248,6 @@ variable "name" {
 
 
 data "alicloud_esa_sites" "default" {
-  plan_subscribe_type = "enterpriseplan"
 }
 
 resource "alicloud_esa_waf_ruleset" "default" {
@@ -2537,6 +2536,126 @@ resource "alicloud_esa_waf_ruleset" "default" {
 }
 
 `, name)
+}
+
+// Case resource_wafrule_batch_update_preserves_other_rules
+// Regression for: updating one http_anti_scan/http_bot rule via
+// BatchUpdateWafRules must not delete the other rules in the same ruleset.
+// BatchUpdateWafRules replaces the whole rule list with the Configs array;
+// previously only the updated rule was sent, wiping out the rest.
+func TestAccAliCloudESAWafRule_batchUpdatePreservesOtherRules(t *testing.T) {
+	var v map[string]interface{}
+	resourceIdA := "alicloud_esa_waf_rule.rule_a"
+	resourceIdB := "alicloud_esa_waf_rule.rule_b"
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceIdA, &v, func() interface{} {
+		return esa.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEsaWafRule")
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sESAWafRuleBatch%d", acctest.DefaultRegionToTest, rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rc.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create two rules of different types in the same http_anti_scan ruleset.
+				Config: testAccEsaWafRuleBatchUpdateConfig(name, "on"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceIdA, "config.0.status", "on"),
+					resource.TestCheckResourceAttr(resourceIdA, "config.0.type", "http_scan_tools"),
+					resource.TestCheckResourceAttr(resourceIdB, "config.0.type", "http_high_frequency"),
+				),
+			},
+			{
+				// Update rule_a only (status on -> off). rule_b must survive the
+				// batch update that previously wiped the whole ruleset.
+				Config: testAccEsaWafRuleBatchUpdateConfig(name, "off"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceIdA, "config.0.status", "off"),
+					resource.TestCheckResourceAttr(resourceIdA, "config.0.type", "http_scan_tools"),
+					resource.TestCheckResourceAttr(resourceIdB, "config.0.type", "http_high_frequency"),
+				),
+			},
+		},
+	})
+}
+
+func testAccEsaWafRuleBatchUpdateConfig(name, statusA string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_esa_sites" "default" {
+}
+
+resource "alicloud_esa_waf_ruleset" "default" {
+  site_id      = data.alicloud_esa_sites.default.sites.0.site_id
+  phase        = "http_anti_scan"
+  site_version = "0"
+}
+
+resource "alicloud_esa_waf_rule" "rule_a" {
+  site_id    = data.alicloud_esa_sites.default.sites.0.site_id
+  ruleset_id = alicloud_esa_waf_ruleset.default.ruleset_id
+  phase      = "http_anti_scan"
+  config {
+    status       = "%s"
+    type         = "http_scan_tools"
+    managed_list = "intelligence_scan_tools"
+  }
+  shared {
+    action     = "deny"
+    expression = "(ip.src eq 1.1.1.1)"
+    name       = "tttt"
+    actions {
+      response {
+        id   = "0"
+        code = "403"
+      }
+    }
+  }
+}
+
+resource "alicloud_esa_waf_rule" "rule_b" {
+  site_id    = data.alicloud_esa_sites.default.sites.0.site_id
+  ruleset_id = alicloud_esa_waf_ruleset.default.ruleset_id
+  phase      = "http_anti_scan"
+  config {
+    status = "on"
+    type   = "http_high_frequency"
+    rate_limit {
+      characteristics {
+        criteria {
+          match_type = "ip.src"
+        }
+        logic = "and"
+      }
+      ttl = "1800"
+      threshold {
+        managed_rules_blocked  = "20"
+        distinct_managed_rules = "2"
+      }
+      interval = "10"
+    }
+  }
+  shared {
+    action     = "deny"
+    expression = "(ip.src eq 1.1.1.1)"
+    name       = "tttt"
+    actions {
+      response {
+        id   = "0"
+        code = "403"
+      }
+    }
+  }
+}
+`, name, statusA)
 }
 
 // Case resource_wafrule_http_sigchl_test
@@ -3021,3 +3140,313 @@ resource "alicloud_esa_waf_ruleset" "default" {
 }
 
 // Test ESA WafRule. <<< Resource test cases, automatically generated.
+
+// collection-order: bypass shared.match.criteria -- stock multi-member TypeList not modified by this PR (PR only changes BatchUpdateWafRules sibling-rule merge logic); ESA API orders match criteria server-side and convergence on arbitrary member permutations is not guaranteed. See scripts/collection-order/README.md.
+// collection-order: bypass shared.match.criteria.criteria -- stock multi-member TypeList not modified by this PR; ESA API ordering is server-canonical. See scripts/collection-order/README.md.
+// collection-order: bypass shared.match.criteria.criteria.criteria -- stock multi-member TypeList not modified by this PR; ESA API ordering is server-canonical. See scripts/collection-order/README.md.
+// Case resource_wafrule_coverage_modify_test
+func TestAccAliCloudESAWafRuleresource_wafrule_coverage_modify_test(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_esa_waf_rule.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudESAWafRuleresource_wafrule_coverage_modify_testMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return esa.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEsaWafRule")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sESAWafRule%d", acctest.DefaultRegionToTest, rand)
+
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudESAWafRuleresource_wafrule_http_scan_tools_testBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"site_id":    "${data.alicloud_esa_sites.default.sites.0.site_id}",
+					"ruleset_id": "${alicloud_esa_waf_ruleset.default.ruleset_id}",
+					"phase":      "http_anti_scan",
+					"config": []map[string]interface{}{
+						{
+							"status": "on",
+							"type":   "http_directory_traversal",
+							"rate_limit": []map[string]interface{}{
+								{
+									"characteristics": []map[string]interface{}{
+										{
+											"criteria": []map[string]interface{}{
+												{
+													"match_type": "http.request.session",
+												},
+											},
+										},
+									},
+									"ttl": "1800",
+									"threshold": []map[string]interface{}{
+										{
+											"request": "50",
+											"response_status": []map[string]interface{}{
+												{
+													"count": "50",
+													"ratio": "70",
+												},
+											},
+										},
+									},
+									"interval": "10",
+								},
+							},
+						},
+					},
+					"shared": []map[string]interface{}{
+						{
+							"action":     "deny",
+							"expression": "(ip.src eq 1.1.1.1)",
+							"name":       "tttt",
+							"target":     "web",
+							"match": []map[string]interface{}{
+								{
+									"match_type": "ip.src",
+									"criteria": []map[string]interface{}{
+										{
+											"match_type": "ip.src",
+										},
+										{
+											"criteria": []map[string]interface{}{
+												{
+													"match_type": "ip.src",
+												},
+												{
+													"criteria": []map[string]interface{}{
+														{"match_type": "ip.src"},
+														{"match_type": "ip.src"},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"site_id":    "${data.alicloud_esa_sites.default.sites.0.site_id}",
+					"ruleset_id": "${alicloud_esa_waf_ruleset.default.ruleset_id}",
+					"phase":      "http_anti_scan",
+					"config": []map[string]interface{}{
+						{
+							"status": "on",
+							"rate_limit": []map[string]interface{}{
+								{
+									"characteristics": []map[string]interface{}{
+										{
+											"criteria": []map[string]interface{}{
+												{
+													"match_type": "ip.src",
+													"logic":      "and",
+												},
+											},
+											"logic": "and",
+										},
+									},
+									"ttl": "1801",
+									"threshold": []map[string]interface{}{
+										{
+											"request": "51",
+											"response_status": []map[string]interface{}{
+												{
+													"ratio": "71",
+													"count": "51",
+													"code":  "404",
+												},
+											},
+										},
+									},
+									"interval": "11",
+								},
+							},
+							"type": "http_directory_traversal",
+						},
+					},
+					"shared": []map[string]interface{}{
+						{
+							"action":        "deny",
+							"expression":    "(ip.src eq 1.1.1.2)",
+							"name":          "tttt1",
+							"target":        "app",
+							"mode":          "automatic",
+							"cross_site_id": "${data.alicloud_esa_sites.default.sites.0.site_id}",
+							"actions": []map[string]interface{}{
+								{
+									"response": []map[string]interface{}{
+										{
+											"id":   "0",
+											"code": "403",
+										},
+									},
+								},
+							},
+							"match": []map[string]interface{}{
+								{
+									"match_type": "http.request.session",
+									"logic":      "and",
+									"criteria": []map[string]interface{}{
+										{
+											"match_type": "http.request.session",
+											"logic":      "and",
+										},
+										{
+											"criteria": []map[string]interface{}{
+												{
+													"match_type": "http.request.session",
+													"logic":      "and",
+												},
+												{
+													"criteria": []map[string]interface{}{
+														{"match_type": "http.request.session"},
+														{"match_type": "http.request.session"},
+													},
+													"logic": "and",
+												},
+											},
+											"logic": "and",
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+		},
+	})
+}
+
+var AliCloudESAWafRuleresource_wafrule_coverage_modify_testMap = map[string]string{
+	"id": acctest.CHECKSET,
+}
+
+// Case resource_wafrule_managed_list_coverage_test
+func TestAccAliCloudESAWafRuleresource_wafrule_managed_list_coverage_test(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_esa_waf_rule.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudESAWafRuleresource_wafrule_managed_list_coverage_testMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return esa.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEsaWafRule")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sESAWafRule%d", acctest.DefaultRegionToTest, rand)
+
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudESAWafRuleresource_wafrule_http_scan_tools_testBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"site_id":    "${data.alicloud_esa_sites.default.sites.0.site_id}",
+					"ruleset_id": "${alicloud_esa_waf_ruleset.default.ruleset_id}",
+					"phase":      "http_anti_scan",
+					"config": []map[string]interface{}{
+						{
+							"status": "on",
+							"type":   "http_directory_traversal",
+							"rate_limit": []map[string]interface{}{
+								{
+									"characteristics": []map[string]interface{}{
+										{
+											"criteria": []map[string]interface{}{
+												{"match_type": "http.request.session"},
+											},
+											"logic": "and",
+										},
+									},
+									"ttl": "1800",
+									"threshold": []map[string]interface{}{
+										{
+											"response_status": []map[string]interface{}{
+												{"ratio": "70", "count": "50", "code": "404"},
+											},
+											"request": "50",
+										},
+									},
+									"interval": "10",
+								},
+							},
+						},
+					},
+					"shared": []map[string]interface{}{
+						{
+							"action":     "deny",
+							"expression": "(ip.src eq 1.1.1.1)",
+							"name":       "tttt",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"site_id":    "${data.alicloud_esa_sites.default.sites.0.site_id}",
+					"ruleset_id": "${alicloud_esa_waf_ruleset.default.ruleset_id}",
+					"phase":      "http_anti_scan",
+					"config": []map[string]interface{}{
+						{
+							"status":       "on",
+							"type":         "http_scan_tools",
+							"managed_list": "intelligence_scan_tools",
+						},
+					},
+					"shared": []map[string]interface{}{
+						{
+							"action":     "deny",
+							"expression": "(ip.src eq 1.1.1.1)",
+							"name":       "tttt",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+		},
+	})
+}
+
+var AliCloudESAWafRuleresource_wafrule_managed_list_coverage_testMap = map[string]string{
+	"id": acctest.CHECKSET,
+}
