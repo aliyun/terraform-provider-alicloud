@@ -1,9 +1,12 @@
 package rkvstore_test
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"reflect"
 	"regexp"
@@ -22,6 +25,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/rkvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	sdkv2schema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -229,12 +233,6 @@ data "alicloud_kvstore_zones" "default" {
   product_type = "Tair_rdb"
 }
 
-data "alicloud_kvstore_instance_classes" "rdb" {
-  zone_id              = data.alicloud_kvstore_zones.default.zones.0.id
-  product_type         = "Tair_rdb"
-  instance_charge_type = "PostPaid"
-}
-
 data "alicloud_vpcs" "default" {
   name_regex = "default-NODELETING"
 }
@@ -255,7 +253,6 @@ resource "alicloud_vswitch" "this" {
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
   zone_id = data.alicloud_kvstore_zones.default.zones.0.id
-  rdb_class = data.alicloud_kvstore_instance_classes.rdb.instance_classes.0
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -3864,6 +3861,822 @@ func TestAccAliCloudRedisTairInstance_elastic_burst(t *testing.T) {
 	})
 }
 
+var AlicloudRedisTairInstanceReplicaCountMap = map[string]string{
+	"tair_instance_id":  acctest.CHECKSET,
+	"status":            acctest.CHECKSET,
+	"connection_domain": acctest.CHECKSET,
+}
+
+func AlicloudRedisTairInstanceBasicDependenceReplicaCount(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_kvstore_zones" "default" {
+  product_type = "Tair_rdb"
+}
+
+data "alicloud_kvstore_instance_classes" "default" {
+  zone_id              = data.alicloud_kvstore_zones.default.zones.0.id
+  product_type         = "Tair_rdb"
+  instance_charge_type = "PostPaid"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.0.0.0/8"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_kvstore_zones.default.zones.0.id
+  cidr_block   = "10.0.0.0/24"
+  vswitch_name = var.name
+}
+
+locals {
+  standard_rdb_classes = [for item in data.alicloud_kvstore_instance_classes.default.instance_classes : item if length(split(".", item)) == 3 && element(split(".", item), 0) == "tair" && element(split(".", item), 1) == "rdb"]
+  instance_class       = local.standard_rdb_classes[0]
+  primary_zone_id      = data.alicloud_kvstore_zones.default.zones.0.id
+  secondary_zone_id    = data.alicloud_kvstore_zones.default.zones.1.id
+}
+
+`, name)
+}
+
+func testAccCheckRedisTairInstanceClassFromDataSource(resourceId, dataSourceId, listAttr string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceId)
+		}
+		ds, ok := s.RootModule().Resources[dataSourceId]
+		if !ok {
+			return fmt.Errorf("data source not found: %s", dataSourceId)
+		}
+		value := rs.Primary.Attributes["instance_class"]
+		if value == "" {
+			return fmt.Errorf("instance_class of %s is empty", resourceId)
+		}
+		var count int
+		if _, err := fmt.Sscanf(ds.Primary.Attributes[listAttr+".#"], "%d", &count); err != nil {
+			return fmt.Errorf("%s.# of %s is not a number", listAttr, dataSourceId)
+		}
+		for i := 0; i < count; i++ {
+			if ds.Primary.Attributes[fmt.Sprintf("%s.%d", listAttr, i)] == value {
+				return nil
+			}
+		}
+		return fmt.Errorf("instance_class %q not found in %s.%s", value, dataSourceId, listAttr)
+	}
+}
+
+// TestAccAliCloudRedisTairInstance_replicaCount covers replica count updates,
+// unrelated tag updates, and import read-back.
+func TestAccAliCloudRedisTairInstance_replicaCount(t *testing.T) {
+	resourceId := "alicloud_redis_tair_instance.default"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sredistairreplica%d", acctest.DefaultRegionToTest, rand)
+
+	var v map[string]interface{}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRedisTairInstanceReplicaCountMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return rkvstore.NewRedisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeRedisTairInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependenceReplicaCount)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { acctest.PreCheck(t) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":        "PayAsYouGo",
+					"zone_id":             "${local.primary_zone_id}",
+					"vswitch_id":          "${alicloud_vswitch.default.id}",
+					"instance_class":      "${local.instance_class}",
+					"vpc_id":              "${alicloud_vpc.default.id}",
+					"engine_version":      "7.0",
+					"tair_instance_name":  name,
+					"instance_type":       "tair_rdb",
+					"password":            "Pass!123456",
+					"node_type":           "MASTER_SLAVE",
+					"shard_count":         "1",
+					"replica_count":       "1",
+					"slave_replica_count": "1",
+					"secondary_zone_id":   "${local.secondary_zone_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":        "PayAsYouGo",
+						"instance_type":       "tair_rdb",
+						"tair_instance_name":  name,
+						"shard_count":         "1",
+						"replica_count":       "1",
+						"slave_replica_count": "1",
+					}),
+					testAccCheckRedisTairInstanceClassFromDataSource(resourceId, "data.alicloud_kvstore_instance_classes.default", "instance_classes"),
+					resource.TestCheckResourceAttrPair(resourceId, "zone_id", "data.alicloud_kvstore_zones.default", "zones.0.id"),
+					resource.TestCheckResourceAttrPair(resourceId, "secondary_zone_id", "data.alicloud_kvstore_zones.default", "zones.1.id"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"replica_count":       "2",
+					"slave_replica_count": "2",
+					"effective_time":      "Immediately",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"replica_count":       "2",
+						"slave_replica_count": "2",
+						"effective_time":      "Immediately",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"slave_replica_count": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"slave_replica_count": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"replica_count": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"replica_count": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "password_wo", "password_wo_version"},
+			},
+			{
+				// password and effective_time are request-only values that
+				// DescribeInstanceAttribute never returns, so the post-import plan
+				// drops them from the config. An import block plans against the
+				// imported state and must be a no-op.
+				Config: testAccConfig(map[string]interface{}{
+					"password":       acctest.REMOVEKEY,
+					"effective_time": acctest.REMOVEKEY,
+				}),
+				ResourceName:       resourceId,
+				ImportState:        true,
+				ImportStateKind:    resource.ImportBlockWithID,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRedisTairInstance_replicaCountUpdateZero covers the real// non-zero -> 0 transition: ModifyInstanceSpec receives SlaveReplicaCount=0 and
+// the product error is surfaced by the provider.
+func TestAccAliCloudRedisTairInstance_replicaCountUpdateZero(t *testing.T) {
+	resourceId := "alicloud_redis_tair_instance.default"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sredistairreplica%d", acctest.DefaultRegionToTest, rand)
+
+	var v map[string]interface{}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRedisTairInstanceReplicaCountMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return rkvstore.NewRedisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeRedisTairInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependenceReplicaCount)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { acctest.PreCheck(t) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":        "PayAsYouGo",
+					"zone_id":             "${local.primary_zone_id}",
+					"vswitch_id":          "${alicloud_vswitch.default.id}",
+					"instance_class":      "${local.instance_class}",
+					"vpc_id":              "${alicloud_vpc.default.id}",
+					"engine_version":      "7.0",
+					"tair_instance_name":  name,
+					"instance_type":       "tair_rdb",
+					"password":            "Pass!123456",
+					"node_type":           "MASTER_SLAVE",
+					"shard_count":         "1",
+					"replica_count":       "1",
+					"slave_replica_count": "1",
+					"secondary_zone_id":   "${local.secondary_zone_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"replica_count":       "1",
+						"slave_replica_count": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"slave_replica_count": "0",
+					"effective_time":      "Immediately",
+				}),
+				ExpectError: regexp.MustCompile(`SlaveReplicaCountCanNotBeZero`),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "password_wo", "password_wo_version"},
+			},
+		},
+	})
+}
+
+// redisTairInstanceTestClient returns a client whose R-kvstore RPC calls go to a
+// local httptest server, so request parameters are observable without cloud credentials.
+func redisTairInstanceTestClient(t *testing.T, handler http.HandlerFunc) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		handler(w, r)
+	}))
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var endpoints, signVersion sync.Map
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: &endpoints, SignVersion: &signVersion, SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("r_kvstore", endpoint)
+	return client
+}
+
+func writeRedisTairInstanceJSON(t *testing.T, w http.ResponseWriter, body map[string]interface{}) {
+	t.Helper()
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(body); err != nil {
+		t.Error(err)
+	}
+}
+
+func replicaPublicError(w http.ResponseWriter, status int, code, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"Code": code, "Message": message,
+	})
+}
+
+func replicaDiagsText(diags diag.Diagnostics) string {
+	var builder strings.Builder
+	for _, item := range diags {
+		builder.WriteString(item.Summary)
+		builder.WriteString(item.Detail)
+	}
+	return builder.String()
+}
+
+// replicaPublicConfig builds a nullable raw configuration for every schema
+// attribute so the public Diff/Apply entry sees the same keys Terraform would.
+func replicaPublicConfig(t *testing.T, values map[string]cty.Value) (cty.Value, *sdktf.ResourceConfig) {
+	t.Helper()
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	block := schemaResource.CoreConfigSchema()
+	attrs := map[string]cty.Value{}
+	for name, attrType := range block.ImpliedType().AttributeTypes() {
+		attrs[name] = cty.NullVal(attrType)
+	}
+	attrs["instance_class"] = cty.StringVal("tair.rdb.1g")
+	attrs["instance_type"] = cty.StringVal("tair_rdb")
+	attrs["vswitch_id"] = cty.StringVal("vsw-test")
+	attrs["vpc_id"] = cty.StringVal("vpc-test")
+	attrs["zone_id"] = cty.StringVal("cn-hangzhou-h")
+	for key, value := range values {
+		attrs[key] = value
+	}
+	raw := cty.ObjectVal(attrs)
+	return raw, sdktf.NewResourceConfigShimmed(raw, block)
+}
+
+func replicaPublicState(slaveReplicaCount, replicaCount int) *sdktf.InstanceState {
+	return &sdktf.InstanceState{
+		ID: "r-test",
+		Attributes: map[string]string{
+			"instance_class":      "tair.rdb.1g",
+			"instance_type":       "tair_rdb",
+			"vswitch_id":          "vsw-test",
+			"vpc_id":              "vpc-test",
+			"zone_id":             "cn-hangzhou-h",
+			"replica_count":       fmt.Sprint(replicaCount),
+			"slave_replica_count": fmt.Sprint(slaveReplicaCount),
+		},
+	}
+}
+
+type replicaPublicCapture struct {
+	create            url.Values
+	modify            url.Values
+	modifyCalls       int
+	failCreate        bool
+	replicaCount      int
+	slaveReplicaCount int
+}
+
+func (c *replicaPublicCapture) describeCounts() (int, int) {
+	if c.replicaCount == 0 && c.slaveReplicaCount == 0 {
+		return 1, 1
+	}
+	return c.replicaCount, c.slaveReplicaCount
+}
+
+func (c *replicaPublicCapture) client(t *testing.T) *connectivity.AliyunClient {
+	return redisTairInstanceTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.Form.Get("Action") {
+		case "CreateTairInstance":
+			c.create = r.Form
+			if c.failCreate {
+				replicaPublicError(w, http.StatusBadRequest, "InvalidParameter", "synthetic create rejection")
+				return
+			}
+			if c.create.Get("SlaveReplicaCount") == "0" {
+				replicaPublicError(w, http.StatusBadRequest, "InvalidParameter", "The specified parameter SlaveReplicaCount is not valid")
+				return
+			}
+			writeRedisTairInstanceJSON(t, w, map[string]interface{}{"InstanceId": "r-test"})
+		case "ModifyInstanceSpec":
+			c.modifyCalls++
+			c.modify = r.Form
+			if c.modify.Get("SlaveReplicaCount") == "0" {
+				replicaPublicError(w, http.StatusBadRequest, "SlaveReplicaCountCanNotBeZero", "SlaveReplicaCount can not be zero, please try MigrateToOtherZone")
+				return
+			}
+			writeRedisTairInstanceJSON(t, w, map[string]interface{}{"IsOrderCompleted": true})
+		case "DescribeInstanceAttribute":
+			replicaCount, slaveReplicaCount := c.describeCounts()
+			writeRedisTairInstanceJSON(t, w, map[string]interface{}{
+				"Instances": map[string]interface{}{
+					"DBInstanceAttribute": []interface{}{
+						map[string]interface{}{
+							"InstanceId":        "r-test",
+							"InstanceStatus":    "Normal",
+							"IsOrderCompleted":  true,
+							"ReplicaCount":      replicaCount,
+							"SlaveReplicaCount": slaveReplicaCount,
+						},
+					},
+				},
+			})
+		default:
+			writeRedisTairInstanceJSON(t, w, map[string]interface{}{"InstanceStatus": "Normal", "IsOrderCompleted": true})
+		}
+	})
+}
+
+// assertReplicaCountsWire compares the serialized request key by key: a count the
+// configuration does not set must be absent from the request, not merely empty,
+// while a configured count must be sent exactly once with the expected value.
+func assertReplicaCountsWire(t *testing.T, form url.Values, want map[string]string) {
+	t.Helper()
+	if form == nil {
+		t.Fatal("the request was not captured")
+	}
+	for _, key := range []string{"ReplicaCount", "SlaveReplicaCount"} {
+		values, sent := form[key]
+		expected, configured := want[key]
+		if !configured {
+			if sent {
+				t.Fatalf("%s must not be sent, got %v", key, values)
+			}
+			continue
+		}
+		if !sent || len(values) != 1 || values[0] != expected {
+			t.Fatalf("%s must be sent once as %q, got %v", key, expected, values)
+		}
+	}
+}
+
+// assertReplicaCountsNoPlanChange requires the plan to leave both counts alone;
+// other attributes may carry their own legitimate changes.
+func assertReplicaCountsNoPlanChange(t *testing.T, diff *sdktf.InstanceDiff) {
+	t.Helper()
+	if diff == nil {
+		return
+	}
+	for _, key := range []string{"replica_count", "slave_replica_count"} {
+		if attr, ok := diff.Attributes[key]; ok {
+			t.Fatalf("plan must not change %s, got %#v", key, attr)
+		}
+	}
+}
+
+// assertReplicaCountsOnlyComputedPlaceholders requires a removal-only plan: no
+// change for either count and nothing else beyond unresolved computed values.
+func assertReplicaCountsOnlyComputedPlaceholders(t *testing.T, diff *sdktf.InstanceDiff) {
+	t.Helper()
+	assertReplicaCountsNoPlanChange(t, diff)
+	if diff == nil {
+		return
+	}
+	for key, attr := range diff.Attributes {
+		if attr.NewComputed && attr.Old == "" && attr.New == "" {
+			continue
+		}
+		t.Fatalf("a removal-only plan must only leave computed placeholders, got %s: %#v", key, attr)
+	}
+}
+
+func assertReplicaCountsRetained(t *testing.T, state *sdktf.InstanceState) {
+	t.Helper()
+	if state == nil {
+		t.Fatal("removal must keep the resource state")
+	}
+	for _, key := range []string{"replica_count", "slave_replica_count"} {
+		if got := state.Attributes[key]; got != "1" {
+			t.Fatalf("removal must retain %s=1, got %q", key, got)
+		}
+	}
+}
+
+// TestUnitRedisTairInstanceCreateReplicaCountWire drives the public create entry
+// and asserts the serialized request: both counts when both are configured,
+// neither when the configuration omits them, and only the configured count in a
+// partial configuration. Each absent key is checked for absence, so an empty
+// value would fail the assertion. The create is rejected synthetically after the
+// request is captured so the assertions do not wait on the create state
+// refresher; the successful create with a trailing update is covered by
+// CreateEntryOmitsUnconfiguredCounts.
+func TestUnitRedisTairInstanceCreateReplicaCountWire(t *testing.T) {
+	cases := []struct {
+		name   string
+		values map[string]cty.Value
+		want   map[string]string
+	}{
+		{
+			name: "both_configured",
+			values: map[string]cty.Value{
+				"replica_count":       cty.NumberIntVal(1),
+				"slave_replica_count": cty.NumberIntVal(2),
+			},
+			want: map[string]string{"ReplicaCount": "1", "SlaveReplicaCount": "2"},
+		},
+		{
+			name:   "omitted",
+			values: nil,
+			want:   map[string]string{},
+		},
+		{
+			name:   "only_replica_count",
+			values: map[string]cty.Value{"replica_count": cty.NumberIntVal(1)},
+			want:   map[string]string{"ReplicaCount": "1"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			capture := &replicaPublicCapture{failCreate: true}
+			client := capture.client(t)
+			raw, config := replicaPublicConfig(t, tc.values)
+			schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+			diff, err := schemaResource.Diff(context.Background(), nil, config, nil)
+			if err != nil || diff == nil {
+				t.Fatalf("diff through the public entry failed: %v", err)
+			}
+			diff.RawConfig = raw
+			if _, diags := schemaResource.Apply(context.Background(), nil, diff, client); !diags.HasError() {
+				t.Fatal("synthetic create rejection must be surfaced")
+			}
+			assertReplicaCountsWire(t, capture.create, tc.want)
+			if capture.modifyCalls != 0 {
+				t.Fatalf("failed create must not reach the trailing update, got %d calls", capture.modifyCalls)
+			}
+		})
+	}
+}
+
+// TestUnitRedisTairInstanceModifyReplicaCountWire drives the public update entry
+// from 1/1 to 2/2 and asserts ModifyInstanceSpec carries both counts and the
+// follow-up read keeps the updated values.
+func TestUnitRedisTairInstanceModifyReplicaCountWire(t *testing.T) {
+	capture := &replicaPublicCapture{replicaCount: 2, slaveReplicaCount: 2}
+	client := capture.client(t)
+	state := replicaPublicState(1, 1)
+	raw, config := replicaPublicConfig(t, map[string]cty.Value{
+		"replica_count":       cty.NumberIntVal(2),
+		"slave_replica_count": cty.NumberIntVal(2),
+	})
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	diff, err := schemaResource.Diff(context.Background(), state, config, nil)
+	if err != nil || diff == nil {
+		t.Fatalf("diff through the public entry failed: %v", err)
+	}
+	diff.RawConfig = raw
+	updated, diags := schemaResource.Apply(context.Background(), state, diff, client)
+	if diags.HasError() {
+		t.Fatalf("update through the public entry failed: %s", replicaDiagsText(diags))
+	}
+	if capture.modifyCalls != 1 {
+		t.Fatalf("update must call ModifyInstanceSpec once, got %d", capture.modifyCalls)
+	}
+	assertReplicaCountsWire(t, capture.modify, map[string]string{"ReplicaCount": "2", "SlaveReplicaCount": "2"})
+	if updated.Attributes["replica_count"] != "2" || updated.Attributes["slave_replica_count"] != "2" {
+		t.Fatalf("readback must keep both updated counts, got %#v", updated.Attributes)
+	}
+}
+
+// TestUnitRedisTairInstanceDescribeReplicaCounts drives the public resource Read
+// (RefreshWithoutUpgrade) so the 1/0 readback is verified through the resource
+// lifecycle rather than the service helper alone.
+func TestUnitRedisTairInstanceDescribeReplicaCounts(t *testing.T) {
+	client := redisTairInstanceTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Form.Get("Action") == "DescribeInstanceAttribute" {
+			writeRedisTairInstanceJSON(t, w, map[string]interface{}{
+				"Instances": map[string]interface{}{
+					"DBInstanceAttribute": []interface{}{
+						map[string]interface{}{
+							"InstanceId":        "r-test",
+							"InstanceStatus":    "Normal",
+							"ReplicaCount":      1,
+							"SlaveReplicaCount": 0,
+						},
+					},
+				},
+			})
+			return
+		}
+		writeRedisTairInstanceJSON(t, w, map[string]interface{}{"InstanceStatus": "Normal", "IsOrderCompleted": true})
+	})
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	state, diags := schemaResource.RefreshWithoutUpgrade(context.Background(), &sdktf.InstanceState{ID: "r-test"}, client)
+	if diags.HasError() {
+		t.Fatalf("read through the public entry failed: %s", replicaDiagsText(diags))
+	}
+	if state.Attributes["replica_count"] != "1" {
+		t.Fatalf("public Read must backfill replica_count=1, got %#v", state.Attributes["replica_count"])
+	}
+	if state.Attributes["slave_replica_count"] != "0" {
+		t.Fatalf("public Read must backfill slave_replica_count=0, got %#v", state.Attributes["slave_replica_count"])
+	}
+}
+
+// TestUnitRedisTairInstanceCreateEntryOmitsUnconfiguredCounts drives the public
+// create entry with no replica count configuration: the create request must omit
+// both counts entirely and the trailing update must not resend them.
+func TestUnitRedisTairInstanceCreateEntryOmitsUnconfiguredCounts(t *testing.T) {
+	capture := &replicaPublicCapture{}
+	client := capture.client(t)
+	raw, config := replicaPublicConfig(t, nil)
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	diff, err := schemaResource.Diff(context.Background(), nil, config, nil)
+	if err != nil || diff == nil {
+		t.Fatalf("diff through the public entry failed: %v", err)
+	}
+	diff.RawConfig = raw
+	if _, diags := schemaResource.Apply(context.Background(), nil, diff, client); diags.HasError() {
+		t.Fatalf("create through the public entry failed: %s", replicaDiagsText(diags))
+	}
+	assertReplicaCountsWire(t, capture.create, map[string]string{})
+	if capture.modifyCalls != 0 {
+		t.Fatalf("create must not resend replica counts through the trailing update, got %d calls", capture.modifyCalls)
+	}
+}
+
+func TestUnitRedisTairInstancePublicCreateExplicitZeroWire(t *testing.T) {
+	capture := &replicaPublicCapture{}
+	client := capture.client(t)
+	raw, config := replicaPublicConfig(t, map[string]cty.Value{
+		"replica_count":       cty.NumberIntVal(1),
+		"slave_replica_count": cty.NumberIntVal(0),
+	})
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	diff, err := schemaResource.Diff(context.Background(), nil, config, nil)
+	if err != nil || diff == nil {
+		t.Fatalf("diff through the public entry failed: %v", err)
+	}
+	diff.RawConfig = raw
+	_, diags := schemaResource.Apply(context.Background(), nil, diff, client)
+	if !diags.HasError() {
+		t.Fatal("explicit zero create must surface the product error")
+	}
+	assertReplicaCountsWire(t, capture.create, map[string]string{"ReplicaCount": "1", "SlaveReplicaCount": "0"})
+	if text := replicaDiagsText(diags); !strings.Contains(text, "InvalidParameter") {
+		t.Fatalf("create error must surface InvalidParameter, got %q", text)
+	}
+}
+
+// TestUnitRedisTairInstancePublicCreateOmittedWire drives the public create
+// entry with an omitted configuration and asserts both count keys are absent
+// from the serialized request. A synthetic rejection keeps the test fast; the
+// successful create/trailing-update path is covered by
+// CreateEntryOmitsUnconfiguredCounts.
+func TestUnitRedisTairInstancePublicCreateOmittedWire(t *testing.T) {
+	capture := &replicaPublicCapture{failCreate: true}
+	client := capture.client(t)
+	raw, config := replicaPublicConfig(t, nil)
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	diff, err := schemaResource.Diff(context.Background(), nil, config, nil)
+	if err != nil || diff == nil {
+		t.Fatalf("diff through the public entry failed: %v", err)
+	}
+	diff.RawConfig = raw
+	_, diags := schemaResource.Apply(context.Background(), nil, diff, client)
+	if !diags.HasError() {
+		t.Fatal("synthetic create rejection must be surfaced")
+	}
+	assertReplicaCountsWire(t, capture.create, map[string]string{})
+	if capture.modifyCalls != 0 {
+		t.Fatalf("failed create must not reach the trailing update, got %d calls", capture.modifyCalls)
+	}
+}
+
+func TestUnitRedisTairInstancePublicUpdateZeroWire(t *testing.T) {
+	capture := &replicaPublicCapture{}
+	client := capture.client(t)
+	state := replicaPublicState(1, 1)
+	raw, config := replicaPublicConfig(t, map[string]cty.Value{
+		"replica_count":       cty.NumberIntVal(1),
+		"slave_replica_count": cty.NumberIntVal(0),
+	})
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	diff, err := schemaResource.Diff(context.Background(), state, config, nil)
+	if err != nil || diff == nil {
+		t.Fatalf("diff through the public entry failed: %v", err)
+	}
+	diff.RawConfig = raw
+	_, diags := schemaResource.Apply(context.Background(), state, diff, client)
+	if !diags.HasError() {
+		t.Fatal("non-zero to zero update must surface the product error")
+	}
+	assertReplicaCountsWire(t, capture.modify, map[string]string{"SlaveReplicaCount": "0"})
+	if text := replicaDiagsText(diags); !strings.Contains(text, "SlaveReplicaCountCanNotBeZero") {
+		t.Fatalf("update error must surface SlaveReplicaCountCanNotBeZero, got %q", text)
+	}
+}
+
+// TestUnitRedisTairInstancePublicRemovalKeepsCurrentValues drives a real Apply for
+// removal of either count. A tag update provides an independent, controlled
+// non-count change so the update path actually runs: removing a count must not
+// call ModifyInstanceSpec, other legitimate updates must complete, the readback
+// must keep the current cloud values, and a plan on the applied state must not
+// change either count.
+func TestUnitRedisTairInstancePublicRemovalKeepsCurrentValues(t *testing.T) {
+	cases := []struct {
+		name   string
+		remove string
+		values map[string]cty.Value
+	}{
+		{
+			name:   "remove_replica_count",
+			remove: "replica_count",
+			values: map[string]cty.Value{
+				"slave_replica_count": cty.NumberIntVal(1),
+			},
+		},
+		{
+			name:   "remove_slave_replica_count",
+			remove: "slave_replica_count",
+			values: map[string]cty.Value{
+				"replica_count": cty.NumberIntVal(1),
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			capture := &replicaPublicCapture{}
+			client := capture.client(t)
+			state := replicaPublicState(1, 1)
+			values := map[string]cty.Value{
+				"tags": cty.MapVal(map[string]cty.Value{"env": cty.StringVal("test")}),
+			}
+			for key, value := range tc.values {
+				values[key] = value
+			}
+			raw, config := replicaPublicConfig(t, values)
+			schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+			diff, err := schemaResource.Diff(context.Background(), state, config, nil)
+			if err != nil {
+				t.Fatalf("diff through the public entry failed: %v", err)
+			}
+			if diff == nil {
+				t.Fatal("the independent tag update must produce a plan so Apply and the follow-up plan actually run")
+			}
+			assertReplicaCountsNoPlanChange(t, diff)
+			diff.RawConfig = raw
+			updated, diags := schemaResource.Apply(context.Background(), state, diff, client)
+			if diags.HasError() {
+				t.Fatalf("applying the removal plan failed: %s", replicaDiagsText(diags))
+			}
+			if capture.modifyCalls != 0 {
+				t.Fatalf("removing %s must not call ModifyInstanceSpec, got %d calls", tc.remove, capture.modifyCalls)
+			}
+			assertReplicaCountsRetained(t, updated)
+			followUp, err := schemaResource.Diff(context.Background(), updated, config, nil)
+			if err != nil {
+				t.Fatalf("diff after applying the removal failed: %v", err)
+			}
+			assertReplicaCountsNoPlanChange(t, followUp)
+		})
+	}
+}
+
+// TestUnitRedisTairInstanceRemovalOnlyPlansNoCountChange covers the removal-only
+// plan without any other change: removing one count must not plan a change for
+// either count. It proves only the first plan; the Apply and follow-up plan are
+// covered by PublicRemovalKeepsCurrentValues.
+func TestUnitRedisTairInstanceRemovalOnlyPlansNoCountChange(t *testing.T) {
+	cases := []struct {
+		name   string
+		values map[string]cty.Value
+	}{
+		{
+			name: "remove_replica_count",
+			values: map[string]cty.Value{
+				"slave_replica_count": cty.NumberIntVal(1),
+			},
+		},
+		{
+			name: "remove_slave_replica_count",
+			values: map[string]cty.Value{
+				"replica_count": cty.NumberIntVal(1),
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			state := replicaPublicState(1, 1)
+			_, config := replicaPublicConfig(t, tc.values)
+			schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+			diff, err := schemaResource.Diff(context.Background(), state, config, nil)
+			if err != nil {
+				t.Fatalf("diff through the public entry failed: %v", err)
+			}
+			assertReplicaCountsOnlyComputedPlaceholders(t, diff)
+		})
+	}
+}
+
+// TestUnitRedisTairInstanceImportReadback imports through the public importer and
+// asserts the follow-up read fills both counts from the API.
+func TestUnitRedisTairInstanceImportReadback(t *testing.T) {
+	capture := &replicaPublicCapture{replicaCount: 2, slaveReplicaCount: 2}
+	client := capture.client(t)
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	d := schemaResource.Data(nil)
+	d.SetId("r-test")
+	imported, err := schemaResource.Importer.State(d, client)
+	if err != nil || len(imported) != 1 {
+		t.Fatalf("unexpected import result: %#v, %v", imported, err)
+	}
+	if imported[0].Id() != "r-test" {
+		t.Fatalf("import must keep the passthrough ID, got %q", imported[0].Id())
+	}
+	state, diags := schemaResource.RefreshWithoutUpgrade(context.Background(), imported[0].State(), client)
+	if diags.HasError() {
+		t.Fatalf("import read failed: %s", replicaDiagsText(diags))
+	}
+	if state.Attributes["replica_count"] != "2" || state.Attributes["slave_replica_count"] != "2" {
+		t.Fatalf("import must read back both counts, got %#v", state.Attributes)
+	}
+}
+
 // tairInstanceImportStateVerifyIgnore lists the arguments an import cannot recover: write-only
 // arguments and creation-only options that DescribeInstanceAttribute does not return.
 var tairInstanceImportStateVerifyIgnore = []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"}
@@ -3872,7 +4685,7 @@ var tairInstanceImportStateVerifyIgnore = []string{"auto_renew", "auto_renew_per
 // parameters and the in-place ModifyInstanceSpec storage change. The prepaid conversion
 // (TransformInstanceChargeType) and its coupon parameter are covered by
 // TestAccAliCloudRedisTairInstance_prepaidCouponConversion and
-// TestUnitRedisTairInstanceOrderTypeAndCouponRequests.
+// TestUnitRedisTairInstanceCreateRequestParameters.
 func TestAccAliCloudRedisTairInstance_propertyCompleteness(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_redis_tair_instance.default"
@@ -3981,7 +4794,7 @@ func TestAccAliCloudRedisTairInstance_propertyCompleteness(t *testing.T) {
 				ImportStateVerify: true,
 				// coupon_no, auto_use_coupon and instance_endpoint_type are write-only and are
 				// absent from the DescribeInstanceAttribute response, so an import cannot recover them.
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
+				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
 			},
 		},
 	})
@@ -4030,171 +4843,70 @@ locals {
 `, name)
 }
 
-func TestAccAliCloudRedisTairInstance_replicaCount(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_redis_tair_instance.default"
-	ra := acctest.ResourceAttrInit(resourceId, AlicloudRedisTairInstanceMapReplicaCount)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return rkvstore.NewRedisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
-	}, "DescribeRedisTairInstance")
-	rac := acctest.ResourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sredistairinstance%d", acctest.DefaultRegionToTest, rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependenceReplicaCount)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheckWithRegions(t, true, connectivity.RedisTariInstanceSupportRegions)
-			acctest.PreCheck(t)
-		},
-		ProviderFactories: acctest.SDKProviderFactories,
-		CheckDestroy:      rac.CheckResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"payment_type":        "PayAsYouGo",
-					"instance_type":       "tair_rdb",
-					"zone_id":             "${local.zone_id}",
-					"secondary_zone_id":   "${local.secondary_zone_id}",
-					"instance_class":      "${local.rdb_class}",
-					"shard_count":         "2",
-					"replica_count":       "1",
-					"slave_replica_count": "1",
-					"vswitch_id":          "${local.vswitch_id}",
-					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"payment_type":        "PayAsYouGo",
-						"instance_type":       "tair_rdb",
-						"instance_class":      acctest.CHECKSET,
-						"shard_count":         "2",
-						"zone_id":             acctest.CHECKSET,
-						"secondary_zone_id":   acctest.CHECKSET,
-						"replica_count":       "1",
-						"slave_replica_count": "1",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"replica_count": "2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"replica_count":       "2",
-						"slave_replica_count": "1",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
-			},
-			{
-				// The secondary zone replica count is applied in its own request after the
-				// primary count has converged.
-				Config: testAccConfig(map[string]interface{}{
-					"slave_replica_count": "2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"replica_count":       "2",
-						"slave_replica_count": "2",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
-			},
-			{
-				// Both replica counts change in this step; the provider applies them in two
-				// sequential calls so each prepaid order can declare its own direction.
-				Config: testAccConfig(map[string]interface{}{
-					"replica_count":       "1",
-					"slave_replica_count": "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"replica_count":       "1",
-						"slave_replica_count": "1",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
-			},
-		},
-	})
+// newTairInstanceFixtureClient builds a client pointed at an in-process fixture server so
+// the unit tests exercise the real request serialization without any cloud call.
+func newTairInstanceFixtureClient(t *testing.T, server *httptest.Server) *connectivity.AliyunClient {
+	t.Helper()
+	t.Cleanup(server.Close)
+
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatalf("failed to build the fixture credential: %s", err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatalf("failed to build the fixture client: %s", err)
+	}
+	endpoints.Store("r_kvstore", endpoint)
+	return client
 }
 
-var AlicloudRedisTairInstanceMapReplicaCount = map[string]string{
-	"status":      acctest.CHECKSET,
-	"create_time": acctest.CHECKSET,
+// tairInstanceUpdateFixtureData builds ResourceData for an existing instance with only the
+// requested attributes changed, plus the configuration the user applied.
+func tairInstanceUpdateFixtureData(t *testing.T, changes map[string][2]string, rawConfig map[string]cty.Value, extraState map[string]string) *sdkv2schema.ResourceData {
+	t.Helper()
+	resourceInstance := rkvstore.ResourceAliCloudRedisTairInstance()
+	diff := &sdktf.InstanceDiff{Attributes: map[string]*sdktf.ResourceAttrDiff{}}
+	for key, values := range changes {
+		diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: values[0], New: values[1]}
+	}
+	diff.RawConfig = cty.ObjectVal(rawConfig)
+	attributes := map[string]string{
+		"instance_class":      "tair.rdb.2g",
+		"instance_type":       "tair_rdb",
+		"zone_id":             "cn-hangzhou-j",
+		"vpc_id":              "vpc-tftest",
+		"vswitch_id":          "vsw-tftest",
+		"payment_type":        "PayAsYouGo",
+		"replica_count":       "1",
+		"slave_replica_count": "1",
+	}
+	for key, value := range extraState {
+		attributes[key] = value
+	}
+	state := &sdktf.InstanceState{
+		ID:         "r-tftest",
+		Attributes: attributes,
+	}
+	d, err := sdkv2schema.InternalMap(resourceInstance.Schema).Data(state, diff)
+	if err != nil {
+		t.Fatalf("failed to build the fixture resource data: %s", err)
+	}
+	return d
 }
 
-func AlicloudRedisTairInstanceBasicDependenceReplicaCount(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-  default = "%s"
-}
-
-data "alicloud_kvstore_zones" "default" {
-  product_type = "Tair_rdb"
-}
-
-data "alicloud_kvstore_instance_classes" "rdb" {
-  zone_id              = data.alicloud_kvstore_zones.default.zones.0.id
-  product_type         = "Tair_rdb"
-  instance_charge_type = "PostPaid"
-}
-
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_kvstore_zones.default.zones.0.id
-}
-
-resource "alicloud_vswitch" "this" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vswitch_name = var.name
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  zone_id      = data.alicloud_kvstore_zones.default.zones.0.id
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
-}
-
-locals {
-  vswitch_id        = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id           = data.alicloud_kvstore_zones.default.zones.0.id
-  secondary_zone_id = data.alicloud_kvstore_zones.default.zones.1.id
-  rdb_class         = [for c in data.alicloud_kvstore_instance_classes.rdb.instance_classes : c if c == "tair.rdb.2g"][0]
-}
-
-`, name)
-}
-
-// tairInstanceUpdateFixtureClient serves the RPC calls of resourceAliCloudRedisTairInstanceUpdate
-// from an in-process HTTP fixture. Every ModifyInstanceSpec request is captured in arrival
-// order, and the describe call used by the state waiter reports a completed order together with
-// the specification the last request asked for, so a waiter that compares the applied values
-// converges while one that only reads IsOrderCompleted would release early.
+// tairInstanceUpdateFixtureClient serves the RPC calls of ResourceAliCloudRedisTairInstanceUpdate
+// and mirrors every applied ModifyInstanceSpec value in the following DescribeInstanceAttribute,
+// so the order waiter converges on the specification the request asked for.
 func tairInstanceUpdateFixtureClient(t *testing.T, requests *[]map[string]string) *connectivity.AliyunClient {
 	t.Helper()
 	applied := map[string]string{
@@ -4221,7 +4933,7 @@ func tairInstanceUpdateFixtureClient(t *testing.T, requests *[]map[string]string
 			fmt.Fprint(w, `{"RequestId":"mock","Instances":{"DBInstanceAttribute":[{`+strings.Join(fields, ",")+`}]}}`)
 		case "ModifyInstanceSpec":
 			captured := map[string]string{}
-			for _, key := range []string{"ReplicaCount", "SlaveReplicaCount", "InstanceClass", "ForceUpgrade", "EffectiveTime", "Storage", "StorageType", "OrderType", "NodeType", "ReadOnlyCount", "SlaveReadOnlyCount"} {
+			for _, key := range []string{"ReplicaCount", "SlaveReplicaCount", "InstanceClass", "ForceUpgrade", "EffectiveTime", "Storage", "StorageType", "NodeType", "ReadOnlyCount", "SlaveReadOnlyCount"} {
 				if values, ok := r.Form[key]; ok && len(values) > 0 {
 					captured[key] = values[0]
 				}
@@ -4316,724 +5028,6 @@ func TestUnitRedisTairInstanceWaitsForAppliedSpec(t *testing.T) {
 	assert.GreaterOrEqual(t, describes, 3, "the update must not release on the stale completed-order flag")
 }
 
-// newTairInstanceFixtureClient builds a client pointed at an in-process fixture server so
-// the unit tests exercise the real request serialization without any cloud call.
-func newTairInstanceFixtureClient(t *testing.T, server *httptest.Server) *connectivity.AliyunClient {
-	t.Helper()
-	t.Cleanup(server.Close)
-
-	credential, err := credentials.NewCredential(new(credentials.Config).
-		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
-	if err != nil {
-		t.Fatalf("failed to build the fixture credential: %s", err)
-	}
-	endpoints := new(sync.Map)
-	endpoint := strings.TrimPrefix(server.URL, "http://")
-	t.Setenv("NO_PROXY", endpoint)
-	config := &connectivity.Config{
-		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
-		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
-		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
-	}
-	client, err := config.Client()
-	if err != nil {
-		t.Fatalf("failed to build the fixture client: %s", err)
-	}
-	endpoints.Store("r_kvstore", endpoint)
-	return client
-}
-
-// tairInstanceUpdateFixtureData builds ResourceData for an existing instance with only the
-// requested attributes changed, plus the configuration the user applied.
-func tairInstanceUpdateFixtureData(t *testing.T, changes map[string][2]string, rawConfig map[string]cty.Value, extraState map[string]string) *sdkv2schema.ResourceData {
-	t.Helper()
-	resourceInstance := rkvstore.ResourceAliCloudRedisTairInstance()
-	diff := &sdktf.InstanceDiff{Attributes: map[string]*sdktf.ResourceAttrDiff{}}
-	for key, values := range changes {
-		diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: values[0], New: values[1]}
-	}
-	diff.RawConfig = cty.ObjectVal(rawConfig)
-	attributes := map[string]string{
-		"instance_class":      "tair.rdb.2g",
-		"instance_type":       "tair_rdb",
-		"zone_id":             "cn-hangzhou-j",
-		"vpc_id":              "vpc-tftest",
-		"vswitch_id":          "vsw-tftest",
-		"payment_type":        "PayAsYouGo",
-		"replica_count":       "1",
-		"slave_replica_count": "1",
-	}
-	for key, value := range extraState {
-		attributes[key] = value
-	}
-	state := &sdktf.InstanceState{
-		ID:         "r-tftest",
-		Attributes: attributes,
-	}
-	d, err := sdkv2schema.InternalMap(resourceInstance.Schema).Data(state, diff)
-	if err != nil {
-		t.Fatalf("failed to build the fixture resource data: %s", err)
-	}
-	return d
-}
-
-func TestUnitRedisTairInstanceUpdateSlaveReplicaCountRequests(t *testing.T) {
-	// Every case drives the public Update entry, so the assertions cover the requests the
-	// provider actually serializes, including the order of the two ModifyInstanceSpec calls.
-	t.Run("slave only update keeps the configured execution options", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{"slave_replica_count": {"1", "2"}},
-			map[string]cty.Value{
-				"config":              cty.NullVal(cty.Map(cty.String)),
-				"instance_class":      cty.StringVal("tair.rdb.2g"),
-				"replica_count":       cty.NumberIntVal(1),
-				"slave_replica_count": cty.NumberIntVal(2),
-				"force_upgrade":       cty.False,
-				"effective_time":      cty.StringVal("MaintainTime"),
-			},
-			map[string]string{"force_upgrade": "false", "effective_time": "MaintainTime"})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("update failed: %v", err)
-		}
-		assert.Len(t, requests, 1)
-		assert.Equal(t, "2", requests[0]["SlaveReplicaCount"])
-		assert.Equal(t, "tair.rdb.2g", requests[0]["InstanceClass"])
-		assert.Equal(t, "false", requests[0]["ForceUpgrade"])
-		assert.Equal(t, "MaintainTime", requests[0]["EffectiveTime"])
-		_, hasReplicaCount := requests[0]["ReplicaCount"]
-		assert.False(t, hasReplicaCount, "the slave request must not change ReplicaCount")
-	})
-
-	t.Run("joint replica update is split into two ordered requests", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{
-				"replica_count":       {"1", "2"},
-				"slave_replica_count": {"1", "2"},
-			},
-			map[string]cty.Value{
-				"config":              cty.NullVal(cty.Map(cty.String)),
-				"instance_class":      cty.StringVal("tair.rdb.2g"),
-				"replica_count":       cty.NumberIntVal(2),
-				"slave_replica_count": cty.NumberIntVal(2),
-				"force_upgrade":       cty.False,
-				"effective_time":      cty.StringVal("MaintainTime"),
-			},
-			map[string]string{"force_upgrade": "false", "effective_time": "MaintainTime"})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("update failed: %v", err)
-		}
-		assert.Len(t, requests, 2)
-		assert.Equal(t, "2", requests[0]["ReplicaCount"])
-		assert.Equal(t, "false", requests[0]["ForceUpgrade"])
-		assert.Equal(t, "MaintainTime", requests[0]["EffectiveTime"])
-		_, firstHasSlave := requests[0]["SlaveReplicaCount"]
-		assert.False(t, firstHasSlave, "ReplicaCount and SlaveReplicaCount must not share a request")
-		assert.Equal(t, "2", requests[1]["SlaveReplicaCount"])
-		assert.Equal(t, "false", requests[1]["ForceUpgrade"])
-		assert.Equal(t, "MaintainTime", requests[1]["EffectiveTime"])
-		_, secondHasReplica := requests[1]["ReplicaCount"]
-		assert.False(t, secondHasReplica)
-	})
-
-	t.Run("growing primary with shrinking secondary frees capacity first", func(t *testing.T) {
-		// 1+2 -> 3+1 is a valid target (sum 4), but the primary request first would briefly
-		// reach 3+2=5. The secondary decrease must be sent before the primary increase.
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{
-				"replica_count":       {"1", "3"},
-				"slave_replica_count": {"2", "1"},
-			},
-			map[string]cty.Value{
-				"config":              cty.NullVal(cty.Map(cty.String)),
-				"instance_class":      cty.StringVal("tair.rdb.2g"),
-				"replica_count":       cty.NumberIntVal(3),
-				"slave_replica_count": cty.NumberIntVal(1),
-			},
-			map[string]string{
-				"replica_count":       "1",
-				"slave_replica_count": "2",
-			})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("update failed: %v", err)
-		}
-		assert.Len(t, requests, 2)
-		assert.Equal(t, "1", requests[0]["SlaveReplicaCount"])
-		_, firstHasReplica := requests[0]["ReplicaCount"]
-		assert.False(t, firstHasReplica)
-		assert.Equal(t, "3", requests[1]["ReplicaCount"])
-		_, secondHasSlave := requests[1]["SlaveReplicaCount"]
-		assert.False(t, secondHasSlave)
-	})
-
-	t.Run("unset execution options are omitted", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{"slave_replica_count": {"1", "2"}},
-			map[string]cty.Value{
-				"config":              cty.NullVal(cty.Map(cty.String)),
-				"instance_class":      cty.StringVal("tair.rdb.2g"),
-				"replica_count":       cty.NumberIntVal(1),
-				"slave_replica_count": cty.NumberIntVal(2),
-			},
-			nil)
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("update failed: %v", err)
-		}
-		assert.Len(t, requests, 1)
-		_, hasForceUpgrade := requests[0]["ForceUpgrade"]
-		_, hasEffectiveTime := requests[0]["EffectiveTime"]
-		assert.False(t, hasForceUpgrade)
-		assert.False(t, hasEffectiveTime)
-	})
-
-	t.Run("removed execution options are not resent from state", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		resourceInstance := rkvstore.ResourceAliCloudRedisTairInstance()
-		diff := &sdktf.InstanceDiff{Attributes: map[string]*sdktf.ResourceAttrDiff{
-			"slave_replica_count": {Old: "1", New: "2"},
-		}}
-		diff.RawConfig = cty.ObjectVal(map[string]cty.Value{
-			"config":              cty.NullVal(cty.Map(cty.String)),
-			"instance_class":      cty.StringVal("tair.rdb.2g"),
-			"replica_count":       cty.NumberIntVal(1),
-			"slave_replica_count": cty.NumberIntVal(2),
-		})
-		state := &sdktf.InstanceState{
-			ID: "r-tftest",
-			Attributes: map[string]string{
-				"instance_class":      "tair.rdb.2g",
-				"instance_type":       "tair_rdb",
-				"replica_count":       "1",
-				"slave_replica_count": "1",
-				"force_upgrade":       "false",
-				"effective_time":      "MaintainTime",
-			},
-		}
-		d, err := sdkv2schema.InternalMap(resourceInstance.Schema).Data(state, diff)
-		if err != nil {
-			t.Fatalf("failed to build the fixture resource data: %s", err)
-		}
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("update failed: %v", err)
-		}
-		assert.Len(t, requests, 1)
-		_, hasForceUpgrade := requests[0]["ForceUpgrade"]
-		_, hasEffectiveTime := requests[0]["EffectiveTime"]
-		assert.False(t, hasForceUpgrade, "a removed option must not be resent from state")
-		assert.False(t, hasEffectiveTime, "a removed option must not be resent from state")
-	})
-}
-
-func TestUnitRedisTairInstanceOrderTypeAndCouponRequests(t *testing.T) {
-	// A Subscription downgrade must declare OrderType=DOWNGRADE because the API defaults to
-	// UPGRADE, and a charge type conversion must carry the configured coupon.
-	t.Run("subscription downgrade declares DOWNGRADE", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{"storage_size_gb": {"70", "60"}},
-			map[string]cty.Value{
-				"config":                    cty.NullVal(cty.Map(cty.String)),
-				"instance_class":            cty.StringVal("tair.essd.standard.2xlarge"),
-				"storage_size_gb":           cty.NumberIntVal(60),
-				"storage_performance_level": cty.StringVal("PL1"),
-				"payment_type":              cty.StringVal("Subscription"),
-			},
-			map[string]string{"payment_type": "Subscription", "storage_size_gb": "70", "storage_performance_level": "PL1"})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("update failed: %v", err)
-		}
-		assert.Len(t, requests, 1)
-		assert.Equal(t, "60", requests[0]["Storage"])
-		assert.Equal(t, "DOWNGRADE", requests[0]["OrderType"])
-	})
-
-	t.Run("pay as you go update keeps the API default order type", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{"storage_size_gb": {"70", "60"}},
-			map[string]cty.Value{
-				"config":          cty.NullVal(cty.Map(cty.String)),
-				"instance_class":  cty.StringVal("tair.essd.standard.2xlarge"),
-				"storage_size_gb": cty.NumberIntVal(60),
-			},
-			map[string]string{"storage_size_gb": "70"})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("update failed: %v", err)
-		}
-		assert.Len(t, requests, 1)
-		_, hasOrderType := requests[0]["OrderType"]
-		assert.False(t, hasOrderType, "a pay-as-you-go update must not declare an order type")
-	})
-
-	t.Run("subscription performance level downgrade declares DOWNGRADE", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{"storage_performance_level": {"PL3", "PL2"}},
-			map[string]cty.Value{
-				"config":                    cty.NullVal(cty.Map(cty.String)),
-				"instance_class":            cty.StringVal("tair.essd.standard.2xlarge"),
-				"storage_performance_level": cty.StringVal("PL2"),
-				"payment_type":              cty.StringVal("Subscription"),
-			},
-			map[string]string{"payment_type": "Subscription", "storage_performance_level": "PL3"})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("update failed: %v", err)
-		}
-		assert.Len(t, requests, 1)
-		assert.Equal(t, "essd_pl2", requests[0]["StorageType"])
-		assert.Equal(t, "DOWNGRADE", requests[0]["OrderType"])
-	})
-
-	t.Run("charge type conversion serializes the coupon", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{"payment_type": {"PayAsYouGo", "Subscription"}},
-			map[string]cty.Value{
-				"config":         cty.NullVal(cty.Map(cty.String)),
-				"instance_class": cty.StringVal("tair.rdb.2g"),
-				"payment_type":   cty.StringVal("Subscription"),
-				"period":         cty.NumberIntVal(1),
-				"coupon_no":      cty.StringVal("default"),
-			},
-			map[string]string{"payment_type": "PayAsYouGo", "period": "1", "coupon_no": "default"})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("update failed: %v", err)
-		}
-		assert.Len(t, requests, 1)
-		assert.Equal(t, "PrePaid", requests[0]["ChargeType"])
-		assert.Equal(t, "default", requests[0]["CouponNo"])
-	})
-}
-
-func TestUnitRedisTairInstanceOrderTypePerRequest(t *testing.T) {
-	// ModifyInstanceSpec judges OrderType from the price of the target specification carried
-	// by that request, so each split request declares its own direction and a request that
-	// cannot be classified is refused before anything is sent.
-
-	t.Run("mixed replica directions are scoped to their own requests", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{
-				"replica_count":       {"1", "2"},
-				"slave_replica_count": {"2", "1"},
-			},
-			map[string]cty.Value{
-				"config":              cty.NullVal(cty.Map(cty.String)),
-				"instance_class":      cty.StringVal("tair.rdb.2g"),
-				"replica_count":       cty.NumberIntVal(2),
-				"slave_replica_count": cty.NumberIntVal(1),
-				"payment_type":        cty.StringVal("Subscription"),
-			},
-			map[string]string{
-				"payment_type":        "Subscription",
-				"replica_count":       "1",
-				"slave_replica_count": "2",
-			})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("update failed: %v", err)
-		}
-		// The primary count grows while the secondary count shrinks, so the secondary decrease
-		// is sent first to keep the intermediate ReplicaCount+SlaveReplicaCount within 4.
-		assert.Len(t, requests, 2)
-		assert.Equal(t, "1", requests[0]["SlaveReplicaCount"])
-		assert.Equal(t, "DOWNGRADE", requests[0]["OrderType"], "the downgrade belongs to the slave request only")
-		_, firstHasReplica := requests[0]["ReplicaCount"]
-		assert.False(t, firstHasReplica)
-		assert.Equal(t, "2", requests[1]["ReplicaCount"])
-		_, secondHasOrderType := requests[1]["OrderType"]
-		assert.False(t, secondHasOrderType, "an upgrade request must keep the API default instead of inheriting DOWNGRADE")
-	})
-
-	t.Run("storage size upgrade keeps the API default order type", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{"storage_size_gb": {"60", "100"}},
-			map[string]cty.Value{
-				"config":                    cty.NullVal(cty.Map(cty.String)),
-				"instance_class":            cty.StringVal("tair.essd.standard.2xlarge"),
-				"storage_size_gb":           cty.NumberIntVal(100),
-				"storage_performance_level": cty.StringVal("PL1"),
-				"payment_type":              cty.StringVal("Subscription"),
-			},
-			map[string]string{
-				"payment_type":              "Subscription",
-				"storage_size_gb":           "60",
-				"storage_performance_level": "PL1",
-			})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("update failed: %v", err)
-		}
-		assert.Len(t, requests, 1)
-		assert.Equal(t, "100", requests[0]["Storage"])
-		_, hasOrderType := requests[0]["OrderType"]
-		assert.False(t, hasOrderType)
-	})
-
-	t.Run("storage size and performance level moving in opposite directions are refused", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{
-				"storage_size_gb":           {"50", "100"},
-				"storage_performance_level": {"PL3", "PL1"},
-			},
-			map[string]cty.Value{
-				"config":                    cty.NullVal(cty.Map(cty.String)),
-				"instance_class":            cty.StringVal("tair.essd.standard.2xlarge"),
-				"storage_size_gb":           cty.NumberIntVal(100),
-				"storage_performance_level": cty.StringVal("PL1"),
-				"payment_type":              cty.StringVal("Subscription"),
-			},
-			map[string]string{
-				"payment_type":              "Subscription",
-				"storage_size_gb":           "50",
-				"storage_performance_level": "PL3",
-			})
-
-		err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client)
-		if err == nil {
-			t.Fatal("a request mixing a storage increase with a performance level decrease must be refused")
-		}
-		assert.Contains(t, err.Error(), "cannot determine the ModifyInstanceSpec OrderType")
-		assert.Empty(t, requests, "a refused request must not reach the API")
-	})
-
-	t.Run("instance class with a storage decrease is refused", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{
-				"instance_class":  {"tair.rdb.2g", "tair.rdb.4g"},
-				"storage_size_gb": {"70", "60"},
-			},
-			map[string]cty.Value{
-				"config":          cty.NullVal(cty.Map(cty.String)),
-				"instance_class":  cty.StringVal("tair.rdb.4g"),
-				"storage_size_gb": cty.NumberIntVal(60),
-				"payment_type":    cty.StringVal("Subscription"),
-			},
-			map[string]string{
-				"payment_type":    "Subscription",
-				"instance_class":  "tair.rdb.2g",
-				"storage_size_gb": "70",
-			})
-
-		err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client)
-		if err == nil {
-			t.Fatal("the price direction of an instance class change cannot be derived, so the update must be refused")
-		}
-		assert.Contains(t, err.Error(), "cannot determine the ModifyInstanceSpec OrderType")
-		assert.Empty(t, requests)
-	})
-
-	t.Run("instance class alone keeps the API default order type", func(t *testing.T) {
-		// The class price is not derivable from the class code, so an isolated class change
-		// keeps the API default (UPGRADE) instead of failing the update.
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{"instance_class": {"tair.rdb.2g", "tair.rdb.4g"}},
-			map[string]cty.Value{
-				"config":         cty.NullVal(cty.Map(cty.String)),
-				"instance_class": cty.StringVal("tair.rdb.4g"),
-				"payment_type":   cty.StringVal("Subscription"),
-			},
-			map[string]string{"payment_type": "Subscription", "instance_class": "tair.rdb.2g"})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("an isolated instance class change must stay usable: %v", err)
-		}
-		assert.Len(t, requests, 1)
-		assert.Equal(t, "tair.rdb.4g", requests[0]["InstanceClass"])
-		_, hasOrderType := requests[0]["OrderType"]
-		assert.False(t, hasOrderType, "an unclassifiable class-only change must not declare a direction")
-	})
-}
-
-func TestUnitRedisTairInstanceOrderTypeCompleteness(t *testing.T) {
-	// The main ModifyInstanceSpec request can also carry the node architecture and the read-only
-	// node counts, so every price-bearing field of the request has to take part in the direction
-	// classification instead of leaving them out of the order decision.
-	t.Run("node architecture change with a storage decrease is refused", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{
-				"node_type":       {"STAND_ALONE", "MASTER_SLAVE"},
-				"storage_size_gb": {"70", "60"},
-			},
-			map[string]cty.Value{
-				"config":                    cty.NullVal(cty.Map(cty.String)),
-				"instance_class":            cty.StringVal("tair.essd.standard.2xlarge"),
-				"node_type":                 cty.StringVal("MASTER_SLAVE"),
-				"storage_size_gb":           cty.NumberIntVal(60),
-				"storage_performance_level": cty.StringVal("PL1"),
-				"payment_type":              cty.StringVal("Subscription"),
-			},
-			map[string]string{
-				"payment_type":              "Subscription",
-				"instance_class":            "tair.essd.standard.2xlarge",
-				"node_type":                 "STAND_ALONE",
-				"storage_size_gb":           "70",
-				"storage_performance_level": "PL1",
-			})
-
-		err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client)
-		if err == nil {
-			t.Fatal("a node architecture change that cannot be compared with the storage decrease must be refused")
-		}
-		assert.Contains(t, err.Error(), "cannot determine the ModifyInstanceSpec OrderType")
-		assert.Empty(t, requests, "a refused request must not reach the API")
-	})
-
-	t.Run("node architecture change alone keeps the API default order type", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{"node_type": {"STAND_ALONE", "MASTER_SLAVE"}},
-			map[string]cty.Value{
-				"config":         cty.NullVal(cty.Map(cty.String)),
-				"instance_class": cty.StringVal("tair.rdb.2g"),
-				"node_type":      cty.StringVal("MASTER_SLAVE"),
-				"payment_type":   cty.StringVal("Subscription"),
-			},
-			map[string]string{
-				"payment_type":   "Subscription",
-				"instance_class": "tair.rdb.2g",
-				"node_type":      "STAND_ALONE",
-			})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("an isolated node architecture change must stay usable: %v", err)
-		}
-		assert.Len(t, requests, 1)
-		assert.Equal(t, "MASTER_SLAVE", requests[0]["NodeType"])
-		_, hasOrderType := requests[0]["OrderType"]
-		assert.False(t, hasOrderType, "an unclassifiable node architecture change keeps the API default")
-	})
-
-	t.Run("read-only count increase with a storage decrease is refused", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{
-				"read_only_count": {"1", "2"},
-				"storage_size_gb": {"70", "60"},
-			},
-			map[string]cty.Value{
-				"config":                    cty.NullVal(cty.Map(cty.String)),
-				"instance_class":            cty.StringVal("tair.essd.standard.2xlarge"),
-				"read_only_count":           cty.NumberIntVal(2),
-				"storage_size_gb":           cty.NumberIntVal(60),
-				"storage_performance_level": cty.StringVal("PL1"),
-				"payment_type":              cty.StringVal("Subscription"),
-			},
-			map[string]string{
-				"payment_type":              "Subscription",
-				"instance_class":            "tair.essd.standard.2xlarge",
-				"read_only_count":           "1",
-				"storage_size_gb":           "70",
-				"storage_performance_level": "PL1",
-			})
-
-		err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client)
-		if err == nil {
-			t.Fatal("a read-only count increase with a storage decrease must be refused")
-		}
-		assert.Contains(t, err.Error(), "cannot determine the ModifyInstanceSpec OrderType")
-		assert.Empty(t, requests, "a refused request must not reach the API")
-	})
-
-	t.Run("read-only count and storage increase keep the API default order type", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{
-				"read_only_count": {"1", "3"},
-				"storage_size_gb": {"70", "80"},
-			},
-			map[string]cty.Value{
-				"config":                    cty.NullVal(cty.Map(cty.String)),
-				"instance_class":            cty.StringVal("tair.essd.standard.2xlarge"),
-				"read_only_count":           cty.NumberIntVal(3),
-				"storage_size_gb":           cty.NumberIntVal(80),
-				"storage_performance_level": cty.StringVal("PL1"),
-				"payment_type":              cty.StringVal("Subscription"),
-			},
-			map[string]string{
-				"payment_type":              "Subscription",
-				"instance_class":            "tair.essd.standard.2xlarge",
-				"read_only_count":           "1",
-				"storage_size_gb":           "70",
-				"storage_performance_level": "PL1",
-			})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("update failed: %v", err)
-		}
-		assert.Len(t, requests, 1)
-		assert.Equal(t, "3", requests[0]["ReadOnlyCount"])
-		assert.Equal(t, "80", requests[0]["Storage"])
-		_, hasOrderType := requests[0]["OrderType"]
-		assert.False(t, hasOrderType)
-	})
-
-	t.Run("removed read-only count is classified as a downgrade", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{
-				"read_only_count": {"2", "0"},
-				"storage_size_gb": {"70", "60"},
-			},
-			map[string]cty.Value{
-				"config":                    cty.NullVal(cty.Map(cty.String)),
-				"instance_class":            cty.StringVal("tair.essd.standard.2xlarge"),
-				"read_only_count":           cty.NumberIntVal(0),
-				"storage_size_gb":           cty.NumberIntVal(60),
-				"storage_performance_level": cty.StringVal("PL1"),
-				"payment_type":              cty.StringVal("Subscription"),
-			},
-			map[string]string{
-				"payment_type":              "Subscription",
-				"instance_class":            "tair.essd.standard.2xlarge",
-				"read_only_count":           "2",
-				"storage_size_gb":           "70",
-				"storage_performance_level": "PL1",
-			})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("update failed: %v", err)
-		}
-		assert.Len(t, requests, 1)
-		assert.Equal(t, "0", requests[0]["ReadOnlyCount"])
-		assert.Equal(t, "DOWNGRADE", requests[0]["OrderType"])
-	})
-
-	t.Run("secondary read-only count increase with a storage decrease is refused", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{
-				"slave_read_only_count": {"1", "2"},
-				"storage_size_gb":       {"70", "60"},
-			},
-			map[string]cty.Value{
-				"config":                    cty.NullVal(cty.Map(cty.String)),
-				"instance_class":            cty.StringVal("tair.essd.standard.2xlarge"),
-				"slave_read_only_count":     cty.NumberIntVal(2),
-				"storage_size_gb":           cty.NumberIntVal(60),
-				"storage_performance_level": cty.StringVal("PL1"),
-				"payment_type":              cty.StringVal("Subscription"),
-			},
-			map[string]string{
-				"payment_type":              "Subscription",
-				"instance_class":            "tair.essd.standard.2xlarge",
-				"slave_read_only_count":     "1",
-				"storage_size_gb":           "70",
-				"storage_performance_level": "PL1",
-			})
-
-		err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client)
-		if err == nil {
-			t.Fatal("a secondary read-only count increase with a storage decrease must be refused")
-		}
-		assert.Contains(t, err.Error(), "cannot determine the ModifyInstanceSpec OrderType")
-		assert.Empty(t, requests, "a refused request must not reach the API")
-	})
-}
-
-func TestUnitRedisTairInstanceOrderTypeBillingTime(t *testing.T) {
-	// ModifyInstanceSpec runs before TransformInstanceChargeType in the same update, so the
-	// order direction has to follow the billing type the instance still has when Modify is sent.
-	t.Run("pay-as-you-go to subscription keeps the API default order type", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{
-				"payment_type":    {"PayAsYouGo", "Subscription"},
-				"storage_size_gb": {"70", "60"},
-			},
-			map[string]cty.Value{
-				"config":                    cty.NullVal(cty.Map(cty.String)),
-				"instance_class":            cty.StringVal("tair.essd.standard.2xlarge"),
-				"storage_size_gb":           cty.NumberIntVal(60),
-				"storage_performance_level": cty.StringVal("PL1"),
-				"payment_type":              cty.StringVal("Subscription"),
-			},
-			map[string]string{
-				"payment_type":              "PayAsYouGo",
-				"instance_class":            "tair.essd.standard.2xlarge",
-				"storage_size_gb":           "70",
-				"storage_performance_level": "PL1",
-			})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("a conversion to subscription must not be judged by the planned billing type: %v", err)
-		}
-		assert.Len(t, requests, 2)
-		assert.Equal(t, "60", requests[0]["Storage"])
-		_, hasOrderType := requests[0]["OrderType"]
-		assert.False(t, hasOrderType, "ModifyInstanceSpec runs while the instance is still pay-as-you-go")
-		assert.Equal(t, "PrePaid", requests[1]["ChargeType"])
-	})
-
-	t.Run("subscription to pay-as-you-go downgrade still declares DOWNGRADE", func(t *testing.T) {
-		var requests []map[string]string
-		client := tairInstanceUpdateFixtureClient(t, &requests)
-		d := tairInstanceUpdateFixtureData(t,
-			map[string][2]string{
-				"payment_type":    {"Subscription", "PayAsYouGo"},
-				"storage_size_gb": {"70", "60"},
-			},
-			map[string]cty.Value{
-				"config":                    cty.NullVal(cty.Map(cty.String)),
-				"instance_class":            cty.StringVal("tair.essd.standard.2xlarge"),
-				"storage_size_gb":           cty.NumberIntVal(60),
-				"storage_performance_level": cty.StringVal("PL1"),
-				"payment_type":              cty.StringVal("PayAsYouGo"),
-			},
-			map[string]string{
-				"payment_type":              "Subscription",
-				"instance_class":            "tair.essd.standard.2xlarge",
-				"storage_size_gb":           "70",
-				"storage_performance_level": "PL1",
-			})
-
-		if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-			t.Fatalf("update failed: %v", err)
-		}
-		assert.Len(t, requests, 2)
-		assert.Equal(t, "DOWNGRADE", requests[0]["OrderType"], "ModifyInstanceSpec runs while the instance is still prepaid")
-		assert.Equal(t, "PostPaid", requests[1]["ChargeType"])
-	})
-}
-
 // tairInstanceTransformRetryFixtureClient fails the first TransformInstanceChargeType call
 // with the in-progress order code and succeeds afterwards, so the retry predicate of the
 // production update path is exercised end to end.
@@ -5121,10 +5115,9 @@ func tairInstanceCreateFixtureClient(t *testing.T, requests *[]map[string]string
 	return newTairInstanceFixtureClient(t, server)
 }
 
-func TestUnitRedisTairInstanceCreateReplicaCountRequest(t *testing.T) {
-	// replica_count and slave_replica_count are Optional+Computed, so the create request must
-	// keep an explicit 0 and must omit a configuration that never set them. Both cases drive
-	// the public create entry and assert the serialized CreateTairInstance parameters.
+func TestUnitRedisTairInstanceCreateRequestParameters(t *testing.T) {
+	// The governance parameters of CreateTairInstance must reach the serialized request, while
+	// an unset auto_use_coupon must stay omitted.
 	resourceInstance := rkvstore.ResourceAliCloudRedisTairInstance()
 	createRequest := func(t *testing.T, attributes map[string]*sdktf.ResourceAttrDiff, rawConfig map[string]cty.Value) map[string]string {
 		t.Helper()
@@ -5144,34 +5137,14 @@ func TestUnitRedisTairInstanceCreateReplicaCountRequest(t *testing.T) {
 		return requests[0]
 	}
 
-	t.Run("explicit zero replica counts are serialized", func(t *testing.T) {
-		request := createRequest(t,
-			map[string]*sdktf.ResourceAttrDiff{
-				"replica_count":       {Old: "", New: "0"},
-				"slave_replica_count": {Old: "", New: "0"},
-			},
-			map[string]cty.Value{
-				"instance_class":      cty.StringVal("tair.rdb.2g"),
-				"replica_count":       cty.NumberIntVal(0),
-				"slave_replica_count": cty.NumberIntVal(0),
-				"password_wo":         cty.NullVal(cty.String),
-			})
-		assert.Equal(t, "0", request["ReplicaCount"])
-		assert.Equal(t, "0", request["SlaveReplicaCount"])
-	})
-
-	t.Run("unset replica counts are omitted", func(t *testing.T) {
+	t.Run("unset governance parameters are omitted", func(t *testing.T) {
 		request := createRequest(t,
 			map[string]*sdktf.ResourceAttrDiff{},
 			map[string]cty.Value{
 				"instance_class": cty.StringVal("tair.rdb.2g"),
 				"password_wo":    cty.NullVal(cty.String),
 			})
-		_, hasReplicaCount := request["ReplicaCount"]
-		_, hasSlaveReplicaCount := request["SlaveReplicaCount"]
 		_, hasAutoUseCoupon := request["AutoUseCoupon"]
-		assert.False(t, hasReplicaCount, "an unset replica_count must not be serialized")
-		assert.False(t, hasSlaveReplicaCount, "an unset slave_replica_count must not be serialized")
 		assert.False(t, hasAutoUseCoupon, "an unset auto_use_coupon must not be serialized")
 	})
 
@@ -5338,7 +5311,7 @@ func TestUnitRedisTairInstanceCreateThenUpdate(t *testing.T) {
 	if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
 		t.Fatalf("a successful prepaid create must not be rejected by the create-time update: %v", err)
 	}
-	assert.Empty(t, requests, "a new resource must not send ModifyInstanceSpec or run the existing-instance order direction validation")
+	assert.Empty(t, requests, "a new resource must not send ModifyInstanceSpec or TransformInstanceChargeType")
 }
 
 // captureTairInstanceId stores the created instance ID so a prepaid test can release it even
@@ -5391,6 +5364,22 @@ func releasePrepaidTairInstance(t *testing.T, instanceId string) {
 	t.Logf("cleanup: released instance %s", instanceId)
 }
 
+// AlicloudRedisTairInstanceBasicDependencePrepaidCoupon reuses the shared 3314 fixture and adds
+// the instance class data source, so the prepaid conversion case does not hard code a class.
+func AlicloudRedisTairInstanceBasicDependencePrepaidCoupon(name string) string {
+	return AlicloudRedisTairInstanceBasicDependence3314(name) + `
+data "alicloud_kvstore_instance_classes" "rdb" {
+  zone_id              = data.alicloud_kvstore_zones.default.zones.0.id
+  product_type         = "Tair_rdb"
+  instance_charge_type = "PostPaid"
+}
+
+locals {
+  rdb_class = data.alicloud_kvstore_instance_classes.rdb.instance_classes.0
+}
+`
+}
+
 func TestAccAliCloudRedisTairInstance_prepaidCouponConversion(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_redis_tair_instance.default"
@@ -5402,7 +5391,7 @@ func TestAccAliCloudRedisTairInstance_prepaidCouponConversion(t *testing.T) {
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", acctest.DefaultRegionToTest, rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependence3314)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependencePrepaidCoupon)
 	var instanceId string
 	t.Cleanup(func() { releasePrepaidTairInstance(t, instanceId) })
 	resource.Test(t, resource.TestCase{
@@ -5484,7 +5473,7 @@ func TestAccAliCloudRedisTairInstance_prepaidCouponConversion(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
+				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
 			},
 		},
 	})
@@ -5493,7 +5482,7 @@ func TestAccAliCloudRedisTairInstance_prepaidCouponConversion(t *testing.T) {
 func TestAccAliCloudRedisTairInstance_prepaidDowngrade(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_redis_tair_instance.default"
-	ra := acctest.ResourceAttrInit(resourceId, AlicloudRedisTairInstanceMapReplicaCount)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRedisTairInstanceReplicaCountMap)
 	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return rkvstore.NewRedisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRedisTairInstance")
@@ -5517,14 +5506,14 @@ func TestAccAliCloudRedisTairInstance_prepaidDowngrade(t *testing.T) {
 					"payment_type":        "Subscription",
 					"period":              "1",
 					"instance_type":       "tair_rdb",
-					"zone_id":             "${local.zone_id}",
+					"zone_id":             "${local.primary_zone_id}",
 					"secondary_zone_id":   "${local.secondary_zone_id}",
-					"instance_class":      "${local.rdb_class}",
+					"instance_class":      "${local.instance_class}",
 					"shard_count":         "2",
 					"replica_count":       "2",
 					"slave_replica_count": "1",
-					"vswitch_id":          "${local.vswitch_id}",
-					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":          "${alicloud_vswitch.default.id}",
+					"vpc_id":              "${alicloud_vpc.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -5543,8 +5532,9 @@ func TestAccAliCloudRedisTairInstance_prepaidDowngrade(t *testing.T) {
 				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
 			},
 			{
-				// EG-01: a prepaid replica count decrease must be submitted as a DOWNGRADE
-				// order instead of the API default UPGRADE.
+				// EG-01: a prepaid replica count decrease is submitted through the single
+				// ModifyInstanceSpec request without an explicit OrderType (upstream #10799
+				// semantics); the order must still converge on the new count.
 				Config: testAccConfig(map[string]interface{}{
 					"replica_count": "1",
 				}),
@@ -5575,7 +5565,7 @@ func TestAccAliCloudRedisTairInstance_prepaidDowngrade(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
+				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
 			},
 		},
 	})
