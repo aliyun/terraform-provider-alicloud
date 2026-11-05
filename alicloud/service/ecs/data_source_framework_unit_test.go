@@ -251,8 +251,11 @@ func TestUnitFwValidateQueryEnvelope(t *testing.T) {
 		"ReservedInstances": "not-an-object",
 	}, "ReservedInstances", "DescribeReservedInstances"), "a present container is validated by the decoder, not here")
 
+	nilErr := fwValidateQueryEnvelope(nil, "ReservedInstances", "DescribeReservedInstances")
+	require.Error(t, nilErr, "a nil response is not a query envelope")
+	assert.Contains(t, nilErr.Error(), "DescribeReservedInstances")
+
 	for name, response := range map[string]map[string]interface{}{
-		"nil response":        nil,
 		"unexpected document": {"unexpected": "shape"},
 		"error shaped body":   {"Code": "InvalidSecurityToken", "Message": "denied"},
 		"request id not text": {"RequestId": 7},
