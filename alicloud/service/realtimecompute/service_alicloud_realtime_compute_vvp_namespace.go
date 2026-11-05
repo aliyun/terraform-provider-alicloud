@@ -29,11 +29,12 @@ import (
 
 // retryRpcPost runs the write call through the shared context-aware retry path, so cancelling the
 // Terraform lifecycle aborts the backoff instead of continuing to send requests. Each attempt also
-// carries the remaining operation deadline into the HTTP layer: the retry loop only stops new
-// attempts, so a request that is already in flight needs its own bounded read/connect timeout.
+// carries the remaining operation deadline into the HTTP layer, and the SDK's own retry loop is
+// disabled: this wrapper is the only retry owner, so a cancellation stops both the attempt in
+// flight (at its bounded timeout) and every later retry or duplicate write.
 func retryRpcPost(ctx context.Context, client *connectivity.AliyunClient, product, version, action string, request map[string]interface{}, timeout time.Duration) (map[string]interface{}, error) {
 	return helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
-		return client.RpcPostWithContext(ctx, product, version, action, nil, request, true)
+		return client.RpcPostWithContext(ctx, product, version, action, nil, request, false)
 	}, timeout, vvpNamespaceRetryable)
 }
 
@@ -42,7 +43,7 @@ func retryRpcPost(ctx context.Context, client *connectivity.AliyunClient, produc
 // with the write calls.
 func retryRpcGet(ctx context.Context, client *connectivity.AliyunClient, product, version, action string, request map[string]interface{}, timeout time.Duration) (map[string]interface{}, error) {
 	return helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
-		return client.RpcGetWithContext(ctx, product, version, action, request, nil, true)
+		return client.RpcGetWithContext(ctx, product, version, action, request, nil, false)
 	}, timeout, vvpNamespaceRetryable)
 }
 
@@ -247,20 +248,81 @@ func vvpNamespaceGetWithTimeout(ctx context.Context, client *connectivity.Aliyun
 		if inner != nil {
 			return vvpNamespaceCompleteRead(client, inner, id, completeRead)
 		}
-		if page >= vvpNamespaceTotalPage(response) {
+		totalPage, totalPageErr := vvpNamespaceTotalPage(response)
+		if totalPageErr != nil {
+			// An unreadable or contradictory page count means the search cannot be proven complete.
+			// Reporting not-found here would remove a live namespace from state.
+			return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: %w", id, totalPageErr)
+		}
+		if totalPage == 0 {
+			// Legacy responses without pagination metadata: a full page cannot prove absence.
+			if len(rows) >= vvpNamespaceDescribePageSize {
+				return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: the response carries no page count and returned a full page of %d namespaces, so absence cannot be proven", id, len(rows))
+			}
+			return nil, nil
+		}
+		if page >= totalPage {
 			return nil, nil
 		}
 	}
 	return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: the namespace was not found within %d DescribeNamespaces pages", id, vvpNamespaceDescribeMaxPages)
 }
 
-// vvpNamespaceTotalPage reads the reported page count of a DescribeNamespaces response. An absent
-// or unreadable count means the response does not advertise more pages, so the walk stops instead of
-// guessing that another page exists.
-func vvpNamespaceTotalPage(response map[string]interface{}) int {
-	raw, ok := response["TotalPage"]
-	if !ok || raw == nil {
-		return 1
+// vvpNamespaceTotalPage reads the reported page count of a DescribeNamespaces response. A value of
+// zero means the response carries no page metadata at all (the legacy single-page shape), which the
+// caller only accepts while the page is not full. An unreadable or contradictory count is an error:
+// silently treating it as one page would turn an incomplete search into a false not-found and drop
+// the namespace from state.
+func vvpNamespaceTotalPage(response map[string]interface{}) (int, error) {
+	raw, present := response["TotalPage"]
+	if !present || raw == nil {
+		return 0, nil
+	}
+	var parsed int
+	switch value := raw.(type) {
+	case float64:
+		parsed = int(value)
+	case int:
+		parsed = value
+	case int64:
+		parsed = int(value)
+	case json.Number:
+		n, err := value.Int64()
+		if err != nil {
+			return 0, fmt.Errorf("the TotalPage field %q is not an integer", value.String())
+		}
+		parsed = int(n)
+	case string:
+		n, err := strconv.Atoi(strings.TrimSpace(value))
+		if err != nil {
+			return 0, fmt.Errorf("the TotalPage field %q is not an integer", value)
+		}
+		parsed = n
+	default:
+		return 0, fmt.Errorf("the TotalPage field has an unreadable type %T", raw)
+	}
+	if parsed < 0 {
+		return 0, fmt.Errorf("the TotalPage field is negative (%d)", parsed)
+	}
+	if parsed == 0 {
+		if total := vvpNamespaceTotalCount(response); total > 0 {
+			return 0, fmt.Errorf("the response reports %d namespaces but TotalPage is 0", total)
+		}
+		return 0, nil
+	}
+	if total := vvpNamespaceTotalCount(response); total > 0 && parsed < 1 {
+		return 0, fmt.Errorf("the response reports %d namespaces but TotalPage is %d", total, parsed)
+	}
+	return parsed, nil
+}
+
+// vvpNamespaceTotalCount reads the reported total of a DescribeNamespaces response. It is only used
+// to detect a page count that contradicts the reported collection size; an absent or unreadable
+// total is ignored because the page count alone still bounds the walk.
+func vvpNamespaceTotalCount(response map[string]interface{}) int {
+	raw, present := response["TotalCount"]
+	if !present || raw == nil {
+		return 0
 	}
 	switch value := raw.(type) {
 	case float64:
@@ -270,15 +332,15 @@ func vvpNamespaceTotalPage(response map[string]interface{}) int {
 	case int64:
 		return int(value)
 	case json.Number:
-		if parsed, err := value.Int64(); err == nil {
-			return int(parsed)
+		if n, err := value.Int64(); err == nil {
+			return int(n)
 		}
 	case string:
-		if parsed, err := strconv.Atoi(strings.TrimSpace(value)); err == nil {
-			return parsed
+		if n, err := strconv.Atoi(strings.TrimSpace(value)); err == nil {
+			return n
 		}
 	}
-	return 1
+	return 0
 }
 
 // vvpNamespaceResponseRows extracts the "Namespaces" collection from a DescribeNamespaces response.

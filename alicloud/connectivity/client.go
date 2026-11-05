@@ -2675,6 +2675,11 @@ func (client *AliyunClient) rpcRequest(method string, apiProductCode string, api
 	return client.rpcRequestWithTimeouts(method, apiProductCode, apiVersion, apiName, query, body, autoRetry, endpoint, nil)
 }
 
+// rpcAttemptTimeoutCap bounds one RPC attempt issued through the context-aware entry points. The
+// transport cannot be cancelled directly, so this cap is what makes a cancelled in-flight request
+// end promptly; the caller's retry loop remains the only retry owner.
+const rpcAttemptTimeoutCap = 20 * time.Second
+
 // RpcPostWithContext invokes a POST RPC that belongs to a Terraform operation budget. Unlike RpcPost
 // the HTTP attempt is bounded by ctx: the SDK read/connect timeouts of this request are clipped to
 // the remaining deadline, and a cancelled ctx returns as soon as it fires instead of leaving the
@@ -2703,6 +2708,13 @@ func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method st
 		remaining := time.Until(deadline)
 		if remaining <= 0 {
 			return nil, context.DeadlineExceeded
+		}
+		// The SDK cannot attach a context to the HTTP request, so the attempt is bounded by a short
+		// slice instead of the whole remaining budget: after a cancellation the already-issued
+		// request ends within this bound, and the caller's retry loop decides whether to issue
+		// another one (it stops as soon as the lifecycle context is done).
+		if remaining > rpcAttemptTimeoutCap {
+			remaining = rpcAttemptTimeoutCap
 		}
 		millis := int(remaining / time.Millisecond)
 		if millis < 1 {
