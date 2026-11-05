@@ -142,6 +142,7 @@ resource "alicloud_cms_subscription" "default" {
 
   filter_setting {
     expression = "1 and 2"
+    relation   = "AND"
 
     conditions {
       field = "labels.alertname"

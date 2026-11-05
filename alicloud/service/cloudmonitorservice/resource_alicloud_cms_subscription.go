@@ -456,7 +456,7 @@ func (r *cmsSubscriptionResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(id, state.Workspace.ValueString())
+	object, err := r.waitCmsSubscriptionUpdate(id, state.Workspace, request)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetSubscription", cmsSubscriptionTypeName),
@@ -549,6 +549,62 @@ func (r *cmsSubscriptionResource) waitCmsSubscriptionEnable(id string, workspace
 		}
 		time.Sleep(3 * time.Second)
 	}
+}
+
+// waitCmsSubscriptionUpdate polls GetSubscription until the configuration sent
+// to UpdateSubscription is visible on the read path. The Cms event subscription
+// reads are eventually consistent, so an immediate read can return the values
+// from before the update.
+func (r *cmsSubscriptionResource) waitCmsSubscriptionUpdate(id string, workspace types.String, request map[string]interface{}) (map[string]interface{}, error) {
+	deadline := time.Now().Add(cmsSubscriptionTimeout)
+	for {
+		object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(id, workspace.ValueString())
+		if err != nil {
+			return nil, err
+		}
+		if cmsSubscriptionUpdateApplied(object, request) {
+			return object, nil
+		}
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("subscription %s configuration did not converge within %s", id, cmsSubscriptionTimeout)
+		}
+		time.Sleep(3 * time.Second)
+	}
+}
+
+func cmsSubscriptionUpdateApplied(object, request map[string]interface{}) bool {
+	for _, key := range []string{"subscriptionName", "description", "notifyStrategyId"} {
+		if want, ok := request[key].(string); ok {
+			got, _ := object[key].(string)
+			if got != want {
+				return false
+			}
+		}
+	}
+	if want, ok := request["subscribeLegacyEvent"].(bool); ok {
+		if got, ok := object["subscribeLegacyEvent"].(bool); !ok || got != want {
+			return false
+		}
+	}
+	wantFilter, ok := request["filterSetting"].(map[string]interface{})
+	if !ok {
+		return true
+	}
+	gotFilter, _ := object["filterSetting"].(map[string]interface{})
+	for _, key := range []string{"expression", "relation"} {
+		if want, ok := wantFilter[key].(string); ok {
+			if got, _ := gotFilter[key].(string); got != want {
+				return false
+			}
+		}
+	}
+	if wantConditions, ok := wantFilter["conditions"].([]map[string]interface{}); ok {
+		gotConditions, _ := gotFilter["conditions"].([]interface{})
+		if len(gotConditions) != len(wantConditions) {
+			return false
+		}
+	}
+	return true
 }
 
 func cmsSubscriptionQuery(workspace types.String) map[string]*string {
