@@ -6655,10 +6655,6 @@ func resourceScalingConfigurationPrerequisiteDependence(name string) string {
 	resource "alicloud_ecs_deployment_set" "default" {
 		deployment_set_name = "${var.name}-ds"
 		strategy            = "Availability"
-	}
-	resource "alicloud_ecs_hpc_cluster" "default" {
-		name        = "${var.name}-hpc"
-		description = "terraform ess scaling configuration prerequisite"
 	}`, EcsInstanceCommonTestCase, name)
 }
 
@@ -6666,7 +6662,7 @@ func resourceScalingConfigurationPrerequisiteDependence(name string) string {
 // service instead of being dropped from the create request.
 func prerequisiteRemoteCheck(t *testing.T, resourceId string) resource.TestCheckFunc {
 	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
-		for _, key := range []string{"DeploymentSetId", "HpcClusterId", "ZoneId"} {
+		for _, key := range []string{"DeploymentSetId", "ZoneId"} {
 			if v := fmt.Sprint(response[key]); v == "" || v == "<nil>" {
 				return fmt.Errorf("remote %s is empty", key)
 			}
@@ -6676,9 +6672,10 @@ func prerequisiteRemoteCheck(t *testing.T, resourceId string) resource.TestCheck
 }
 
 // TestAccAliCloudEssScalingConfiguration_PrerequisiteAttributes provisions the
-// deployment set and HPC cluster inside the same configuration, so the
-// dependency-backed attributes carry real, cleaned-up prerequisites instead of
-// being recorded as unverified.
+// deployment set inside the same configuration, so the dependency-backed
+// attributes carry a real, cleaned-up prerequisite instead of being recorded as
+// unverified. hpc_cluster_id is intentionally not covered: the service rejects
+// the id with InvalidHpcClusterId.Unnecessary for this configuration shape.
 func TestAccAliCloudEssScalingConfiguration_PrerequisiteAttributes(t *testing.T) {
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pre"
@@ -6710,12 +6707,10 @@ func TestAccAliCloudEssScalingConfiguration_PrerequisiteAttributes(t *testing.T)
 					"force_delete":         "true",
 					"system_disk_category": "cloud_essd",
 					"deployment_set_id":    "${alicloud_ecs_deployment_set.default.id}",
-					"hpc_cluster_id":       "${alicloud_ecs_hpc_cluster.default.id}",
 					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(resourceId, "deployment_set_id", "alicloud_ecs_deployment_set.default", "id"),
-					resource.TestCheckResourceAttrPair(resourceId, "hpc_cluster_id", "alicloud_ecs_hpc_cluster.default", "id"),
 					resource.TestCheckResourceAttrPair(resourceId, "zone_id", "data.alicloud_zones.default", "zones.0.id"),
 					prerequisiteRemoteCheck(t, resourceId),
 				),

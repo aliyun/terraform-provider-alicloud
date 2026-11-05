@@ -248,10 +248,11 @@ func buildSchedulerOptionsRequest(request map[string]interface{}, block []interf
 	}
 }
 
-// putBurstingRequest writes the bursting flag only when the user configured it;
-// an explicit false must still be sent so the remote value can be turned off.
+// putBurstingRequest writes the bursting flag only when the user configured it.
+// An explicit false must still be sent so the remote value can be turned off,
+// while a removed value must not resend the stale state value.
 func putBurstingRequest(target map[string]interface{}, enabled, configured bool) {
-	if enabled || configured {
+	if configured {
 		target["BurstingEnabled"] = enabled
 	}
 }
