@@ -1684,21 +1684,24 @@ func TestUnitListenerAclAttachmentProtocolGoneClassification(t *testing.T) {
 	}
 
 	cases := []struct {
-		name   string
-		derive func() (map[string]interface{}, error)
-		gone   bool
+		name      string
+		derive    func() (map[string]interface{}, error)
+		gone      bool
+		readError bool
 	}{
 		{
 			name: "gateway 404 without a business body",
 			derive: func() (map[string]interface{}, error) {
 				return nil, fmt.Errorf("%w: status 404: unexpected EOF", connectivity.ErrRpcRejectedResponse)
 			},
+			readError: true,
 		},
 		{
 			name: "empty business code on a 403",
 			derive: func() (map[string]interface{}, error) {
 				return nil, &tea.SDKError{StatusCode: tea.Int(403), Code: tea.String(""), Message: tea.String("Forbidden"), Data: tea.String("{}")}
 			},
+			readError: true,
 		},
 		{
 			name: "enabled listener without a reported member list",
@@ -1729,16 +1732,22 @@ func TestUnitListenerAclAttachmentProtocolGoneClassification(t *testing.T) {
 				if err != nil {
 					t.Fatalf("ReadResource: %s", err)
 				}
-				listenerAclTestRequireNoError(t, "ReadResource", read.Diagnostics)
 				value, err := read.NewState.Unmarshal(listenerAclAttachmentTestType)
 				if err != nil {
 					t.Fatalf("decoding the read state: %s", err)
 				}
 				if tc.gone {
+					listenerAclTestRequireNoError(t, "ReadResource (missing listener)", read.Diagnostics)
 					if !value.IsNull() {
 						t.Fatalf("a proven missing listener must clear the state, got %s", value)
 					}
 					return
+				}
+				// An unproven API result is reported as an error and an incomplete
+				// response as a pending read; both keep the existing object instead
+				// of dropping a binding that may still exist.
+				if got := listenerAclTestHasError(read.Diagnostics); got != tc.readError {
+					t.Fatalf("ReadResource error = %v, want %v: %v", got, tc.readError, read.Diagnostics)
 				}
 				if value.IsNull() {
 					t.Fatal("an unproven missing listener must keep the state")
