@@ -363,7 +363,7 @@ func testAccKvstorePrepareClusterBackupSource(t *testing.T, name string, sourceI
 	if !backupAccepted {
 		t.Fatalf("could not create a cluster backup for source instance %s", *sourceId)
 	}
-	clusterBackupId := testAccKvstoreWaitClusterBackupId(t, client, *sourceId, 30*time.Minute)
+	clusterBackupId := testAccKvstoreWaitClusterBackupId(t, client, *sourceId, 45*time.Minute)
 	return clusterBackupId, zoneId, secondaryZoneId, vswitchId
 }
 
