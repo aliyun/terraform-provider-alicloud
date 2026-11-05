@@ -5708,13 +5708,17 @@ func TestAccAliCloudDBInstance_ipArraySingleGroup(t *testing.T) {
 // importAfterConfigStep verifies that the instance can be imported from the
 // state produced by the successful configuration step before it. Import
 // intentionally does not adopt whitelist groups, so the new block is ignored
-// by the state comparison and asserted separately.
+// by the state comparison and asserted separately. The legacy single-group
+// selector cannot be recovered from a bare import either: Read keeps
+// db_instance_ip_array_name and db_instance_ip_array_attribute from the
+// configuration and flattens security_ips from the default group, so those
+// three attributes are compared by the per-step cloud checks instead.
 func importAfterConfigStep(resourceId string) resource.TestStep {
 	return resource.TestStep{
 		ResourceName:            resourceId,
 		ImportState:             true,
 		ImportStateVerify:       true,
-		ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "parameters", "encryption_key", "security_group_id", "storage_auto_scale", "storage_threshold", "storage_upper_bound", "db_instance_ip_arrays"},
+		ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "parameters", "encryption_key", "security_group_id", "storage_auto_scale", "storage_threshold", "storage_upper_bound", "db_instance_ip_arrays", "db_instance_ip_array_name", "db_instance_ip_array_attribute", "security_ips"},
 		ImportStateCheck: func(states []*terraform.InstanceState) error {
 			if len(states) != 1 {
 				return fmt.Errorf("expected one imported state, got %d", len(states))
