@@ -828,6 +828,8 @@ resource "alicloud_star_rocks_instance" "default" {
   run_mode          = "shared_data"
   package_type      = "official"
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+  oss_accessing_role_name = "AliyunEMRStarRocksAccessingOSSRole"
+  pricing_cycle           = "Month"
 
   vswitches {
     vswitch_id = alicloud_vswitch.default106DkE.id
