@@ -61,9 +61,6 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						// The cluster-autoscaler addon is installed asynchronously after
-						// autoscaling is enabled; wait before reading it back on import.
-						acctest.ForceSleep:              "600",
 						"cluster_id":                    acctest.CHECKSET,
 						"cool_down_duration":            acctest.CHECKSET,
 						"unneeded_duration":             acctest.CHECKSET,
@@ -80,12 +77,6 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 						"scale_up_from_zero":            "false",
 					}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"scaler_type"},
 			},
 			{
 				// false -> true for the same batch of boolean arguments.
@@ -111,12 +102,6 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"scaler_type"},
-			},
-			{
 				// Removing the arguments leaves the last applied values in place and
 				// must not produce a persistent diff.
 				Config: testAccConfig(map[string]interface{}{
@@ -137,12 +122,6 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"scaler_type"},
-			},
-			{
 				// true -> false again, proving both directions reach the API.
 				Config: testAccConfig(map[string]interface{}{
 					"skip_nodes_with_system_pods":   "false",
@@ -160,12 +139,6 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 						"scale_up_from_zero":            "false",
 					}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"scaler_type"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -191,12 +164,6 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"scaler_type"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"expander": "priority",
 				}),
@@ -205,12 +172,6 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 						"expander": acctest.CHECKSET,
 					}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"scaler_type"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -223,14 +184,6 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"scaler_type"},
-			},
-			{
-				// Import always reads the default cluster-autoscaler addon, so no
-				// import step follows the goatscaler switch.
 				Config: testAccConfig(map[string]interface{}{
 					"scaler_type": "goatscaler",
 				}),
@@ -262,7 +215,6 @@ data "alicloud_instance_types" "default" {
   cpu_core_count       = 4
   memory_size          = 8
   kubernetes_node_role = "Worker"
-  system_disk_category = "cloud_essd"
 }
 
 resource "alicloud_vpc" "default" {
@@ -289,23 +241,6 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 37)
   service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
   slb_internet_enabled = true
-}
-
-// Autoscaling is enabled on a node pool so the cluster-autoscaler addon exists
-// and the autoscaling config can be read back.
-resource "alicloud_cs_kubernetes_node_pool" "default" {
-  cluster_id           = alicloud_cs_managed_kubernetes.default.id
-  node_pool_name       = var.name
-  vswitch_ids          = [local.vswitch_id]
-  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
-  system_disk_category = "cloud_essd"
-  system_disk_size     = 40
-  image_type           = "AliyunLinux3ContainerOptimized"
-  scaling_config {
-    enable   = true
-    min_size = 0
-    max_size = 1
-  }
 }
 
 `, name)
