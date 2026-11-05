@@ -236,7 +236,7 @@ func TestAccAliCloudPolarDbDatabase_basic9535(t *testing.T) {
 				ImportStateVerify: false,
 				ImportStateCheck: checkImportedDatabaseState(map[string]string{
 					"db_name": name,
-					"engine":  "MySQL",
+					"engine":  "PostgreSQL",
 				}),
 			},
 		},
@@ -293,7 +293,7 @@ func TestAccAliCloudPolarDbDatabase_basic9535_twin(t *testing.T) {
 					"db_name":            name,
 					"db_description":     name,
 					"character_set_name": "ISO_8859_5",
-					"engine":             "MySQL",
+					"engine":             "PostgreSQL",
 				}),
 			},
 		},
