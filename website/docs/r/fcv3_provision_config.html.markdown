@@ -27,6 +27,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 provider "alicloud" {
   region = "cn-shanghai"
 }
@@ -54,12 +62,6 @@ resource "alicloud_log_store" "default" {
   append_meta           = true
 }
 
-resource "time_sleep" "wait_10_minutes" {
-  depends_on = [alicloud_log_store.default]
-
-  create_duration = "10m"
-}
-
 resource "alicloud_fcv3_function" "function" {
   memory_size   = "512"
   cpu           = 0.5
@@ -77,8 +79,6 @@ resource "alicloud_fcv3_function" "function" {
     logstore                = alicloud_log_store.default.logstore_name
     log_begin_rule          = "None"
   }
-
-  depends_on = [time_sleep.wait_10_minutes]
 }
 
 resource "alicloud_fcv3_provision_config" "default" {
@@ -147,12 +147,12 @@ resource "alicloud_fcv3_provision_config" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `always_allocate_cpu` - (Optional) Whether the CPU is always allocated. The default value is true.
-* `always_allocate_gpu` - (Optional) Whether to always assign GPU to function instance
+* `always_allocate_cpu` - (Optional, Computed, Bool) Whether the CPU is always allocated. The service default is `true`. If you omit the argument, the value returned by the service is stored and no diff is generated; removing the argument does not trigger an update.
+* `always_allocate_gpu` - (Optional, Computed, Bool) Whether to always assign GPU to function instance. The service default is `true`. For a function without GPU, the service keeps this value consistent with `always_allocate_cpu`, so configure both arguments with the same value in that case; different values produce a persistent diff. If you omit the argument, the value returned by the service is stored and no diff is generated; removing the argument does not trigger an update.
 * `function_name` - (Required, ForceNew) The name of the function. If this parameter is not specified, the provisioned configurations of all functions are listed.
-* `qualifier` - (Optional) The function alias or LATEST.
+* `qualifier` - (Optional) The function alias or LATEST. The resource sends the configured qualifier on create, update and delete, and an update that has to recover the configured default target reads the same qualifier. The regular state refresh still reads the default (`LATEST`) provision configuration, so a qualifier other than `LATEST` cannot be read back, and changing only the qualifier performs no update.
 * `scheduled_actions` - (Optional, List) Timing policy configuration See [`scheduled_actions`](#scheduled_actions) below.
-* `target` - (Optional, Int) Number of reserved target resources. The value range is [0,10000].
+* `target` - (Optional, Computed, Int) Default number of reserved instances. Valid values: `0-10000`. The API requires `target` on every write, so set it when you create the resource; creating the resource without `target` fails. This argument maps to the API `defaultTarget` and is written through both the required `target` field and `defaultTarget`. While a target tracking policy or a scheduled action is active, the service reports the policy-computed runtime target separately and that runtime value is never stored in state, so an update triggered by another argument keeps the configured default instead of turning the temporary policy target into the new default. Omitting the argument is supported only for an existing resource (for example after an import, or after you remove the argument from the configuration), where the stored default is sent on the next update instead of `0`. If Terraform has no established default yet (for example right after an import) and the service response also omits `defaultTarget` while a scaling policy is active, the update fails instead of writing `0` as the new default; set `target` explicitly in that case.
 * `target_tracking_policies` - (Optional, List) Metric tracking scaling policy configuration See [`target_tracking_policies`](#target_tracking_policies) below.
 
 ### `scheduled_actions`
