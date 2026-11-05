@@ -23,7 +23,7 @@ import (
 )
 
 func resourceAliCloudMongoDBInstance() *schema.Resource {
-	return &schema.Resource{
+	resource := &schema.Resource{
 		Create: resourceAliCloudMongoDBInstanceCreate,
 		Read:   resourceAliCloudMongoDBInstanceRead,
 		Update: resourceAliCloudMongoDBInstanceUpdate,
@@ -443,6 +443,10 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 			},
 		},
 	}
+	for name, attribute := range mongoDBInstanceGovernanceSchema() {
+		resource.Schema[name] = attribute
+	}
+	return resource
 }
 
 func resourceAliCloudMongoDBInstanceCreate(d *schema.ResourceData, meta interface{}) error {
@@ -925,6 +929,8 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("zone_infos", roleZoneInfosMaps)
+
+	mongoDBGovernanceReadInstance(d, client)
 
 	return nil
 }
@@ -1633,6 +1639,10 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
+	if err := mongoDBGovernanceUpdateInstance(d, client); err != nil {
+		return err
+	}
+
 	d.Partial(false)
 
 	return resourceAliCloudMongoDBInstanceRead(d, meta)
@@ -1653,6 +1663,10 @@ func resourceAliCloudMongoDBInstanceDelete(d *schema.ResourceData, meta interfac
 
 	if fmt.Sprint(object["ChargeType"]) == "PrePaid" {
 		return errs.WrapError(errs.Error("'PrePaid' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
+	}
+
+	if err := mongoDBGovernanceDeleteInstance(d, client); err != nil {
+		return err
 	}
 
 	request := map[string]interface{}{

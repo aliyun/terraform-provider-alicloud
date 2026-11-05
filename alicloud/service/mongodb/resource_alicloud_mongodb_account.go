@@ -17,7 +17,7 @@ import (
 )
 
 func resourceAliCloudMongodbAccount() *schema.Resource {
-	return &schema.Resource{
+	resource := &schema.Resource{
 		Create: resourceAliCloudMongodbAccountCreate,
 		Read:   resourceAliCloudMongodbAccountRead,
 		Update: resourceAliCloudMongodbAccountUpdate,
@@ -63,6 +63,10 @@ func resourceAliCloudMongodbAccount() *schema.Resource {
 			},
 		},
 	}
+	for name, attribute := range mongoDBAccountGovernanceSchema() {
+		resource.Schema[name] = attribute
+	}
+	return resource
 }
 
 func resourceAliCloudMongodbAccountCreate(d *schema.ResourceData, meta interface{}) error {
@@ -182,6 +186,8 @@ func resourceAliCloudMongodbAccountRead(d *schema.ResourceData, meta interface{}
 	d.Set("account_name", objectRaw["AccountName"])
 	d.Set("instance_id", objectRaw["DBInstanceId"])
 
+	mongoDBGovernanceReadAccount(d, client)
+
 	return nil
 }
 
@@ -283,11 +289,22 @@ func resourceAliCloudMongodbAccountUpdate(d *schema.ResourceData, meta interface
 		}
 	}
 
+	if err := mongoDBGovernanceUpdateAccount(d, client); err != nil {
+		return err
+	}
+
 	d.Partial(false)
 	return resourceAliCloudMongodbAccountRead(d, meta)
 }
 
 func resourceAliCloudMongodbAccountDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Account. Terraform will remove this resource from the state file, however resources may remain.")
+	if d.Get("force_destroy").(bool) {
+		client := meta.(*connectivity.AliyunClient)
+		if err := mongoDBGovernanceDeleteAccount(d, client); err != nil {
+			return err
+		}
+		return nil
+	}
+	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Account. Terraform will remove this resource from the state file, however resources may remain. Set force_destroy = true to delete the account.")
 	return nil
 }

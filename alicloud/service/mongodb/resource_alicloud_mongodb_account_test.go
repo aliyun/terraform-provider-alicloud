@@ -625,3 +625,51 @@ resource "alicloud_mongodb_instance" "default7eOftZ" {
 }
 
 // Test Mongodb Account. <<< Resource test cases, automatically generated.
+
+// TestAccAliCloudMongoDBAccount_governance covers the account-level Dds APIs
+// that are exposed on alicloud_mongodb_account: roles read-back, privilege
+// update and opt-in account deletion.
+func TestAccAliCloudMongoDBAccount_governance(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_account.default"
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MongoDBSupportRegions)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudMongoDBAccountMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mongodb.NewMongodbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMongodbAccount")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%smongodbaccountgov%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMongoDBAccountBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":          "${alicloud_mongodb_instance.default.id}",
+					"account_name":         "root",
+					"account_password":     "YourPassword+12345",
+					"account_description":  "${var.name}",
+					"force_destroy":        true,
+					"privilege_reset_type": "update",
+					"privilege": []map[string]interface{}{
+						{
+							"role":    "readWrite",
+							"db_name": "admin",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name": "root",
+					}),
+				),
+			},
+		},
+	})
+}

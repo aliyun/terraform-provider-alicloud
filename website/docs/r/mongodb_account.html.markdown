@@ -70,7 +70,7 @@ resource "alicloud_mongodb_account" "default" {
 
 ### Deleting `alicloud_mongodb_account` or removing it from your configuration
 
-Terraform cannot destroy resource `alicloud_mongodb_account`. Terraform will remove this resource from the state file, however resources may remain.
+By default Terraform cannot destroy resource `alicloud_mongodb_account`: it removes the resource from the state file while the account remains on the instance. Set `force_destroy = true` to delete the account from the instance when the resource is destroyed.
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mongodb_account&spm=docs.r.mongodb_account.example&intl_lang=EN_US)
 
@@ -90,12 +90,25 @@ The following arguments are supported:
   -> **NOTE:** When setting the account type to normal, the AccountName must be root. This selection does not create a new account; instead, Terraform will update the password for the existing root account.
 
 * `instance_id` - (Required, ForceNew) Instance Id
+* `privilege` - (Optional, List, Available since v2.3.0) The database roles granted to the account. See [`privilege`](#privilege) below.
+* `privilege_reset_type` - (Optional, Available since v2.3.0) How `privilege` is applied. Valid values: `update`, `grant`, `revoke`. Default value: `update`.
+* `force_destroy` - (Optional, Bool, Available since v2.3.0) Whether to delete the account when the resource is destroyed. Default value: `false`.
+
+### `privilege`
+
+The privilege supports the following:
+
+* `role` - (Required) The role name, for example `read`, `readWrite` or `dbAdmin`.
+* `db_name` - (Required) The database the role applies to.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<account_name>`.
 * `status` - Account Status
+* `account_roles` - (Available since v2.3.0) The roles assigned to the account.
+  * `role` - The role name.
+  * `db_name` - The database the role applies to.
 
 ## Timeouts
 
