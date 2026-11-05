@@ -12,6 +12,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceLoadBalancer() *schema.Resource {
@@ -57,6 +58,15 @@ func ResourceLoadBalancer() *schema.Resource {
 				Computed: true,
 			},
 			"tags": tags.TagsSchema(),
+			"traffic_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					"LoadBalance",
+					"ByPass",
+				}, false),
+			},
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -167,6 +177,37 @@ func resourceLoadBalancerCreate(d *schema.ResourceData, meta interface{}) error 
 		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
+	// CreateLoadBalancer does not accept TrafficMode, so a value configured at creation
+	// must be applied with UpdateLoadBalancerAttribute after the instance becomes Active.
+	if v, ok := d.GetOk("traffic_mode"); ok {
+		action = "UpdateLoadBalancerAttribute"
+		updateRequest := map[string]interface{}{
+			"LoadBalancerId": d.Id(),
+			"RegionId":       client.RegionId,
+			"ClientToken":    helper.BuildClientToken(action),
+			"TrafficMode":    v,
+		}
+		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+			response, err = client.RpcPost("Gwlb", "2024-04-15", action, make(map[string]interface{}), updateRequest, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, updateRequest)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		stateConf = helper.BuildStateConf([]string{}, []string{fmt.Sprintf("Active/%v", v)}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gwlbService.LoadBalancerTrafficModeStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
+	}
+
 	return resourceLoadBalancerRead(d, meta)
 }
 
@@ -198,6 +239,9 @@ func resourceLoadBalancerRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	if objectRaw["LoadBalancerStatus"] != nil {
 		d.Set("status", objectRaw["LoadBalancerStatus"])
+	}
+	if objectRaw["TrafficMode"] != nil {
+		d.Set("traffic_mode", objectRaw["TrafficMode"])
 	}
 	if objectRaw["VpcId"] != nil {
 		d.Set("vpc_id", objectRaw["VpcId"])
@@ -239,6 +283,17 @@ func resourceLoadBalancerRead(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
+// loadBalancerUpdateWaitTarget reports the state an attribute update must reach and whether the
+// traffic-mode-aware refresh is needed. When traffic_mode is unchanged the mode is deliberately
+// left out of the target: state written by provider versions before 2.3.0 carries no traffic_mode
+// value, so a combined target would degrade to "Active/" and never converge.
+func loadBalancerUpdateWaitTarget(trafficModeChanged bool, trafficMode interface{}) (string, bool) {
+	if trafficModeChanged {
+		return fmt.Sprintf("Active/%v", trafficMode), true
+	}
+	return "Active", false
+}
+
 func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
@@ -260,6 +315,11 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 		update = true
 		request["LoadBalancerName"] = d.Get("load_balancer_name")
 	}
+	trafficModeChanged := d.HasChange("traffic_mode")
+	if trafficModeChanged {
+		update = true
+		request["TrafficMode"] = d.Get("traffic_mode")
+	}
 
 	if update {
 		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
@@ -279,7 +339,13 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		gwlbService := NewService(client)
-		stateConf := helper.BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbService.LoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
+		target, waitForTrafficMode := loadBalancerUpdateWaitTarget(trafficModeChanged, d.Get("traffic_mode"))
+		var stateConf *retry.StateChangeConf
+		if waitForTrafficMode {
+			stateConf = helper.BuildStateConf([]string{}, []string{target}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbService.LoadBalancerTrafficModeStateRefreshFunc(d.Id(), []string{}))
+		} else {
+			stateConf = helper.BuildStateConf([]string{}, []string{target}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbService.LoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
+		}
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}

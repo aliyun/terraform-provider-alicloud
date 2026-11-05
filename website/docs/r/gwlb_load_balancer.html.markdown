@@ -27,6 +27,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -97,6 +105,12 @@ The following arguments are supported:
   The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (\_), and hyphens (-). The name must start with a letter.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group.
 * `tags` - (Optional, Map) The tag keys. You can specify at most 20 tags in each call.
+* `traffic_mode` - (Optional, Computed, String, Available since v2.3.0) The traffic forwarding mode of the GWLB instance. Valid values:
+
+  - `LoadBalance`: The GWLB instance distributes network traffic across backend servers. Defaults to `LoadBalance`.
+  - `ByPass`: The GWLB instance forwards traffic to the associated ENI without load balancing.
+
+  If the parameter is not set when the instance is created, the service default is `LoadBalance`. After `traffic_mode` has been configured, removing it from the configuration keeps the current value returned by the API; it is not reset to `LoadBalance`.
 * `vpc_id` - (Required, ForceNew) The virtual private cloud (VPC) ID.
 * `zone_mappings` - (Required, Set) The mappings between zones and vSwitches. You must specify at least one zone. You can specify at most 20 zones. If the region supports two or more zones, we recommend that you select two or more zones. See [`zone_mappings`](#zone_mappings) below.
 
@@ -111,7 +125,8 @@ The zone_mappings supports the following:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the resource was created. The time follows the ISO 8601 standard in the **yyyy-MM-ddTHH:mm:ssZ** format. The time is displayed in UTC.
-* `status` - The GWLB instance status. 
+* `status` - The GWLB instance status.
+* `traffic_mode` - The traffic forwarding mode of the GWLB instance.
 
 * `zone_mappings` - The mappings between zones and vSwitches. You must specify at least one zone. You can specify at most 20 zones. If the region supports two or more zones, we recommend that you select two or more zones.
   * `load_balancer_addresses` - The information about the IP addresses used by the GWLB instance.
