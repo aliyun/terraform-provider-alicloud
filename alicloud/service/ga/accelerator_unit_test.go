@@ -366,6 +366,13 @@ func TestUnitAliCloudGaAcceleratorDdosConfigs(t *testing.T) {
 	assert.Equal(t, "ddos-b", add[0]["ddos_id"])
 	assert.Len(t, remove, 1)
 	assert.Equal(t, "ddos-a", remove[0]["ddos_id"])
+
+	request := buildGaAcceleratorDdosConfigRequest(map[string]interface{}{}, add)
+	assert.Equal(t, "ddos-b", request["DdosConfigList.1.DdosId"])
+	assert.Equal(t, "ap-southeast-1", request["DdosConfigList.1.DdosRegionId"])
+	request = buildGaAcceleratorDdosConfigRequest(map[string]interface{}{}, remove)
+	assert.Equal(t, "ddos-a", request["DdosConfigList.1.DdosId"])
+	assert.Equal(t, "cn-hangzhou", request["DdosConfigList.1.DdosRegionId"])
 }
 
 // lintignore: R001
@@ -457,12 +464,6 @@ func TestUnitAliCloudGaAcceleratorCreateRequest(t *testing.T) {
 
 // lintignore: R001
 func TestUnitAliCloudGaAcceleratorUserDefineBandwidthGuard(t *testing.T) {
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := unitTestSharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-	}
-
 	d, _ := schema.InternalMap(unitTestProviderResources()["alicloud_ga_accelerator"].Schema).Data(nil, nil)
 	d.MarkNewResource()
 	assert.Nil(t, d.Set("bandwidth", 200))
@@ -470,7 +471,7 @@ func TestUnitAliCloudGaAcceleratorUserDefineBandwidthGuard(t *testing.T) {
 		map[string]interface{}{"access_mode": "UserDefine"},
 	}))
 
-	err = resourceAliCloudGaAcceleratorCreate(d, rawClient)
+	err := resourceAliCloudGaAcceleratorCreate(d, &connectivity.AliyunClient{})
 	assert.NotNil(t, err)
 	assert.Contains(t, fmt.Sprint(err), "bandwidth is valid only when access_mode is set to Anycast")
 }

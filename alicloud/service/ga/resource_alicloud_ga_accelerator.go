@@ -637,10 +637,7 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 				"ClientToken":   helper.BuildClientToken("DetachDdosFromAccelerator"),
 				"AcceleratorId": d.Id(),
 			}
-			for k, ddosConfig := range removeDdosConfigs {
-				detachDdosReq[fmt.Sprintf("DdosConfigList.%d.DdosId", k+1)] = ddosConfig["ddos_id"]
-				detachDdosReq[fmt.Sprintf("DdosConfigList.%d.DdosRegionId", k+1)] = ddosConfig["ddos_region_id"]
-			}
+			buildGaAcceleratorDdosConfigRequest(detachDdosReq, removeDdosConfigs)
 
 			action := "DetachDdosFromAccelerator"
 			var err error
@@ -677,10 +674,7 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 				"ClientToken":   helper.BuildClientToken("AttachDdosToAccelerator"),
 				"AcceleratorId": d.Id(),
 			}
-			for k, ddosConfig := range addDdosConfigs {
-				attachDdosReq[fmt.Sprintf("DdosConfigList.%d.DdosId", k+1)] = ddosConfig["ddos_id"]
-				attachDdosReq[fmt.Sprintf("DdosConfigList.%d.DdosRegionId", k+1)] = ddosConfig["ddos_region_id"]
-			}
+			buildGaAcceleratorDdosConfigRequest(attachDdosReq, addDdosConfigs)
 
 			action := "AttachDdosToAccelerator"
 			var err error
@@ -803,6 +797,14 @@ func gaAcceleratorDdosConfigsFromSet(v interface{}) []map[string]string {
 		})
 	}
 	return configs
+}
+
+func buildGaAcceleratorDdosConfigRequest(request map[string]interface{}, configs []map[string]string) map[string]interface{} {
+	for k, ddosConfig := range configs {
+		request[fmt.Sprintf("DdosConfigList.%d.DdosId", k+1)] = ddosConfig["ddos_id"]
+		request[fmt.Sprintf("DdosConfigList.%d.DdosRegionId", k+1)] = ddosConfig["ddos_region_id"]
+	}
+	return request
 }
 
 func flattenGaAcceleratorDdosConfigList(v interface{}) []map[string]interface{} {
