@@ -3762,7 +3762,7 @@ func TestAccAliCloudElasticsearchInstance_basic11470(t *testing.T) {
 						{
 							"disk_type": "cloud_efficiency",
 							"amount":    "2",
-							"spec":      "elasticsearch.sn1ne.large",
+							"spec":      "elasticsearch.sn1ne.large.new",
 							"disk":      "20",
 						},
 					},
@@ -5058,7 +5058,7 @@ func TestAccAliCloudElasticsearchInstance_downgradeLegacyFields(t *testing.T) {
 					"instance_category":   "x-pack",
 					"password":            "Admain@123",
 					"payment_type":        "PayAsYouGo",
-					"data_node_spec":      "elasticsearch.sn2ne.large",
+					"data_node_spec":      "elasticsearch.sn1ne.xlarge.new",
 					"data_node_amount":    "3",
 					"data_node_disk_size": "20",
 					"data_node_disk_type": "cloud_ssd",
@@ -5069,7 +5069,7 @@ func TestAccAliCloudElasticsearchInstance_downgradeLegacyFields(t *testing.T) {
 						"zone_count":          "1",
 						"description":         name,
 						"payment_type":        "PayAsYouGo",
-						"data_node_spec":      "elasticsearch.sn2ne.large",
+						"data_node_spec":      "elasticsearch.sn1ne.xlarge.new",
 						"data_node_amount":    "3",
 						"data_node_disk_size": "20",
 						"data_node_disk_type": "cloud_ssd",
@@ -5087,12 +5087,12 @@ func TestAccAliCloudElasticsearchInstance_downgradeLegacyFields(t *testing.T) {
 				// deprecated flat field.
 				Config: testAccConfig(map[string]interface{}{
 					"order_action_type": "DOWNGRADE",
-					"data_node_spec":    "elasticsearch.sn1ne.large",
+					"data_node_spec":    "elasticsearch.sn1ne.large.new",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"order_action_type": "DOWNGRADE",
-						"data_node_spec":    "elasticsearch.sn1ne.large",
+						"data_node_spec":    "elasticsearch.sn1ne.large.new",
 						"data_node_amount":  "3",
 					}),
 				),
@@ -5113,7 +5113,7 @@ func TestAccAliCloudElasticsearchInstance_downgradeLegacyFields(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"order_action_type": "DOWNGRADE",
-						"data_node_spec":    "elasticsearch.sn1ne.large",
+						"data_node_spec":    "elasticsearch.sn1ne.large.new",
 						"data_node_amount":  "2",
 					}),
 				),
@@ -5129,12 +5129,12 @@ func TestAccAliCloudElasticsearchInstance_downgradeLegacyFields(t *testing.T) {
 				// type.
 				Config: testAccConfig(map[string]interface{}{
 					"order_action_type": "UPGRADE",
-					"data_node_spec":    "elasticsearch.sn2ne.large",
+					"data_node_spec":    "elasticsearch.sn1ne.xlarge.new",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"order_action_type": "UPGRADE",
-						"data_node_spec":    "elasticsearch.sn2ne.large",
+						"data_node_spec":    "elasticsearch.sn1ne.xlarge.new",
 						"data_node_amount":  "2",
 					}),
 				),
@@ -5182,7 +5182,7 @@ func TestAccAliCloudElasticsearchInstance_downgradeConfiguration(t *testing.T) {
 					"data_node_configuration": []map[string]interface{}{
 						{
 							"disk_type": "cloud_ssd",
-							"spec":      "elasticsearch.sn2ne.large",
+							"spec":      "elasticsearch.sn1ne.xlarge.new",
 							"disk":      "20",
 							"amount":    "3",
 						},
@@ -5201,7 +5201,7 @@ func TestAccAliCloudElasticsearchInstance_downgradeConfiguration(t *testing.T) {
 						"description":                         name,
 						"payment_type":                        "PayAsYouGo",
 						"data_node_configuration.#":           "1",
-						"data_node_configuration.0.spec":      "elasticsearch.sn2ne.large",
+						"data_node_configuration.0.spec":      "elasticsearch.sn1ne.xlarge.new",
 						"data_node_configuration.0.amount":    "3",
 						"data_node_configuration.0.disk":      "20",
 						"data_node_configuration.0.disk_type": "cloud_ssd",
@@ -5222,7 +5222,7 @@ func TestAccAliCloudElasticsearchInstance_downgradeConfiguration(t *testing.T) {
 					"data_node_configuration": []map[string]interface{}{
 						{
 							"disk_type": "cloud_ssd",
-							"spec":      "elasticsearch.sn1ne.large",
+							"spec":      "elasticsearch.sn1ne.large.new",
 							"disk":      "20",
 							"amount":    "3",
 						},
@@ -5231,7 +5231,7 @@ func TestAccAliCloudElasticsearchInstance_downgradeConfiguration(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"order_action_type":                "DOWNGRADE",
-						"data_node_configuration.0.spec":   "elasticsearch.sn1ne.large",
+						"data_node_configuration.0.spec":   "elasticsearch.sn1ne.large.new",
 						"data_node_configuration.0.amount": "3",
 						"data_node_configuration.0.disk":   "20",
 					}),
@@ -5250,7 +5250,7 @@ func TestAccAliCloudElasticsearchInstance_downgradeConfiguration(t *testing.T) {
 					"data_node_configuration": []map[string]interface{}{
 						{
 							"disk_type": "cloud_ssd",
-							"spec":      "elasticsearch.sn1ne.large",
+							"spec":      "elasticsearch.sn1ne.large.new",
 							"disk":      "20",
 							"amount":    "2",
 						},
@@ -5259,7 +5259,7 @@ func TestAccAliCloudElasticsearchInstance_downgradeConfiguration(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"order_action_type":                "DOWNGRADE",
-						"data_node_configuration.0.spec":   "elasticsearch.sn1ne.large",
+						"data_node_configuration.0.spec":   "elasticsearch.sn1ne.large.new",
 						"data_node_configuration.0.amount": "2",
 					}),
 				),

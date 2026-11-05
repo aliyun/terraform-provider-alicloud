@@ -106,7 +106,7 @@ The following arguments are supported:
 
   -> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
 
-  -> **NOTE:** This parameter is sent to the configuration change API as the lowercase value `upgrade` or `downgrade`. It applies to both the `data_node_configuration` block and the deprecated `data_node_spec`, `data_node_amount`, `master_node_spec`, `client_node_spec`, `warm_node_spec` and `kibana_node_spec` fields. Set it to `DOWNGRADE` when reducing a specification or a node count; otherwise the API keeps its default upgrade behaviour.
+  -> **NOTE:** This parameter is sent to the configuration change API as the lowercase value `upgrade` or `downgrade`. It applies to both the `data_node_configuration` block and the deprecated `data_node_spec`, `data_node_amount`, `master_node_spec`, `client_node_spec`, `warm_node_spec` and `kibana_node_spec` fields. Set it to `DOWNGRADE` when reducing a specification or a node count; otherwise the API keeps its default upgrade behavior.
 
   -> **NOTE:** When `data_node_amount` or `data_node_configuration.0.amount` is reduced with `order_action_type = "DOWNGRADE"`, the provider first sends `orderActionType=downgrade` to the configuration change API. If the instance cannot reduce data nodes that way, the provider removes the nodes with the `ShrinkNode` API instead (the same applies to `warm_node_amount` and `warm_node_configuration.0.amount` with cold nodes). Nodes to be removed must not hold data; migrate the data of these nodes to other nodes first, otherwise the update fails and reports how many data-free nodes were found.
 
