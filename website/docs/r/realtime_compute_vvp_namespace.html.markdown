@@ -152,7 +152,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions. Values use the Go duration syntax, for example `10m` or `1h`; an operation that is not set uses the default shown below:
 * `create` - (String, Defaults to `5 mins`) Used when create the Vvp Namespace.
 * `delete` - (String, Defaults to `5 mins`) Used when delete the Vvp Namespace.
 * `update` - (String, Defaults to `5 mins`) Used when update the Vvp Namespace.

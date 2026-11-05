@@ -167,6 +167,12 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_basic0(t *testing.T) {
 // pre-provisioned cross-zone workspace instead of creating one; see
 // testAccRealtimeComputeVvpRequireHaWorkspace for how it is located.
 func TestAccAliCloudRealtimeComputeVvpNamespace_ha0(t *testing.T) {
+	// This case reads a pre-provisioned workspace before resource.Test builds its steps, so it has
+	// to honour the TF_ACC gate itself: without it a plain `go test` run would touch the cloud
+	// instead of skipping like the other acceptance cases.
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("acceptance tests are skipped unless TF_ACC is set")
+	}
 	resourceId := "alicloud_realtime_compute_vvp_namespace.ha"
 	region := "cn-hangzhou"
 	if err := os.Setenv("ALICLOUD_REGION", region); err != nil {
@@ -835,7 +841,17 @@ func testAccRealtimeComputeVvpRequireHaWorkspace(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("listing the workspaces for the HA lifecycle failed: %s", err)
 	}
-	instances, _ := response["Instances"].([]interface{})
+	raw, ok := response["Instances"]
+	if !ok {
+		t.Fatalf("listing the workspaces for the HA lifecycle returned no Instances collection")
+	}
+	if raw == nil {
+		t.Fatalf("listing the workspaces for the HA lifecycle returned a null Instances collection")
+	}
+	instances, ok := raw.([]interface{})
+	if !ok {
+		t.Fatalf("listing the workspaces for the HA lifecycle returned Instances of type %T", raw)
+	}
 	for _, item := range instances {
 		instance, _ := item.(map[string]interface{})
 		if !strings.HasPrefix(fmt.Sprint(instance["InstanceName"]), testAccRealtimeComputeVvpHaWorkspacePrefix) {
