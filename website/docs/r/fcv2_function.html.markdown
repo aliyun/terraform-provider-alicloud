@@ -337,7 +337,8 @@ The following arguments are supported:
   - **fc.gpu.ampere.1**: The Ampere series A10 card type of the GPU instance.
   - **g1**: Same as **fc.gpu.tesla.1**.
 * `layers` - (Optional) List of layers.
--> **NOTE:**  Multiple layers will be merged in the order of array subscripts from large to small, and the contents of layers with small subscripts will overwrite the files with the same name of layers with large subscripts.
+
+  -> **NOTE:**  Multiple layers will be merged in the order of array subscripts from large to small, and the contents of layers with small subscripts will overwrite the files with the same name of layers with large subscripts.
 * `memory_size` - (Optional, Computed) memory size needed by function.
 * `runtime` - (Required) runtime of function code.
 * `service_name` - (Required, ForceNew) The name of the function Service.

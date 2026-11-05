@@ -20,12 +20,22 @@ For information about Cloud Firewall Fw Switch and how to use it, see [What is F
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_firewall_fw_switch&exampleId=56e249bc-1949-2226-7455-d1d6dc2f1a547c80e6de&activeTab=example&spm=docs.r.cloud_firewall_fw_switch.0.56e249bc19&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_cloud_firewall_fw_switch" "example" {
   internet_address = "203.0.113.1"
   member_uid       = 1412345678901234
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_fw_switch&spm=docs.r.cloud_firewall_fw_switch.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

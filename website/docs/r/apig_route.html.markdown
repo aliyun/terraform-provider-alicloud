@@ -109,14 +109,14 @@ The following arguments are supported:
 * `description` - (Optional) The description of the route.
 * `domain_ids` - (Optional, List) The list of domain name identifiers associated with this APIG route for inbound traffic routing.
 
--> **NOTE:** This parameter is only evaluated during resource creation and update. Modifying it in isolation will not trigger any action.
+  -> **NOTE:** This parameter is only evaluated during resource creation and update. Modifying it in isolation will not trigger any action.
 
 * `environment_info` - (Optional, ForceNew, Set) The environment information of the route. See [`environment_info`](#environment_info) below.
 * `http_api_id` - (Optional, ForceNew, Computed) The ID of the HTTP API to which the route belongs.
 * `match` - (Optional, Set) The route match rule. See [`match`](#match) below.
 * `route_name` - (Optional, ForceNew) The name of the route.
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 
 ### `backend`

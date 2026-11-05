@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Bastionhost User Groups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.132.0+.
+-> **NOTE:** Available since v1.132.0.
 
 ## Example Usage
 
@@ -46,14 +46,14 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `user_group_name` - (Optional, ForceNew) Specify the New Group Name. Supports up to 128 Characters.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of User Group names.
 * `groups` - A list of Bastionhost User Groups. Each element contains the following attributes:
-	* `comment` - Specify the New Group of Remark Information. Supports up to 500 Characters.
-	* `id` - The ID of the User Group.
-	* `instance_id` - Specify the New Group of the Bastion Host of Instance Id.
-	* `user_group_id` - The User Group ID.
-	* `user_group_name` - Specify the New Group Name. Supports up to 128 Characters.
+  * `comment` - Specify the New Group of Remark Information. Supports up to 500 Characters.
+  * `id` - The ID of the User Group.
+  * `instance_id` - Specify the New Group of the Bastion Host of Instance Id.
+  * `user_group_id` - The User Group ID.
+  * `user_group_name` - Specify the New Group Name. Supports up to 128 Characters.

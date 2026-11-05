@@ -13,6 +13,8 @@ Cloud DBaudit instance resource ("Yundun_dbaudit" is the short term of this prod
 
 -> **NOTE:** The endpoint of bssopenapi used only support "business.aliyuncs.com" at present.
 
+-> **NOTE:** Destroying a `Subscription` instance fails with an error since v2.1.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
+
 -> **NOTE:** Available since v1.62.0+.
 
 -> **NOTE:** In order to destroy Cloud DBaudit instance , users are required to apply for white list first
@@ -72,7 +74,8 @@ The following arguments are supported:
 * `plan_code` - (Required) Plan code of the Cloud DBAudit to produce. (alpha.professional, alpha.basic, alpha.premium) 
 * `description` - (Required) Description of the instance. This name can have a string of 1 to 63 characters.
 * `period` - (Required) Duration for initially producing the instance. Valid values: [1~9], 12, 24, 36. At present, the provider does not support modify "period".
--> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
+
+  -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `vswitch_id` - (Required, ForceNew) vSwtich ID configured to audit
 * `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
 * `resource_group_id` - (Optional, Available in v1.87.0+) The Id of resource group which the DBaudit Instance belongs. If not set, the resource is created in the default resource group.

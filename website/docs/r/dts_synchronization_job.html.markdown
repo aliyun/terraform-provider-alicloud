@@ -26,6 +26,13 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
 variable "name" {
   default = "terraform-example"
 }
@@ -151,7 +158,9 @@ The following arguments supported:
 * `structure_initialization` - (Required, ForceNew) Whether to perform library table structure migration or initialization. Valid values: `true`, `false`.
 * `db_list` - (Required) Migration object, in the format of JSON strings. For detailed definition instructions, please refer to [the description of migration, synchronization or subscription objects](https://help.aliyun.com/document_detail/209545.html). **NOTE:** From version 1.173.0, `db_list` can be modified.
 * `synchronization_direction` - (Optional, ForceNew) Synchronization direction. Valid values: `Forward`, `Reverse`. Only when the property `sync_architecture` of the `alicloud_dts_synchronization_instance` was `bidirectional` this parameter should be passed, otherwise this parameter should not be specified.
-* `instance_class` - (Optional) The instance class. Valid values: `large`, `medium`, `micro`, `small`, `xlarge`, `xxlarge`. You can only upgrade the configuration, not downgrade the configuration. If you downgrade the instance, you need to [submit a ticket](https://selfservice.console.aliyun.com/ticket/category/dts/today).
+* `instance_class` - (Optional) The instance class. Valid values: `xmicro`, `micro`, `small`, `medium`, `large`, `xlarge`, `2xlarge`, `4xlarge`, `6xlarge`, `8xlarge`. Upgrades take effect directly; downgrades are a restricted capability, see the note below.
+
+  -> **NOTE:** `instance_class` is applied through `TransferInstanceClass`, which is called only when the configured class differs from the class reported by the service. Downgrading is restricted: it is supported only for synchronization instances that have entered the incremental synchronization stage, are running, paused or failed, and are of class `large` or above, the target class cannot be lower than `medium`, and the account must be granted downgrade permission first; otherwise the request fails with `DTS.Msg.TransferInstanceClass.NoPermission` (see [Downgrade the specifications of an instance](https://help.aliyun.com/zh/dts/user-guide/downgrade-a-dts-instance) and the [DTS FAQ](https://help.aliyun.com/zh/dts/support/performance-and-specification-issues)). The job uses the class of its bound `alicloud_dts_synchronization_instance`; when the class changes here, keep the configuration of that instance consistent with the resulting class, because the instance resource does not change the class of an existing instance.
 * `checkpoint` - (Optional, ForceNew) The start point or synchronization point of incremental data migration, the format is Unix timestamp, and the unit is seconds.
 * `reserve` - (Optional) DTS reserves parameters, the format is a JSON string, you can pass in this parameter to complete the source and target database information (such as the data storage format of the target Kafka database, the instance ID of the cloud enterprise network CEN). For more information, please refer to the parameter [description of the Reserve parameter](https://help.aliyun.com/document_detail/273111.html).
 
@@ -194,6 +203,9 @@ The following arguments supported:
 * `error_notice` - (Optional, ForceNew) The error notice. Valid values: `true`, `false`.
 * `error_phone` - (Optional, ForceNew) The error phone. The mobile phone number of the contact who error the alarm. Multiple mobile phone numbers separated by English commas `,`. This parameter currently only supports China stations, and only supports mainland mobile phone numbers, and up to 10 mobile phone numbers can be passed in.
 * `status` - (Optional) The status of the resource. Valid values: `Synchronizing`, `Suspending`. You can stop the task by specifying `Suspending` and start the task by specifying `Synchronizing`.
+
+  -> **NOTE:** From the status of `NotStarted` to `Synchronizing`, the resource goes through the `Prechecking` and `Initializing` phases. Because of the `Initializing` phase takes too long, and once the resource passes to the status of `Prechecking`, it can be considered that the task can be executed normally. Therefore, we treat the status of `Initializing` as an equivalent to `Synchronizing`.
+
 * `dedicated_cluster_id` - (Optional, ForceNew) When the ID of the dedicated cluster is input, the task is scheduled to the corresponding cluster.
 * `data_check_configure` - (Optional, ForceNew) The data verification task of the migration or synchronization instance, in the format of a JSON string, such as parameter limits or alarm configurations. For more information, see the DataCheckConfigure parameter description [datacheckconfigure-parameter](https://help.aliyun.com/zh/dts/developer-reference/datacheckconfigure-parameter).
 * `source_endpoint_vswitch_id` - (Optional, ForceNew) Data Delivery link switch instance id
@@ -203,13 +215,10 @@ The following arguments supported:
 * `destination_endpoint_role` - (Optional, ForceNew) The role name of the Alibaba Cloud account to which the target instance belongs. This parameter must be entered when data migration or synchronization across Alibaba Cloud accounts is performed. For the permissions and authorization methods required by this role.
 * `dest_primary_vswitch_id` - (Optional, ForceNew, Available since v1.289.0) The ID of the primary vSwitch on the destination side of a VPC NAT connection.
 * `dest_secondary_vswitch_id` - (Optional, ForceNew, Available since v1.289.0) The ID of the secondary vSwitch on the destination side of a VPC NAT connection.
+
+  -> **NOTE:** `src_primary_vswitch_id`, `src_secondary_vswitch_id`, `dest_primary_vswitch_id` and `dest_secondary_vswitch_id` are only used when the job is created. They are not refreshed from the server, and are not populated by `terraform import`.
+
 * `dts_bis_label` - (Optional, ForceNew) The environment label of the DTS instance. The value is: **normal**, **online**.
-
--> **NOTE:** `src_primary_vswitch_id`, `src_secondary_vswitch_id`, `dest_primary_vswitch_id` and `dest_secondary_vswitch_id` are only used when the job is created. They are not refreshed from the server, and are not populated by `terraform import`.
-
--> **NOTE:** From the status of `NotStarted` to `Synchronizing`, the resource goes through the `Prechecking` and `Initializing` phases. Because of the `Initializing` phase takes too long, and once the resource passes to the status of `Prechecking`, it can be considered that the task can be executed normally. Therefore, we treat the status of `Initializing` as an equivalent to `Synchronizing`.
-
--> **NOTE:** If you want to upgrade the synchronization job specifications by the property `instance_class`, you must also modify the property `instance_class` of it's instance to keep them consistent.
 
 ## Notice
 
@@ -228,8 +237,12 @@ The following attributes are exported:
 
 ## Import
 
-DTS Synchronization Job can be imported using the id, e.g.
+DTS Synchronization Job can be imported using its canonical `DtsJobId`, e.g.
 
 ```shell
-$ terraform import alicloud_dts_synchronization_job.example <id>
+$ terraform import alicloud_dts_synchronization_job.example <DtsJobId>
 ```
+
+The import ID must exactly match `DtsJobId` returned by `DescribeDtsJobDetail`. A DTS instance ID (`DtsInstanceID`) is not a job ID, even if the detail API accepts it as a lookup key. Import rejects a different or missing job identity and does not automatically bind to another task.
+
+If existing state contains an instance ID, first back up the state and verify the intended job in DTS. Remove only the incorrect local state binding with `terraform state rm`, then explicitly import the verified `DtsJobId`. Do not delete the cloud job to correct its state binding. If the original job has been deleted or rebuilt, verify the replacement separately before importing it.

@@ -93,10 +93,10 @@ The following arguments are supported:
 * `max_version` - (Required) The maximum number of versions stored in this table. The valid value is 1-2147483647.
 * `allow_update` - (Optional, Available since v1.224.0) Whether allow data update operations. Default value is true. Skipping the resource state refresh step may result in unnecessary execution plan when upgrading from an earlier version.
 * `deviation_cell_version_in_sec` - (Optional, Available in 1.42.0+) The max version offset of the table. The valid value is 1-9223372036854775807. Defaults to 86400.
-* `enable_sse` - (Optional, Available since v1.172.0) Whether enable OTS server side encryption. Default value is false.
-* `sse_key_type` - (Optional, Available since v1.172.0) The key type of OTS server side encryption. `SSE_KMS_SERVICE`, `SSE_BYOK` is allowed.
-* `sse_key_id` - (Optional, Available since v1.224.0) . The key ID of secret. `sse_key_id` is valid only when `sse_key_type` is set to `SSE_BYOK`.
-* `sse_role_arn` - (Optional, Available since v1.224.0) The arn of role that can access kms service. `sse_role_arn` is valid only when `sse_key_type` is set to `SSE_BYOK`.
+* `enable_sse` - (Optional, Available since v1.172.0) Whether enable OTS server side encryption. Default value is false. **Note: The parameter is immutable after resource creation.
+* `sse_key_type` - (Optional, Available since v1.172.0) The key type of OTS server side encryption. `SSE_KMS_SERVICE`, `SSE_BYOK` is allowed. **Note: The parameter is immutable after resource creation.
+* `sse_key_id` - (Optional, Available since v1.224.0) . The key ID of secret. `sse_key_id` is valid only when `sse_key_type` is set to `SSE_BYOK`. **Note: The parameter is immutable after resource creation.
+* `sse_role_arn` - (Optional, Available since v1.224.0) The arn of role that can access kms service. `sse_role_arn` is valid only when `sse_key_type` is set to `SSE_BYOK`. **Note: The parameter is immutable after resource creation.
 
 ### `defined_column`
 

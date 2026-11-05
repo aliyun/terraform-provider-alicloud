@@ -69,7 +69,7 @@ The following arguments are supported:
 * `child_instance_id` - (Required, ForceNew) The ID of the leased line gateway subinstance.
 * `child_instance_owner_id` - (Optional, ForceNew, Computed, Int) The ID of the Alibaba Cloud account (primary account) to which the VBR instance belongs.
 
--> **NOTE:**  This parameter is required if you want to load a cross-account network instance.
+  -> **NOTE:**  This parameter is required if you want to load a cross-account network instance.
 
 * `child_instance_region_id` - (Required, ForceNew) Region of the leased line gateway sub-instance
 * `child_instance_type` - (Required, ForceNew) The type of the network instance. Value: `VBR`: VBR instance.

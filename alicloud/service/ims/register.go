@@ -8,6 +8,18 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "Ims",
+		SDKDataSources: []conns.SDKDataSource{
+			{
+				TypeName: "alicloud_ims_oidc_providers",
+				Factory:  DataSourceImsOidcProviders,
+			},
+		},
+		SDKResources: []conns.SDKResource{
+			{
+				TypeName: "alicloud_ims_oidc_provider",
+				Factory:  ResourceImsOidcProvider,
+			},
+		},
 		DataSources: []conns.DataSource{
 			{
 				TypeName: "alicloud_ims_default_domain",

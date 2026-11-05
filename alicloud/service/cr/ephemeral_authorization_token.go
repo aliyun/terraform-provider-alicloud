@@ -83,7 +83,7 @@ func (e *authorizationTokenEphemeral) Open(ctx context.Context, req ephemeral.Op
 		request["ExpiresInHours"] = config.ExpiresInHours.ValueInt64()
 	}
 
-	response, err := e.Client().RpcPost("cr", "2018-12-01", action, nil, request, true)
+	response, err := e.Meta().RpcPost("cr", "2018-12-01", action, nil, request, true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Opening %s: calling %s", authorizationTokenEphemeralTypeName, action),

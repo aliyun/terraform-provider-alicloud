@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Cddc Zones of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.147.0+.
+-> **NOTE:** Available since v1.147.0.
 
 ## Example Usage
 
@@ -31,12 +31,12 @@ The following arguments are supported:
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of Cddc Zone IDs.
 * `zones` - A list of Cddc Zones. Each element contains the following attributes:
-	* `region_id` - The ID of the region.
-	* `zone_id` - The ID of the zone.
-	* `id` - The ID of the zone.
-	
+  * `region_id` - The ID of the region.
+  * `zone_id` - The ID of the zone.
+  * `id` - The ID of the zone.

@@ -7,11 +7,11 @@ description: |-
     Provides a list of FileType owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_nas_zones
+# alicloud_nas_zones
 
 Provide  a data source to retrieve the type of zone used to create NAS file system.
 
--> **NOTE:** Available in v1.140.0+.
+-> **NOTE:** Available since v1.140.0+.
 
 ## Example Usage
 
@@ -35,14 +35,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `zones` - A list of availability zone information collection.
-    * `zone_id` - String to filter results by zone id.
-    * `instance_types` - A list of instance type information collection
-        * `storage_type` - The storage type of the nas zones. Valid values:
-          * `standard` - When FileSystemType is standard. Valid values: `Performance` and `Capacity`.
-          * `extreme` - When FileSystemType is extreme. Valid values: `Standard` and `Advance`.
-          * `cpfs` - When FileSystemType is cpfs. Valid values: `advance_100` and `advance_200` .
-        * `protocol_type` - File transfer protocol type. Valid values:
-          * `standard` - When FileSystemType is standard. Valid values: `NFS` and `SMB`.
-          * `extreme` - When FileSystemType is extreme. Valid values: `NFS`.
-          * `cpfs` - When FileSystemType is cpfs. Valid values: `cpfs`.
-          
+  * `zone_id` - String to filter results by zone id.
+  * `instance_types` - A list of instance type information collection
+    * `storage_type` - The storage type of the nas zones. Valid values: `Performance`, `Capacity`, `Standard`, `Advance`, `advance_100` and `advance_200`.
+    * `protocol_type` - File transfer protocol type. Valid values: `NFS`, `SMB` and `cpfs`.

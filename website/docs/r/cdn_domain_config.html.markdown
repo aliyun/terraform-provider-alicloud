@@ -78,7 +78,8 @@ The `function_args` block supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Domain Config. It formats as `<domain_name>:<function_name>:<config_id>`.
--> **NOTE:** Before provider version 1.132.0, it formats as `<domain_name>:<function_name>`
+
+  -> **NOTE:** Before provider version 1.132.0, it formats as `<domain_name>:<function_name>`
 * `config_id` - (Available since v1.132.0) The ID of the domain config function.
 * `status` - (Available since v1.132.0) The Status of the function.
 

@@ -54,13 +54,13 @@ The following arguments are supported:
 * `insert_way` - (Required, ForceNew) The method to submit the URLs to be prefetched.
 * `oss_url` - (Optional) Preheat OSS files regularly and fill in the OSS file address. Note: The OSS file contains the URL that you need to warm up.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `scheduled_preload_job_name` - (Required, ForceNew) The task name.
 * `site_id` - (Required, ForceNew) The site ID.
 * `url_list` - (Optional) A list of URLs to be preheated, which is used when uploading a preheated file in the text box mode.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 
 ## Attributes Reference

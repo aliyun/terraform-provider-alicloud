@@ -20,12 +20,19 @@ For information about DTS Subscription Job and how to use it, see [What is Subsc
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_dts_subscription_job&exampleId=b7c48966-4e24-7a01-90d8-61543ab216d45f8c1081&activeTab=example&spm=docs.r.dts_subscription_job.0.b7c489664e&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_dts_subscription_job&exampleId=a7dcbf9d-1018-b303-0995-ba44ea716f5b2e6ae759&activeTab=example&spm=docs.r.dts_subscription_job.0.a7dcbf9d10&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
 variable "name" {
   default = "terraform-example"
 }
@@ -81,7 +88,7 @@ resource "alicloud_db_instance" "example" {
 
 resource "alicloud_rds_account" "example" {
   db_instance_id   = alicloud_db_instance.example.id
-  account_name     = "test_mysql"
+  account_name     = "example_mysql"
   account_password = "N1cetest"
 }
 
@@ -152,6 +159,7 @@ The following arguments were support:
 * `source_endpoint_owner_id` - (Optional) The Alibaba Cloud account ID to which the source instance belongs. This parameter is only available when configuring data subscriptions across Alibaba Cloud accounts and must be passed in.
 * `source_endpoint_user_name` - (Optional) The username of source database instance account.
 * `source_endpoint_password` - (Optional) The password of source database instance account.
+* `source_endpoint_ssl` - (Optional, Computed, Available since v2.1.0) The connection method of the source instance. Valid values: `0` (an unencrypted connection), `1` (an SSL-secured connection). Only supported when the source endpoint is accessed as a cloud instance or as a self-managed database hosted on ECS. When `1` is configured and the source instance is an ApsaraDB RDS for MySQL instance, the SSL encryption feature of the source RDS instance must be enabled in advance, otherwise the task precheck fails and the task cannot be started.
 * `source_endpoint_port` - (Optional) The port of source database.
 * `source_endpoint_region` - (Required) The region of source database.
 * `source_endpoint_role` - (Optional) Both the authorization roles. When the source instance and configure subscriptions task of the Alibaba Cloud account is not the same as the need to pass the parameter, to specify the source of the authorization roles, to allow configuration subscription task of the Alibaba Cloud account to access the source of the source instance information.
@@ -179,8 +187,12 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-DTS Subscription Job can be imported using the id, e.g.
+DTS Subscription Job can be imported using its canonical `DtsJobId`, e.g.
 
 ```shell
-$ terraform import alicloud_dts_subscription_job.example <id>
+$ terraform import alicloud_dts_subscription_job.example <DtsJobId>
 ```
+
+The import ID must exactly match `DtsJobId` returned by `DescribeDtsJobDetail`. A DTS instance ID (`DtsInstanceID`) is not a job ID, even if the detail API accepts it as a lookup key. Import rejects a different or missing job identity and does not automatically bind to another task.
+
+If existing state contains an instance ID, first back up the state and verify the intended job in DTS. Remove only the incorrect local state binding with `terraform state rm`, then explicitly import the verified `DtsJobId`. Do not delete the cloud job to correct its state binding. If the original job has been deleted or rebuilt, verify the replacement separately before importing it.

@@ -35,6 +35,7 @@ output "first_brain_industrial_pid_loop_id" {
 
 The following arguments are supported:
 
+* `enable_details` - (Optional) Whether to detail the Pid Loops. Default to `false`. When it is set to `true`, the data source will query the Pid Loop details by `GetLoop`.
 * `ids` - (Optional, ForceNew, Computed)  A list of Pid Loop IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Pid Loop name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -48,10 +49,13 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Pid Loop names.
 * `loops` - A list of Brain Industrial Pid Loops. Each element contains the following attributes:
-	* `id` - The ID of the Pid Loop.
-	* `pid_loop_dcs_type` - The dcs type of Pid Loop.
-	* `pid_loop_id` - The ID of the Pid Loop.
-	* `pid_loop_is_crucial` - Whether is crucial Pid Loop.
-	* `pid_loop_name` - The name of Pid Loop.
-	* `pid_loop_type` - The type of Pid Loop.
-	* `status` - The status of Pid Loop.
+  * `id` - The ID of the Pid Loop.
+  * `pid_loop_configuration` - The configuration of Pid Loop.
+  * `pid_loop_dcs_type` - The dcs type of Pid Loop.
+  * `pid_loop_desc` - The description of Pid Loop.
+  * `pid_loop_id` - The ID of the Pid Loop.
+  * `pid_loop_is_crucial` - Whether is crucial Pid Loop.
+  * `pid_loop_name` - The name of Pid Loop.
+  * `pid_loop_type` - The type of Pid Loop.
+  * `pid_project_id` - The pid project id of Pid Loop.
+  * `status` - The status of Pid Loop.

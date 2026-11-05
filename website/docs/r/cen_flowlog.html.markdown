@@ -71,7 +71,7 @@ The following arguments are supported:
 * `tags` - (Optional, Map, Available since v1.235.0) The tag of the resource
 * `transit_router_attachment_id` - (Optional, ForceNew, Available since v1.235.0) Cross-region Connection ID or VBR connection ID.
 
--> **NOTE:**  This parameter is required.
+  -> **NOTE:**  This parameter is required.
 
 * `transit_router_id` - (Optional, ForceNew, Available since v1.235.0) Transit Router ID
 

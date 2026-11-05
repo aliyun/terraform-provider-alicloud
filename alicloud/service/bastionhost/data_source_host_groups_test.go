@@ -1,0 +1,105 @@
+package bastionhost_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+)
+
+func TestAccAliCloudBastionhostHostGroupsDataSource(t *testing.T) {
+	resourceId := "data.alicloud_bastionhost_host_groups.default"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccBastionhostHostGroupsTest%d", rand)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceBastionhostHostGroupsDependence)
+
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
+			"instance_id": "${alicloud_bastionhost_host_group.default.instance_id}",
+			"ids":         []string{"${alicloud_bastionhost_host_group.default.host_group_id}"},
+		}),
+		FakeConfig: testAccConfig(map[string]interface{}{
+			"instance_id": "${alicloud_bastionhost_host_group.default.instance_id}",
+			"ids":         []string{"${alicloud_bastionhost_host_group.default.id}-fake"},
+		}),
+	}
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
+			"instance_id": "${alicloud_bastionhost_host_group.default.instance_id}",
+			"name_regex":  "${alicloud_bastionhost_host_group.default.host_group_name}",
+		}),
+		FakeConfig: testAccConfig(map[string]interface{}{
+			"instance_id": "${alicloud_bastionhost_host_group.default.instance_id}",
+			"name_regex":  "${alicloud_bastionhost_host_group.default.host_group_name}" + "fake",
+		}),
+	}
+	userNameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
+			"instance_id":     "${alicloud_bastionhost_host_group.default.instance_id}",
+			"host_group_name": "${alicloud_bastionhost_host_group.default.host_group_name}",
+		}),
+		FakeConfig: testAccConfig(map[string]interface{}{
+			"instance_id":     "${alicloud_bastionhost_host_group.default.instance_id}",
+			"host_group_name": "${alicloud_bastionhost_host_group.default.host_group_name}" + "fake",
+		}),
+	}
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
+			"instance_id":     "${alicloud_bastionhost_host_group.default.instance_id}",
+			"name_regex":      name,
+			"host_group_name": name,
+			"ids":             []string{"${alicloud_bastionhost_host_group.default.host_group_id}"},
+		}),
+		FakeConfig: testAccConfig(map[string]interface{}{
+			"instance_id":     "${alicloud_bastionhost_host_group.default.instance_id}",
+			"host_group_name": name + "fake",
+			"name_regex":      name + "fake",
+			"ids":             []string{"${alicloud_bastionhost_host_group.default.id}-fake"},
+		}),
+	}
+	var existBastionhostHostGroupsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                    "1",
+			"ids.0":                    acctest.CHECKSET,
+			"names.#":                  "1",
+			"names.0":                  name,
+			"groups.#":                 "1",
+			"groups.0.id":              acctest.CHECKSET,
+			"groups.0.comment":         "",
+			"groups.0.instance_id":     acctest.CHECKSET,
+			"groups.0.host_group_id":   acctest.CHECKSET,
+			"groups.0.host_group_name": name,
+		}
+	}
+
+	var fakeBastionhostHostGroupsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":    "0",
+			"names.#":  "0",
+			"groups.#": "0",
+		}
+	}
+
+	var BastionhostHostGroupsInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existBastionhostHostGroupsMapFunc,
+		FakeMapFunc:  fakeBastionhostHostGroupsMapFunc,
+	}
+
+	BastionhostHostGroupsInfo.DataSourceTestCheck(t, 0, idsConf, nameRegexConf, userNameRegexConf, allConf)
+}
+
+func dataSourceBastionhostHostGroupsDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+data "alicloud_bastionhost_instances" "default" {}
+
+resource "alicloud_bastionhost_host_group" "default" {
+  instance_id     = data.alicloud_bastionhost_instances.default.ids.0
+  host_group_name      = var.name
+}
+`, name)
+}

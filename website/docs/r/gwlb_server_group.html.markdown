@@ -25,6 +25,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -45,19 +53,19 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_vpc" "defaultEaxcvb" {
   cidr_block = "10.0.0.0/8"
-  vpc_name   = "tf-gwlb-vpc"
+  vpc_name   = "terraform-example-gwlb-vpc"
 }
 
 resource "alicloud_vswitch" "defaultc3uVID" {
   vpc_id       = alicloud_vpc.defaultEaxcvb.id
   zone_id      = var.zone_id1
   cidr_block   = "10.0.0.0/24"
-  vswitch_name = "tf-example-vsw1"
+  vswitch_name = "terraform-example-vsw1"
 }
 
 resource "alicloud_security_group" "default7NNxRl" {
   description         = "sg"
-  security_group_name = "sg_name"
+  security_group_name = "terraform-example-sg"
   vpc_id              = alicloud_vpc.defaultEaxcvb.id
   security_group_type = "normal"
 }
@@ -222,8 +230,9 @@ The health_check_config supports the following:
 
   - `TCP`: TCP health checks send TCP SYN packets to a backend server to check whether the port of the backend server is reachable.
   - `HTTP`: HTTP health checks simulate a process that uses a web browser to access resources by sending HEAD or GET requests to an instance. These requests are used to check whether the instance is healthy.
-* `health_check_req` - (Optional) The request string sent to a backend server during a health check.
-* `health_check_exp` - (Optional) The expected response string that the backend server must return during a health check.
+  - `UDP`: UDP health checks send UDP packets to a backend server to check whether the port of the backend server is reachable.
+* `health_check_req` - (Optional, String, Available since v2.3.0) The request string sent to a backend server during a health check. This parameter takes effect only if you set `health_check_protocol` to `UDP`.
+* `health_check_exp` - (Optional, String, Available since v2.3.0) The expected response string that the backend server must return during a health check. This parameter takes effect only if you set `health_check_protocol` to `UDP`.
 * `healthy_threshold` - (Optional, Computed, Int, Available since v1.236.0) The number of times that an unhealthy backend server must consecutively pass health checks before it is declared healthy. In this case, the health status changes from `fail` to `success`.
 
   Valid values: `2` to `10`.

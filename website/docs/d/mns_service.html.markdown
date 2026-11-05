@@ -32,7 +32,7 @@ The following arguments are supported:
 
 * `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Default value: `Off`. Valid values: `On` and `Off`.
 
--> **NOTE:** Setting `enable = "On"` to open the MNS service that means you have read and agreed the [MNS Terms of Service](https://help.aliyun.com/document_detail/27418.html). The service can not closed once it is opened.
+  -> **NOTE:** Setting `enable = "On"` to open the MNS service that means you have read and agreed the [MNS Terms of Service](https://help.aliyun.com/document_detail/27418.html). The service can not closed once it is opened.
 
 ## Attributes Reference
 

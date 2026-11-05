@@ -7,11 +7,11 @@ description: |-
   Verify whether an IP is a CDN node.
 ---
 
-# alicloud\_cdn\_ip\_info
+# alicloud_cdn_ip_info
 
 This data source provides the function of verifying whether an IP is a CDN node.
 
--> **NOTE:** Available in v1.153.0+.
+-> **NOTE:** Available since v1.153.0.
 
 ## Example Usage
 
@@ -30,7 +30,7 @@ The following arguments are supported:
 
 * `ip` - (Required, ForceNew)  Specify IP address.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 * `cdn_ip` - Whether it belongs to an Alibaba Cloud CDN node.Valid values: `True`, `False`.

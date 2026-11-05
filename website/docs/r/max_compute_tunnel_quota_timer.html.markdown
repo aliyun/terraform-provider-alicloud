@@ -74,8 +74,8 @@ The following arguments are supported:
 * `nickname` - (Required, ForceNew) The nickname of the exclusive Resource Group (Tunnel Quota) for the level - 1 data transmission service.
 * `quota_timer` - (Optional, Set) Time-Sharing configuration
 
--> **NOTE:** -- The same reserved Quota resource group supports up to 48 time intervals. The minimum duration of a time interval is 30 minutes. -- After the current data transmission service is configured for time-sharing, if you need to perform a downgrade operation on the data transmission service (package year and month), please reduce the time-sharing concurrency first. -- The effective time of the time-sharing configuration is 0 to 5 minutes, and the billing will be calculated according to the actual effective time. -- Please make sure to set the time range completely from 00:00 to 24:00
- See [`quota_timer`](#quota_timer) below.
+  -> **NOTE:** -- The same reserved Quota resource group supports up to 48 time intervals. The minimum duration of a time interval is 30 minutes. -- After the current data transmission service is configured for time-sharing, if you need to perform a downgrade operation on the data transmission service (package year and month), please reduce the time-sharing concurrency first. -- The effective time of the time-sharing configuration is 0 to 5 minutes, and the billing will be calculated according to the actual effective time. -- Please make sure to set the time range completely from 00:00 to 24:00
+  See [`quota_timer`](#quota_timer) below.
 * `time_zone` - (Optional) Time zone, reference: Asia/Shanghai
 In general, the system will automatically generate the time zone according to the region without configuration.
 
@@ -92,7 +92,7 @@ The quota_timer-tunnel_quota_parameter supports the following:
 * `elastic_reserved_slot_num` - (Required, Int) The number of elastic reserved concurrency (Slot).
 * `slot_num` - (Required, Int) The number of reserved concurrency (Slot).
 
--> **NOTE:** The reserved concurrency (Slot) cannot be modified. The number of concurrency slots must be the same as that of the purchased tunnel quota.
+  -> **NOTE:** The reserved concurrency (Slot) cannot be modified. The number of concurrency slots must be the same as that of the purchased tunnel quota.
 
 
 ## Attributes Reference

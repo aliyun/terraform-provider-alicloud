@@ -15,6 +15,8 @@ Provides  Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance re
 
 -> **NOTE:** Destroying a `PrePaid` instance fails with an error since v1.294.0. To destroy it, convert the instance to `PostPaid` by setting `payment_type = "PostPaid"` and re-applying, or unsubscribe it in the Alibaba Cloud console. To remove the instance from the state only, run `terraform state rm`.
 
+-> **NOTE:** Refreshing a `Redis` type instance calls the `DescribeRoleZoneInfo` operation to read the additional bandwidth purchased for its data shards, so the RAM policy used by Terraform must allow `kvstore:DescribeRoleZoneInfo` in addition to the instance query permissions.
+
 ## Example Usage
 
 Basic Usage
@@ -26,6 +28,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example"
 }
@@ -78,6 +88,14 @@ Launching a PrePaid instance
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example-prepaid"
 }
@@ -115,7 +133,7 @@ resource "alicloud_kvstore_instance" "default" {
   config = {
     appendonly             = "no"
     lazyfree-lazy-eviction = "no"
-    EvictionPolicy         = "volatile-lru"
+    maxmemory-policy       = "volatile-lru"
   }
   tags = {
     Created = "TF",
@@ -133,6 +151,14 @@ Setting Private Connection String
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example-with-connection"
 }
@@ -176,7 +202,7 @@ resource "alicloud_kvstore_instance" "default" {
   config = {
     appendonly             = "yes"
     lazyfree-lazy-eviction = "yes"
-    EvictionPolicy         = "volatile-lru"
+    maxmemory-policy       = "volatile-lru"
   }
   tags = {
     Created = "TF",
@@ -194,6 +220,8 @@ The following arguments are supported:
 * `instance_name` - (Deprecated since v1.101.0) It has been deprecated from provider version 1.101.0 and `db_instance_name` instead.
 * `db_instance_name` - (Optional, Available since v1.101.0) The name of KVStore DBInstance. It is a string of 2 to 256 characters.
 * `password`- (Optional, Sensitive) The password of the KVStore DBInstance. The password that is used to connect to the instance. The password must be 8 to 32 characters in length and must contain at least three of the following character types: uppercase letters, lowercase letters, special characters, and digits. Special characters include: `! @ # $ % ^ & * ( ) _ + - =`
+* `password_wo` - (Optional, Available since v2.2.0) The write-only password of the account. It is only sent to the server when the resource is created or the `password_wo_version` changes and is never stored in the state or plan.
+* `password_wo_version` - (Optional, Available since v2.2.0) The version of the write-only password. The write-only password is re-sent to the server only when this argument changes, so it must be changed whenever `password_wo` changes.
 * `kms_encrypted_password` - (Optional, Available since v1.57.1) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `instance_class` - (Optional) Type of the applied Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance. It can be retrieved by data source [alicloud_kvstore_instance_classes](https://www.terraform.io/docs/providers/alicloud/d/kvstore_instance_classes)
@@ -202,6 +230,7 @@ The following arguments are supported:
 * `availability_zone` - (Deprecated since v1.101.0) It has been deprecated from provider version 1.101.0 and `zone_id` instead.
 * `zone_id` - (Optional, Available since v1.101.0) The ID of the zone.
 * `secondary_zone_id` - (Optional, Available since v1.128.0) The ID of the secondary zone to which you want to migrate the Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance.
+
   -> **NOTE:** If you specify this parameter, the master node and replica node of the instance can be deployed in different zones and disaster recovery is implemented across zones. The instance can withstand failures in data centers.
 * `instance_charge_type` - (Deprecated since v1.101.0) It has been deprecated from provider version 1.101.0 and `payment_type` instead.
 * `payment_type` - (Optional, Available since v1.101.0) The billing method of the KVStore DBInstance. Valid values: `PrePaid`, `PostPaid`. Default value: `PostPaid`.
@@ -239,7 +268,8 @@ The following arguments are supported:
   - `STAND_ALONE`: Standalone
   - `double`: Master-replica
   - `single`: Standalone
--> **NOTE:** To create a cloud-native instance, set this parameter to `MASTER_SLAVE` or `STAND_ALONE`. To create a classic instance, set this parameter to `double` or `single`.
+
+  -> **NOTE:** To create a cloud-native instance, set this parameter to `MASTER_SLAVE` or `STAND_ALONE`. To create a classic instance, set this parameter to `double` or `single`.
 * `ssl_enable`- (Optional, Available since v1.101.0) Modifies the SSL status. Valid values: `Disable`, `Enable` and `Update`.
   **NOTE:** This functionality is supported by Cluster mode (Redis 2.8, 4.0, 5.0) and Standard mode( Redis 2.8 only).
 * `force_upgrade`- (Optional, Bool, Available since v1.101.0) Specifies whether to forcibly change the type. Default value: `true`.
@@ -267,23 +297,35 @@ The following arguments are supported:
 * `shard_count`- (Optional, Int, Available since v1.208.0) The number of data shards. This parameter is available only if you create a cluster instance that uses cloud disks. You can use this parameter to specify a custom number of data shards. **NOTE:** From version 1.216.0, `shard_count` can be modified.
 * `read_only_count` - (Optional, Int, Available since v1.226.0) The number of read replicas in the primary zone. Valid values: `1` to `9`.
 * `slave_read_only_count` - (Optional, Int, Available since v1.226.0) The number of read replicas in the secondary zone. **NOTE:**: When you create a multi-zone read/write splitting instance, you must specify both `secondary_zone_id` and `slave_read_only_count`.
--> **NOTE:** The sum of `read_only_count` and `slave_read_only_count` cannot be greater than `9`.
+
+  -> **NOTE:** The sum of `read_only_count` and `slave_read_only_count` cannot be greater than `9`.
 * `replica_count` - (Optional, Int, Available since v1.286.0) The number of replica nodes in the primary zone. If not specified, the value is assigned by the system based on the instance architecture.
 * `slave_replica_count` - (Optional, Int, Available since v1.286.0) The number of replica nodes in the secondary zone. If not specified, the value is assigned by the system based on the instance architecture.
--> **NOTE:** `replica_count`/`slave_replica_count` (replica nodes) and `read_only_count`/`slave_read_only_count` (read-only nodes) are mutually exclusive. An instance cannot have both replicas and read-only nodes at the same time.
+
+  -> **NOTE:** `replica_count`/`slave_replica_count` (replica nodes) and `read_only_count`/`slave_read_only_count` (read-only nodes) are mutually exclusive. An instance cannot have both replicas and read-only nodes at the same time.
 * `is_auto_upgrade_open` - (Optional, Available since v1.228.0) Specifies whether to enable automatic minor version update. Valid values:
   - `1`: Enables automatic minor version update.
   - `0`: Disables automatic minor version update.
 * `bandwidth` - (Optional, Int) The total bandwidth of the instance. **NOTE:** From version 1.232.0, `bandwidth` can be set. If the instance is a cluster instance, `bandwidth` must be divisible by the number of `shard_count` in the instance, and if the instance is a read/write splitting instance, `bandwidth` cannot be set.
+* `bandwidth_burst` - (Optional, Bool, Available since v2.2.0) Specifies whether to enable Elastic Burst for the instance. After it is enabled, the instance can temporarily burst beyond the default bandwidth limit during bandwidth auto scaling. **NOTE:** This attribute is only submitted through the `EnableAdditionalBandwidth` API and cannot be read back by instance query APIs; Terraform keeps the configured value in the state. The additional bandwidth is charged on a pay-as-you-go basis.
+* `additional_bandwidth` - (Optional, Set, Available since v2.2.0) The additional bandwidth to add to each data shard of the instance. Unit: MB/s. Setting this block adjusts the shard bandwidth to the specification default plus the configured value, which also changes the total `bandwidth` of the instance. See [`additional_bandwidth`](#additional_bandwidth) below. **NOTE:** The purchased bandwidth is read back from the `DescribeRoleZoneInfo` API as each data node's `CurrentBandWidth` minus its `DefaultBandWidth` (the specification default) for the shards managed by this resource, so bandwidth changed outside Terraform is detected on refresh. Removing a block does not release the purchased bandwidth of that shard; set its `bandwidth` to `0` explicitly to release it. **NOTE:** The additional bandwidth is purchased for a limited order duration (the API default is 1 day) and must be renewed with the `RenewAdditionalBandwidth` operation before it expires; this resource does not manage the renewal or the order duration. The additional bandwidth is charged on a pay-as-you-go basis.
 * `connection_string` - (Deprecated since v1.101.0) Indicates whether the address is a private endpoint.
+* `global_security_group_list` - (Optional, List, Available since v2.1.0) The list of Global Security Group Ids.
 
--> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
+  -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 
--> **NOTE:** You must specify at least one of the `capacity` and `instance_class` parameters when you call create instance operation.
+  -> **NOTE:** You must specify at least one of the `capacity` and `instance_class` parameters when you call create instance operation.
 
--> **NOTE:** The `private_ip` must be in the Classless Inter-Domain Routing (CIDR) block of the VSwitch to which the instance belongs.
+  -> **NOTE:** The `private_ip` must be in the Classless Inter-Domain Routing (CIDR) block of the VSwitch to which the instance belongs.
 
--> **NOTE:** If you specify the `srcdb_instance_id` parameter, you must specify the `backup_id` or `restore_time` parameter.
+  -> **NOTE:** If you specify the `srcdb_instance_id` parameter, you must specify the `backup_id` or `restore_time` parameter.
+
+### `additional_bandwidth`
+
+The `additional_bandwidth` block supports the following:
+
+* `node_id` - (Optional, String) The data shard whose bandwidth is adjusted. Use the shard node name (`r-xxx-db-0`, the `InsName` reported by the `DescribeRoleZoneInfo` operation) or its full topology ID (`r-xxx-db-0#123456`); a suffix such as `db-0` is also accepted when exactly one data shard of the instance ends with it. Required on [cluster](https://www.alibabacloud.com/help/en/redis/user-guide/cluster-instances) and [read/write splitting](https://www.alibabacloud.com/help/en/redis/user-guide/read-write-splitting-based-on-proxy-nodes) instances, and each data shard can be configured at most once. A standard instance takes `bandwidth` alone and must leave this argument unset, because `EnableAdditionalBandwidth` only accepts `NodeId` for the cluster and read/write splitting architectures.
+* `bandwidth` - (Optional, Int) The additional bandwidth to add. Unit: MB/s. Must be set in every `additional_bandwidth` block; a block without it is rejected. Valid values: non-negative integers. The maximum value is 6 times the default bandwidth of the instance (or shard) specification, capped at 192 MB/s. Set to `0` to release the additional bandwidth purchased for the shard.
 
 ### `parameters`
 
@@ -301,6 +343,9 @@ The following attributes are exported:
 * `qps` - Theoretical maximum QPS value.
 * `connection_domain`- Intranet connection address of the KVStore instance.
 * `status` - The status of KVStore DBInstance.
+* `ca_cert_download_url` - The download URL of the CA certificate. This attribute is populated when `ssl_enable` is set to `Enable`.
+* `ca_cert_common_name` - The common name of the CA certificate. **NOTE:** This is a best-effort attribute and may be empty when the upstream API does not return it.
+* `ssl_expired_time` - The expiration time of the SSL certificate. **NOTE:** This is a best-effort attribute and may be empty when the upstream API does not return it.
 
 ## Timeouts
 

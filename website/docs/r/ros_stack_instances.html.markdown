@@ -96,7 +96,7 @@ The following arguments are supported:
 
 * `deployment_targets` - (Optional) Configuration block defining deployment targets for service-managed permissions model. This parameter conflicts with `account_ids`. Changes to `rd_folder_ids` and `account_ids` within this block support in-place updates. See [`deployment_targets`](#deployment_targets) below.
 
--> **NOTE:** You must specify either `account_ids` (for self-managed permissions) or `deployment_targets` (for service-managed permissions), but not both.
+  -> **NOTE:** You must specify either `account_ids` (for self-managed permissions) or `deployment_targets` (for service-managed permissions), but not both.
 
 * `parameter_overrides` - (Optional) A set of parameters to override in the stack instances. See [`parameter_overrides`](#parameter_overrides) below.
 
@@ -142,7 +142,7 @@ The following attributes are exported:
 
 * `stack_instances` - A list of stack instances with their latest operation tracking information. See [`stack_instances`](#stack_instances) below.
 
--> **NOTE:** The `stack_instances` attribute may be empty if the deployment targets contain no valid accounts or if all deployments failed.
+  -> **NOTE:** The `stack_instances` attribute may be empty if the deployment targets contain no valid accounts or if all deployments failed.
 
 ### `stack_instances`
 

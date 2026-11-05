@@ -106,6 +106,7 @@ The following arguments are supported:
   - If `db_instance_mode` is set to `Serverless`. Valid values: `4C16G`, `8C32G`.
 
   -> **NOTE:** This parameter must be passed to create a storage elastic mode instance and a serverless version instance.
+
   -> **NOTE:** For `ServerlessPro` instances, `instance_spec` is a server-side placeholder (e.g. `1C8G`) returned by the API and is not user-configurable; sizing is controlled via `serverless_resource` and `cache_storage_size`. The placeholder is read into state but should not be set in the configuration.
  
 * `storage_size` - (Optional, Int) The storage capacity. Unit: GB. Valid values: `50` to `4000`.
@@ -210,7 +211,6 @@ The parameters supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of AnalyticDB for PostgreSQL.
-* `status` - The status of the instance. When the instance is paused, the value is `STOPPED`.
 * `connection_string` - (Available since v1.196.0) The connection string of the instance.
 * `port` - (Available since v1.196.0) The connection port of the instance.
 

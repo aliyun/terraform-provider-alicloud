@@ -123,7 +123,7 @@ The following attributes are exported:
 * `cert_identifier` - The global certificate identifier, formatted as the certificate ID plus `-` plus the site region ID. Alibaba Cloud services such as ALB, CDN and WAF reference a certificate by this value.
 * `certificate_status` - The status of the issued certificate.
 
--> **NOTE:** Enabling managed renewal on the certificate instance causes a **new certificate** to be issued when the certificate is renewed, which changes `certificate_id` and `cert_identifier`. Resources referencing these attributes pick up the new certificate on the next apply.
+  -> **NOTE:** Enabling managed renewal on the certificate instance causes a **new certificate** to be issued when the certificate is renewed, which changes `certificate_id` and `cert_identifier`. Resources referencing these attributes pick up the new certificate on the next apply.
 
 ## Timeouts
 

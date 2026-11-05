@@ -1,0 +1,371 @@
+package hbr
+
+import (
+	"fmt"
+	"log"
+	"strconv"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func ResourceServerBackupPlan() *schema.Resource {
+	return &schema.Resource{
+		Create: ResourceServerBackupPlanCreate,
+		Read:   ResourceServerBackupPlanRead,
+		Update: ResourceServerBackupPlanUpdate,
+		Delete: ResourceServerBackupPlanDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		DeprecationMessage: "This resource has been deprecated since v1.249.0 and will be removed in the future. Please use 'alicloud_hbr_policy' and 'alicloud_hbr_policy_binding' instead.",
+		Schema: map[string]*schema.Schema{
+			"disabled": {
+				Type:     schema.TypeBool,
+				Computed: true,
+				Optional: true,
+			},
+			"detail": {
+				Type:     schema.TypeSet,
+				Required: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"app_consistent": {
+							Type:     schema.TypeBool,
+							Required: true,
+						},
+						"snapshot_group": {
+							Type:     schema.TypeBool,
+							Required: true,
+						},
+						"enable_fs_freeze": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"pre_script_path": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"post_script_path": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"timeout_in_seconds": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  30,
+						},
+						"disk_id_list": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"do_copy": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"destination_region_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"destination_retention": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  -1,
+						},
+					},
+				},
+			},
+			"ecs_server_backup_plan_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"instance_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"retention": {
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"schedule": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"cross_account_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"SELF_ACCOUNT", "CROSS_ACCOUNT"}, false),
+			},
+			"cross_account_user_id": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"cross_account_role_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+		},
+	}
+}
+
+func ResourceServerBackupPlanCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	hbrService := HbrService{client}
+	var response map[string]interface{}
+	action := "CreateBackupPlan"
+	request := make(map[string]interface{})
+	var err error
+	request["BackupType"] = "COMPLETE"
+	if v, err := hbrService.convertDetailToString(d.Get("detail").(*schema.Set).List()); err == nil {
+		request["Detail"] = v
+	} else {
+		return errs.WrapError(err)
+	}
+
+	request["PlanName"] = d.Get("ecs_server_backup_plan_name")
+	request["InstanceId"] = d.Get("instance_id")
+	request["UdmRegionId"] = client.RegionId
+	request["Retention"] = d.Get("retention")
+
+	request["Schedule"] = d.Get("schedule")
+	request["SourceType"] = "UDM_ECS"
+
+	if v, ok := d.GetOk("cross_account_type"); ok {
+		request["CrossAccountType"] = v
+	}
+
+	if v, ok := d.GetOk("cross_account_user_id"); ok {
+		request["CrossAccountUserId"] = v
+	}
+
+	if v, ok := d.GetOk("cross_account_role_name"); ok {
+		request["CrossAccountRoleName"] = v
+	}
+
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
+		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_hbr_server_backup_plan", action, errs.AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+
+	d.SetId(fmt.Sprint(response["PlanId"]))
+
+	return ResourceServerBackupPlanUpdate(d, meta)
+}
+
+func ResourceServerBackupPlanRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	hbrService := HbrService{client}
+	object, err := hbrService.DescribeHbrServerBackupPlan(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_hbr_server_backup_plan hbrService.DescribeHbrServerBackupPlan Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	if v, ok := object["Detail"].(map[string]interface{}); ok {
+		details := make([]map[string]interface{}, 0)
+		detail := make(map[string]interface{})
+		detail["app_consistent"] = v["appConsistent"]
+		detail["snapshot_group"] = v["snapshotGroup"]
+		detail["enable_fs_freeze"] = v["enableFsFreeze"]
+		detail["pre_script_path"] = v["preScriptPath"]
+		detail["post_script_path"] = v["postScriptPath"]
+		timeoutInSecondsValue, err := convert.FormatInt(v["timeoutInSeconds"])
+		if err != nil {
+			return err
+		}
+		detail["timeout_in_seconds"] = timeoutInSecondsValue
+		detail["do_copy"] = v["doCopy"]
+		detail["destination_region_id"] = v["destinationRegionId"]
+		detail["destination_retention"] = v["destinationRetention"]
+		if v["diskIdList"] != nil {
+			detail["disk_id_list"] = convert.ExpandStringList(v["diskIdList"].([]interface{}))
+		}
+		details = append(details, detail)
+		if err := d.Set("detail", details); err != nil {
+			return errs.WrapError(err)
+		}
+	}
+
+	d.Set("ecs_server_backup_plan_name", object["PlanName"])
+	d.Set("instance_id", object["InstanceId"])
+	retentionVal, err := convert.FormatInt(object["Retention"])
+	if err != nil {
+		return err
+	}
+	d.Set("retention", retentionVal)
+	d.Set("schedule", object["Schedule"])
+	d.Set("disabled", object["Disabled"])
+	d.Set("cross_account_type", object["CrossAccountType"])
+	cross_account_user_idVal, err := convert.FormatInt(object["CrossAccountUserId"])
+	if err != nil {
+		return err
+	}
+	d.Set("cross_account_user_id", cross_account_user_idVal)
+	d.Set("cross_account_role_name", object["CrossAccountRoleName"])
+
+	return nil
+}
+
+func ResourceServerBackupPlanUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	hbrService := HbrService{client}
+	var err error
+	var response map[string]interface{}
+	d.Partial(true)
+
+	update := false
+	request := map[string]interface{}{
+		"PlanId": d.Id(),
+	}
+	if !d.IsNewResource() && d.HasChange("retention") {
+		update = true
+	}
+	if v, ok := d.GetOk("retention"); ok {
+		request["Retention"] = v
+	}
+	if !d.IsNewResource() && d.HasChange("detail") {
+		update = true
+		if v, err := hbrService.convertDetailToString(d.Get("detail").(*schema.Set).List()); err == nil {
+			request["Detail"] = v
+		} else {
+			return errs.WrapError(err)
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("ecs_server_backup_plan_name") {
+		update = true
+		request["PlanName"] = d.Get("ecs_server_backup_plan_name")
+	}
+	if !d.IsNewResource() && d.HasChange("schedule") {
+		update = true
+		request["Schedule"] = d.Get("schedule")
+	}
+	request["SourceType"] = "UDM_ECS"
+	if update {
+		action := "UpdateBackupPlan"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
+			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+	}
+	if d.HasChange("disabled") {
+		object, err := hbrService.DescribeHbrServerBackupPlan(d.Id())
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		target := strconv.FormatBool(d.Get("disabled").(bool))
+		if strconv.FormatBool(object["Disabled"].(bool)) != target {
+			if target == "false" {
+				request := map[string]interface{}{
+					"PlanId": d.Id(),
+				}
+				request["SourceType"] = "UDM_ECS"
+			}
+			action := "EnableBackupPlan"
+			if target == "false" {
+				action = "EnableBackupPlan"
+			} else {
+				action = "DisableBackupPlan"
+			}
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+			err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
+				response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
+				if err != nil {
+					if helper.NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			logs.AddDebug(action, response, request)
+			if err != nil {
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			}
+			if fmt.Sprint(response["Success"]) == "false" {
+				return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			}
+		}
+	}
+
+	d.Partial(false)
+	return ResourceServerBackupPlanRead(d, meta)
+}
+
+func ResourceServerBackupPlanDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteBackupPlan"
+	var response map[string]interface{}
+	var err error
+	request := map[string]interface{}{
+		"PlanId": d.Id(),
+	}
+
+	request["SourceType"] = "UDM_ECS"
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
+		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	return nil
+}

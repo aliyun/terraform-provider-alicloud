@@ -133,17 +133,17 @@ The following arguments are supported:
 * `install_pai` - (Optional) Whether to buy PAI. default value `false`.
 * `billing_cycle` - (Optional) Billing cycle
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `classify` - (Optional) Classification
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `cluster_id` - (Optional, Available since v1.265.0) Cluster id
 * `computing_server` - (Optional, ForceNew, Computed, Deprecated since v1.265.0) Node Model
 * `discount_level` - (Optional) Offer Information
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `hostname` - (Optional, ForceNew, Available since v1.265.0) Host name
 * `hpn_zone` - (Optional, ForceNew) Cluster Number
@@ -154,21 +154,21 @@ The following arguments are supported:
 * `node_type` - (Optional, Computed, Available since v1.265.0) node type
 * `payment_ratio` - (Optional) Down payment ratio
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `payment_type` - (Optional, ForceNew, Computed, Available since v1.261.0) The payment method of the node. Value range: Subscription: fixed fee installment; PayAsYouGo: pay by volume.
 The default is Subscription.
 * `period` - (Optional, Int) Prepaid cycle. The unit is Month, please enter an integer multiple of 12 for the annual payment product.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `product_form` - (Optional) Form
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `renew_period` - (Optional, Int) Automatic renewal period, in months.
 
--> **NOTE:**  When setting `RenewalStatus` to `AutoRenewal`, it must be set.
+  -> **NOTE:**  When setting `RenewalStatus` to `AutoRenewal`, it must be set.
 
 * `renewal_status` - (Optional) Automatic renewal status, value:
   - AutoRenewal: automatic renewal.
@@ -178,11 +178,11 @@ The default ManualRenewal.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group
 * `server_arch` - (Optional) Architecture
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `stage_num` - (Optional) Number of stages
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `status` - (Optional, Computed) The status of the resource
 * `tags` - (Optional, Map) The tag of the resource

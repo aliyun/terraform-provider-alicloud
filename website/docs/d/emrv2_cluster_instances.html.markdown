@@ -191,18 +191,18 @@ The following attributes are exported in addition to the arguments listed above:
 * `names` - A list of Cluster ecs instance names.
 * `ids` - A list of Cluster ecs instance IDS.
 * `instances` - A list of Emr Cluster ecs instances. Each element contains the following attributes:
-	* `instance_id` - The emr cluster ecs instance ID.
-	* `instance_name` - The emr cluster ecs instance name.
-	* `instance_type` - The emr cluster ecs instance type.
-	* `instance_state` - The emr cluster ecs instance state.
-	* `node_group_id` - The emr cluster node group ID.
-	* `node_group_type` - The emr cluster node group type.
-	* `zone_id` - The emr cluster node group zone ID.
-	* `public_ip` - The emr cluster ecs instance public ip.
-	* `private_ip` - The emr cluster ecs instance private ip.
-	* `auto_renew` - The emr cluster node group whether auto renew when payment type is 'Subscription'.
-	* `auto_renew_duration_unit` - The emr cluster node group auto renew duration unit when payment type is 'Subscription'.
-	* `auto_renew_duration` - The emr cluster node group auto renew duration when payment type is 'Subscription'.
-	* `create_time` - The creation time of the resource.
-	* `expire_time` - The expire time of the resource.
+  * `instance_id` - The emr cluster ecs instance ID.
+  * `instance_name` - The emr cluster ecs instance name.
+  * `instance_type` - The emr cluster ecs instance type.
+  * `instance_state` - The emr cluster ecs instance state.
+  * `node_group_id` - The emr cluster node group ID.
+  * `node_group_type` - The emr cluster node group type.
+  * `zone_id` - The emr cluster node group zone ID.
+  * `public_ip` - The emr cluster ecs instance public ip.
+  * `private_ip` - The emr cluster ecs instance private ip.
+  * `auto_renew` - The emr cluster node group whether auto renew when payment type is 'Subscription'.
+  * `auto_renew_duration_unit` - The emr cluster node group auto renew duration unit when payment type is 'Subscription'.
+  * `auto_renew_duration` - The emr cluster node group auto renew duration when payment type is 'Subscription'.
+  * `create_time` - The creation time of the resource.
+  * `expire_time` - The expire time of the resource.
 * `total_count` - The total count of list emr cluster ecs instances.

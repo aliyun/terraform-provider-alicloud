@@ -105,7 +105,7 @@ Limitations:
   - Can contain numbers, colons (:), underscores (_), or dashes (-).
 * `dry_run` - (Optional) DryRun
 
--> **NOTE:** This parameter only applies during resource creation, update or deletion. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update or deletion. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `file_system_id` - (Required, ForceNew) The ID of the file system.
 * `fset_id` - (Optional, ForceNew) The ID of the Fileset to be mounted.

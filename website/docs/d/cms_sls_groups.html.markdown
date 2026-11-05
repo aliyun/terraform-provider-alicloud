@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Cms Sls Groups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.171.0+.
+-> **NOTE:** Available since v1.171.0.
 
 ## Example Usage
 
@@ -42,18 +42,18 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Sls Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Sls Group names.
 * `groups` - A list of Cms Sls Groups. Each element contains the following attributes:
-	* `create_time` - The creation time of the resource.
-	* `id` - The ID of the Sls Group. Its value is same as Queue Name.
-	* `sls_group_config` - The Config of the Sls Group.
-		* `sls_logstore` - The name of the Log Store.
-		* `sls_project` - The name of the Project.
-		* `sls_region` - The Sls Region.
-		* `sls_user_id` - The ID of the Sls User.
-	* `sls_group_description` - The Description of the Sls Group.
-	* `sls_group_name` - The name of the resource.
+  * `create_time` - The creation time of the resource.
+  * `id` - The ID of the Sls Group. Its value is same as Queue Name.
+  * `sls_group_config` - The Config of the Sls Group.
+    * `sls_logstore` - The name of the Log Store.
+    * `sls_project` - The name of the Project.
+    * `sls_region` - The Sls Region.
+    * `sls_user_id` - The ID of the Sls User.
+  * `sls_group_description` - The Description of the Sls Group.
+  * `sls_group_name` - The name of the resource.
