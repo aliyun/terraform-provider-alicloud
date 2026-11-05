@@ -28,15 +28,33 @@ terraform {
   }
 }
 
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
+  name_regex  = "^ubuntu"
   most_recent = true
   owners      = "system"
 }
 
+resource "alicloud_vpc" "default" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = "terraform-example"
+}
+
 resource "alicloud_ecs_image_pipeline" "default" {
-  base_image      = data.alicloud_images.default.ids.0
+  base_image      = data.alicloud_images.default.images.0.id
   base_image_type = "IMAGE"
+  vswitch_id      = alicloud_vswitch.default.id
+  build_content   = "RUN echo terraform-example"
   name            = "terraform-example"
 }
 
