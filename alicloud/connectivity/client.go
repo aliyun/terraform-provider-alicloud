@@ -2788,19 +2788,47 @@ func validateRpcEndpointURL(protocol, endpoint string) error {
 	return nil
 }
 
+// redactedLogPlaceholder replaces the value of a credential bearing parameter.
+const redactedLogPlaceholder = "<redacted>"
+
+// credentialLogFields lists the parameter names whose value is a credential on
+// its own. A service or gateway may echo the signed request as independent JSON
+// fields (or inside a nested object, list or header map) instead of a URL, and
+// such a value carries no scheme and no "key=value" text to match.
+var credentialLogFields = map[string]struct{}{
+	"accesskeyid":     {},
+	"accesskeysecret": {},
+	"signature":       {},
+	"signaturenonce":  {},
+	"securitytoken":   {},
+}
+
+func isCredentialLogField(key string) bool {
+	_, ok := credentialLogFields[strings.ToLower(strings.TrimSpace(key))]
+	return ok
+}
+
 // RedactLogValue returns a deep copy of a request or response payload with every
-// string passed through the same signed URL redaction as the error path. Service
-// debug logging hands its payload to a human readable log, and a service or
-// gateway that echoes the request must not be able to print the access key,
-// signature or security token there.
+// credential removed: a value under a credential parameter name is replaced
+// outright, and every other string is passed through the same signed URL
+// redaction as the error path. Service debug logging hands its payload to a
+// human readable log, and a service or gateway that echoes the request must not
+// be able to print the access key, signature or security token there.
 func RedactLogValue(value interface{}) interface{} {
+	return redactLogValue(value, false)
+}
+
+func redactLogValue(value interface{}, credential bool) interface{} {
 	switch typed := value.(type) {
 	case string:
+		if credential {
+			return redactedLogPlaceholder
+		}
 		return redactSignedURLs(typed)
 	case map[string]interface{}:
 		out := make(map[string]interface{}, len(typed))
 		for key, item := range typed {
-			out[key] = RedactLogValue(item)
+			out[key] = redactLogValue(item, isCredentialLogField(key))
 		}
 		return out
 	case map[string]*string:
@@ -2810,6 +2838,11 @@ func RedactLogValue(value interface{}) interface{} {
 				out[key] = nil
 				continue
 			}
+			if isCredentialLogField(key) {
+				placeholder := redactedLogPlaceholder
+				out[key] = &placeholder
+				continue
+			}
 			sanitized := redactSignedURLs(*item)
 			out[key] = &sanitized
 		}
@@ -2817,7 +2850,9 @@ func RedactLogValue(value interface{}) interface{} {
 	case []interface{}:
 		out := make([]interface{}, len(typed))
 		for index, item := range typed {
-			out[index] = RedactLogValue(item)
+			// A credential name applies to the whole value below it, whatever its
+			// shape, so a list of signatures cannot leak through the list branch.
+			out[index] = redactLogValue(item, credential)
 		}
 		return out
 	default:

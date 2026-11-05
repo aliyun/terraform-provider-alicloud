@@ -267,6 +267,7 @@ func createListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	listenerId := plan.ListenerId.ValueString()
 	aclId := plan.AclId.ValueString()
 	aclType := plan.AclType.ValueString()
+	planState := listenerAclAttachmentPlanState(plan)
 
 	writeCtx, cancelWrite := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
 	defer cancelWrite()
@@ -286,13 +287,18 @@ func createListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 				fmt.Sprintf("The request that binds policy group %s to listener %s returned an unknown result, but the listener reports the planned binding; the identity is kept in state.", aclId, listenerId),
 			}, nil
 		}
-		return listenerAclAttachmentResourceModel{}, nil, err
+		// The request may still have reached the service. Keep the planned identity
+		// so a later refresh or destroy can release an applied binding instead of
+		// leaving an enabled ACL unmanaged; the diagnostic keeps the failure visible.
+		return planState, nil, fmt.Errorf(
+			"the request that binds policy group %s to listener %s returned an unknown result and the listener did not confirm the planned access control settings within %s; the planned identity is kept in state and will be reconciled on the next refresh: %v",
+			aclId, listenerId, listenerAclAttachmentConfirmTimeout, err,
+		)
 	}
 
 	// The write was acknowledged, so the identity is persisted before the first
 	// read. The read waits for the listener to report the planned settings, so a
 	// stale response cannot store the previous type against the new plan.
-	planState := listenerAclAttachmentPlanState(plan)
 	readCtx, cancelRead := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
 	defer cancelRead()
 	object, converged, complete, err := waitListenerAclAttachmentConverged(readCtx, api, listenerId, aclId, aclType)
@@ -330,6 +336,7 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	aclType := plan.AclType.ValueString()
 
 	if !plan.AclId.Equal(state.AclId) || !plan.AclType.Equal(state.AclType) {
+		planState := listenerAclAttachmentPlanState(plan)
 		writeCtx, cancelWrite := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
 		defer cancelWrite()
 		if err := api.SetAcl(writeCtx, listenerId, aclId, aclType, true); err != nil {
@@ -340,7 +347,12 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 			defer cancel()
 			object, confirmed, _, _ := waitListenerAclAttachmentConverged(confirmCtx, api, listenerId, aclId, aclType)
 			if !confirmed {
-				return listenerAclAttachmentResourceModel{}, nil, err
+				// Same rule as create: keep the planned identity of a write that may
+				// have reached the service, so the change stays recoverable.
+				return planState, nil, fmt.Errorf(
+					"the request that updates the access control settings of listener %s returned an unknown result and the listener did not confirm the planned settings within %s; the planned identity is kept in state and will be reconciled on the next refresh: %v",
+					listenerId, listenerAclAttachmentConfirmTimeout, err,
+				)
 			}
 			return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), []string{
 				fmt.Sprintf("The request that updates the access control settings of listener %s returned an unknown result, but the listener reports the planned binding; the identity is kept in state.", listenerId),
@@ -349,7 +361,6 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 
 		// The write was acknowledged: wait for the listener to report the
 		// planned settings instead of storing a stale response.
-		planState := listenerAclAttachmentPlanState(plan)
 		readCtx, cancelRead := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
 		defer cancelRead()
 		object, converged, complete, err := waitListenerAclAttachmentConverged(readCtx, api, listenerId, aclId, aclType)

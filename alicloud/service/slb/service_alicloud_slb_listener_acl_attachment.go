@@ -291,8 +291,16 @@ func isUnknownListenerAclWriteOutcome(err error) bool {
 // the parent operation is still alive. The caller reconciles those against the
 // listener. A cancelled parent operation keeps the plain failure because no
 // further request can be issued.
+//
+// A decoded service answer is checked first: it proves the request was answered,
+// so the terminal classification wins over a write budget that expired at the
+// same moment. Reconciling such a rejection could otherwise adopt a pre-existing
+// matching binding as the result of a refused write.
 func isUnresolvedListenerAclWrite(parent, writeCtx context.Context, err error) bool {
 	if parent.Err() != nil {
+		return false
+	}
+	if isDefinitiveListenerAclWriteOutcome(err) {
 		return false
 	}
 	if writeCtx.Err() != nil {
@@ -302,6 +310,30 @@ func isUnresolvedListenerAclWrite(parent, writeCtx context.Context, err error) b
 		return true
 	}
 	return errors.Is(listenerAclErrorCause(err), context.DeadlineExceeded)
+}
+
+// isDefinitiveListenerAclWriteOutcome reports whether the service answered the
+// write with a decoded error: a 4xx business error, or an explicit rejection
+// whose body could not be decoded. Both prove that the request was not applied.
+// A 5xx answer, an unreadable 2xx body and a transport level failure stay
+// unknown and are reconciled instead.
+func isDefinitiveListenerAclWriteOutcome(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(listenerAclErrorCause(err), connectivity.ErrRpcRejectedResponse) {
+		return true
+	}
+	sdkErr := listenerAclSdkError(err)
+	if sdkErr == nil {
+		return false
+	}
+	status := tea.IntValue(sdkErr.StatusCode)
+	if status >= 400 && status < 500 {
+		return true
+	}
+	// A decoded error without an HTTP status still carries the service verdict.
+	return status == 0 && strings.TrimSpace(tea.StringValue(sdkErr.Code)) != ""
 }
 
 // listenerAclErrorCause exposes the original error behind the provider's

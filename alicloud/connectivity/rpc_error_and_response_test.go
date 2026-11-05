@@ -267,24 +267,41 @@ func (f *failingReader) Read([]byte) (int, error) { return 0, errors.New("unexpe
 // The debug log boundary receives the provider payloads, so the redaction has to
 // reach every string shape the service logs: plain values, nested objects, lists
 // and the response headers map. A service may echo only the query string instead
-// of the complete URL, which carries the same credentials.
+// of the complete URL, or repeat the signed parameters as independent fields,
+// which carry the same credentials.
 func TestUnitRedactLogValue(t *testing.T) {
 	signed := "https://slb.aliyuncs.com/?AccessKeyId=LTAI-test&Signature=synthetic&SecurityToken=token-value"
 	queryOnly := "AccessKeyId=LTAI-test&Signature=synthetic&SignatureNonce=nonce-value&SecurityToken=token-value"
 	redacted := RedactLogValue(map[string]interface{}{
-		"AclStatus": "on",
-		"Echo":      signed,
-		"QueryEcho": queryOnly,
-		"Nested":    map[string]interface{}{"Message": "request " + signed},
-		"List":      []interface{}{signed, "plain"},
-		"_headers":  map[string]*string{"location": tea.String(signed), "empty": nil},
+		"AclStatus":   "on",
+		"RequestId":   "req-1",
+		"Echo":        signed,
+		"QueryEcho":   queryOnly,
+		"Nested":      map[string]interface{}{"Message": "request " + signed},
+		"List":        []interface{}{signed, "plain"},
+		"_headers":    map[string]*string{"location": tea.String(signed), "empty": nil},
+		"AccessKeyId": "independent-ak",
+		"Signature":   "independent-signature",
+		"Auth": map[string]interface{}{
+			"SecurityToken": "nested-token",
+			"Details": []interface{}{
+				map[string]interface{}{"SignatureNonce": "nested-nonce"},
+				"plain-detail",
+			},
+		},
+		"securitytoken": []interface{}{"list-token-1", "list-token-2"},
+		"HeaderMap":     map[string]*string{"Signature": tea.String("header-signature")},
 	})
 	payload, err := json.Marshal(redacted)
 	if err != nil {
 		t.Fatalf("marshalling the redacted payload: %s", err)
 	}
 	// The parameter names may stay in the log; only their values are secret.
-	for _, secret := range []string{"LTAI-test", "synthetic", "token-value", "nonce-value"} {
+	for _, secret := range []string{
+		"LTAI-test", "synthetic", "token-value", "nonce-value",
+		"independent-ak", "independent-signature", "nested-token", "nested-nonce",
+		"list-token-1", "list-token-2", "header-signature",
+	} {
 		if strings.Contains(string(payload), secret) {
 			t.Fatalf("the logged payload still exposes %q: %s", secret, payload)
 		}
@@ -295,8 +312,11 @@ func TestUnitRedactLogValue(t *testing.T) {
 	if !strings.Contains(string(payload), "redacted") {
 		t.Fatalf("the signed parameter rule did not run: %s", payload)
 	}
-	if !strings.Contains(string(payload), "slb.aliyuncs.com") || !strings.Contains(string(payload), "AclStatus") {
-		t.Fatalf("the redaction dropped the usable payload: %s", payload)
+	// Public metadata and ordinary values stay readable.
+	for _, kept := range []string{"slb.aliyuncs.com", "AclStatus", "req-1", "plain", "plain-detail"} {
+		if !strings.Contains(string(payload), kept) {
+			t.Fatalf("the redaction dropped the usable payload item %q: %s", kept, payload)
+		}
 	}
 	if redacted.(map[string]interface{})["AclStatus"] != "on" {
 		t.Fatal("a value without a URL must be preserved")

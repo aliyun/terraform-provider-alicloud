@@ -266,6 +266,59 @@ func TestUnitListenerAclAttachmentDebugLogIsRedacted(t *testing.T) {
 	}
 }
 
+// A decoded service answer is terminal even when the write budget expires at the
+// same moment: reconciling it could adopt a pre-existing matching binding as the
+// result of a refused write.
+func TestUnitListenerAclAttachmentWriteOutcomeClassification(t *testing.T) {
+	alive := context.Background()
+	expired := func() context.Context {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		return ctx
+	}
+	pastDeadline := func() context.Context {
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
+		defer cancel()
+		return ctx
+	}
+
+	terminal := &tea.SDKError{
+		StatusCode: tea.Int(400),
+		Code:       tea.String("QuotaLimitExceeds.AclListenerOverLimit"),
+		Message:    tea.String("quota exceeded"),
+		Data:       tea.String("{}"),
+	}
+	serverFailure := &tea.SDKError{
+		StatusCode: tea.Int(500),
+		Code:       tea.String("InternalError"),
+		Message:    tea.String("code: 500, internal error"),
+		Data:       tea.String("{}"),
+	}
+	rejection := fmt.Errorf("%w: status 400: unexpected EOF", connectivity.ErrRpcRejectedResponse)
+	transport := errors.New(`Post "https://slb.aliyuncs.com/": i/o timeout`)
+
+	cases := []struct {
+		name     string
+		parent   context.Context
+		writeCtx context.Context
+		err      error
+		want     bool
+	}{
+		{"terminal rejection wins over an expired write budget", alive, expired(), terminal, false},
+		{"terminal rejection wins over a passed deadline", alive, pastDeadline(), terminal, false},
+		{"undecodable 4xx rejection wins over an expired write budget", alive, expired(), rejection, false},
+		{"expired write budget keeps a transport failure unresolved", alive, expired(), transport, true},
+		{"transport failure stays unresolved", alive, context.Background(), transport, true},
+		{"5xx answer stays unresolved", alive, context.Background(), serverFailure, true},
+		{"cancelled parent keeps the plain failure", expired(), context.Background(), transport, false},
+	}
+	for _, tc := range cases {
+		if got := isUnresolvedListenerAclWrite(tc.parent, tc.writeCtx, tc.err); got != tc.want {
+			t.Fatalf("%s: isUnresolvedListenerAclWrite = %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
 // The transport layer must keep the not-found and unreadable-response classes
 // distinguishable after the shared retry wrapper and the URL sanitizer.
 func TestUnitListenerAclAttachmentTransportClassification(t *testing.T) {
