@@ -5275,6 +5275,38 @@ func TestUnitRedisTairInstanceDeferredOrderAcceptedByIdentity(t *testing.T) {
 	assert.LessOrEqual(t, describes, 1, "the accepted order id is the proof; an incomplete order does not block the deferred update")
 }
 
+// TestUnitRedisTairInstanceDeferredOrderTransitionKeepsDescribeError covers a describe that fails
+// terminally while the deferred transition is observed: the original cause must survive in the
+// returned error instead of being replaced by a transition-window message.
+func TestUnitRedisTairInstanceDeferredOrderTransitionKeepsDescribeError(t *testing.T) {
+	var requests []map[string]string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstanceAttribute":
+			w.WriteHeader(http.StatusForbidden)
+			fmt.Fprint(w, `{"Code":"Forbidden.RAM","Message":"user not authorized","RequestId":"mock"}`)
+		case "ModifyInstanceSpec":
+			*requests = append(*requests, map[string]string{"EffectiveTime": r.Form.Get("EffectiveTime")})
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	client := newTairInstanceFixtureClient(t, server)
+
+	err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(tairInstanceDeferredFixtureData(t), client)
+	if err == nil {
+		t.Fatal("the describe failure must surface")
+	}
+	assert.Contains(t, err.Error(), "Forbidden", "the underlying describe error must be preserved")
+	assert.Len(t, requests, 1)
+}
+
 // tairInstanceTransformRetryFixtureClient fails the first TransformInstanceChargeType call
 // with the in-progress order code and succeeds afterwards, so the retry predicate of the
 // production update path is exercised end to end.
@@ -5571,9 +5603,11 @@ func captureTairInstanceId(target *string, object *map[string]interface{}) resou
 // one.
 func findTairInstanceIdByName(client *connectivity.AliyunClient, name string) (string, error) {
 	const pageSize = 50
+	const maxSearchPages = 50
 	found := ""
 	collected := 0
-	for page := 1; page <= 50; page++ {
+	exhausted := false
+	for page := 1; page <= maxSearchPages; page++ {
 		request := map[string]interface{}{
 			"RegionId":   client.RegionId,
 			"PageSize":   pageSize,
@@ -5602,16 +5636,23 @@ func findTairInstanceIdByName(client *connectivity.AliyunClient, name string) (s
 		if totalErr != nil {
 			// Without a total the page size is the only stop condition.
 			if len(items) < pageSize {
+				exhausted = true
 				break
 			}
 			continue
 		}
 		if collected >= total {
+			exhausted = true
 			break
 		}
 		if len(items) == 0 {
 			return "", fmt.Errorf("empty page %d while %d of %d instances were returned", page, collected, total)
 		}
+	}
+	if !exhausted {
+		// A full last page means more results may exist: the search did not prove that the
+		// leftover is absent or unique, so it must not be reported as a completed lookup.
+		return "", fmt.Errorf("the search for instances named %q did not finish within %d pages, so a leftover cannot be ruled out", name, maxSearchPages)
 	}
 	return found, nil
 }
@@ -5761,6 +5802,111 @@ func TestUnitRedisTairInstancePrepaidCleanupAmbiguousName(t *testing.T) {
 
 	err := releasePrepaidTairInstanceWithClient(client, "", "tf-testaccexact-1")
 	assert.Error(t, err, "two instances with the same exact name must be reported instead of deleted")
+}
+
+// tairInstanceSearchPage builds one DescribeInstances page. A negative total omits TotalCount.
+func tairInstanceSearchPage(total, filler int, exactId string) string {
+	items := make([]string, 0, filler+1)
+	for i := 0; i < filler; i++ {
+		items = append(items, fmt.Sprintf(`{"InstanceId":"r-filler-%d","InstanceName":"tf-other"}`, i))
+	}
+	if exactId != "" {
+		items = append(items, fmt.Sprintf(`{"InstanceId":%q,"InstanceName":"tf-testaccexact-1"}`, exactId))
+	}
+	if total < 0 {
+		return fmt.Sprintf(`{"RequestId":"mock","Instances":{"KVStoreInstance":[%s]}}`, strings.Join(items, ","))
+	}
+	return fmt.Sprintf(`{"RequestId":"mock","TotalCount":%d,"Instances":{"KVStoreInstance":[%s]}}`, total, strings.Join(items, ","))
+}
+
+// TestUnitRedisTairInstancePrepaidCleanupPageGuard covers a search that reaches the page guard
+// while the result set is still not exhausted: the lookup must report an incomplete search instead
+// of returning "no leftover".
+func TestUnitRedisTairInstancePrepaidCleanupPageGuard(t *testing.T) {
+	pages := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if r.Form.Get("Action") != "DescribeInstances" {
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+			return
+		}
+		pages++
+		fmt.Fprint(w, tairInstanceSearchPage(10000, 50, ""))
+	}))
+	client := newTairInstanceFixtureClient(t, server)
+
+	err := releasePrepaidTairInstanceWithClient(client, "", "tf-testaccexact-1")
+	assert.Error(t, err, "an unfinished search must not be reported as no leftover")
+	assert.Contains(t, err.Error(), "did not finish")
+	assert.Equal(t, 50, pages, "the guard stops the search after 50 pages")
+}
+
+// TestUnitRedisTairInstancePrepaidCleanupWithoutTotal covers a response without TotalCount: a full
+// page continues the search and a non-full page terminates it.
+func TestUnitRedisTairInstancePrepaidCleanupWithoutTotal(t *testing.T) {
+	var deletes []string
+	pages := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstances":
+			pages++
+			if r.Form.Get("PageNumber") == "1" {
+				fmt.Fprint(w, tairInstanceSearchPage(-1, 50, ""))
+				return
+			}
+			fmt.Fprint(w, tairInstanceSearchPage(-1, 0, "r-exact"))
+		case "DescribeInstanceAttribute":
+			if len(deletes) > 0 {
+				w.WriteHeader(http.StatusNotFound)
+				fmt.Fprint(w, `{"Code":"InvalidInstanceId.NotFound","Message":"not found","RequestId":"mock"}`)
+				return
+			}
+			fmt.Fprint(w, `{"RequestId":"mock","Instances":{"DBInstanceAttribute":[{"InstanceId":"r-exact","InstanceStatus":"Normal","IsOrderCompleted":"true","ChargeType":"PostPaid"}]}}`)
+		case "DeleteInstance":
+			deletes = append(deletes, r.Form.Get("InstanceId"))
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	client := newTairInstanceFixtureClient(t, server)
+
+	if err := releasePrepaidTairInstanceWithClient(client, "", "tf-testaccexact-1"); err != nil {
+		t.Fatalf("cleanup failed: %v", err)
+	}
+	assert.Equal(t, 2, pages, "a full page without a total continues the search")
+	assert.Equal(t, []string{"r-exact"}, deletes)
+}
+
+// TestUnitRedisTairInstancePrepaidCleanupEmptyPage covers an empty page that arrives before the
+// declared total: the incomplete listing is reported instead of being treated as absence.
+func TestUnitRedisTairInstancePrepaidCleanupEmptyPage(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if r.Form.Get("Action") == "DescribeInstances" {
+			fmt.Fprint(w, tairInstanceSearchPage(3, 0, ""))
+			return
+		}
+		fmt.Fprint(w, `{"RequestId":"mock"}`)
+	}))
+	client := newTairInstanceFixtureClient(t, server)
+
+	err := releasePrepaidTairInstanceWithClient(client, "", "tf-testaccexact-1")
+	assert.Error(t, err, "an empty page before the declared total is an incomplete listing")
+	assert.Contains(t, err.Error(), "empty page")
 }
 
 // TestUnitRedisTairInstancePrepaidCleanupFailureIsReported covers a cleanup that cannot delete the

@@ -1871,7 +1871,9 @@ func waitTairInstanceOrderTransition(d *schema.ResourceData, service RedisServic
 	}
 	stateConf := helper.BuildStateConf([]string{}, []string{"true"}, timeout, 3*time.Second, refresh)
 	if _, err := stateConf.WaitForState(); err != nil {
-		return fmt.Errorf("the change could not be verified: the API returned no order id and no order transition was observed within %s", timeout)
+		// Keep the underlying describe/timeout error so an immediate API failure is not reported
+		// as an elapsed transition window.
+		return fmt.Errorf("the deferred change could not be verified (no order id returned and the order state was not confirmed within %s): %w", timeout, err)
 	}
 	return nil
 }
