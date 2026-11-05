@@ -36,13 +36,8 @@ variable "name" {
   default = "tf-example"
 }
 
-resource "random_integer" "default" {
-  min = 10000
-  max = 99999
-}
-
 resource "alicloud_ots_instance" "default" {
-  name        = "${var.name}-${random_integer.default.result}"
+  name        = "tf-${substr(uuid(), 0, 8)}"
   description = var.name
   accessed_by = "Any"
   tags = {
@@ -177,13 +172,8 @@ terraform {
   }
 }
 
-resource "random_integer" "default" {
-  min = 10000
-  max = 99999
-}
-
 resource "alicloud_ots_instance" "default" {
-  name          = "tf-example-${random_integer.default.result}"
+  name          = "tf-${substr(uuid(), 0, 8)}"
   description   = "tf-example-nested"
   accessed_by   = "Any"
   instance_type = "Capacity"

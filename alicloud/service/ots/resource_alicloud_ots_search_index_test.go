@@ -314,7 +314,7 @@ func TestAccAliCloudOtsSearchIndex_complete(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(getSearchIndexCheckMap()),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "schema.*", map[string]string{
-						"field_schema.#":                              "7",
+						"field_schema.#":                              "8",
 						"field_schema.2.field_type":                   "Vector",
 						"field_schema.2.vector_options.#":             "1",
 						"field_schema.2.vector_options.0.metric_type": "cosine",
@@ -324,6 +324,7 @@ func TestAccAliCloudOtsSearchIndex_complete(t *testing.T) {
 						"field_schema.5.date_format_list.#":           "2",
 						"field_schema.6.is_virtual_field":             "true",
 						"field_schema.6.source_field_name":            "pk2",
+						"field_schema.7.field_type":                   "Text",
 					}),
 					checkSearchIndexSchemaFields(),
 				),
@@ -352,7 +353,6 @@ func TestAccAliCloudOtsSearchIndex_invalidSchema(t *testing.T) {
       field_name = "col1"
       field_type = "Vector"
     }`),
-				PlanOnly:    true,
 				ExpectError: regexp.MustCompile("requires vector_options"),
 			},
 			{
@@ -362,7 +362,6 @@ func TestAccAliCloudOtsSearchIndex_invalidSchema(t *testing.T) {
       field_type       = "Keyword"
       is_virtual_field = true
     }`),
-				PlanOnly:    true,
 				ExpectError: regexp.MustCompile("requires source_field_name"),
 			},
 			{
@@ -371,7 +370,6 @@ func TestAccAliCloudOtsSearchIndex_invalidSchema(t *testing.T) {
       field_name = "col1"
       field_type = "Nested"
     }`),
-				PlanOnly:    true,
 				ExpectError: regexp.MustCompile("requires sub_field_schemas"),
 			},
 			{
@@ -380,7 +378,6 @@ func TestAccAliCloudOtsSearchIndex_invalidSchema(t *testing.T) {
       field_name = "col1"
       field_type = "Date"
     }`),
-				PlanOnly:    true,
 				ExpectError: regexp.MustCompile("requires date_format_list"),
 			},
 			{
@@ -390,7 +387,6 @@ func TestAccAliCloudOtsSearchIndex_invalidSchema(t *testing.T) {
       field_type        = "Keyword"
       source_field_name = "col2"
     }`),
-				PlanOnly:    true,
 				ExpectError: regexp.MustCompile("is_virtual_field is not true"),
 			},
 			{
@@ -399,59 +395,10 @@ func TestAccAliCloudOtsSearchIndex_invalidSchema(t *testing.T) {
       field_name = "col1"
       field_type = "Unknown"
     }`),
-				PlanOnly:    true,
 				ExpectError: regexp.MustCompile("expected .*field_type to be one of"),
 			},
 		},
 	})
-}
-
-func TestAccAliCloudOtsSearchIndex_unknownValuesAtPlan(t *testing.T) {
-	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("unknown%d", rand)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
-		},
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				// field_name and the schema set are unknown during plan, so the
-				// plan-time validation must not substitute zero values and reject
-				// the configuration.
-				Config:             resourceOtsSearchIndexUnknownValueConfig(name),
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
-			},
-		},
-	})
-}
-
-func resourceOtsSearchIndexUnknownValueConfig(name string) string {
-	return fmt.Sprintf(`
-resource "alicloud_ots_instance" "default" {
-  name          = "tf-%s"
-  description   = "%s"
-  accessed_by   = "Any"
-  instance_type = "%s"
-}
-
-resource "alicloud_ots_search_index" "default" {
-  instance_name = alicloud_ots_instance.default.name
-  table_name    = "tf_unknown_table"
-  index_name    = "tf_unknown_index"
-  time_to_live  = -1
-
-  schema {
-    field_schema {
-      field_name = alicloud_ots_instance.default.id
-      field_type = "Vector"
-    }
-  }
-}
-`, name, name, string(ots.OtsCapacity))
 }
 
 func resourceOtsSearchIndexCompleteConfig(name string) string {
@@ -565,6 +512,10 @@ resource "alicloud_ots_search_index" "default" {
       field_type        = "Keyword"
       is_virtual_field  = true
       source_field_name = "pk2"
+    }
+    field_schema {
+      field_name = "pk2"
+      field_type = "Text"
     }
 
     index_setting {

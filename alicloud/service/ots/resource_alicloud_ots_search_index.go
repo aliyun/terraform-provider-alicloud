@@ -1,7 +1,6 @@
 package ots
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -18,10 +17,9 @@ import (
 
 func ResourceOtsSearchIndex() *schema.Resource {
 	return &schema.Resource{
-		Create:        resourceAliyunOtsSearchIndexCreate,
-		Read:          resourceAliyunOtsSearchIndexRead,
-		Delete:        resourceAliyunOtsSearchIndexDelete,
-		CustomizeDiff: validateSearchIndexSchemaCustomizeDiff,
+		Create: resourceAliyunOtsSearchIndexCreate,
+		Read:   resourceAliyunOtsSearchIndexRead,
+		Delete: resourceAliyunOtsSearchIndexDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -290,29 +288,6 @@ func otsSearchIndexFieldSchema(remainingNestingDepth int) *schema.Resource {
 	}
 
 	return fieldSchema
-}
-
-func validateSearchIndexSchemaCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
-	// TypeSet diff readers do not reliably mark unknown nested values as
-	// computed, so gate on the raw configuration instead of NewValueKnown.
-	rawConfig := d.GetRawConfig()
-	if rawConfig.IsNull() || !rawConfig.IsWhollyKnown() {
-		return nil
-	}
-	raw, ok := d.GetOk("schema")
-	if !ok {
-		return nil
-	}
-	schemaSet, ok := raw.(*schema.Set)
-	if !ok || schemaSet.Len() == 0 {
-		return nil
-	}
-	schemaArg, ok := schemaSet.List()[0].(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	_, err := parseFieldSchemas(schemaArg)
-	return err
 }
 
 func parseSearchIndexResourceArgs(d *schema.ResourceData) (*SearchIndexResourceArgs, error) {
