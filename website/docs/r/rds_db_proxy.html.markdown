@@ -13,6 +13,8 @@ Information about RDS database exclusive agent and its usage, see [What is RDS D
 
 -> **NOTE:** Available since v1.193.0.
 
+-> **NOTE:** Resource `alicloud_rds_db_proxy` should be created after `alicloud_db_readonly_instance`. The example below references `alicloud_db_readonly_instance.default.id` in `read_only_instance_weight`, which makes Terraform create the read-only instance first.
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -22,12 +24,32 @@ Information about RDS database exclusive agent and its usage, see [What is RDS D
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example"
 }
 data "alicloud_db_zones" "default" {
-  engine         = "MySQL"
-  engine_version = "5.6"
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
 }
 
 resource "alicloud_vpc" "default" {
@@ -42,29 +64,30 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = alicloud_vpc.default.id
+  security_group_name = var.name
+  vpc_id              = alicloud_vpc.default.id
 }
 
 resource "alicloud_db_instance" "default" {
   engine                   = "MySQL"
-  engine_version           = "5.7"
-  instance_type            = "rds.mysql.c1.large"
-  instance_storage         = "20"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   instance_charge_type     = "Postpaid"
   instance_name            = var.name
   vswitch_id               = alicloud_vswitch.default.id
-  db_instance_storage_type = "local_ssd"
+  db_instance_storage_type = "cloud_essd"
 }
 
 resource "alicloud_db_readonly_instance" "default" {
-  zone_id               = alicloud_db_instance.default.zone_id
-  master_db_instance_id = alicloud_db_instance.default.id
-  engine_version        = alicloud_db_instance.default.engine_version
-  instance_storage      = alicloud_db_instance.default.instance_storage
-  instance_type         = alicloud_db_instance.default.instance_type
-  instance_name         = "${var.name}readonly"
-  vswitch_id            = alicloud_vswitch.default.id
+  zone_id                  = alicloud_db_instance.default.zone_id
+  master_db_instance_id    = alicloud_db_instance.default.id
+  engine_version           = alicloud_db_instance.default.engine_version
+  instance_storage         = alicloud_db_instance.default.instance_storage
+  instance_type            = "mysqlro.n4.medium.1c"
+  instance_name            = "${var.name}readonly"
+  vswitch_id               = alicloud_vswitch.default.id
+  db_instance_storage_type = "cloud_essd"
 }
 
 resource "alicloud_rds_db_proxy" "default" {
@@ -90,8 +113,6 @@ resource "alicloud_rds_db_proxy" "default" {
 }
 ```
 
--> **NOTE:** Resource `alicloud_rds_db_proxy` should be created after `alicloud_db_readonly_instance`, so the `depends_on` statement is necessary.
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_db_proxy&spm=docs.r.rds_db_proxy.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -101,19 +122,23 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The Id of instance that can run database.
 * `db_proxy_instance_num` - (Required)The number of proxy instances that are enabled. Valid values: 1 to 60.
 * `instance_network_type` - (Required, ForceNew)The network type of the instance. Set the value to VPC.
-* `vpc_id` - (Required, ForceNew)The ID of the virtual private cloud (VPC) to which the instance belongs.
-* `vswitch_id` - (Required, ForceNew)The ID of the vSwitch that is associated with the specified VPC.
+* `vpc_id` - (Required, String)The ID of the virtual private cloud (VPC) to which the instance belongs.
+* `vswitch_id` - (Required, String)The ID of the vSwitch that is associated with the specified VPC.
+
+  -> **NOTE:** Changing `vpc_id` or `vswitch_id` updates the proxy in place. Terraform migrates the proxy to the target vSwitch and VPC through the `MigrateAZ` parameter of `ModifyDBProxyInstance`, so no replacement is triggered. The migration uses the default proxy endpoint (`db_proxy_endpoint_id`) and is supported only for RDS MySQL instances whose storage type is cloud disk. For other engines or storage types the API rejects the in-place update, and the proxy has to be recreated manually. The proxy nodes move to the availability zone of the target vSwitch together with the proxy. If `db_proxy_nodes` is configured, its `zone_id` must be the availability zone of the target vSwitch in the same configuration change; otherwise Terraform reports an error before calling the API. An in-place network change moves every proxy node into the availability zone of the target vSwitch, so it is supported only for a proxy that is deployed in a single availability zone. If the proxy is currently deployed across availability zones, Terraform reports an error before calling the API whether or not `db_proxy_nodes` is configured, and the network of such a proxy has to be changed by recreating the proxy.
 * `db_proxy_connection_prefix` - (Optional)The new prefix of the proxy endpoint. Enter a prefix.
 * `db_proxy_connect_string_port` - (Optional)The port number that is associated with the proxy endpoint.
 * `db_proxy_instance_type` - (Optional, Available since v1.230.0) The database proxy type. Valid values:
   - common: universal proxy.
   - exclusive: Exclusive proxy (default).
-* `effective_time` - (Optional)When modifying the number of proxy instances,The time when you want to apply the new database proxy settings.Valid values:
+* `effective_time` - (Optional, String)When modifying the number of proxy instances,The time when you want to apply the new database proxy settings.Defaults to `Immediate`. Valid values:
   - Immediate: ApsaraDB RDS immediately applies the new settings.
   - MaintainTime: ApsaraDB RDS applies the new settings during the maintenance window that you specified. For more information, see Modify the maintenance window.
   - SpecificTime: ApsaraDB RDS applies the new settings at a specified point in time.
 
   -> **NOTE:** Note If you set the EffectiveTime parameter to SpecificTime, you must specify the EffectiveSpecificTime parameter.
+
+  -> **NOTE:** Note The provider sends `Immediate` when this attribute has no value, so the API default `MaintainTime` is not used. When a deferred value is set, the database proxy settings, including a proxy availability zone migration, take effect at the configured time.
 
 * `effective_specific_time` - (Optional) The point in time at which you want to apply the new database proxy settings. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
 * `read_only_instance_max_delay_time` - (Optional) The maximum latency threshold that is allowed for read/write splitting. If the latency on a read-only instance exceeds the threshold that you specified, ApsaraDB RDS no longer forwards read requests to the read-only instance. If you do not specify this parameter, the default value of this parameter is retained. Unit: seconds. Valid values: 0 to 3600.
@@ -153,6 +178,17 @@ The following arguments are supported:
   - SpecificTime: ApsaraDB RDS performs the upgrade at a specified point in time.
 * `switch_time` - (Optional) The point in time at which you want to upgrade the database proxy version of the instance. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
 * `resource_group_id` - (Optional) The ID of the resource group.
+* `persistent_connection_status` - (Optional, String, Available since v2.3.0) Specifies whether to enable the persistent connection feature. Valid values:
+  - `Enabled`: enables the persistent connection feature.
+  - `Disabled`: disables the persistent connection feature.
+
+  -> **NOTE:** Only RDS MySQL instances support this parameter. If the instance does not support the persistent connection feature, `Unsupported` is returned when the database proxy is queried. Do not configure this parameter on such instances: the value cannot converge because the API keeps reporting `Unsupported`.
+
+  -> **NOTE:** Removing this parameter from the configuration stops Terraform from managing the switch. The proxy keeps its current setting, the value reported by the API is recorded in the state, and later changes made outside Terraform are not reverted. To turn the feature off, set the value to `Disabled` explicitly.
+
+* `db_proxy_nodes` - (Optional, Set, Available since v2.3.0) The nodes of the database proxy. It is required when the database proxy is deployed in multiple availability zones. See [`db_proxy_nodes`](#db_proxy_nodes) below.
+
+  -> **NOTE:** The node layout is refreshed from the proxy node list only when this block is configured. Removing this block from the configuration stops Terraform from managing the node layout and leaves the existing layout unchanged. After `terraform import`, this block is empty until it is configured. When the specification of a proxy that is deployed in multiple availability zones is updated, this block has to be configured, because the API requires the node layout for such a proxy. If it is missing, Terraform reports an error before calling the API. Because an in-place network change moves every proxy node into the target availability zone, a two-zone layout cannot change `vswitch_id` or `vpc_id` in place.
 
 ### `read_only_instance_weight`
 
@@ -160,6 +196,19 @@ The read_only_instance_weight mapping supports the following:
 
 * `instance_id` - (Required) The Id of the instance and its read-only instances that can run database.
 * `weight` - (Required) Weight of instances that can run the database and their read-only instances. Read weights increase in increments of 100, and the maximum read weight is 10000.
+
+### `db_proxy_nodes`
+
+The db_proxy_nodes mapping supports the following:
+
+* `cpu_cores` - (Optional, Int, Available since v2.3.0) The number of CPU cores of the proxy node. Valid values: 1 to 16. Must be set when the block is configured.
+* `node_counts` - (Optional, Int, Available since v2.3.0) The number of proxy nodes in the availability zone. Valid values: 1 to 2. The total number of proxy nodes cannot exceed 2 for a general-purpose database proxy. Must be set when the block is configured.
+
+  -> **NOTE:** `DescribeDBProxy` returns one entry per proxy node, so the node list is grouped by `zone_id` when it is read back.
+
+* `zone_id` - (Optional, String, Available since v2.3.0) The ID of the availability zone in which the proxy node is deployed. The number of availability zones can be 1 or 2. Must be set when the block is configured.
+
+  -> **NOTE:** All three attributes have to be set explicitly when `db_proxy_nodes` is configured. The provider validates them before calling the API and reports the missing attribute.
 
 ## Attributes Reference
 
@@ -178,7 +227,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 * `create` - (Defaults to 60 mins) Use when opening exclusive agent (until it reaches the initial `Running` status).
 * `update` - (Defaults to 30 mins) Used when updating exclusive agent (until it reaches the initial `Running` status).
-* `delete` - (Defaults to 20 mins) Use when closing exclusive agent.
+* `delete` - (Defaults to 45 mins) Use when closing exclusive agent.
 
 ## Import
 
