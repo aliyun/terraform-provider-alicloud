@@ -942,13 +942,17 @@ func TestUnitOtsTableCustomizeDiffRejectsInvalidConfigs(t *testing.T) {
 			"auto_increment": autoIncrement,
 		}
 	}
-	tableConfig := func(keys []map[string]interface{}, localTxn bool) map[string]interface{} {
+	tableConfig := func(localTxn bool, keys ...map[string]interface{}) map[string]interface{} {
+		primaryKeys := make([]interface{}, 0, len(keys))
+		for _, key := range keys {
+			primaryKeys = append(primaryKeys, key)
+		}
 		return map[string]interface{}{
 			"instance_name":    "tf-test-instance",
 			"table_name":       "tf_test_table",
 			"time_to_live":     -1,
 			"max_version":      1,
-			"primary_key":      keys,
+			"primary_key":      primaryKeys,
 			"enable_local_txn": localTxn,
 		}
 	}
@@ -960,22 +964,22 @@ func TestUnitOtsTableCustomizeDiffRejectsInvalidConfigs(t *testing.T) {
 	}{
 		{
 			name:    "auto_increment primary key must be Integer",
-			config:  tableConfig([]map[string]interface{}{primaryKey("pk1", "Integer", false), primaryKey("pk2", "String", true)}, false),
+			config:  tableConfig(false, primaryKey("pk1", "Integer", false), primaryKey("pk2", "String", true)),
 			wantErr: `the primary_key with auto_increment set to true must be of type Integer, got "String"`,
 		},
 		{
 			name:    "auto_increment primary key must not be the partition key",
-			config:  tableConfig([]map[string]interface{}{primaryKey("pk1", "Integer", true), primaryKey("pk2", "Integer", false)}, false),
+			config:  tableConfig(false, primaryKey("pk1", "Integer", true), primaryKey("pk2", "Integer", false)),
 			wantErr: "the auto_increment primary key must not be the partition key (the first primary_key)",
 		},
 		{
 			name:    "at most one auto_increment primary key",
-			config:  tableConfig([]map[string]interface{}{primaryKey("pk1", "Integer", false), primaryKey("pk2", "Integer", true), primaryKey("pk3", "Integer", true)}, false),
+			config:  tableConfig(false, primaryKey("pk1", "Integer", false), primaryKey("pk2", "Integer", true), primaryKey("pk3", "Integer", true)),
 			wantErr: "at most one primary_key can be set to auto_increment, got 2",
 		},
 		{
 			name:    "auto_increment conflicts with local transaction",
-			config:  tableConfig([]map[string]interface{}{primaryKey("pk1", "Integer", false), primaryKey("pk2", "Integer", true)}, true),
+			config:  tableConfig(true, primaryKey("pk1", "Integer", false), primaryKey("pk2", "Integer", true)),
 			wantErr: "enable_local_txn cannot be set to true when any primary_key has auto_increment set to true",
 		},
 	}
@@ -993,7 +997,7 @@ func TestUnitOtsTableCustomizeDiffRejectsInvalidConfigs(t *testing.T) {
 
 	t.Run("valid auto_increment configuration is accepted", func(t *testing.T) {
 		r := ots.ResourceOtsTable()
-		config := tableConfig([]map[string]interface{}{primaryKey("pk1", "Integer", false), primaryKey("pk2", "Integer", true)}, false)
+		config := tableConfig(false, primaryKey("pk1", "Integer", false), primaryKey("pk2", "Integer", true))
 		if _, err := r.Diff(context.Background(), nil, sdktf.NewResourceConfigRaw(config), nil); err != nil {
 			t.Fatalf("expected the configuration to be accepted, got error: %v", err)
 		}
@@ -1001,7 +1005,7 @@ func TestUnitOtsTableCustomizeDiffRejectsInvalidConfigs(t *testing.T) {
 
 	t.Run("valid local transaction configuration is accepted", func(t *testing.T) {
 		r := ots.ResourceOtsTable()
-		config := tableConfig([]map[string]interface{}{primaryKey("pk1", "Integer", false)}, true)
+		config := tableConfig(true, primaryKey("pk1", "Integer", false))
 		if _, err := r.Diff(context.Background(), nil, sdktf.NewResourceConfigRaw(config), nil); err != nil {
 			t.Fatalf("expected the configuration to be accepted, got error: %v", err)
 		}
@@ -1111,12 +1115,16 @@ func TestUnitOtsTableCreateAndDescribeWire(t *testing.T) {
 		return map[string]interface{}{"name": name, "type": "Integer", "auto_increment": autoIncrement}
 	}
 	tableConfig := func(localTxn bool, keys ...map[string]interface{}) map[string]interface{} {
+		primaryKeys := make([]interface{}, 0, len(keys))
+		for _, key := range keys {
+			primaryKeys = append(primaryKeys, key)
+		}
 		return map[string]interface{}{
 			"instance_name":    "tf-test-instance",
 			"table_name":       "tf_test_table",
 			"time_to_live":     -1,
 			"max_version":      1,
-			"primary_key":      keys,
+			"primary_key":      primaryKeys,
 			"enable_local_txn": localTxn,
 		}
 	}
