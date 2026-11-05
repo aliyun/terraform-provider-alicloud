@@ -15,6 +15,8 @@ Provides a Threat Detection Unknown Threat Detect Strategy resource.
 
 For information about Threat Detection Unknown Threat Detect Strategy and how to use it, see [CreateUnknownThreatDetectStrategy](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-createunknownthreaddetectstrategy).
 
+-> **NOTE:** Available since v2.3.0.
+
 -> **NOTE:** The strategy requires Agentic-EDR to be purchased and activated; otherwise CreateUnknownThreatDetectStrategy returns `EdrSaleAdmissionDenied`.
 
 ## Example Usage
@@ -29,11 +31,11 @@ Basic Usage
 
 ```terraform
 resource "alicloud_threat_detection_unknown_threat_detect_strategy" "default" {
-  name                   = "tf-example-strategy"
-  asset_selection_type   = "UNKNOWN_THREAT_DETECT_CONFIG_example"
-  study_mode             = "hash"
-  duration_days_after_init  = 1
-  duration_days_after_stop  = 1
+  name                     = "tf-example-strategy"
+  asset_selection_type     = "UNKNOWN_THREAT_DETECT_CONFIG_example"
+  study_mode               = "hash"
+  duration_days_after_init = 1
+  duration_days_after_stop = 1
 }
 ```
 
@@ -58,6 +60,6 @@ The following attributes are exported:
 
 Threat Detection Unknown Threat Detect Strategy can be imported using the id, e.g.
 
-```terraform
+```shell
 terraform import alicloud_threat_detection_unknown_threat_detect_strategy.example 12345678
 ```
