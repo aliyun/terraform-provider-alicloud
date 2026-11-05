@@ -316,7 +316,7 @@ func TestUnitAliCloudPolarDbDatabase_accountNameChange(t *testing.T) {
 			name:        "mysql with a malformed account block is rejected",
 			response:    map[string]interface{}{"Engine": "MySQL", "Accounts": map[string]interface{}{"Account": "unexpected"}},
 			accountName: "carol",
-			wantErr:     `"account_name" can only be changed`,
+			wantErr:     `"account_name" cannot be confirmed`,
 		},
 		{
 			name:        "missing engine is rejected",

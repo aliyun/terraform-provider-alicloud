@@ -304,12 +304,14 @@ func validateAccountNameChange(objectRaw map[string]interface{}, accountName str
 	if engine == "" || engine == "<nil>" {
 		return fmt.Errorf("\"account_name\" cannot be changed: the database engine is not reported by DescribeDatabases, so the provider cannot confirm that the update re-grants the account")
 	}
-	if accounts, authoritative := databaseAccounts(objectRaw); authoritative {
-		if _, found := selectDatabaseAccount(accounts, strings.TrimSpace(accountName)); found {
-			// The target account is already authorized, so adopting it needs no
-			// write and the recorded state matches the database.
-			return nil
-		}
+	accounts, authoritative := databaseAccounts(objectRaw)
+	if !authoritative {
+		return fmt.Errorf("\"account_name\" cannot be confirmed for the %s engine: the database account list is missing or malformed, so the provider cannot check whether the target account is already authorized", engine)
+	}
+	if _, found := selectDatabaseAccount(accounts, strings.TrimSpace(accountName)); found {
+		// The target account is already authorized, so adopting it needs no
+		// write and the recorded state matches the database.
+		return nil
 	}
 	return fmt.Errorf("\"account_name\" can only be changed for PolarDB for PostgreSQL or PolarDB for PostgreSQL (Compatible with Oracle) databases: the %s engine does not re-grant the account on update", engine)
 }

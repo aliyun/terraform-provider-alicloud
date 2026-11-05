@@ -702,7 +702,9 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 					"db_description": name + "rejected",
 				}),
 				ExpectError: regexp.MustCompile(`"account_name" can only be changed`),
-				Check:       func(_ *terraform.State) error { return nil },
+				// The step fails during apply, so this check never runs; it keeps the
+				// step shape required by the coverage parser.
+				Check: func(_ *terraform.State) error { return nil },
 			},
 			{
 				// The rejected update did not reach any write and changed nothing:
