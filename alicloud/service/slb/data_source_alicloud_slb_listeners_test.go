@@ -7,6 +7,7 @@ import (
 
 	acctest "github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAlicloudSLBListenersDataSource_http(t *testing.T) {
@@ -87,6 +88,41 @@ func TestAccAlicloudSLBListenersDataSource_http(t *testing.T) {
 	}
 
 	slbListenersCheckInfo.DataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
+}
+
+// TestAccAlicloudSLBListenersDataSource_id verifies that every listener element
+// exposes the same ID as the alicloud_slb_listener resource, so it can be used
+// directly as the listener_id of alicloud_slb_listener_acl_attachment.
+//
+// The load balancer and the listener are created by this test, so the destroy
+// check proves that each of those exact objects was released: a route level or
+// generic not-found answer is not accepted as a release proof.
+func TestAccAlicloudSLBListenersDataSource_id(t *testing.T) {
+	rand := tfacctest.RandInt()
+	dataSourceId := "data.alicloud_slb_listeners.default"
+	listenerId := "alicloud_slb_listener.default"
+	var created []testAccSlbResource
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckSlbResourcesReleased(&created),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudSlbListenersDataSourceConfig(rand, map[string]string{
+					"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(dataSourceId, "slb_listeners.#", "1"),
+					resource.TestCheckResourceAttrPair(dataSourceId, "slb_listeners.0.id", listenerId, "id"),
+					testAccCaptureSlbResources(&created,
+						"alicloud_slb_load_balancer.default",
+						listenerId,
+					),
+				),
+			},
+		},
+	})
 }
 
 func TestAccAlicloudSLBListenersDataSource_https(t *testing.T) {

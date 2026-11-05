@@ -16,8 +16,19 @@ This data source provides the listeners related to a server load balancer of the
 ## Example Usage
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "alicloud_slb_load_balancer" "default" {
-  load_balancer_name = "tf-exampleSlbListenerTcp"
+  load_balancer_name   = "tf-exampleSlbListenerTcp"
+  internet_charge_type = "PayByTraffic"
+  address_type         = "internet"
+  load_balancer_spec   = "slb.s1.small"
 }
 resource "alicloud_slb_listener" "tcp" {
   load_balancer_id          = alicloud_slb_load_balancer.default.id
@@ -38,11 +49,15 @@ resource "alicloud_slb_listener" "tcp" {
 }
 
 data "alicloud_slb_listeners" "sample_ds" {
-  load_balancer_id = alicloud_slb_load_balancer.default.id
+  load_balancer_id = alicloud_slb_listener.tcp.load_balancer_id
 }
 
 output "first_slb_listener_protocol" {
   value = data.alicloud_slb_listeners.sample_ds.slb_listeners[0].protocol
+}
+
+output "first_slb_listener_id" {
+  value = data.alicloud_slb_listeners.sample_ds.slb_listeners[0].id
 }
 ```
 
@@ -61,6 +76,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `slb_listeners` - A list of SLB listeners. Each element contains the following attributes:
+  * `id` - (String, Available since v2.3.0) The listener ID, in the format of `<load_balancer_id>:<protocol>:<frontend_port>`. It is the same as the import ID of `alicloud_slb_listener`.
   * `frontend_port` - Frontend port used to receive incoming traffic and distribute it to the backend servers.
   * `backend_port` - Port opened on the backend server to receive requests.
   * `protocol` - Listener protocol. Possible values: `http`, `https`, `tcp` and `udp`.

@@ -1,0 +1,541 @@
+package connectivity
+
+import (
+	"context"
+	"crypto/tls"
+	"encoding/pem"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	rpc "github.com/alibabacloud-go/tea-rpc/client"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
+)
+
+// newLocalRpcClient points the SLB endpoint of a client at a local test server
+// so RpcPostWithContext exercises the real Set/Describe transport path without
+// reaching the cloud.
+func newLocalRpcClient(t *testing.T, endpoint string) *AliyunClient {
+	t.Helper()
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").
+		SetAccessKeyId("unit-test-access-key").
+		SetAccessKeySecret("unit-test-access-key-secret"))
+	if err != nil {
+		t.Fatalf("building the credential: %s", err)
+	}
+	var endpoints sync.Map
+	endpoints.Store("slb", endpoint)
+	return &AliyunClient{
+		RegionId: "cn-beijing",
+		config: &Config{
+			RegionId:    "cn-beijing",
+			Protocol:    "HTTP",
+			Credential:  credential,
+			Endpoints:   &endpoints,
+			SignVersion: &sync.Map{},
+		},
+		teaSdkConfig: rpc.Config{Protocol: tea.String("HTTP")},
+	}
+}
+
+func clearProxyEnv(t *testing.T) {
+	t.Helper()
+	for _, name := range []string{"HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy"} {
+		t.Setenv(name, "")
+	}
+}
+
+// The transport used by RpcPostWithContext must abort an in-flight request when
+// the lifecycle context is cancelled, not only stop the outer waiter.
+func TestUnitContextHTTPClientCancelsInFlightRequest(t *testing.T) {
+	requestStarted := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(requestStarted)
+		<-r.Context().Done()
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	client := contextHTTPClient{ctx: ctx, budget: 30 * time.Second}
+	request, err := http.NewRequest(http.MethodGet, server.URL, nil)
+	if err != nil {
+		t.Fatalf("building the request: %s", err)
+	}
+	go func() {
+		<-requestStarted
+		cancel()
+	}()
+
+	start := time.Now()
+	if _, err := client.Call(request, &http.Transport{}); err == nil {
+		t.Fatal("expected the cancelled request to fail")
+	}
+	if elapsed := time.Since(start); elapsed > 5*time.Second {
+		t.Fatalf("the cancelled request did not stop promptly: %s", elapsed)
+	}
+}
+
+// A request is also bounded by the remaining budget even without an explicit
+// cancellation.
+func TestUnitContextHTTPClientHonoursBudget(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(2 * time.Second)
+	}))
+	defer server.Close()
+
+	client := contextHTTPClient{ctx: context.Background(), budget: 100 * time.Millisecond}
+	request, err := http.NewRequest(http.MethodGet, server.URL, nil)
+	if err != nil {
+		t.Fatalf("building the request: %s", err)
+	}
+	start := time.Now()
+	if _, err := client.Call(request, &http.Transport{}); err == nil {
+		t.Fatal("expected the request to exceed the budget")
+	}
+	if elapsed := time.Since(start); elapsed > time.Second {
+		t.Fatalf("the budget was not enforced: %s", elapsed)
+	}
+}
+
+// A response that arrives inside the remaining budget still succeeds even when
+// the budget is short.
+func TestUnitContextHTTPClientDelayedSuccessWithinBudget(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(50 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer server.Close()
+
+	client := contextHTTPClient{ctx: context.Background(), budget: 500 * time.Millisecond}
+	request, err := http.NewRequest(http.MethodGet, server.URL, nil)
+	if err != nil {
+		t.Fatalf("building the request: %s", err)
+	}
+	response, err := client.Call(request, &http.Transport{})
+	if err != nil {
+		t.Fatalf("the delayed response should fit the budget: %s", err)
+	}
+	response.Body.Close()
+}
+
+// A fast dial must leave the whole remaining budget for the response headers.
+// The header arrives after more than half of the budget, which the previous
+// 50/50 split rejected.
+func TestUnitContextRpcFastDialDelayedHeader(t *testing.T) {
+	clearProxyEnv(t)
+	const headerDelay = 700 * time.Millisecond
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		time.Sleep(headerDelay)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"RequestId":"r-1","AclStatus":"on","ListenerPort":80}`))
+	}))
+	defer server.Close()
+
+	client := newLocalRpcClient(t, strings.TrimPrefix(server.URL, "http://"))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	start := time.Now()
+	result, err := client.RpcPostWithContext(ctx, "Slb", "2014-05-15", "DescribeLoadBalancerHTTPListenerAttribute", nil, map[string]interface{}{
+		"LoadBalancerId": "lb-unit-test",
+		"ListenerPort":   80,
+	})
+	elapsed := time.Since(start)
+	if err != nil {
+		t.Fatalf("a delayed header inside the budget must succeed: %s", err)
+	}
+	if got := requests.Load(); got != 1 {
+		t.Fatalf("expected exactly one request, got %d", got)
+	}
+	if result["AclStatus"] != "on" {
+		t.Fatalf("unexpected response: %v", result)
+	}
+	if elapsed >= time.Second {
+		t.Fatalf("the request did not respect the total deadline: %s", elapsed)
+	}
+}
+
+// Cancelling the lifecycle context must abort an in-flight Set or Describe
+// request and prevent another attempt.
+func TestUnitContextRpcCancellationStopsInFlightWrite(t *testing.T) {
+	clearProxyEnv(t)
+	for _, action := range []string{"SetLoadBalancerHTTPListenerAttribute", "DescribeLoadBalancerHTTPListenerAttribute"} {
+		t.Run(action, func(t *testing.T) {
+			arrived := make(chan struct{})
+			release := make(chan struct{})
+			var once sync.Once
+			var requests atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests.Add(1)
+				once.Do(func() { close(arrived) })
+				// The handler must never outlive the test, otherwise Close waits
+				// for the connection instead of reporting the assertion result.
+				select {
+				case <-r.Context().Done():
+				case <-release:
+				case <-time.After(3 * time.Second):
+				}
+			}))
+			defer server.Close()
+			defer close(release)
+
+			client := newLocalRpcClient(t, strings.TrimPrefix(server.URL, "http://"))
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			go func() {
+				<-arrived
+				cancel()
+			}()
+
+			start := time.Now()
+			_, err := client.RpcPostWithContext(ctx, "Slb", "2014-05-15", action, nil, map[string]interface{}{
+				"LoadBalancerId": "lb-unit-test",
+				"ListenerPort":   80,
+				"AclStatus":      "on",
+				"AclId":          "acl-unit-test",
+				"AclType":        "white",
+			})
+			if err == nil {
+				t.Fatal("expected the cancelled request to fail")
+			}
+			if elapsed := time.Since(start); elapsed > 2*time.Second {
+				t.Fatalf("the cancelled request did not stop promptly: %s", elapsed)
+			}
+			// Give a runaway retry a chance to show up before asserting the count.
+			time.Sleep(100 * time.Millisecond)
+			if got := requests.Load(); got != 1 {
+				t.Fatalf("a cancelled request must not be retried, got %d requests", got)
+			}
+		})
+	}
+}
+
+// A malformed endpoint must fail before tea builds the signed request URL, so
+// neither the SDK debug output nor the parse error can echo the credentials.
+func TestUnitContextRpcMalformedEndpointIsRedacted(t *testing.T) {
+	clearProxyEnv(t)
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		_, _ = w.Write([]byte(`{"RequestId":"r-1"}`))
+	}))
+	defer server.Close()
+
+	endpoint := strings.TrimPrefix(server.URL, "http://") + "/%zz"
+	client := newLocalRpcClient(t, endpoint)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	_, err := client.RpcPostWithContext(ctx, "Slb", "2014-05-15", "SetLoadBalancerHTTPListenerAttribute", nil, map[string]interface{}{
+		"LoadBalancerId": "lb-unit-test",
+		"ListenerPort":   80,
+		"AclStatus":      "on",
+		"AclId":          "acl-unit-test",
+		"AclType":        "white",
+	})
+	if err == nil {
+		t.Fatal("expected the malformed endpoint to fail")
+	}
+	if got := requests.Load(); got != 0 {
+		t.Fatalf("no request may be built or sent for a malformed endpoint, got %d", got)
+	}
+	message := err.Error()
+	for _, secret := range []string{"AccessKeyId", "Signature=", "SignatureNonce", "SecurityToken", "unit-test-access-key"} {
+		if strings.Contains(message, secret) {
+			t.Fatalf("the endpoint error exposes %q: %s", secret, message)
+		}
+	}
+	if !strings.Contains(message, "invalid") || !strings.Contains(message, "endpoint") {
+		t.Fatalf("the endpoint error lost its classification: %s", message)
+	}
+}
+
+// The generic RpcPost path uses the same guard: a malformed endpoint fails
+// before the SDK builds the signed request URL.
+func TestUnitRpcMalformedEndpointIsRejected(t *testing.T) {
+	clearProxyEnv(t)
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		_, _ = w.Write([]byte(`{"RequestId":"r-1"}`))
+	}))
+	defer server.Close()
+
+	client := newLocalRpcClient(t, strings.TrimPrefix(server.URL, "http://")+"/%zz")
+	_, err := client.RpcPost("Slb", "2014-05-15", "DescribeLoadBalancerHTTPListenerAttribute", nil, map[string]interface{}{"LoadBalancerId": "lb-unit-test"}, false)
+	if err == nil {
+		t.Fatal("expected the malformed endpoint to fail")
+	}
+	if got := requests.Load(); got != 0 {
+		t.Fatalf("no request may be built or sent for a malformed endpoint, got %d", got)
+	}
+	message := err.Error()
+	for _, secret := range []string{"AccessKeyId", "Signature=", "SignatureNonce", "SecurityToken", "unit-test-access-key"} {
+		if strings.Contains(message, secret) {
+			t.Fatalf("the endpoint error exposes %q: %s", secret, message)
+		}
+	}
+}
+
+// A transport failure on the generic RpcPost path carries the signed request
+// URL in the *url.Error; the returned error must keep its chain but not the
+// credentials.
+func TestUnitRpcTransportErrorIsSanitized(t *testing.T) {
+	clearProxyEnv(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hijacker, ok := w.(http.Hijacker)
+		if !ok {
+			t.Errorf("the test server does not support hijacking")
+			return
+		}
+		conn, _, err := hijacker.Hijack()
+		if err != nil {
+			t.Errorf("hijacking the response: %s", err)
+			return
+		}
+		_ = conn.Close()
+	}))
+	defer server.Close()
+
+	client := newLocalRpcClient(t, strings.TrimPrefix(server.URL, "http://"))
+	_, err := client.RpcPost("Slb", "2014-05-15", "DescribeLoadBalancerHTTPListenerAttribute", nil, map[string]interface{}{"LoadBalancerId": "lb-unit-test"}, false)
+	if err == nil {
+		t.Fatal("expected the closed connection to fail the request")
+	}
+	message := err.Error()
+	for _, secret := range []string{"AccessKeyId", "Signature=", "SignatureNonce", "SecurityToken", "unit-test-access-key"} {
+		if strings.Contains(message, secret) {
+			t.Fatalf("the transport error exposes %q: %s", secret, message)
+		}
+	}
+	var urlErr *url.Error
+	if !errors.As(err, &urlErr) {
+		t.Fatalf("the transport error classification was lost: %T %v", err, err)
+	}
+}
+
+const rpcDebugChildEnv = "TF_UNIT_RPC_DEBUG_CHILD"
+
+// The SDK debug logger prints the complete signed request URL before any custom
+// transport is entered, so a valid endpoint leaks the access key, signature and
+// security token whenever DEBUG includes "tea". The child process enables that
+// logger and drives the real Set and Describe actions; the parent asserts that
+// neither the access key nor the signature reached its output.
+func TestUnitSignedUrlNeverReachesDebugOutput(t *testing.T) {
+	if os.Getenv(rpcDebugChildEnv) == "1" {
+		runSignedRpcDebugChild(t)
+		return
+	}
+
+	command := exec.Command(os.Args[0], "-test.run=^TestUnitSignedUrlNeverReachesDebugOutput$", "-test.v")
+	env := make([]string, 0, len(os.Environ())+2)
+	for _, item := range os.Environ() {
+		if strings.HasPrefix(item, "DEBUG=") || strings.HasPrefix(item, rpcDebugChildEnv+"=") {
+			continue
+		}
+		env = append(env, item)
+	}
+	command.Env = append(env, "DEBUG=tea", rpcDebugChildEnv+"=1")
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("the debug enabled Set/Describe run failed: %s\n%s", err, output)
+	}
+	for _, secret := range []string{"unit-test-access-key", "Signature=", "AccessKeyId", "SecurityToken", "SignatureNonce"} {
+		if strings.Contains(string(output), secret) {
+			t.Fatalf("the SDK debug output leaked %q:\n%s", secret, output)
+		}
+	}
+}
+
+// runSignedRpcDebugChild performs the same Set and Describe requests the
+// resource issues. It also proves that signing still happens: without it the
+// leak assertion above would pass for the wrong reason.
+func runSignedRpcDebugChild(t *testing.T) {
+	clearProxyEnv(t)
+	var sawSignature atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query()
+		if query.Get("AccessKeyId") != "" && query.Get("Signature") != "" {
+			sawSignature.Add(1)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"RequestId":"r-1","ListenerPort":80,"AclStatus":"on","AclType":"white","AclId":"acl-1"}`))
+	}))
+	defer server.Close()
+
+	client := newLocalRpcClient(t, strings.TrimPrefix(server.URL, "http://"))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	requests := []struct {
+		action  string
+		request map[string]interface{}
+	}{
+		{action: "SetLoadBalancerHTTPListenerAttribute", request: map[string]interface{}{
+			"LoadBalancerId": "lb-unit-test", "ListenerPort": 80, "AclStatus": "on", "AclId": "acl-unit-test", "AclType": "white",
+		}},
+		{action: "DescribeLoadBalancerHTTPListenerAttribute", request: map[string]interface{}{
+			"LoadBalancerId": "lb-unit-test", "ListenerPort": 80,
+		}},
+	}
+	for _, item := range requests {
+		if _, err := client.RpcPostWithContext(ctx, "Slb", "2014-05-15", item.action, nil, item.request); err != nil {
+			t.Fatalf("%s failed: %s", item.action, err)
+		}
+	}
+	if got := sawSignature.Load(); got != int32(len(requests)) {
+		t.Fatalf("expected both requests to be signed, got %d", got)
+	}
+}
+
+const (
+	rpcTLSChildEnv         = "TF_UNIT_RPC_TLS_DEBUG_CHILD"
+	rpcTLSChildEndpointEnv = "TF_UNIT_RPC_TLS_ENDPOINT"
+)
+
+// newLocalHttpsRpcClient is the TLS variant of newLocalRpcClient: the transport
+// negotiates TLS, which is the only path where the HTTP/2 client could be used.
+func newLocalHttpsRpcClient(t *testing.T, endpoint string) *AliyunClient {
+	t.Helper()
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").
+		SetAccessKeyId("unit-test-access-key").
+		SetAccessKeySecret("unit-test-access-key-secret"))
+	if err != nil {
+		t.Fatalf("building the credential: %s", err)
+	}
+	var endpoints sync.Map
+	endpoints.Store("slb", endpoint)
+	return &AliyunClient{
+		RegionId: "cn-beijing",
+		config: &Config{
+			RegionId:    "cn-beijing",
+			Protocol:    "HTTPS",
+			Credential:  credential,
+			Endpoints:   &endpoints,
+			SignVersion: &sync.Map{},
+		},
+		teaSdkConfig: rpc.Config{Protocol: tea.String("HTTPS")},
+	}
+}
+
+// A TLS endpoint can negotiate HTTP/2, and the standard library's HTTP/2 client
+// has its own verbose logger. This transport stays on HTTP/1.1, whose request
+// path is never logged, so the signed query cannot reach the debug output even
+// with the most verbose HTTP/2 setting. The child process enables both loggers
+// and drives the real Set and Describe requests against a TLS server that offers
+// h2 through ALPN.
+func TestUnitSignedUrlNeverReachesHttp2DebugOutput(t *testing.T) {
+	if os.Getenv(rpcTLSChildEnv) == "1" {
+		runSignedRpcTLSChild(t)
+		return
+	}
+	clearProxyEnv(t)
+
+	var http2Requests, signedRequests atomic.Int32
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor >= 2 {
+			http2Requests.Add(1)
+		}
+		query := r.URL.Query()
+		if query.Get("AccessKeyId") != "" && query.Get("Signature") != "" {
+			signedRequests.Add(1)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		// A gateway that echoes the request in its response must not make the
+		// provider log the signed URL either.
+		_, _ = w.Write([]byte(`{"RequestId":"r-1","ListenerPort":80,"AclStatus":"on","AclType":"white","AclId":"acl-1","Echo":"https://slb.aliyuncs.com/?AccessKeyId=unit-test-access-key&Signature=synthetic-signature&SecurityToken=synthetic-token"}`))
+	}))
+	server.TLS = &tls.Config{NextProtos: []string{"h2", "http/1.1"}}
+	server.StartTLS()
+	defer server.Close()
+
+	certificate := server.Certificate()
+	if certificate == nil {
+		t.Fatal("the test server did not expose its certificate")
+	}
+	certPath := filepath.Join(t.TempDir(), "server.pem")
+	encoded := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificate.Raw})
+	if err := os.WriteFile(certPath, encoded, 0o600); err != nil {
+		t.Fatalf("writing the test certificate: %s", err)
+	}
+
+	command := exec.Command(os.Args[0], "-test.run=^TestUnitSignedUrlNeverReachesHttp2DebugOutput$", "-test.v")
+	env := make([]string, 0, len(os.Environ())+6)
+	for _, item := range os.Environ() {
+		if strings.HasPrefix(item, "DEBUG=") || strings.HasPrefix(item, "GODEBUG=") ||
+			strings.HasPrefix(item, "SSL_CERT_FILE=") || strings.HasPrefix(item, rpcTLSChildEnv+"=") ||
+			strings.HasPrefix(item, rpcTLSChildEndpointEnv+"=") {
+			continue
+		}
+		env = append(env, item)
+	}
+	endpoint := strings.TrimPrefix(server.URL, "https://")
+	command.Env = append(env,
+		"DEBUG=tea",
+		"GODEBUG=http2debug=2",
+		"SSL_CERT_FILE="+certPath,
+		rpcTLSChildEnv+"=1",
+		rpcTLSChildEndpointEnv+"="+endpoint,
+	)
+	output, err := command.CombinedOutput()
+	text := string(output)
+	for _, secret := range []string{"unit-test-access-key", "Signature=", "AccessKeyId", "SecurityToken", "SignatureNonce", "synthetic-signature", "synthetic-token"} {
+		if strings.Contains(text, secret) {
+			// Never print the leaking output: it contains the very secret the
+			// assertion protects.
+			t.Fatalf("the TLS debug output leaked %q", secret)
+		}
+	}
+	if err != nil {
+		t.Fatalf("the TLS debug run failed: %s\n%s", err, text)
+	}
+	if got := http2Requests.Load(); got != 0 {
+		t.Fatalf("the signed transport must not negotiate HTTP/2, got %d h2 requests", got)
+	}
+	if got := signedRequests.Load(); got != 2 {
+		t.Fatalf("expected both requests to be signed, got %d", got)
+	}
+}
+
+// runSignedRpcTLSChild performs the Set and Describe requests through the TLS
+// endpoint supplied by the parent process.
+func runSignedRpcTLSChild(t *testing.T) {
+	clearProxyEnv(t)
+	endpoint := os.Getenv(rpcTLSChildEndpointEnv)
+	if endpoint == "" {
+		t.Fatal("the child process did not receive the TLS endpoint")
+	}
+	client := newLocalHttpsRpcClient(t, endpoint)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	requests := []struct {
+		action  string
+		request map[string]interface{}
+	}{
+		{action: "SetLoadBalancerHTTPListenerAttribute", request: map[string]interface{}{
+			"LoadBalancerId": "lb-unit-test", "ListenerPort": 80, "AclStatus": "on", "AclId": "acl-unit-test", "AclType": "white",
+		}},
+		{action: "DescribeLoadBalancerHTTPListenerAttribute", request: map[string]interface{}{
+			"LoadBalancerId": "lb-unit-test", "ListenerPort": 80,
+		}},
+	}
+	for _, item := range requests {
+		if _, err := client.RpcPostWithContext(ctx, "Slb", "2014-05-15", item.action, nil, item.request); err != nil {
+			t.Fatalf("%s failed: %s", item.action, err)
+		}
+	}
+}

@@ -46,6 +46,10 @@ func DataSourceListeners() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"frontend_port": {
 							Type:     schema.TypeInt,
 							Computed: true,
@@ -273,13 +277,14 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 	var s []map[string]interface{}
 
 	for _, listener := range listeners {
+		loadBalancerId := d.Get("load_balancer_id").(string)
 		mapping := map[string]interface{}{
+			"id":            loadBalancerId + ":" + listener.ListenerProtocol + ":" + strconv.Itoa(listener.ListenerPort),
 			"frontend_port": listener.ListenerPort,
 			"protocol":      listener.ListenerProtocol,
 			"description":   listener.Description,
 		}
 
-		loadBalancerId := d.Get("load_balancer_id").(string)
 		switch helper.Protocol(listener.ListenerProtocol) {
 		case helper.Http:
 			request := slb.CreateDescribeLoadBalancerHTTPListenerAttributeRequest()

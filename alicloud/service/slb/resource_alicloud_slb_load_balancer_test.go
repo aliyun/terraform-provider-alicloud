@@ -37,10 +37,6 @@ func testSweepSLBs(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
 	k8sPrefix := "kubernetes"
 
 	action := "DescribeLoadBalancers"
@@ -88,11 +84,8 @@ func testSweepSLBs(region string) error {
 		id := fmt.Sprint(loadBalancer["LoadBalancerId"])
 		skip := true
 		if !sweep.SweepAll() {
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-					break
-				}
+			if sweeperMatches(name) {
+				skip = false
 			}
 			// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
 			if skip {
