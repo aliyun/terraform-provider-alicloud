@@ -639,7 +639,7 @@ func TestAccAliCloudMongoDBAccount_governance(t *testing.T) {
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf_testaccgov%d", rand)
+	name := fmt.Sprintf("tfgov%d", rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMongodbAccountBasicDependence9243)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
