@@ -114,8 +114,8 @@ The following arguments are supported:
 ### `roles`
 
 The roles supports the following:
-* `db_name` - (Required, ForceNew, String, Available since v2.2.0) The database the role applies to.
-* `role` - (Required, ForceNew, String, Available since v2.2.0) The role to grant.
+* `db_name` - (Optional, ForceNew, String, Available since v2.2.0) The database the role applies to.
+* `role` - (Optional, ForceNew, String, Available since v2.2.0) The role to grant.
 
 ## Attributes Reference
 

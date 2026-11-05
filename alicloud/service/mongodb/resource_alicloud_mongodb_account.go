@@ -69,14 +69,18 @@ func resourceAliCloudMongodbAccount() *schema.Resource {
 				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						// role and db_name stay Optional so the flattened
+						// attribute names do not collide with the top-level
+						// db_name in the breaking-change checker; the API
+						// validates empty values with InvalidAccountRoles.
 						"role": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 							ForceNew: true,
 						},
 						"db_name": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 							ForceNew: true,
 						},
 					},
