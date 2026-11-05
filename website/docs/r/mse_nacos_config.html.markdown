@@ -113,6 +113,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 Microservice Engine (MSE) Nacos Config can be imported using the id, e.g.
 
 **Note**: If instance_id, namespace_id, data_id, and group contain ":", please replace it with "\\\\:", available since v1.243.0
+
 ```shell
 $ terraform import alicloud_mse_nacos_config.example <instance_id>:<namespace_id>:<data_id>:<group>
 ```

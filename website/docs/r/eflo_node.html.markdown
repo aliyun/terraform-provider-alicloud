@@ -55,6 +55,7 @@ resource "alicloud_eflo_node" "default" {
   status         = "Unused"
 }
 ```
+
 Creating a PayAsYouGo eflo node
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_eflo_node&exampleId=c7a78e81-3b3b-8b48-df8c-216206f8d1f9fe457282&activeTab=example&spm=docs.r.eflo_node.1.c7a78e813b&intl_lang=EN_US" target="_blank">

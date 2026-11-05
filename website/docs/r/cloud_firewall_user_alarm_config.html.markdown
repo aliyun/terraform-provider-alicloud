@@ -69,6 +69,7 @@ The following arguments are supported:
   ~> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 ---
+
 ### `alarm_config`
 
 The alarm_config supports the following:
@@ -80,6 +81,7 @@ The alarm_config supports the following:
 * `alarm_week_day` - (Optional) The day of the week when the alarm is triggered. The range is `1 ~ 7`.
 
 ---
+
 ### `contact_config`
 
 The contact_config supports the following:
@@ -89,6 +91,7 @@ The contact_config supports the following:
 * `status` - (Optional) The status of the contact configuration. Possible values are: `0` disable, `1` enable.
 
 ---
+
 ### `notify_config`
 
 The notify_config supports the following:

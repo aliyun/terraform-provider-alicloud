@@ -30,6 +30,7 @@ resource "alicloud_cloud_firewall_instance" "PayAsYouGo" {
 ```
 
 create a subscription instance
+
 ```terraform
 resource "alicloud_cloud_firewall_instance" "Subscription" {
   payment_type = "Subscription"

@@ -184,6 +184,7 @@ The following arguments are supported:
 * `public_white_list` - (Optional, Available since 1.199.0) The public IP address that you want to add to the whitelist.
 
   -> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) with `ad_auth_server` or `ldap_auth_server` to configure auth server, then ignore any changes to that `password` caused externally (e.g. Application Autoscaling).
+
 ```
   # ... ignore the change about ad_auth_server.0.password and ldap_auth_server.0.password in alicloud_bastionhost_instance
   lifecycle {

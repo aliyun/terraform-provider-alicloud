@@ -67,6 +67,7 @@ The following attributes are exported:
 * `id` - The membership ID, it's set to `group_name`
 
 ## Import
+
 RAM Group membership can be imported using the id, e.g.
 
 ```shell

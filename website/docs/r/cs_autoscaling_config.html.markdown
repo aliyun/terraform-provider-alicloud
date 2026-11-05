@@ -22,6 +22,7 @@ This resource will help you configure auto scaling for the kubernetes cluster, s
 -> **NOTE:** From version 1.256.0, support for setting the priority of scaling groups by parameter `priorities`.
 
 ## Example Usage
+
 If you do not have an existing cluster, you need to create an ACK cluster through [alicloud_cs_managed_kubernetes](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_managed_kubernetes) first, and then configure automatic scaling.
 
 Basic Usage

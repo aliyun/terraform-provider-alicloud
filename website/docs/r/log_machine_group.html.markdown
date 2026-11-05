@@ -13,6 +13,7 @@ Log Service manages all the ECS instances whose logs need to be collected by usi
  [Refer to details](https://www.alibabacloud.com/help/doc-detail/28966.htm)
 
 -> **NOTE:** Available since v1.9.5.
+
 ## Example Usage
 
 Basic Usage

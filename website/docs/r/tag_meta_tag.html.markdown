@@ -47,6 +47,7 @@ The following arguments are supported:
 
 * `key` - (Required, ForceNew) The key of the tag meta tag. key must be 1 to 128 characters in length.
 * `values` - (Required, ForceNew) The values of the tag meta tag. 
+
 ## Attributes Reference
 
 The following attributes are exported:

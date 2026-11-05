@@ -74,6 +74,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 * `delete` - (Defaults to 5 mins) Used when deleting the api gateway group plugin attachment.
 
 ## Import
+
 Api Gateway group plugin attachment a can be imported using the id, e.g.
 
 ```shell

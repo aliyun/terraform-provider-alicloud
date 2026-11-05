@@ -59,6 +59,7 @@ resource "alicloud_adb_backup_policy" "default" {
   preferred_backup_time   = "10:00Z-11:00Z"
 }
 ```
+
 ### Removing alicloud_adb_cluster from your configuration
  
 The alicloud_adb_backup_policy resource allows you to manage your adb cluster policy, but Terraform cannot destroy it. Removing this resource from your configuration will remove it from your statefile and management, but will not destroy the cluster policy. You can resume managing the cluster via the adb Console.

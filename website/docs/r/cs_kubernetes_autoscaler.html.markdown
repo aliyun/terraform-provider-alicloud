@@ -123,6 +123,7 @@ The nodepools mapping supports the following:
 ## Ignoring Changes to tags and user_data
 
 -> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://www.terraform.io/docs/configuration/resources.html) with `ignore_changes` to create a  a autoscaler group, then ignore any changes to that tags and user_data caused externally (e.g. Application Autoscaling).
+
 ```
   # ... ignore the change about tags and user_data in alicloud_ess_scaling_configuration
   lifecycle {

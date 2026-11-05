@@ -119,6 +119,7 @@ resource "alicloud_log_audit" "example" {
   }
 }
 ```
+
 Multiple accounts Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -142,6 +143,7 @@ resource "alicloud_log_audit" "example" {
   multi_account = ["123456789123", "12345678912300123"]
 }
 ```
+
 Resource Directory Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -165,6 +167,7 @@ resource "alicloud_log_audit" "example" {
   resource_directory_type = "all"
 }
 ```
+
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_log_audit&exampleId=9844a14c-5cfc-9781-e1fa-03defa44c0cfba3dbae6&activeTab=example&spm=docs.r.log_audit.3.9844a14c5c&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">

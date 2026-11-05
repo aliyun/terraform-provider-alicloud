@@ -401,6 +401,7 @@ The pg_hba_conf mapping supports the following:
 * `user` - (Required) The user that is allowed to access the instance. If you specify multiple users, separate the usernames with commas (,).
 * `method` - (Required) The authentication method of Lightweight Directory Access Protocol (LDAP). Valid values: `trust`, `reject`, `scram-sha-256`, `md5`, `password`, `gss`, `sspi`, `ldap`, `radius`, `cert`, `pam`.
 * `option` - (Optional) Optional. The value of this parameter is based on the value of the HbaItem.N.Method parameter. In this topic, LDAP is used as an example. You must configure this parameter. For more information, see [Authentication Methods](https://www.postgresql.org/docs/11/auth-methods.html).
+
 ## Attributes Reference
 
 The following attributes are exported:

@@ -61,6 +61,7 @@ The following arguments are supported:
 * `max_session_duration` - (Optional) Role maximum session time. Valid values: [3600-43200]. Default to `3600`.
 * `role_name` - (Required, ForceNew) Role Name. The length is 1 ~ 64 characters, which can include English letters, numbers, dots "." and dashes "-".
 _
+
 ## Attributes Reference
 
 The following attributes are exported:

@@ -106,6 +106,7 @@ resource "alicloud_ess_instance_refresh" "default" {
   }
 }
 ```
+
 ### Deleting `alicloud_ess_instance_refresh` or removing it from your configuration
 
 The `alicloud_ess_instance_refresh` resource allows you to manage  `status = "RollbackInProgress"`  instance refresh, but Terraform cannot destroy it.

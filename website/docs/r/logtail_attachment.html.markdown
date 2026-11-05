@@ -18,6 +18,7 @@ This resource amis to attach one logtail configure to a machine group.
 -> **NOTE:** One logtail configure can be attached to multiple machine groups and one machine group can attach several logtail configures.
 
 -> **NOTE:** Available since v1.30.0.
+
 ## Example Usage
 
 Basic Usage

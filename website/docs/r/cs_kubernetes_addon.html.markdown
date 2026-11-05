@@ -83,6 +83,7 @@ resource "alicloud_cs_kubernetes_addon" "logtail-ds" {
   )
 }
 ```
+
 **Installing of addon**
 When a cluster is created, some system addons and those specified at the time of cluster creation will be installed, so when an addon resource is applied:
 * If the addon already exists in the cluster and its version is the same as the specified version, it will be skipped and will not be reinstalled.

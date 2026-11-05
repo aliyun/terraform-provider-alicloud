@@ -99,6 +99,7 @@ The following arguments are supported:
 * `notify_template` - (Optional, Available since v1.238.0) Sets the notification template. See [`notify_template`](#notify_template) below.
 
 ### `group_rules`
+
 The group_rules supports the following:
 
 * `group_wait_time` - (Required) The duration for which the system waits after the first alert is sent. After the duration, all alerts are sent in a single notification to the handler.
@@ -108,16 +109,19 @@ The group_rules supports the following:
 * `group_id` - (Optional) The ID of the group rule.
 
 ### `label_match_expression_grid`
+
 The label_match_expression_grid supports the following:
 
 * `label_match_expression_groups` - (Required) Sets the dispatch rule. See [`label_match_expression_groups`](#label_match_expression_grid-label_match_expression_groups) below.
 
 ### `label_match_expression_grid-label_match_expression_groups`
+
 The label_match_expression_groups supports the following:
 
 * `label_match_expressions` - (Required) Sets the dispatch rule. See [`label_match_expressions`](#label_match_expression_grid-label_match_expression_groups-label_match_expressions) below.
 
 ### `label_match_expression_grid-label_match_expression_groups-label_match_expressions`
+
 The label_match_expressions supports the following:
 
 * `key` - (Required) The key of the tag of the dispatch rule. Valid values:
@@ -136,6 +140,7 @@ The label_match_expressions supports the following:
   * re: matches a regular expression.
 
 ### `notify_rules`
+
 The notify_rules supports the following:
 
 * `notify_objects` - (Required) Sets the notification object. See [`notify_objects`](#notify_rules-notify_objects) below.
@@ -144,6 +149,7 @@ The notify_rules supports the following:
 * `notify_end_time` - (Required, Available since v1.237.0) End time of notification.
 
 ### `notify_template`
+
 The notify_template supports the following:
 * `email_title` - (Required) The title of the email notification.
 * `email_content` - (Required) The content of the email notification.
@@ -156,6 +162,7 @@ The notify_template supports the following:
 * `robot_content` - (Required) The content of the robot notification.
 
 ### `notify_rules-notify_objects`
+
 The notify_objects supports the following:
 
 * `notify_object_id` - (Required) The ID of the contact or contact group.

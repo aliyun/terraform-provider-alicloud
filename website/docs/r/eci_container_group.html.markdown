@@ -278,6 +278,7 @@ The environment_vars supports the following:
 * `field_ref` - (Optional) The reference of the environment variable. See [`field_ref`](#init_containers-environment_vars-field_ref) below.
 
 ### `init_containers-environment_vars-field_ref`
+
 * `field_path` - (Optional) The path of the reference.
 
 ### `init_containers-volume_mounts`
@@ -340,6 +341,7 @@ The environment_vars supports the following:
 * `field_ref` - (Optional) The reference of the environment variable. See [`field_ref`](#containers-environment_vars-field_ref) below.
 
 ### `containers-environment_vars-field_ref`
+
 * `field_path` - (Optional) The path of the reference.
 
 ### `containers-volume_mounts`

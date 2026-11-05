@@ -50,6 +50,7 @@ resource "alicloud_ram_account_password_policy" "corporate" {
   max_login_attempts           = 3
 }
 ```
+
 For not specified values sets defaults.
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_account_password_policy&spm=docs.r.ram_account_password_policy.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_account_password_policy&spm=docs.r.ram_account_password_policy.example&intl_lang=EN_US)

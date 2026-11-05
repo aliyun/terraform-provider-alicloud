@@ -138,6 +138,7 @@ The following arguments are supported:
 * `target_port` - (Required) The port of k8s pod, values should be within range [1, 65535].
 
 ## Attributes Reference
+
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of an EDAS k8s application, which is in the format of UUID.
