@@ -543,9 +543,6 @@ func validateSearchIndexFieldSchema(fieldSchema *tablestore.FieldSchema) error {
 		if len(fieldSchema.FieldSchemas) == 0 {
 			return fmt.Errorf("field %q of type Nested requires sub_field_schemas", fieldName)
 		}
-		if fieldSchema.EnableSortAndAgg != nil && *fieldSchema.EnableSortAndAgg {
-			return fmt.Errorf("field %q of type Nested does not support enable_sort_and_agg", fieldName)
-		}
 	case tablestore.FieldType_TEXT, tablestore.FieldType_FUZZY_KEYWORD:
 		if fieldSchema.EnableSortAndAgg != nil && *fieldSchema.EnableSortAndAgg {
 			return fmt.Errorf("field %q of type %s does not support enable_sort_and_agg", fieldName, fieldSchema.FieldType.String())
