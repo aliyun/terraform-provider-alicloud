@@ -135,6 +135,9 @@ func (s *Service) CatalogStateRefreshFuncWithApi(id string, field string, failSt
 		if err != nil {
 			return nil, "", errs.WrapErrorf(err, "reading %s from DlfNext Catalog %s", field, id)
 		}
+		if v == nil {
+			return nil, "", errs.WrapErrorf(fmt.Errorf("field %q is missing", field), "reading %s from DlfNext Catalog %s", field, id)
+		}
 		currentStatus := fmt.Sprint(v)
 		if strings.HasPrefix(field, "#") {
 			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)

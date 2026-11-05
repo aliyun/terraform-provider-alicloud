@@ -235,7 +235,11 @@ func testAccCheckAlicloudDlfNextCatalogDestroy(s *terraform.State) error {
 }
 
 func testAccDlfNextCatalogBestEffortCleanup(t *testing.T, catalogName string) {
-	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	meta := acctest.Provider.Meta()
+	if meta == nil {
+		return
+	}
+	client := meta.(*connectivity.AliyunClient)
 	service := dlfnext.NewService(client)
 	ctx := t.Context()
 

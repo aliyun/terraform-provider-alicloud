@@ -83,6 +83,7 @@ func (r *catalogResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"type": schema.StringAttribute{
 				Optional: true,
+				Computed: true,
 				Default:  stringdefault.StaticString("PAIMON"),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
