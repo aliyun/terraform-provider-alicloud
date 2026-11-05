@@ -5299,11 +5299,14 @@ func TestUnitRedisTairInstanceDeferredOrderTransitionKeepsDescribeError(t *testi
 	}))
 	client := newTairInstanceFixtureClient(t, server)
 
+	start := time.Now()
 	err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(tairInstanceDeferredFixtureData(t), client)
+	elapsed := time.Since(start)
 	if err == nil {
 		t.Fatal("the describe failure must surface")
 	}
 	assert.Contains(t, err.Error(), "Forbidden", "the underlying describe error must be preserved")
+	assert.Less(t, elapsed, 30*time.Second, "an immediate describe failure must not wait for the transition window")
 	assert.Len(t, requests, 1)
 }
 
@@ -5843,6 +5846,35 @@ func TestUnitRedisTairInstancePrepaidCleanupPageGuard(t *testing.T) {
 	assert.Error(t, err, "an unfinished search must not be reported as no leftover")
 	assert.Contains(t, err.Error(), "did not finish")
 	assert.Equal(t, 50, pages, "the guard stops the search after 50 pages")
+}
+
+// TestUnitRedisTairInstancePrepaidCleanupMatchBeyondGuard covers a match found inside the guarded
+// pages while the search is still incomplete: the collected ID is not a verified result, so it must
+// not be released and the incomplete search must be reported.
+func TestUnitRedisTairInstancePrepaidCleanupMatchBeyondGuard(t *testing.T) {
+	deleted := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstances":
+			// The exact target sits inside the guarded pages, but the search never finishes.
+			fmt.Fprint(w, tairInstanceSearchPage(10000, 49, "r-exact"))
+		case "DeleteInstance":
+			deleted = true
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	client := newTairInstanceFixtureClient(t, server)
+
+	err := releasePrepaidTairInstanceWithClient(client, "", "tf-testaccexact-1")
+	assert.Error(t, err, "a match found in an incomplete search is not a verified result")
+	assert.False(t, deleted, "nothing may be deleted before the search is complete")
 }
 
 // TestUnitRedisTairInstancePrepaidCleanupWithoutTotal covers a response without TotalCount: a full
