@@ -93,9 +93,10 @@ func rocketmqCollectPages(action string, key func(item map[string]interface{}) s
 
 // rocketmqListItems extracts data.list from a list response. The list APIs omit
 // data.list when nothing matched, so totalCount==0 is the legitimate empty
-// result; a response without a body, with a missing list while rows are
-// reported, or with the list under another type is a parse failure that must
-// reach the caller instead of looking like an empty result.
+// result; an empty array is empty as well. Everything else - a body-less
+// response, a missing list while rows are reported, a null or non-array list,
+// or a non-object element - is a parse failure that must reach the caller
+// instead of looking like a shorter page.
 func rocketmqListItems(response map[string]interface{}) ([]map[string]interface{}, error) {
 	items := make([]map[string]interface{}, 0)
 	if response == nil {
@@ -115,16 +116,20 @@ func rocketmqListItems(response map[string]interface{}) ([]map[string]interface{
 		return nil, fmt.Errorf("RocketMQ response has no readable $.data.list and does not report an empty result: %w", err)
 	}
 	if raw == nil {
-		return items, nil
+		return nil, fmt.Errorf("RocketMQ response carries $.data.list as null instead of an array")
 	}
 	list, ok := raw.([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("RocketMQ response carries $.data.list as %T instead of an array", raw)
 	}
-	for _, v := range list {
-		if item, ok := v.(map[string]interface{}); ok {
-			items = append(items, item)
+	for index, v := range list {
+		item, ok := v.(map[string]interface{})
+		if !ok {
+			// Dropping the element would shrink the page and let the walk stop
+			// early with a partial result.
+			return nil, fmt.Errorf("RocketMQ response carries a non-object element at $.data.list[%d] (type %T)", index, v)
 		}
+		items = append(items, item)
 	}
 	return items, nil
 }

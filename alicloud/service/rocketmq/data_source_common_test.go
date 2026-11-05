@@ -103,6 +103,22 @@ func TestUnitRocketmqCollectPages(t *testing.T) {
 			t.Fatalf("expected a non-termination error, got %v", err)
 		}
 	})
+
+	t.Run("a malformed full page is an error, not a short final page", func(t *testing.T) {
+		page := make([]interface{}, rocketmqDataSourcePageSize)
+		for i := range page {
+			page[i] = map[string]interface{}{"instanceId": fmt.Sprintf("id-%d", i)}
+		}
+		page[len(page)-1] = "not-an-object"
+		response := map[string]interface{}{"success": true, "data": map[string]interface{}{"list": page}}
+
+		items, err := rocketmqCollectPages("/instances", key, func(pageNumber int) ([]map[string]interface{}, error) {
+			return rocketmqListItems(response)
+		})
+		if err == nil || !strings.Contains(err.Error(), fmt.Sprintf("$.data.list[%d]", len(page)-1)) {
+			t.Fatalf("expected the malformed element to fail the walk, got items=%d err=%v", len(items), err)
+		}
+	})
 }
 
 func TestUnitRocketmqListItems(t *testing.T) {
@@ -112,7 +128,6 @@ func TestUnitRocketmqListItems(t *testing.T) {
 			"data": map[string]interface{}{
 				"list": []interface{}{
 					map[string]interface{}{"instanceId": "rmq-1"},
-					"not-an-object",
 					map[string]interface{}{"instanceId": "rmq-2"},
 				},
 			},
@@ -126,6 +141,22 @@ func TestUnitRocketmqListItems(t *testing.T) {
 		}
 	})
 
+	t.Run("non-object element is an error naming its index", func(t *testing.T) {
+		response := map[string]interface{}{
+			"success": true,
+			"data": map[string]interface{}{
+				"list": []interface{}{
+					map[string]interface{}{"instanceId": "rmq-1"},
+					"not-an-object",
+				},
+			},
+		}
+		_, err := rocketmqListItems(response)
+		if err == nil || !strings.Contains(err.Error(), "$.data.list[1]") {
+			t.Fatalf("expected an element error naming index 1, got %v", err)
+		}
+	})
+
 	t.Run("empty list is an empty result", func(t *testing.T) {
 		items, err := rocketmqListItems(map[string]interface{}{"success": true, "data": map[string]interface{}{"list": []interface{}{}}})
 		if err != nil {
@@ -136,13 +167,10 @@ func TestUnitRocketmqListItems(t *testing.T) {
 		}
 	})
 
-	t.Run("null list is an empty result", func(t *testing.T) {
-		items, err := rocketmqListItems(map[string]interface{}{"success": true, "data": map[string]interface{}{"list": nil}})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(items) != 0 {
-			t.Fatalf("expected no items, got %d", len(items))
+	t.Run("null list is an error", func(t *testing.T) {
+		_, err := rocketmqListItems(map[string]interface{}{"success": true, "data": map[string]interface{}{"list": nil}})
+		if err == nil || !strings.Contains(err.Error(), "null") {
+			t.Fatalf("expected a null-list error, got %v", err)
 		}
 	})
 
