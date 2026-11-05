@@ -1721,7 +1721,7 @@ func accountWireClient(t *testing.T, describe map[string]interface{}) (*connecti
 			}
 			return
 		}
-		_, _ = io.WriteString(w, `{"RequestId":"wire-test"}`)
+		_, _ = io.WriteString(w, `{"RequestId":"mock"}`)
 	}))
 	t.Cleanup(server.Close)
 
@@ -1774,7 +1774,7 @@ func accountWireDescribe(instanceId, dbName, accountName, characterType, descrip
 		account["Roles"] = map[string]interface{}{"Role": roleList}
 	}
 	return map[string]interface{}{
-		"RequestId": "wire-test",
+		"RequestId": "mock",
 		"Accounts":  map[string]interface{}{"Account": []interface{}{account}},
 	}
 }
