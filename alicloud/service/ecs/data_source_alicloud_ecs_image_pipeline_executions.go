@@ -383,7 +383,7 @@ func imagePipelineExecutionsNextToken(response map[string]interface{}) string {
 	return ""
 }
 
-func imagePipelineExecutionObject(object map[string]interface{}) attr.Value {
+func imagePipelineExecutionObject(object map[string]interface{}) types.Object {
 	return types.ObjectValueMust(imagePipelineExecutionAttrTypes, map[string]attr.Value{
 		"execution_id":      ecsFwString(object["ExecutionId"]),
 		"image_pipeline_id": ecsFwString(object["ImagePipelineId"]),

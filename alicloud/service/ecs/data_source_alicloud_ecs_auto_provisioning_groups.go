@@ -316,7 +316,7 @@ func autoProvisioningGroupsItems(response map[string]interface{}) []map[string]i
 	return items
 }
 
-func autoProvisioningGroupObject(object map[string]interface{}) attr.Value {
+func autoProvisioningGroupObject(object map[string]interface{}) types.Object {
 	return types.ObjectValueMust(autoProvisioningGroupAttrTypes, map[string]attr.Value{
 		"auto_provisioning_group_id":          ecsFwString(object["AutoProvisioningGroupId"]),
 		"auto_provisioning_group_name":        ecsFwString(object["AutoProvisioningGroupName"]),

@@ -332,7 +332,7 @@ func reservedInstancesItems(response map[string]interface{}) []map[string]interf
 	return items
 }
 
-func reservedInstanceObject(object map[string]interface{}) attr.Value {
+func reservedInstanceObject(object map[string]interface{}) types.Object {
 	return types.ObjectValueMust(reservedInstanceAttrTypes, map[string]attr.Value{
 		"reserved_instance_id":   ecsFwString(object["ReservedInstanceId"]),
 		"reserved_instance_name": ecsFwString(object["ReservedInstanceName"]),
