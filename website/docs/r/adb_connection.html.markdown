@@ -25,6 +25,14 @@ Provides an ADB connection resource to allocate an Internet connection string fo
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -52,8 +60,8 @@ resource "alicloud_adb_db_cluster" "cluster" {
 }
 
 resource "alicloud_adb_connection" "default" {
-  db_cluster_id     = alicloud_adb_db_cluster.cluster.id
-  connection_prefix = "example"
+  db_cluster_id            = alicloud_adb_db_cluster.cluster.id
+  connection_string_prefix = "example"
 }
 ```
 
@@ -64,7 +72,8 @@ resource "alicloud_adb_connection" "default" {
 The following arguments are supported:
 
 * `db_cluster_id` - (Required, ForceNew) The Id of cluster that can run database.
-* `connection_prefix` - (Optional, ForceNew) Prefix of the cluster public endpoint. The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter. Default to `<db_cluster_id> + tf`.
+* `connection_string_prefix` - (Optional, ForceNew, String, Available since v2.3.0) Prefix of the cluster public endpoint. The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter. Defaults to `<db_cluster_id>tf`. It conflicts with `connection_prefix`.
+* `connection_prefix` - (Optional, ForceNew, String, Deprecated from v2.3.0) Prefix of the cluster public endpoint. The attribute has been deprecated from 2.3.0 and using `connection_string_prefix` instead. It conflicts with `connection_string_prefix`.
 
 ## Attributes Reference
 
@@ -77,8 +86,8 @@ The following attributes are exported:
 
 ## Import
 
-ADB connection can be imported using the id, e.g.
+ADB connection can be imported using the id, which is composed of the cluster ID and the connection prefix with format `<db_cluster_id>:<connection_prefix>`, e.g.
 
 ```shell
-$ terraform import alicloud_adb_connection.example am-12345678
+$ terraform import alicloud_adb_connection.example am-12345678:example
 ```

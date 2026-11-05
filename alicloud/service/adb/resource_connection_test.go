@@ -3,6 +3,7 @@ package adb_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	adbsdk "github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
@@ -16,12 +17,17 @@ import (
 func TestAccAliCloudADBConnectionConfig(t *testing.T) {
 	var v *adbsdk.Address
 	rand := tfacctest.RandStringFromCharSet(10, tfacctest.CharSetAlphaNum)
+	rand2 := tfacctest.RandStringFromCharSet(10, tfacctest.CharSetAlphaNum)
 	name := fmt.Sprintf("tf-testAccAdbConnection%s", rand)
+	prefix := fmt.Sprintf("tf-testacc%s", rand)
+	prefix2 := fmt.Sprintf("tf-testacc%s", rand2)
 	var basicMap = map[string]string{
-		"db_cluster_id":     acctest.CHECKSET,
-		"connection_string": acctest.CHECKSET,
-		"ip_address":        acctest.CHECKSET,
-		"port":              acctest.CHECKSET,
+		"db_cluster_id":            acctest.CHECKSET,
+		"connection_prefix":        acctest.CHECKSET,
+		"connection_string_prefix": acctest.CHECKSET,
+		"connection_string":        acctest.CHECKSET,
+		"ip_address":               acctest.CHECKSET,
+		"port":                     acctest.CHECKSET,
 	}
 	resourceId := "alicloud_adb_connection.default"
 	ra := acctest.ResourceAttrInit(resourceId, basicMap)
@@ -45,8 +51,7 @@ func TestAccAliCloudADBConnectionConfig(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id":     "${alicloud_adb_db_cluster.cluster.id}",
-					"connection_prefix": fmt.Sprintf("tf-testacc%s", rand),
+					"db_cluster_id": "${alicloud_adb_db_cluster.cluster.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -56,6 +61,45 @@ func TestAccAliCloudADBConnectionConfig(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"connection_prefix": prefix,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"connection_prefix":        prefix,
+						"connection_string_prefix": prefix,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"connection_prefix":        acctest.REMOVEKEY,
+					"connection_string_prefix": prefix2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"connection_prefix":        prefix2,
+						"connection_string_prefix": prefix2,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"connection_prefix": prefix,
+				}),
+				ExpectError: regexp.MustCompile("conflicts with"),
 			},
 		},
 	})
