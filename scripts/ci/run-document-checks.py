@@ -46,7 +46,7 @@ COMMANDS = {'markdown-link': "find website/docs -type f -name '*.md' -print0 |\n
  'basic-check': 'bash scripts/basic-check.sh',
  'misspell': '"${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}/misspell" \\\n'
              '  -error \\\n'
-             "  -i 'bussiness,protocal,attemps,alltime,transfering,cancelling,cancelled' \\\n"
+             "  -i 'bussiness,protocal,attemps,alltime,transfering' \\\n"
              '  website/docs\n',
  'terrafmt': '"${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}/terrafmt" diff ./website --check --pattern '
              "'*.markdown'\n"}
@@ -90,7 +90,7 @@ def scoped_commands(paths, full=False):
     if not full:
         commands['misspell'] = file_loop(docs,
             '\"${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}/misspell\" -error '
-            "-i 'bussiness,protocal,attemps,alltime,transfering,cancelling,cancelled' \"$doc\"")
+            "-i 'bussiness,protocal,attemps,alltime,transfering' \"$doc\"")
         commands['terrafmt'] = file_loop([p for p in docs if p.endswith('.markdown')],
             '\"${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}/terrafmt\" diff \"$doc\" --check --pattern \"*.markdown\"')
     return commands

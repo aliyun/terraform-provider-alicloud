@@ -454,14 +454,14 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
     if [ "$STRICT_MODE" = true ]; then
       # CI mode: check all docs
       run_check "Spell Check (misspell)" \
-        "misspell -error -locale=US -i 'cancelling,cancelled' ./website/docs" \
+        "misspell -error -locale=US ./website/docs" \
         || true
     else
       # Smart mode: check only changed docs
       CHANGED_DOCS=$(echo "$CHANGED_FILES" | grep "website/docs" || true)
       if [[ -n "$CHANGED_DOCS" ]]; then
         run_check "Spell Check (changed docs only)" \
-          "echo '$CHANGED_DOCS' | xargs misspell -error -locale=US -i 'cancelling,cancelled'" \
+          "echo '$CHANGED_DOCS' | xargs misspell -error -locale=US" \
           || true
       else
         echo -e "${BLUE}▶ Misspell Check: No changed doc files${NC}"
