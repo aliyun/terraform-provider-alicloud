@@ -19,7 +19,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 const (
@@ -153,14 +152,16 @@ func (r *inboundEndpointResource) Schema(ctx context.Context, req resource.Schem
 	}
 }
 
-// ModifyPlan clears the service-assigned ip in ip_config elements when ip_configs is changing.
-// UpdateInboundEndpoint re-assigns every IP from VSwitchId/CidrBlock (it rejects stale IPs with
-// InboundEndpoint.Ipconfig.InvalidIp), so any ip value carried into plan from state by
-// UseStateForUnknown would no longer match the actual IP after the API re-assigns it. The
-// Framework's set correlation would then fail with "Provider produced inconsistent result after
-// apply". Setting ip to unknown for all elements lets the Framework correlate them by
-// vswitch_id/zone_id/cidr_block and accept whatever IP the API assigns. When ip_configs is
-// unchanged, the prior IPs are preserved and no modification is needed.
+// ModifyPlan preserves explicitly configured ip values in ip_config elements when
+// ip_configs is changing, while clearing service-assigned ips to unknown.
+// UpdateInboundEndpoint accepts IpConfig.Ip (optional; when left empty the API auto-assigns),
+// so an explicitly set ip must be sent on update and kept in plan. An auto-assigned ip that
+// UseStateForUnknown carried into plan from state would no longer match the ip the API
+// re-assigns from the new VSwitchId/CidrBlock, and the Framework's set correlation would
+// fail with "Provider produced inconsistent result after apply". Clearing only the
+// non-explicit ips to unknown lets the Framework correlate elements by
+// vswitch_id/zone_id/cidr_block and accept whatever IP the API assigns, while explicit
+// ips survive the update. When ip_configs is unchanged, all prior ips are preserved.
 func (r *inboundEndpointResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	// On create there is no prior state; the ip is unknown in plan and assigned by the API.
 	if req.State.Raw.IsNull() {
@@ -185,17 +186,46 @@ func (r *inboundEndpointResource) ModifyPlan(ctx context.Context, req resource.M
 		return
 	}
 
-	// ip_configs is changing: clear all ip values to unknown so the Framework does not expect
-	// specific IP values that the API will re-assign from the new VSwitchId/CidrBlock.
-	ipConfigs, diags := inboundEndpointIpConfigsFromSet(ctx, plan.IpConfigs)
+	// ip_configs is changing. Read the user-configured ip values from config so explicitly
+	// set ips are preserved (UpdateInboundEndpoint accepts Ip and keeps it), while the
+	// service-assigned ips that UseStateForUnknown carried from state are cleared to unknown
+	// so the Framework accepts whatever IP the API re-assigns from the new VSwitchId/CidrBlock.
+	var config inboundEndpointResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	planConfigs, diags := inboundEndpointIpConfigsFromSet(ctx, plan.IpConfigs)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	for i := range ipConfigs {
-		ipConfigs[i].Ip = types.StringUnknown()
+
+	// Build a lookup of explicitly configured ip values keyed by vswitch_id/zone_id/cidr_block
+	// so each plan element is matched to its config element regardless of set ordering.
+	explicitIPs := make(map[string]string)
+	if !config.IpConfigs.IsNull() && !config.IpConfigs.IsUnknown() {
+		configConfigs, diags := inboundEndpointIpConfigsFromSet(ctx, config.IpConfigs)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		for _, cc := range configConfigs {
+			if !cc.Ip.IsNull() && !cc.Ip.IsUnknown() && cc.Ip.ValueString() != "" {
+				explicitIPs[inboundEndpointIpConfigKey(cc.VSwitchId, cc.ZoneId, cc.CidrBlock)] = cc.Ip.ValueString()
+			}
+		}
 	}
-	newSet, diags := inboundEndpointIpConfigsToSet(ctx, ipConfigs)
+
+	for i := range planConfigs {
+		if ip, ok := explicitIPs[inboundEndpointIpConfigKey(planConfigs[i].VSwitchId, planConfigs[i].ZoneId, planConfigs[i].CidrBlock)]; ok {
+			planConfigs[i].Ip = types.StringValue(ip)
+		} else {
+			planConfigs[i].Ip = types.StringUnknown()
+		}
+	}
+	newSet, diags := inboundEndpointIpConfigsToSet(ctx, planConfigs)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -237,21 +267,17 @@ func (r *inboundEndpointResource) Create(ctx context.Context, req resource.Creat
 	}
 
 	action := "AddInboundEndpoint"
-	var response map[string]interface{}
-	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
-	err := retry.RetryContext(ctx, inboundEndpointTimeout, func() *retry.RetryError {
-		var callErr error
-		response, callErr = r.Meta().RpcPost("pvtz", "2018-01-01", action, nil, request, false)
-		if callErr != nil {
-			// ResolverEndpoint.Operation.ExceedsFrequency is the documented throttle for the
-			// outbound endpoint; InboundEndpoint may reuse the same pattern, so both are retried.
-			if errs.IsExpectedErrors(callErr, []string{"InboundEndpoint.Operation.ExceedsFrequency", "ResolverEndpoint.Operation.ExceedsFrequency"}) || helper.NeedRetry(callErr) {
-				wait()
-				return retry.RetryableError(callErr)
-			}
-			return retry.NonRetryableError(callErr)
-		}
-		return nil
+	// ClientToken makes AddInboundEndpoint idempotent across retries: a replay after a
+	// transport timeout reuses the same token so the API returns the original EndpointId
+	// instead of creating a duplicate orphan endpoint. helper.BuildClientToken is the shared
+	// generator the sweeper already uses for DeleteInboundEndpoint.
+	request["ClientToken"] = helper.BuildClientToken(action)
+	response, err := helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
+		return r.Meta().RpcPost("pvtz", "2018-01-01", action, nil, request, false)
+	}, inboundEndpointTimeout, func(callErr error) bool {
+		// ResolverEndpoint.Operation.ExceedsFrequency is the documented throttle for the
+		// outbound endpoint; InboundEndpoint may reuse the same pattern, so both are retried.
+		return errs.IsExpectedErrors(callErr, []string{"InboundEndpoint.Operation.ExceedsFrequency", "ResolverEndpoint.Operation.ExceedsFrequency"}) || helper.NeedRetry(callErr)
 	})
 	logs.AddDebug(action, response, request)
 	if err != nil {
@@ -370,33 +396,27 @@ func (r *inboundEndpointResource) Update(ctx context.Context, req resource.Updat
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		// The service-assigned ip is Optional+Computed. UseStateForUnknown carries the
-		// prior ip value from state into plan for elements that persist across the change.
-		// Unlike UpdateResolverEndpoint (outbound), UpdateInboundEndpoint rejects that stale
-		// ip with InboundEndpoint.Ipconfig.InvalidIp, so ip is never sent on update; the API
-		// re-assigns IPs from VSwitchId/CidrBlock exactly as in Create (where ip is omitted).
+		// UpdateInboundEndpoint accepts IpConfig.Ip (optional; when left empty the API
+		// auto-assigns), matching UpdateResolverEndpoint (outbound) which sends ip verbatim.
+		// ModifyPlan preserved explicitly configured ips and cleared auto-assigned ones to
+		// unknown, so a known non-empty ip is the user's explicit value and is sent; an
+		// unknown ip is omitted so the API re-assigns it from VSwitchId/CidrBlock as in Create.
 		for k, ic := range ipConfigs {
 			request[fmt.Sprintf("IpConfig.%d.VSwitchId", k+1)] = ic.VSwitchId.ValueString()
 			request[fmt.Sprintf("IpConfig.%d.AzId", k+1)] = ic.ZoneId.ValueString()
 			request[fmt.Sprintf("IpConfig.%d.CidrBlock", k+1)] = ic.CidrBlock.ValueString()
+			if !ic.Ip.IsNull() && !ic.Ip.IsUnknown() && ic.Ip.ValueString() != "" {
+				request[fmt.Sprintf("IpConfig.%d.Ip", k+1)] = ic.Ip.ValueString()
+			}
 		}
 	}
 
 	if update {
 		action := "UpdateInboundEndpoint"
-		var response map[string]interface{}
-		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
-		err := retry.RetryContext(ctx, inboundEndpointTimeout, func() *retry.RetryError {
-			var callErr error
-			response, callErr = r.Meta().RpcPost("pvtz", "2018-01-01", action, nil, request, false)
-			if callErr != nil {
-				if helper.NeedRetry(callErr) {
-					wait()
-					return retry.RetryableError(callErr)
-				}
-				return retry.NonRetryableError(callErr)
-			}
-			return nil
+		response, err := helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
+			return r.Meta().RpcPost("pvtz", "2018-01-01", action, nil, request, false)
+		}, inboundEndpointTimeout, func(callErr error) bool {
+			return helper.NeedRetry(callErr)
 		})
 		logs.AddDebug(action, response, request)
 		if err != nil {
@@ -449,19 +469,10 @@ func (r *inboundEndpointResource) Delete(ctx context.Context, req resource.Delet
 		"EndpointId": id,
 		"Lang":       "en",
 	}
-	var response map[string]interface{}
-	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
-	err := retry.RetryContext(ctx, inboundEndpointTimeout, func() *retry.RetryError {
-		var callErr error
-		response, callErr = r.Meta().RpcPost("pvtz", "2018-01-01", action, nil, request, false)
-		if callErr != nil {
-			if helper.NeedRetry(callErr) {
-				wait()
-				return retry.RetryableError(callErr)
-			}
-			return retry.NonRetryableError(callErr)
-		}
-		return nil
+	response, err := helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
+		return r.Meta().RpcPost("pvtz", "2018-01-01", action, nil, request, false)
+	}, inboundEndpointTimeout, func(callErr error) bool {
+		return helper.NeedRetry(callErr)
 	})
 	logs.AddDebug(action, response, request)
 	if err != nil {
@@ -482,6 +493,14 @@ func (r *inboundEndpointResource) Delete(ctx context.Context, req resource.Delet
 
 func (r *inboundEndpointResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// inboundEndpointIpConfigKey returns a stable composite key for matching ip_config elements
+// across config/plan/state regardless of set ordering. vswitch_id identifies the element within
+// an endpoint; zone_id and cidr_block are included so two elements sharing a vswitch (if ever
+// allowed) still match on the full triple.
+func inboundEndpointIpConfigKey(vswitchId, zoneId, cidrBlock types.String) string {
+	return vswitchId.ValueString() + "|" + zoneId.ValueString() + "|" + cidrBlock.ValueString()
 }
 
 // inboundEndpointIpConfigsFromSet unwraps a types.Set of ip_config objects into a slice of

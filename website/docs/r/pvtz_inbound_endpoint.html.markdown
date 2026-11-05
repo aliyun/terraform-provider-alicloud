@@ -28,7 +28,7 @@ terraform {
 }
 
 variable "name" {
-  default = "example_name"
+  default = "terraform-example"
 }
 
 data "alicloud_pvtz_resolver_zones" "default" {

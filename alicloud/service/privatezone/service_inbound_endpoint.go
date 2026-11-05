@@ -35,19 +35,10 @@ func (s *Service) DescribeInboundEndpointContext(ctx context.Context, id string)
 		"Lang":       "en",
 	}
 
-	var response map[string]interface{}
-	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
-	err = retry.RetryContext(ctx, inboundEndpointReadTimeout, func() *retry.RetryError {
-		var callErr error
-		response, callErr = client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
-		if callErr != nil {
-			if helper.NeedRetry(callErr) {
-				wait()
-				return retry.RetryableError(callErr)
-			}
-			return retry.NonRetryableError(callErr)
-		}
-		return nil
+	response, err := helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
+		return client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
+	}, inboundEndpointReadTimeout, func(callErr error) bool {
+		return helper.NeedRetry(callErr)
 	})
 	logs.AddDebug(action, response, request)
 	if err != nil {
