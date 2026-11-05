@@ -1653,11 +1653,6 @@ variable "name" {
 	default = "%s"
 }
 
-data "alicloud_ga_accelerators" "default" {
-	status                 = "active"
-	bandwidth_billing_type = "BandwidthPackage"
-}
-
 resource "alicloud_log_project" "default" {
 	name = lower(var.name)
 }
@@ -1667,23 +1662,13 @@ resource "alicloud_log_store" "default" {
 	name    = lower(var.name)
 }
 
-resource "alicloud_ga_bandwidth_package" "default" {
-	bandwidth              = 100
-	type                   = "Basic"
-	bandwidth_type         = "Basic"
+resource "alicloud_ga_accelerator" "default" {
+	bandwidth_billing_type = "CDT"
 	payment_type           = "PayAsYouGo"
-	billing_type           = "PayBy95"
-	ratio                  = 30
-	bandwidth_package_name = var.name
-}
-
-resource "alicloud_ga_bandwidth_package_attachment" "default" {
-	accelerator_id       = data.alicloud_ga_accelerators.default.ids.0
-	bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
 }
 
 resource "alicloud_ga_listener" "default" {
-	accelerator_id  = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+	accelerator_id  = alicloud_ga_accelerator.default.id
 	client_affinity = "SOURCE_IP"
 	protocol        = "HTTP"
 	name            = var.name
