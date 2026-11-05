@@ -5,11 +5,18 @@ import (
 )
 
 // ServicePackage returns the registration declaration of the Realtime Compute
-// (foasconsole 2019-06-01 / ververica 2022-07-18) service. All migrated types
-// are SDKv2.
+// (foasconsole 2019-06-01 / ververica 2022-07-18 / foas 2018-11-11
+// package lifecycle) service. Most types are SDKv2; the package resource is
+// hand-written on the terraform-plugin-framework.
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "RealtimeCompute",
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_realtime_compute_package",
+				Factory:  NewRealtimeComputePackageResource,
+			},
+		},
 		SDKDataSources: []conns.SDKDataSource{
 			{
 				TypeName: "alicloud_realtime_compute_variables",
