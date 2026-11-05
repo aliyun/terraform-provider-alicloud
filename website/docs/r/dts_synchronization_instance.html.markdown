@@ -26,6 +26,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_regions" "default" {
   current = true
 }
@@ -57,7 +65,7 @@ The following arguments are supported:
 * `sync_architecture` - (Optional) The sync architecture. Valid values: `oneway`, `bidirectional`.
 * `compute_unit` - (Optional) [ETL specifications](https://help.aliyun.com/document_detail/212324.html). The unit is the computing unit ComputeUnit (CU), 1CU=1vCPU+4 GB memory. The value range is an integer greater than or equal to 2.
 * `database_count` - (Optional) The number of private customized RDS instances under PolarDB-X. The default value is 1. This parameter needs to be passed only when `source_endpoint_engine_name` equals `drds`.
-* `auto_pay` - (Optional) Whether to automatically renew when it expires. Valid values: `true`, `false`.
+* `auto_pay` - (Optional, String, Computed) Whether to automatically renew the instance when it expires. Valid values: `true`, `false`. This argument only takes effect when `payment_type` is `Subscription`; for `PayAsYouGo` instances it is ignored and not set by the provider. When `payment_type` is `Subscription`, the provider reads the actual renewal status from BSS on every refresh, including refreshes of instances whose configuration does not set `auto_pay`, so the RAM user needs `bss:DescribeInstances`; if that lookup fails, the resource read fails. Setting it to `true` switches the instance to `AutoRenewal` and, when an existing instance is updated, requires `payment_duration` and `payment_duration_unit` to define the renewal period. In this case `payment_duration` must be `1`, `2`, `3`, `6`, or `12`, and `payment_duration_unit` must be `Month` or `Year`; these values can differ from the purchase duration accepted when the instance is created, where the renewal setting is passed through `AutoPay`. Setting it to `false` switches the instance to `ManualRenewal`, so the instance is retained but is not renewed automatically at expiry. BSS reports three renewal states (`AutoRenewal`, `ManualRenewal` and `NotRenewal`); `auto_pay` is read as `false` for both `ManualRenewal` and `NotRenewal`, so the two states are not distinguishable in the state. The renewal setting is sent to BSS only when `auto_pay` changes: because an instance in `NotRenewal` is already read as `false`, adding `auto_pay = "false"` to its configuration produces no change and does not trigger an update, so the instance is still released at expiry. To retain such an instance, set `auto_pay = "true"` first and then back to `false`, or change the renewal setting in the console. The renewal period is applied when `auto_pay` is set or changed; changing only `payment_duration` or `payment_duration_unit` on an existing instance does not update the renewal setting. Changing `auto_pay` on an existing subscription instance updates its auto-renew setting in place. The RAM user must be granted `bss:ModifyPrepaidInstanceAutoRenew` to change the setting and `bss:DescribeInstances` to read it back. For an existing subscription instance whose configuration already sets `auto_pay`, the next apply reconciles the instance with the configured value, which can overwrite a renewal setting changed in the console.
 * `auto_start` - (Optional) Whether to automatically start the task after the purchase completed. Valid values: `true`, `false`.
 * `quantity` - (Optional) The number of instances purchased.
 

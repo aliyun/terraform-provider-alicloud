@@ -1450,13 +1450,14 @@ func (s *ServiceV2) ThreatDetectionServiceLinkedRoleStateRefreshFuncWithApi(id s
 	}
 }
 
-func (s *ServiceV2) DescribeAsyncThreatDetectionServiceLinkedRoleStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
+func (s *ServiceV2) DescribeAsyncThreatDetectionServiceLinkedRoleStateRefreshFunc(id string, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeAsyncDescribeServiceLinkedRoleStatus(d, res)
+		object, err := s.DescribeAsyncDescribeServiceLinkedRoleStatus(id, res)
 		if err != nil {
 			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
+			return nil, "", errs.WrapError(err)
 		}
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
@@ -1482,15 +1483,14 @@ func (s *ServiceV2) DescribeAsyncThreatDetectionServiceLinkedRoleStateRefreshFun
 
 // DescribeThreatDetectionServiceLinkedRole >>> Encapsulated.
 // DescribeAsyncDescribeServiceLinkedRoleStatus <<< Encapsulated for ThreatDetection.
-func (s *ServiceV2) DescribeAsyncDescribeServiceLinkedRoleStatus(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
+func (s *ServiceV2) DescribeAsyncDescribeServiceLinkedRoleStatus(id string, res map[string]interface{}) (object map[string]interface{}, err error) {
 	client := s.client
-	id := d.Id()
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["ServiceLinkedRole"] = d.Id()
+	request["ServiceLinkedRole"] = id
 
 	action := "DescribeServiceLinkedRoleStatus"
 

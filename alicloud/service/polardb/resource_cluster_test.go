@@ -607,10 +607,9 @@ func TestAccAliCloudPolarDBCluster_TDEAutomaticRotationIncremental(t *testing.T)
 					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					// Align with the API default for a TDE-disabled cluster:
-					// DescribeDBClusterTDE returns EncryptNewTables="OFF", but the
-					// schema field is Optional (not Computed), so an unset config
-					// (value="") would produce a perpetual diff OFF=>"" at step0.
+					// DescribeDBClusterTDE reports EncryptNewTables="OFF" for a TDE-disabled
+					// cluster. The schema field is Optional+Computed, so an unset config no
+					// longer drifts; the explicit value is kept to document the intent.
 					"encrypt_new_tables": "OFF",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -725,10 +724,9 @@ func TestAccAliCloudPolarDBCluster_TDEAutomaticRotationOracle(t *testing.T) {
 					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					// Align with the API default for a TDE-disabled cluster:
-					// DescribeDBClusterTDE returns EncryptNewTables="OFF", but the
-					// schema field is Optional (not Computed), so an unset config
-					// (value="") would produce a perpetual diff OFF=>"" at step0.
+					// DescribeDBClusterTDE reports EncryptNewTables="OFF" for a TDE-disabled
+					// cluster. The schema field is Optional+Computed, so an unset config no
+					// longer drifts; the explicit value is kept to document the intent.
 					"encrypt_new_tables": "OFF",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1565,7 +1563,7 @@ func TestAccAliCloudPolarDBCluster_VpcId(t *testing.T) {
 					"db_version":        "8.0",
 					"pay_type":          "PostPaid",
 					"db_node_count":     "2",
-					"db_node_class":     "polar.mysql.x4.large",
+					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
 					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
@@ -1594,6 +1592,17 @@ func TestAccAliCloudPolarDBCluster_VpcId(t *testing.T) {
 					testAccCheck(map[string]string{
 						"target_db_revision_version_code": "20230707",
 					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.3.db_node_class}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_node_class": CHECKSET,
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "db_node_class", "data.alicloud_polardb_node_classes.this", "classes.0.supported_engines.0.available_resources.3.db_node_class"),
 				),
 			},
 		},
