@@ -388,14 +388,6 @@ func (r *cmsSubscriptionResource) Create(ctx context.Context, req resource.Creat
 		Workspace:        plan.Workspace,
 		Enable:           plan.Enable,
 	}
-	object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(id, plan.Workspace.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Reading %s: calling GetSubscription", cmsSubscriptionTypeName),
-			errs.WrapErrorf(err, errs.DefaultErrorMsg, cmsSubscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
-		)
-		return
-	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, cmsSubscriptionState(object, previous))...)
 }
 
