@@ -480,10 +480,12 @@ func TagsMapEqual(expectMap map[string]interface{}, compareMap map[string]string
 	return true
 }
 
-// IgnoredTags is the historical *TagsToMap filter. It drops the four namespace
-// prefixes only and never dropped the SAE key, unlike TagIgnored; the prefixes
-// are the same literal strings the shared reserved list uses, so the two
-// decisions cannot drift apart on the namespace keys.
+// IgnoredTags is the separate historical filter used by callers that asked for
+// this narrower subset; TagsToMap has always used TagIgnored instead. It drops
+// the four namespace prefixes only and never dropped the SAE key, so it must not
+// be replaced with IsReservedTagKey. The prefixes are the same literal strings
+// the shared reserved list uses, so the two decisions cannot drift apart on the
+// namespace keys.
 func IgnoredTags(tagKey string, tagValue interface{}) bool {
 	for _, prefix := range []string{reservedTagPrefixAliyun, reservedTagPrefixAcs, reservedTagPrefixHTTP, reservedTagPrefixHTTPS} {
 		if strings.HasPrefix(tagKey, prefix) {

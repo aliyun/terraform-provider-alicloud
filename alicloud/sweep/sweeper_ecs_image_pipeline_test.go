@@ -44,8 +44,17 @@ func testSweepEcsImagePipeline(region string) error {
 	listErrors := make([]string, 0)
 	recordErrors := make([]string, 0)
 	seenTokens := map[string]struct{}{}
+	pages := 0
 
 	for {
+		// The token guard below catches an echoed cursor; this cap catches a
+		// server that keeps returning distinct tokens, so the listing always
+		// terminates like the data source helpers do.
+		if pages >= imagePipelineSweepMaxPages {
+			listErrors = append(listErrors, fmt.Sprintf("%s kept returning a continuation token for %d pages; the sweep stopped instead of listing forever", action, pages))
+			break
+		}
+		pages++
 		var response map[string]interface{}
 		wait := tfhelper.IncrementalWait(3*time.Second, 3*time.Second)
 		listErr := retry.Retry(1*time.Minute, func() *retry.RetryError {
@@ -222,6 +231,10 @@ const (
 	imagePipelineOwnerTagKey   = "terraform-example"
 	imagePipelineOwnerTagValue = "true"
 )
+
+// imagePipelineSweepMaxPages bounds one sweeper listing, matching the page
+// budget the read helpers use.
+const imagePipelineSweepMaxPages = 1000
 
 // imagePipelineTagMap decodes the Tags member into a plain map. An absent
 // member means "no tags", which is a legitimate "not owned" answer; a member of

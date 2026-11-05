@@ -12,7 +12,6 @@ import (
 	"unicode/utf8"
 
 	utilV2 "github.com/alibabacloud-go/tea-utils/v2/service"
-	"github.com/alibabacloud-go/tea/dara"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
@@ -376,28 +375,15 @@ func fwRequestRuntime() *utilV2.RuntimeOptions {
 }
 
 // fwNeedRetry reports whether a failed read is worth retrying inside the read
-// budget. The shared helper recognises the error shapes of the older SDK path;
-// the context bound path reports throttling and timeouts as SDK v2 errors, so
-// they are classified here as well. A cancelled or expired read is never
-// retried: its budget is gone.
+// budget. The context bound SDK path reports throttling, 5xx and timeouts as tea
+// SDK errors, which the shared helper classifies. A cancelled or expired read is
+// never retried: its budget is gone.
 func fwNeedRetry(err error) bool {
 	if err == nil {
 		return false
 	}
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return false
-	}
-	var sdkErr *dara.SDKError
-	if errors.As(err, &sdkErr) {
-		code := dara.StringValue(sdkErr.Code)
-		message := dara.StringValue(sdkErr.Message)
-		if code == "ServiceUnavailable" || code == "Rejected.Throttling" || strings.Contains(code, "Throttling") {
-			return true
-		}
-		if dara.IntValue(sdkErr.StatusCode) >= 500 {
-			return true
-		}
-		return strings.Contains(message, "Client.Timeout")
 	}
 	return helper.NeedRetry(err)
 }

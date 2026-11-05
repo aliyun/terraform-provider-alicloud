@@ -10,7 +10,7 @@ import (
 	"time"
 
 	utilV2 "github.com/alibabacloud-go/tea-utils/v2/service"
-	"github.com/alibabacloud-go/tea/dara"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -956,7 +956,7 @@ func TestUnitFwRpcPostRetriesThrottlingThenStops(t *testing.T) {
 	fwRpcCall = func(callCtx context.Context, client *connectivity.AliyunClient, action string, request map[string]interface{}, runtime *utilV2.RuntimeOptions) (map[string]interface{}, error) {
 		calls++
 		if calls == 1 {
-			return nil, &dara.SDKError{Code: dara.String("Rejected.Throttling"), Message: dara.String("throttled")}
+			return nil, &tea.SDKError{Code: tea.String("Rejected.Throttling"), Message: tea.String("throttled")}
 		}
 		return map[string]interface{}{"ok": true}, nil
 	}
