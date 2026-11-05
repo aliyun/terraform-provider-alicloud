@@ -14,6 +14,7 @@ import (
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/otsprotocol"
+	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
@@ -1064,6 +1065,15 @@ func newOtsTableWireClient(t *testing.T) (*connectivity.AliyunClient, *otsTableW
 		OtsEndpoint:          server.URL,
 		SkipRegionValidation: true,
 	}
+	credentialConfig := new(credentials.Config).
+		SetType("access_key").
+		SetAccessKeyId("test-access-key").
+		SetAccessKeySecret("test-secret-key")
+	credential, err := credentials.NewCredential(credentialConfig)
+	if err != nil {
+		t.Fatalf("create test credential: %v", err)
+	}
+	config.Credential = credential
 	client, err := config.Client()
 	if err != nil {
 		t.Fatalf("build connectivity client: %v", err)
