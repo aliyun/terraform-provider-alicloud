@@ -246,7 +246,7 @@ func fwTimeoutDuration(value types.Object, operation string, fallback time.Durat
 // retryRpcPost mirrors alicloud's retry.Retry+NeedRetry wrapper around RpcPost.
 // RpcPost returns *tea.SDKError, so the classifier only handles that path.
 func retryRpcPost(client *connectivity.AliyunClient, product, version, action string, request map[string]interface{}, timeout time.Duration) (map[string]interface{}, error) {
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := dbNodeIncrementalWait(3*time.Second, 5*time.Second)
 	var response map[string]interface{}
 	err := retry.Retry(timeout, func() *retry.RetryError {
 		resp, e := client.RpcPost(product, version, action, nil, request, true)
@@ -268,7 +268,7 @@ func retryRpcPost(client *connectivity.AliyunClient, product, version, action st
 
 // retryRpcGet preserves query parameters for RPC APIs whose metadata only permits GET.
 func retryRpcGet(client *connectivity.AliyunClient, product, version, action string, request map[string]interface{}, timeout time.Duration) (map[string]interface{}, error) {
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := dbNodeIncrementalWait(3*time.Second, 5*time.Second)
 	var response map[string]interface{}
 	err := retry.Retry(timeout, func() *retry.RetryError {
 		resp, e := client.RpcGet(product, version, action, request, nil)
@@ -297,8 +297,8 @@ func buildClientToken(action string) string {
 	return token
 }
 
-// incrementalWait mirrors alicloud.incrementalWait: exponential backoff capped at 20s with jitter.
-func incrementalWait(first, incr time.Duration) func() {
+// dbNodeIncrementalWait mirrors alicloud.incrementalWait: exponential backoff capped at 20s with jitter.
+func dbNodeIncrementalWait(first, incr time.Duration) func() {
 	retryCount := 0
 	return func() {
 		upper := float64(first) + (math.Pow(2, float64(retryCount))-1)*float64(incr)
