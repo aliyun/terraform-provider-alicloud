@@ -27,5 +27,11 @@ func ServicePackage() conns.ServicePackage {
 			{TypeName: "alicloud_pvtz_resolver_zones", Factory: DataSourceResolverZones},
 			{TypeName: "alicloud_pvtz_rules", Factory: DataSourceRules},
 		},
+		Resources: []conns.Resource{
+			// alicloud_pvtz_inbound_endpoint is a Framework-native resource (the platform v2
+			// policy for new types). It lives alongside the SDKv2 resources in the same
+			// ServicePackage; fwadapt.WrapResource adapts it into the provider.
+			{TypeName: "alicloud_pvtz_inbound_endpoint", Factory: NewInboundEndpointResource},
+		},
 	}
 }
