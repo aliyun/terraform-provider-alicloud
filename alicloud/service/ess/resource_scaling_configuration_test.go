@@ -23,7 +23,7 @@ import (
 
 // kms限制
 func TestAccAliCloudEssScalingConfiguration_override(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -93,7 +93,7 @@ func TestAccAliCloudEssScalingConfiguration_override(t *testing.T) {
 
 // kms限制
 func TestAccAliCloudEssScalingConfiguration_other(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -167,7 +167,7 @@ func TestAccAliCloudEssScalingConfiguration_other(t *testing.T) {
 }
 
 func TestAccAliCloudEssScalingConfiguration_credit_specification(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
 	acctest.CheckoutSupportedRegions(t, true, []connectivity.Region{"cn-beijing"})
@@ -233,7 +233,7 @@ func TestAccAliCloudEssScalingConfiguration_credit_specification(t *testing.T) {
 }
 
 func TestAccAliCloudEssScalingConfiguration_imageName(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -296,7 +296,7 @@ func TestAccAliCloudEssScalingConfiguration_imageName(t *testing.T) {
 }
 
 func TestAccAliCloudEssScalingConfiguration_imageId(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -366,7 +366,7 @@ func TestAccAliCloudEssScalingConfiguration_imageId(t *testing.T) {
 
 // kms限制
 func TestAccAliCloudEssScalingConfiguration_kms(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -434,7 +434,7 @@ func TestAccAliCloudEssScalingConfiguration_kms(t *testing.T) {
 
 // kms限制
 func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -773,7 +773,7 @@ func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
 }
 
 func TestAccAliCloudEssScalingConfiguration_UpdateSystemDiskSize(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -931,7 +931,7 @@ func TestAccAliCloudEssScalingConfiguration_UpdateSystemDiskSize(t *testing.T) {
 }
 
 func TestAccAliCloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pl"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -1106,7 +1106,7 @@ func TestAccAliCloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
 }
 
 func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesCreate(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pl"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -1178,7 +1178,7 @@ func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesCreate(t *testing.T)
 }
 
 func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesModify(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pl"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -1259,7 +1259,7 @@ func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesModify(t *testing.T)
 
 // kms限制
 func TestAccAliCloudEssScalingConfiguration_EnchanceCreate(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pl"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -1359,7 +1359,7 @@ func TestAccAliCloudEssScalingConfiguration_EnchanceCreate(t *testing.T) {
 }
 
 func TestAccAliCloudEssScalingConfiguration_ResourcePoolOptions_PoolTags(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pl"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -1548,7 +1548,7 @@ func TestAccAliCloudEssScalingConfiguration_ResourcePoolOptions_PoolTags(t *test
 }
 
 func TestAccAliCloudEssScalingConfiguration_ResourcePoolOptions_PoolIds(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pl"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -1725,7 +1725,7 @@ func TestAccAliCloudEssScalingConfiguration_ResourcePoolOptions_PoolIds(t *testi
 }
 
 func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint_Create(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.ipi"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -1842,7 +1842,7 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint_
 }
 
 func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.ipi"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -2309,7 +2309,7 @@ func TestAccAliCloudEssScalingConfiguration_PropertyCoverage(t *testing.T) {
 
 // kms限制
 func TestAccAliCloudEssScalingConfiguration_Enchance(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pl"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -2531,7 +2531,7 @@ func TestAccAliCloudEssScalingConfiguration_Enchance(t *testing.T) {
 }
 
 func TestAccAliCloudEssScalingConfiguration_Multi(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default.9"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -3532,7 +3532,7 @@ func resourceEssScalingConfigurationConfigMutilDependence(name string) string {
 
 // kms限制
 func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.ipi"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -3800,7 +3800,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 }
 
 func TestAccAliCloudEssScalingConfiguration_OnlyInstancePatternInfo(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.ipi"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -4035,7 +4035,7 @@ func TestAccAliCloudEssScalingConfiguration_OnlyInstancePatternInfo(t *testing.T
 
 // kms限制
 func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_InstanceTypeFamiliesAndInstanceCategories(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.ipi"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -4257,7 +4257,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_InstanceTypeFami
 }
 
 func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_CpuAndRange(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.ipi"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -4530,7 +4530,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_CpuAndRange(t *t
 }
 
 func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.ipi"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -4638,7 +4638,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 }
 
 func TestAccAliCloudEssScalingConfiguration_InstanceTypeOverride(t *testing.T) {
-	rand := tfctfcacctest.RandIntRange(1000, 999999)
+	rand := tfcacctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.ipi"
 	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -4743,7 +4743,7 @@ func TestAccAliCloudEssScalingConfiguration_userDataTagsConvergence(t *testing.T
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", tfctfcacctest.RandIntRange(1000, 999999))
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", tfcacctest.RandIntRange(1000, 999999))
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfigurationUserDataTagsDependence)
 
 	externalUserData := base64.StdEncoding.EncodeToString([]byte("#!/bin/bash\necho external-autoscaler"))
@@ -5159,7 +5159,7 @@ func TestAccAliCloudEssScalingConfiguration_TypeListOrderConvergence(t *testing.
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", tfctfcacctest.RandIntRange(1000, 999999))
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", tfcacctest.RandIntRange(1000, 999999))
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfigurationTypeListOrderDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -5259,7 +5259,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfoOrder(t *testing.
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", tfctfcacctest.RandIntRange(1000, 999999))
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", tfcacctest.RandIntRange(1000, 999999))
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfigurationConfigDependenceOnlyInstancePatternInfo)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -5346,7 +5346,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceSecurityGroupOrder(t
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", tfctfcacctest.RandIntRange(1000, 999999))
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", tfcacctest.RandIntRange(1000, 999999))
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfigurationTypeListOrderDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -5451,7 +5451,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceIPv6Transition(t *te
 	})
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", tfctfcacctest.RandIntRange(1000, 999999))
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", tfcacctest.RandIntRange(1000, 999999))
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfigurationIPv6Dependence)
 
 	primaryNetworkInterface := func(ipv6AddressCount string) []map[string]interface{} {
@@ -5574,7 +5574,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceIPv6Negative(t *test
 	})
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", tfctfcacctest.RandIntRange(1000, 999999))
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", tfcacctest.RandIntRange(1000, 999999))
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfigurationIPv6Dependence)
 
 	primaryNetworkInterface := func(ipv6AddressCount string) []map[string]interface{} {
