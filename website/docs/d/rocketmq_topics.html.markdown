@@ -100,12 +100,8 @@ resource "alicloud_rocketmq_topic" "default" {
 data "alicloud_rocketmq_topics" "default" {
   instance_id = alicloud_rocketmq_instance.default.id
   name_regex  = "^${var.name}$"
-  depends_on  = [alicloud_rocketmq_topic.default]
 }
 
-output "rocketmq_topic_names" {
-  value = data.alicloud_rocketmq_topics.default.names
-}
 ```
 
 ## Argument Reference

@@ -98,12 +98,8 @@ data "alicloud_rocketmq_instances" "default" {
   tags = {
     Created = "TF"
   }
-  depends_on = [alicloud_rocketmq_instance.default]
 }
 
-output "rocketmq_instance_ids" {
-  value = data.alicloud_rocketmq_instances.default.ids
-}
 ```
 
 ## Argument Reference

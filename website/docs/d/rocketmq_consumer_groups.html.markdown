@@ -103,12 +103,8 @@ resource "alicloud_rocketmq_consumer_group" "default" {
 data "alicloud_rocketmq_consumer_groups" "default" {
   instance_id = alicloud_rocketmq_instance.default.id
   name_regex  = "^${var.name}$"
-  depends_on  = [alicloud_rocketmq_consumer_group.default]
 }
 
-output "rocketmq_consumer_group_ids" {
-  value = data.alicloud_rocketmq_consumer_groups.default.ids
-}
 ```
 
 ## Argument Reference
