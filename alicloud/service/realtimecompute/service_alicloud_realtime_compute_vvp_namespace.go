@@ -130,10 +130,11 @@ func vvpNamespaceCreateResultUncertainDepth(err error, depth int) bool {
 }
 
 // vvpNamespaceRecoverCreate checks the identity after an uncertain CreateNamespace failure. It
-// returns the object when the namespace exists, which means the create was accepted even though its
-// response was lost. The object is returned in whatever state it is in, FAILED included: the caller
-// has to persist its identity first and then decide whether the create can still succeed. A lookup
-// failure is returned so the caller can report both causes.
+// returns the object when the namespace now exists. Existence alone does not prove this request
+// created it: the product exposes no request correlation or idempotency token, so the caller must
+// NOT adopt the object. The caller reports an uncertain result and leaves the object out of state,
+// with import or ownership-coordination guidance. A lookup failure is returned so the caller can
+// report both causes.
 func vvpNamespaceRecoverCreate(ctx context.Context, client *connectivity.AliyunClient, id string, cause error) (map[string]interface{}, error) {
 	if !vvpNamespaceCreateResultUncertain(cause) {
 		return nil, nil
@@ -223,6 +224,12 @@ func vvpNamespaceGetWithTimeout(ctx context.Context, client *connectivity.Aliyun
 			}
 			return nil, err
 		}
+		// The walk advances its own page counter, so a response that echoes a different page (a
+		// repeated page 1 or a foreign page) would silently cover a page that was never received.
+		// Validate the optional echoed PageIndex before the rows are used for selection or absence.
+		if pageErr := vvpNamespaceResponsePage(response, page); pageErr != nil {
+			return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: %w", id, pageErr)
+		}
 		// Gets RootMapping "Namespaces". Only a decoded collection is evidence of what the workspace
 		// holds: the list is handed to fwadapt.SelectReadObject, which selects the row whose
 		// $.Namespace equals the requested identity; multiple matching rows and list items without a
@@ -260,6 +267,25 @@ func vvpNamespaceGetWithTimeout(ctx context.Context, client *connectivity.Aliyun
 		}
 	}
 	return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: the namespace was not found within %d DescribeNamespaces pages", id, vvpNamespaceDescribeMaxPages)
+}
+
+// vvpNamespaceResponsePage validates the optional echoed PageIndex of a DescribeNamespaces response
+// against the page that was requested. A present value must match: a repeated or foreign page cannot
+// be used to prove absence, because the walk would otherwise move past a page it never received. A
+// response without PageIndex keeps the legacy single-page shape and is handled by the completeness
+// checks below.
+func vvpNamespaceResponsePage(response map[string]interface{}, requested int) error {
+	page, present, err := vvpNamespaceIntField(response, "PageIndex")
+	if err != nil {
+		return err
+	}
+	if !present {
+		return nil
+	}
+	if page != requested {
+		return fmt.Errorf("the response is for page %d but page %d was requested", page, requested)
+	}
+	return nil
 }
 
 // vvpNamespaceSearchComplete reports whether a DescribeNamespaces page proves that the requested

@@ -265,10 +265,10 @@ func (r *vvpNamespaceResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	// Ownership guard. An uncertain create is only adopted when this identity did not exist before
-	// the request, so the recovery path cannot claim a namespace that already belonged to another
-	// request or to manual work. The create then still reports the product's own conflict answer if
-	// something appears between this check and the write.
+	// Ownership guard. An identity that already exists before the write cannot be claimed by this
+	// create, so it is reported as already exists and the write is never sent. A later uncertain
+	// result is not adopted either: existence after the failure does not prove this request created
+	// it, and the create reports an explicit uncertain-result diagnostic instead.
 	existing, existingErr := vvpNamespaceGetWithTimeout(operationCtx, r.Meta(), id, remaining())
 	if existingErr != nil {
 		resp.Diagnostics.AddError(fmt.Sprintf("Creating %s: checking the existing namespace", vvpNamespaceTypeName), existingErr.Error())

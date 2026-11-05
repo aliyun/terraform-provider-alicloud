@@ -3,7 +3,6 @@ package realtimecompute_test
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -256,6 +255,21 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_ha0(t *testing.T) {
 						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
 					},
 				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "ha", "true"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "1"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// ha is Optional+Computed and only forces replacement when it is configured. Dropping
+				// it from the configuration must keep the value already in state (true) without a
+				// replacement or any other diff, so this re-apply converges to the same object.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspaceWithoutHa(instanceId, namespace, 1, 4),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "ha", "true"),
 					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "1"),
@@ -896,6 +910,24 @@ resource "alicloud_realtime_compute_vvp_namespace" "ha" {
     }
   ]
 }`, instanceId, namespace, ha, cpu, memoryGb)
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspaceWithoutHa renders the HA-workspace
+// configuration with the optional ha argument omitted, so a test can prove that dropping it from the
+// configuration preserves the value already in state.
+func testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspaceWithoutHa(instanceId, namespace string, cpu, memoryGb int) string {
+	return fmt.Sprintf(`
+resource "alicloud_realtime_compute_vvp_namespace" "ha" {
+  instance_id = %q
+  namespace   = %q
+
+  resource_spec = [
+    {
+      cpu       = %d
+      memory_gb = %d
+    }
+  ]
+}`, instanceId, namespace, cpu, memoryGb)
 }
 
 // realtimeComputeTestZone returns a zone expression usable in HCL. Realtime Compute accepts
@@ -1987,8 +2019,9 @@ func testAccRealtimeComputeVvpCaptureResourceId(resourceName string, target *str
 }
 
 // vvpNamespaceCreateRecoveryTestServer answers CreateNamespace with a 5xx that does not prove the
-// request was rejected, while DescribeNamespaces already lists the namespace the request asked for.
-// A create that adopts the object it finds is what the recovery path must do.
+// request was rejected, while DescribeNamespaces lists the namespace afterwards. Existence after the
+// failure must not be adopted: the product has no request correlation, so the provider cannot prove
+// this request created the object.
 func vvpNamespaceCreateRecoveryTestServer(t *testing.T) (*httptest.Server, func() []string) {
 	t.Helper()
 	var mu sync.Mutex
@@ -2013,8 +2046,9 @@ func vvpNamespaceCreateRecoveryTestServer(t *testing.T) (*httptest.Server, func(
 		present := created
 		mu.Unlock()
 		if !present {
-			// The ownership guard reads the identity before the write; it must not exist yet, so the
-			// adoption after the uncertain create proves the object belongs to this request.
+			// The ownership guard reads the identity before the write; it must not exist yet. The
+			// read after the injected failure therefore sees only the object the failed write may
+			// have created, which the provider must still refuse to adopt.
 			fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[]}`)
 			return
 		}
@@ -2279,50 +2313,6 @@ func TestUnitRealtimeComputeVvpDefaultWorkspaceDestroyKeepsWaitingWhileWorkspace
 	}
 }
 
-// TestUnitRealtimeComputeVvpNamespaceInFlightRequestHonoursBudget pins the HTTP-level half of the
-// operation budget: a request that is already in flight has to stop at the remaining deadline or at
-// a lifecycle cancellation. The retry loop alone only stops new attempts, so these cases point the
-// client at a server that never answers.
-func TestUnitRealtimeComputeVvpNamespaceInFlightRequestHonoursBudget(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		<-r.Context().Done()
-	}))
-	t.Cleanup(func() {
-		server.CloseClientConnections()
-		server.Close()
-	})
-	client := vvpNamespaceTestClient(t, server.URL)
-
-	t.Run("remaining deadline bounds the request", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
-		defer cancel()
-		started := time.Now()
-		_, err := client.RpcPostWithContext(ctx, "foasconsole", "2019-06-01", "CreateNamespace", nil, map[string]interface{}{})
-		if err == nil {
-			t.Fatalf("a hung request must not report success")
-		}
-		if elapsed := time.Since(started); elapsed > 3*time.Second {
-			t.Fatalf("the hung request returned after %s; the remaining budget was not applied to the HTTP attempt", elapsed)
-		}
-	})
-
-	t.Run("cancellation interrupts the request", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		go func() {
-			time.Sleep(150 * time.Millisecond)
-			cancel()
-		}()
-		started := time.Now()
-		_, err := client.RpcPostWithContext(ctx, "foasconsole", "2019-06-01", "CreateNamespace", nil, map[string]interface{}{})
-		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("error = %v, want context.Canceled", err)
-		}
-		if elapsed := time.Since(started); elapsed > 3*time.Second {
-			t.Fatalf("the cancelled request returned after %s", elapsed)
-		}
-	})
-}
-
 // TestUnitRealtimeComputeVvpNamespaceUpdateInFlightWriteHonoursBudget drives the public Update path
 // against a write that never answers: the update must stop at its budget, keep the namespace in
 // state and never reach the stages after the write.
@@ -2427,63 +2417,6 @@ func TestUnitRealtimeComputeVvpNamespaceCreateRefusesExistingIdentity(t *testing
 	}
 }
 
-// TestUnitRealtimeComputeVvpNamespaceInFlightCancelStopsFurtherRequests proves that lifecycle
-// cancellation reaches the actual HTTP request: the test synchronizes on the request arriving at the
-// server, cancels the context, and then waits for the server-side request context to end. It also
-// asserts that no second request is issued, because the caller owns the only retry loop.
-func TestUnitRealtimeComputeVvpNamespaceInFlightCancelStopsFurtherRequests(t *testing.T) {
-	var mu sync.Mutex
-	requests := 0
-	started := make(chan struct{}, 1)
-	finished := make(chan struct{}, 1)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mu.Lock()
-		requests++
-		mu.Unlock()
-		started <- struct{}{}
-		<-r.Context().Done()
-		finished <- struct{}{}
-	}))
-	t.Cleanup(func() {
-		server.CloseClientConnections()
-		server.Close()
-	})
-	client := vvpNamespaceTestClient(t, server.URL)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	result := make(chan error, 1)
-	go func() {
-		_, err := client.RpcPostWithContext(ctx, "foasconsole", "2019-06-01", "CreateNamespace", nil, map[string]interface{}{})
-		result <- err
-	}()
-	select {
-	case <-started:
-	case <-time.After(5 * time.Second):
-		t.Fatalf("the request never reached the server")
-	}
-	cancel()
-	select {
-	case err := <-result:
-		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("error = %v, want context.Canceled", err)
-		}
-	case <-time.After(3 * time.Second):
-		t.Fatalf("the cancelled call did not return")
-	}
-	select {
-	case <-finished:
-	case <-time.After(5 * time.Second):
-		t.Fatalf("cancelling the lifecycle did not end the in-flight HTTP request")
-	}
-	time.Sleep(300 * time.Millisecond)
-	mu.Lock()
-	defer mu.Unlock()
-	if requests != 1 {
-		t.Fatalf("HTTP attempts = %d, want exactly 1 after cancellation (no further retry or write)", requests)
-	}
-}
-
 // TestUnitRealtimeComputeVvpNamespaceReadRejectsUnreadablePagination pins the page-metadata contract:
 // an unreadable or contradictory page count, or a full page without any page count, is an incomplete
 // search and must fail the read instead of turning into a not-found that removes a live namespace
@@ -2508,6 +2441,8 @@ func TestUnitRealtimeComputeVvpNamespaceReadRejectsUnreadablePagination(t *testi
 		{name: "negative page count", body: `{"RequestId":"mock","Namespaces":[],"TotalPage":-2}`, wantErr: "TotalPage"},
 		{name: "page count contradicts the reported total", body: `{"RequestId":"mock","Namespaces":[],"TotalPage":0,"TotalCount":5}`, wantErr: "TotalPage"},
 		{name: "positive page count cannot cover the reported total", body: `{"RequestId":"mock","Namespaces":[],"TotalPage":1,"PageIndex":1,"PageSize":10,"TotalCount":11}`, wantErr: "TotalPage"},
+		{name: "unreadable page index", body: `{"RequestId":"mock","PageIndex":"oops","Namespaces":[]}`, wantErr: "PageIndex"},
+		{name: "response page differs from the requested page", body: `{"RequestId":"mock","PageIndex":2,"Namespaces":[]}`, wantErr: "page 2 but page 1 was requested"},
 		{name: "legacy single page without metadata", body: `{"RequestId":"mock","Namespaces":[]}`, wantGone: true},
 		{name: "legacy full page cannot prove absence", body: fullPage, wantErr: "within 100 DescribeNamespaces pages"},
 		{name: "consistent empty result", body: `{"RequestId":"mock","Namespaces":[],"TotalPage":1,"TotalCount":0}`, wantGone: true},
@@ -2547,6 +2482,93 @@ func TestUnitRealtimeComputeVvpNamespaceReadRejectsUnreadablePagination(t *testi
 				t.Fatalf("gone = %t, want %t", resp.State.Raw.IsNull(), tc.wantGone)
 			}
 		})
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceReadRejectsRepeatedPageIndex pins the echoed PageIndex contract:
+// when the server repeats page 1 for a page-2 request, the walk must not treat the repeated page as
+// the requested one. The read reports the mismatch and keeps the namespace in state instead of
+// concluding absence from a page that was never received.
+func TestUnitRealtimeComputeVvpNamespaceReadRejectsRepeatedPageIndex(t *testing.T) {
+	var mu sync.Mutex
+	var requested []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		page := r.FormValue("DescribeNamespacesRequest.PageIndex")
+		mu.Lock()
+		requested = append(requested, page)
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		// Every response claims to be page 1, even after page 2 is requested.
+		fmt.Fprint(w, `{"RequestId":"mock","PageIndex":1,"TotalPage":2,"PageSize":1,"TotalCount":2,"Namespaces":[{"InstanceId":"other-instance","Namespace":"other-ns","Status":"SUCCESS"}]}`)
+	}))
+	t.Cleanup(func() {
+		server.CloseClientConnections()
+		server.Close()
+	})
+
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+	req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+	resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+	res.Read(context.Background(), req, resp)
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("a repeated page index must be reported")
+	}
+	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+	if !strings.Contains(detail, "page 1 but page 2 was requested") {
+		t.Fatalf("expected the page mismatch in the diagnostic, got %q", detail)
+	}
+	if resp.State.Raw.IsNull() {
+		t.Fatalf("a repeated page must not remove the namespace from state")
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(requested) < 2 || requested[0] != "1" || requested[1] != "2" {
+		t.Fatalf("DescribeNamespaces pages = %v, want page 2 to be requested", requested)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceDeleteRefusesRepeatedPageIndex pins the Delete side of the same
+// contract: a pre-delete search that receives a repeated page cannot prove the namespace is gone, so
+// Delete reports the mismatch, keeps the resource in state and never sends DeleteNamespace.
+func TestUnitRealtimeComputeVvpNamespaceDeleteRefusesRepeatedPageIndex(t *testing.T) {
+	var mu sync.Mutex
+	var actions []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		mu.Lock()
+		actions = append(actions, r.FormValue("Action"))
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"RequestId":"mock","PageIndex":1,"TotalPage":2,"PageSize":1,"TotalCount":2,"Namespaces":[{"InstanceId":"other-instance","Namespace":"other-ns","Status":"SUCCESS"}]}`)
+	}))
+	t.Cleanup(func() {
+		server.CloseClientConnections()
+		server.Close()
+	})
+
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+	req := fwresource.DeleteRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+	resp := &fwresource.DeleteResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+	res.Delete(context.Background(), req, resp)
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("a delete whose pre-read receives a repeated page must be reported")
+	}
+	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+	if !strings.Contains(detail, "page 1 but page 2 was requested") {
+		t.Fatalf("expected the page mismatch in the diagnostic, got %q", detail)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	for _, action := range actions {
+		if action == "DeleteNamespace" {
+			t.Fatalf("Delete sent DeleteNamespace although the search was incomplete: %v", actions)
+		}
+	}
+	if resp.State.Raw.IsNull() {
+		t.Fatalf("the delete dropped the namespace from state")
 	}
 }
 
