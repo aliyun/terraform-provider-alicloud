@@ -86,8 +86,10 @@ func testAccCheckAliCloudGaResourceAttachmentDestroy(s *terraform.State) error {
 			if !ok {
 				continue
 			}
-			if fmt.Sprint(record["AcceleratorId"]) == parts[0] &&
-				fmt.Sprint(record["AssociatedResourceType"]) == parts[1] &&
+			if recordAcceleratorId, ok := record["AcceleratorId"].(string); ok && recordAcceleratorId != "" && recordAcceleratorId != parts[0] {
+				continue
+			}
+			if fmt.Sprint(record["AssociatedResourceType"]) == parts[1] &&
 				fmt.Sprint(record["AssociatedResourceRegionId"]) == parts[2] &&
 				fmt.Sprint(record["AssociatedResourceId"]) == parts[3] {
 				return fmt.Errorf("resource attachment %s still exists", rs.Primary.ID)

@@ -164,6 +164,11 @@ func (r *resourceAttachmentResource) Create(ctx context.Context, req resource.Cr
 
 	record, err := waitResourceAttachmentActive(ctx, client, acceleratorId, resourceType, resourceRegionId, resourceId)
 	if err != nil {
+		// Keep the created identity in state; the computed values were never
+		// observed, and persisting them as unknown fails the apply check.
+		plan.AssociatedMode = types.StringNull()
+		plan.State = types.StringNull()
+		resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: waiting for the association to become active", resourceAttachmentTypeName),
 			errs.WrapErrorf(err, "Creating %s: waiting for the association to become active", resourceAttachmentTypeName).Error(),

@@ -61,8 +61,13 @@ func getResourceAttachment(ctx context.Context, client *connectivity.AliyunClien
 		if !ok {
 			continue
 		}
-		if fmt.Sprint(record["AcceleratorId"]) == acceleratorId &&
-			fmt.Sprint(record["AssociatedResourceType"]) == resourceType &&
+		// The list is already scoped by the request's AcceleratorId, and the
+		// response omits AcceleratorId when it is empty. Verify it only when
+		// the field is actually returned.
+		if recordAcceleratorId, ok := record["AcceleratorId"].(string); ok && recordAcceleratorId != "" && recordAcceleratorId != acceleratorId {
+			continue
+		}
+		if fmt.Sprint(record["AssociatedResourceType"]) == resourceType &&
 			fmt.Sprint(record["AssociatedResourceRegionId"]) == resourceRegionId &&
 			fmt.Sprint(record["AssociatedResourceId"]) == resourceId {
 			return record, nil
