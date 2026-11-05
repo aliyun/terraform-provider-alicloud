@@ -24,6 +24,14 @@ For information about ess scaling rule, see [CreateScalingRule](https://www.alib
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 provider "alicloud" {
   region = "ap-southeast-5"
 }
