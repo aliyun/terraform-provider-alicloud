@@ -7,11 +7,11 @@ description: |-
   Provides a list of Private Zone Resolver available zones to the user.
 ---
 
-# alicloud\_pvtz\_resolver\_zones
+# alicloud_pvtz_resolver_zones
 
 This data source provides the available zones with the Private Zone Resolver of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.143.0+.
+-> **NOTE:** Available since v1.143.0.
 
 ## Example Usage
 
@@ -35,10 +35,10 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The status of the Zone. Valid values: `NORMAL`, `SOLD_OUT`.
 
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `zones` - A list of Private Zone Resolver zones. Each element contains the following attributes:
-	* `zone_id` - The zone ID.
-	* `status` - The status of the Zone.
+  * `zone_id` - The zone ID.
+  * `status` - The status of the Zone.

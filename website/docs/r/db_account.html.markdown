@@ -51,7 +51,7 @@ resource "alicloud_db_instance" "instance" {
 
 resource "alicloud_db_account" "account" {
   instance_id = alicloud_db_instance.instance.id
-  name        = "tftestnormal"
+  name        = "tfaccountnormal"
   password    = "Test12345"
 }
 ```
@@ -62,17 +62,27 @@ resource "alicloud_db_account" "account" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required, ForceNew) The Id of instance in which account belongs.
-* `name` - (Required, ForceNew) Operation account requiring a uniqueness check. It may consist of lower case letters, numbers, and underlines, and must start with a letter and have no more than 16 characters.
-* `password` - (Optional, Sensitive) Operation password. It may consist of letters, digits, or underlines, with a length of 6 to 32 characters. You have to specify one of `password` and `kms_encrypted_password` fields.
+* `db_instance_id` - (Optional, ForceNew) The ID of the instance.
+* `instance_id` - (Optional, ForceNew, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `db_instance_id` instead.
+* `name` - (Optional, ForceNew, Deprecated from v1.120.0) Operation account requiring a uniqueness check. It may consist of lower case letters, numbers, and underlines, and must start with a letter and have no more than 16 characters. The attribute has been deprecated from 1.120.0 and using `account_name` instead.
+* `account_name` - (Optional, ForceNew) The name of the account. It conflicts with `name` and is ignored when `name` is set.
+* `password` - (Optional, Sensitive, Deprecated from v1.120.0) Operation password. It may consist of letters, digits, or underlines, with a length of 6 to 32 characters. You have to specify one of `password` and `kms_encrypted_password` fields. The attribute has been deprecated from 1.120.0 and using `account_password` instead.
+* `account_password` - (Optional, Sensitive) The password of the account. It conflicts with `password`, `kms_encrypted_password` and `account_password_wo`, and one of the four password sources must be set.
+* `account_password_wo` - (Optional, Sensitive) The write-only password of the account. It conflicts with `password` and `kms_encrypted_password`, and must be specified together with `account_password_wo_version`.
+* `account_password_wo_version` - (Optional) The version of the write-only password. It must be specified together with `account_password_wo`.
 * `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to a db account. If the `password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
-* `description` - (Optional) Database description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
-* `type` - (Optional, ForceNew)Privilege type of account. The SQLServer engine does not support create high privilege accounts.
-    - Normal: Common privilege.
-    - Super: High privilege.
-    
-    Default to Normal.
+* `account_description` - (Optional) The description of the account. The value must be 2 to 256 characters in length. The value can contain letters, digits, underscores (_), and hyphens (-), and must start with a letter. It conflicts with `description` and is ignored when `description` is set.
+* `description` - (Optional, Deprecated from v1.120.0) Database description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters. The attribute has been deprecated from 1.120.0 and using `account_description` instead.
+* `type` - (Optional, ForceNew, Deprecated from v1.120.0) Privilege type of account. The SQLServer engine does not support create high privilege accounts.
+  - Normal: Common privilege.
+  - Super: High privilege.
+
+    Default to Normal. The attribute has been deprecated from 1.120.0 and using `account_type` instead.
+* `account_type` - (Optional, ForceNew) The account type. Valid values: Normal/Super/Sysadmin.
+* `reset_permission_flag` - (Optional, Available in v1.198.0+) Resets permissions flag of the privileged account. Default to `false`. Set it to `true` can resets permissions of the privileged account.
+* `check_policy` - (Optional, Available since v1.266.0) Whether to apply password policy.
+* `status` - (Optional, Computed) The status of the resource. Valid values: `Available`, `Unavailable`.
 
 ## Attributes Reference
 

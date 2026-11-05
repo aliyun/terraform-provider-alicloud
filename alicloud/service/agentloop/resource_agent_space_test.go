@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/agentloop"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -15,17 +16,22 @@ import (
 // Case AgentSpace全生命周期 11075
 func TestAccAliCloudAgentloopAgentSpace_basic11075(t *testing.T) {
 	resourceId := "alicloud_agentloop_agent_space.default"
-	rac := resourceAttrCheckInit(resourceId, AlicloudAgentloopAgentSpaceMap11075, (*agentloop.Service).DescribeAgentSpace)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	var v map[string]interface{}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAgentloopAgentSpaceMap11075)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return agentloop.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeAgentSpace")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tftestaccagentspace%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAgentloopAgentSpaceBasicDependence11075)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAgentloopAgentSpaceBasicDependence11075)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             rac.checkResourceDestroy(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				// The recommended usage: cms_workspace / mse_namespace_id are
@@ -79,32 +85,33 @@ func TestAccAliCloudAgentloopAgentSpace_basic11075(t *testing.T) {
 }
 
 var AlicloudAgentloopAgentSpaceMap11075 = map[string]string{
-	"region_id":        CHECKSET,
-	"create_time":      CHECKSET,
-	"cms_workspace":    CHECKSET,
-	"mse_namespace_id": CHECKSET,
-	"sls_project":      CHECKSET,
+	"region_id":        acctest.CHECKSET,
+	"create_time":      acctest.CHECKSET,
+	"cms_workspace":    acctest.CHECKSET,
+	"mse_namespace_id": acctest.CHECKSET,
+	"sls_project":      acctest.CHECKSET,
 	// The bind type is assigned asynchronously by the backend provisioning
 	// workflow, so right after creation it may still read "UserSelected"
 	// even for an auto-created workspace. Only verify it is set here; the
 	// exact enum values are asserted in case 11076 (UserSelected).
-	"cms_workspace_bind_type": CHECKSET,
+	"cms_workspace_bind_type": acctest.CHECKSET,
 }
 
 func AlicloudAgentloopAgentSpaceBasicDependence11075(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 resource "alicloud_log_project" "default" {
-    project_name = "${var.name}-log"
+  project_name = "${var.name}-log"
 }
 
 resource "alicloud_cms_workspace" "default" {
-    workspace_name = "${var.name}-cms"
-    sls_project    = alicloud_log_project.default.project_name
+  workspace_name = "${var.name}-cms"
+  sls_project    = alicloud_log_project.default.project_name
 }
+
 
 `, name)
 }
@@ -112,17 +119,22 @@ resource "alicloud_cms_workspace" "default" {
 // Case AgentSpace创建参数覆盖 11076
 func TestAccAliCloudAgentloopAgentSpace_basic11076(t *testing.T) {
 	resourceId := "alicloud_agentloop_agent_space.default"
-	rac := resourceAttrCheckInit(resourceId, AlicloudAgentloopAgentSpaceMap11076, (*agentloop.Service).DescribeAgentSpace)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	var v map[string]interface{}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAgentloopAgentSpaceMap11076)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return agentloop.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeAgentSpace")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tftestaccagentspace%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAgentloopAgentSpaceBasicDependence11076)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAgentloopAgentSpaceBasicDependence11076)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             rac.checkResourceDestroy(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				// cms_workspace is covered here with user-selected workspaces
@@ -173,40 +185,38 @@ func TestAccAliCloudAgentloopAgentSpace_basic11076(t *testing.T) {
 }
 
 var AlicloudAgentloopAgentSpaceMap11076 = map[string]string{
-	"region_id":        CHECKSET,
-	"create_time":      CHECKSET,
-	"mse_namespace_id": CHECKSET,
+	"region_id":        acctest.CHECKSET,
+	"create_time":      acctest.CHECKSET,
+	"mse_namespace_id": acctest.CHECKSET,
 }
 
 func AlicloudAgentloopAgentSpaceBasicDependence11076(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 resource "alicloud_agentloop_agent_space" "shared" {
-    agent_space = "${var.name}-shared"
+  agent_space = "${var.name}-shared"
 }
 
 resource "alicloud_log_project" "default" {
-    project_name = "${var.name}-log-a"
+  project_name = "${var.name}-log-a"
 }
 
 resource "alicloud_log_project" "update" {
-    project_name = "${var.name}-log-b"
+  project_name = "${var.name}-log-b"
 }
 
 resource "alicloud_cms_workspace" "default" {
-    workspace_name = "${var.name}-cms-a"
-    sls_project    = alicloud_log_project.default.project_name
+  workspace_name = "${var.name}-cms-a"
+  sls_project    = alicloud_log_project.default.project_name
 }
 
 resource "alicloud_cms_workspace" "update" {
-    workspace_name = "${var.name}-cms-b"
-    sls_project    = alicloud_log_project.update.project_name
-}
-
-`, name)
+  workspace_name = "${var.name}-cms-b"
+  sls_project    = alicloud_log_project.update.project_name
+}`, name)
 }
 
 // Test Agentloop AgentSpace. <<< Resource test cases, automatically generated.

@@ -7,13 +7,15 @@ description: |-
     Provides a list of server load balancer attachments to the user.
 ---
 
-# alicloud\_slb_attachments
+# alicloud_slb_attachments
 
 This data source provides the server load balancer attachments of the current Alibaba Cloud user.
 
+-> **NOTE:** Available since v1.15.0.
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_slb_attachments" "sample_ds" {
   load_balancer_id = "${alicloud_slb_load_balancer.sample_slb.id}"
 }
@@ -27,7 +29,7 @@ output "first_slb_attachment_instance_id" {
 
 The following arguments are supported:
 
-* `load_balancer_id` - ID of the SLB with attachments.
+* `load_balancer_id` - (Required) ID of the SLB with attachments.
 * `instance_ids` - (Optional) List of attached ECS instance IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

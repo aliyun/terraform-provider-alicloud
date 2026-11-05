@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cs_managed_kubernetes_clusters
 
--> **DEPRECATION NOTICE:** This data source has been deprecated since v1.276.0 and will be removed in a future release. Please use `alicloud_cs_clusters` instead.
+-> **DEPRECATED:** This data source has been deprecated since v1.276.0 and will be removed in a future release. Please use `alicloud_cs_clusters` instead.
 
 This data source provides a list Container Service Managed Kubernetes Clusters on Alibaba Cloud.
 
@@ -52,9 +52,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `id` - The ID of the container cluster.
   * `name` - The name of the container cluster.
   * `availability_zone` - The ID of availability zone.
-  * `key_name` - The keypair of ssh login cluster node, you have to create it first.
-  * `worker_numbers` - The ECS instance node number in the current container cluster.
-  * `vswitch_ids` - The ID of VSwitches where the current cluster is located.
   * `vpc_id` - The ID of VPC where the current cluster is located.
   * `security_group_id` - The ID of security group where the current cluster worker node is located.
   * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
@@ -67,9 +64,6 @@ The following attributes are exported in addition to the arguments listed above:
     * `api_server_intranet` - API Server Intranet endpoint.
     * `master_public_ip` - Master node SSH IP address.
     * `service_domain` - Service Access Domain.
-  * `log_config` - A list of one element containing information about the associated log store. It contains the following attributes:
-    * `type` - Type of collecting logs.
-    * `project` - Log Service project name.
   * `state` - (Available since v1.245.0) The state of cluster.
   * `rrsa_config` - (Available since v1.245.0) Nested attribute containing RRSA related data for your cluster.
     * `enabled` - Whether the RRSA feature has been enabled.

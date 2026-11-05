@@ -11,7 +11,7 @@ description: |-
 
 This data source provides Dts Instance available to the user.[What is Instance](https://www.alibabacloud.com/help/en/data-transmission-service/latest/createdtsinstance)
 
--> **NOTE:** Available in 1.198.0+
+-> **NOTE:** Available since v1.198.0.
 
 ## Example Usage
 
@@ -29,7 +29,7 @@ output "alicloud_dts_instance_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `resource_group_id` - (ForceNew,Optional) Resource Group ID
+* `resource_group_id` - (Optional) Resource Group ID
 * `ids` - (Optional, ForceNew, Computed) A list of Instance IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by trail name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -45,12 +45,12 @@ The following attributes are exported in addition to the arguments listed above:
   * `destination_endpoint_engine_name` - The target database engine type.
   * `dts_instance_id` - The ID of the subscription instance.
   * `instance_class` - The type of the migration or synchronization instance.- The specifications of the migration instance: **xxlarge**, **xlarge**, **large**, **medium**, **small**.- The types of synchronization instances: **large**, **medium**, **small**, **micro**.
+  * `instance_name` - The name of the instance.
   * `payment_type` - The payment type of the resource.
-  * `destination_region` - The target instance region. 
+  * `destination_region` - The target instance region.
   * `resource_group_id` - Resource Group ID.
   * `source_endpoint_engine_name` - Source instance database engine type.
   * `source_region` - The source instance region.
-  * `destination_region` - The destination instance region.
   * `status` - Instance status.
-  * `tags` - The tag value corresponding to the tag key.
+  * `tags` - (Optional) The tag value corresponding to the tag key.
   * `type` - The instance type. Valid values: -**MIGRATION**: MIGRATION.-**SYNC**: synchronization.-**SUBSCRIBE**: SUBSCRIBE.

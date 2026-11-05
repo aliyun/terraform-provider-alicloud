@@ -75,13 +75,15 @@ func SharedClientForRegion(region string) (interface{}, error) {
 	securityToken = os.Getenv("ALICLOUD_SECURITY_TOKEN")
 
 	conf := connectivity.Config{
-		Region:      connectivity.Region(region),
-		RegionId:    region,
-		AccessKey:   accessKey,
-		SecretKey:   secretKey,
-		Protocol:    "HTTPS",
-		Endpoints:   SharedEndpointCacheForRegion(region),
-		SignVersion: &signVersion,
+		Region:               connectivity.Region(region),
+		RegionId:             region,
+		AccessKey:            accessKey,
+		SecretKey:            secretKey,
+		Protocol:             "HTTPS",
+		Endpoints:            SharedEndpointCacheForRegion(region),
+		SignVersion:          &signVersion,
+		ClientReadTimeout:    30000,
+		ClientConnectTimeout: 60000,
 	}
 	if securityToken != "" {
 		conf.SecurityToken = securityToken

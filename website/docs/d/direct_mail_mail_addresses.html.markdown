@@ -7,11 +7,11 @@ description: |-
   Provides a list of Direct Mail Mail Addresses to the user.
 ---
 
-# alicloud\_direct\_mail\_mail\_addresses
+# alicloud_direct_mail_mail_addresses
 
 This data source provides the Direct Mail Mail Addresses of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.134.0+.
+-> **NOTE:** Available since v1.134.0.
 
 ## Example Usage
 
@@ -36,21 +36,21 @@ The following arguments are supported:
 * `sendtype` - (Optional, ForceNew) Account type. Valid values: `batch`, `trigger`.
 * `status` - (Optional, ForceNew) Account Status. Valid values: `0`, `1`. Freeze: 1, normal: 0.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `addresses` - A list of Direct Mail Mail Addresses. Each element contains the following attributes:
-	* `id` - The ID of the Mail Address.
-	* `account_name` - The sender address.
-	* `create_time` - The creation of the record time.
-	* `daily_count` - On the quota limit.
-	* `daily_req_count` - On the quota.
-	* `domain_status` - Domain name status. Valid values: `0`, `1`.
-	* `mail_address_id` - The sender address ID.
-	* `month_count` - Monthly quota limit.
-	* `month_req_count` - Months amount.
-	* `reply_address` - Return address.
-	* `reply_status` - If using STMP address status.
-	* `sendtype` - Account type.
-	* `status` - Account Status. Valid values: `0`, `1`. Freeze: 1, normal: 0.
+  * `id` - The ID of the Mail Address.
+  * `account_name` - The sender address.
+  * `create_time` - The creation of the record time.
+  * `daily_count` - On the quota limit.
+  * `daily_req_count` - On the quota.
+  * `domain_status` - Domain name status. Valid values: `0`, `1`.
+  * `mail_address_id` - The sender address ID.
+  * `month_count` - Monthly quota limit.
+  * `month_req_count` - Months amount.
+  * `reply_address` - Return address.
+  * `reply_status` - If using STMP address status.
+  * `sendtype` - Account type.
+  * `status` - Account Status. Valid values: `0`, `1`. Freeze: 1, normal: 0.

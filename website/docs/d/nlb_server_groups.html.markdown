@@ -42,6 +42,7 @@ The following arguments are supported:
 * `server_group_names` - (Optional, ForceNew) The names of the server groups to be queried.
 * `server_group_type` - (Optional, ForceNew) The type of the server group. Valid values: `Instance`, `Ip`.
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `Available`, `Configuring`, `Creating`.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 

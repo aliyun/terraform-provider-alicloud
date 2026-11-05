@@ -11,7 +11,7 @@ description: |-
 
 This data source provides Service Catalog Portfolio available to the user.[What is Portfolio](https://www.alibabacloud.com/help/en/service-catalog/developer-reference/api-servicecatalog-2021-09-01-createportfolio)
 
--> **NOTE:** Available in 1.204.0+
+-> **NOTE:** Available since v1.204.0+
 
 ## Example Usage
 
@@ -30,7 +30,6 @@ output "alicloud_service_catalog_portfolio_example_id" {
 
 The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed) A list of Portfolio IDs.
-* `portfolio_names` - (Optional, ForceNew) The name of the Portfolio. You can specify at most 10 names.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `scope` - (Optional, ForceNew) The query scope. Valid values: `Local`(default), `Import`, `All`.
 * `sort_by` - (Optional, ForceNew) The field that is used to sort the queried data. The value is fixed as CreateTime, which specifies the creation time of product portfolios.

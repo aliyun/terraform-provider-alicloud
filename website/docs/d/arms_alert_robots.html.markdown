@@ -48,11 +48,11 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Alert Robot IDs.
 * `names` - A list of Alert Robot names.
 * `robots` - A list of Arms Alert Robots. Each element contains the following attributes:
-	* `robot_id` - The id of the robot.
-	* `robot_name` - The name of the robot.
-	* `robot_type` - The type of the robot.
-	* `robot_addr` - The webhook url of the robot.
-	* `daily_noc` - Specifies whether the alert robot receives daily notifications.
-	* `daily_noc_time` - The time of the daily notification.
-	* `create_time` - The creation time of the resource.
-	* `id` - The ID of the Alert Robot.
+  * `robot_id` - The id of the robot.
+  * `robot_name` - The name of the robot.
+  * `robot_type` - The type of the robot.
+  * `robot_addr` - The webhook url of the robot.
+  * `daily_noc` - Specifies whether the alert robot receives daily notifications.
+  * `daily_noc_time` - The time of the daily notification.
+  * `create_time` - The creation time of the resource.
+  * `id` - The ID of the Alert Robot.

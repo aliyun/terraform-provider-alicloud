@@ -76,31 +76,26 @@ The following arguments are supported:
   * `FailureTolerancePercentage`: The percentage of stack group operation failures that can occur. In a stack group operation, if the percentage of failures does not exceed the FailureTolerancePercentage value, the operation succeeds. Otherwise, the operation fails. You cannot specify both FailureToleranceCount and FailureTolerancePercentage. Valid values: `0` to `100`. 
   * `MaxConcurrentCount`: The maximum number of accounts within which to perform this operation at one time. You cannot specify both MaxConcurrentCount and MaxConcurrentPercentage. Valid values: `1` to `20`. 
   * `MaxConcurrentPercentage`: The maximum percentage of accounts within which to perform this operation at one time. You cannot specify both MaxConcurrentCount and MaxConcurrentPercentage. Valid values: `1` to `100`
-* `parameter_overrides` - (Optional, Sensitive) ParameterOverrides. See the following `Block parameter_overrides`.
-* `stack_instance_account_id` - (Required) The account to which the stack instance belongs.
-* `stack_instance_region_id` - (Required) The region of the stack instance.
+* `parameter_overrides` - (Optional, Sensitive) ParameterOverrides. See [`parameter_overrides`](#parameter_overrides) below.
+* `stack_instance_account_id` - (Required, ForceNew) The account to which the stack instance belongs.
+* `stack_instance_region_id` - (Required, ForceNew) The region of the stack instance.
 * `stack_group_name` - (Required, ForceNew) The name of the stack group.
 * `retain_stacks` - (Optional) Specifies whether to retain the stack corresponding to the stack instance.Default value `false`. **NOTE:** When `retain_stacks` is `true`, the stack is retained. If the stack is retained, the corresponding stack is not deleted when the stack instance is deleted from the stack group. 
 * `timeout_in_minutes` - (Optional) The timeout period that is specified for the stack creation request. Default value: `60`. Unit: `minutes`.
 
-#### Block parameter_overrides
+### `parameter_overrides`
 
-The parameter_overrides supports the following: 
+The parameter_overrides supports the following:
 
-* `parameter_key` - (Required, Sensitive) The key of override parameter. If you do not specify the key and value of the parameter, ROS uses the key and value that you specified when you created the stack group.
-* `parameter_value` - (Required, Sensitive) The value of override parameter. If you do not specify the key and value of the parameter, ROS uses the key and value that you specified when you created the stack group.
+* `parameter_key` - (Optional, Sensitive) The key of override parameter. If you do not specify the key and value of the parameter, ROS uses the key and value that you specified when you created the stack group.
+* `parameter_value` - (Optional, Sensitive) The value of override parameter. If you do not specify the key and value of the parameter, ROS uses the key and value that you specified when you created the stack group.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID of Stack Instance. The value formats as `<stack_group_name>:<stack_instance_account_id>:<stack_instance_region_id>`.
-* `status` - The status of the stack instance. Valid values: `CURRENT` or `OUTDATED`. 
-  * `CURRENT`: The stack corresponding to the stack instance is up to date with the stack group. 
-  * `OUTDATED`: The stack corresponding to the stack instance is not up to date with the stack group. The `OUTDATED` state has the following possible causes: 
-    * When the CreateStackInstances operation is called to create stack instances, the corresponding stacks fail to be created. 
-    * When the UpdateStackInstances or UpdateStackGroup operation is called to update stack instances, the corresponding stacks fail to be updated, or only some of the stack instances are updated. 
-    * The create or update operation is not complete.
+* `status` - The status of the stack instance. Valid values: `CURRENT` or `OUTDATED`. `CURRENT` means the stack corresponding to the stack instance is up to date with the stack group. `OUTDATED` means the stack corresponding to the stack instance is not up to date with the stack group, which may be caused by: stack creation failures when CreateStackInstances is called; stack update failures or partial updates when UpdateStackInstances or UpdateStackGroup is called; or the create or update operation is not complete.
 
 ## Timeouts
 

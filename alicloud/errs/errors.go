@@ -6,6 +6,7 @@
 package errs
 
 import (
+	stderrors "errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -416,4 +417,58 @@ func GetTimeoutMessage(product, status string) string {
 
 func GetCreateFailedMessage(product string) string {
 	return fmt.Sprintf("The specified %s is create failed.", product)
+}
+
+// IsTypedNotFound reports whether err is a typed tea SDK not-found response:
+// HTTP 404 or the literal code "404". IsExpectedErrors must not be used for this
+// decision: its tea SDK branch also substring-matches the code against the whole
+// error payload, so a 403 APINotAuthorize carrying "404" in unrelated metadata
+// would be classified as not-found and erase a live resource from state.
+func IsTypedNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	var e *tea.SDKError
+	if !stderrors.As(err, &e) {
+		return false
+	}
+	if tea.IntValue(e.StatusCode) == 404 {
+		return true
+	}
+	return tea.StringValue(e.Code) == "404"
+}
+
+// IsResponseCodeNotFound reports a successful non-404 HTTP response whose body
+// carries Code "404". The SDK surfaces such a body as an error; callers may
+// honor it as not-found only after validating the response container, so a
+// malformed body is never turned into a missing resource.
+func IsResponseCodeNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	var e *tea.SDKError
+	if !stderrors.As(err, &e) {
+		return false
+	}
+	status := tea.IntValue(e.StatusCode)
+	return status >= 200 && status < 300 && tea.StringValue(e.Code) == "404"
+}
+
+// IsProviderNotFound reports whether err was produced by the provider's own
+// not-found path, i.e. a ComplexError whose message was built with NotFoundMsg.
+// It deliberately does not inspect the wrapped API error: a permission or other
+// non-404 failure whose text happens to contain "NotFound" must not be treated
+// as proof that the remote object is gone.
+func IsProviderNotFound(err error) bool {
+	for err != nil {
+		if e, ok := err.(*ComplexError); ok {
+			if e.Err != nil && strings.HasPrefix(e.Err.Error(), ResourceNotfound) {
+				return true
+			}
+			err = e.Cause
+			continue
+		}
+		return false
+	}
+	return false
 }

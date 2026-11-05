@@ -7,13 +7,13 @@ description: |-
     Provides a datasource to open the Fnf service automatically.
 ---
 
-# alicloud\_fnf\_service
+# alicloud_fnf_service
 
 Using this data source can open Fnf service automatically. If the service has been opened, it will return opened.
 
 For information about Fnf and how to use it, see [What is Fnf](https://www.alibabacloud.com/help/en/product/113549.htm).
 
--> **NOTE:** Available in v1.114.0+
+-> **NOTE:** Available since v1.114.0.
 
 ## Example Usage
 

@@ -12,7 +12,9 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -1084,6 +1086,119 @@ func TestProviderConfigure_CredentialsURIInvalid(t *testing.T) {
 	msg := err[0].Summary + err[0].Detail
 	if !containsString(msg, expectedMsg) && !containsString(msg, "no valid credential") {
 		t.Errorf("Expected error message related to credentials, got: %v", err)
+	}
+}
+
+// TestProviderCredentials_CredentialsURIRefresh 验证 credentials_uri 返回的是可刷新的凭证：
+// 侧车给出的 Expiration 临近时 provider 会重新请求该 URI，而不是一路沿用首次获取的静态快照。
+func TestProviderCredentials_CredentialsURIRefresh(t *testing.T) {
+	var hits int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := atomic.AddInt32(&hits, 1)
+		// Expiration 只留 1 秒，提前刷新阈值随即失效，下一次 GetCredential 必须重新请求。
+		response := fmt.Sprintf(`{
+			"Code": "Success",
+			"AccessKeyId": "STS.RefreshAccessKey%d",
+			"AccessKeySecret": "refreshAccessKeySecret%d",
+			"SecurityToken": "refreshSecurityToken%d",
+			"Expiration": %q
+		}`, n, n, n, time.Now().Add(time.Second).UTC().Format("2006-01-02T15:04:05Z"))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(response))
+	}))
+	defer server.Close()
+
+	credential := newCredentialsURICredential(server.URL, time.Now().Add(time.Hour).UTC().Format("2006-01-02T15:04:05Z"), 0, 0)
+	if credential == nil {
+		t.Fatal("Expected a refreshable credential for a sidecar returning Expiration")
+	}
+
+	first, err := credential.GetCredential()
+	if err != nil {
+		t.Fatalf("First GetCredential failed: %v", err)
+	}
+	second, err := credential.GetCredential()
+	if err != nil {
+		t.Fatalf("Second GetCredential failed: %v", err)
+	}
+
+	if got := atomic.LoadInt32(&hits); got != 2 {
+		t.Fatalf("Expected the credentials URI to be requested twice, got %d", got)
+	}
+	if *first.SecurityToken == *second.SecurityToken {
+		t.Fatalf("Expected the security token to be refreshed, got %q twice", *first.SecurityToken)
+	}
+	if got := *second.Type; got != "credentials_uri" {
+		t.Fatalf("Expected credential type credentials_uri, got %q", got)
+	}
+}
+
+// TestProviderCredentials_CredentialsURIStaticFallback 验证侧车不返回合法 Expiration 时保留一次快照的行为。
+func TestProviderCredentials_CredentialsURIStaticFallback(t *testing.T) {
+	if credential := newCredentialsURICredential("http://127.0.0.1:1/credentials", "", 0, 0); credential != nil {
+		t.Fatal("Expected a nil credential when Expiration is absent")
+	}
+	if credential := newCredentialsURICredential("http://127.0.0.1:1/credentials", "not-a-timestamp", 0, 0); credential != nil {
+		t.Fatal("Expected a nil credential when Expiration is not RFC3339")
+	}
+}
+
+// TestProviderConfigure_CredentialsURIConsumed 验证没有其他凭证来源时 providerConfigure 会读取 credentials_uri，
+// 并把侧车返回的 STS 信息装配到客户端上。refresh 语义由 TestProviderCredentials_CredentialsURIRefresh 覆盖：
+// 客户端内部的 Credential 不对外暴露，只能从 connectivity 包内断言。
+func TestProviderConfigure_CredentialsURIConsumed(t *testing.T) {
+	envVars := []string{
+		"ALICLOUD_ACCESS_KEY", "ALICLOUD_SECRET_KEY", "ALICLOUD_SECURITY_TOKEN",
+		"ALIBABA_CLOUD_ACCESS_KEY_ID", "ALIBABA_CLOUD_ACCESS_KEY_SECRET", "ALIBABA_CLOUD_SECURITY_TOKEN",
+		"ALICLOUD_PROFILE", "ALIBABA_CLOUD_PROFILE",
+		"ALICLOUD_ECS_ROLE_NAME",
+	}
+	savedEnvs := make(map[string]string)
+	for _, env := range envVars {
+		savedEnvs[env] = os.Getenv(env)
+		os.Unsetenv(env)
+	}
+	defer func() {
+		for env, val := range savedEnvs {
+			if val != "" {
+				os.Setenv(env, val)
+			}
+		}
+	}()
+
+	var hits int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := atomic.AddInt32(&hits, 1)
+		response := fmt.Sprintf(`{
+			"Code": "Success",
+			"AccessKeyId": "STS.ConfigureAccessKey%d",
+			"AccessKeySecret": "configureAccessKeySecret%d",
+			"SecurityToken": "configureSecurityToken%d",
+			"Expiration": %q
+		}`, n, n, n, time.Now().Add(time.Second).UTC().Format("2006-01-02T15:04:05Z"))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(response))
+	}))
+	defer server.Close()
+
+	provider := Provider()
+	resourceData := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
+		"credentials_uri": server.URL,
+		"region":          "cn-hangzhou",
+	})
+
+	configured, diags := providerConfigure(context.Background(), resourceData, provider)
+	if diags.HasError() {
+		t.Fatalf("providerConfigure failed with credentials_uri: %v", diags)
+	}
+	client, ok := configured.(*connectivity.AliyunClient)
+	if !ok || client == nil {
+		t.Fatalf("Expected an AliyunClient, got %#v", configured)
+	}
+	if client.AccessKey != "STS.ConfigureAccessKey1" || client.SecurityToken != "configureSecurityToken1" {
+		t.Fatalf("Expected the sidecar credentials to be used, got access key %q / token %q", client.AccessKey, client.SecurityToken)
 	}
 }
 

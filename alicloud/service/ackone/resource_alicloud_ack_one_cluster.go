@@ -1,0 +1,330 @@
+// Package ackone. This file is generated automatically. Please do not modify it manually, thank you!
+package ackone
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func ResourceCluster() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceClusterCreate,
+		Read:   resourceClusterRead,
+		Update: resourceClusterUpdate,
+		Delete: resourceClusterDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(25 * time.Minute),
+			Delete: schema.DefaultTimeout(25 * time.Minute),
+			Update: schema.DefaultTimeout(25 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"cluster_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"argocd_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"network": {
+				Type:     schema.TypeList,
+				Required: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"vswitches": {
+							Type:     schema.TypeList,
+							Required: true,
+							ForceNew: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Required: true,
+							ForceNew: true,
+						},
+						"security_group_ids": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+			},
+			"profile": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validators.StringInSlice([]string{"Default", "XFlow"}, false),
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+		},
+	}
+}
+
+func resourceClusterCreate(d *schema.ResourceData, meta interface{}) error {
+
+	if profile, ok := d.GetOk("profile"); ok && profile.(string) == "XFlow" {
+		if _, ok := d.GetOkExists("argocd_enabled"); ok {
+			return fmt.Errorf("argocd_enabled is not supported when profile is XFlow")
+		}
+	}
+
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "CreateHubCluster"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var err error
+	request = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+
+	jsonPathResult, err := jsonpath.Get("$[0].vpc_id", d.Get("network"))
+	if err == nil {
+		request["VpcId"] = jsonPathResult
+	}
+
+	jsonPathResult1, err := jsonpath.Get("$[0].vswitches", d.Get("network"))
+	if err == nil {
+		request["VSwitches"] = convert.ConvertListToJsonString(jsonPathResult1.([]interface{}))
+	}
+
+	profile := "Default"
+	if v, ok := d.GetOk("profile"); ok {
+		request["Profile"] = v
+		profile = v.(string)
+	}
+	if v, ok := d.GetOk("cluster_name"); ok {
+		request["Name"] = v
+	}
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("adcp", "2022-01-01", action, nil, request, true)
+
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		logs.AddDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ack_one_cluster", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["ClusterId"]))
+
+	ackOneService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackOneService.ClusterStateRefreshFunc(d.Id(), "$.ClusterInfo.State", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	// Wait until argocd_enabled attribute is available
+	if profile != "XFlow" {
+		stateConf = helper.BuildStateConf([]string{"<nil>"}, []string{"true", "false"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackOneService.ClusterStateRefreshFunc(d.Id(), "$.ClusterInfo.MetaData.ACKOne.GitOps.Enabled", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, "Failed to get argocd_enabled attribute after cluster creation")
+		}
+
+		if v, ok := d.GetOkExists("argocd_enabled"); ok && !v.(bool) {
+			if err := resourceClusterUpdate(d, meta); err != nil {
+				return errs.WrapErrorf(err, "Failed to set argocd_enabled correctly when creating cluster")
+			}
+		}
+	}
+
+	return resourceClusterRead(d, meta)
+}
+
+func resourceClusterRead(d *schema.ResourceData, meta interface{}) error {
+
+	if profile, ok := d.GetOk("profile"); ok && profile.(string) == "XFlow" {
+		if _, ok := d.GetOkExists("argocd_enabled"); ok {
+			return fmt.Errorf("argocd_enabled is not supported when profile is XFlow")
+		}
+	}
+
+	client := meta.(*connectivity.AliyunClient)
+	ackOneService := NewService(client)
+
+	objectRaw, err := ackOneService.DescribeCluster(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ack_one_cluster DescribeCluster Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	clusterInfo1RawObj, _ := jsonpath.Get("$.ClusterInfo", objectRaw)
+	clusterInfo1Raw := make(map[string]interface{})
+	if clusterInfo1RawObj != nil {
+		clusterInfo1Raw = clusterInfo1RawObj.(map[string]interface{})
+	}
+	d.Set("cluster_name", clusterInfo1Raw["Name"])
+	d.Set("create_time", clusterInfo1Raw["CreationTime"])
+	d.Set("profile", clusterInfo1Raw["Profile"])
+	d.Set("status", clusterInfo1Raw["State"])
+
+	networkMaps := make([]map[string]interface{}, 0)
+	networkMap := make(map[string]interface{})
+	network1Raw := make(map[string]interface{})
+	if objectRaw["Network"] != nil {
+		network1Raw = objectRaw["Network"].(map[string]interface{})
+	}
+	if len(network1Raw) > 0 {
+		networkMap["vpc_id"] = network1Raw["VpcId"]
+		securityGroupIDs1Raw := make([]interface{}, 0)
+		if network1Raw["SecurityGroupIDs"] != nil {
+			securityGroupIDs1Raw = network1Raw["SecurityGroupIDs"].([]interface{})
+		}
+
+		networkMap["security_group_ids"] = securityGroupIDs1Raw
+		vSwitches1Raw := make([]interface{}, 0)
+		if network1Raw["VSwitches"] != nil {
+			vSwitches1Raw = network1Raw["VSwitches"].([]interface{})
+		}
+
+		networkMap["vswitches"] = vSwitches1Raw
+		networkMaps = append(networkMaps, networkMap)
+	}
+	d.Set("network", networkMaps)
+
+	if d.Get("profile") == "Default" {
+		argocdEnabled, err := jsonpath.Get("$.ClusterInfo.MetaData.ACKOne.GitOps.Enabled", objectRaw)
+		if err != nil {
+			d.Set("argocd_enabled", false)
+		} else {
+			if v, ok := argocdEnabled.(bool); ok {
+				d.Set("argocd_enabled", v)
+			} else {
+				d.Set("argocd_enabled", false)
+			}
+		}
+	}
+	return nil
+}
+
+func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
+	if profile, ok := d.GetOk("profile"); ok && profile.(string) == "XFlow" {
+		if _, ok := d.GetOkExists("argocd_enabled"); ok {
+			return fmt.Errorf("argocd_enabled is not supported when profile is XFlow")
+		}
+	}
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "UpdateHubClusterFeature"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var err error
+	request = make(map[string]interface{})
+	request["ClusterId"] = d.Id()
+	if d.Get("profile") != "XFlow" {
+		if v, ok := d.GetOkExists("argocd_enabled"); ok {
+			request["ArgoCDEnabled"] = v.(bool)
+		} else {
+			request["ArgoCDEnabled"] = true
+		}
+	}
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+		response, err = client.RpcPost("adcp", "2022-01-01", action, nil, request, true)
+
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ack_one_cluster", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	ackOneService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ackOneService.ClusterStateRefreshFunc(d.Id(), "$.ClusterInfo.State", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	time.Sleep(4 * time.Minute)
+
+	return resourceClusterRead(d, meta)
+}
+
+func resourceClusterDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteHubCluster"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var err error
+	request = make(map[string]interface{})
+	request["ClusterId"] = d.Id()
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("adcp", "2022-01-01", action, nil, request, true)
+
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	ackOneService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ackOneService.ClusterStateRefreshFunc(d.Id(), "$.ClusterInfo.State", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+	return nil
+}

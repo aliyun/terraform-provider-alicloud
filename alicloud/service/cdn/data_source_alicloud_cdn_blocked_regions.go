@@ -1,0 +1,103 @@
+package cdn
+
+import (
+	"fmt"
+	"strconv"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func dataSourceAlicloudCdnBlockedRegions() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceAlicloudCdnBlockedRegionsRead,
+		Schema: map[string]*schema.Schema{
+			"language": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringInSlice([]string{"zh", "en", "jp"}, false),
+			},
+			"regions": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"countries_and_regions": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"continent": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"countries_and_regions_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceAlicloudCdnBlockedRegionsRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "DescribeBlockedRegions"
+	request := make(map[string]interface{})
+
+	request["Language"] = d.Get("language")
+
+	var response map[string]interface{}
+	var err error
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcGet("Cdn", "2018-05-10", action, request, nil)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cdn_blocked_regions", action, errs.AlibabaCloudSdkGoERROR)
+	}
+	resp, err := jsonpath.Get("$.InfoList.InfoItem", response)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.InfoList.InfoItem", response)
+	}
+	objects := resp.([]interface{})
+	s := make([]map[string]interface{}, 0)
+	for _, item := range objects {
+		object := item.(map[string]interface{})
+		mapping := map[string]interface{}{
+			"continent":                  fmt.Sprint(object["Continent"]),
+			"countries_and_regions_name": fmt.Sprint(object["CountriesAndRegionsName"]),
+			"countries_and_regions":      fmt.Sprint(object["CountriesAndRegions"]),
+		}
+
+		s = append(s, mapping)
+	}
+
+	d.SetId(strconv.FormatInt(time.Now().Unix(), 16))
+	if err := d.Set("regions", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

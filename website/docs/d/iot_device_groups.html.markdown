@@ -7,11 +7,11 @@ description: |-
   Provides a list of Iot Device Groups to the user.
 ---
 
-# alicloud\_iot\_device\_groups
+# alicloud_iot_device_groups
 
 This data source provides the Iot Device Groups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.134.0+.
+-> **NOTE:** Available since v1.134.0.
 
 ## Example Usage
 
@@ -37,18 +37,18 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `super_group_id` - (Optional, ForceNew) The id of the SuperGroup.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `groups` - A list of Iot Device Groups. Each element contains the following attributes:
-	* `create_time` - The Group CreateTime.
-	* `device_active` - The Group Number of activated devices.
-	* `device_count` - The Group Total number of devices.
-	* `device_online` - The Group Number of online devices.
-	* `error_message` - The Error_Message of the device group.
-	* `group_desc` - The GroupDesc of the device group.
-	* `group_id` - The GroupId of the device group.
-	* `group_name` - The GroupName of the device group.
-	* `id` - The ID of the device group.
-	* `success` - Whether the call is successful.
+  * `create_time` - The Group CreateTime.
+  * `device_active` - The Group Number of activated devices.
+  * `device_count` - The Group Total number of devices.
+  * `device_online` - The Group Number of online devices.
+  * `error_message` - The Error_Message of the device group.
+  * `group_desc` - The GroupDesc of the device group.
+  * `group_id` - The GroupId of the device group.
+  * `group_name` - The GroupName of the device group.
+  * `id` - The ID of the device group.
+  * `success` - Whether the call is successful.

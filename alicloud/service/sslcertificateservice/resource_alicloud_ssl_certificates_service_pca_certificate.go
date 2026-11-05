@@ -1,0 +1,391 @@
+package sslcertificateservice
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func resourceAliCloudSslCertificatesServicePcaCertificate() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAliCloudSslCertificatesServicePcaCertificateCreate,
+		Read:   resourceAliCloudSslCertificatesServicePcaCertificateRead,
+		Update: resourceAliCloudSslCertificatesServicePcaCertificateUpdate,
+		Delete: resourceAliCloudSslCertificatesServicePcaCertificateDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"algorithm": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"alias_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"common_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"country_code": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"crl_day": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"enable_crl": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"extended_key_usages": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"locality": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"organization": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"organization_unit": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"parent_identifier": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"path_len_constraint": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"state": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"tags": tags.TagsSchema(),
+			"years": {
+				Type:     schema.TypeInt,
+				Required: true,
+				ForceNew: true,
+			},
+			"certificate_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+		},
+	}
+}
+
+func resourceAliCloudSslCertificatesServicePcaCertificateCreate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	if v, ok := d.GetOk("certificate_type"); ok && helper.InArray(fmt.Sprint(v), []string{"SUB_ROOT"}) {
+		action := "CreateSubCACertificate"
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+		var err error
+		request = make(map[string]interface{})
+
+		request["ClientToken"] = helper.BuildClientToken(action)
+
+		request["State"] = d.Get("state")
+		if v, ok := d.GetOk("country_code"); ok {
+			request["CountryCode"] = v
+		}
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			request["ResourceGroupId"] = v
+		}
+		if v, ok := d.GetOk("tags"); ok {
+			tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+			request = tags.ExpandTagsToMapWithTags(request, tagsMap)
+		}
+
+		if v, ok := d.GetOkExists("path_len_constraint"); ok {
+			request["PathLenConstraint"] = v
+		}
+		request["OrganizationUnit"] = d.Get("organization_unit")
+		request["Locality"] = d.Get("locality")
+		if v, ok := d.GetOk("parent_identifier"); ok {
+			request["ParentIdentifier"] = v
+		}
+		request["Organization"] = d.Get("organization")
+		if v, ok := d.GetOkExists("enable_crl"); ok {
+			request["EnableCrl"] = v
+		}
+		request["Years"] = d.Get("years")
+		if v, ok := d.GetOk("extended_key_usages"); ok {
+			extendedKeyUsagesMapsArray := convert.ConvertToInterfaceArray(v)
+
+			request["ExtendedKeyUsages"] = extendedKeyUsagesMapsArray
+		}
+
+		request["Algorithm"] = d.Get("algorithm")
+		request["CommonName"] = d.Get("common_name")
+		if v, ok := d.GetOkExists("crl_day"); ok {
+			request["CrlDay"] = v
+		}
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+			response, err = client.RpcPost("cas", "2020-06-30", action, query, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ssl_certificates_service_pca_certificate", action, errs.AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetId(fmt.Sprint(response["Identifier"]))
+
+	} else {
+		action := "CreateRootCACertificate"
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+		var err error
+		request = make(map[string]interface{})
+
+		request["ClientToken"] = helper.BuildClientToken(action)
+
+		request["State"] = d.Get("state")
+		if v, ok := d.GetOk("country_code"); ok {
+			request["CountryCode"] = v
+		}
+		if v, ok := d.GetOk("tags"); ok {
+			tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+			request = tags.ExpandTagsToMapWithTags(request, tagsMap)
+		}
+
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			request["ResourceGroupId"] = v
+		}
+		request["OrganizationUnit"] = d.Get("organization_unit")
+		request["Locality"] = d.Get("locality")
+		request["Organization"] = d.Get("organization")
+		request["Years"] = d.Get("years")
+		if v, ok := d.GetOk("algorithm"); ok {
+			request["Algorithm"] = v
+		}
+		request["CommonName"] = d.Get("common_name")
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+			response, err = client.RpcPost("cas", "2020-06-30", action, query, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ssl_certificates_service_pca_certificate", action, errs.AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetId(fmt.Sprint(response["Identifier"]))
+	}
+
+	return resourceAliCloudSslCertificatesServicePcaCertificateUpdate(d, meta)
+}
+
+func resourceAliCloudSslCertificatesServicePcaCertificateRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	sslCertificatesServiceServiceV2 := SslCertificatesServiceServiceV2{client}
+
+	objectRaw, err := sslCertificatesServiceServiceV2.DescribeSslCertificatesServicePcaCertificate(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ssl_certificates_service_pca_certificate DescribeSslCertificatesServicePcaCertificate Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	d.Set("algorithm", objectRaw["FullAlgorithm"])
+	d.Set("common_name", objectRaw["CommonName"])
+	d.Set("country_code", objectRaw["CountryCode"])
+	d.Set("crl_day", objectRaw["CrlDay"])
+	d.Set("locality", objectRaw["Locality"])
+	d.Set("organization", objectRaw["Organization"])
+	d.Set("organization_unit", objectRaw["OrganizationUnit"])
+	d.Set("parent_identifier", objectRaw["ParentIdentifier"])
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	d.Set("state", objectRaw["State"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("years", objectRaw["Years"])
+	d.Set("certificate_type", objectRaw["CertificateType"])
+
+	tagsMaps := objectRaw["Tags"]
+	d.Set("tags", tags.TagsToMap(tagsMaps))
+
+	return nil
+}
+
+func resourceAliCloudSslCertificatesServicePcaCertificateUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+	d.Partial(true)
+
+	var err error
+	action := "MoveResourceGroup"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
+		update = true
+	}
+	request["ResourceGroupId"] = d.Get("resource_group_id")
+	request["ResourceType"] = "PcaCertificate"
+	if update {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("cas", "2020-06-30", action, query, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	action = "UpdatePcaCertificate"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Identifier"] = d.Id()
+
+	request["ClientToken"] = helper.BuildClientToken(action)
+	if d.HasChange("alias_name") {
+		update = true
+		if v, ok := d.GetOk("alias_name"); ok {
+			request["AliasName"] = v
+		}
+	}
+	if update {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("cas", "2020-06-30", action, query, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("tags") {
+		sslCertificatesServiceServiceV2 := SslCertificatesServiceServiceV2{client}
+		if err := sslCertificatesServiceServiceV2.SetResourceTags(d, "PcaCertificate"); err != nil {
+			return errs.WrapError(err)
+		}
+	}
+	d.Partial(false)
+	return resourceAliCloudSslCertificatesServicePcaCertificateRead(d, meta)
+}
+
+func resourceAliCloudSslCertificatesServicePcaCertificateDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteClientCertificate"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["Identifier"] = d.Id()
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("cas", "2020-06-30", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}

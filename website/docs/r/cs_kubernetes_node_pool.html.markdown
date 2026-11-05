@@ -937,7 +937,6 @@ The following arguments are supported:
 * `instances` - (Optional, Available since v1.127.0) The instance list. Add existing nodes under the same cluster VPC to the node pool. 
 * `node_count` (Optional, Deprecated) The worker node number of the node pool. From version 1.111.0, `node_count` is not required.
 * `keep_instance_name` - (Optional, Available since v1.127.0) Add an existing instance to the node pool, whether to keep the original instance name. It is recommended to set to `true`.
-* `rollout_policy` - (Optional, Deprecated since 1.185.0) Rollout policy is used to specify the strategy when the node pool is rolling update. This field works when node pool updating. Please use `rolling_policy` to instead it from provider version 1.185.0. See [`rollout_policy`](#rollout_policy) below.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `name` - (Deprecated since v1.219.0). Field 'name' has been deprecated from provider version 1.219.0. New field 'node_pool_name' instead.
@@ -1212,11 +1211,6 @@ The upgrade_policy supports the following:
 * `use_replace` - (Optional, Available since v1.269.0) Whether to use replacement disk upgrade. Valid values:
   - `true`: Use replacement disk upgrade. Nodes in the node pool will be upgraded by replacing the system disk, and ACK will reinitialize the nodes according to the current node pool configuration (such as node login method, labels, taints, OS image, and runtime version).
   - `false`: Do not use replacement disk upgrade.
-
-### `rollout_policy`
-
-The rollout_policy mapping supports the following:
-* `max_unavailable` - (Optional, Deprecated since 1.185.0) Maximum number of unavailable nodes during rolling upgrade. The value of this field should be greater than `0`, and if it's set to a number less than or equal to `0`, the default setting will be used. Please use `max_parallelism` to instead it from provider version 1.185.0.
 
 ## Attributes Reference
 
