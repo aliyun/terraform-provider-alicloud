@@ -869,6 +869,24 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 	backupTime := d.Get("backup_time").(string)
 	periodList := convert.ExpandStringList(d.Get("backup_period").(*schema.Set).List())
 	backupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], helper.CommaSeparated))
+	// A resource created with geo-redundant attributes reaches this builder before
+	// any Read has populated the conventional backup fields. Sending empty values
+	// makes the service reject the whole request (InvalidPreferredBackupTime), so
+	// read the effective values instead of resetting the backup schedule.
+	if backupTime == "" || backupPeriod == "" {
+		if policy, policyErr := s.DescribeMongoDBBackupPolicy(d.Id()); policyErr == nil {
+			if backupTime == "" {
+				if v, ok := policy["PreferredBackupTime"]; ok && fmt.Sprint(v) != "" {
+					backupTime = fmt.Sprint(v)
+				}
+			}
+			if backupPeriod == "" {
+				if v, ok := policy["PreferredBackupPeriod"]; ok && fmt.Sprint(v) != "" {
+					backupPeriod = fmt.Sprint(v)
+				}
+			}
+		}
+	}
 
 	request["PreferredBackupTime"] = backupTime
 	request["PreferredBackupPeriod"] = backupPeriod

@@ -458,7 +458,7 @@ func TestAccAliCloudMongoDBInstance_securityIpGroups(t *testing.T) {
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAccMongoDBInstanceSecurityIpGroups%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMongoDBInstanceBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMongoDBInstanceNetworkDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -1140,7 +1140,7 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAccMongoDBInstanceCrossBackup%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMongoDBInstanceCrossBackupDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMongoDBInstanceNetworkDependence)
 	srcRegion := mongodbTestRegion()
 	destRegion := mongodbCrossBackupDestRegion()
 	resource.Test(t, resource.TestCase{
@@ -1535,7 +1535,7 @@ func TestAccAliCloudMongoDBInstance_validation(t *testing.T) {
 	acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(mongodbTestRegion())})
 	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAccMongoDBInstanceValidation%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMongoDBInstanceCrossBackupDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMongoDBInstanceNetworkDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -1643,13 +1643,13 @@ var AliCloudMongoDBInstanceMap1 = map[string]string{
 	"replica_sets.#":          acctest.CHECKSET,
 }
 
-// AliCloudMongoDBInstanceCrossBackupDependence provides only the network
-// dependencies used by the cross-backup and validation cases. Those cases do not
-// reference the security group, KMS key or global security IP groups, so creating
-// them would only add resources that are not exercised and can be left behind when
-// the test case aborts (NEW-2). Keeping the fixture minimal makes every created
-// resource part of the assertion and cleanup surface.
-func AliCloudMongoDBInstanceCrossBackupDependence(name string) string {
+// AliCloudMongoDBInstanceNetworkDependence provides only the network
+// dependencies used by the cross-backup, validation and security IP group cases.
+// Those cases do not reference the security group, KMS key or global security IP
+// groups, so creating them would only add resources that are not exercised and can
+// be left behind when the test case aborts (NEW-2). Keeping the fixture minimal
+// makes every created resource part of the assertion and cleanup surface.
+func AliCloudMongoDBInstanceNetworkDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
 		default = "%s"
@@ -1787,6 +1787,11 @@ func (f *mongodbBackupPolicyFixture) serveHTTP(w http.ResponseWriter, r *http.Re
 	case "ModifyBackupPolicy":
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"Code": "InvalidParameter", "Message": "fixture captured the modify request", "RequestId": "fixture"})
+	case "DescribeBackupPolicy":
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"PreferredBackupTime":   "23:00Z-24:00Z",
+			"PreferredBackupPeriod": "Monday,Tuesday",
+		})
 	default:
 		// The update chain always reads the auto-renewal attribute, so the fixture keeps
 		// that response stable instead of letting an unrelated read fail early.
@@ -2132,6 +2137,19 @@ func TestUnitAliCloudMongoDBInstanceBackupPolicyRequestSerialization(t *testing.
 		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossRetentionValue", "7")
 		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossLogRetentionType", "delay")
 		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossLogRetentionValue", "3")
+	})
+
+	t.Run("create-time policy reuses the service backup schedule", func(t *testing.T) {
+		// A resource created with geo-redundant attributes reaches the policy builder
+		// before a Read populated backup_time/backup_period. The effective schedule is
+		// read from the service instead of sending empty values that the API rejects.
+		raw, values := mongodbBackupPolicyFixtureCrossConfig(t, 1)
+		state := mongodbBackupPolicyFixtureState(map[string]string{
+			"backup_time": "",
+		})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "PreferredBackupTime", "23:00Z-24:00Z")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "PreferredBackupPeriod", "Monday,Tuesday")
 	})
 
 	t.Run("delete mode carries the regions and omits the retention attributes", func(t *testing.T) {
