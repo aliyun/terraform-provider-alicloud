@@ -98,6 +98,9 @@ func ResourcePolarFs() *schema.Resource {
 func resourcePolarFsCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "CreatePolarFs"
+	if err := validatePolarDBPolarFsCreateRequest(d); err != nil {
+		return errs.WrapError(err)
+	}
 	request := buildPolarDBPolarFsCreateRequest(d, client.RegionId)
 	response, err := polarDBRpcPost(client, action, request, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
@@ -134,14 +137,7 @@ func buildPolarDBPolarFsCreateRequest(d *schema.ResourceData, regionId string) m
 		}
 	}
 	if value, ok := d.GetOk("custom_bucket_path_list"); ok {
-		var raw []interface{}
-		switch typed := value.(type) {
-		case *schema.Set:
-			raw = typed.List()
-		case []interface{}:
-			raw = typed
-		}
-		if list := expandPolarDBPolarFsCustomBucketPathList(raw); len(list) > 0 {
+		if list := expandPolarDBPolarFsCustomBucketPathList(polarDBPolarFsCustomBucketPathListRaw(value)); len(list) > 0 {
 			request["CustomBucketPathList"] = list
 		}
 	}
@@ -149,6 +145,28 @@ func buildPolarDBPolarFsCreateRequest(d *schema.ResourceData, regionId string) m
 		request["DBType"] = expandPolarDBPolarFsDBType(value.(string))
 	}
 	return request
+}
+
+func validatePolarDBPolarFsCreateRequest(d *schema.ResourceData) error {
+	accelerateType, ok := d.GetOk("accelerate_type")
+	if !ok || accelerateType.(string) != "alluxio" {
+		return nil
+	}
+	value, ok := d.GetOk("custom_bucket_path_list")
+	if !ok || len(expandPolarDBPolarFsCustomBucketPathList(polarDBPolarFsCustomBucketPathListRaw(value))) == 0 {
+		return fmt.Errorf("custom_bucket_path_list must contain at least one bucket/path pair when accelerate_type is alluxio")
+	}
+	return nil
+}
+
+func polarDBPolarFsCustomBucketPathListRaw(value interface{}) []interface{} {
+	switch typed := value.(type) {
+	case *schema.Set:
+		return typed.List()
+	case []interface{}:
+		return typed
+	}
+	return nil
 }
 
 func expandPolarDBPolarFsCustomBucketPathList(raw []interface{}) []map[string]interface{} {

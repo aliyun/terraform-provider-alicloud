@@ -175,6 +175,52 @@ func TestUnitPolarDBPolarFsCustomBucketPathListRead(t *testing.T) {
 		t.Fatal("an unexpected CustomBucketPathList payload must return an error")
 	}
 }
+func TestUnitPolarDBPolarFsCustomBucketPathListRequiredForAlluxio(t *testing.T) {
+	resourceSchema := ResourcePolarFs()
+	for _, test := range []struct {
+		name    string
+		config  map[string]interface{}
+		wantErr bool
+	}{
+		{
+			name:    "alluxio without list",
+			config:  map[string]interface{}{"accelerate_type": "alluxio"},
+			wantErr: true,
+		},
+		{
+			name: "alluxio with empty entry",
+			config: map[string]interface{}{
+				"accelerate_type":         "alluxio",
+				"custom_bucket_path_list": []interface{}{map[string]interface{}{"bucket": "", "path": ""}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "alluxio with list",
+			config: map[string]interface{}{
+				"accelerate_type":         "alluxio",
+				"custom_bucket_path_list": []interface{}{map[string]interface{}{"bucket": "tf-bucket.oss-cn-beijing-internal.aliyuncs.com", "path": "/data"}},
+			},
+		},
+		{
+			name:   "juice without list",
+			config: map[string]interface{}{"accelerate_type": "juice"},
+		},
+		{
+			name:   "accelerate_type unset",
+			config: map[string]interface{}{},
+		},
+	} {
+		d := schema.TestResourceDataRaw(t, resourceSchema.Schema, test.config)
+		err := validatePolarDBPolarFsCreateRequest(d)
+		if test.wantErr && err == nil {
+			t.Fatalf("%s: expected an error for accelerate_type=alluxio without a bucket/path pair", test.name)
+		}
+		if !test.wantErr && err != nil {
+			t.Fatalf("%s: unexpected error: %s", test.name, err)
+		}
+	}
+}
 func TestUnitRedactPolarDBSensitiveValue(t *testing.T) {
 	input := map[string]interface{}{
 		"CustomOssAk": "ak", "CustomOssSk": "sk",

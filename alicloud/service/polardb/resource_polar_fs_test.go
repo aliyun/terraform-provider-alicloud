@@ -39,7 +39,7 @@ func TestAccAliCloudPolarDBPolarFs_complete(t *testing.T) {
 					"accelerate_type":         "alluxio",
 					"custom_bucket_path_list": []map[string]interface{}{
 						{
-							"bucket": "${alicloud_oss_bucket.default.bucket}",
+							"bucket": "${alicloud_oss_bucket.default.bucket}.oss-cn-beijing-internal.aliyuncs.com",
 							"path":   "/terraform-acc",
 						},
 					},
@@ -59,7 +59,7 @@ func TestAccAliCloudPolarDBPolarFs_complete(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceId, "accelerate_type", "alluxio"),
 					resource.TestCheckResourceAttr(resourceId, "custom_bucket_path_list.#", "1"),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "custom_bucket_path_list.*", map[string]string{
-						"bucket": name,
+						"bucket": name + ".oss-cn-beijing-internal.aliyuncs.com",
 						"path":   "/terraform-acc",
 					}),
 					resource.TestCheckResourceAttrSet(resourceId, "status"),
