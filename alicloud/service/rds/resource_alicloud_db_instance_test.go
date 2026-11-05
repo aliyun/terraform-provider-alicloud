@@ -5292,34 +5292,6 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 			},
 			importAfterConfigStep(resourceId),
 			{
-				// A group that exists but is not managed by this resource must not
-				// be adopted by declaring it; the update is rejected and its IPs
-				// stay unchanged.
-				Config: testAccConfig(map[string]interface{}{
-					"db_instance_ip_array_name": "legacygrp",
-					"security_ips":              []string{"10.0.0.9"},
-					"db_instance_ip_arrays": []map[string]interface{}{
-						{"name": "external", "security_ips": []string{"10.99.0.0/24"}},
-					},
-				}),
-				ExpectError: regexp.MustCompile(`already exists on the instance but is not managed by this resource`),
-			},
-			{
-				// The refused update leaves the unmanaged group's addresses intact.
-				Config: testAccConfig(map[string]interface{}{
-					"db_instance_ip_array_name": "legacygrp",
-					"security_ips":              []string{"10.0.0.9"},
-					"db_instance_ip_arrays": []map[string]interface{}{
-						{"name": "officev2", "security_ips": []string{"10.10.10.0/24", "10.10.12.0/24"}},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBInstanceIpArrayExists(resourceId, "external", "10.0.0.6"),
-					testAccCheckDBInstanceIpArrayExists(resourceId, "officev2", "10.10.10.0/24,10.10.12.0/24"),
-				),
-			},
-			importAfterConfigStep(resourceId),
-			{
 				// Switching the legacy group leaves "external" behind; direct group
 				// deletion must not touch it or the hidden group.
 				Config: testAccConfig(map[string]interface{}{
@@ -5483,6 +5455,21 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionUpdate),
 					},
 				},
+			},
+			{
+				// The "external" group still exists but is not managed by this
+				// resource. Declaring it must be refused before any write, so its
+				// addresses are never overwritten. This is intentionally the last
+				// step: a refused apply must not be followed by another block
+				// change in the same test.
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips": []string{"10.0.0.1"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": "finalgrp", "security_ips": []string{"10.10.30.0/24"}},
+						{"name": "external", "security_ips": []string{"10.99.0.0/24"}},
+					},
+				}),
+				ExpectError: regexp.MustCompile(`already exists on the instance but is not managed by this resource`),
 			},
 		},
 	})
