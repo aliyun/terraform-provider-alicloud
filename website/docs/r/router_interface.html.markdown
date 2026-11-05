@@ -38,7 +38,7 @@ resource "alicloud_router_interface" "interface" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_router_interface&spm=docs.r.router_interface.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_router_interface&spm=docs.r.router_interface.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_router_interface&spm=docs.r.router_interface.example&intl_lang=EN_US)
 
 ## Argument Reference
 

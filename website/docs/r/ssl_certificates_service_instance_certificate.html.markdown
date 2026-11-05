@@ -25,7 +25,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ssl_certificates_service_instance_certificate&exampleId=a4a1a9bc-a012-a8b4-7889-b4b497a5b6d77cce5701&activeTab=example&spm=docs.r.ssl_certificates_service_instance_certificate.0.a4a1a9bca0&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ssl_certificates_service_instance_certificate&exampleId=a4a1a9bc-a012-a8b4-7889-b4b497a5b6d77cce5701&activeTab=example&spm=docs.r.ssl_certificates_service_instance_certificate.0.a4a1a9bca0&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -51,7 +51,7 @@ output "cert_identifier" {
 Terraform cannot destroy resource `alicloud_ssl_certificates_service_instance_certificate`. Terraform will remove this resource from the state file, however resources may remain.
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_instance_certificate&spm=docs.r.ssl_certificates_service_instance_certificate.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_instance_certificate&spm=docs.r.ssl_certificates_service_instance_certificate.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_instance_certificate&spm=docs.r.ssl_certificates_service_instance_certificate.example&intl_lang=EN_US)
 
 
 ## Argument Reference

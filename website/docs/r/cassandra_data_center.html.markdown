@@ -60,7 +60,7 @@ resource "alicloud_cassandra_data_center" "default" {
 
 This is a example for class netType dataCenter. You can find more detail with the examples/cassandra_data_center dir.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_data_center&spm=docs.r.cassandra_data_center.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_data_center&spm=docs.r.cassandra_data_center.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_data_center&spm=docs.r.cassandra_data_center.example&intl_lang=EN_US)
 
 ## Argument Reference
 

@@ -32,7 +32,7 @@ resource "alicloud_dns_domain" "dns" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dns_domain&spm=docs.r.dns_domain.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dns_domain&spm=docs.r.dns_domain.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dns_domain&spm=docs.r.dns_domain.example&intl_lang=EN_US)
 
 ## Argument Reference
 

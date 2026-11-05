@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ecs_disk_encryption_by_default&exampleId=7721a500-9b55-82d6-81b4-ff1d0791ba7dbfcdae14&activeTab=example&spm=docs.r.ecs_disk_encryption_by_default.0.7721a5009b&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ecs_disk_encryption_by_default&exampleId=7721a500-9b55-82d6-81b4-ff1d0791ba7dbfcdae14&activeTab=example&spm=docs.r.ecs_disk_encryption_by_default.0.7721a5009b&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -37,7 +37,7 @@ resource "alicloud_ecs_disk_encryption_by_default" "default" {
 Terraform cannot destroy resource `alicloud_ecs_disk_encryption_by_default`. Terraform will remove this resource from the state file, however resources may remain.
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_disk_encryption_by_default&spm=docs.r.ecs_disk_encryption_by_default.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_disk_encryption_by_default&spm=docs.r.ecs_disk_encryption_by_default.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_disk_encryption_by_default&spm=docs.r.ecs_disk_encryption_by_default.example&intl_lang=EN_US)
 
 
 ## Argument Reference

@@ -47,7 +47,7 @@ ACK cluster
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=b0eb1ce5-600c-72f9-4f22-48dd1a98bae886cee4d4&activeTab=example&spm=docs.r.cs_managed_kubernetes.0.b0eb1ce560&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=b0eb1ce5-600c-72f9-4f22-48dd1a98bae886cee4d4&activeTab=example&spm=docs.r.cs_managed_kubernetes.0.b0eb1ce560&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -183,7 +183,7 @@ ACK Cluster with Auto Mode
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=60e29c41-4080-b619-5a95-b85ec420a8a4e95bb70b&activeTab=example&spm=docs.r.cs_managed_kubernetes.1.60e29c4140&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=60e29c41-4080-b619-5a95-b85ec420a8a4e95bb70b&activeTab=example&spm=docs.r.cs_managed_kubernetes.1.60e29c4140&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -352,7 +352,7 @@ When `load_balancer_id` is omitted, ACK automatically creates and manages a priv
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=d7768390-cf8f-03db-c010-4a05267c2a3dbf058138&activeTab=example&spm=docs.r.cs_managed_kubernetes.2.d7768390cf&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=d7768390-cf8f-03db-c010-4a05267c2a3dbf058138&activeTab=example&spm=docs.r.cs_managed_kubernetes.2.d7768390cf&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -408,7 +408,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_managed_kubernetes&spm=docs.r.cs_managed_kubernetes.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_managed_kubernetes&spm=docs.r.cs_managed_kubernetes.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_managed_kubernetes&spm=docs.r.cs_managed_kubernetes.example&intl_lang=EN_US)
 
 ## Argument Reference
 

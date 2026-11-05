@@ -25,7 +25,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_firewall_nat_firewall_control_policy_order&exampleId=60ab672c-ffbe-70c6-4887-67810ea3266c4ce49904&activeTab=example&spm=docs.r.cloud_firewall_nat_firewall_control_policy_order.0.60ab672cff&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cloud_firewall_nat_firewall_control_policy_order&exampleId=60ab672c-ffbe-70c6-4887-67810ea3266c4ce49904&activeTab=example&spm=docs.r.cloud_firewall_nat_firewall_control_policy_order.0.60ab672cff&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -51,7 +51,7 @@ resource "alicloud_cloud_firewall_nat_firewall_control_policy_order" "default" {
 Terraform cannot destroy resource `alicloud_cloud_firewall_nat_firewall_control_policy_order`. Terraform will remove this resource from the state file, however resources may remain.
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_nat_firewall_control_policy_order&spm=docs.r.cloud_firewall_nat_firewall_control_policy_order.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_nat_firewall_control_policy_order&spm=docs.r.cloud_firewall_nat_firewall_control_policy_order.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_nat_firewall_control_policy_order&spm=docs.r.cloud_firewall_nat_firewall_control_policy_order.example&intl_lang=EN_US)
 
 
 ## Argument Reference

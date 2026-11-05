@@ -66,7 +66,7 @@ resource "alicloud_max_compute_tunnel_quota_timer" "default" {
 
 Terraform cannot destroy resource `alicloud_max_compute_tunnel_quota_timer`. Terraform will remove this resource from the state file, however resources may remain.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_max_compute_tunnel_quota_timer&spm=docs.r.max_compute_tunnel_quota_timer.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_max_compute_tunnel_quota_timer&spm=docs.r.max_compute_tunnel_quota_timer.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_max_compute_tunnel_quota_timer&spm=docs.r.max_compute_tunnel_quota_timer.example&intl_lang=EN_US)
 
 ## Argument Reference
 

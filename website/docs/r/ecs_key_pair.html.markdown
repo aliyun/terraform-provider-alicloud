@@ -21,7 +21,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ecs_key_pair&exampleId=3dd74fa1-1377-6034-b4c4-c41fd49d223c74831f0e&activeTab=example&spm=docs.r.ecs_key_pair.0.3dd74fa113&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ecs_key_pair&exampleId=3dd74fa1-1377-6034-b4c4-c41fd49d223c74831f0e&activeTab=example&spm=docs.r.ecs_key_pair.0.3dd74fa113&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -42,7 +42,7 @@ resource "alicloud_ecs_key_pair" "publickey" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_key_pair&spm=docs.r.ecs_key_pair.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_key_pair&spm=docs.r.ecs_key_pair.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_key_pair&spm=docs.r.ecs_key_pair.example&intl_lang=EN_US)
 
 ## Argument Reference
 

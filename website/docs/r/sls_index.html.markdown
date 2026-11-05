@@ -21,9 +21,9 @@ For information about Log Service (SLS) Index and how to use it, see [What is In
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_sls_index&exampleId=e68b5aa6-d6b3-6332-9382-e22ad463e1716d0ef37d&activeTab=example&spm=docs.r.sls_index.0.e68b5aa6d6&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_sls_index&exampleId=6fc14868-ee27-a53e-f6aa-bd39e8b480ef821e6b1d&activeTab=example&spm=docs.r.sls_index.0.6fc14868ee&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_sls_index&exampleId=6fc14868-ee27-a53e-f6aa-bd39e8b480ef821e6b1d&activeTab=example&spm=docs.r.sls_index.0.6fc14868ee&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -105,7 +105,7 @@ resource "alicloud_sls_index" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_index&spm=docs.r.sls_index.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_index&spm=docs.r.sls_index.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_index&spm=docs.r.sls_index.example&intl_lang=EN_US)
 
 ## Argument Reference
 

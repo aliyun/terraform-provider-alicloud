@@ -33,7 +33,7 @@ You can add forwarding rules to a listener to forward requests based on the doma
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_slb_rule&exampleId=3924f6b8-5e44-cfa9-6e0b-653b370141419fb6fd66&activeTab=example&spm=docs.r.slb_rule.0.3924f6b85e&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_slb_rule&exampleId=3924f6b8-5e44-cfa9-6e0b-653b370141419fb6fd66&activeTab=example&spm=docs.r.slb_rule.0.3924f6b85e&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -133,7 +133,7 @@ resource "alicloud_slb_rule" "rule" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_rule&spm=docs.r.slb_rule.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_rule&spm=docs.r.slb_rule.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_rule&spm=docs.r.slb_rule.example&intl_lang=EN_US)
 
 ## Argument Reference
 

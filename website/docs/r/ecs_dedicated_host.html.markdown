@@ -22,7 +22,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ecs_dedicated_host&exampleId=dc59ca38-fd10-4e9a-85c7-290e4853308e82aa96a9&activeTab=example&spm=docs.r.ecs_dedicated_host.0.dc59ca38fd&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ecs_dedicated_host&exampleId=dc59ca38-fd10-4e9a-85c7-290e4853308e82aa96a9&activeTab=example&spm=docs.r.ecs_dedicated_host.0.dc59ca38fd&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -45,7 +45,7 @@ Create Prepaid DDH
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ecs_dedicated_host&exampleId=1289ef43-59c7-4a3f-bbed-976fc2067df23d131e63&activeTab=example&spm=docs.r.ecs_dedicated_host.1.1289ef4359&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ecs_dedicated_host&exampleId=1289ef43-59c7-4a3f-bbed-976fc2067df23d131e63&activeTab=example&spm=docs.r.ecs_dedicated_host.1.1289ef4359&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -70,7 +70,7 @@ Deleting the subscription resource or removing it from your configuration
 will remove it from your state file and management, but will not destroy the Dedicated Host.
 You can resume managing the subscription dedicated host via the AlibabaCloud Console.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_dedicated_host&spm=docs.r.ecs_dedicated_host.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_dedicated_host&spm=docs.r.ecs_dedicated_host.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_dedicated_host&spm=docs.r.ecs_dedicated_host.example&intl_lang=EN_US)
 
 ## Argument Reference
 

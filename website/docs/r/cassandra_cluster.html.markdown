@@ -46,7 +46,7 @@ resource "alicloud_cassandra_cluster" "default" {
 
 This is a example for class netType cluster. You can find more detail with the examples/cassandra_cluster dir.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_cluster&spm=docs.r.cassandra_cluster.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_cluster&spm=docs.r.cassandra_cluster.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_cluster&spm=docs.r.cassandra_cluster.example&intl_lang=EN_US)
 
 ## Argument Reference
 

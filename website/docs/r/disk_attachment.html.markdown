@@ -53,7 +53,7 @@ resource "alicloud_disk_attachment" "ecs_disk_att" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_disk_attachment&spm=docs.r.disk_attachment.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_disk_attachment&spm=docs.r.disk_attachment.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_disk_attachment&spm=docs.r.disk_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
 

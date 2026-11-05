@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_transit_router_grant_attachment&exampleId=d3da962c-17b8-e48b-28ad-cc619d02ca0d7a77d422&activeTab=example&spm=docs.r.cen_transit_router_grant_attachment.0.d3da962c17&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cen_transit_router_grant_attachment&exampleId=d3da962c-17b8-e48b-28ad-cc619d02ca0d7a77d422&activeTab=example&spm=docs.r.cen_transit_router_grant_attachment.0.d3da962c17&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -49,7 +49,7 @@ resource "alicloud_cen_transit_router_grant_attachment" "example" {
 ```
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_grant_attachment&spm=docs.r.cen_transit_router_grant_attachment.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_grant_attachment&spm=docs.r.cen_transit_router_grant_attachment.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_grant_attachment&spm=docs.r.cen_transit_router_grant_attachment.example&intl_lang=EN_US)
 
 
 ## Argument Reference

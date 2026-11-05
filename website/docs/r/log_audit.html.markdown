@@ -22,7 +22,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_log_audit&exampleId=771f99a8-11b2-0457-b1eb-811fa59251c3441793f0&activeTab=example&spm=docs.r.log_audit.0.771f99a811&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_log_audit&exampleId=771f99a8-11b2-0457-b1eb-811fa59251c3441793f0&activeTab=example&spm=docs.r.log_audit.0.771f99a811&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -124,7 +124,7 @@ Multiple accounts Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_log_audit&exampleId=4ef78322-06f0-bf07-151a-03b3bba82aa2c9eb6dfb&activeTab=example&spm=docs.r.log_audit.1.4ef7832206&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_log_audit&exampleId=4ef78322-06f0-bf07-151a-03b3bba82aa2c9eb6dfb&activeTab=example&spm=docs.r.log_audit.1.4ef7832206&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -147,7 +147,7 @@ Resource Directory Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_log_audit&exampleId=52d8f305-0eaf-1a81-2b89-9c96539bff9f43d4c2ed&activeTab=example&spm=docs.r.log_audit.2.52d8f3050e&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_log_audit&exampleId=52d8f305-0eaf-1a81-2b89-9c96539bff9f43d4c2ed&activeTab=example&spm=docs.r.log_audit.2.52d8f3050e&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -168,7 +168,7 @@ resource "alicloud_log_audit" "example" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_log_audit&exampleId=9844a14c-5cfc-9781-e1fa-03defa44c0cfba3dbae6&activeTab=example&spm=docs.r.log_audit.3.9844a14c5c&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_log_audit&exampleId=9844a14c-5cfc-9781-e1fa-03defa44c0cfba3dbae6&activeTab=example&spm=docs.r.log_audit.3.9844a14c5c&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -189,7 +189,7 @@ resource "alicloud_log_audit" "example" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_log_audit&spm=docs.r.log_audit.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_log_audit&spm=docs.r.log_audit.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_log_audit&spm=docs.r.log_audit.example&intl_lang=EN_US)
 
 ## Argument Reference
 

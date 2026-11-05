@@ -26,7 +26,7 @@ For information about RDS and how to use it, see [What is ApsaraDB for RDS](http
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_db_instance&exampleId=68a4ca14-6671-8348-6221-95a96e39e6d6cf8fb824&activeTab=example&spm=docs.r.db_instance.0.68a4ca1466&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_db_instance&exampleId=68a4ca14-6671-8348-6221-95a96e39e6d6cf8fb824&activeTab=example&spm=docs.r.db_instance.0.68a4ca1466&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -84,7 +84,7 @@ resource "alicloud_db_instance" "example" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_db_instance&exampleId=9778b08f-c1e9-2996-3ae6-309e2e5e9ee604feca12&activeTab=example&spm=docs.r.db_instance.1.9778b08fc1&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_db_instance&exampleId=9778b08f-c1e9-2996-3ae6-309e2e5e9ee604feca12&activeTab=example&spm=docs.r.db_instance.1.9778b08fc1&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -149,7 +149,7 @@ resource "alicloud_db_instance" "example" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_db_instance&exampleId=4b50f5e4-5909-8ef5-5859-01c08c1355be7d668db8&activeTab=example&spm=docs.r.db_instance.2.4b50f5e459&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_db_instance&exampleId=4b50f5e4-5909-8ef5-5859-01c08c1355be7d668db8&activeTab=example&spm=docs.r.db_instance.2.4b50f5e459&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -210,7 +210,7 @@ resource "alicloud_db_instance" "example" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_db_instance&exampleId=7f44ae17-f632-5f9a-3bcd-bf035cc7d477f677f388&activeTab=example&spm=docs.r.db_instance.3.7f44ae17f6&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_db_instance&exampleId=7f44ae17-f632-5f9a-3bcd-bf035cc7d477f677f388&activeTab=example&spm=docs.r.db_instance.3.7f44ae17f6&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -274,7 +274,7 @@ resource "alicloud_db_instance" "example" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_db_instance&exampleId=d6a43bad-8e5c-dc3e-ce0e-598136e9cdbb2315fbe8&activeTab=example&spm=docs.r.db_instance.4.d6a43bad8e&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_db_instance&exampleId=d6a43bad-8e5c-dc3e-ce0e-598136e9cdbb2315fbe8&activeTab=example&spm=docs.r.db_instance.4.d6a43bad8e&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -336,7 +336,7 @@ resource "alicloud_db_instance" "example" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_db_instance&exampleId=f0cbdff6-c03a-c52b-383c-ae2dd1fd695361ab971c&activeTab=example&spm=docs.r.db_instance.5.f0cbdff6c0&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_db_instance&exampleId=f0cbdff6-c03a-c52b-383c-ae2dd1fd695361ab971c&activeTab=example&spm=docs.r.db_instance.5.f0cbdff6c0&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -404,7 +404,7 @@ resource "alicloud_db_instance" "example" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_db_instance&exampleId=3457ee01-3106-7d9d-f1e0-f3690c8b9d53a4f97404&activeTab=example&spm=docs.r.db_instance.6.3457ee0131&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_db_instance&exampleId=3457ee01-3106-7d9d-f1e0-f3690c8b9d53a4f97404&activeTab=example&spm=docs.r.db_instance.6.3457ee0131&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -465,7 +465,7 @@ resource "alicloud_db_instance" "example" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_db_instance&exampleId=1b056009-c0c0-8b06-5c28-a9f20c80f344d64f33d0&activeTab=example&spm=docs.r.db_instance.7.1b056009c0&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_db_instance&exampleId=1b056009-c0c0-8b06-5c28-a9f20c80f344d64f33d0&activeTab=example&spm=docs.r.db_instance.7.1b056009c0&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -533,7 +533,7 @@ By default, the `alicloud_db_instance` resource cannot destroy a `Prepaid` (Subs
 
 To destroy a Subscription DB instance, set `force_delete = true` on the resource. Terraform will first convert the instance from `PrePaid` to `PostPaid` (settling the remaining subscription period) and then delete it. This conversion has billing consequences, so it must be enabled explicitly.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_db_instance&spm=docs.r.db_instance.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_db_instance&spm=docs.r.db_instance.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_db_instance&spm=docs.r.db_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 

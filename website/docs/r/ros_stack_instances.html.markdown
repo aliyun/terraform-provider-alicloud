@@ -24,7 +24,7 @@ Basic Usage - Self-Managed Permissions
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ros_stack_instances&exampleId=ab82e707-95f7-26fa-bc67-c2a79a1b22247d8ca206&activeTab=example&spm=docs.r.ros_stack_instances.0.ab82e70795&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ros_stack_instances&exampleId=ab82e707-95f7-26fa-bc67-c2a79a1b22247d8ca206&activeTab=example&spm=docs.r.ros_stack_instances.0.ab82e70795&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -66,7 +66,7 @@ resource "alicloud_ros_stack_instances" "self_managed" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://github.com/aliyun/terraform-provider-alicloud/tree/master/examples/ros-stack-instances)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ros_stack_instances&spm=docs.r.ros_stack_instances.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ros_stack_instances&spm=docs.r.ros_stack_instances.example&intl_lang=EN_US)
 
 ## Important Notes
 

@@ -32,7 +32,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ga_endpoint_group&exampleId=698d9c61-9f7d-dbd4-38cb-127f54151ac5cf3814d3&activeTab=example&spm=docs.r.ga_endpoint_group.0.698d9c619f&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ga_endpoint_group&exampleId=698d9c61-9f7d-dbd4-38cb-127f54151ac5cf3814d3&activeTab=example&spm=docs.r.ga_endpoint_group.0.698d9c619f&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -107,7 +107,7 @@ The following example shows how to create an endpoint group with `IpTarget` type
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ga_endpoint_group&exampleId=d869845e-cab2-6de1-8b7f-90587e028ae20e4d661b&activeTab=example&spm=docs.r.ga_endpoint_group.1.d869845eca&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ga_endpoint_group&exampleId=d869845e-cab2-6de1-8b7f-90587e028ae20e4d661b&activeTab=example&spm=docs.r.ga_endpoint_group.1.d869845eca&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -188,7 +188,7 @@ resource "alicloud_ga_endpoint_group" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ga_endpoint_group&spm=docs.r.ga_endpoint_group.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ga_endpoint_group&spm=docs.r.ga_endpoint_group.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ga_endpoint_group&spm=docs.r.ga_endpoint_group.example&intl_lang=EN_US)
 
 ## Argument Reference
 

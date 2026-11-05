@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_file_system&exampleId=e4c2e56e-d616-5a3d-e56d-56aa3caacf29cd5c0a18&activeTab=example&spm=docs.r.nas_file_system.0.e4c2e56ed6&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_nas_file_system&exampleId=e4c2e56e-d616-5a3d-e56d-56aa3caacf29cd5c0a18&activeTab=example&spm=docs.r.nas_file_system.0.e4c2e56ed6&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -63,7 +63,7 @@ A CPFS file system is created inside a VPC, so `vpc_id` and `vswitch_id` are req
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_file_system&exampleId=88a4c7e1-1b7d-80e1-393c-0807b82608b0552656ad&activeTab=example&spm=docs.r.nas_file_system.1.88a4c7e11b&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_nas_file_system&exampleId=88a4c7e1-1b7d-80e1-393c-0807b82608b0552656ad&activeTab=example&spm=docs.r.nas_file_system.1.88a4c7e11b&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -80,7 +80,7 @@ resource "alicloud_nas_file_system" "cpfs" {
 ```
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_file_system&spm=docs.r.nas_file_system.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_file_system&spm=docs.r.nas_file_system.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_file_system&spm=docs.r.nas_file_system.example&intl_lang=EN_US)
 
 ## Argument Reference
 

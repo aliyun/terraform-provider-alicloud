@@ -20,6 +20,12 @@ For information about Application Real-Time Monitoring Service (ARMS) Notificati
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_arms_notification_policy&exampleId=7c9def2c-7d7c-f1a5-0d98-76a17371e930c88eaf86&activeTab=example&spm=docs.r.arms_notification_policy.0.7c9def2c7d&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_arms_notification_policy&exampleId=7c9def2c-7d7c-f1a5-0d98-76a17371e930c88eaf86&activeTab=example&spm=docs.r.arms_notification_policy.0.7c9def2c7d&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -71,6 +77,12 @@ resource "alicloud_arms_notification_policy" "default" {
 
 The `CONTACT` notification object may reference an `alicloud_arms_webhook_contact` resource. Its ID and name are taken from the webhook contact's exported output, and the `webhook` channel delivers through that endpoint.
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_arms_notification_policy&exampleId=57bae2fa-d67d-45d1-9de4-574a5288fdafec1fe9a8&activeTab=example&spm=docs.r.arms_notification_policy.1.57bae2fad6&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_arms_notification_policy&exampleId=57bae2fa-d67d-45d1-9de4-574a5288fdafec1fe9a8&activeTab=example&spm=docs.r.arms_notification_policy.1.57bae2fad6&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
+</div></div>
+
 ```terraform
 variable "webhook_name" {
   default = "terraform-example-webhook"
@@ -116,6 +128,10 @@ resource "alicloud_arms_notification_policy" "default" {
   }
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_arms_notification_policy&spm=docs.r.arms_notification_policy.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_arms_notification_policy&spm=docs.r.arms_notification_policy.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

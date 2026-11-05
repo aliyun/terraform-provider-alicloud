@@ -31,7 +31,7 @@ resource "alicloud_brain_industrial_pid_loop" "example" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_brain_industrial_pid_loop&spm=docs.r.brain_industrial_pid_loop.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_brain_industrial_pid_loop&spm=docs.r.brain_industrial_pid_loop.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_brain_industrial_pid_loop&spm=docs.r.brain_industrial_pid_loop.example&intl_lang=EN_US)
 
 ## Argument Reference
 

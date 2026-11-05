@@ -53,7 +53,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=66279bbd-218c-c7d1-b075-cf3d0013a3536bfa116b&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.0.66279bbd21&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=66279bbd-218c-c7d1-b075-cf3d0013a3536bfa116b&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.0.66279bbd21&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -331,7 +331,7 @@ Create Target mode private pools with `alicloud_ecs_capacity_reservation` and `a
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=3fbf422e-4652-b0a9-429d-81a4b1071e7ad5019e74&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.1.3fbf422e46&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=3fbf422e-4652-b0a9-429d-81a4b1071e7ad5019e74&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.1.3fbf422e46&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -435,7 +435,7 @@ Nodepools enable Auto Mode can only be created in Auto Mode clusters. An Auto Mo
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=c5601ff1-e32a-cd27-cd93-52aa3e24ae143cb018a1&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.2.c5601ff1e3&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=c5601ff1-e32a-cd27-cd93-52aa3e24ae143cb018a1&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.2.c5601ff1e3&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -775,7 +775,7 @@ resource "alicloud_cs_kubernetes_node_pool" "upgrade_nodepool" {
 ```
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_node_pool&spm=docs.r.cs_kubernetes_node_pool.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_node_pool&spm=docs.r.cs_kubernetes_node_pool.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_node_pool&spm=docs.r.cs_kubernetes_node_pool.example&intl_lang=EN_US)
 
 ## Argument Reference
 

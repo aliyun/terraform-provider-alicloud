@@ -22,9 +22,9 @@ For information about Server Certificate and how to use it, see [Configure Serve
 * using server_certificate/private content as string example
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_slb_server_certificate&exampleId=4fad1cdc-1024-dfa2-c0f2-5d214bbc799fba0a7c4a&activeTab=example&spm=docs.r.slb_server_certificate.0.4fad1cdc10&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_slb_server_certificate&exampleId=6c7aab13-04ad-9dbb-1c88-bd6ea262307b08207fdd&activeTab=example&spm=docs.r.slb_server_certificate.0.6c7aab1304&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_slb_server_certificate&exampleId=6c7aab13-04ad-9dbb-1c88-bd6ea262307b08207fdd&activeTab=example&spm=docs.r.slb_server_certificate.0.6c7aab1304&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -38,6 +38,12 @@ resource "alicloud_slb_server_certificate" "foo" {
 
 * using server_certificate/private file example
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_slb_server_certificate&exampleId=00bca350-6c1d-994c-d7dc-283d2fa72440fec2b44c&activeTab=example&spm=docs.r.slb_server_certificate.1.00bca3506c&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_slb_server_certificate&exampleId=00bca350-6c1d-994c-d7dc-283d2fa72440fec2b44c&activeTab=example&spm=docs.r.slb_server_certificate.1.00bca3506c&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
+</div></div>
+
 ```terraform
 # create a server certificate
 resource "alicloud_slb_server_certificate" "foo" {
@@ -47,7 +53,7 @@ resource "alicloud_slb_server_certificate" "foo" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_server_certificate&spm=docs.r.slb_server_certificate.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_server_certificate&spm=docs.r.slb_server_certificate.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_server_certificate&spm=docs.r.slb_server_certificate.example&intl_lang=EN_US)
 
 ## Argument Reference
 

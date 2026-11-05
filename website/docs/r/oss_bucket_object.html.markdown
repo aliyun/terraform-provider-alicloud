@@ -20,7 +20,7 @@ Provides a resource to put a object(content or file) to a oss bucket.
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket_object&exampleId=61f00540-416c-d582-0484-f3dabd21d0a6b92739d4&activeTab=example&spm=docs.r.oss_bucket_object.0.61f0054041&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_oss_bucket_object&exampleId=61f00540-416c-d582-0484-f3dabd21d0a6b92739d4&activeTab=example&spm=docs.r.oss_bucket_object.0.61f0054041&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -50,7 +50,7 @@ resource "alicloud_oss_bucket_object" "default" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket_object&exampleId=dade73b3-5a61-2529-6fe5-6dd66693916a63b3c7f5&activeTab=example&spm=docs.r.oss_bucket_object.1.dade73b35a&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_oss_bucket_object&exampleId=dade73b3-5a61-2529-6fe5-6dd66693916a63b3c7f5&activeTab=example&spm=docs.r.oss_bucket_object.1.dade73b35a&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -76,7 +76,7 @@ resource "alicloud_oss_bucket_object" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_object&spm=docs.r.oss_bucket_object.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_object&spm=docs.r.oss_bucket_object.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_object&spm=docs.r.oss_bucket_object.example&intl_lang=EN_US)
 
 ## Argument Reference
 

@@ -147,7 +147,7 @@ resource "alicloud_cddc_dedicated_propre_host" "default" {
 
 Terraform cannot destroy resource `alicloud_cddc_dedicated_propre_host`. Terraform will remove this resource from the state file, however resources may remain.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cddc_dedicated_propre_host&spm=docs.r.cddc_dedicated_propre_host.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cddc_dedicated_propre_host&spm=docs.r.cddc_dedicated_propre_host.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cddc_dedicated_propre_host&spm=docs.r.cddc_dedicated_propre_host.example&intl_lang=EN_US)
 
 ## Argument Reference
 

@@ -56,7 +56,7 @@ resource "alicloud_adb_cluster" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_adb_cluster&spm=docs.r.adb_cluster.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_adb_cluster&spm=docs.r.adb_cluster.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_adb_cluster&spm=docs.r.adb_cluster.example&intl_lang=EN_US)
 
 ### Removing alicloud_adb_cluster from your configuration
 

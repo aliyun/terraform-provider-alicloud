@@ -20,9 +20,9 @@ databases.
 Create a PolarDB MySQL cluster
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_cluster&exampleId=14aedf61-7507-af1c-c239-50c54127fb66a22cd321&activeTab=example&spm=docs.r.polardb_cluster.0.14aedf6175&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_cluster&exampleId=fa7aa8de-1e2c-32fc-6030-450579d942adc4f3f776&activeTab=example&spm=docs.r.polardb_cluster.0.fa7aa8de1e&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_polardb_cluster&exampleId=fa7aa8de-1e2c-32fc-6030-450579d942adc4f3f776&activeTab=example&spm=docs.r.polardb_cluster.0.fa7aa8de1e&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -76,9 +76,9 @@ resource "alicloud_polardb_cluster" "default" {
 Create a PolarDB PostgreSQL distributed cluster
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_cluster&exampleId=6a2fb509-2f5d-ea60-f6dd-3d048e279b4b8a53b1e7&activeTab=example&spm=docs.r.polardb_cluster.1.6a2fb5092f&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_cluster&exampleId=78616856-eeb5-9183-54c0-a1b2fe834927228f6f1c&activeTab=example&spm=docs.r.polardb_cluster.1.78616856ee&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_polardb_cluster&exampleId=78616856-eeb5-9183-54c0-a1b2fe834927228f6f1c&activeTab=example&spm=docs.r.polardb_cluster.1.78616856ee&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -127,9 +127,9 @@ When enabling TDE encryption, it is necessary to ensure that there is an AliyunR
 Note: If there is only the role AliyunRDSSInceEncryptionDefaultRole under the account, this example may not be applicable.
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_cluster&exampleId=7fe72195-8276-56ac-7eea-a41843688621c173a84b&activeTab=example&spm=docs.r.polardb_cluster.2.7fe7219582&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_cluster&exampleId=45b98bb9-84a9-39c7-a5cf-e483620ccbdfc1a803d6&activeTab=example&spm=docs.r.polardb_cluster.2.45b98bb984&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_polardb_cluster&exampleId=45b98bb9-84a9-39c7-a5cf-e483620ccbdfc1a803d6&activeTab=example&spm=docs.r.polardb_cluster.2.45b98bb984&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -185,7 +185,7 @@ resource "alicloud_resource_manager_policy_attachment" "default" {
 
 The alicloud_polardb_cluster resource allows you to manage your polardb cluster, but Terraform cannot destroy it if your cluster type is pre paid(post paid type can destroy normally). Removing this resource from your configuration will remove it from your statefile and management, but will not destroy the cluster. You can resume managing the cluster via the polardb Console.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_cluster&spm=docs.r.polardb_cluster.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_cluster&spm=docs.r.polardb_cluster.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_cluster&spm=docs.r.polardb_cluster.example&intl_lang=EN_US)
 
 ## Argument Reference
 

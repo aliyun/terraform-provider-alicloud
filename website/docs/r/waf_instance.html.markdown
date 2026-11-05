@@ -44,7 +44,7 @@ The `alicloud_waf_instance` resource allows you to manage `subscription_type = "
 Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the WAF Instance.
 You can resume managing the subscription WAF instance via the AlibabaCloud Console.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_waf_instance&spm=docs.r.waf_instance.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_waf_instance&spm=docs.r.waf_instance.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_waf_instance&spm=docs.r.waf_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 

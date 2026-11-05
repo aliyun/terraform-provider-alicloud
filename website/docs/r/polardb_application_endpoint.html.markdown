@@ -20,7 +20,7 @@ Create a PolarDB Application Endpoint
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_application_endpoint&exampleId=d60fa825-9674-997b-7617-9a6565a72eba497f4d7f&activeTab=example&spm=docs.r.polardb_application_endpoint.0.d60fa82596&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_polardb_application_endpoint&exampleId=d60fa825-9674-997b-7617-9a6565a72eba497f4d7f&activeTab=example&spm=docs.r.polardb_application_endpoint.0.d60fa82596&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -36,7 +36,7 @@ resource "alicloud_polardb_application_endpoint" "default" {
 
 The `alicloud_polardb_application_endpoint` resource allows you to manage the network endpoints of your PolarDB application. Removing this resource from your configuration will remove it from your statefile and management, but may not disable the network access immediately depending on the underlying API behavior. Please verify the status in the PolarDB Console.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_application_endpoint&spm=docs.r.polardb_application_endpoint.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_application_endpoint&spm=docs.r.polardb_application_endpoint.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_application_endpoint&spm=docs.r.polardb_application_endpoint.example&intl_lang=EN_US)
 
 ## Argument Reference
 

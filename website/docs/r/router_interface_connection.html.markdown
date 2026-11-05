@@ -85,7 +85,7 @@ resource "alicloud_router_interface_connection" "bar" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_router_interface_connection&spm=docs.r.router_interface_connection.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_router_interface_connection&spm=docs.r.router_interface_connection.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_router_interface_connection&spm=docs.r.router_interface_connection.example&intl_lang=EN_US)
 
 ## Argument Reference
 

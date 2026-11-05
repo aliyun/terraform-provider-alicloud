@@ -70,7 +70,7 @@ resource "alicloud_kvstore_backup_policy" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kvstore_backup_policy&spm=docs.r.kvstore_backup_policy.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kvstore_backup_policy&spm=docs.r.kvstore_backup_policy.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kvstore_backup_policy&spm=docs.r.kvstore_backup_policy.example&intl_lang=EN_US)
 
 ## Argument Reference
 

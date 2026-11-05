@@ -17,7 +17,7 @@ Provides a ESS lifecycle hook resource. More about Ess lifecycle hook, see [Life
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ess_lifecycle_hook&exampleId=43224bf8-0c9c-80bd-1a38-8a8f1e813f30d78a0ce8&activeTab=example&spm=docs.r.ess_lifecycle_hook.0.43224bf80c&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ess_lifecycle_hook&exampleId=43224bf8-0c9c-80bd-1a38-8a8f1e813f30d78a0ce8&activeTab=example&spm=docs.r.ess_lifecycle_hook.0.43224bf80c&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -81,7 +81,7 @@ resource "alicloud_ess_lifecycle_hook" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_lifecycle_hook&spm=docs.r.ess_lifecycle_hook.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_lifecycle_hook&spm=docs.r.ess_lifecycle_hook.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_lifecycle_hook&spm=docs.r.ess_lifecycle_hook.example&intl_lang=EN_US)
 
 ## Module Support
 
