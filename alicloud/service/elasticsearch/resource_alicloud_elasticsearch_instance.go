@@ -1929,8 +1929,8 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		query["force"] = helper.StringPointer(strconv.FormatBool(v.(bool)))
 	}
 
-	if v, ok := d.GetOk("order_action_type"); ok {
-		query["orderActionType"] = helper.StringPointer(v.(string))
+	if v, ok := orderActionTypeQuery(d); ok {
+		query["orderActionType"] = helper.StringPointer(v)
 	}
 
 	body = request
@@ -1939,7 +1939,7 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if errs.IsExpectedErrors(err, []string{"TheSpecNotEnoughInDetail", "ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InternalServerError", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"TheSpecNotEnoughInDetail", "ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InternalServerError", "InstanceStatusNotSupportCurrentAction", "CpuHeapPercentOnThreshold"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1948,6 +1948,40 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			return nil
 		})
 		logs.AddDebug(action, response, request)
+		if err != nil && isNodeAmountDowngradeNotSupported(err) {
+			if isAmountDecreased(d, "data_node_configuration.0.amount") && isAmountDecreased(d, "warm_node_configuration.0.amount") {
+				return errs.WrapError(fmt.Errorf("Elasticsearch instance %s cannot shrink data nodes and warm nodes in the same update; split the change into separate applies", d.Id()))
+			}
+			elasticsearchService := ElasticsearchService{client}
+			nodeType, amountKey := "WORKER", "data_node_configuration.0.amount"
+			if !isAmountDecreased(d, amountKey) {
+				nodeType, amountKey = "WORKER_WARM", "warm_node_configuration.0.amount"
+			}
+			shrinked, shrinkErr := elasticsearchService.ShrinkNodesIfDecreased(d, nodeType, amountKey)
+			if shrinkErr != nil {
+				return errs.WrapError(shrinkErr)
+			}
+			if shrinked {
+				// The node count now matches the configuration, so the same
+				// request only carries the remaining changes.
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+					response, err = client.RoaPut("elasticsearch", "2017-06-13", action, query, header, body, true)
+					if err != nil {
+						if errs.IsExpectedErrors(err, []string{"MustChangeOneResource"}) {
+							err = nil
+							return nil
+						}
+						if errs.IsExpectedErrors(err, []string{"TheSpecNotEnoughInDetail", "ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InternalServerError", "InstanceStatusNotSupportCurrentAction", "CpuHeapPercentOnThreshold"}) || helper.NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				logs.AddDebug(action, response, request)
+			}
+		}
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
@@ -2133,7 +2167,7 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InstanceStatusNotSupportCurrentAction", "CpuHeapPercentOnThreshold"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
