@@ -77,6 +77,12 @@ func ResourceCluster() *schema.Resource {
 					return err
 				}
 			}
+			// is_switch_over_for_disaster is an option of the standby-zone
+			// change. Accepting its own change would apply without any API call
+			// and store a value that never took effect.
+			if d.HasChange("is_switch_over_for_disaster") && !d.HasChange("standby_az") {
+				return fmt.Errorf("is_switch_over_for_disaster only takes effect together with a standby_az change")
+			}
 			return nil
 		},
 

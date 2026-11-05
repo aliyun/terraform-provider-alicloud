@@ -3151,6 +3151,15 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				ExpectError: regexp.MustCompile(`expected storage_upper_bound to be in the range \(20 - 64000\)`),
 			},
 			{
+				// Enabling automatic storage scaling without a bound is rejected
+				// before the request is sent.
+				Config: testAccConfig(map[string]interface{}{
+					"storage_auto_scale":  "Enable",
+					"storage_upper_bound": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile(`storage_upper_bound must be set to a value between 20 and 64000`),
+			},
+			{
 				// ModifyDBNodeClass only accepts DLNode for AI node class changes.
 				Config: testAccConfig(map[string]interface{}{
 					"db_node_type": "Primary",
