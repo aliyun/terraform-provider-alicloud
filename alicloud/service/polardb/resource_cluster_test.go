@@ -3186,6 +3186,76 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.0.modify_mode", "db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.modify_mode", "db_cluster_ip_array.1.white_list_type"},
 			},
 			{
+				// QA01: hiding a whitelist group that is already visible is not
+				// supported by ModifyDBClusterAccessWhitelist, so the plan must
+				// reject it instead of producing no diff and ignoring the value.
+				// These CustomizeDiff negatives run before the schema-validation
+				// negatives below: acctest.ResourceTestAccConfig accumulates the
+				// step configs, so their invalid values would otherwise abort the
+				// plan before CustomizeDiff is reached.
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "hidden",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}, {
+						"db_cluster_ip_array_name":      "tftesthid",
+						"db_cluster_ip_array_attribute": "hidden",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				ExpectError: regexp.MustCompile(`db_cluster_ip_array_attribute cannot be set to hidden for the existing "default" group`),
+			},
+			{
+				// QA01: the API cannot make a hidden group visible again either.
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}, {
+						"db_cluster_ip_array_name":      "tftesthid",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				ExpectError: regexp.MustCompile(`db_cluster_ip_array_attribute cannot be removed from the "tftesthid" group`),
+			},
+			{
+				// QA02: planned_flashing_off_time is only sent by ModifyDBNodeClass,
+				// so setting it without a db_node_class change is rejected instead of
+				// being stored without taking effect.
+				Config: testAccConfig(map[string]interface{}{
+					"planned_flashing_off_time": plannedFlashingOffTime,
+				}),
+				ExpectError: regexp.MustCompile(`planned_flashing_off_time is an option of the db_node_class update`),
+			},
+			{
+				// QA02: db_node_type is only sent by ModifyDBNodeClass together with
+				// a class change.
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_class": "${local.upgrade_node_class}",
+					"db_node_type":  "DLNode",
+				}),
+				ExpectError: regexp.MustCompile(`db_node_type is an option of the db_node_class update`),
+			},
+			{
+				// QA02: zone_type is only sent by ModifyDBClusterPrimaryZone together
+				// with a standby_az change.
+				Config: testAccConfig(map[string]interface{}{
+					"zone_type": "Standby",
+				}),
+				ExpectError: regexp.MustCompile(`zone_type is an option of the standby_az update`),
+			},
+			{
 				// The nested block only supports IP whitelists; security groups are
 				// managed by the top-level security_group_ids attribute.
 				Config: testAccConfig(map[string]interface{}{
@@ -3220,53 +3290,6 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 					"zone_type": "Primary",
 				}),
 				ExpectError: regexp.MustCompile(`expected zone_type to be one of \[Standby\]`),
-			},
-			{
-				// QA01: hiding a whitelist group that is already visible is not
-				// supported by ModifyDBClusterAccessWhitelist, so the plan must
-				// reject it instead of producing no diff and ignoring the value.
-				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_ip_array": []map[string]interface{}{{
-						"db_cluster_ip_array_name":      "default",
-						"db_cluster_ip_array_attribute": "hidden",
-						"white_list_type":               "IP",
-						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
-						"modify_mode":                   "Cover",
-					}, {
-						"db_cluster_ip_array_name":      "tftesthid",
-						"db_cluster_ip_array_attribute": "hidden",
-						"white_list_type":               "IP",
-						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
-						"modify_mode":                   "Cover",
-					}},
-				}),
-				ExpectError: regexp.MustCompile(`db_cluster_ip_array_attribute cannot be set to hidden for the existing "default" group`),
-			},
-			{
-				// QA02: planned_flashing_off_time is only sent by ModifyDBNodeClass,
-				// so setting it without a db_node_class change is rejected instead of
-				// being stored without taking effect.
-				Config: testAccConfig(map[string]interface{}{
-					"planned_flashing_off_time": plannedFlashingOffTime,
-				}),
-				ExpectError: regexp.MustCompile(`planned_flashing_off_time is an option of the db_node_class update`),
-			},
-			{
-				// QA02: db_node_type is only sent by ModifyDBNodeClass together with
-				// a class change.
-				Config: testAccConfig(map[string]interface{}{
-					"db_node_class": "${local.upgrade_node_class}",
-					"db_node_type":  "DLNode",
-				}),
-				ExpectError: regexp.MustCompile(`db_node_type is an option of the db_node_class update`),
-			},
-			{
-				// QA02: zone_type is only sent by ModifyDBClusterPrimaryZone together
-				// with a standby_az change.
-				Config: testAccConfig(map[string]interface{}{
-					"zone_type": "Standby",
-				}),
-				ExpectError: regexp.MustCompile(`zone_type is an option of the standby_az update`),
 			},
 			{
 				// Restore a valid configuration after the negative steps so the
