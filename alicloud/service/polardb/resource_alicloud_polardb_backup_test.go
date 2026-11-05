@@ -1582,6 +1582,53 @@ func TestUnitAliCloudPolarDBBackupReadReportsTaskQueryFailure(t *testing.T) {
 	}
 }
 
+// TestUnitAliCloudPolarDBBackupReadToleratesReleasedClusterTaskQuery covers the released-cluster
+// read: after the cluster is released, DescribeBackupTasks answers InvalidDBClusterId.NotFound.
+// That is a definitive "no task record", not a failed query, so Read must keep the tracked
+// resource and its task id instead of failing the refresh.
+func TestUnitAliCloudPolarDBBackupReadToleratesReleasedClusterTaskQuery(t *testing.T) {
+	client, server := newBackupUnitClient(t, func(action string, params map[string]string) string {
+		switch action {
+		case "DescribeBackupPolicy":
+			return backupUnitNotFound("InvalidDBClusterId.NotFound")
+		case "DescribeBackups":
+			return backupUnitNotFound("InvalidDBClusterId.NotFound")
+		case "DescribeDetachedBackups":
+			return backupUnitBackupsJSON(backupUnitBackupEntry(backupUnitBackupID, backupUnitClusterID, backupUnitStartTime))
+		case "DescribeBackupTasks":
+			return backupUnitNotFound("InvalidDBClusterId.NotFound")
+		}
+		return "{}"
+	})
+	r, sch := newBackupUnitResource(t, client)
+	objectType := backupUnitObjectType(t, sch)
+	state := backupUnitObject(t, objectType, map[string]tftypes.Value{
+		"id":                backupUnitString(backupUnitClusterID + ":" + backupUnitBackupID),
+		"db_cluster_id":     backupUnitString(backupUnitClusterID),
+		"backup_id":         backupUnitString(backupUnitBackupID),
+		"backup_job_id":     backupUnitString(backupUnitBackupID),
+		"backup_start_time": backupUnitString(backupUnitStartTime),
+		"backup_retention_policy_on_cluster_deletion": backupUnitString("ALL"),
+		"timeouts": backupUnitTimeouts(t, objectType, "", "1s"),
+	})
+
+	var resp fwresource.ReadResponse
+	resp.State = tfsdk.State{Schema: sch, Raw: state}
+	r.Read(context.Background(), fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: state}}, &resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Read failed although a released cluster cannot answer DescribeBackupTasks: %v", backupUnitDiagnosticsText(resp.Diagnostics))
+	}
+	if !server.seen("DescribeBackupTasks") {
+		t.Fatal("Read did not query the tracked backup task")
+	}
+	if id, ok := backupUnitStateAttribute(t, resp.State, "id"); !ok || id != backupUnitClusterID+":"+backupUnitBackupID {
+		t.Fatalf("Read dropped the released-cluster backup set: id=%q present=%v", id, ok)
+	}
+	if jobId, ok := backupUnitStateAttribute(t, resp.State, "backup_job_id"); !ok || jobId != backupUnitBackupID {
+		t.Fatalf("Read lost the tracked backup task id: %q present=%v", jobId, ok)
+	}
+}
+
 // TestUnitAliCloudPolarDBBackupDeletePropagatesNonNotFound covers QAP-01: a DeleteBackup failure
 // that is not a NotFound must propagate; it must not be reinterpreted as "retained" success.
 func TestUnitAliCloudPolarDBBackupDeletePropagatesNonNotFound(t *testing.T) {

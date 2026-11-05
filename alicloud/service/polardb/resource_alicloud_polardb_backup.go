@@ -1011,6 +1011,10 @@ func (r *backupResource) Read(ctx context.Context, req resource.ReadRequest, res
 	if jobId := state.BackupJobId.ValueString(); jobId != "" {
 		task, taskErr := backupFindBackupTask(r.Meta(), state.DBClusterId.ValueString(), jobId)
 		switch {
+		case taskErr != nil && errs.IsExpectedErrors(taskErr, backupReadNotFoundCodes):
+			// The cluster is released or deleted, so DescribeBackupTasks cannot answer for
+			// it. That is a definitive "no task record", not a failed query: the backup-set
+			// fields (detached list) stay authoritative and the task-owned fields are kept.
 		case taskErr != nil:
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Reading %s: backup task query", backupTypeName),
