@@ -15,6 +15,8 @@ You can see detail product introduction [MongoDB documentation](https://www.alib
 
 -> **NOTE:** Available since v1.40.0.
 
+-> **NOTE:** Destroying a `PrePaid` instance fails with an error since v2.1.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
+
 -> **NOTE:**  The following regions don't support create Classic network MongoDB Sharding Instance.
 [`cn-zhangjiakou`,`cn-huhehaote`,`ap-southeast-3`,`ap-southeast-5`,`me-east-1`,`ap-northeast-1`,`eu-west-1`]
 
@@ -103,6 +105,8 @@ The following arguments are supported:
 * `security_ip_list` - (Optional, List) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]). System default to `["127.0.0.1"]`.
 * `security_ip_groups` - (Optional, Set) The list of named security IP groups. Each element represents a separate IP whitelist group managed independently from `security_ip_list` (which manages the `default` group). See [`security_ip_groups`](#security_ip_groups) below.
 * `account_password` - (Optional, Sensitive) Password of the root account. It is a string of 6 to 32 characters and is composed of letters, numbers, and underlines.
+* `account_password_wo` - (Optional, Available since v2.2.0) The write-only password of the account. It is only sent to the server when the resource is created or the `account_password_wo_version` changes and is never stored in the state or plan.
+* `account_password_wo_version` - (Optional, Available since v2.2.0) The version of the write-only password. The write-only password is re-sent to the server only when this argument changes, so it must be changed whenever `account_password_wo` changes.
 * `kms_encrypted_password` - (Optional, Available since v1.57.1) An KMS encrypts password used to a instance. If the `account_password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `encrypted` - (Optional, ForceNew, Bool, Available since v1.260.0) Whether to enable cloud disk encryption. Default value: `false`. Valid values: `true`, `false`.
@@ -110,10 +114,12 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, Available since v1.161.0) The ID of the Resource Group.
 * `auto_renew` - (Optional, Bool, Available since v1.141.0) Auto renew for prepaid. Default value: `false`. Valid values: `true`, `false`.
 * `auto_renew_duration` - (Optional, Int, Available since v1.271.0) The auto-renewal period. Unit: months. Valid values: `1` to `12`.
--> **NOTE:** If `auto_renew` is set to `true`, `auto_renew_duration` must be set.
+
+  -> **NOTE:** If `auto_renew` is set to `true`, `auto_renew_duration` must be set.
 * `src_db_instance_id` - (Optional, Available since v1.271.0) The source instance ID.
 * `restore_time` - (Optional, Available since v1.271.0) The point in time to which you want to restore the instance. You can specify any point in time within the last seven days. The time must be in the yyyy-MM-ddTHH:mm:ssZ format and in UTC.
--> **NOTE:** You must specify `src_db_instance_id` and `restore_time` only when you clone an instance based on a point in time.
+
+  -> **NOTE:** You must specify `src_db_instance_id` and `restore_time` only when you clone an instance based on a point in time.
 * `backup_time` - (Optional, Available since v1.42.0) Sharding Instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
 * `backup_period` - (Optional, List, Available since v1.42.0) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
 * `backup_retention_period` - (Optional, Int, Available since v1.259.0) The retention period of full backups.
@@ -132,11 +138,13 @@ The following arguments are supported:
   - `Open`: turn on SSL encryption.
   - `Close`: turn off SSL encryption.
   - `Update`: update SSL certificate.
--> **NOTE:** Once `ssl_action` is set, it isn't allowed to be removed from the Terraform code.
+
+  -> **NOTE:** Once `ssl_action` is set, it isn't allowed to be removed from the Terraform code.
 * `force_encryption` - (Optional, Available since v1.271.0) Specifies whether to forcibly enable SSL encryption for connections. Valid values:
   - `1`: Forcibly enable SSL encryption.
   - `0`: Do not forcibly enable SSL encryption.
--> **NOTE:** `force_encryption` is supported only for MongoDB 7.0 and 8.0 instances that use cloud disks. After you enable forced SSL encryption, only SSL connections to the instance are allowed.
+
+  -> **NOTE:** `force_encryption` is supported only for MongoDB 7.0 and 8.0 instances that use cloud disks. After you enable forced SSL encryption, only SSL connections to the instance are allowed.
 * `maintain_start_time` - (Optional, Available since v1.259.0) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available since v1.259.0) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `tde_status` - (Optional, Available since v1.76.0) The TDE(Transparent Data Encryption) status. It can be updated from version 1.160.0.

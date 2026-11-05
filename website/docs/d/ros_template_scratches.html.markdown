@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ros Template Scratches to the user.
 ---
 
-# alicloud\_ros\_template\_scratches
+# alicloud_ros_template_scratches
 
 This data source provides the Ros Template Scratches of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.151.0+.
+-> **NOTE:** Available since v1.151.0.
 
 ## Example Usage
 
@@ -51,29 +51,47 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The status of the resource. Valid Values: `GENERATE_IN_PROGRESS`, `GENERATE_COMPLETE` and `GENERATE_FAILED`.
 * `template_scratch_type` - (Optional, ForceNew) The type of the template scratch. Valid Values: `ResourceImport`, `ArchitectureReplication`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `scratches` - A list of Ros Template Scratches. Each element contains the following attributes:
-  * `create_time` - The creation time of the resource.
-  * `description` - The description of the Template Scratch.
-  * `id` - The ID of the Template Scratch.
-  * `logical_id_strategy` - The Logical ID generation strategy of the Template Scratch.
-  * `preference_parameters` - Priority parameter.
-    * `parameter_key` - Priority parameter key.
-    * `parameter_value` - Priority parameter value.
-  * `source_tag` - The Source label list.
-    * `resource_tags` - Source label.
-    * `resource_type_filter` - Source resource type filter list.
-  * `source_resource_group` - Source resource grouping.
-    * `resource_type_filter` - Source resource type filter list.
-    * `resource_group_id` - The ID of the Source Resource Group.
-  * `source_resources` - Source resource.
-    * `resource_id` - The ID of the Source Resource.
-    * `resource_type` - The type of the Source resource.
-  * `stacks` - A list of resource stacks associated with the resource scene.
-    * `stack_id` - The ID of the Resource stack.
-  * `status` - The status of the resource.
-  * `template_scratch_id` - The ID of the Template Scratch.
-  * `template_scratch_type` - The type of the Template Scratch.
+* `scratches` - A list of Ros Template Scratches. Each element contains the following attributes. See [`scratches`](#scratches) below.
+
+### `scratches`
+
+* `create_time` - The creation time of the resource.
+* `description` - The description of the Template Scratch.
+* `id` - The ID of the Template Scratch.
+* `logical_id_strategy` - The Logical ID generation strategy of the Template Scratch.
+* `preference_parameters` - Priority parameter. See [`preference_parameters`](#scratches-preference_parameters) below.
+* `source_tag` - The Source label list. See [`source_tag`](#scratches-source_tag) below.
+* `source_resource_group` - Source resource grouping. See [`source_resource_group`](#scratches-source_resource_group) below.
+* `source_resources` - Source resource. See [`source_resources`](#scratches-source_resources) below.
+* `stacks` - A list of resource stacks associated with the resource scene. See [`stacks`](#scratches-stacks) below.
+* `status` - The status of the resource.
+* `template_scratch_id` - The ID of the Template Scratch.
+* `template_scratch_type` - The type of the Template Scratch.
+
+### `scratches-preference_parameters`
+
+* `parameter_key` - Priority parameter key.
+* `parameter_value` - Priority parameter value.
+
+### `scratches-source_tag`
+
+* `resource_tags` - Source label.
+* `resource_type_filter` - Source resource type filter list.
+
+### `scratches-source_resource_group`
+
+* `resource_type_filter` - Source resource type filter list.
+* `resource_group_id` - The ID of the Source Resource Group.
+
+### `scratches-source_resources`
+
+* `resource_id` - The ID of the Source Resource.
+* `resource_type` - The type of the Source resource.
+
+### `scratches-stacks`
+
+* `stack_id` - The ID of the Resource stack.

@@ -7,11 +7,11 @@ description: |-
     Provides a list of DFS Zones And Configurations to the user.
 ---
 
-# alicloud\_dfs\_zones
+# alicloud_dfs_zones
 
 This data source provides the DFS Zones And Configurations of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.140.0+.
+-> **NOTE:** Available since v1.140.0.
 
 ## Example Usage
 
@@ -29,12 +29,12 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `zones` - A list of HDFS Zones And Configurations. Each element contains the following attributes:
-    * `zone_id` - The zone ID.
-    * `options` -  A list of available configurations of the Zone.
-      * `storage_type` - The storage specifications of the File system. Valid values: `PERFORMANCE`, `STANDARD`.
-      * `protocol_type` - The protocol type. Valid values: `HDFS`.
+  * `zone_id` - The zone ID.
+  * `options` -  A list of available configurations of the Zone.
+    * `storage_type` - The storage specifications of the File system. Valid values: `PERFORMANCE`, `STANDARD`.
+    * `protocol_type` - The protocol type. Valid values: `HDFS`.

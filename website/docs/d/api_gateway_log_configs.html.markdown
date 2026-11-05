@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Api Gateway Log Configs of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.185.0+.
+-> **NOTE:** Available since v1.185.0.
 
 ## Example Usage
 
@@ -43,13 +43,13 @@ The following arguments are supported:
 * `log_type` - (Optional, ForceNew) The type the of log. Valid values: `PROVIDER`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `configs` - A list of Api Gateway Log Configs. Each element contains the following attributes:
-	* `id` - The ID of the Log Config.
-	* `log_type` - The type the of log.
-	* `sls_project` - The name of the Project.
-	* `sls_log_store` - The name of the Log Store.
-	* `region_id` - The region ID of the Log Config.
+  * `id` - The ID of the Log Config.
+  * `log_type` - The type the of log.
+  * `sls_project` - The name of the Project.
+  * `sls_log_store` - The name of the Log Store.
+  * `region_id` - The region ID of the Log Config.

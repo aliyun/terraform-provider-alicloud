@@ -187,20 +187,20 @@ The following arguments are supported:
   - `ram`: RAM authentication.
   - `openSource`: Open source authentication.
 
--> **NOTE:** `auth_model` only takes effect when creating a new instance. It cannot be modified or queried on an existing instance.
+  -> **NOTE:** `auth_model` only takes effect when creating a new instance. It cannot be modified or queried on an existing instance.
 
 * `auto_renew` - (Optional, Available since v1.129.0) Renewal method. Automatic renewal: true; Manual renewal: false. When RenewalStatus has a value, the value of RenewalStatus shall prevail.
 * `edition` - (Optional, Available since v1.266.0) The deployment architecture for Serverless instances. Valid values:
   - `shared`: Shared architecture, applicable to reserved + elastic (shared) and pay-as-you-go editions.
   - `dedicated`: Dedicated architecture, applicable to reserved + elastic (dedicated) editions.
 
--> **NOTE:**  Modifying the Edition parameter triggers instance cluster migration. Before making this change, submit a ticket to the cloud service team. [Submit a Ticket](https://smartservice.console.aliyun.com/service/create-ticket?entrance=100&product=rabbitmq)
+  -> **NOTE:**  Modifying the Edition parameter triggers instance cluster migration. Before making this change, submit a ticket to the cloud service team. [Submit a Ticket](https://smartservice.console.aliyun.com/service/create-ticket?entrance=100&product=rabbitmq)
 
 * `encrypted_instance` - (Optional, ForceNew, Computed) Whether to enable storage encryption when creating the instance. When set to `true`, `kms_key_id` must also be specified. AMQP currently supports storage encryption for the following SKU combinations:
   - `instance_type = "vip"`.
   - `payment_type = "PayAsYouGo"`, `serverless_charge_type = "provisioned"`, and `edition = "dedicated"`.
 
--> **NOTE:** SKU eligibility is validated by the AMQP API when the instance is created, and unsupported combinations are rejected by the backend. Storage encryption cannot be enabled or modified after creation. Changing `encrypted_instance` replaces the instance.
+  -> **NOTE:** SKU eligibility is validated by the AMQP API when the instance is created, and unsupported combinations are rejected by the backend. Storage encryption cannot be enabled or modified after creation. Changing `encrypted_instance` replaces the instance.
 
 * `instance_name` - (Optional, Computed) The instance name.
 * `instance_type` - (Optional, Computed) Instance type. Valid values:
@@ -208,6 +208,7 @@ The following arguments are supported:
   - enterprise: enterprise Edition
   - vip: Platinum Edition.
   - serverless: Serverless Edition.
+
   -> **NOTE:** Do not set `instance_type` when creating a serverless instance. Set `payment_type = "PayAsYouGo"` and choose `serverless_charge_type = "onDemand"` or `serverless_charge_type = "provisioned"`.
 * `listener_mode` - (Optional, ForceNew, Available since v1.274.0) The Listener mode. Valid values: `tcp_and_ssl`, `ssl_only`.
 * `kms_key_id` - (Optional, ForceNew) The ID of the KMS key used for storage encryption. The key must be in the same region as the instance, enabled, symmetric, and usable for encryption and decryption. This argument must be specified together with `encrypted_instance = true` when the instance is created. Changing `kms_key_id` replaces the instance.

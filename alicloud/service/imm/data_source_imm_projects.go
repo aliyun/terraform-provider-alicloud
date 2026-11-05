@@ -1,0 +1,174 @@
+package imm
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func dataSourceAlicloudImmProjects() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceAlicloudImmProjectsRead,
+		Schema: map[string]*schema.Schema{
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"projects": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"billing_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"compute_unit": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"create_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"modify_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"project": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"service_role": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"endpoint": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceAlicloudImmProjectsRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "ListProjects"
+	request := map[string]interface{}{
+		"MaxKeys":  helper.PageSizeLarge,
+		"RegionId": client.RegionId,
+	}
+
+	var objects []map[string]interface{}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+	var response map[string]interface{}
+	var err error
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("imm", "2017-09-06", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_imm_projects", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.Projects", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Projects", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["Project"])]; !ok {
+					continue
+				}
+			}
+			objects = append(objects, item)
+		}
+		if marker, ok := response["Marker"].(string); ok && marker != "" {
+			request["Marker"] = marker
+		} else {
+			break
+		}
+	}
+	ids := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+
+		compute_unitVal, err := convert.FormatInt(object["CU"])
+		if err != nil {
+			return err
+		}
+		mapping := map[string]interface{}{
+			"billing_type": object["BillingType"],
+			"compute_unit": compute_unitVal,
+			"create_time":  object["CreateTime"],
+			"modify_time":  object["ModifyTime"],
+			"type":         object["Type"],
+			"id":           fmt.Sprint(object["Project"]),
+			"project":      fmt.Sprint(object["Project"]),
+			"service_role": object["ServiceRole"],
+			"endpoint":     object["Endpoint"],
+		}
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("projects", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

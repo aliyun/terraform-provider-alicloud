@@ -60,11 +60,11 @@ Refer to [Policy-based access control](https://www.alibabacloud.com/help/en/maxc
 * `project_name` - (Required, ForceNew) Project name
 * `role_name` - (Required, ForceNew) Role Name
 
--> **NOTE:** At the beginning of a letter, it can contain letters and numbers and can be no more than 64 characters in length.
+  -> **NOTE:** At the beginning of a letter, it can contain letters and numbers and can be no more than 64 characters in length.
 
 * `type` - (Required) Role type Valid values: admin/resource
 
--> **NOTE:** -- management type (admin) role: You can grant management type permissions through Policy. You cannot grant resource permissions to management type roles. You cannot grant management type permissions to management type roles through ACL. -- resource role: you can authorize resource type permissions through Policy or ACL, but cannot authorize management type permissions. For details, see [role-planning](https://www.alibabacloud.com/help/en/maxcompute/user-guide/role-planning)
+  -> **NOTE:** -- management type (admin) role: You can grant management type permissions through Policy. You cannot grant resource permissions to management type roles. You cannot grant management type permissions to management type roles through ACL. -- resource role: you can authorize resource type permissions through Policy or ACL, but cannot authorize management type permissions. For details, see [role-planning](https://www.alibabacloud.com/help/en/maxcompute/user-guide/role-planning)
 
 
 ## Attributes Reference

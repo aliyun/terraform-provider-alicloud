@@ -76,7 +76,7 @@ func (e *clusterCredentialEphemeral) Open(ctx context.Context, req ephemeral.Ope
 		return
 	}
 
-	roaClient, err := e.Client().NewRoaCsClient()
+	roaClient, err := e.Meta().NewRoaCsClient()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Opening %s: building the CS client", clusterCredentialEphemeralTypeName),

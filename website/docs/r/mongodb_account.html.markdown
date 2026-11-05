@@ -87,7 +87,7 @@ The following arguments are supported:
   - `db`: shard account.
   - `normal`: The replica set account. (The default value).
 
--> **NOTE:** When setting the account type to normal, the AccountName must be root. This selection does not create a new account; instead, Terraform will update the password for the existing root account.
+  -> **NOTE:** When setting the account type to normal, the AccountName must be root. This selection does not create a new account; instead, Terraform will update the password for the existing root account.
 
 * `instance_id` - (Required, ForceNew) Instance Id
 

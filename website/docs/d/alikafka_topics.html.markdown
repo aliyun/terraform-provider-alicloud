@@ -11,14 +11,14 @@ description: |-
 
 This data source provides a list of ALIKAFKA Topics in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.56.0+
+-> **NOTE:** Available since v1.56.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_alikafka_topics" "topics_ds" {
   instance_id = "xxx"
-  name_regex = "alikafkaTopicName"
+  name_regex  = "alikafkaTopicName"
   output_file = "topics.txt"
 }
 
@@ -37,12 +37,16 @@ The following arguments are supported:
 * `topic` - (Optional) A topic to filter results by the topic name.  
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
+### `topics`
+
+* `tags` - (Optional) A mapping of tags to assign to the topic.
+
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of topic names.
-* `topics` - A list of topics. Each element contains the following attributes:
+* `topics` - A list of topics. Each element contains the following attributes. See [`topics`](#topics) for the optional argument block.
   * `id` - The ID of the topic, It is formatted to `<instance_id>:<topic>`.
   * `topic` - The name of the topic.
   * `create_time` - Time of creation.

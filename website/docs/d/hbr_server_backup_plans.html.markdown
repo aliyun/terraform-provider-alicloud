@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Hbr Server Backup Plans of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.142.0+.
+-> **NOTE:** Available since v1.142.0.
 
 ## Example Usage
 
@@ -40,17 +40,17 @@ output "hbr_server_backup_plan_id_1" {
 The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed)  A list of Server Backup Plan IDs.
-* `filters` - (Optional, ForceNew) The filters.
+* `filters` - (Optional, ForceNew) The filters. See [`filters`](#filters) below.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-### Block filter
+### `filters`
 
 More complex filters can be expressed using one or more `filter` sub-blocks,
 which take the following arguments:
-* `key` - (Required) The key of the field to filter. Valid values: `planId`, `instanceId`, `planName`.
-* `values` - (Required) Set of values that are accepted for the given field.
+* `key` - (Optional) The key of the field to filter. Valid values: `planId`, `instanceId`, `planName`.
+* `values` - (Optional) Set of values that are accepted for the given field.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

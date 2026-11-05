@@ -110,26 +110,26 @@ The following arguments are supported:
   - `HaVip`: HAVIP
   - `IpAddress`: IP address
 
--> **NOTE:**   The default value is `EcsInstance`. If the instance with which you want to associate the EIP is not an ECS instance, this parameter is required.
+  -> **NOTE:**   The default value is `EcsInstance`. If the instance with which you want to associate the EIP is not an ECS instance, this parameter is required.
 
 * `mode` - (Optional, Computed, Available since v1.216.0) The association mode. Valid values:
   - `NAT` (default): NAT mode
   - `MULTI_BINDED`: multi-EIP-to-ENI mode
   - `BINDED`: cut-network interface controller mode
 
--> **NOTE:**   This parameter is required only when `instance_type` is set to `NetworkInterface`.
+  -> **NOTE:**   This parameter is required only when `instance_type` is set to `NetworkInterface`.
 
 * `private_ip_address` - (Optional, ForceNew) The IP address in the CIDR block of the vSwitch.
 
   If you leave this parameter empty, the system allocates a private IP address based on the VPC ID and vSwitch ID.
 
--> **NOTE:**   This parameter is required if `instance_type` is set to `IpAddress`, which indicates that the EIP is to be associated with an IP address.
+  -> **NOTE:**   This parameter is required if `instance_type` is set to `IpAddress`, which indicates that the EIP is to be associated with an IP address.
 
 * `vpc_id` - (Optional, ForceNew) The ID of the VPC in which an IPv4 gateway is created. The VPC and the EIP must be in the same region.
 
   When you associate an EIP with an IP address, the system can enable the IP address to access the Internet based on VPC route configurations.
 
--> **NOTE:**   This parameter is required if `instance_type` is set to `IpAddress`, which indicates that the EIP is to be associated with an IP address.
+  -> **NOTE:**   This parameter is required if `instance_type` is set to `IpAddress`, which indicates that the EIP is to be associated with an IP address.
 
 
 ## Attributes Reference

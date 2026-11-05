@@ -15,6 +15,8 @@ For information about Cloud Storage Gateway Gateway and how to use it, see [What
 
 -> **NOTE:** Available since v1.132.0.
 
+-> **NOTE:** Destroying a `Subscription` instance fails with an error since v2.1.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
+
 ## Example Usage
 
 Basic Usage
@@ -85,7 +87,8 @@ The following arguments are supported:
 * `release_after_expiration` - (Optional, Bool, ForceNew) Specifies whether to release the gateway after the subscription expires. Valid values:
   - `true`: The gateway is released after it expires. The gateway becomes unavailable seven days after the gateway expires.
   - `false`: The gateway is not released after it expires. After the gateway expires, its billing method is changed to `PayAsYouGo`.
--> **NOTE:** `release_after_expiration` is only valid when `payment_type` is `Subscription`.
+
+  -> **NOTE:** `release_after_expiration` is only valid when `payment_type` is `Subscription`.
 * `reason_type` - (Optional) The type of the reason why you want to delete the gateway.
 * `reason_detail` - (Optional) The detailed reason why you want to delete the gateway.
 

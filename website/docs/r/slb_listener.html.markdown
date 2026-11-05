@@ -119,7 +119,8 @@ The HTTP Listener supports the following:
 * `bandwidth` - (Optional, Int) The maximum bandwidth of the listener. Unit: Mbit/s. Valid values:
   - `-1`: If you set `bandwidth` to `-1`, the bandwidth of the listener is unlimited.
   - `1` to `1000`: The sum of the maximum bandwidth that you specify for all listeners of the CLB instance cannot exceed the maximum bandwidth of the CLB instance.
--> **NOTE:** Currently, this `bandwidth` is available on `Domestic Site Account`.
+
+  -> **NOTE:** Currently, this `bandwidth` is available on `Domestic Site Account`.
 * `scheduler` - (Optional) The scheduling algorithm. Default value: `wrr`. Valid values:
   - `wrr`: Backend servers with higher weights receive more requests than those with lower weights.
   - `rr`: Requests are distributed to backend servers in sequence.
@@ -162,7 +163,8 @@ The HTTPS Listener supports the following:
 * `bandwidth` - (Required, Int) The maximum bandwidth of the listener. Unit: Mbit/s. Valid values:
   - `-1`: For a pay-by-data-transfer Internet-facing CLB instance, if you set `bandwidth` to `-1`, the bandwidth of the listener is unlimited.
   - `1` to `1000`: The sum of the maximum bandwidth that you specify for all listeners of the CLB instance cannot exceed the maximum bandwidth of the CLB instance.
--> **NOTE:** Currently, this `bandwidth` is available on `Domestic Site Account`.
+
+  -> **NOTE:** Currently, this `bandwidth` is available on `Domestic Site Account`.
 * `backend_port` - (Optional, Int, ForceNew) The backend port that is used by the CLB instance. Valid values: `1` to `65535`. **NOTE:** If `server_group_id` is not set, `backend_port` is required.
 * `scheduler` - (Optional) The scheduling algorithm. Default value: `wrr`. Valid values:
   - `wrr`: Backend servers with higher weights receive more requests than those with lower weights.
@@ -209,7 +211,8 @@ The TCP Listener supports the following:
 * `bandwidth` - (Required, Int) The maximum bandwidth of the listener. Unit: Mbit/s. Valid values:
   - `-1`: For a pay-by-data-transfer Internet-facing CLB instance, if you set `bandwidth` to `-1`, the bandwidth of the listener is unlimited.
   - `1` to `1000`: The sum of the maximum bandwidth that you specify for all listeners of the CLB instance cannot exceed the maximum bandwidth of the CLB instance.
--> **NOTE:** Currently, this `bandwidth` is available on `Domestic Site Account`.
+
+  -> **NOTE:** Currently, this `bandwidth` is available on `Domestic Site Account`.
 * `backend_port` - (Optional, Int, ForceNew) The backend port that is used by the CLB instance. Valid values: `1` to `65535`. **NOTE:** If `server_group_id` is not set, `backend_port` is required.
 * `scheduler` - (Optional) The scheduling algorithm. Default value: `wrr`. Valid values:
   - `wrr`: Backend servers with higher weights receive more requests than those with lower weights.
@@ -249,7 +252,8 @@ The UDP Listener supports the following:
 * `bandwidth` - (Required, Int) The maximum bandwidth of the listener. Unit: Mbit/s. Valid values:
   - `-1`: For a pay-by-data-transfer Internet-facing CLB instance, if you set `bandwidth` to `-1`, the bandwidth of the listener is unlimited.
   - `1` to `1000`: The sum of the maximum bandwidth that you specify for all listeners of the CLB instance cannot exceed the maximum bandwidth of the CLB instance.
--> **NOTE:** Currently, this `bandwidth` is available on `Domestic Site Account`.
+
+  -> **NOTE:** Currently, this `bandwidth` is available on `Domestic Site Account`.
 * `backend_port` - (Optional, Int, ForceNew) The backend port that is used by the CLB instance. Valid values: `1` to `65535`. **NOTE:** If `server_group_id` is not set, `backend_port` is required.
 * `scheduler` - (Optional) The scheduling algorithm. Default value: `wrr`. Valid values:
   - `wrr`: Backend servers with higher weights receive more requests than those with lower weights.
@@ -273,9 +277,9 @@ The UDP Listener supports the following:
 * `delete_protection_validation` - (Optional, Bool, Available since v1.63.0) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default value: `false`.
 * `acl_id` - (Deprecated since v1.249.0) The ID of the network ACL that is associated with the listener. **NOTE:** Field `acl_id` has been deprecated from provider version 1.249.0. New field `acl_ids` instead.
 
--> **NOTE:** Once enable the http redirect to https function, any parameters excepted forward_port, listener_forward, load_balancer_id, frontend_port, protocol will be ignored. More info, please refer to [Redirect http to https](https://www.alibabacloud.com/help/doc-detail/89151.htm?spm=a2c63.p38356.b99.186.42f66384mpjUTB).
+  -> **NOTE:** Once enable the http redirect to https function, any parameters excepted forward_port, listener_forward, load_balancer_id, frontend_port, protocol will be ignored. More info, please refer to [Redirect http to https](https://www.alibabacloud.com/help/doc-detail/89151.htm?spm=a2c63.p38356.b99.186.42f66384mpjUTB).
 
--> **NOTE:** Advantanced feature such as `tls_cipher_policy`, can not be updated when load balancer instance is "Shared-Performance". More info, please refer to [Configure a HTTPS Listener](https://www.alibabacloud.com/help/doc-detail/27593.htm).
+  -> **NOTE:** Advantanced feature such as `tls_cipher_policy`, can not be updated when load balancer instance is "Shared-Performance". More info, please refer to [Configure a HTTPS Listener](https://www.alibabacloud.com/help/doc-detail/27593.htm).
 
 ### `x_forwarded_for`
 
@@ -290,7 +294,8 @@ The x_forwarded_for mapping supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Listener. It formats as `<load_balancer_id>:<protocol>:<frontend_port>`.
--> **NOTE:** Before provider version 1.57.1, it formats as `<load_balancer_id>:<frontend_port>`.
+
+  -> **NOTE:** Before provider version 1.57.1, it formats as `<load_balancer_id>:<frontend_port>`.
 * `x_forwarded_for` - Whether to set additional HTTP Header field "X-Forwarded-For".
   * `retrive_client_ip` - Whether to retrieve the client ip.
 

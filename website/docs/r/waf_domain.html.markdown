@@ -59,15 +59,17 @@ By default, port 80 is used to forward the requests to the origin server. Valid 
 * `instance_id` - (Required, ForceNew) The ID of the WAF instance.
 * `is_access_product` - (Required) Specifies whether to configure a Layer-7 proxy, such as Anti-DDoS Pro or CDN, to filter the inbound traffic before it is forwarded to WAF. Valid values: `On` and `Off`. Default to `Off`.
 * `load_balancing` - (Optional) The load balancing algorithm that is used to forward requests to the origin. Valid values: `IpHash` and `RoundRobin`. Default to `IpHash`.
-* `log_headers` - (Optional) The key-value pair that is used to mark the traffic that flows through WAF to the domain. Each item contains two field:
-   * key: The key of label
-   * value: The value of label
-   
+* `log_headers` - (Optional) The key-value pair that is used to mark the traffic that flows through WAF to the domain. Each item contains two field. See [`log_headers`](#log_headers) below.
 * `read_time` - (Optional) The read timeout of a WAF exclusive cluster. Unit: seconds.
-* `resource_group_id` - (Optional) The ID of the resource group to which the queried domain belongs in Resource Management. By default, no value is specified, indicating that the domain belongs to the default resource group.
+* `resource_group_id` - (Optional, ForceNew) The ID of the resource group to which the queried domain belongs in Resource Management. By default, no value is specified, indicating that the domain belongs to the default resource group.
 * `source_ips` - (Optional) List of the IP address or domain of the origin server to which the specified domain points.
 * `write_time` - (Optional) The timeout period for a WAF exclusive cluster write connection. Unit: seconds.
-			
+
+### `log_headers`
+
+* `key` - (Optional) The key of label.
+* `value` - (Optional) The value of label.
+
 ## Attributes Reference
 
 The following attributes are exported:

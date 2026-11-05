@@ -11,13 +11,13 @@ description: |-
 
 This data source provides the Resource Manager Policy Versions of the current Alibaba Cloud user.
 
--> **NOTE:**  Available in 1.85.0+.
+-> **NOTE:** Available since v1.85.0.
 
 ## Example Usage
 
 ```terraform
 data "alicloud_resource_manager_policy_versions" "default" {
-  policy_name = "tftest"
+  policy_name = "tf-example"
   policy_type = "Custom"
 }
 
@@ -42,10 +42,9 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of policy version IDs.
 * `versions` - A list of policy versions. Each element contains the following attributes:
-    * `id` - The ID of the resource, the value is `<policy_name>`:`<version_id>`.
-    * `version_id`- The ID of the policy version.
-    * `create_date`- (Removed form v1.114.0)The time when the policy version was created.
-    * `is_default_version`- Indicates whether the policy version is the default version.
-    * `policy_document`- (Available in v1.114.0+) The policy document of the policy version.
+  * `id` - The ID of the resource, the value is `<policy_name>`:`<version_id>`.
+  * `version_id`- The ID of the policy version.
+  * `is_default_version`- Indicates whether the policy version is the default version.
+  * `policy_document`- (Available in v1.114.0+) The policy document of the policy version.
     
     

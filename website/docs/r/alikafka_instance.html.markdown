@@ -107,9 +107,11 @@ The following arguments are supported:
 * `disk_type` - (Optional, ForceNew) The disk type of the instance. Valid values:
   - `0`: efficient cloud disk.
   - `1`: SSD.
--> **NOTE:** If `instance_type` is set to `alikafka`, `disk_type` is required.
+
+  -> **NOTE:** If `instance_type` is set to `alikafka`, `disk_type` is required.
 * `disk_size` - (Optional, Int) The disk size of the instance. When modify this value, it only supports adjust to a greater value.
--> **NOTE:** If `instance_type` is set to `alikafka`, `disk_size` is required.
+
+  -> **NOTE:** If `instance_type` is set to `alikafka`, `disk_size` is required.
 * `io_max` - (Optional) The max value of io of the instance. When modify this value, it only support adjust to a greater value.
 * `io_max_spec` - (Optional, Available since v1.201.0) The traffic specification of the instance. We recommend that you configure this parameter.
   - You should specify one of the `io_max` and `io_max_spec` parameters, and `io_max_spec` is recommended.
@@ -142,14 +144,17 @@ The following arguments are supported:
 * `default_topic_partition_num` - (Optional, Int, Available since v1.241.0) The number of partitions in a topic that is automatically created.
 * `password` - (Optional, Available since v1.253.0) The instance password. **NOTE:** If `instance_type` is set to `alikafka_confluent`, `password` is required.
 * `vswitch_ids` - (Optional, ForceNew, List, Available since v1.241.0) The IDs of the vSwitches with which the instance is associated.
--> **NOTE:** If `instance_type` is set to `alikafka` or `alikafka_serverless`, `vswitch_ids` is required. When `instance_type` is set to `alikafka_confluent`, you must specify at least one of the `vswitch_id` and `vswitch_ids`, and if you specify both `vswitch_id` and `vswitch_ids`, only the `vswitch_ids` takes effect.
+
+  -> **NOTE:** If `instance_type` is set to `alikafka` or `alikafka_serverless`, `vswitch_ids` is required. When `instance_type` is set to `alikafka_confluent`, you must specify at least one of the `vswitch_id` and `vswitch_ids`, and if you specify both `vswitch_id` and `vswitch_ids`, only the `vswitch_ids` takes effect.
 * `selected_zones` - (Optional, List, Available since v1.195.0) The zones among which you want to deploy the instance. For more information, see [How to use it](https://www.alibabacloud.com/help/en/apsaramq-for-kafka/cloud-message-queue-for-kafka/developer-reference/api-alikafka-2019-09-16-startinstance).
 * `serverless_config` - (Optional, Set, Available since v1.253.0) The parameters configured for the serverless ApsaraMQ for Kafka instance. See [`serverless_config`](#serverless_config) below.
--> **NOTE:** If `instance_type` is set to `alikafka_serverless`, `serverless_config` is required.
-* `confluent_config` - (Optional, Set, Available since v1.253.0) The configurations of Confluent. See [`confluent_config`](#confluent_config) below.
--> **NOTE:** If `instance_type` is set to `alikafka_confluent`, `confluent_config` is required.
 
--> **NOTE:** Field `io_max`, `disk_size`, `topic_quota`, `eip_max` should follow the following constraints.
+  -> **NOTE:** If `instance_type` is set to `alikafka_serverless`, `serverless_config` is required.
+* `confluent_config` - (Optional, Set, Available since v1.253.0) The configurations of Confluent. See [`confluent_config`](#confluent_config) below.
+
+  -> **NOTE:** If `instance_type` is set to `alikafka_confluent`, `confluent_config` is required.
+
+  -> **NOTE:** Field `io_max`, `disk_size`, `topic_quota`, `eip_max` should follow the following constraints.
 
 | io_max | disk_size(min-max:lag) | topic_quota(min-max:lag) | eip_max(min-max:lag) |
 | ------ | ---------------------- | :----------------------: | :------------------: |

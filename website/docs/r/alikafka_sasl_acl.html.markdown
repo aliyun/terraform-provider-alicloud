@@ -111,11 +111,13 @@ The following arguments are supported:
   - `IdempotentWrite`: idempotent write to Cluster
   - `IDEMPOTENT_WRITE`: idempotent write to Cluster, only available for Serverless instances.
   - `DESCRIBE_CONFIGS`: query configuration, only available for Serverless instances.
--> **NOTE:**  `acl_operation_types` is only supported for Serverless instances.
+
+  -> **NOTE:**  `acl_operation_types` is only supported for Serverless instances.
 * `acl_permission_type` - (Optional, ForceNew, Available since v1.270.0) Authorization method. Value:
   - `DENY`: deny.
   - `ALLOW`: allow.
--> **NOTE:**  `acl_permission_type` is only supported for Serverless instances.
+
+  -> **NOTE:**  `acl_permission_type` is only supported for Serverless instances.
 * `acl_resource_name` - (Required, ForceNew) The resource name.
   - The name of the resource, which can be a topic name, Group ID, cluster name, or transaction ID.
   - You can use an asterisk (*) to represent all resources of this type.
@@ -128,7 +130,8 @@ The following arguments are supported:
   - `Cluster`: the instance.
   - `TransactionalId`: transaction ID.
 * `host` - (Optional, ForceNew) The host of the acl.
--> **NOTE:** From version 1.270.0, `host` can be set.
+
+  -> **NOTE:** From version 1.270.0, `host` can be set.
 * `instance_id` - (Required, ForceNew) The instance ID.
 * `username` - (Required, ForceNew) The user name.
 

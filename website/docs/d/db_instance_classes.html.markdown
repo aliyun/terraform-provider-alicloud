@@ -53,10 +53,10 @@ The following arguments are supported:
   * **rds_serverless_public_cn**: The instance is a subscription serverless instance. This value is available on the China site (aliyun.com).
   * **rds_serverless_public_intl**: The instance is a subscription serverless instance. This value is available on the International site (alibabacloud.com).
 
--> **NOTE**: The field `db_instance_id` will be ignored when `commodity_code` is not a read-only type.
+  -> **NOTE**: The field `db_instance_id` will be ignored when `commodity_code` is not a read-only type.
 * `db_instance_id` - (Optional, Available in v1.166.0+) The ID of the instance.
 
--> **NOTE**: The field `db_instance_id` will be ignored when `commodity_code` is not a read-only type.
+  -> **NOTE**: The field `db_instance_id` will be ignored when `commodity_code` is not a read-only type.
 * `multi_zone` - (Optional, Available in v1.48.0+) Whether to show multi available zone. Default false to not show multi availability zone.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform apply`).
 

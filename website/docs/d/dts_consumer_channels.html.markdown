@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Dts Consumer Channels of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.146.0+.
+-> **NOTE:** Available since v1.146.0.
 
 ## Example Usage
 
@@ -32,15 +32,15 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Consumer Channel IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `channels` - A list of Dts Consumer Channels. Each element contains the following attributes:
-	* `consumer_group_id` - The ID of the consumer group.
-	* `consumer_group_name` - The name of the consumer group.
-	* `consumer_group_user_name` - The username of the consumer group.
-	* `consumption_checkpoint` - The time point when the client consumed the last message in the subscription channel.
-	* `id` - The ID of the Consumer Channel.
-	* `message_delay` - The message delay time, for the current time data subscription channel in the earliest time of unconsumed messages of the difference, in Unix timestamp format, which is measured in seconds.
-	* `unconsumed_data` - The total number of unconsumed messages.
+  * `consumer_group_id` - The ID of the consumer group.
+  * `consumer_group_name` - The name of the consumer group.
+  * `consumer_group_user_name` - The username of the consumer group.
+  * `consumption_checkpoint` - The time point when the client consumed the last message in the subscription channel.
+  * `id` - The ID of the Consumer Channel.
+  * `message_delay` - The message delay time, for the current time data subscription channel in the earliest time of unconsumed messages of the difference, in Unix timestamp format, which is measured in seconds.
+  * `unconsumed_data` - The total number of unconsumed messages.

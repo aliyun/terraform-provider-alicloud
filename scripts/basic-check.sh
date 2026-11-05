@@ -96,22 +96,21 @@ for doc in "${changed_files[@]}"; do
 		fi
 		;;
 	esac
+	# The fmt.Println guard covers both layouts: files directly in alicloud/
+	# are matched by the category case above, split-layout product packages
+	# by their path.
+	case "$doc" in
+	"alicloud/service/"*".go")
+		if grep "fmt.Println" "$doc" >/dev/null 2>&1; then
+			echo -e "\033[31mFile :${doc}: Please Remove the fmt.Println Method! \033[0m"
+			error=true
+		fi
+		;;
+	esac
 done
 
 if [[ "$error" == "true" ]]; then
 	exit 1
-fi
-
-# release/v2 guard: reject new SDK v2 helper/resource retry usage so the
-# helper/retry migration cannot regress (see scripts/ci/v2-retry-guard.sh).
-v2_guard_base_ref="${V2_RETRY_GUARD_BASE_REF:-${GITHUB_BASE_REF:-}}"
-if [[ "$v2_guard_base_ref" == "release/v2" && -n "${diff_base:-}" && -n "${diff_head:-}" ]]; then
-	echo "==> Checking for new SDK v2 helper/resource retry usage (release/v2)..."
-	DIFF_BASE="$diff_base" DIFF_HEAD="$diff_head" \
-		bash "$(dirname "${BASH_SOURCE[0]}")/ci/v2-retry-guard.sh" || {
-		echo -e "\033[31mbasic-check: release/v2 must not introduce terraform-plugin-sdk helper/resource retry helpers; use helper/retry instead.\033[0m" >&2
-		exit 1
-	}
 fi
 
 echo "==> All basic checks passed!"

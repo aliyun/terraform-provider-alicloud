@@ -11,11 +11,11 @@ description: |-
 
 This data source provides an available area for remote disaster recovery for RDS.
 
--> **NOTE:** Available in v1.193.0+.
+-> **NOTE:** Available since v1.193.0+.
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_rds_cross_regions" "cross_regions" {}
 
@@ -23,6 +23,12 @@ output "first_rds_cross_regions" {
   value = data.alicloud_rds_cross_regions.regions.ids.0
 }
 ```
+
+## Argument Reference
+
+The following arguments are supported:
+
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 

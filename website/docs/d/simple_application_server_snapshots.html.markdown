@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Simple Application Server Snapshots of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.143.0+.
+-> **NOTE:** Available since v1.143.0.
 
 ## Example Usage
 
@@ -61,18 +61,18 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the snapshots. Valid values: `Progressing`, `Accomplished` and `Failed`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Snapshot names.
 * `snapshots` - A list of Simple Application Server Snapshots. Each element contains the following attributes:
-	* `create_time` - The time when the snapshot was created. The time follows the ISO 8601 standard in the `yyyy-MM-ddTHH:mm:ssZ` format. The time is displayed in UTC.
-	* `disk_id` - The ID of the source disk. This parameter has a value even after the source disk is released.
-	* `id` - The ID of the Snapshot.
-	* `progress` - The progress of snapshot creation.
-	* `remark` - The remarks of the snapshot.
-	* `snapshot_id` - The ID of the snapshot.
-	* `snapshot_name` - The name of the snapshot.
-	* `source_disk_type` - A snapshot of the source of a disk type. Possible values: `System`, `Data`.
-	* `status` - The status of the snapshots. Valid values: `Progressing`, `Accomplished` and `Failed`.
+  * `create_time` - The time when the snapshot was created. The time follows the ISO 8601 standard in the `yyyy-MM-ddTHH:mm:ssZ` format. The time is displayed in UTC.
+  * `disk_id` - The ID of the source disk. This parameter has a value even after the source disk is released.
+  * `id` - The ID of the Snapshot.
+  * `progress` - The progress of snapshot creation.
+  * `remark` - The remarks of the snapshot.
+  * `snapshot_id` - The ID of the snapshot.
+  * `snapshot_name` - The name of the snapshot.
+  * `source_disk_type` - A snapshot of the source of a disk type. Possible values: `System`, `Data`.
+  * `status` - The status of the snapshots. Valid values: `Progressing`, `Accomplished` and `Failed`.

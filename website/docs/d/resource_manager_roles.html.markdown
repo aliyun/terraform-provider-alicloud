@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Resource Manager Roles of the current Alibaba Cloud user.
 
--> **NOTE:**  Available in 1.86.0+.
+-> **NOTE:** Available since v1.86.0.
 
 ## Example Usage
 
@@ -41,13 +41,12 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of role IDs.
 * `names` - A list of role names.
 * `roles` - A list of roles. Each element contains the following attributes:
-    * `id` - The ID of the role.
-    * `role_id`- The ID of the role.
-    * `role_name`- The name of the role.
-    * `arn`- The Alibaba Cloud Resource Name (ARN) of the RAM role.
-    * `create_date`- (Removed form v1.114.0) The time when the RAM role was created.
-    * `update_date`- The time when the RAM role was updated.
-    * `description`- The description of the RAM role.
-    * `max_session_duration`- The maximum session duration of the RAM role.
-    * `assume_role_policy_document`- (Available in v1.114.0+) The assume role policy document.
+  * `id` - The ID of the role.
+  * `role_id`- The ID of the role.
+  * `role_name`- The name of the role.
+  * `arn`- The Alibaba Cloud Resource Name (ARN) of the RAM role.
+  * `update_date`- The time when the RAM role was updated.
+  * `description`- The description of the RAM role.
+  * `max_session_duration`- The maximum session duration of the RAM role.
+  * `assume_role_policy_document`- (Available in v1.114.0+) The assume role policy document.
     

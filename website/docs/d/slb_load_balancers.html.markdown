@@ -41,16 +41,16 @@ The following arguments are supported:
 * `address` - (Optional) Service address of the SLBs.
 * `tags` - (Optional) A map of tags assigned to the SLB instances. The `tags` can have a maximum of 5 tag. It must be in the format:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_group_id` - (Optional, ForceNew) The Id of resource group which SLB belongs.
-* `address_ip_version` - (Optional, ForceNew) The address ip version. Valid values `ipv4` and `ipv6`.
-* `address_type` - (Optional, ForceNew) The address type of the SLB. Valid values `internet` and `intranet`.
-* `internet_charge_type` - (Optional, ForceNew) The internet charge type. Valid values `PayByBandwidth` and `PayByTraffic`.
-* `load_balancer_name` - (Optional, ForceNew) The name of the SLB.
-* `payment_type` - (Optional, ForceNew) The payment type of SLB. Valid values `PayAsYouGo` and `Subscription`.
-* `server_id` - (Optional, ForceNew) The server ID.
-* `server_intranet_address` - (Optional, ForceNew) The server intranet address.
-* `master_zone_id` - (Optional, ForceNew) The master zone id of the SLB.
-* `slave_zone_id` - (Optional, ForceNew) The slave zone id of the SLB.
+* `resource_group_id` - (Optional) The Id of resource group which SLB belongs.
+* `address_ip_version` - (Optional) The address ip version. Valid values `ipv4` and `ipv6`.
+* `address_type` - (Optional) The address type of the SLB. Valid values `internet` and `intranet`.
+* `internet_charge_type` - (Optional) The internet charge type. Valid values `PayByBandwidth` and `PayByTraffic`.
+* `load_balancer_name` - (Optional) The name of the SLB.
+* `payment_type` - (Optional) The payment type of SLB. Valid values `PayAsYouGo` and `Subscription`.
+* `server_id` - (Optional) The server ID.
+* `server_intranet_address` - (Optional) The server intranet address.
+* `master_zone_id` - (Optional) The master zone id of the SLB.
+* `slave_zone_id` - (Optional) The slave zone id of the SLB.
 * `status` - (Optional) The status of the SLB. Valid values: `active`, `inactive` and `locked`.
 * `enable_details` - (Optional) Whether to enable details of the SLB. Default to `false`.
 
@@ -78,9 +78,9 @@ The following attributes are exported in addition to the arguments listed above:
   * `end_time` - The end time of the SLB.
   * `end_time_stamp` - The end time stamp of the SLB.
   * `internet_charge_type` - The billing method of the Internet-facing SLB instance.
-  * `listener_ports_and_protocal` - The listener ports and protocal of the SLB.
+  * `listener_ports_and_protocal` - The listener ports and protocol of the SLB.
     * `listener_port` - The listener port.
-    * `listener_protocal` - The listener protoal.
+    * `listener_protocal` - The listener protocol.
   * `listener_ports_and_protocol` - The listener ports and protocol of the SLB.
     * `description` - The description of protocol.
     * `forward_port` - The forward port.

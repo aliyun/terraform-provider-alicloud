@@ -54,7 +54,7 @@ The following arguments are supported:
 * `secondary_cidr_block` - (Optional, ForceNew, Computed) Additional network segment information.
 * `secondary_cidr_mask` - (Optional, Int, Available since v1.242.0) Add an additional CIDR block from the IPAM address pool to the VPC by entering a mask.
 
--> **NOTE:**  Specify the IPAM address pool to add an additional CIDR block to the VPC. Enter at least one of the SecondaryCidrBlock or SecondaryCidrMask parameters.
+  -> **NOTE:**  Specify the IPAM address pool to add an additional CIDR block to the VPC. Enter at least one of the SecondaryCidrBlock or SecondaryCidrMask parameters.
 
 * `vpc_id` - (Required, ForceNew) The ID of the VPC.
 

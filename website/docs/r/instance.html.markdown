@@ -24,12 +24,20 @@ Provides a ECS instance resource.
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
 
 variable "instance_type" {
-  default = "ecs.n4.large"
+  default = "ecs.g7.large"
 }
 
 variable "image_id" {
@@ -50,7 +58,7 @@ resource "alicloud_kms_key" "key" {
 }
 
 data "alicloud_zones" "default" {
-  available_disk_category     = "cloud_efficiency"
+  available_disk_category     = "cloud_essd"
   available_resource_creation = "VSwitch"
   available_instance_type     = var.instance_type
 }
@@ -75,7 +83,7 @@ resource "alicloud_instance" "instance" {
 
   # series III
   instance_type              = var.instance_type
-  system_disk_category       = "cloud_efficiency"
+  system_disk_category       = "cloud_essd"
   system_disk_name           = var.name
   system_disk_description    = "test_foo_system_disk_description"
   image_id                   = var.image_id
@@ -85,7 +93,7 @@ resource "alicloud_instance" "instance" {
   data_disks {
     name        = "disk2"
     size        = 20
-    category    = "cloud_efficiency"
+    category    = "cloud_essd"
     description = "disk2"
     encrypted   = true
     kms_key_id  = alicloud_kms_key.key.id
@@ -111,19 +119,18 @@ The following arguments are supported:
   -> **NOTE:** The system disk is created anew from the image either way, so its data never survives an `image_id` change. Setting `replace_on_image_update` to `true` gives up the instance ID, the private IP address and the data disks as well, and requires the instance to be destroyable: a `prevent_destroy` lifecycle rule turns the planned replacement into an error, the provider refuses to destroy an instance whose `instance_charge_type` is `PrePaid` unless `force_delete` is `true`, and ECS rejects the deletion itself while `deletion_protection` is `true`. See the [`features.ecs_instance`](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs#features-ecs_instance) documentation for the cases in which a change cannot be planned as a replacement.
 
 * `instance_type` - (Optional) The type of instance to start. When it is changed, the instance will reboot to make the change take effect. If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `instance_type`.
-* `io_optimized` - (Removed) It has been deprecated on instance resource. All the launched alicloud instances will be I/O optimized.
 * `is_outdated` - (Optional) Whether to use outdated instance type. **Note: The parameter is immutable after resource creation.** It only controls the I/O optimization option sent when creating the instance.
 * `network_interface_id` - (Optional, ForceNew, Available since v1.284.0) The ID of the Primary ENI.
   
--> **NOTE:** From version 1.284.0, `network_interface_id` can be set.
+  -> **NOTE:** From version 1.284.0, `network_interface_id` can be set.
 
 * `security_groups` - (Optional) A list of security group ids to associate with.
 
--> **NOTE:** If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `security_groups`.
+  -> **NOTE:** If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `security_groups`.
 
 * `availability_zone` - (Optional, ForceNew) The Zone to start the instance in. It is ignored and will be computed when set `vswitch_id`.
 * `instance_name` - (Optional) The name of the ECS. This instance_name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen, and must not begin with http:// or https://. **NOTE:** From version 1.243.0, the default value `ECS-Instance` will be removed.
-* `system_disk_category` - (Optional, ForceNew) Valid values are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud`, `cloud_auto`, `cloud_essd_entry`. only is used to some none I/O optimized instance. Valid values `cloud_auto` Available since v1.184.0.
+* `system_disk_category` - (Optional, ForceNew, String) Valid values: `all`, `local_disk`, `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud`, `cloud_auto`, `cloud_essd_entry`, `cloud_essd_xc0`, `cloud_essd_xc1`. only is used to some none I/O optimized instance. `cloud_auto` is Available since v1.184.0. `cloud_essd_xc0` and `cloud_essd_xc1` are Available since v2.2.0 and only supported in government cloud (政务云) regions.
 * `system_disk_name` - (Optional, Available since v1.101.0) The name of the system disk. The name must be 2 to 128 characters in length and can contain letters, digits, periods (.), colons (:), underscores (_), and hyphens (-). It must start with a letter and cannot start with http:// or https://.
 * `system_disk_description` - (Optional, Available since v1.101.0) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `system_disk_size` - (Optional) Size of the system disk, measured in GiB. Value range: [20, 500]. The specified value must be equal to or greater than max{20, Imagesize}. Default value: max{40, ImageSize}.
@@ -160,7 +167,7 @@ The following arguments are supported:
   - [1-9, 12, 24, 36, 48, 60] when `period_unit` in "Month"
   - [1-3] when `period_unit` in "Week"
 
--> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
+  -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 
 * `renewal_status` - (Optional) Whether to renew an ECS instance automatically or not. It is valid when `instance_charge_type` is `PrePaid`. Default to "Normal". Valid values:
   - `AutoRenewal`: Enable auto renewal.
@@ -184,14 +191,19 @@ The following arguments are supported:
   From version 1.60.0, it can be updated in-place. If updated, the instance will reboot to make the change take effect.
   Note: Not all changes will take effect, and it depends on [cloud-init module type](https://cloudinit.readthedocs.io/en/latest/topics/modules.html).
 * `key_name` - (Optional) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid. **NOTE:** From version 1.268.0, `key_name` can be modified. If you want to use `key_name`, We recommend you to use the resource [alicloud_ecs_key_pair_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_key_pair_attachment).
--> **NOTE:** When modifying `key_name`, if the instance status is `Running`, the ECS instance will be rebooted; If the instance status is `Stopped`, the ECS instance status will be changed to `Running`.
+
+  -> **NOTE:** When modifying `key_name`, if the instance status is `Running`, the ECS instance will be rebooted; If the instance status is `Stopped`, the ECS instance status will be changed to `Running`.
 * `include_data_disks` - (Optional) Whether to change instance disks charge type when changing instance charge type.
 * `dry_run` - (Optional) Specifies whether to send a dry-run request. Default to false.
   - true: Only a dry-run request is sent and no instance is created. The system checks whether the required parameters are set, and validates the request format, service permissions, and available ECS instances. If the validation fails, the corresponding error code is returned. If the validation succeeds, the `DryRunOperation` error code is returned.
   - false: A request is sent. If the validation succeeds, the instance is created.
+* `additional_attributes` - (Optional, Set, Available since v2.1.0) A set of additional attributes that the provider requests when reading the instance through the `DescribeInstances` API. It only affects the data returned during `terraform refresh` and `terraform import`, and changing it does not trigger any API call that modifies the instance. Configured values are merged into the default set of `META_OPTIONS`, `NETWORK_PRIMARY_ENI_IP`, `LOGIN_AS_NON_ROOT`, `DISK_HIGH_DENSITY_MODE` and `CPU_OPTIONS_TOPOLOGY_TYPE` that the provider always requests, so existing reads keep working. Other useful values include `DDH_CLUSTER`, `PRIVATE_DNS_OPTIONS`, `CURRENT_OS_NVME_SUPPORTED` and `MANAGED_HOST_ID`.
+
+  -> **NOTE:** The provider always merges its five default attributes into every `DescribeInstances` query and the API accepts at most `10` values, so at most `5` additional values can be set here. `MANAGED_HOST_ID` is requested only when configured here and makes the API return the managed host ID inside `AdditionalInfo`; the state value of `managed_host_id` is refreshed from the response only when `managed_host_id` is configured.
 * `private_ip` - (Optional) Instance private IP address can be specified when you creating new instance. It is valid when `vswitch_id` is specified. When it is changed, the instance will reboot to make the change take effect.
 * `credit_specification` - (Optional, Available since v1.57.1) Performance mode of the t5 burstable instance. Valid values: 'Standard', 'Unlimited'.
--> **NOTE:** `credit_specification` is only supported by burstable instance families (e.g. `t5`, `t6`). For an existing or imported instance whose instance type does not support credit specification, this field is empty in the state and configuring it does not take effect; no change will be applied, which avoids the `Credit.NotFound` error from the API.
+
+  -> **NOTE:** `credit_specification` is only supported by burstable instance families (e.g. `t5`, `t6`). For an existing or imported instance whose instance type does not support credit specification, this field is empty in the state and configuring it does not take effect; no change will be applied, which avoids the `Credit.NotFound` error from the API.
 * `spot_strategy` - (Optional, ForceNew) The spot strategy of a Pay-As-You-Go instance, and it takes effect only when parameter `instance_charge_type` is 'PostPaid'. Value range:
   - NoSpot: A regular Pay-As-You-Go instance.
   - SpotWithPriceLimit: A price threshold for a spot instance
@@ -202,7 +214,8 @@ The following arguments are supported:
 * `deletion_protection` - (Optional, Bool) Whether enable the deletion protection or not. It does not work when the instance is spot. Default value: `false`.
   - `true`: Enable deletion protection.
   - `false`: Disable deletion protection.
--> **NOTE:** `deletion_protection` is valid only when `instance_charge_type` is set to `PostPaid`.
+
+  -> **NOTE:** `deletion_protection` is valid only when `instance_charge_type` is set to `PostPaid`.
 * `force_delete` - (Optional, Available since v1.18.0) If it is true, the `PrePaid` instance will be change to `PostPaid` and then deleted forcibly.
   However, because of changing instance charge type has CPU core count quota limitation, so strongly recommand that "Don't modify instance charge type frequentlly in one month".
 * `auto_release_time` - (Optional, Available since v1.70.0) The automatic release time of the `PostPaid` instance.
@@ -213,7 +226,7 @@ The following arguments are supported:
   - Active: Enable security enhancement strategy, it only works on system images.
   - Deactive: Disable security enhancement strategy, it works on all images.
 
--> **NOTE:** The ECS API does not return `security_enhancement_strategy`, so the provider cannot read it back into the state. For an imported instance (or an instance created without this field), the state value is empty; in this case, configuring or changing `security_enhancement_strategy` is ignored and will not force the instance to be recreated.
+  -> **NOTE:** The ECS API does not return `security_enhancement_strategy`, so the provider cannot read it back into the state. For an imported instance (or an instance created without this field), the state value is empty; in this case, configuring or changing `security_enhancement_strategy` is ignored and will not force the instance to be recreated.
 * `data_disks` - (Optional, ForceNew, Available since v1.23.1) The list of data disks created with instance. **Note: The parameter is immutable after resource creation.** This resource only configures these disks during instance creation; it does not update or refresh the inline disk settings. See [`data_disks`](#data_disks) below.
 * `network_interfaces` - (Optional, ForceNew, Available since v1.212.0) The list of network interfaces created with instance. **Note: The parameter is immutable after resource creation.** See [`network_interfaces`](#network_interfaces) below.
 * `status` - (Optional 1.85.0) The instance status. Valid values: ["Running", "Stopped"]. You can control the instance start and stop through this parameter. Default to `Running`.
@@ -246,6 +259,9 @@ The following arguments are supported:
 * `ipv6_address_count` - (Optional, ForceNew, Available since v1.193.0) The number of IPv6 addresses to randomly generate for the primary ENI. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv6_addresses` and `ipv6_address_count` parameters.
 * `ipv6_addresses` - (Optional, Available since v1.193.0) A list of IPv6 address to be assigned to the primary ENI. Support up to 10. **NOTE:** From version 1.241.0, `ipv6_addresses` can be modified.
 * `dedicated_host_id` - (Optional, ForceNew, Available since v1.201.0) The ID of the dedicated host on which to create the instance. If you set the DedicatedHostId parameter, the `spot_strategy` and `spot_price_limit` parameters cannot be set. This is because preemptible instances cannot be created on dedicated hosts.
+* `managed_host_id` - (Optional, ForceNew, Available since v2.1.0) The ID of the managed host on which to create the instance, such as `mh-f2d3647ca21****`. The managed host refers to the physical machine in the intelligent fully-managed resource pool. **NOTE:** You cannot specify both the `managed_host_id` and `dedicated_host_id` parameters.
+
+  -> **NOTE:** The managed host of an instance cannot be changed after creation. Modifying it in the configuration triggers a replacement of the instance. The API returns the managed host ID only when `additional_attributes` contains `MANAGED_HOST_ID`, and the value is refreshed into the state only while `managed_host_id` is configured.
 * `launch_template_id` - (Optional, ForceNew, Available since v1.213.1) The ID of the launch template. For more information, see [DescribeLaunchTemplates](https://www.alibabacloud.com/help/en/ecs/developer-reference/api-describelaunchtemplates).To use a launch template to create an instance, you must use the `launch_template_id` or `launch_template_name` parameter to specify the launch template.
 * `launch_template_name` - (Optional, ForceNew, Available since v1.213.1) The name of the launch template.
 * `launch_template_version` - (Optional, ForceNew, Available since v1.213.1) The version of the launch template. If you set `launch_template_id` or `launch_template_name` parameter but do not set the version number of the launch template, the default template version is used.
@@ -267,7 +283,8 @@ The following arguments are supported:
 * `password_inherit` - (Optional, Bool, Available since v1.232.0) Specifies whether to use the password preset in the image. Default value: `false`. Valid values:
   - `true`: Uses the preset password.
   - `false`: Does not use the preset password.
--> **NOTE:** If you set `password_inherit` to `true`, make sure that you have not specified `password` or `kms_encrypted_password` and the selected image has a preset password.
+
+  -> **NOTE:** If you set `password_inherit` to `true`, make sure that you have not specified `password` or `kms_encrypted_password` and the selected image has a preset password.
 * `private_pool_options_match_criteria` - (Optional, Available since v1.253.0) The type of the private pool. Default value: `None`. Valid values:
   - `Open`: Open private pool.
   - `Target`: Specified private pool. **NOTE:** If `private_pool_options_match_criteria` is set to `Target`, `private_pool_options_id` is required.
@@ -280,19 +297,19 @@ The following arguments are supported:
 * `internet_max_bandwidth_in` - (Optional, Int, Deprecated since v1.121.2) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). Value range: [1, 200]. If this value is not specified, then automatically sets it to 200 Mbps.
 * `role_name` - (Optional, Deprecated since v1.275.0) The name of the Resource Access Management (RAM) role. **NOTE:** From version 1.250.0, If you want to use `role_name`, We recommend you to use the resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment). Field `role_name` has been deprecated from provider version 1.275.0. New resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment) instead. From version 1.276.0, `role_name` can be modified.
 
--> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
+  -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
--> **NOTE:** From version 1.5.0, instance's charge type can be changed to `PrePaid` by specifying `period` and `period_unit`, but it is irreversible.
+  -> **NOTE:** From version 1.5.0, instance's charge type can be changed to `PrePaid` by specifying `period` and `period_unit`, but it is irreversible.
 
--> **NOTE:** From version 1.5.0, instance's private IP address can be specified when creating VPC network instance.
+  -> **NOTE:** From version 1.5.0, instance's private IP address can be specified when creating VPC network instance.
 
--> **NOTE:** From version 1.5.0, instance's vswitch and private IP can be changed in the same availability zone. When they are changed, the instance will reboot to make the change take effect.
+  -> **NOTE:** From version 1.5.0, instance's vswitch and private IP can be changed in the same availability zone. When they are changed, the instance will reboot to make the change take effect.
 
--> **NOTE:** From version 1.7.0, setting "internet_max_bandwidth_out" larger than 0 can allocate a public IP for an instance.
-Setting "internet_max_bandwidth_out" to 0 can release allocated public IP for VPC instance(For Classic instnace, its public IP cannot be release once it allocated, even thougth its bandwidth out is 0).
-However, at present, 'PrePaid' instance cannot narrow its max bandwidth out when its 'internet_charge_type' is "PayByBandwidth".
+  -> **NOTE:** From version 1.7.0, setting "internet_max_bandwidth_out" larger than 0 can allocate a public IP for an instance.
+  Setting "internet_max_bandwidth_out" to 0 can release allocated public IP for VPC instance(For Classic instnace, its public IP cannot be release once it allocated, even thougth its bandwidth out is 0).
+  However, at present, 'PrePaid' instance cannot narrow its max bandwidth out when its 'internet_charge_type' is "PayByBandwidth".
 
--> **NOTE:** From version 1.7.0, instance's type can be changed. When it is changed, the instance will reboot to make the change take effect.
+  -> **NOTE:** From version 1.7.0, instance's type can be changed. When it is changed, the instance will reboot to make the change take effect.
 
 ### `data_disks`
 
@@ -305,7 +322,9 @@ The data_disks supports the following:
   - cloud_ssd：[20, 32768]
   - cloud_essd：[20, 32768]
   - ephemeral_ssd: [5, 800]
-* `category` - (Optional, ForceNew) The category of the disk. Default value: `cloud_efficiency`. Valid values:
+* `category` - (Optional, ForceNew, String) The category of the disk. Defaults to `cloud_efficiency`. Valid values:
+  - `all`: All disk categories.
+  - `local_disk`: The local disk.
   - `cloud`: The general cloud disk.
   - `cloud_efficiency`: The efficiency cloud disk.
   - `cloud_ssd`: The SSD cloud disk.
@@ -316,6 +335,8 @@ The data_disks supports the following:
   - `cloud_regional_disk_auto` (Available since v1.274.0) : The Regional ESSD.
   - `elastic_ephemeral_disk_standard` (Available since v1.274.0) : The standard elastic ephemeral disk.
   - `elastic_ephemeral_disk_premium` (Available since v1.274.0) : The premium elastic ephemeral disk.
+  - `cloud_essd_xc0` (Available since v2.2.0) : The ESSD XC0 disk, only supported in government cloud (政务云) regions.
+  - `cloud_essd_xc1` (Available since v2.2.0) : The ESSD XC1 disk, only supported in government cloud (政务云) regions.
 * `performance_level` - (Optional, ForceNew) The performance level of the ESSD used as data disk:
   - `PL0`: A single ESSD can deliver up to 10,000 random read/write IOPS.
   - `PL1`: A single ESSD can deliver up to 50,000 random read/write IOPS.

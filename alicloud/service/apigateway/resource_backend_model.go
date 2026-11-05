@@ -1,0 +1,235 @@
+package apigateway
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"reflect"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func ResourceBackendModel() *schema.Resource {
+	return &schema.Resource{
+		Create: ResourceBackendModelCreate,
+		Read:   ResourceBackendModelRead,
+		Update: ResourceBackendModelUpdate,
+		Delete: ResourceBackendModelDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"backend_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"backend_type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"HTTP", "VPC", "FC_EVENT", "FC_EVENT_V3", "FC_HTTP", "FC_HTTP_V3", "OSS", "MOCK", "EVENTBRIDGE"}, false),
+			},
+			"stage_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"backend_model_data": {
+				Type:     schema.TypeString,
+				Required: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if old == new {
+						return true
+					}
+					var oldMap, newMap map[string]interface{}
+					if err := json.Unmarshal([]byte(old), &oldMap); err != nil {
+						return false
+					}
+					if err := json.Unmarshal([]byte(new), &newMap); err != nil {
+						return false
+					}
+					return reflect.DeepEqual(oldMap, newMap)
+				},
+			},
+			"backend_model_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+		},
+	}
+}
+
+func ResourceBackendModelCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	request := make(map[string]interface{})
+	var err error
+
+	request["BackendId"] = d.Get("backend_id").(string)
+	request["BackendType"] = d.Get("backend_type").(string)
+	request["StageName"] = d.Get("stage_name").(string)
+	request["BackendModelData"] = d.Get("backend_model_data").(string)
+
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v.(string)
+	}
+
+	var response map[string]interface{}
+	action := "CreateBackendModel"
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		resp, err := client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		response = resp
+		logs.AddDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_api_gateway_backend_model", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	backendId := d.Get("backend_id").(string)
+	stageName := d.Get("stage_name").(string)
+	d.SetId(fmt.Sprintf("%s%s%s", backendId, COLON_SEPARATED, stageName))
+
+	return ResourceBackendModelRead(d, meta)
+}
+
+func ResourceBackendModelRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	cloudApiService := CloudApiService{client}
+
+	object, err := cloudApiService.DescribeApiGatewayBackendModel(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_api_gateway_backend_model cloudApiService.DescribeApiGatewayBackendModel Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	d.Set("backend_id", object["BackendId"])
+	d.Set("backend_type", object["BackendType"])
+	d.Set("stage_name", object["StageName"])
+	d.Set("description", object["Description"])
+	d.Set("backend_model_data", object["BackendModelData"])
+	d.Set("backend_model_id", object["BackendModelId"])
+
+	return nil
+}
+
+func ResourceBackendModelUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var err error
+	update := false
+
+	parts, err := helper.ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	backendId := parts[0]
+	stageName := parts[1]
+
+	request := map[string]interface{}{
+		"BackendId":      backendId,
+		"StageName":      stageName,
+		"BackendType":    d.Get("backend_type").(string),
+		"BackendModelId": d.Get("backend_model_id").(string),
+	}
+
+	if d.HasChange("backend_model_data") {
+		update = true
+	}
+	request["BackendModelData"] = d.Get("backend_model_data").(string)
+
+	if d.HasChange("description") {
+		update = true
+		request["Description"] = d.Get("description")
+	}
+
+	if update {
+		action := "ModifyBackendModel"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			resp, err := client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, false)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			logs.AddDebug(action, resp, request)
+			return nil
+		})
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return ResourceBackendModelRead(d, meta)
+}
+
+func ResourceBackendModelDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var err error
+
+	parts, err := helper.ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	backendId := parts[0]
+	stageName := parts[1]
+
+	request := map[string]interface{}{
+		"BackendId":      backendId,
+		"StageName":      stageName,
+		"BackendModelId": d.Get("backend_model_id").(string),
+	}
+
+	action := "DeleteBackendModel"
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		resp, err := client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		logs.AddDebug(action, resp, request)
+		return nil
+	})
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"NotFoundBackend", "NotFoundBackendModel"}) || errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}

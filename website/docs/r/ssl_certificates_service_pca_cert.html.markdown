@@ -86,10 +86,10 @@ resource "alicloud_ssl_certificates_service_pca_cert" "default" {
 The following arguments are supported:
 * `after_time` - (Optional, Int) The service expiration time of the client certificate, specified as a Unix timestamp in seconds.  
 
--> **NOTE:**  The `before_time` and `after_time` parameters must either both be empty or both be specified.  
+  -> **NOTE:**  The `before_time` and `after_time` parameters must either both be empty or both be specified.
 
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `algorithm` - (Optional, ForceNew, Computed) The key algorithm of the client certificate. The key algorithm is specified in the format `_`. Valid values:
   - `RSA_1024`: corresponds to the signature algorithm Sha256WithRSA.
@@ -107,7 +107,7 @@ The encryption algorithm of the client certificate must match that of the subord
 * `alias_name` - (Optional) The name assigned to the issued certificate.  
 * `before_time` - (Optional, Int) The issuance time of the client certificate, in timestamp format. By default, it is set to the time when you call this API. Unit: seconds.
 
--> **NOTE:**  The `before_time` and `after_time` parameters must either both be empty or both be specified.
+  -> **NOTE:**  The `before_time` and `after_time` parameters must either both be empty or both be specified.
 
 * `common_name` - (Optional, ForceNew) Name of the certificate subject. For a Client Authentication (ClientAuth) certificate, the subject is typically an individual, company, organization, or application. We recommend using the common name of the subject—for example, Zhang San, Alibaba, Alibaba Cloud KMS, or Tmall Genie.  
 * `country_code` - (Optional, ForceNew) Country code of the organization associated with the subordinate CA certificate that issued this certificate.  
@@ -125,20 +125,20 @@ The `days`, `before_time`, and `after_time` parameters cannot all be empty. Addi
   - `0`: No.
   - `1`: Yes.  
   
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `immediately` - (Optional, Int) Specifies whether to return the digital certificate immediately. Valid values:  
   - `0`: Do not return the certificate. This is the default value.  
   - `1`: Return the certificate.  
   - `2`: Return the certificate and its certificate chain.  
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `locality` - (Optional, ForceNew) The name of the city where the organization associated with the certificate is located. Chinese characters, English letters, and other characters are supported.
 By default, this value is the same as the city name of the organization associated with the issuing subordinate CA certificate.
 * `months` - (Optional, Int) The duration for which the certificate is purchased, in months.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `organization` - (Optional, ForceNew) Name of the organization associated with the subordinate CA certificate that issued this certificate.  
 * `organization_unit` - (Optional, ForceNew) Department name. Default: Aliyun CDN.
@@ -148,22 +148,23 @@ By default, this value is the same as the city name of the organization associat
   - `1`: Email address.
   - `6`: Uniform Resource Identifier (URI).
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `san_value` - (Optional) Specific extension information for the client certificate. You can enter multiple extensions. If you need to specify multiple extensions, separate them with commas (,).  
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `state` - (Optional, ForceNew) The name of the province, municipality, or autonomous region where the certificate's organization is located. Chinese and English characters are supported. By default, this value is the same as the province, municipality, or autonomous region of the organization associated with the subordinate CA certificate that issued this certificate.
 The name of the state or province where the certificate's organization is located. Chinese and English characters are supported. By default, this value is the same as the state or province of the organization associated with the subordinate CA certificate that issued this certificate.
 * `status` - (Optional, Computed) The status of the certificate. Valid values:
   - `REVOKE`: indicates that the certificate has been revoked.
--> **NOTE:** If you want to destroy `alicloud_ssl_certificates_service_pca_cert`, `status` must be set to `REVOKE`
+
+  -> **NOTE:** If you want to destroy `alicloud_ssl_certificates_service_pca_cert`, `status` must be set to `REVOKE`
 * `tags` - (Optional, Map) Information about the queried instances and their associated tags.  
 * `upload_flag` - (Optional, Computed, Int) Indicates whether the certificate has been uploaded to the SSL certificate management platform.
 * `years` - (Optional, Int) The duration for which the certificate is purchased, in years.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 
 ## Attributes Reference

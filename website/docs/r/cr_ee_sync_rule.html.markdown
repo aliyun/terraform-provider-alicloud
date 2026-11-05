@@ -113,7 +113,8 @@ The following arguments are supported:
 * `sync_scope` - (Optional, ForceNew) The synchronization scope. Valid values:
   - `REPO`: Encrypts or decrypts data.
   - `NAMESPACE`: Generates or verifies a digital signature.
--> **NOTE:** From version 1.240.0, `sync_scope` can be set.
+
+  -> **NOTE:** From version 1.240.0, `sync_scope` can be set.
 * `sync_trigger` - (Optional, ForceNew, Available since v1.240.0) The policy configured to trigger the synchronization rule. Default value: `PASSIVE`. Valid values:
   - `INITIATIVE`: Manually triggers the synchronization rule.
   - `PASSIVE`: Automatically triggers the synchronization rule.

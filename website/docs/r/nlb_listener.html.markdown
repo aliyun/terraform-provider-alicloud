@@ -124,7 +124,7 @@ The following arguments are supported:
   - `true`
   - `false` (default)
 
--> **NOTE:**  Effective only for TCPSSL listener
+  -> **NOTE:**  Effective only for TCPSSL listener
 
 * `alpn_policy` - (Optional) The ALPN policy. Valid values:
   - `HTTP1Only`: uses only HTTP 1.x. The priority of HTTP 1.1 is higher than the priority of HTTP 1.0.
@@ -132,25 +132,25 @@ The following arguments are supported:
   - `HTTP2Optional`: preferentially uses HTTP 1.x over HTTP 2.0. The priority of HTTP 1.1 is higher than the priority of HTTP 1.0, and the priority of HTTP 1.0 is higher than the priority of HTTP 2.0.
   - `HTTP2Preferred`: preferentially uses HTTP 2.0 over HTTP 1.x. The priority of HTTP 2.0 is higher than the priority of HTTP 1.1, and the priority of HTTP 1.1 is higher than the priority of HTTP 1.0.
 
--> **NOTE:**  This parameter is required if AlpnEnabled is set to true.
+  -> **NOTE:**  This parameter is required if AlpnEnabled is set to true.
 
--> **NOTE:**  Effective only for TCPSSL listener.
+  -> **NOTE:**  Effective only for TCPSSL listener.
 
 * `ca_certificate_ids` - (Optional, List) The list of certificate authority (CA) certificates. This parameter takes effect only for listeners that use SSL over TCP. 
 
--> **NOTE:**  Only one CA certificate is supported.
+  -> **NOTE:**  Only one CA certificate is supported.
 
 * `ca_enabled` - (Optional, Computed) Specifies whether to enable mutual authentication. Valid values:
   - `true` : yes
   - `false` (default): no
 * `certificate_ids` - (Optional, List) The list of server certificates. This parameter takes effect only for listeners that use SSL over TCP. 
 
--> **NOTE:**  This parameter takes effect only for TCPSSL listeners.
+  -> **NOTE:**  This parameter takes effect only for TCPSSL listeners.
 
 * `cps` - (Optional, Int) The maximum number of connections that can be created per second on the NLB instance. Valid values: `0` to `1000000`. `0` specifies that the number of connections is unlimited.
 * `end_port` - (Optional, ForceNew, Int) The last port in the listener port range. Valid values: `0` to `65535`. The number of the last port must be greater than the number of the first port.
 
--> **NOTE:**  This parameter is required when `ListenerPort` is set to `0`.
+  -> **NOTE:**  This parameter is required when `ListenerPort` is set to `0`.
 
 * `idle_timeout` - (Optional, Computed, Int) The timeout period of idle connections. Unit: seconds. Valid values: `1` to `900`. Default value: `900`.
 * `listener_description` - (Optional) Enter a name for the listener.
@@ -161,7 +161,7 @@ If you set the value to `0`, the listener listens by port range. If you set the 
 * `load_balancer_id` - (Required, ForceNew) The ID of the Network Load Balancer (NLB) instance.
 * `mss` - (Optional, Int) The maximum size of a TCP segment. Unit: bytes. Valid values: `0` to `1500`. `0` specifies that the maximum segment size remains unchanged.
 
--> **NOTE:**  This parameter is supported only by TCP listeners and listeners that use SSL over TCP.
+  -> **NOTE:**  This parameter is supported only by TCP listeners and listeners that use SSL over TCP.
 
 * `proxy_protocol_config` - (Optional, Computed, List, Available since v1.243.0) The Proxy Protocol is used to carry the VpcId, PrivateLinkEpId, and PrivateLinkEpsId information to the backend server for configuration. See [`proxy_protocol_config`](#proxy_protocol_config) below.
 * `proxy_protocol_enabled` - (Optional, Computed) Specifies whether to use the Proxy protocol to pass client IP addresses to backend servers. Valid values:
@@ -171,7 +171,7 @@ If you set the value to `0`, the listener listens by port range. If you set the 
   - `true`
   - `false` (default)
 
--> **NOTE:**  Before enabling this function, ensure that the HdMonitor storage has been configured in the region. Otherwise, create listener may fails.
+  -> **NOTE:**  Before enabling this function, ensure that the HdMonitor storage has been configured in the region. Otherwise, create listener may fails.
 
 * `security_policy_id` - (Optional, Computed) The security policy ID. System security policies and custom security policies are supported.
 
@@ -182,7 +182,7 @@ Valid values: `tls_cipher_policy\_1\_0` (default), `tls_cipher_policy\_1\_1`, `t
 * `server_group_id` - (Required) The ID of the server group.
 * `start_port` - (Optional, ForceNew, Int) The first port in the listener port range. Valid values: `0` to `65535`.
 
--> **NOTE:**  This parameter is required when `ListenerPort` is set to `0`.
+  -> **NOTE:**  This parameter is required when `ListenerPort` is set to `0`.
 
 * `status` - (Optional, Computed) The status of the resource. Valid values: `Running`, `Stopped`. When you want to enable this instance, you can set the property value to `Running`; 
 * `tags` - (Optional, Map) The tag of the resource

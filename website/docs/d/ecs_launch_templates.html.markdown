@@ -149,7 +149,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `modified_time` - The time when a version was added to or deleted from the launch template.
   * `resource_group_id` - The ID of the resource group to which to assign the instance, Elastic Block Storage (EBS) device, and ENI.
   * `template_tags` - The tags of the launch template.
--> **NOTE:** Except for the fields `id`, `launch_template_id`, `launch_template_name`, `default_version_number`, `latest_version_number`, `created_by`, `modified_time`, `resource_group_id`, `template_tags`, all other fields take effect only if `enable_details` is set to `true`.
+
+    -> **NOTE:** Except for the fields `id`, `launch_template_id`, `launch_template_name`, `default_version_number`, `latest_version_number`, `created_by`, `modified_time`, `resource_group_id`, `template_tags`, all other fields take effect only if `enable_details` is set to `true`.
   * `auto_release_time` - The automatic release time of the instance.
   * `deployment_set_id` - The ID of the deployment set.
   * `description` - The Description of Template.
