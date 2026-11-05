@@ -296,7 +296,9 @@ func vvpNamespaceResponsePage(response map[string]interface{}, requested int) er
 //     total must not exceed the rows read so far.
 //
 // Anything else keeps the walk going. An unreadable or contradictory field is an error so an
-// incomplete search never turns into a not-found that removes a live namespace from state.
+// incomplete search never turns into a not-found that removes a live namespace from state. That
+// includes a reported total below the rows already read: the page metadata cannot then be trusted
+// to prove how much of the collection was covered.
 func vvpNamespaceSearchComplete(response map[string]interface{}, page int, pageRows int, seenRows int) (bool, error) {
 	totalPage, hasTotalPage, err := vvpNamespaceIntField(response, "TotalPage")
 	if err != nil {
@@ -309,6 +311,12 @@ func vvpNamespaceSearchComplete(response map[string]interface{}, page int, pageR
 	pageSize, hasPageSize, err := vvpNamespaceIntField(response, "PageSize")
 	if err != nil {
 		return false, err
+	}
+	// The rows read so far cannot outnumber the total the response reports. Such a contradiction
+	// means the counts describe different collections (or a broken page), so neither the current
+	// page nor the walk may be used to prove absence.
+	if hasTotalCount && totalCount < seenRows {
+		return false, fmt.Errorf("the response read %d namespace(s) but reports TotalCount %d", seenRows, totalCount)
 	}
 	if hasTotalPage {
 		if totalPage == 0 {

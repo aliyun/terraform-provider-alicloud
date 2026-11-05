@@ -128,7 +128,7 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew, String) The ID of the Realtime Compute instance that owns the namespace.
 * `namespace` - (Required, ForceNew, String) The name of the namespace. A workspace gets its default namespace automatically, named `<workspace_name>-default` (or `<workspace_name>-default-ha` when the workspace is multi-availability-zone).
 * `ha` - (Optional, ForceNew, Bool) Whether the namespace is highly available. It can only be set when the namespace is created, and changing a configured value forces a new namespace; removing the argument keeps the value already in state. When it is omitted, the service decides, and a namespace created on a single-availability-zone workspace reports `false`. An HA namespace also needs HA capacity on the parent workspace: a workspace without it refuses the create with `903100`.
-* `resource_spec` - (Optional, List) The resource specification (CU) of the namespace. See [`resource_spec`](#resource_spec) below.
+* `resource_spec` - (Optional, List) The resource specification (CU) of the namespace. Removing it from an existing configuration keeps the specification already in state and does not resize the namespace; to change the specification, keep the block and change `cpu` and `memory_gb`. See [`resource_spec`](#resource_spec) below.
 * `timeouts` - (Optional, Object) See [Timeouts](#timeouts) below.
 
 ### `resource_spec`

@@ -142,6 +142,29 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_basic0(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
+				// resource_spec is Optional+Computed and updatable. Removing it from an existing
+				// configuration must keep the specification already in state: the PreApply check
+				// proves the plan is a no-op (no replacement and no resize request) before anything
+				// is applied, and the following import must reproduce the retained 3/12 spec.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceMinimal0WithoutSpec(name, namespace, zone, 8, 32),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "3"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "12"),
+				),
+			},
+			{
+				// Import right after removing resource_spec must still reproduce the retained state.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				// Shrinking below the capacity the namespace's resource queues already use is
 				// rejected by the product, so the update is asserted as a negative case rather
 				// than dropped: 903099 is the expected, identifiable error.
@@ -268,8 +291,15 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_ha0(t *testing.T) {
 			{
 				// ha is Optional+Computed and only forces replacement when it is configured. Dropping
 				// it from the configuration must keep the value already in state (true) without a
-				// replacement or any other diff, so this re-apply converges to the same object.
+				// replacement or any other diff. The PreApply check proves the plan is a no-op before
+				// anything is applied: state assertions and the post-apply empty plan would also pass
+				// if the provider replaced the namespace and then converged on the same values.
 				Config: testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspaceWithoutHa(instanceId, namespace, 1, 4),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "ha", "true"),
 					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "1"),
@@ -1343,6 +1373,23 @@ resource "alicloud_realtime_compute_vvp_namespace" "default" {
 }`, namespace, cpu, memoryGb)
 	}
 	return testAccAliCloudRealtimeComputeVvpNamespaceSharedVpcWorkspace(name, zone, instanceCpu, instanceMemoryGb) + namespaceBlock
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceMinimal0WithoutSpec renders the same lifecycle without
+// the resource_spec block: on an existing namespace the attribute is Optional+Computed, so removing
+// it keeps the specification already in state instead of sending a resize.
+func testAccAliCloudRealtimeComputeVvpNamespaceMinimal0WithoutSpec(name, namespace, zone string, instanceCpu, instanceMemoryGb int) string {
+	return testAccAliCloudRealtimeComputeVvpNamespaceSharedVpcWorkspace(name, zone, instanceCpu, instanceMemoryGb) + fmt.Sprintf(`
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = alicloud_realtime_compute_vvp_instance.default.id
+  namespace   = %q
+
+  timeouts {
+    create = "30m"
+    update = "30m"
+    delete = "30m"
+  }
+}`, namespace)
 }
 
 // testAccAliCloudRealtimeComputeVvpNamespaceHa0 keeps the main namespace at its grown
@@ -2446,6 +2493,11 @@ func TestUnitRealtimeComputeVvpNamespaceReadRejectsUnreadablePagination(t *testi
 		{name: "legacy single page without metadata", body: `{"RequestId":"mock","Namespaces":[]}`, wantGone: true},
 		{name: "legacy full page cannot prove absence", body: fullPage, wantErr: "within 100 DescribeNamespaces pages"},
 		{name: "consistent empty result", body: `{"RequestId":"mock","Namespaces":[],"TotalPage":1,"TotalCount":0}`, wantGone: true},
+		// The rows read cannot outnumber TotalCount: this page claims the collection is empty while
+		// returning a row, so the metadata describes a different collection and cannot prove absence.
+		{name: "reported total below the rows read", body: `{"RequestId":"mock","Namespaces":[{"InstanceId":"other","Namespace":"other","Status":"SUCCESS"}],"TotalPage":1,"PageIndex":1,"PageSize":10,"TotalCount":0}`, wantErr: "TotalCount"},
+		{name: "reported total below the rows read without a page count", body: `{"RequestId":"mock","Namespaces":[{"InstanceId":"other","Namespace":"other","Status":"SUCCESS"}],"TotalCount":0}`, wantErr: "TotalCount"},
+		{name: "reported total below the rows read across pages", body: `{"RequestId":"mock","Namespaces":[{"InstanceId":"other","Namespace":"other","Status":"SUCCESS"}],"TotalPage":2,"PageIndex":1,"PageSize":1,"TotalCount":0}`, wantErr: "TotalCount"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -2638,42 +2690,64 @@ func TestUnitRealtimeComputeVvpNamespaceReadContinuesIncompleteLegacyPagination(
 // TestUnitRealtimeComputeVvpNamespaceDeleteRefusesIncompletePagination pins that a contradictory
 // page shape keeps the resource in state and never sends DeleteNamespace: absence was not proven.
 func TestUnitRealtimeComputeVvpNamespaceDeleteRefusesIncompletePagination(t *testing.T) {
-	var mu sync.Mutex
-	var actions []string
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = r.ParseForm()
-		mu.Lock()
-		actions = append(actions, r.FormValue("Action"))
-		mu.Unlock()
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[],"TotalPage":1,"PageIndex":1,"PageSize":10,"TotalCount":11}`)
-	}))
-	t.Cleanup(func() {
-		server.CloseClientConnections()
-		server.Close()
-	})
+	cases := []struct {
+		name    string
+		body    string
+		wantErr string
+	}{
+		{
+			name:    "page count cannot cover the total",
+			body:    `{"RequestId":"mock","Namespaces":[],"TotalPage":1,"PageIndex":1,"PageSize":10,"TotalCount":11}`,
+			wantErr: "TotalPage",
+		},
+		{
+			// The collection cannot hold fewer rows than this page returned. Treating the page as a
+			// complete search would let the delete skip DeleteNamespace for a namespace that exists.
+			name:    "reported total below the rows read",
+			body:    `{"RequestId":"mock","Namespaces":[{"InstanceId":"other","Namespace":"other","Status":"SUCCESS"}],"TotalPage":1,"PageIndex":1,"PageSize":10,"TotalCount":0}`,
+			wantErr: "TotalCount",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var mu sync.Mutex
+			var actions []string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_ = r.ParseForm()
+				mu.Lock()
+				actions = append(actions, r.FormValue("Action"))
+				mu.Unlock()
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprint(w, tc.body)
+			}))
+			t.Cleanup(func() {
+				server.CloseClientConnections()
+				server.Close()
+			})
 
-	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
-	value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
-	req := fwresource.DeleteRequest{State: tfsdk.State{Schema: sch, Raw: value}}
-	resp := &fwresource.DeleteResponse{State: tfsdk.State{Schema: sch, Raw: value}}
-	res.Delete(context.Background(), req, resp)
-	if !resp.Diagnostics.HasError() {
-		t.Fatalf("a delete whose pre-read cannot prove absence must be reported")
-	}
-	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
-	if !strings.Contains(detail, "TotalPage") {
-		t.Fatalf("expected the pagination diagnostic, got %q", detail)
-	}
-	mu.Lock()
-	defer mu.Unlock()
-	for _, action := range actions {
-		if action == "DeleteNamespace" {
-			t.Fatalf("Delete sent DeleteNamespace although absence was not proven: %v", actions)
-		}
-	}
-	if resp.State.Raw.IsNull() {
-		t.Fatalf("the delete dropped the namespace from state")
+			res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+			value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+			req := fwresource.DeleteRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+			resp := &fwresource.DeleteResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+			res.Delete(context.Background(), req, resp)
+			if !resp.Diagnostics.HasError() {
+				t.Fatalf("a delete whose pre-read cannot prove absence must be reported")
+			}
+			detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+			if !strings.Contains(detail, tc.wantErr) {
+				t.Fatalf("expected the %s diagnostic, got %q", tc.wantErr, detail)
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			for _, action := range actions {
+				if action == "DeleteNamespace" {
+					t.Fatalf("Delete sent DeleteNamespace although absence was not proven: %v", actions)
+				}
+			}
+			if resp.State.Raw.IsNull() {
+				t.Fatalf("the delete dropped the namespace from state")
+			}
+		})
 	}
 }
 
