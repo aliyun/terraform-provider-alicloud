@@ -14,6 +14,7 @@ import (
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // Case 1
@@ -329,7 +330,7 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 						"start_hour":       "0",
 						"end_hour":         "4",
 					}),
-					func(s *sdktf.State) error {
+					func(s *terraform.State) error {
 						if rs := s.RootModule().Resources[resourceId]; rs != nil {
 							createdId = rs.Primary.ID
 						}
@@ -438,7 +439,7 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 						"start_hour":       "0",
 						"end_hour":         "4",
 					}),
-					func(s *sdktf.State) error {
+					func(s *terraform.State) error {
 						rs := s.RootModule().Resources[resourceId]
 						if rs == nil {
 							return fmt.Errorf("the assurance is missing from state after the permitted update")
