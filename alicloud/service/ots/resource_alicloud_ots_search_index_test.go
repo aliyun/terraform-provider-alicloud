@@ -397,6 +397,50 @@ func TestAccAliCloudOtsSearchIndex_invalidSchema(t *testing.T) {
     }`),
 				ExpectError: regexp.MustCompile("expected .*field_type to be one of"),
 			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name          = "col1"
+      field_type          = "Text"
+      enable_sort_and_agg = true
+    }`),
+				ExpectError: regexp.MustCompile("does not support enable_sort_and_agg"),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name          = "col1"
+      field_type          = "FuzzyKeyword"
+      enable_sort_and_agg = true
+    }`),
+				ExpectError: regexp.MustCompile("does not support enable_sort_and_agg"),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name          = "col1"
+      field_type          = "Nested"
+      enable_sort_and_agg = true
+      sub_field_schemas {
+        field_name = "nested_long"
+        field_type = "Long"
+      }
+    }`),
+				ExpectError: regexp.MustCompile("does not support enable_sort_and_agg"),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name       = "col1"
+      field_type       = "Nested"
+      is_virtual_field = true
+      sub_field_schemas {
+        field_name = "nested_long"
+        field_type = "Long"
+      }
+    }`),
+				ExpectError: regexp.MustCompile("cannot be a virtual field"),
+			},
 		},
 	})
 }
