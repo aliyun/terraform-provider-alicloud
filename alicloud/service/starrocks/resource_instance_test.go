@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/starrocks"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -682,8 +683,25 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 		}
 		return nil
 	}
-	// The state attribute mirrors the configuration because Read does not backfill
-	// node groups, so the remote disk size is checked through the API as well.
+	// Read does not backfill node groups, so the state attribute mirrors the
+	// configuration. The remote disk size is resolved through the configured
+	// attributes instead, and the same node group must be the one resized.
+	var backendNodeGroupId string
+	configuredBackendGroups := func(groups []map[string]interface{}) []map[string]interface{} {
+		matches := make([]map[string]interface{}, 0)
+		for _, group := range groups {
+			if fmt.Sprint(group["ZoneId"]) != "cn-hangzhou-i" ||
+				fmt.Sprint(group["SpecType"]) != "standard" ||
+				fmt.Sprint(group["Cu"]) != "8" ||
+				fmt.Sprint(group["DiskNumber"]) != "1" ||
+				fmt.Sprint(group["ResidentNodeNumber"]) != "3" ||
+				fmt.Sprint(group["StoragePerformanceLevel"]) != "pl1" {
+				continue
+			}
+			matches = append(matches, group)
+		}
+		return matches
+	}
 	checkBackendNodeGroupStorageSize := func(expected int) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			instance, ok := s.RootModule().Resources[resourceId]
@@ -691,25 +709,28 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 				return fmt.Errorf("resource %s not found in state", resourceId)
 			}
 			service := starrocks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
-			deadline := time.Now().Add(10 * time.Minute)
-			var lastSize []float64
+			deadline := time.Now().Add(5 * time.Minute)
 			for {
 				groups, err := service.DescribeBackendNodeGroups(instance.Primary.ID)
 				if err != nil {
 					return err
 				}
-				lastSize = make([]float64, 0, len(groups))
-				for _, group := range groups {
-					size, _ := group["StorageSize"].(float64)
-					lastSize = append(lastSize, size)
-				}
-				if len(groups) == 1 && len(lastSize) == 1 && int(lastSize[0]) == expected {
-					return nil
+				matches := configuredBackendGroups(groups)
+				if len(matches) == 1 {
+					size, _ := matches[0]["StorageSize"].(float64)
+					nodeGroupId := fmt.Sprint(matches[0]["NodeGroupId"])
+					if int(size) == expected {
+						if backendNodeGroupId != "" && nodeGroupId != backendNodeGroupId {
+							return fmt.Errorf("disk expansion hit node group %s instead of %s", nodeGroupId, backendNodeGroupId)
+						}
+						backendNodeGroupId = nodeGroupId
+						return nil
+					}
 				}
 				if time.Now().After(deadline) {
-					return fmt.Errorf("backend node group storage sizes %v did not converge to %d GiB", lastSize, expected)
+					return fmt.Errorf("configured backend node group did not reach %d GiB, groups: %v", expected, groups)
 				}
-				time.Sleep(15 * time.Second)
+				time.Sleep(10 * time.Second)
 			}
 		}
 	}
@@ -746,10 +767,25 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 				ImportStateVerifyIgnore: []string{"admin_password", "auto_renew", "backend_node_groups", "cluster_zone_id", "duration", "frontend_node_groups", "observer_node_groups", "oss_accessing_role_name", "pricing_cycle", "promotion_option_no"},
 			},
 			{
-				// Shrinking is not supported in place, so the plan must keep the change
-				// (a replacement) instead of converging silently. Plan only: applying it
-				// would rebuild the instance.
-				Config:             starRocksInstanceBackendNodeGroupsStorageSizeConfig(name, 100),
+				// Shrinking cannot be applied in place, so the plan must replace the
+				// instance. Plan only: applying it would rebuild the instance.
+				Config: starRocksInstanceBackendNodeGroupsStorageSizeConfig(name, 100),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
+					},
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				// Removing storage_size is not an in-place change either.
+				Config: starRocksInstanceBackendNodeGroupsStorageSizeConfig(name, 0),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
+					},
+				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
@@ -758,6 +794,10 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 }
 
 func starRocksInstanceBackendNodeGroupsStorageSizeConfig(name string, storageSize int) string {
+	storageSizeLine := ""
+	if storageSize > 0 {
+		storageSizeLine = fmt.Sprintf("    storage_size              = %d\n", storageSize)
+	}
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -805,15 +845,14 @@ resource "alicloud_star_rocks_instance" "default" {
 
   backend_node_groups {
     cu                        = 8
-    storage_size              = %d
-    storage_performance_level = "pl1"
+%[2]s    storage_performance_level = "pl1"
     disk_number               = 1
     resident_node_number      = 3
     spec_type                 = "standard"
     zone_id                   = "cn-hangzhou-i"
   }
 }
-`, name, storageSize)
+`, name, storageSizeLine)
 }
 
 // Test StarRocks Instance. <<< Resource test cases, automatically generated.

@@ -662,6 +662,9 @@ func resourceInstanceModifyBackendNodeGroupStorageSize(d *schema.ResourceData, s
 			continue
 		}
 		if backendNodeGroupStorageSizeChangeForcesReplacement(oldStorageSize, oldOk, newStorageSize, newOk) {
+			if !newOk {
+				return fmt.Errorf("backend_node_groups.%d storage_size cannot be removed in place, the instance has to be replaced", i)
+			}
 			return fmt.Errorf("backend_node_groups.%d storage_size can only be expanded in place, got %d -> %d GiB", i, oldStorageSize, newStorageSize)
 		}
 		if !newOk || newStorageSize == oldStorageSize {
