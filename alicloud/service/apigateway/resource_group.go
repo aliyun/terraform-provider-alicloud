@@ -48,7 +48,6 @@ func ResourceGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 			},
 			"base_path": {
 				Type:     schema.TypeString,
@@ -217,6 +216,26 @@ func ResourceGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request2.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 		logs.AddDebug(request2.GetActionName(), raw, request2.RpcRequest, request2)
+	}
+
+	// ModifyApiGroupInstance is not included in alibaba-cloud-sdk-go v1.63.107,
+	// so it is invoked via a CommonRequest. CreateApiGroup already sets the
+	// instance on creation, so this only runs on updates to an existing group.
+	if !d.IsNewResource() && d.HasChanges("instance_id") {
+		instanceRequest, err := client.NewCommonRequest("CloudAPI", "apigateway", "HTTPS", connectivity.ApiVersion("2016-07-14"))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		instanceRequest.ApiName = "ModifyApiGroupInstance"
+		instanceRequest.QueryParams["GroupId"] = d.Id()
+		instanceRequest.QueryParams["TargetInstanceId"] = d.Get("instance_id").(string)
+		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+			return cloudApiClient.ProcessCommonRequest(instanceRequest)
+		})
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), instanceRequest.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+		}
+		logs.AddDebug(instanceRequest.GetActionName(), raw, instanceRequest)
 	}
 
 	return ResourceGroupRead(d, meta)

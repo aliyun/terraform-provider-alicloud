@@ -234,6 +234,19 @@ func TestAccAliCloudApigatewayGroup_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${var.name}",
+					"description": "${var.description}",
+					"base_path":   "${var.base_path}",
+					"instance_id": "api-shared-vpc-001",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id": "api-shared-vpc-001",
+					}),
+				),
+			},
 		},
 	})
 }
