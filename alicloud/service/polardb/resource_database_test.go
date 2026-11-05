@@ -915,6 +915,26 @@ func TestAccAliCloudPolarDbDatabase_oracleAccountPrivilege(t *testing.T) {
 					checkDatabaseAccountEmpowered(resourceId, name+"u"),
 				),
 			},
+			{
+				// Oracle does not report the owner privilege, so an import cannot
+				// recover the account fields; the imported state keeps them empty.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected 1 imported state, got %d", len(states))
+					}
+					attributes := states[0].Attributes
+					if got := attributes["account_name"]; got != "" {
+						return fmt.Errorf("expected imported account_name to stay empty, got %q", got)
+					}
+					if got := attributes["account_privilege"]; got != "" {
+						return fmt.Errorf("expected account_privilege to be unrecoverable after import, got %q", got)
+					}
+					return nil
+				},
+			},
 		},
 	})
 }

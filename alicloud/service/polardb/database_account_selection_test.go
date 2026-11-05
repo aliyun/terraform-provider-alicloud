@@ -288,47 +288,37 @@ func TestUnitAliCloudPolarDbDatabase_createKeepsAccountStateDuringRead(t *testin
 
 // TestUnitAliCloudPolarDbDatabase_accountNameChange covers the guard that
 // rejects an account_name change on engines whose update does not re-grant the
-// account. Accepting such a change would send no request and the read would echo
-// the new value, reporting a successful change that never happened. A target
-// account that is already authorized needs no write and stays accepted.
+// account. Accepting such a change would send no request, and the read would
+// bind the new account's privilege to the ForceNew account_privilege after the
+// plan, so every change on these engines is rejected.
 func TestUnitAliCloudPolarDbDatabase_accountNameChange(t *testing.T) {
-	alice := map[string]interface{}{"AccountName": "alice", "AccountPrivilege": "ReadOnly"}
 	tests := []struct {
-		name        string
-		response    map[string]interface{}
-		accountName string
-		wantErr     string
+		name     string
+		response map[string]interface{}
+		wantErr  string
 	}{
-		{name: "postgresql is supported", response: map[string]interface{}{"Engine": "PostgreSQL"}, accountName: "carol"},
-		{name: "oracle is supported", response: map[string]interface{}{"Engine": "Oracle"}, accountName: "carol"},
+		{name: "postgresql is supported", response: map[string]interface{}{"Engine": "PostgreSQL"}},
+		{name: "oracle is supported", response: map[string]interface{}{"Engine": "Oracle"}},
 		{
-			name:        "mysql is rejected for an unauthorized account",
-			response:    databaseAccountResponseForEngine("MySQL", alice),
-			accountName: "carol",
-			wantErr:     `"account_name" can only be changed`,
+			name:     "mysql is rejected",
+			response: databaseAccountResponseForEngine("MySQL", map[string]interface{}{"AccountName": "alice", "AccountPrivilege": "ReadOnly"}),
+			wantErr:  `"account_name" can only be changed`,
 		},
 		{
-			name:        "mysql accepts an already authorized account",
-			response:    databaseAccountResponseForEngine("MySQL", alice, map[string]interface{}{"AccountName": "carol", "AccountPrivilege": "ReadWrite"}),
-			accountName: "carol",
+			name:     "mysql with a malformed account block is rejected",
+			response: map[string]interface{}{"Engine": "MySQL", "Accounts": map[string]interface{}{"Account": "unexpected"}},
+			wantErr:  `"account_name" can only be changed`,
 		},
 		{
-			name:        "mysql with a malformed account block is rejected",
-			response:    map[string]interface{}{"Engine": "MySQL", "Accounts": map[string]interface{}{"Account": "unexpected"}},
-			accountName: "carol",
-			wantErr:     `"account_name" cannot be confirmed`,
-		},
-		{
-			name:        "missing engine is rejected",
-			response:    map[string]interface{}{},
-			accountName: "carol",
-			wantErr:     `the database engine is not reported`,
+			name:     "missing engine is rejected",
+			response: map[string]interface{}{},
+			wantErr:  `the database engine is not reported`,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := validateAccountNameChange(test.response, test.accountName)
+			err := validateAccountNameChange(test.response)
 			if test.wantErr == "" {
 				if err != nil {
 					t.Fatalf("expected the engine to be accepted, got %v", err)
