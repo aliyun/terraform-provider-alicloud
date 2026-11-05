@@ -108,7 +108,7 @@ resource "alicloud_rocketmq_consumer_group" "first" {
 resource "alicloud_rocketmq_consumer_group" "second" {
   instance_id         = alicloud_rocketmq_instance.default.id
   consumer_group_id   = "${var.name}-second"
-  delivery_order_type = "Orderly"
+  delivery_order_type = "Concurrently"
   remark              = "example"
   consume_retry_policy {
     retry_policy = "DefaultRetryPolicy"
