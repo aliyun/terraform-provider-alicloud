@@ -6,6 +6,7 @@ import (
 	"log"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -718,7 +719,141 @@ func (s *MongoDBService) DescribeMongoDBShardingTDEInfo(id string) (object map[s
 	return object, nil
 }
 
+// highFrequencyBackupApplicable reports whether the current snapshot configuration
+// accepts the high-frequency backup attributes. The contract enables high-frequency
+// backup for Flash snapshots with any positive BackupInterval, not only for a specific
+// pair of intervals; Standard snapshots report -1. The interval is a schema string, so
+// an absent, negative or non-numeric value is not applicable either.
+func highFrequencyBackupApplicable(backupType, interval string) bool {
+	if backupType != "Flash" {
+		return false
+	}
+	minutes, err := strconv.Atoi(interval)
+	return err == nil && minutes > 0
+}
+
+// crossBackupDeleteSelected reports whether this update has to issue the delete shape
+// of ModifyBackupPolicy. cross_backup_type is write-only, so once the state and the
+// configuration both read "delete" the selector itself never changes again; the policy
+// to remove is identified by its locations, so any later change to a policy field while
+// the selector stays "delete" is still a delete operation and must carry the selector
+// and both regions. Gating only on a selector change made a region-only change send a
+// partial request that the service could not resolve to a policy.
+func crossBackupDeleteSelected(d *schema.ResourceData) bool {
+	if v, _ := d.Get("cross_backup_type").(string); v != "delete" {
+		return false
+	}
+	if d.HasChange("cross_backup_type") {
+		return true
+	}
+	for _, key := range []string{
+		"cross_backup_period",
+		"cross_retention_type",
+		"cross_retention_value",
+		"cross_log_retention_type",
+		"cross_log_retention_value",
+		"src_region",
+		"dest_region",
+		"enable_cross_log_backup",
+	} {
+		if d.HasChange(key) {
+			return true
+		}
+	}
+	return false
+}
+
+// attributeConfiguredInConfig reports whether the attribute is explicitly present in
+// the planned configuration. Optional+Computed attributes are null in the raw config
+// when the user leaves them out, so this distinguishes "not configured" from a
+// legitimate zero value that GetOk would drop.
+func attributeConfiguredInConfig(d *schema.ResourceData, key string) bool {
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() || !rawConfig.Type().IsObjectType() || !rawConfig.Type().HasAttribute(key) {
+		return false
+	}
+	value := rawConfig.GetAttr(key)
+	return value.IsKnown() && !value.IsNull()
+}
+
+// validateMongoDBCrossBackupPolicy enforces the ModifyBackupPolicy contract before a
+// request is built: geo-redundant backup attributes need the operation selector, and
+// enabling the policy requires the full parameter set plus a retention value for each
+// "delay" retention type.
+//
+// The selector requirement is expressed structurally: every geo-redundant attribute
+// declares RequiredWith cross_backup_type, so the plan rejects a partial configuration
+// before Update runs (and an explicit 0 still counts as configured). The checks below
+// only cover the rules that depend on the selector value.
+func validateMongoDBCrossBackupPolicy(d *schema.ResourceData) error {
+	crossBackupType, _ := d.Get("cross_backup_type").(string)
+	if crossBackupDeleteSelected(d) {
+		// The service locates the geo-redundant policy to delete by its source and
+		// destination regions, so both must accompany the delete request. The selector
+		// alone is not enough: a region change under an already-selected "delete" is
+		// still a delete and needs the same two locations.
+		missing := make([]string, 0, 2)
+		if v, ok := d.GetOk("src_region"); !ok || fmt.Sprint(v) == "" {
+			missing = append(missing, "src_region")
+		}
+		if v, ok := d.GetOk("dest_region"); !ok || fmt.Sprint(v) == "" {
+			missing = append(missing, "dest_region")
+		}
+		if len(missing) > 0 {
+			return fmt.Errorf("cross_backup_type is set to \"delete\", so the geo-redundant backup locations %s must be configured", strings.Join(missing, ", "))
+		}
+	}
+	if crossBackupType != "update" {
+		return nil
+	}
+
+	missing := make([]string, 0, 6)
+	if v, ok := d.GetOk("src_region"); !ok || fmt.Sprint(v) == "" {
+		missing = append(missing, "src_region")
+	}
+	if v, ok := d.GetOk("dest_region"); !ok || fmt.Sprint(v) == "" {
+		missing = append(missing, "dest_region")
+	}
+	if v, ok := d.GetOk("cross_retention_type"); !ok || fmt.Sprint(v) == "" {
+		missing = append(missing, "cross_retention_type")
+	}
+	if v, ok := d.GetOk("cross_backup_period"); !ok || v.(*schema.Set).Len() == 0 {
+		missing = append(missing, "cross_backup_period")
+	}
+	// enable_cross_log_backup accepts 0 as a legitimate value, so its presence must be
+	// read from the configuration instead of GetOk. Only when the operation selector
+	// itself changes does the user have to state the switch explicitly: a value that
+	// already lives in state (Optional+Computed, e.g. after the attribute was removed
+	// from the configuration) is replayed by the request builder instead of failing an
+	// unrelated update.
+	if d.HasChange("cross_backup_type") && !attributeConfiguredInConfig(d, "enable_cross_log_backup") {
+		missing = append(missing, "enable_cross_log_backup")
+	}
+	if v, ok := d.GetOk("cross_log_retention_type"); !ok || fmt.Sprint(v) == "" {
+		missing = append(missing, "cross_log_retention_type")
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("cross_backup_type is set to \"update\", so the geo-redundant backup attributes %s must be configured", strings.Join(missing, ", "))
+	}
+
+	if crossRetentionType, _ := d.Get("cross_retention_type").(string); crossRetentionType == "delay" {
+		if _, ok := d.GetOk("cross_retention_value"); !ok {
+			return fmt.Errorf("cross_retention_value must be configured when cross_retention_type is set to \"delay\"")
+		}
+	}
+	if crossLogRetentionType, _ := d.Get("cross_log_retention_type").(string); crossLogRetentionType == "delay" {
+		if _, ok := d.GetOk("cross_log_retention_value"); !ok {
+			return fmt.Errorf("cross_log_retention_value must be configured when cross_log_retention_type is set to \"delay\"")
+		}
+	}
+	return nil
+}
+
 func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error {
+	if err := validateMongoDBCrossBackupPolicy(d); err != nil {
+		return err
+	}
+
 	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0*time.Second, s.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return errs.WrapError(err)
@@ -738,9 +873,41 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 	backupTime := d.Get("backup_time").(string)
 	periodList := convert.ExpandStringList(d.Get("backup_period").(*schema.Set).List())
 	backupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], helper.CommaSeparated))
+	// A resource created with geo-redundant attributes reaches this builder before
+	// any Read has populated the conventional backup fields. Sending empty values
+	// makes the service reject the whole request (InvalidPreferredBackupTime), so
+	// read the effective values instead of resetting the backup schedule.
+	//
+	// A failed read must stop here instead of falling through to the Modify request:
+	// collapsing the failure into empty values would replace the real error (for
+	// example a permission or transient read failure) with an unrelated
+	// InvalidPreferredBackupTime/Period error and could drop the configured schedule.
+	if backupTime == "" || backupPeriod == "" {
+		policy, policyErr := s.DescribeMongoDBBackupPolicy(d.Id())
+		if policyErr != nil {
+			return errs.WrapError(policyErr)
+		}
+		if backupTime == "" {
+			if v, ok := policy["PreferredBackupTime"]; ok && fmt.Sprint(v) != "" {
+				backupTime = fmt.Sprint(v)
+			}
+		}
+		if backupPeriod == "" {
+			if v, ok := policy["PreferredBackupPeriod"]; ok && fmt.Sprint(v) != "" {
+				backupPeriod = fmt.Sprint(v)
+			}
+		}
+	}
 
-	request["PreferredBackupTime"] = backupTime
-	request["PreferredBackupPeriod"] = backupPeriod
+	// PreferredBackupTime and PreferredBackupPeriod are optional for the service, so
+	// an undetermined value is omitted instead of being sent as an empty string that
+	// the service rejects.
+	if backupTime != "" {
+		request["PreferredBackupTime"] = backupTime
+	}
+	if backupPeriod != "" {
+		request["PreferredBackupPeriod"] = backupPeriod
+	}
 
 	if v, ok := d.GetOkExists("backup_retention_period"); ok {
 		request["BackupRetentionPeriod"] = v
@@ -764,6 +931,87 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 
 	if v, ok := d.GetOk("backup_interval"); ok {
 		request["BackupInterval"] = v
+	}
+
+	// The geo-redundant backup parameters are only accepted while cross_backup_type
+	// selects "update", so a user change is always sent and the state value is only
+	// replayed for that accepted combination (R4.6). An unrelated backup-policy update
+	// therefore never re-sends a stale cross-region payload.
+	crossBackupType, _ := d.Get("cross_backup_type").(string)
+	crossBackupUpdate := crossBackupType == "update"
+	// The retention values are only meaningful for the "delay" retention type: the
+	// service rejects them for "never" ("never retention type do not support retention
+	// value"). An Optional+Computed value can stay in state after the type changes, so
+	// the type decides whether the value is serialized.
+	crossRetentionType, _ := d.Get("cross_retention_type").(string)
+	crossLogRetentionType, _ := d.Get("cross_log_retention_type").(string)
+	// The delete branch of ModifyBackupPolicy only assembles the region and type fields
+	// of the policy entry, so it must carry both regions and must not receive the
+	// retention/period fields that belong to the update branch.
+	crossBackupDelete := crossBackupDeleteSelected(d)
+	snapshotBackupType, _ := d.Get("snapshot_backup_type").(string)
+	backupInterval, _ := d.Get("backup_interval").(string)
+	highFrequencyApplicable := highFrequencyBackupApplicable(snapshotBackupType, backupInterval)
+
+	if !crossBackupDelete && (d.HasChange("cross_backup_period") || crossBackupUpdate) {
+		if v, ok := d.GetOk("cross_backup_period"); ok {
+			crossPeriodList := convert.ExpandStringList(v.(*schema.Set).List())
+			request["CrossBackupPeriod"] = strings.Join(crossPeriodList[:], helper.CommaSeparated)
+		}
+	}
+
+	if v, ok := d.GetOk("cross_backup_type"); ok && (d.HasChange("cross_backup_type") || crossBackupUpdate || crossBackupDelete) {
+		request["CrossBackupType"] = v
+	}
+
+	if !crossBackupDelete && (d.HasChange("cross_retention_type") || crossBackupUpdate) {
+		if v, ok := d.GetOk("cross_retention_type"); ok {
+			request["CrossRetentionType"] = v
+		}
+	}
+
+	if !crossBackupDelete && (d.HasChange("cross_retention_value") || crossBackupUpdate) {
+		if v, ok := d.GetOk("cross_retention_value"); ok && crossRetentionType == "delay" {
+			request["CrossRetentionValue"] = v
+		}
+	}
+
+	if !crossBackupDelete && (d.HasChange("cross_log_retention_type") || crossBackupUpdate) {
+		if v, ok := d.GetOk("cross_log_retention_type"); ok {
+			request["CrossLogRetentionType"] = v
+		}
+	}
+
+	if !crossBackupDelete && (d.HasChange("cross_log_retention_value") || crossBackupUpdate) {
+		if v, ok := d.GetOk("cross_log_retention_value"); ok && crossLogRetentionType == "delay" {
+			request["CrossLogRetentionValue"] = v
+		}
+	}
+
+	if d.HasChange("dest_region") || crossBackupUpdate || crossBackupDelete {
+		if v, ok := d.GetOk("dest_region"); ok {
+			request["DestRegion"] = v
+		}
+	}
+
+	if v, ok := d.Get("enable_cross_log_backup").(int); ok && !crossBackupDelete && (d.HasChange("enable_cross_log_backup") || crossBackupUpdate) {
+		request["EnableCrossLogBackup"] = v
+	}
+
+	if d.HasChange("high_frequency_backup_retention") || highFrequencyApplicable {
+		if v, ok := d.GetOk("high_frequency_backup_retention"); ok {
+			request["HighFrequencyBackupRetention"] = v
+		}
+	}
+
+	if v, ok := d.Get("preserve_one_each_hour").(bool); ok && (d.HasChange("preserve_one_each_hour") || highFrequencyApplicable) {
+		request["PreserveOneEachHour"] = v
+	}
+
+	if d.HasChange("src_region") || crossBackupUpdate || crossBackupDelete {
+		if v, ok := d.GetOk("src_region"); ok {
+			request["SrcRegion"] = v
+		}
 	}
 
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
