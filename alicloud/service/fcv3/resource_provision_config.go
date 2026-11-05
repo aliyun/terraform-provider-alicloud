@@ -365,7 +365,14 @@ func provisionConfigUpdateTarget(d *schema.ResourceData, client *connectivity.Al
 	}
 
 	service := NewService(client)
-	object, err := service.DescribeProvisionConfig(d.Id())
+	// The replacement PUT below addresses the configured qualifier. Read the
+	// same object here: reading LATEST instead could return another alias's
+	// default target and make the update persist it on the configured alias.
+	qualifier := ""
+	if v, ok := d.GetOk("qualifier"); ok {
+		qualifier = v.(string)
+	}
+	object, err := service.DescribeProvisionConfigWithQualifier(d.Id(), qualifier)
 	if err != nil {
 		return nil, errs.WrapError(err)
 	}
