@@ -31,6 +31,19 @@ const (
 	slbListenerIdPattern                = `^[^:]+:(http|https|tcp|udp):[1-9][0-9]*$`
 )
 
+// slbListenerTransientErrors are the listener level transient codes that the
+// Set*ListenerAttribute actions may return while another configuration change
+// is still being applied. They are retryable; quota, invalid ACL and IP
+// version conflicts are not and must fail fast.
+var slbListenerTransientErrors = []string{
+	"SystemBusy",
+	"OperationBusy",
+	"ServiceIsStopping",
+	"BackendServer.configuring",
+	"ServiceIsConfiguring",
+	"TLSCipherPolicyConfiguring",
+}
+
 var (
 	_ resource.Resource                = &listenerAclAttachmentResource{}
 	_ resource.ResourceWithImportState = &listenerAclAttachmentResource{}
@@ -109,7 +122,8 @@ func (r *listenerAclAttachmentResource) Create(ctx context.Context, req resource
 
 	listenerId := plan.ListenerId.ValueString()
 	aclId := plan.AclId.ValueString()
-	if err := updateListenerAcl(r.Meta(), listenerId, aclId, plan.AclType.ValueString(), true); err != nil {
+
+	if err := updateListenerAcl(ctx, r.Meta(), listenerId, aclId, plan.AclType.ValueString(), true); err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: binding access control policy group %s", listenerAclAttachmentTypeName, aclId),
 			errs.WrapErrorf(err, "Creating %s: binding access control policy group %s", listenerAclAttachmentTypeName, aclId).Error(),
@@ -117,17 +131,25 @@ func (r *listenerAclAttachmentResource) Create(ctx context.Context, req resource
 		return
 	}
 
+	// The write already took effect, so the identity is persisted before the
+	// first read. A transient read failure must not drop a binding that
+	// Terraform now owns; the next refresh reconciles the server values.
+	resp.Diagnostics.Append(resp.State.Set(ctx, listenerAclAttachmentPlanState(plan))...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	object, err := NewService(r.Meta()).DescribeSlbListener(listenerId)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Reading %s: calling DescribeLoadBalancer*ListenerAttribute", listenerAclAttachmentTypeName),
-			errs.WrapErrorf(err, "Reading %s: calling DescribeLoadBalancer*ListenerAttribute", listenerAclAttachmentTypeName).Error(),
+		resp.Diagnostics.AddWarning(
+			fmt.Sprintf("Created %s but the first read failed", listenerAclAttachmentTypeName),
+			fmt.Sprintf("The access control policy group %s was bound to listener %s, but reading the listener failed: %s. "+
+				"The binding is kept in state and will be reconciled on the next refresh.", aclId, listenerId, err.Error()),
 		)
 		return
 	}
 
-	model := listenerAclAttachmentState(listenerId, aclId, object)
-	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, listenerAclAttachmentState(listenerId, aclId, plan.AclType, object))...)
 }
 
 func (r *listenerAclAttachmentResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -137,13 +159,17 @@ func (r *listenerAclAttachmentResource) Read(ctx context.Context, req resource.R
 		return
 	}
 
-	listenerId, aclId, err := parseListenerAclAttachmentId(state.Id.ValueString())
+	listenerId, idAclId, err := parseListenerAclAttachmentId(state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: parsing resource ID", listenerAclAttachmentTypeName),
 			err.Error(),
 		)
 		return
+	}
+	targetAclId := state.AclId.ValueString()
+	if targetAclId == "" {
+		targetAclId = idAclId
 	}
 
 	object, err := NewService(r.Meta()).DescribeSlbListener(listenerId)
@@ -166,19 +192,32 @@ func (r *listenerAclAttachmentResource) Read(ctx context.Context, req resource.R
 		resp.State.RemoveResource(ctx)
 		return
 	}
-	if aclId == "" {
-		// Imported without the ACL part: adopt the ACL that is bound now.
-		aclId = listenerFirstAclId(object)
-		if aclId == "" {
+
+	if targetAclId == "" {
+		// Imported without the ACL part. A single bound policy group is
+		// unambiguous; several groups need the four segment import form so the
+		// target identity is never guessed.
+		aclIds := listenerAclIds(object)
+		switch len(aclIds) {
+		case 0:
 			resp.State.RemoveResource(ctx)
 			return
+		case 1:
+			targetAclId = aclIds[0]
+		default:
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Importing %s: the listener has multiple access control policy groups", listenerAclAttachmentTypeName),
+				fmt.Sprintf("Listener %s is bound to several access control policy groups (%s). Import with the four segment ID "+
+					"<load_balancer_id>:<protocol>:<listener_port>:<acl_id> to select the managed group.", listenerId, strings.Join(aclIds, ", ")),
+			)
+			return
 		}
-	} else if !listenerAclContains(object, aclId) {
+	} else if !listenerAclContains(object, targetAclId) {
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, listenerAclAttachmentState(listenerId, aclId, object))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, listenerAclAttachmentState(listenerId, targetAclId, state.AclType, object))...)
 }
 
 func (r *listenerAclAttachmentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -200,7 +239,7 @@ func (r *listenerAclAttachmentResource) Update(ctx context.Context, req resource
 
 	aclId := plan.AclId.ValueString()
 	if !plan.AclId.Equal(state.AclId) || !plan.AclType.Equal(state.AclType) {
-		if err := updateListenerAcl(r.Meta(), listenerId, aclId, plan.AclType.ValueString(), true); err != nil {
+		if err := updateListenerAcl(ctx, r.Meta(), listenerId, aclId, plan.AclType.ValueString(), true); err != nil {
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Updating %s: binding access control policy group %s", listenerAclAttachmentTypeName, aclId),
 				errs.WrapErrorf(err, "Updating %s: binding access control policy group %s", listenerAclAttachmentTypeName, aclId).Error(),
@@ -209,16 +248,23 @@ func (r *listenerAclAttachmentResource) Update(ctx context.Context, req resource
 		}
 	}
 
-	object, err := NewService(r.Meta()).DescribeSlbListener(listenerId)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Reading %s: calling DescribeLoadBalancer*ListenerAttribute", listenerAclAttachmentTypeName),
-			errs.WrapErrorf(err, "Reading %s: calling DescribeLoadBalancer*ListenerAttribute", listenerAclAttachmentTypeName).Error(),
-		)
+	// Persist the planned identity right after the successful write so a
+	// transient read failure cannot lose the managed binding.
+	resp.Diagnostics.Append(resp.State.Set(ctx, listenerAclAttachmentPlanState(plan))...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, listenerAclAttachmentState(listenerId, aclId, object))...)
+	object, err := NewService(r.Meta()).DescribeSlbListener(listenerId)
+	if err != nil {
+		resp.Diagnostics.AddWarning(
+			fmt.Sprintf("Updated %s but the read failed", listenerAclAttachmentTypeName),
+			fmt.Sprintf("The access control settings of listener %s were updated, but reading the listener failed: %s. "+
+				"The planned state is kept and will be reconciled on the next refresh.", listenerId, err.Error()),
+		)
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, listenerAclAttachmentState(listenerId, aclId, plan.AclType, object))...)
 }
 
 func (r *listenerAclAttachmentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -250,7 +296,7 @@ func (r *listenerAclAttachmentResource) Delete(ctx context.Context, req resource
 		return
 	}
 
-	if err := updateListenerAcl(r.Meta(), listenerId, "", "", false); err != nil {
+	if err := updateListenerAcl(ctx, r.Meta(), listenerId, "", "", false); err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Deleting %s: disabling listener access control", listenerAclAttachmentTypeName),
 			errs.WrapErrorf(err, "Deleting %s: disabling listener access control", listenerAclAttachmentTypeName).Error(),
@@ -260,8 +306,10 @@ func (r *listenerAclAttachmentResource) Delete(ctx context.Context, req resource
 
 	// Wait until the access control status is switched off. The server may keep
 	// the previous AclId after disabling, so only AclStatus is asserted.
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	err = retry.Retry(time.Duration(listenerAclAttachmentTimeoutSeconds)*time.Second, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, time.Duration(listenerAclAttachmentTimeoutSeconds)*time.Second, func() *retry.RetryError {
+		if err := ctx.Err(); err != nil {
+			return retry.NonRetryableError(err)
+		}
 		object, err := service.DescribeSlbListener(listenerId)
 		if err != nil {
 			if errs.NotFoundError(err) {
@@ -272,7 +320,9 @@ func (r *listenerAclAttachmentResource) Delete(ctx context.Context, req resource
 		if status, _ := object["AclStatus"].(string); !strings.EqualFold(status, "on") {
 			return nil
 		}
-		wait()
+		if err := waitListenerAclWithContext(ctx, 3*time.Second); err != nil {
+			return retry.NonRetryableError(err)
+		}
 		return retry.RetryableError(fmt.Errorf("%s: access control of listener %s is still enabled", listenerAclAttachmentTypeName, listenerId))
 	})
 	if err != nil {
@@ -285,7 +335,7 @@ func (r *listenerAclAttachmentResource) Delete(ctx context.Context, req resource
 }
 
 func (r *listenerAclAttachmentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	listenerId, _, err := parseListenerAclAttachmentId(req.ID)
+	listenerId, aclId, err := parseListenerAclAttachmentId(req.ID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Importing %s: parsing import ID", listenerAclAttachmentTypeName),
@@ -294,12 +344,31 @@ func (r *listenerAclAttachmentResource) ImportState(ctx context.Context, req res
 		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), listenerId)...)
+	if aclId != "" {
+		// Keep the requested fourth segment as the managed policy group so the
+		// following read never adopts a different group.
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("acl_id"), aclId)...)
+	}
+}
+
+// listenerAclAttachmentPlanState stores the identity that is already known
+// once the write succeeds. It is used before the first read so that a transient
+// read failure can never leave an unmanaged binding behind; the next refresh
+// replaces the assumed status with the server values.
+func listenerAclAttachmentPlanState(plan listenerAclAttachmentResourceModel) listenerAclAttachmentResourceModel {
+	return listenerAclAttachmentResourceModel{
+		Id:         types.StringValue(plan.ListenerId.ValueString()),
+		ListenerId: plan.ListenerId,
+		AclId:      plan.AclId,
+		AclType:    plan.AclType,
+		AclStatus:  types.StringValue("on"),
+	}
 }
 
 // updateListenerAcl only sends the ACL related parameters of the protocol
 // specific SetLoadBalancer*ListenerAttribute API, so other listener settings
 // (bandwidth, health check, certificates and so on) are left untouched.
-func updateListenerAcl(client *connectivity.AliyunClient, listenerId, aclId, aclType string, enable bool) error {
+func updateListenerAcl(ctx context.Context, client *connectivity.AliyunClient, listenerId, aclId, aclType string, enable bool) error {
 	parts, err := ParseSlbListenerId(listenerId)
 	if err != nil {
 		return errs.WrapError(err)
@@ -312,11 +381,10 @@ func updateListenerAcl(client *connectivity.AliyunClient, listenerId, aclId, acl
 	if err != nil {
 		return errs.WrapErrorf(err, "invalid listener port in listener ID %s", listenerId)
 	}
-	if !isSupportedListenerProtocol(protocol) {
-		return errs.WrapError(fmt.Errorf("unsupported listener protocol %s in listener ID %s", protocol, listenerId))
+	action, err := listenerAttributeAction(protocol)
+	if err != nil {
+		return errs.WrapErrorf(err, "invalid listener ID %s", listenerId)
 	}
-
-	action := fmt.Sprintf("SetLoadBalancer%sListenerAttribute", strings.ToUpper(protocol))
 	request := map[string]interface{}{
 		"RegionId":       client.RegionId,
 		"LoadBalancerId": parts[0],
@@ -331,12 +399,16 @@ func updateListenerAcl(client *connectivity.AliyunClient, listenerId, aclId, acl
 	}
 
 	var response map[string]interface{}
-	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
-	err = retry.Retry(time.Duration(listenerAclAttachmentTimeoutSeconds)*time.Second, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, time.Duration(listenerAclAttachmentTimeoutSeconds)*time.Second, func() *retry.RetryError {
+		if err := ctx.Err(); err != nil {
+			return retry.NonRetryableError(err)
+		}
 		response, err = client.RpcPost("Slb", string(connectivity.ApiVersion20140515), action, nil, request, true)
 		if err != nil {
-			if helper.NeedRetry(err) {
-				wait()
+			if isTransientListenerError(err) {
+				if err := waitListenerAclWithContext(ctx, 3*time.Second); err != nil {
+					return retry.NonRetryableError(err)
+				}
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
@@ -350,16 +422,37 @@ func updateListenerAcl(client *connectivity.AliyunClient, listenerId, aclId, acl
 	return nil
 }
 
-func listenerAclAttachmentState(listenerId, aclId string, object map[string]interface{}) listenerAclAttachmentResourceModel {
+// isTransientListenerError covers both the transport level retries and the
+// listener level busy codes that the Set*ListenerAttribute actions return while
+// another change is still in progress. Quota, invalid ACL and IP version
+// conflicts are terminal and stay non retryable.
+func isTransientListenerError(err error) bool {
+	if helper.NeedRetry(err) {
+		return true
+	}
+	return errs.IsExpectedErrors(err, slbListenerTransientErrors)
+}
+
+func waitListenerAclWithContext(ctx context.Context, duration time.Duration) error {
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
+
+func listenerAclAttachmentState(listenerId, aclId string, aclType types.String, object map[string]interface{}) listenerAclAttachmentResourceModel {
 	model := listenerAclAttachmentResourceModel{
 		Id:         types.StringValue(listenerId),
 		ListenerId: types.StringValue(listenerId),
 		AclId:      types.StringValue(aclId),
+		AclType:    aclType,
 	}
 	if v, ok := object["AclType"].(string); ok && v != "" {
 		model.AclType = types.StringValue(v)
-	} else {
-		model.AclType = types.StringNull()
 	}
 	if v, ok := object["AclStatus"].(string); ok && v != "" {
 		model.AclStatus = types.StringValue(v)
@@ -369,49 +462,48 @@ func listenerAclAttachmentState(listenerId, aclId string, object map[string]inte
 	return model
 }
 
+// listenerAclIds returns every access control policy group reported by
+// DescribeLoadBalancer*ListenerAttribute.
+func listenerAclIds(object map[string]interface{}) []string {
+	var ids []string
+	seen := map[string]struct{}{}
+	appendID := func(id string) {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			return
+		}
+		if _, ok := seen[id]; ok {
+			return
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+	if v, ok := object["AclId"].(string); ok && v != "" {
+		for _, id := range strings.Split(v, ",") {
+			appendID(id)
+		}
+	}
+	if v, ok := object["AclIds"].(map[string]interface{}); ok {
+		if items, ok := v["AclId"].([]interface{}); ok {
+			for _, item := range items {
+				if id, ok := item.(string); ok {
+					appendID(id)
+				}
+			}
+		}
+	}
+	return ids
+}
+
 // listenerAclContains reports whether the configured policy group is part of
 // the listener ACLs described by DescribeLoadBalancer*ListenerAttribute.
 func listenerAclContains(object map[string]interface{}, aclId string) bool {
-	if v, ok := object["AclId"].(string); ok && v != "" {
-		for _, id := range strings.Split(v, ",") {
-			if strings.TrimSpace(id) == aclId {
-				return true
-			}
-		}
-	}
-	if v, ok := object["AclIds"].(map[string]interface{}); ok {
-		if items, ok := v["AclId"].([]interface{}); ok {
-			for _, item := range items {
-				if id, ok := item.(string); ok && id == aclId {
-					return true
-				}
-			}
+	for _, id := range listenerAclIds(object) {
+		if id == aclId {
+			return true
 		}
 	}
 	return false
-}
-
-// listenerFirstAclId returns the first policy group reported by
-// DescribeLoadBalancer*ListenerAttribute, used when the resource is imported
-// without the optional ACL part.
-func listenerFirstAclId(object map[string]interface{}) string {
-	if v, ok := object["AclId"].(string); ok && v != "" {
-		for _, id := range strings.Split(v, ",") {
-			if id = strings.TrimSpace(id); id != "" {
-				return id
-			}
-		}
-	}
-	if v, ok := object["AclIds"].(map[string]interface{}); ok {
-		if items, ok := v["AclId"].([]interface{}); ok {
-			for _, item := range items {
-				if id, ok := item.(string); ok && id != "" {
-					return id
-				}
-			}
-		}
-	}
-	return ""
 }
 
 func parseListenerAclAttachmentId(id string) (listenerId, aclId string, err error) {
@@ -432,4 +524,13 @@ func isSupportedListenerProtocol(protocol string) bool {
 		return true
 	}
 	return false
+}
+
+// listenerAttributeAction maps the protocol part of a listener ID to the
+// protocol specific SetLoadBalancer*ListenerAttribute action.
+func listenerAttributeAction(protocol string) (string, error) {
+	if !isSupportedListenerProtocol(protocol) {
+		return "", fmt.Errorf("unsupported listener protocol %q", protocol)
+	}
+	return fmt.Sprintf("SetLoadBalancer%sListenerAttribute", strings.ToUpper(protocol)), nil
 }

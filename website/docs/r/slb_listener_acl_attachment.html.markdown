@@ -17,19 +17,9 @@ For information about Classic Load Balancer (SLB) and how to use it, see [What i
 
 -> **NOTE:** This resource manages only the access control settings of the listener. It can be used with listeners that are not managed by Terraform, for example the listeners created by an ACK cluster. Use the `id` element of `alicloud_slb_listeners` (or the `id` of `alicloud_slb_listener`) as `listener_id`.
 
--> **NOTE:** An SLB listener expresses a single set of ACLs. This resource exclusively manages the ACL binding of its listener and overwrites the ACLs already bound to that listener. Do not manage the same listener through both this resource and the `acl_status`/`acl_type`/`acl_id`/`acl_ids` arguments of `alicloud_slb_listener`. When the listener itself is still created by `alicloud_slb_listener`, add `ignore_changes = [acl_status, acl_type, acl_id, acl_ids]` to that listener so that only this resource drives the ACL settings:
+-> **NOTE:** An SLB listener expresses a single set of ACLs. This resource exclusively manages the ACL binding of its listener and overwrites the ACLs already bound to that listener. Do not manage the same listener through both this resource and the `acl_status`/`acl_type`/`acl_id`/`acl_ids` arguments of `alicloud_slb_listener`. When the listener itself is still created by `alicloud_slb_listener`, add `ignore_changes = [acl_status, acl_type, acl_id, acl_ids]` to that listener so that only this resource drives the ACL settings.
 
-```terraform
-resource "alicloud_slb_listener" "default" {
-  # ... other listener arguments ...
-
-  lifecycle {
-    ignore_changes = [acl_status, acl_type, acl_id, acl_ids]
-  }
-}
-```
-
--> **NOTE:** Enabling access control takes effect immediately and may affect traffic. When a white list is enabled with no entries, all requests are forwarded; when a black list is enabled with no entries, all requests are denied. Make sure the policy group is configured before binding it.
+-> **NOTE:** Enabling access control takes effect immediately and may affect traffic. A white list with no entries denies all requests, while a black list with no entries forwards all requests. Make sure the policy group is configured before binding it.
 
 -> **NOTE:** Deleting this resource only disables access control (`AclStatus=off`) and never deletes or rebuilds the listener. SLB has no dedicated de-association API, so the server may keep the previous `AclId` after the binding is removed.
 
@@ -38,8 +28,16 @@ resource "alicloud_slb_listener" "default" {
 Basic Usage
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
-  default = "terraform-example"
+  default = "tf-testAccSlbListenerAclAttachment"
 }
 
 resource "alicloud_slb_load_balancer" "default" {
@@ -62,6 +60,10 @@ resource "alicloud_slb_listener" "default" {
   unhealthy_threshold       = 8
   health_check_timeout      = 8
   health_check_interval     = 5
+
+  lifecycle {
+    ignore_changes = [acl_status, acl_type, acl_id, acl_ids]
+  }
 }
 
 resource "alicloud_slb_acl" "default" {
@@ -81,11 +83,38 @@ resource "alicloud_slb_listener_acl_attachment" "default" {
 
 ### Attach an ACL to a listener that is not managed by Terraform
 
-An ACK-created apiServer SLB listener can be located through the `alicloud_slb_listeners` data source and bound directly:
+An ACK-created apiServer SLB listener can be located through the `alicloud_slb_listeners` data source and bound directly. The load balancer and the policy group are existing resources:
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
+variable "load_balancer_id" {
+  description = "The ID of the existing SLB created by ACK."
+  type        = string
+}
+
+variable "acl_name" {
+  description = "The name of the policy group to bind."
+  type        = string
+  default     = "tf-testAccSlbListenerAclAttachment"
+}
+
 data "alicloud_slb_listeners" "apiserver" {
-  load_balancer_id = "lb-xxxxxxxxxxxx"
+  load_balancer_id = var.load_balancer_id
+}
+
+resource "alicloud_slb_acl" "apiserver" {
+  name       = var.acl_name
+  ip_version = "ipv4"
+  entry_list {
+    entry = "10.10.10.0/24"
+  }
 }
 
 resource "alicloud_slb_listener_acl_attachment" "apiserver" {
@@ -99,16 +128,16 @@ resource "alicloud_slb_listener_acl_attachment" "apiserver" {
 
 The following arguments are supported:
 
-* `listener_id` - (Required, ForceNew) The ID of the SLB listener, in the format of `<load_balancer_id>:<protocol>:<listener_port>`. The protocol is one of `http`, `https`, `tcp` and `udp`. It is the same as the `id` of `alicloud_slb_listener`.
-* `acl_id` - (Required) The ID of the access control policy group bound to the listener.
-* `acl_type` - (Required) The access control type. Valid values: `white` and `black`.
+* `listener_id` - (Required, ForceNew, String) The ID of the SLB listener, in the format of `<load_balancer_id>:<protocol>:<listener_port>`. The protocol is one of `http`, `https`, `tcp` and `udp`, and the port ranges from `1` to `65535`. It is the same as the `id` of `alicloud_slb_listener`.
+* `acl_id` - (Required, String) The ID of the access control policy group bound to the listener.
+* `acl_type` - (Required, String) The access control type. Valid values: `white` and `black`.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID in terraform of the listener ACL attachment. It formats as `<load_balancer_id>:<protocol>:<listener_port>`, which is the ID of the listener whose ACL binding is managed.
-* `acl_status` - The access control status of the listener.
+* `id` - (String) The resource ID in terraform of the listener ACL attachment. It formats as `<load_balancer_id>:<protocol>:<listener_port>`, which is the ID of the listener whose ACL binding is managed.
+* `acl_status` - (String) The access control status of the listener.
 
 ## Import
 
@@ -123,3 +152,5 @@ or
 ```shell
 $ terraform import alicloud_slb_listener_acl_attachment.example <load_balancer_id>:<protocol>:<listener_port>:<acl_id>
 ```
+
+-> **NOTE:** When the listener is bound to several policy groups, use the four segment form to select the managed group; importing with only the listener ID then fails with a diagnostic instead of guessing one.
