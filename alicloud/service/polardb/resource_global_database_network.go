@@ -37,6 +37,21 @@ func ResourceGlobalDatabaseNetwork() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"enable_global_domain_name": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"gdn_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -57,6 +72,18 @@ func resourceGlobalDatabaseNetworkCreate(d *schema.ResourceData, meta interface{
 
 	if v, ok := d.GetOk("description"); ok {
 		request["GDNDescription"] = v
+	}
+
+	if v, ok := d.GetOk("gdn_version"); ok {
+		request["GDNVersion"] = v.(string)
+	}
+
+	if v, ok := d.GetOk("enable_global_domain_name"); ok {
+		request["EnableGlobalDomainName"] = v.(bool)
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+		request["ResourceGroupId"] = v.(string)
 	}
 
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
@@ -99,6 +126,16 @@ func resourceGlobalDatabaseNetworkRead(d *schema.ResourceData, meta interface{})
 	dBClusterId := object["DBClusters"].([]interface{})[0].(map[string]interface{})["DBClusterId"]
 	d.Set("db_cluster_id", dBClusterId)
 	d.Set("description", object["GDNDescription"])
+	if labels, ok := object["Labels"].(map[string]interface{}); ok {
+		if v, ok := labels["GDNVersion"].(string); ok && v != "" {
+			d.Set("gdn_version", v)
+		}
+	}
+	// Keep the configured value when the API response omits ResourceGroupId,
+	// instead of overwriting it with an empty one.
+	if v, ok := object["ResourceGroupId"].(string); ok && v != "" {
+		d.Set("resource_group_id", v)
+	}
 	d.Set("status", object["GDNStatus"])
 
 	return nil
@@ -118,6 +155,18 @@ func resourceGlobalDatabaseNetworkUpdate(d *schema.ResourceData, meta interface{
 	}
 	if v, ok := d.GetOk("description"); ok {
 		request["GDNDescription"] = v
+	}
+
+	if d.HasChange("enable_global_domain_name") {
+		update = true
+		request["EnableGlobalDomainName"] = d.Get("enable_global_domain_name").(bool)
+	}
+
+	if d.HasChange("resource_group_id") {
+		update = true
+		if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+			request["ResourceGroupId"] = v.(string)
+		}
 	}
 
 	if update {

@@ -69,6 +69,9 @@ func TestAccAlicloudPolarDBGlobalDatabaseNetworkDataSource(t *testing.T) {
 			"status":        `"locked"`,
 		}),
 	}
+	// DescribeGlobalDatabaseNetworks does not return ResourceGroupId, so the
+	// value may be empty until the API contract is confirmed. The assertion
+	// requires the key and, once populated, a resource group ID shape.
 	var existAlicloudPolarDBGlobalDatabaseNetworkDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                                  "1",
@@ -76,6 +79,8 @@ func TestAccAlicloudPolarDBGlobalDatabaseNetworkDataSource(t *testing.T) {
 			"networks.0.id":                          CHECKSET,
 			"networks.0.gdn_id":                      CHECKSET,
 			"networks.0.description":                 CHECKSET,
+			"networks.0.gdn_version":                 CHECKSET,
+			"networks.0.resource_group_id":           REGEXMATCH + "^(|rg-[0-9a-z]+)$",
 			"networks.0.db_type":                     CHECKSET,
 			"networks.0.db_version":                  CHECKSET,
 			"networks.0.create_time":                 CHECKSET,
@@ -109,25 +114,36 @@ func testAccCheckAlicloudPolarDBGlobalDatabaseNetworkDataSourceName(rand int, at
 	variable "name" {
 		default = "tf-testAcc-%d"
 	}
-	data "alicloud_vpcs" "default" {
-		name_regex = "^default-NODELETING$"
+	data "alicloud_resource_manager_resource_groups" "default" {}
+
+	data "alicloud_polardb_zones" "default" {}
+
+	resource "alicloud_vpc" "default" {
+		vpc_name = var.name
 	}
-	
-	data "alicloud_vswitches" "default" {
-		vpc_id = data.alicloud_vpcs.default.ids.0
+
+	resource "alicloud_vswitch" "default" {
+		zone_id    = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
+		vpc_id     = alicloud_vpc.default.id
+		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
 	}
-	
+
 	resource "alicloud_polardb_cluster" "default" {
 		db_type       = "MySQL"
 		db_version    = "8.0"
 		pay_type      = "PostPaid"
 		db_node_class = "polar.mysql.x4.medium"
-		vswitch_id    = data.alicloud_vswitches.default.ids.0
+		vswitch_id    = alicloud_vswitch.default.id
 		description   = "${var.name}"
+		lifecycle {
+			ignore_changes = [encrypt_new_tables]
+		}
 	}
 	resource "alicloud_polardb_global_database_network" "default" {
-		db_cluster_id = "${alicloud_polardb_cluster.default.id}"
-		description   = var.name
+		db_cluster_id     = "${alicloud_polardb_cluster.default.id}"
+		description       = var.name
+		resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.1
+		gdn_version       = "1.0"
 	}
 	data "alicloud_polardb_global_database_networks" "default" {
 		%s
