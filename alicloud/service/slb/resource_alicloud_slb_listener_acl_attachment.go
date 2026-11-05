@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -152,6 +151,12 @@ func (r *listenerAclAttachmentResource) Create(ctx context.Context, req resource
 		)
 	}
 	if err != nil {
+		// An acknowledged write whose readback contradicts the plan returns the
+		// planned identity with the error: Terraform keeps that object and the next
+		// refresh or destroy can reconcile it, so the binding is never orphaned.
+		if listenerAclAttachmentIdentityKnown(model) {
+			resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+		}
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s", listenerAclAttachmentTypeName),
 			err.Error(),
@@ -199,6 +204,11 @@ func (r *listenerAclAttachmentResource) Update(ctx context.Context, req resource
 		)
 	}
 	if err != nil {
+		// Same rule as create: the planned identity is persisted with the error so
+		// the acknowledged change can be reconciled later.
+		if listenerAclAttachmentIdentityKnown(model) {
+			resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+		}
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Updating %s", listenerAclAttachmentTypeName),
 			err.Error(),
@@ -294,10 +304,13 @@ func createListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	if !converged {
 		if complete {
 			// The listener answered completely and still reports a different
-			// binding: this is a contradiction, not a pending readback, so it
-			// must not be reported as a successful create.
-			return listenerAclAttachmentResourceModel{}, nil, fmt.Errorf(
-				"listener %s was asked to bind policy group %s with type %s, but it reports a different access control binding (status %v, type %v, groups %v); no state was written",
+			// binding: this is a contradiction, not a pending readback, so it must
+			// not be reported as a successful create. The planned identity travels
+			// back with the error so Terraform keeps a recoverable object: without
+			// it an applied binding would stay unmanaged, and without the planned
+			// fields a later refresh would reconcile against the old group.
+			return planState, nil, fmt.Errorf(
+				"listener %s was asked to bind policy group %s with type %s, but it reports a different access control binding (status %v, type %v, groups %v)",
 				listenerId, aclId, aclType, object["AclStatus"], object["AclType"], listenerAclIdsForMessage(object),
 			)
 		}
@@ -347,8 +360,11 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 		}
 		if !converged {
 			if complete {
-				return listenerAclAttachmentResourceModel{}, nil, fmt.Errorf(
-					"listener %s was asked to use policy group %s with type %s, but it reports a different access control binding (status %v, type %v, groups %v); no state was written",
+				// Same rule as create: the acknowledged write stays recoverable, so
+				// the planned identity is returned with the error instead of leaving
+				// the previous group as the only state.
+				return planState, nil, fmt.Errorf(
+					"listener %s was asked to use policy group %s with type %s, but it reports a different access control binding (status %v, type %v, groups %v)",
 					listenerId, aclId, aclType, object["AclStatus"], object["AclType"], listenerAclIdsForMessage(object),
 				)
 			}
@@ -395,7 +411,7 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 
 	object, err := api.Describe(ctx, listenerId)
 	if err != nil {
-		if errs.NotFoundError(err) {
+		if listenerAclListenerGone(err) {
 			return listenerAclAttachmentResourceModel{}, false, nil
 		}
 		return listenerAclAttachmentResourceModel{}, false, err
@@ -434,11 +450,15 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 		return state, true, nil
 	}
 
-	aclIds, membersComplete := listenerAclIds(object)
-	if !membersComplete {
+	aclIds, membersReported, membersComplete := listenerAclIds(object)
+	if !membersReported || !membersComplete {
+		// An enabled listener always reports its members, so a response that omits
+		// them has not reported the membership: it cannot prove that the managed
+		// group was removed. Keeping the state avoids dropping a live binding on a
+		// gateway that serialises the list differently.
 		if importing {
 			return listenerAclAttachmentResourceModel{}, false, fmt.Errorf(
-				"cannot confirm the imported binding of listener %s: the describe response reported malformed access control members",
+				"cannot confirm the imported binding of listener %s: the describe response did not report a usable access control member list",
 				listenerId,
 			)
 		}
@@ -488,7 +508,7 @@ func deleteListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	defer cancel()
 	object, err := api.Describe(ctx, listenerId)
 	if err != nil {
-		if errs.NotFoundError(err) {
+		if listenerAclListenerGone(err) {
 			// The listener is gone, so the ACL binding no longer exists.
 			return nil
 		}
@@ -517,7 +537,7 @@ func deleteListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 		}
 		current, err := api.Describe(ctx, listenerId)
 		if err != nil {
-			if errs.NotFoundError(err) {
+			if listenerAclListenerGone(err) {
 				return nil
 			}
 			return err
@@ -536,6 +556,14 @@ func deleteListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 			return err
 		}
 	}
+}
+
+// listenerAclAttachmentIdentityKnown reports whether the model carries the
+// identity of a binding that the service already accepted, so it can be stored
+// even when the readback contradicts the plan. An empty model means the write
+// was not acknowledged and must not create state.
+func listenerAclAttachmentIdentityKnown(model listenerAclAttachmentResourceModel) bool {
+	return !model.ListenerId.IsNull() || !model.Id.IsNull()
 }
 
 // listenerAclAttachmentPlanState stores the identity that is already known

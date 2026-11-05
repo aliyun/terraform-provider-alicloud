@@ -1,9 +1,12 @@
 package slb
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"strings"
 	"testing"
 	"time"
 
@@ -185,19 +188,79 @@ func TestUnitListenerAclAttachmentErrorClassification(t *testing.T) {
 	if isTransientListenerError(notFound) {
 		t.Fatal("a missing listener must not be retried")
 	}
-	if !errs.NotFoundError(notFound) {
-		t.Fatal("a 404 response must stay recognizable as not found")
+	if !listenerAclListenerGone(notFound) {
+		t.Fatal("a 404 with the SLB business code must stay recognizable as a missing listener")
+	}
+
+	// A bare status, an empty business code and a plain transport failure never
+	// prove that the listener is gone. Only the transport failure stays retryable;
+	// the others are terminal SLB rejections.
+	notGone := []struct {
+		name      string
+		err       error
+		retryable bool
+	}{
+		{name: "empty business code with a 403 status", err: &tea.SDKError{StatusCode: tea.Int(403), Code: tea.String(""), Message: tea.String("The specified resource does not exist."), Data: tea.String("{}")}},
+		{name: "empty code and message with a 404 status", err: &tea.SDKError{StatusCode: tea.Int(404), Code: tea.String(""), Message: tea.String(""), Data: tea.String("{}")}},
+		{name: "gateway 404 without a business body", err: fmt.Errorf("%w: status 404: unexpected EOF", connectivity.ErrRpcRejectedResponse)},
+		{name: "plain transport failure", err: errors.New(`Post "https://slb.aliyuncs.com/": i/o timeout`), retryable: true},
+	}
+	for _, tc := range notGone {
+		if listenerAclListenerGone(tc.err) {
+			t.Fatalf("%s must not be classified as a missing listener", tc.name)
+		}
+		if got := isTransientListenerError(tc.err); got != tc.retryable {
+			t.Fatalf("%s retryable = %v, want %v", tc.name, got, tc.retryable)
+		}
 	}
 }
 
-// listenerAclTestNotFoundError is the error shape errs.NotFoundError detects
-// for a listener that no longer exists.
+// listenerAclTestNotFoundError is the error shape that proves the SLB entity is
+// gone: a decodable business error, not only a status.
 func listenerAclTestNotFoundError() error {
 	return &tea.SDKError{
 		StatusCode: tea.Int(404),
 		Code:       tea.String("InvalidLoadBalancerId.NotFound"),
 		Message:    tea.String("The specified resource does not exist."),
 		Data:       tea.String("{}"),
+	}
+}
+
+// The provider debug log receives the response payload. A gateway that echoes the
+// request in its response must not be able to write the signed URL into it.
+func TestUnitListenerAclAttachmentDebugLogIsRedacted(t *testing.T) {
+	var buffer bytes.Buffer
+	previousWriter := log.Writer()
+	log.SetOutput(&buffer)
+	t.Cleanup(func() { log.SetOutput(previousWriter) })
+	t.Setenv("DEBUG", "terraform")
+
+	requestCapture(t, func(ctx context.Context, action string, request map[string]interface{}) (map[string]interface{}, error) {
+		return map[string]interface{}{
+			"RequestId":    "r-1",
+			"ListenerPort": 80,
+			"AclStatus":    "on",
+			"AclType":      "white",
+			"AclId":        "acl-1",
+			"Echo":         "https://slb.aliyuncs.com/?AccessKeyId=unit-test-access-key&Signature=synthetic-signature&SecurityToken=synthetic-token",
+		}, nil
+	})
+	client := &connectivity.AliyunClient{RegionId: "cn-hangzhou"}
+	if _, err := describeListenerWithContext(context.Background(), client, "lb-123:http:80"); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	output := buffer.String()
+	if !strings.Contains(output, "DescribeLoadBalancerHTTPListenerAttribute") {
+		t.Fatalf("the debug log did not record the call: %q", output)
+	}
+	for _, secret := range []string{"AccessKeyId", "Signature=", "SecurityToken", "unit-test-access-key", "synthetic-signature", "synthetic-token"} {
+		if strings.Contains(output, secret) {
+			// Do not print the leaking line: it contains the protected value.
+			t.Fatalf("the debug log leaked %q", secret)
+		}
+	}
+	if !strings.Contains(output, "slb.aliyuncs.com") {
+		t.Fatalf("the redaction dropped the usable response: %q", output)
 	}
 }
 

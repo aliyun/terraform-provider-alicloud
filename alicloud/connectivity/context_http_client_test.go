@@ -2,12 +2,15 @@ package connectivity
 
 import (
 	"context"
+	"crypto/tls"
+	"encoding/pem"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -395,5 +398,144 @@ func runSignedRpcDebugChild(t *testing.T) {
 	}
 	if got := sawSignature.Load(); got != int32(len(requests)) {
 		t.Fatalf("expected both requests to be signed, got %d", got)
+	}
+}
+
+const (
+	rpcTLSChildEnv         = "TF_UNIT_RPC_TLS_DEBUG_CHILD"
+	rpcTLSChildEndpointEnv = "TF_UNIT_RPC_TLS_ENDPOINT"
+)
+
+// newLocalHttpsRpcClient is the TLS variant of newLocalRpcClient: the transport
+// negotiates TLS, which is the only path where the HTTP/2 client could be used.
+func newLocalHttpsRpcClient(t *testing.T, endpoint string) *AliyunClient {
+	t.Helper()
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").
+		SetAccessKeyId("unit-test-access-key").
+		SetAccessKeySecret("unit-test-access-key-secret"))
+	if err != nil {
+		t.Fatalf("building the credential: %s", err)
+	}
+	var endpoints sync.Map
+	endpoints.Store("slb", endpoint)
+	return &AliyunClient{
+		RegionId: "cn-beijing",
+		config: &Config{
+			RegionId:    "cn-beijing",
+			Protocol:    "HTTPS",
+			Credential:  credential,
+			Endpoints:   &endpoints,
+			SignVersion: &sync.Map{},
+		},
+		teaSdkConfig: rpc.Config{Protocol: tea.String("HTTPS")},
+	}
+}
+
+// A TLS endpoint can negotiate HTTP/2, and the standard library's HTTP/2 client
+// has its own verbose logger. This transport stays on HTTP/1.1, whose request
+// path is never logged, so the signed query cannot reach the debug output even
+// with the most verbose HTTP/2 setting. The child process enables both loggers
+// and drives the real Set and Describe requests against a TLS server that offers
+// h2 through ALPN.
+func TestUnitSignedUrlNeverReachesHttp2DebugOutput(t *testing.T) {
+	if os.Getenv(rpcTLSChildEnv) == "1" {
+		runSignedRpcTLSChild(t)
+		return
+	}
+	clearProxyEnv(t)
+
+	var http2Requests, signedRequests atomic.Int32
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor >= 2 {
+			http2Requests.Add(1)
+		}
+		query := r.URL.Query()
+		if query.Get("AccessKeyId") != "" && query.Get("Signature") != "" {
+			signedRequests.Add(1)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		// A gateway that echoes the request in its response must not make the
+		// provider log the signed URL either.
+		_, _ = w.Write([]byte(`{"RequestId":"r-1","ListenerPort":80,"AclStatus":"on","AclType":"white","AclId":"acl-1","Echo":"https://slb.aliyuncs.com/?AccessKeyId=unit-test-access-key&Signature=synthetic-signature&SecurityToken=synthetic-token"}`))
+	}))
+	server.TLS = &tls.Config{NextProtos: []string{"h2", "http/1.1"}}
+	server.StartTLS()
+	defer server.Close()
+
+	certificate := server.Certificate()
+	if certificate == nil {
+		t.Fatal("the test server did not expose its certificate")
+	}
+	certPath := filepath.Join(t.TempDir(), "server.pem")
+	encoded := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificate.Raw})
+	if err := os.WriteFile(certPath, encoded, 0o600); err != nil {
+		t.Fatalf("writing the test certificate: %s", err)
+	}
+
+	command := exec.Command(os.Args[0], "-test.run=^TestUnitSignedUrlNeverReachesHttp2DebugOutput$", "-test.v")
+	env := make([]string, 0, len(os.Environ())+6)
+	for _, item := range os.Environ() {
+		if strings.HasPrefix(item, "DEBUG=") || strings.HasPrefix(item, "GODEBUG=") ||
+			strings.HasPrefix(item, "SSL_CERT_FILE=") || strings.HasPrefix(item, rpcTLSChildEnv+"=") ||
+			strings.HasPrefix(item, rpcTLSChildEndpointEnv+"=") {
+			continue
+		}
+		env = append(env, item)
+	}
+	endpoint := strings.TrimPrefix(server.URL, "https://")
+	command.Env = append(env,
+		"DEBUG=tea",
+		"GODEBUG=http2debug=2",
+		"SSL_CERT_FILE="+certPath,
+		rpcTLSChildEnv+"=1",
+		rpcTLSChildEndpointEnv+"="+endpoint,
+	)
+	output, err := command.CombinedOutput()
+	text := string(output)
+	for _, secret := range []string{"unit-test-access-key", "Signature=", "AccessKeyId", "SecurityToken", "SignatureNonce", "synthetic-signature", "synthetic-token"} {
+		if strings.Contains(text, secret) {
+			// Never print the leaking output: it contains the very secret the
+			// assertion protects.
+			t.Fatalf("the TLS debug output leaked %q", secret)
+		}
+	}
+	if err != nil {
+		t.Fatalf("the TLS debug run failed: %s\n%s", err, text)
+	}
+	if got := http2Requests.Load(); got != 0 {
+		t.Fatalf("the signed transport must not negotiate HTTP/2, got %d h2 requests", got)
+	}
+	if got := signedRequests.Load(); got != 2 {
+		t.Fatalf("expected both requests to be signed, got %d", got)
+	}
+}
+
+// runSignedRpcTLSChild performs the Set and Describe requests through the TLS
+// endpoint supplied by the parent process.
+func runSignedRpcTLSChild(t *testing.T) {
+	clearProxyEnv(t)
+	endpoint := os.Getenv(rpcTLSChildEndpointEnv)
+	if endpoint == "" {
+		t.Fatal("the child process did not receive the TLS endpoint")
+	}
+	client := newLocalHttpsRpcClient(t, endpoint)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	requests := []struct {
+		action  string
+		request map[string]interface{}
+	}{
+		{action: "SetLoadBalancerHTTPListenerAttribute", request: map[string]interface{}{
+			"LoadBalancerId": "lb-unit-test", "ListenerPort": 80, "AclStatus": "on", "AclId": "acl-unit-test", "AclType": "white",
+		}},
+		{action: "DescribeLoadBalancerHTTPListenerAttribute", request: map[string]interface{}{
+			"LoadBalancerId": "lb-unit-test", "ListenerPort": 80,
+		}},
+	}
+	for _, item := range requests {
+		if _, err := client.RpcPostWithContext(ctx, "Slb", "2014-05-15", item.action, nil, item.request); err != nil {
+			t.Fatalf("%s failed: %s", item.action, err)
+		}
 	}
 }

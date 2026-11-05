@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
@@ -106,7 +107,10 @@ func updateListenerAcl(ctx context.Context, client *connectivity.AliyunClient, l
 		}
 		return listenerAclAttachmentRpcPost(ctx, client, action, request)
 	}, listenerAclAttachmentOperationTimeout, isTransientListenerError)
-	logs.AddDebug(action, response, request)
+	// The debug log receives redacted copies: a gateway that echoes the request in
+	// its response must not be able to write the signed URL (access key, signature
+	// and security token) into the provider log.
+	logs.AddDebug(action, connectivity.RedactLogValue(response), connectivity.RedactLogValue(request))
 	if err != nil {
 		wrapped := errs.WrapErrorf(err, errs.DefaultErrorMsg, listenerId, action, errs.AlibabaCloudSdkGoERROR)
 		if isUnknownListenerAclWriteOutcome(err) {
@@ -146,12 +150,12 @@ func describeListenerWithContext(ctx context.Context, client *connectivity.Aliyu
 		}
 		response, err := listenerAclAttachmentRpcPost(ctx, client, action, request)
 		if err != nil {
-			if errs.IsExpectedErrors(err, []string{"The specified resource does not exist"}) {
+			if listenerAclListenerGone(err) {
 				return nil, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 			}
 			return nil, err
 		}
-		logs.AddDebug(action, response, request)
+		logs.AddDebug(action, connectivity.RedactLogValue(response), connectivity.RedactLogValue(request))
 		if value, ok := response["ListenerPort"]; !ok || strings.TrimSpace(fmt.Sprint(value)) == "" || fmt.Sprint(value) == "0" {
 			return response, fmt.Errorf("%w: %s", errListenerAclAttachmentListeningNotVisible, listenerId)
 		}
@@ -174,13 +178,79 @@ func isTransientListenerError(err error) bool {
 	if errors.Is(err, errListenerAclAttachmentListeningNotVisible) {
 		return true
 	}
-	if errs.NotFoundError(err) {
+	if listenerAclListenerGone(err) {
 		return false
 	}
 	if helper.NeedRetry(err) {
 		return true
 	}
-	return errs.IsExpectedErrors(err, listenerTransientErrors)
+	code := listenerAclBusinessCode(err)
+	if code == "" {
+		return false
+	}
+	for _, busy := range listenerTransientErrors {
+		if code == busy {
+			return true
+		}
+	}
+	return false
+}
+
+// listenerAclSdkError returns the tea SDK error behind the provider's wrappers
+// (the retry helper wraps once, the lifecycle wraps again) so the business code
+// and message survive every layer.
+func listenerAclSdkError(err error) *tea.SDKError {
+	for err != nil {
+		if sdkErr, ok := err.(*tea.SDKError); ok {
+			return sdkErr
+		}
+		switch typed := err.(type) {
+		case *errs.ComplexError:
+			// ComplexError predates errors.Unwrap and carries its cause directly.
+			err = typed.Cause
+		case interface{ Unwrap() error }:
+			err = typed.Unwrap()
+		default:
+			return nil
+		}
+	}
+	return nil
+}
+
+// listenerAclBusinessCode returns the SLB business code, or an empty string when
+// the response carried none. An empty code must never be matched against a code
+// list: the shared errs.IsExpectedErrors helper treats an empty code as a
+// wildcard, which would classify an unrelated gateway rejection (for example an
+// empty-bodied 403) as a known SLB result.
+func listenerAclBusinessCode(err error) string {
+	sdkErr := listenerAclSdkError(err)
+	if sdkErr == nil {
+		return ""
+	}
+	return strings.TrimSpace(tea.StringValue(sdkErr.Code))
+}
+
+// listenerAclListenerGone reports whether err proves that the addressed SLB load
+// balancer or listener no longer exists. Only a decodable business error may
+// prove it: a bare HTTP status (a gateway 404, an undecodable body) or a
+// response without a business code does not show that the SLB entity is gone,
+// and treating it as gone would drop live state on Read or report a successful
+// destroy. The two Describe actions of this resource address only the load
+// balancer and the listener, so a not-found result refers to one of them.
+func listenerAclListenerGone(err error) bool {
+	sdkErr := listenerAclSdkError(err)
+	if sdkErr == nil {
+		return false
+	}
+	code := strings.TrimSpace(tea.StringValue(sdkErr.Code))
+	if code == "" {
+		return false
+	}
+	if strings.Contains(strings.ToLower(code), "notfound") {
+		return true
+	}
+	message := strings.ToLower(strings.TrimSpace(tea.StringValue(sdkErr.Message)))
+	return strings.Contains(message, "does not exist") || strings.Contains(message, "not found")
 }
 
 // isUnknownListenerAclWriteOutcome reports whether a failed write may still have
@@ -285,8 +355,9 @@ func listenerAclAttachmentConfirms(object map[string]interface{}, aclId, aclType
 // listenerAclAttachmentObserved reports whether a Describe response carries
 // enough usable fields to either confirm or contradict a planned binding. A
 // response without a usable status, or one that reports an enabled listener
-// without a usable type or with malformed members, is incomplete: it can
-// neither prove nor disprove the planned change.
+// without a usable type, without reporting the membership at all, or with
+// malformed members, is incomplete: it can neither prove nor disprove the
+// planned change.
 func listenerAclAttachmentObserved(object map[string]interface{}) bool {
 	if object == nil {
 		return false
@@ -301,8 +372,8 @@ func listenerAclAttachmentObserved(object map[string]interface{}) bool {
 	if value, ok := object["AclType"].(string); !ok || strings.TrimSpace(value) == "" {
 		return false
 	}
-	_, membersComplete := listenerAclIds(object)
-	return membersComplete
+	_, membersReported, membersComplete := listenerAclIds(object)
+	return membersReported && membersComplete
 }
 
 // waitListenerAclAttachmentConverged reads the listener until it reports the
@@ -344,13 +415,17 @@ func waitListenerAclWithContext(ctx context.Context, duration time.Duration) err
 }
 
 // listenerAclIds returns every access control policy group reported by
-// DescribeLoadBalancer*ListenerAttribute. The complete flag reports whether every
-// reported member could be read: a single unexpected type or empty member makes
-// the list unusable for proving which groups are bound.
-func listenerAclIds(object map[string]interface{}) ([]string, bool) {
-	var ids []string
+// DescribeLoadBalancer*ListenerAttribute. The reported flag says whether the
+// response carried the member field at all, and complete says whether every
+// reported member could be read.
+//
+// An enabled listener must report at least one member, so a response that omits
+// the member fields (or serialises them as JSON null) has not reported the
+// membership at all: it can neither prove that the planned group is bound nor
+// that it is missing. Only a reported and readable list is usable as evidence.
+func listenerAclIds(object map[string]interface{}) (ids []string, reported, complete bool) {
 	seen := map[string]struct{}{}
-	complete := true
+	complete = true
 	appendID := func(id string) {
 		id = strings.TrimSpace(id)
 		if id == "" {
@@ -363,11 +438,9 @@ func listenerAclIds(object map[string]interface{}) ([]string, bool) {
 		seen[id] = struct{}{}
 		ids = append(ids, id)
 	}
-	// An explicit JSON null means the field was not reported, which is the same
-	// shape as an absent key; only a present but unusable value makes the list
-	// incomplete.
 	if value, ok := object["AclId"]; ok && value != nil {
 		if raw, ok := value.(string); ok {
+			reported = true
 			for _, id := range strings.Split(raw, ",") {
 				appendID(id)
 			}
@@ -378,8 +451,11 @@ func listenerAclIds(object map[string]interface{}) ([]string, bool) {
 	if value, ok := object["AclIds"]; ok && value != nil {
 		container, ok := value.(map[string]interface{})
 		if !ok {
+			// A present but unusable container was reported and is incomplete.
+			reported = true
 			complete = false
 		} else if members, ok := container["AclId"]; ok {
+			reported = true
 			switch typed := members.(type) {
 			case []interface{}:
 				for _, item := range typed {
@@ -398,13 +474,13 @@ func listenerAclIds(object map[string]interface{}) ([]string, bool) {
 			}
 		}
 	}
-	return ids, complete
+	return ids, reported, complete
 }
 
 // listenerAclContains reports whether the configured policy group is part of
 // the listener ACLs described by DescribeLoadBalancer*ListenerAttribute.
 func listenerAclContains(object map[string]interface{}, aclId string) bool {
-	ids, _ := listenerAclIds(object)
+	ids, _, _ := listenerAclIds(object)
 	for _, id := range ids {
 		if id == aclId {
 			return true
@@ -416,7 +492,7 @@ func listenerAclContains(object map[string]interface{}, aclId string) bool {
 // listenerAclIdsForMessage lists the readable policy groups for a diagnostic;
 // the completeness of the member list is irrelevant there.
 func listenerAclIdsForMessage(object map[string]interface{}) []string {
-	ids, _ := listenerAclIds(object)
+	ids, _, _ := listenerAclIds(object)
 	return ids
 }
 

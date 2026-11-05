@@ -1,6 +1,7 @@
 package connectivity
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"strings"
@@ -177,14 +178,36 @@ func TestUnitDecodeRpcResponse(t *testing.T) {
 		}
 	})
 
-	t.Run("bad body on a 404 response stays a not found error", func(t *testing.T) {
+	// A 404 without a readable body may come from a gateway or proxy that never
+	// reached the SLB service, so the status alone must not be reported as a
+	// missing resource: the outcome is an explicit rejection with the real status
+	// preserved, and no business "not found" code is invented.
+	t.Run("bad body on a 404 response is an explicit rejection", func(t *testing.T) {
 		_, err := decodeRpcResponse(newResponse(404, ""))
 		if errors.Is(err, ErrUnreadableResponse) {
 			t.Fatalf("a 404 must keep its status classification, got an unknown outcome: %v", err)
 		}
+		if !errors.Is(err, ErrRpcRejectedResponse) {
+			t.Fatalf("an undecodable 404 must be an explicit rejection, got %v", err)
+		}
+		if strings.Contains(err.Error(), "status 404") == false {
+			t.Fatalf("the real status was lost: %v", err)
+		}
+		if _, ok := err.(*tea.SDKError); ok {
+			t.Fatal("an undecodable 404 must not be turned into a business SDK error")
+		}
+	})
+
+	// The control case: a decodable 404 that carries the SLB business code stays
+	// usable, so callers can still prove that the entity itself is gone.
+	t.Run("decoded 404 keeps the slb business code", func(t *testing.T) {
+		_, err := decodeRpcResponse(newResponse(404, `{"Code":"InvalidLoadBalancerId.NotFound","Message":"The specified resource does not exist.","RequestId":"r-1"}`))
 		sdkErr, ok := err.(*tea.SDKError)
-		if !ok || tea.IntValue(sdkErr.StatusCode) != 404 {
-			t.Fatalf("expected a typed 404 SDK error, got %T: %v", err, err)
+		if !ok {
+			t.Fatalf("expected a typed business error, got %T: %v", err, err)
+		}
+		if tea.StringValue(sdkErr.Code) != "InvalidLoadBalancerId.NotFound" || tea.IntValue(sdkErr.StatusCode) != 404 {
+			t.Fatalf("the business code was lost: %+v", sdkErr)
 		}
 	})
 
@@ -223,3 +246,35 @@ func TestUnitDecodeRpcResponse(t *testing.T) {
 type failingReader struct{}
 
 func (f *failingReader) Read([]byte) (int, error) { return 0, errors.New("unexpected EOF") }
+
+// The debug log boundary receives the provider payloads, so the redaction has to
+// reach every string shape the service logs: plain values, nested objects, lists
+// and the response headers map.
+func TestUnitRedactLogValue(t *testing.T) {
+	signed := "https://slb.aliyuncs.com/?AccessKeyId=LTAI-test&Signature=synthetic&SecurityToken=token-value"
+	redacted := RedactLogValue(map[string]interface{}{
+		"AclStatus": "on",
+		"Echo":      signed,
+		"Nested":    map[string]interface{}{"Message": "request " + signed},
+		"List":      []interface{}{signed, "plain"},
+		"_headers":  map[string]*string{"location": tea.String(signed), "empty": nil},
+	})
+	payload, err := json.Marshal(redacted)
+	if err != nil {
+		t.Fatalf("marshalling the redacted payload: %s", err)
+	}
+	for _, secret := range []string{"AccessKeyId", "Signature=", "SecurityToken", "LTAI-test", "synthetic", "token-value"} {
+		if strings.Contains(string(payload), secret) {
+			t.Fatalf("the logged payload still exposes %q: %s", secret, payload)
+		}
+	}
+	if !strings.Contains(string(payload), "slb.aliyuncs.com") || !strings.Contains(string(payload), "AclStatus") {
+		t.Fatalf("the redaction dropped the usable payload: %s", payload)
+	}
+	if redacted.(map[string]interface{})["AclStatus"] != "on" {
+		t.Fatal("a value without a URL must be preserved")
+	}
+	if list, ok := redacted.(map[string]interface{})["List"].([]interface{}); !ok || list[1] != "plain" {
+		t.Fatalf("a plain list item was changed: %v", redacted.(map[string]interface{})["List"])
+	}
+}

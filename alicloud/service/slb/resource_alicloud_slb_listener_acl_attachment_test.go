@@ -384,11 +384,14 @@ func TestAccAliCloudSLBListenerAclAttachment_externalDelete(t *testing.T) {
 // paths: a listener that does not exist, an ACL that does not exist and an ACL
 // that conflicts with the listener IP version.
 //
-// A rejected apply never runs its Check, so each rejected write is followed by
-// a successful apply of the surviving configuration whose Check proves that no
-// attachment state and no listener ACL change were left behind. The next
-// rejected write asserts the same remote ACL again in PreConfig, before it can
-// destroy or repair anything.
+// The listener, load balancer and policy groups are created by a successful step
+// first, so every rejected apply has an existing target. A rejected apply never
+// runs its Check, so each rejection is followed by a PlanOnly step that plans the
+// surviving configuration with -refresh=false: the plan can only be empty when
+// the rejection left no attachment object in Terraform state, and a refresh
+// cannot hide such an object by dropping it. The same step's PreConfig reads the
+// complete remote ACL of the same listener before the next write, so a corrective
+// apply can never mask a side effect.
 func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 	name := fmt.Sprintf("tf-testAccSlbListenerAclNeg%d", tfacctest.RandIntRange(10000, 99999))
 	var listenerId, loadBalancerId string
@@ -397,6 +400,11 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		// The state assertions below must not be masked by a refresh that would
+		// drop a leftover attachment object, so every plan skips the refresh.
+		AdditionalCLIOptions: &resource.AdditionalCLIOptions{
+			Plan: resource.PlanOptions{NoRefresh: true},
+		},
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckListenerAclAttachmentDestroy,
 			testAccCheckListenerAclAttachmentScopedResourcesDestroy(&listenerId, &loadBalancerId, &aclIds),
@@ -419,65 +427,63 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 				Config:      testAccListenerAclAttachmentConfigInvalidListenerProtocol(),
 				ExpectError: regexp.MustCompile(`Invalid listener_id`),
 			},
+			// The surviving configuration creates the SLB, the policy groups and
+			// the TCP listener used by every rejected step. Its Check records the
+			// identities that the destroy check has to prove released.
 			{
-				Config:      testAccListenerAclAttachmentConfigMissingListener(name),
-				ExpectError: regexp.MustCompile(`(?i)(not exist|notfound|invalidloadbalancerid)`),
-			},
-			{
-				// Successful apply of the surviving configuration: the rejected
-				// request left no attachment state and did not enable the listener
-				// ACLs. It also creates the TCP listener used by the next steps.
 				Config: testAccListenerAclAttachmentConfigIpVersionConflictNoAttachment(name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNoListenerAclAttachmentState,
 					testAccCaptureResourceId("alicloud_slb_load_balancer.default", &loadBalancerId),
 					testAccCaptureResourceId(listenerAclAttachmentListenerId, &listenerId),
-					testAccCheckListenerRemoteAclStatus(listenerAclAttachmentListenerId, "off"),
+					testAccCheckListenerRemoteAcl(testAccListenerAclAttachmentListenerId, "off"),
 				),
 			},
 			{
-				Config: testAccListenerAclAttachmentConfigMissingAcl(name),
-				PreConfig: func() {
-					testAccAssertListenerAclStatus(t, listenerId, "off")
-				},
-				ExpectError: regexp.MustCompile(`(?i)(aclnotexist|acl.?not.?exist|specified acl)`),
+				Config:      testAccListenerAclAttachmentConfigMissingListener(name),
+				ExpectError: regexp.MustCompile(`(?i)(not exist|notfound|invalidloadbalancerid)`),
 			},
-			// The corrective apply is the first write after the rejection. Its
-			// PreConfig proves the same listener ACL is still off right before the
-			// apply, and its Check proves the rejected request left no attachment
-			// in Terraform state and did not keep the listener identity, so the
-			// apply cannot hide a side effect.
+			// Before any correction: the rejection left no attachment in state and
+			// did not touch the listener ACL.
 			{
 				Config: testAccListenerAclAttachmentConfigIpVersionConflictNoAttachment(name),
 				PreConfig: func() {
-					testAccAssertListenerAclStatus(t, listenerId, "off")
+					testAccAssertListenerAcl(t, listenerId, "off")
 				},
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNoListenerAclAttachmentState,
-					testAccCheckListenerIdUnchanged(listenerAclAttachmentListenerId, &listenerId),
-					testAccCheckListenerRemoteAclStatus(listenerAclAttachmentListenerId, "off"),
-				),
+				PlanOnly: true,
 			},
 			{
-				Config: testAccListenerAclAttachmentConfigIpVersionConflict(name),
+				Config:      testAccListenerAclAttachmentConfigMissingAcl(name),
+				ExpectError: regexp.MustCompile(`(?i)(aclnotexist|acl.?not.?exist|specified acl)`),
+			},
+			{
+				Config: testAccListenerAclAttachmentConfigIpVersionConflictNoAttachment(name),
 				PreConfig: func() {
-					testAccAssertListenerAclStatus(t, listenerId, "off")
+					testAccAssertListenerAcl(t, listenerId, "off")
 				},
+				PlanOnly: true,
+			},
+			{
+				Config:      testAccListenerAclAttachmentConfigIpVersionConflict(name),
 				ExpectError: regexp.MustCompile(`(?i)ipversionconflict`),
 			},
 			{
-				// Keep the same TCP listener used by the rejected steps so the
-				// assertion cannot be masked by replacing it with another type.
-				// The corrective apply runs only after the same listener ACL is
-				// proven off, so it cannot hide a side effect of the rejection.
 				Config: testAccListenerAclAttachmentConfigIpVersionConflictNoAttachment(name),
 				PreConfig: func() {
-					testAccAssertListenerAclStatus(t, listenerId, "off")
+					testAccAssertListenerAcl(t, listenerId, "off")
 				},
+				PlanOnly: true,
+			},
+			// The corrective apply runs only after the same listener ACL was proven
+			// off and the state was proven free of an attachment. Its Check asserts
+			// the same facts again and records every policy group for the destroy
+			// check, so the rejected requests left no side effect behind.
+			{
+				Config: testAccListenerAclAttachmentConfigIpVersionConflictNoAttachment(name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNoListenerAclAttachmentState,
 					testAccCheckListenerIdUnchanged(listenerAclAttachmentListenerId, &listenerId),
-					testAccCheckListenerRemoteAclStatus(listenerAclAttachmentListenerId, "off"),
+					testAccCheckListenerRemoteAcl(testAccListenerAclAttachmentListenerId, "off"),
 					testAccCaptureListenerAclIds(&aclIds),
 				),
 			},
@@ -485,10 +491,11 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 	})
 }
 
-// testAccAssertListenerAclStatus asserts the remote ACL status before a step is
-// applied. PreConfig has no error return and runs before the plan, which is the
-// only hook that can observe the listener before the next write.
-func testAccAssertListenerAclStatus(t *testing.T, listenerId, wantStatus string) {
+// testAccAssertListenerAcl asserts the complete remote access control state of
+// the listener before the next write. PreConfig has no error return and runs
+// before the plan, which is the only hook that can observe the listener before
+// the following apply.
+func testAccAssertListenerAcl(t *testing.T, listenerId, wantStatus string) {
 	t.Helper()
 	if listenerId == "" {
 		t.Fatal("the listener identity was not captured before the corrective apply")
@@ -500,6 +507,15 @@ func testAccAssertListenerAclStatus(t *testing.T, listenerId, wantStatus string)
 	status, _ := object["AclStatus"].(string)
 	if !strings.EqualFold(status, wantStatus) {
 		t.Fatalf("listener %s access control status before the next write = %q, want %q", listenerId, status, wantStatus)
+	}
+	if !strings.EqualFold(wantStatus, "off") {
+		return
+	}
+	// Access control never succeeded in this test, so disabling it must leave no
+	// bound policy group: the member list is part of the ACL contract, not only
+	// the status switch.
+	if ids := slbsvc.ListenerAclIdsForTest(object); len(ids) != 0 {
+		t.Fatalf("listener %s still reports bound policy groups %v before the next write", listenerId, ids)
 	}
 }
 
@@ -556,6 +572,32 @@ func testAccCheckNoListenerAclAttachmentState(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+// testAccCheckListenerRemoteAcl proves the complete remote access control state
+// of the listener: the status and, when access control is off, that no policy
+// group is still bound.
+func testAccCheckListenerRemoteAcl(listenerResourceId, wantStatus string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		listener := s.RootModule().Resources[listenerResourceId]
+		if listener == nil {
+			return fmt.Errorf("cannot find %s state", listenerResourceId)
+		}
+		object, err := testAccListenerDescribe(listener.Primary.ID)
+		if err != nil {
+			return err
+		}
+		status, _ := object["AclStatus"].(string)
+		if !strings.EqualFold(status, wantStatus) {
+			return fmt.Errorf("listener %s access control status = %q, want %q", listener.Primary.ID, status, wantStatus)
+		}
+		if strings.EqualFold(wantStatus, "off") {
+			if ids := slbsvc.ListenerAclIdsForTest(object); len(ids) != 0 {
+				return fmt.Errorf("listener %s still reports bound policy groups %v while access control is off", listener.Primary.ID, ids)
+			}
+		}
+		return nil
+	}
 }
 
 func testAccCheckListenerRemoteAclStatus(listenerResourceId, wantStatus string) resource.TestCheckFunc {
@@ -1000,6 +1042,36 @@ resource "alicloud_slb_listener_acl_attachment" "default" {
 `, resourceSlbHTTPSListenerConfigDependence(name))
 }
 
+// testAccListenerAclAttachmentConfigNegativeBase is the state every rejected step
+// must leave untouched: the load balancer, three policy groups and the TCP
+// listener. Each rejected config adds only the attachment under test, so a
+// rejection can neither create nor destroy any other object and the following
+// plan can attribute every difference to the attachment.
+func testAccListenerAclAttachmentConfigNegativeBase(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_slb_acl" "ipv6" {
+  name       = "${var.name}-ipv6"
+  ip_version = "ipv6"
+  entry_list {
+    entry = "2001:db8::/32"
+  }
+}
+
+resource "alicloud_slb_listener" "default" {
+  load_balancer_id = alicloud_slb_load_balancer.default.id
+  backend_port     = 22
+  frontend_port    = 22
+  protocol         = "tcp"
+  bandwidth        = 10
+  health_check_type = "tcp"
+
+  lifecycle {
+    ignore_changes = [acl_status, acl_type, acl_id, acl_ids]
+  }
+}
+`, testAccListenerAclAttachmentCommonConfig(name))
+}
+
 func testAccListenerAclAttachmentConfigMissingListener(name string) string {
 	return fmt.Sprintf(`%s
 resource "alicloud_slb_listener_acl_attachment" "default" {
@@ -1007,86 +1079,31 @@ resource "alicloud_slb_listener_acl_attachment" "default" {
   acl_id      = alicloud_slb_acl.first.id
   acl_type    = "white"
 }
-`, testAccListenerAclAttachmentCommonConfig(name))
+`, testAccListenerAclAttachmentConfigNegativeBase(name))
 }
 
 func testAccListenerAclAttachmentConfigMissingAcl(name string) string {
 	return fmt.Sprintf(`%s
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = alicloud_slb_load_balancer.default.id
-  backend_port     = 22
-  frontend_port    = 22
-  protocol         = "tcp"
-  bandwidth        = 10
-  health_check_type = "tcp"
-
-  lifecycle {
-    ignore_changes = [acl_status, acl_type, acl_id, acl_ids]
-  }
-}
-
 resource "alicloud_slb_listener_acl_attachment" "default" {
   listener_id = alicloud_slb_listener.default.id
   acl_id      = "acl-notexist00000"
   acl_type    = "white"
 }
-`, testAccListenerAclAttachmentCommonConfig(name))
+`, testAccListenerAclAttachmentConfigNegativeBase(name))
 }
 
 func testAccListenerAclAttachmentConfigIpVersionConflictNoAttachment(name string) string {
-	return fmt.Sprintf(`%s
-resource "alicloud_slb_acl" "ipv6" {
-  name       = "${var.name}-ipv6"
-  ip_version = "ipv6"
-  entry_list {
-    entry = "2001:db8::/32"
-  }
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = alicloud_slb_load_balancer.default.id
-  backend_port     = 22
-  frontend_port    = 22
-  protocol         = "tcp"
-  bandwidth        = 10
-  health_check_type = "tcp"
-
-  lifecycle {
-    ignore_changes = [acl_status, acl_type, acl_id, acl_ids]
-  }
-}
-`, testAccListenerAclAttachmentCommonConfig(name))
+	return testAccListenerAclAttachmentConfigNegativeBase(name)
 }
 
 func testAccListenerAclAttachmentConfigIpVersionConflict(name string) string {
 	return fmt.Sprintf(`%s
-resource "alicloud_slb_acl" "ipv6" {
-  name       = "${var.name}-ipv6"
-  ip_version = "ipv6"
-  entry_list {
-    entry = "2001:db8::/32"
-  }
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = alicloud_slb_load_balancer.default.id
-  backend_port     = 22
-  frontend_port    = 22
-  protocol         = "tcp"
-  bandwidth        = 10
-  health_check_type = "tcp"
-
-  lifecycle {
-    ignore_changes = [acl_status, acl_type, acl_id, acl_ids]
-  }
-}
-
 resource "alicloud_slb_listener_acl_attachment" "default" {
   listener_id = alicloud_slb_listener.default.id
   acl_id      = alicloud_slb_acl.ipv6.id
   acl_type    = "white"
 }
-`, testAccListenerAclAttachmentCommonConfig(name))
+`, testAccListenerAclAttachmentConfigNegativeBase(name))
 }
 
 // testAccListenerAclAttachmentConfigCombinedAcl configures a comma separated
@@ -1642,6 +1659,146 @@ func TestUnitListenerAclAttachmentProtocolReadAndDestroyMissingListener(t *testi
 	}
 }
 
+// Only a decodable SLB business error proves that the listener is gone. A
+// gateway 404 without a business body, an empty business code and an enabled
+// listener that does not report its members must keep the state on Read and must
+// fail Delete instead of reporting a successful unbind. The decodable 404 is the
+// control case that still releases the state.
+func TestUnitListenerAclAttachmentProtocolGoneClassification(t *testing.T) {
+	previousOperation := *slbsvc.ListenerAclAttachmentOperationTimeoutForTest
+	*slbsvc.ListenerAclAttachmentOperationTimeoutForTest = 300 * time.Millisecond
+	t.Cleanup(func() { *slbsvc.ListenerAclAttachmentOperationTimeoutForTest = previousOperation })
+	previousInterval := *slbsvc.ListenerAclAttachmentPollIntervalForTest
+	*slbsvc.ListenerAclAttachmentPollIntervalForTest = 10 * time.Millisecond
+	t.Cleanup(func() { *slbsvc.ListenerAclAttachmentPollIntervalForTest = previousInterval })
+
+	prior := func(t *testing.T) *tfprotov5.DynamicValue {
+		t.Helper()
+		return listenerAclTestDynamic(t, listenerAclTestObject(t, map[string]tftypes.Value{
+			"id":          tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+			"listener_id": tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+			"acl_id":      tftypes.NewValue(tftypes.String, "acl-1"),
+			"acl_type":    tftypes.NewValue(tftypes.String, "white"),
+			"acl_status":  tftypes.NewValue(tftypes.String, "on"),
+		}))
+	}
+
+	cases := []struct {
+		name   string
+		derive func() (map[string]interface{}, error)
+		gone   bool
+	}{
+		{
+			name: "gateway 404 without a business body",
+			derive: func() (map[string]interface{}, error) {
+				return nil, fmt.Errorf("%w: status 404: unexpected EOF", connectivity.ErrRpcRejectedResponse)
+			},
+		},
+		{
+			name: "empty business code on a 403",
+			derive: func() (map[string]interface{}, error) {
+				return nil, &tea.SDKError{StatusCode: tea.Int(403), Code: tea.String(""), Message: tea.String("Forbidden"), Data: tea.String("{}")}
+			},
+		},
+		{
+			name: "enabled listener without a reported member list",
+			derive: func() (map[string]interface{}, error) {
+				return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white"}, nil
+			},
+		},
+		{
+			name: "missing listener proven by the business code",
+			derive: func() (map[string]interface{}, error) {
+				return nil, &tea.SDKError{StatusCode: tea.Int(404), Code: tea.String("InvalidLoadBalancerId.NotFound"), Message: tea.String("The specified resource does not exist."), Data: tea.String("{}")}
+			},
+			gone: true,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Run("read", func(t *testing.T) {
+				stub := &listenerAclRpcStub{describe: tc.derive}
+				stub.install(t)
+				server := newListenerAclAttachmentServer(t)
+				read, err := server.ReadResource(context.Background(), &tfprotov5.ReadResourceRequest{
+					TypeName:     listenerAclAttachmentTestTypeName,
+					CurrentState: prior(t),
+				})
+				if err != nil {
+					t.Fatalf("ReadResource: %s", err)
+				}
+				listenerAclTestRequireNoError(t, "ReadResource", read.Diagnostics)
+				value, err := read.NewState.Unmarshal(listenerAclAttachmentTestType)
+				if err != nil {
+					t.Fatalf("decoding the read state: %s", err)
+				}
+				if tc.gone {
+					if !value.IsNull() {
+						t.Fatalf("a proven missing listener must clear the state, got %s", value)
+					}
+					return
+				}
+				if value.IsNull() {
+					t.Fatal("an unproven missing listener must keep the state")
+				}
+				if got := listenerAclTestString(t, listenerAclTestAttrs(t, read.NewState)["acl_id"]); got != "acl-1" {
+					t.Fatalf("acl_id = %q, want acl-1", got)
+				}
+			})
+
+			t.Run("destroy", func(t *testing.T) {
+				stub := &listenerAclRpcStub{describe: tc.derive}
+				stub.install(t)
+				server := newListenerAclAttachmentServer(t)
+				state := prior(t)
+				plan, err := server.PlanResourceChange(context.Background(), &tfprotov5.PlanResourceChangeRequest{
+					TypeName:         listenerAclAttachmentTestTypeName,
+					PriorState:       state,
+					ProposedNewState: listenerAclTestNull(t),
+					Config:           listenerAclTestNull(t),
+				})
+				if err != nil {
+					t.Fatalf("PlanResourceChange (destroy): %s", err)
+				}
+				listenerAclTestRequireNoError(t, "PlanResourceChange (destroy)", plan.Diagnostics)
+				destroyed, err := server.ApplyResourceChange(context.Background(), &tfprotov5.ApplyResourceChangeRequest{
+					TypeName:       listenerAclAttachmentTestTypeName,
+					PriorState:     state,
+					PlannedState:   plan.PlannedState,
+					Config:         listenerAclTestNull(t),
+					PlannedPrivate: plan.PlannedPrivate,
+				})
+				if err != nil {
+					t.Fatalf("ApplyResourceChange (destroy): %s", err)
+				}
+				if tc.gone {
+					listenerAclTestRequireNoError(t, "ApplyResourceChange (destroy of a missing listener)", destroyed.Diagnostics)
+					value, err := destroyed.NewState.Unmarshal(listenerAclAttachmentTestType)
+					if err != nil {
+						t.Fatalf("decoding the destroyed state: %s", err)
+					}
+					if !value.IsNull() {
+						t.Fatalf("destroy of a proven missing listener must not fail, got %s", value)
+					}
+					return
+				}
+				if !listenerAclTestHasError(destroyed.Diagnostics) {
+					t.Fatal("an unproven missing listener must fail the destroy instead of reporting success")
+				}
+				value, err := destroyed.NewState.Unmarshal(listenerAclAttachmentTestType)
+				if err != nil {
+					t.Fatalf("decoding the destroyed state: %s", err)
+				}
+				if value.IsNull() {
+					t.Fatal("an unconfirmed unbinding must keep the state")
+				}
+			})
+		})
+	}
+}
+
 func TestUnitListenerAclAttachmentProtocolImportForms(t *testing.T) {
 	importAndRead := func(t *testing.T, describe func() (map[string]interface{}, error), id string) (*tfprotov5.DynamicValue, []*tfprotov5.Diagnostic) {
 		t.Helper()
@@ -1696,11 +1853,33 @@ func TestUnitListenerAclAttachmentProtocolImportForms(t *testing.T) {
 		}
 	})
 
-	t.Run("three segments with no bound group clears the state", func(t *testing.T) {
+	// An enabled listener always reports its members. A response that omits them
+	// has not reported the membership, so an import must not adopt it and must
+	// not conclude that nothing is bound.
+	t.Run("three segments without reported members cannot confirm", func(t *testing.T) {
 		state, diagnostics := importAndRead(t, func() (map[string]interface{}, error) {
 			return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white"}, nil
 		}, "lb-123:http:80")
-		listenerAclTestRequireNoError(t, "ReadResource (no bound group)", diagnostics)
+		if !listenerAclTestHasError(diagnostics) {
+			t.Fatalf("an unreported member list must not confirm the import, state: %s", state)
+		}
+		if !listenerAclTestDiagnosticsContain(diagnostics, "cannot confirm the imported binding") {
+			t.Fatalf("the diagnostic did not report the pending confirmation: %v", diagnostics)
+		}
+	})
+
+	// The control case: an explicitly empty member list is a reported membership
+	// that proves nothing is bound, so the import clears the state.
+	t.Run("three segments with an empty reported member list clears the state", func(t *testing.T) {
+		state, diagnostics := importAndRead(t, func() (map[string]interface{}, error) {
+			return map[string]interface{}{
+				"ListenerPort": 80,
+				"AclStatus":    "on",
+				"AclType":      "white",
+				"AclIds":       map[string]interface{}{"AclId": []interface{}{}},
+			}, nil
+		}, "lb-123:http:80")
+		listenerAclTestRequireNoError(t, "ReadResource (empty member list)", diagnostics)
 		value, err := state.Unmarshal(listenerAclAttachmentTestType)
 		if err != nil {
 			t.Fatalf("decoding the read state: %s", err)
@@ -2371,12 +2550,16 @@ func TestUnitListenerAclAttachmentProtocolReadbackOutcomes(t *testing.T) {
 	*slbsvc.ListenerAclAttachmentPollIntervalForTest = 10 * time.Millisecond
 	t.Cleanup(func() { *slbsvc.ListenerAclAttachmentPollIntervalForTest = previousInterval })
 
-	t.Run("a complete but different binding fails the create", func(t *testing.T) {
+	t.Run("a complete but different binding keeps the planned identity", func(t *testing.T) {
+		// The listener keeps reporting the previous type during the whole read
+		// budget of the apply and converges only for the following refresh.
+		stale := true
 		stub := &listenerAclRpcStub{
 			describe: func() (map[string]interface{}, error) {
-				// The listener keeps the previous white binding while the plan asks
-				// for black on the same policy group.
-				return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": "acl-1"}, nil
+				if stale {
+					return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": "acl-1"}, nil
+				}
+				return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "black", "AclId": "acl-1"}, nil
 			},
 		}
 		stub.install(t)
@@ -2389,12 +2572,31 @@ func TestUnitListenerAclAttachmentProtocolReadbackOutcomes(t *testing.T) {
 		if !listenerAclTestDiagnosticsContain(applied.Diagnostics, "different access control binding") {
 			t.Fatalf("the contradiction was not reported: %v", applied.Diagnostics)
 		}
-		value, err := applied.NewState.Unmarshal(listenerAclAttachmentTestType)
-		if err != nil {
-			t.Fatalf("decoding the state: %s", err)
+		attrs := listenerAclTestAttrs(t, applied.NewState)
+		if got := listenerAclTestString(t, attrs["id"]); got != "lb-123:http:80" {
+			t.Fatalf("the acknowledged identity was dropped, id = %q", got)
 		}
-		if !value.IsNull() {
-			t.Fatalf("a contradicted readback must not write state, got %s", value)
+		if got := listenerAclTestString(t, attrs["acl_id"]); got != "acl-1" {
+			t.Fatalf("acl_id = %q, want acl-1", got)
+		}
+		if got := listenerAclTestString(t, attrs["acl_type"]); got != "black" {
+			t.Fatalf("the planned type was dropped, acl_type = %q", got)
+		}
+
+		// Recovery: the next refresh sees the converged binding and keeps the
+		// identity that the failed apply stored.
+		stale = false
+		read, err := server.ReadResource(context.Background(), &tfprotov5.ReadResourceRequest{
+			TypeName:     listenerAclAttachmentTestTypeName,
+			CurrentState: applied.NewState,
+		})
+		if err != nil {
+			t.Fatalf("ReadResource after the contradiction: %s", err)
+		}
+		listenerAclTestRequireNoError(t, "ReadResource after the contradiction", read.Diagnostics)
+		recovered := listenerAclTestAttrs(t, read.NewState)
+		if got := listenerAclTestString(t, recovered["acl_type"]); got != "black" {
+			t.Fatalf("the refreshed binding was lost, acl_type = %q", got)
 		}
 	})
 
@@ -2425,6 +2627,97 @@ func TestUnitListenerAclAttachmentProtocolReadbackOutcomes(t *testing.T) {
 			t.Fatal("a pending confirmation must be reported as a warning")
 		}
 	})
+}
+
+// An acknowledged single field update whose readback keeps the old value must
+// fail the apply but keep the planned identity, so the change can be reconciled
+// instead of silently keeping the previous group.
+func TestUnitListenerAclAttachmentProtocolUpdateContradictionKeepsPlan(t *testing.T) {
+	previousOperation := *slbsvc.ListenerAclAttachmentOperationTimeoutForTest
+	*slbsvc.ListenerAclAttachmentOperationTimeoutForTest = 300 * time.Millisecond
+	t.Cleanup(func() { *slbsvc.ListenerAclAttachmentOperationTimeoutForTest = previousOperation })
+	previousInterval := *slbsvc.ListenerAclAttachmentPollIntervalForTest
+	*slbsvc.ListenerAclAttachmentPollIntervalForTest = 10 * time.Millisecond
+	t.Cleanup(func() { *slbsvc.ListenerAclAttachmentPollIntervalForTest = previousInterval })
+
+	// The listener keeps reporting the previous type during the whole read budget
+	// of the apply and converges only for the following refresh.
+	stale := true
+	stub := &listenerAclRpcStub{
+		describe: func() (map[string]interface{}, error) {
+			if stale {
+				return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": "acl-1"}, nil
+			}
+			return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "black", "AclId": "acl-1"}, nil
+		},
+	}
+	stub.install(t)
+	server := newListenerAclAttachmentServer(t)
+
+	prior := listenerAclTestDynamic(t, listenerAclTestObject(t, map[string]tftypes.Value{
+		"id":          tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"listener_id": tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"acl_id":      tftypes.NewValue(tftypes.String, "acl-1"),
+		"acl_type":    tftypes.NewValue(tftypes.String, "white"),
+		"acl_status":  tftypes.NewValue(tftypes.String, "on"),
+	}))
+	config := listenerAclTestDynamic(t, listenerAclTestObject(t, map[string]tftypes.Value{
+		"id":          tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"listener_id": tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"acl_id":      tftypes.NewValue(tftypes.String, "acl-1"),
+		"acl_type":    tftypes.NewValue(tftypes.String, "black"),
+		"acl_status":  tftypes.NewValue(tftypes.String, "on"),
+	}))
+	plan, err := server.PlanResourceChange(context.Background(), &tfprotov5.PlanResourceChangeRequest{
+		TypeName:         listenerAclAttachmentTestTypeName,
+		PriorState:       prior,
+		ProposedNewState: config,
+		Config:           config,
+	})
+	if err != nil {
+		t.Fatalf("PlanResourceChange (update): %s", err)
+	}
+	listenerAclTestRequireNoError(t, "PlanResourceChange (update)", plan.Diagnostics)
+	applied, err := server.ApplyResourceChange(context.Background(), &tfprotov5.ApplyResourceChangeRequest{
+		TypeName:       listenerAclAttachmentTestTypeName,
+		PriorState:     prior,
+		PlannedState:   plan.PlannedState,
+		Config:         config,
+		PlannedPrivate: plan.PlannedPrivate,
+	})
+	if err != nil {
+		t.Fatalf("ApplyResourceChange (update): %s", err)
+	}
+	if !listenerAclTestHasError(applied.Diagnostics) {
+		t.Fatal("a stale readback after an acknowledged update must fail the apply")
+	}
+	if !listenerAclTestDiagnosticsContain(applied.Diagnostics, "different access control binding") {
+		t.Fatalf("the contradiction was not reported: %v", applied.Diagnostics)
+	}
+	attrs := listenerAclTestAttrs(t, applied.NewState)
+	if got := listenerAclTestString(t, attrs["acl_type"]); got != "black" {
+		t.Fatalf("the previous group was kept instead of the planned identity, acl_type = %q", got)
+	}
+	if got := listenerAclTestString(t, attrs["acl_id"]); got != "acl-1" {
+		t.Fatalf("acl_id = %q, want acl-1", got)
+	}
+	if stub.sets != 1 {
+		t.Fatalf("expected exactly one acknowledged write, got %d", stub.sets)
+	}
+
+	// Recovery: once the listener converges, the stored identity is kept.
+	stale = false
+	read, err := server.ReadResource(context.Background(), &tfprotov5.ReadResourceRequest{
+		TypeName:     listenerAclAttachmentTestTypeName,
+		CurrentState: applied.NewState,
+	})
+	if err != nil {
+		t.Fatalf("ReadResource after the update contradiction: %s", err)
+	}
+	listenerAclTestRequireNoError(t, "ReadResource after the update contradiction", read.Diagnostics)
+	if got := listenerAclTestString(t, listenerAclTestAttrs(t, read.NewState)["acl_type"]); got != "black" {
+		t.Fatalf("the refreshed update was lost, acl_type = %q", got)
+	}
 }
 
 // Read has to follow the real on to off transition: the resource is kept while

@@ -16,9 +16,11 @@ var ListenerAclAttachmentPollIntervalForTest = &listenerAclAttachmentPollInterva
 // test package without exporting a production symbol.
 var ListenerAclIdsForTest = listenerAclIdsForMessage
 
-// ListenerAclIdsCompleteForTest exposes the member completeness alongside the
-// readable policy groups.
-var ListenerAclIdsCompleteForTest = listenerAclIds
+// ListenerAclIdsCompleteForTest exposes whether the member list was reported and
+// completely readable alongside the readable policy groups.
+var ListenerAclIdsCompleteForTest = func(object map[string]interface{}) ([]string, bool, bool) {
+	return listenerAclIds(object)
+}
 
 // ListenerAclAttachmentOperationTimeoutForTest lets tests shorten the operation
 // budget used by the retry helper and the resource deadlines.

@@ -3,6 +3,7 @@ package connectivity
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -2779,6 +2780,43 @@ func validateRpcEndpointURL(protocol, endpoint string) error {
 	return nil
 }
 
+// RedactLogValue returns a deep copy of a request or response payload with every
+// string passed through the same signed URL redaction as the error path. Service
+// debug logging hands its payload to a human readable log, and a service or
+// gateway that echoes the request must not be able to print the access key,
+// signature or security token there.
+func RedactLogValue(value interface{}) interface{} {
+	switch typed := value.(type) {
+	case string:
+		return redactSignedURLs(typed)
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(typed))
+		for key, item := range typed {
+			out[key] = RedactLogValue(item)
+		}
+		return out
+	case map[string]*string:
+		out := make(map[string]*string, len(typed))
+		for key, item := range typed {
+			if item == nil {
+				out[key] = nil
+				continue
+			}
+			sanitized := redactSignedURLs(*item)
+			out[key] = &sanitized
+		}
+		return out
+	case []interface{}:
+		out := make([]interface{}, len(typed))
+		for index, item := range typed {
+			out[index] = RedactLogValue(item)
+		}
+		return out
+	default:
+		return value
+	}
+}
+
 // sanitizeRpcError strips signed URLs from transport errors while preserving the
 // underlying error type and chain.
 func sanitizeRpcError(err error) error {
@@ -2871,20 +2909,16 @@ func decodeRpcResponse(response *tea.Response) (map[string]interface{}, error) {
 // the request even though its error payload is unreadable, so the outcome is
 // known. Any other status (including 2xx and 5xx) leaves the outcome unknown
 // and is reported as ErrUnreadableResponse so a write can be reconciled.
+//
+// A bare status is never mapped to a business "NotFound" code, 404 included. An
+// HTML gateway page or a proxy response can carry a 404 without addressing the
+// requested entity at all, and callers that treat it as a missing resource would
+// drop live state or report a successful destroy. Only a decodable SLB business
+// error can prove that the entity is gone.
 func undecodableRpcResponseError(response *tea.Response, cause error) error {
 	status := 0
 	if response != nil {
 		status = tea.IntValue(response.StatusCode)
-	}
-	if status == 404 {
-		// A not-found status stays a typed not-found error even without a
-		// readable body, so callers can still treat the resource as gone.
-		return tea.NewSDKError(map[string]interface{}{
-			"code":       "NotFound",
-			"statusCode": status,
-			"message":    "code: 404, the response body could not be decoded",
-			"data":       map[string]interface{}{"code": "NotFound", "statusCode": status},
-		})
 	}
 	if status >= 400 && status < 500 {
 		return fmt.Errorf("%w: status %d: %v", ErrRpcRejectedResponse, status, sanitizeRpcError(cause))
@@ -3029,12 +3063,18 @@ func executeSignedRpcRequest(ctx context.Context, request *tea.Request) (*tea.Re
 		httpRequest.Header.Set(key, *value)
 	}
 
+	// The signed RPC query carries the access key, the signature and the security
+	// token, and the standard library's HTTP/2 client decodes frames through its
+	// own verbose logger, which a debug build prints for the request stream. An
+	// empty, non-nil TLSNextProto map keeps this transport on HTTP/1.1, whose
+	// request path is never logged; signing, headers, body, cancellation and the
+	// deadline budgets below are unaffected.
 	transport := &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
 		DialContext:           (&net.Dialer{Timeout: connectBudget, KeepAlive: 30 * time.Second}).DialContext,
 		TLSHandshakeTimeout:   connectBudget,
 		ResponseHeaderTimeout: readBudget,
-		ForceAttemptHTTP2:     true,
+		TLSNextProto:          map[string]func(string, *tls.Conn) http.RoundTripper{},
 	}
 	response, err := (contextHTTPClient{ctx: ctx, budget: budget}).Call(httpRequest, transport)
 	if err != nil {
