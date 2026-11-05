@@ -26,7 +26,13 @@ func ResourceCSAutoscalingConfig() *schema.Resource {
 		Update: resourceCSAutoscalingConfigUpdate,
 		Delete: resourceCSAutoscalingConfigDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: func(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+				// The import ID is the cluster ID, which the read path needs as cluster_id.
+				if err := d.Set("cluster_id", d.Id()); err != nil {
+					return nil, err
+				}
+				return []*schema.ResourceData{d}, nil
+			},
 		},
 
 		Timeouts: &schema.ResourceTimeout{
@@ -234,14 +240,14 @@ func resourceCSAutoscalingConfigUpdate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("expander"); ok {
 		updateAutoscalingConfigRequest.Expander = tea.String(v.(string))
 	}
-	if v, ok := d.GetOk("skip_nodes_with_system_pods"); ok {
-		updateAutoscalingConfigRequest.SkipNodesWithSystemPods = tea.Bool(v.(bool))
+	if v, ok := autoscalingConfigBoolFromRawConfig(d, "skip_nodes_with_system_pods"); ok {
+		updateAutoscalingConfigRequest.SkipNodesWithSystemPods = tea.Bool(v)
 	}
-	if v, ok := d.GetOk("skip_nodes_with_local_storage"); ok {
-		updateAutoscalingConfigRequest.SkipNodesWithLocalStorage = tea.Bool(v.(bool))
+	if v, ok := autoscalingConfigBoolFromRawConfig(d, "skip_nodes_with_local_storage"); ok {
+		updateAutoscalingConfigRequest.SkipNodesWithLocalStorage = tea.Bool(v)
 	}
-	if v, ok := d.GetOk("daemonset_eviction_for_nodes"); ok {
-		updateAutoscalingConfigRequest.DaemonsetEvictionForNodes = tea.Bool(v.(bool))
+	if v, ok := autoscalingConfigBoolFromRawConfig(d, "daemonset_eviction_for_nodes"); ok {
+		updateAutoscalingConfigRequest.DaemonsetEvictionForNodes = tea.Bool(v)
 	}
 	if v, ok := d.GetOk("max_graceful_termination_sec"); ok {
 		updateAutoscalingConfigRequest.MaxGracefulTerminationSec = tea.Int32(int32(v.(int)))
@@ -249,11 +255,11 @@ func resourceCSAutoscalingConfigUpdate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("min_replica_count"); ok {
 		updateAutoscalingConfigRequest.MinReplicaCount = tea.Int32(int32(v.(int)))
 	}
-	if v, ok := d.GetOk("recycle_node_deletion_enabled"); ok {
-		updateAutoscalingConfigRequest.RecycleNodeDeletionEnabled = tea.Bool(v.(bool))
+	if v, ok := autoscalingConfigBoolFromRawConfig(d, "recycle_node_deletion_enabled"); ok {
+		updateAutoscalingConfigRequest.RecycleNodeDeletionEnabled = tea.Bool(v)
 	}
-	if v, ok := d.GetOk("scale_up_from_zero"); ok {
-		updateAutoscalingConfigRequest.ScaleUpFromZero = tea.Bool(v.(bool))
+	if v, ok := autoscalingConfigBoolFromRawConfig(d, "scale_up_from_zero"); ok {
+		updateAutoscalingConfigRequest.ScaleUpFromZero = tea.Bool(v)
 	}
 	if v, ok := d.GetOk("scaler_type"); ok {
 		updateAutoscalingConfigRequest.ScalerType = tea.String(v.(string))
@@ -302,4 +308,25 @@ func resourceCSAutoscalingConfigUpdate(d *schema.ResourceData, meta interface{})
 
 func resourceCSAutoscalingConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	return nil
+}
+
+// autoscalingConfigBoolFromRawConfig returns the value the user explicitly set
+// for a top-level boolean argument and whether it was set at all. d.GetOk
+// reports an explicit false as unset, so read the raw configuration instead;
+// an omitted argument stays null and is left to the server default.
+func autoscalingConfigBoolFromRawConfig(d *schema.ResourceData, key string) (bool, bool) {
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() || !rawConfig.Type().IsObjectType() || !rawConfig.Type().HasAttribute(key) {
+		return false, false
+	}
+	rawValue := rawConfig.GetAttr(key)
+	if rawValue.IsNull() {
+		return false, false
+	}
+	if !rawValue.IsKnown() {
+		// Terraform resolves unknown configuration before apply; fall back to
+		// the applied value so a resolved expression is still sent.
+		return d.Get(key).(bool), true
+	}
+	return rawValue.True(), true
 }

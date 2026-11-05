@@ -33,6 +33,13 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
 variable "name" {
   default = "terraform-example"
 }
@@ -140,6 +147,16 @@ The following arguments are supported.
 
 The following attributes are exported:
 * `id` - Resource id.
+
+## Import
+
+The auto scaling configuration of an ACK cluster can be imported using the cluster ID, e.g.
+
+```shell
+$ terraform import alicloud_cs_autoscaling_config.example <cluster_id>
+```
+
+-> **NOTE:** Import reads the `cluster-autoscaler` configuration of the cluster. If you use a different `scaler_type` or configure `priorities`, declare them again in your configuration after importing.
 
 ## Timeouts
 
