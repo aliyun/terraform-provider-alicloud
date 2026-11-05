@@ -13,7 +13,7 @@ Provides a DLF Next Catalog resource.
 
 For information about DLF Next Catalog and how to use it, see [What is DLF Next Catalog](https://www.alibabacloud.com/help/en/dlf/).
 
--> **NOTE:** Available since v2.1.0.
+-> **NOTE:** Available since v2.3.0.
 
 ## Example Usage
 

@@ -127,3 +127,13 @@ func TestUnitIncrementalWaitContextStopsWhenCancelled(t *testing.T) {
 		t.Fatalf("incrementalWaitContext slept %s after cancellation", elapsed)
 	}
 }
+
+func TestUnitNeedRetryNilSafe(t *testing.T) {
+	// tea.SDKError fields can be nil; NeedRetry must not dereference them.
+	if NeedRetry(&tea.SDKError{}) {
+		t.Fatalf("all-nil SDKError must not be retryable")
+	}
+	if !NeedRetry(&tea.SDKError{Code: tea.String("Throttling.User"), Message: tea.String("throttled")}) {
+		t.Fatalf("throttling error must be retryable")
+	}
+}

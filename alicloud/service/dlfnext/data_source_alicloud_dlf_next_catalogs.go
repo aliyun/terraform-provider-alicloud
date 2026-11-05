@@ -187,9 +187,11 @@ func dataSourceCatalogsRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	// ListCatalogs may return the same set in a different order across calls
-	// (pagination, backend sharding). Sort the catalogs by name so Terraform
-	// state stays stable across refreshes; the data source id is derived
-	// separately from the matched names below.
+	// (pagination, backend sharding). Sort both the list and the matched-name
+	// outputs so state stays stable across refreshes and catalogs.0.name
+	// agrees with names.0; the data source id is derived from the same sorted
+	// names.
+	matchedNames = sortCatalogNames(matchedNames)
 	catalogs = sortCatalogsByName(catalogs)
 	d.SetId(catalogsID(matchedNames))
 	if err := d.Set("ids", matchedNames); err != nil {
@@ -221,6 +223,16 @@ func catalogsID(names []string) string {
 	copy(sorted, names)
 	sort.Strings(sorted)
 	return helper.DataResourceIdHash(sorted)
+}
+
+// sortCatalogNames returns a sorted copy of the matched catalog names so the
+// order-sensitive ids/names lists are deterministic and agree with the sorted
+// catalogs list.
+func sortCatalogNames(names []string) []string {
+	sorted := make([]string, len(names))
+	copy(sorted, names)
+	sort.Strings(sorted)
+	return sorted
 }
 
 // sortCatalogsByName returns a copy of catalogs sorted by the catalog "name"

@@ -90,3 +90,24 @@ func TestUnitIsProviderNotFound(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitIsExpectedErrorsNilSafe(t *testing.T) {
+	// A tea.SDKError can carry Code with Data unset, or no fields at all.
+	// Dereferencing them used to panic; classification must stay false.
+	cases := []struct {
+		name string
+		err  error
+	}{
+		{"all nil", &tea.SDKError{}},
+		{"nil code", &tea.SDKError{Data: tea.String("some data"), Message: tea.String("msg"), StatusCode: tea.Int(500)}},
+		{"nil data", &tea.SDKError{Code: tea.String("SomeOtherCode"), Message: tea.String("msg"), StatusCode: tea.Int(500)}},
+	}
+	for _, c := range cases {
+		if errs.IsExpectedErrors(c.err, []string{"NotFound"}) {
+			t.Fatalf("%s: expected no match without panicking", c.name)
+		}
+	}
+	if !errs.IsExpectedErrors(&tea.SDKError{Code: tea.String("NotFound")}, []string{"NotFound"}) {
+		t.Fatalf("expected an exact code match")
+	}
+}

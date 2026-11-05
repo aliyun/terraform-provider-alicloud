@@ -47,7 +47,29 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 		CheckDestroy:      testAccCheckAlicloudDlfNextCatalogDestroy,
 		Steps: []resource.TestStep{
 			{
-				// Step 1 (Create): create with three writable managed options.
+				// Basic: the minimal configuration (name + type only).
+				// No options and no is_shared are sent, so the complete step
+				// also covers the omitted-vs-explicit transition without a
+				// second catalog.
+				Config: testAccDlfNextCatalogBasicConfig(catalogName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccAlicloudDlfNextCatalogExists(resourceId, &v),
+					resource.TestCheckResourceAttr(resourceId, "name", catalogName),
+					resource.TestCheckResourceAttr(resourceId, "type", "PAIMON"),
+					resource.TestCheckResourceAttr(resourceId, "options.%", "0"),
+					resource.TestCheckResourceAttrSet(resourceId, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceId, "updated_at"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"options"},
+			},
+			{
+				// Complete: three writable managed options
+				// and an explicit is_shared = false.
 				Config: testAccDlfNextCatalogOptionsModelConfig(catalogName, map[string]interface{}{
 					"comment":     "c1",
 					"description": "d1",
@@ -71,7 +93,13 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 				),
 			},
 			{
-				// Step 2 (Data Source basic): the data source reads the catalog
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"options"},
+			},
+			{
+				// Data Source basic: the data source reads the catalog
 				// created in step 1 (no new CreateCatalog). The implicit
 				// dependency via catalog_name_pattern interpolation forces the
 				// data source to wait for the resource.
@@ -79,7 +107,7 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 					"comment":     "c1",
 					"description": "d1",
 					"dlf.discovery-query-results-retained-days": "7",
-				}, ""),
+				}, "output_file = \"test-catalogs.json\""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.alicloud_dlf_next_catalogs.default", "catalogs.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_dlf_next_catalogs.default", "catalogs.0.name", catalogName),
@@ -131,7 +159,7 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 				),
 			},
 			{
-				// Step 6 (Options Update): remove description (AlterCatalog
+				// Options Update: remove description (AlterCatalog
 				// removals derived from oldManaged - newManaged) and keep the
 				// other two managed keys.
 				Config: testAccDlfNextCatalogOptionsModelConfig(catalogName, map[string]interface{}{
@@ -149,7 +177,13 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 				),
 			},
 			{
-				// Step 7 (Options Clear, two-state): explicit options = {}
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"options"},
+			},
+			{
+				// Options Clear (two-state): explicit options = {}
 				// makes the managed set empty, so the provider sends
 				// AlterCatalog removals = oldManaged - newManaged. The API does
 				// not honor the removal for dlf.discovery-query-results-retained-days
@@ -167,7 +201,7 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 				),
 			},
 			{
-				// Step 8 (Import): a fresh import cannot recover which remote
+				// Import: a fresh import cannot recover which remote
 				// options were originally user-configured, so options is empty
 				// and remote_options carries the full remote set.
 				ResourceName:            resourceId,
@@ -184,7 +218,7 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 				),
 			},
 			{
-				// Step 9 (Re-adopt one key): after import oldManaged is empty,
+				// Re-adopt one key: after import oldManaged is empty,
 				// so re-adopting comment drives an update only (no removals).
 				Config: testAccDlfNextCatalogOptionsModelConfig(catalogName, map[string]interface{}{
 					"comment": "adopted",
@@ -196,6 +230,12 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 					testAccAlicloudDlfNextCatalogRemoteOptionSet(resourceId, serverDefault1, ""),
 					testAccAlicloudDlfNextCatalogRemoteOptionSet(resourceId, serverDefault2, ""),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"options"},
 			},
 		},
 	})
@@ -397,6 +437,16 @@ func testAccAlicloudDlfNextCatalogRemoteOptionAbsent(resourceId, key string) res
 		}
 		return nil
 	}
+}
+
+// testAccDlfNextCatalogBasicConfig renders the minimal configuration: name and
+// type only, with options and is_shared omitted.
+func testAccDlfNextCatalogBasicConfig(catalogName string) string {
+	return fmt.Sprintf(`
+resource "alicloud_dlf_next_catalog" "default" {
+  name = %q
+  type = "PAIMON"
+}`, catalogName)
 }
 
 // testAccDlfNextCatalogOptionsModelConfig renders the options config as a raw

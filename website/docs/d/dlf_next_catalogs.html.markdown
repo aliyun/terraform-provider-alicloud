@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the DLF Next Catalogs of the current Alibaba Cloud user.
 
--> **NOTE:** Available since v2.1.0.
+-> **NOTE:** Available since v2.3.0.
 
 ## Example Usage
 
@@ -75,5 +75,3 @@ The following attributes are exported:
 The data source calls the DLF Next API, which is authorized at the API (RAM) layer. The provider does not automatically grant any RAM permissions to the execution identity (the AccessKey, STS token or RAM role used to run Terraform); the credentials used for `terraform plan`/`apply` must already hold the actions below.
 
 * `dlf:ListCatalogs` - list catalogs (required to read the data source). The exact action set follows the current DLF RAM / CLI official documentation; `dlf:ListCatalogs` is the minimum required action.
-
-  -> **NOTE:** Catalog CRUD / List acceptance tests only verify the API-layer (RAM) authorization for DLF Next Catalog management. They do not verify DLF data-layer authorization to access table data through Paimon REST, Iceberg REST or HMS, so data-access permissions cannot be claimed as verified by running this data source.

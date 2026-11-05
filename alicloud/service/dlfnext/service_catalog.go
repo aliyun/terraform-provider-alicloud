@@ -275,13 +275,11 @@ func isCatalogExplicitClientError(err error) bool {
 // throttle. DLF CreateCatalog carries no idempotency token, and the backend
 // rejects new catalogs when the account+Region has too many recently-created
 // catalogs still being cleaned up (the backend reaps them asynchronously,
-// ~48h). The signals are: an error message containing the backend capacity
-// phrases, or a catalog that reached INITIALIZE_FAILED after the create was
-// accepted. This is NOT retried: re-issuing CreateCatalog would only add
-// another catalog to the cleanup queue and worsen the quota pressure. The
-// caller surfaces a clear INFRA_BLOCKED error with account/Region/Catalog
-// name/RequestId/server message so the test runner can classify it as an
-// environment capacity issue (not a regression, not a PASS).
+// ~48h). Only the specific capacity phrases are matched; generic wording such
+// as "exceed the maximum" is deliberately excluded because it also appears in
+// throttling/5xx responses, which must stay retryable. This error is NOT
+// retried: re-issuing CreateCatalog would only add another catalog to the
+// cleanup queue and worsen the quota pressure.
 func isCatalogBackendCapacityError(err error) bool {
 	if err == nil {
 		return false
@@ -292,7 +290,6 @@ func isCatalogBackendCapacityError(err error) bool {
 		"catalogs being cleaned up",
 		"approximately 48 hours",
 		"catalog quota",
-		"exceed the maximum",
 	} {
 		if strings.Contains(msg, sig) {
 			return true
