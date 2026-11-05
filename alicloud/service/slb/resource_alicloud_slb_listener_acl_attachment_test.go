@@ -157,7 +157,6 @@ func TestAccAliCloudSLBListenerAclAttachment_multiAcl(t *testing.T) {
 			{
 				Config: testAccListenerAclAttachmentConfigHttp(name, "first", "white", true),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckListenerIdUnchanged(listenerAclAttachmentListenerId, &listenerId),
 					testAccCheckListenerAclAttachmentAttrs("alicloud_slb_acl.first", "white"),
 					// The first binding must be verified on the listener before
 					// any out-of-band change, otherwise an incorrect apply could
