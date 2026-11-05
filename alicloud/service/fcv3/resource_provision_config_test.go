@@ -1676,7 +1676,7 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 	}
 	rawValues["function_name"] = cty.StringVal("unit-provision")
 	rawValues["target"] = cty.NumberIntVal(0)
-	rawValues["always_allocate_cpu"] = cty.True
+	rawValues["always_allocate_cpu"] = cty.False
 	rawValues["always_allocate_gpu"] = cty.True
 
 	zeroPrior := priorState(map[string]string{
