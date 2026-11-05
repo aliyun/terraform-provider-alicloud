@@ -131,11 +131,9 @@ func (r *cmsSubscriptionResource) Schema(ctx context.Context, req resource.Schem
 				Optional: true,
 			},
 			"workspace": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Required: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
-					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"enable": schema.BoolAttribute{

@@ -31,8 +31,22 @@ provider "alicloud" {
   region = "cn-hangzhou"
 }
 
+variable "name" {
+  default = "tf-example"
+}
+
+resource "alicloud_log_project" "default" {
+  project_name = var.name
+}
+
+resource "alicloud_cms_workspace" "default" {
+  workspace_name = var.name
+  sls_project    = alicloud_log_project.default.project_name
+}
+
 resource "alicloud_cms_subscription" "default" {
-  subscription_name = "tf-example-subscription"
+  subscription_name = var.name
+  workspace         = alicloud_cms_workspace.default.workspace_name
   description       = "Event subscription managed by Terraform"
 
   filter_setting {
@@ -54,7 +68,7 @@ The following arguments are supported:
 * `subscription_name` - (Required) The name of the subscription.
 * `description` - (Optional) The description of the subscription.
 * `notify_strategy_id` - (Optional) The UUID of the notification strategy bound to the subscription.
-* `workspace` - (Optional, ForceNew) The name of the workspace the subscription belongs to. Changing this forces a new subscription to be created.
+* `workspace` - (Required, ForceNew) The name of the workspace the subscription belongs to. Changing this forces a new subscription to be created.
 * `enable` - (Optional) Whether the subscription is enabled. Defaults to `true`. The enabled state is controlled by the separate enable and disable operations, not by the subscription body.
 * `subscribe_legacy_event` - (Optional) Whether events from CMS 1.0, ARMS and SLS resources that have no workspace are also subscribed. If it is not configured, the service default (`false`) applies.
 * `filter_setting` - (Optional, List) The event filter. See [`filter_setting`](#filter_setting) below.

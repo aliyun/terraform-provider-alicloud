@@ -78,8 +78,22 @@ func testAccCheckCmsSubscriptionDestroy(s *terraform.State) error {
 
 func testAccCmsSubscriptionConfigBasic(name string) string {
 	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+resource "alicloud_log_project" "default" {
+  project_name = var.name
+}
+
+resource "alicloud_cms_workspace" "default" {
+  workspace_name = var.name
+  sls_project    = alicloud_log_project.default.project_name
+}
+
 resource "alicloud_cms_subscription" "default" {
-  subscription_name = "%s"
+  subscription_name = var.name
+  workspace         = alicloud_cms_workspace.default.workspace_name
   description       = "created by terraform"
   enable            = false
 
@@ -98,8 +112,22 @@ resource "alicloud_cms_subscription" "default" {
 
 func testAccCmsSubscriptionConfigUpdate(name string) string {
 	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+resource "alicloud_log_project" "default" {
+  project_name = var.name
+}
+
+resource "alicloud_cms_workspace" "default" {
+  workspace_name = var.name
+  sls_project    = alicloud_log_project.default.project_name
+}
+
 resource "alicloud_cms_subscription" "default" {
-  subscription_name      = "%s"
+  subscription_name      = var.name
+  workspace              = alicloud_cms_workspace.default.workspace_name
   description            = "updated by terraform"
   enable                 = true
   subscribe_legacy_event = true
