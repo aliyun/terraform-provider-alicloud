@@ -3102,6 +3102,10 @@ func restoreDBInstanceIpArraysState(d *schema.ResourceData, oldSet *schema.Set) 
 		return
 	}
 	_ = d.Set("db_instance_ip_arrays", oldSet.List())
+	// Partial mode makes the SDK return the previous state instead of the
+	// planned one when Update fails. Otherwise a refused plan would look
+	// applied to the next plan and could delete a group it never wrote.
+	d.Partial(true)
 }
 
 // securityIpsGroupReader is the minimal read surface the update entry needs.
