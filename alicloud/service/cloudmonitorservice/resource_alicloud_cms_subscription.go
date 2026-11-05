@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -267,7 +268,7 @@ func (r *cmsSubscriptionResource) Create(ctx context.Context, req resource.Creat
 		Workspace:        plan.Workspace,
 		Enable:           plan.Enable,
 	}
-	object, err := NewService(r.Meta()).DescribeCmsSubscription(id, plan.Workspace.ValueString())
+	object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(id, plan.Workspace.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetSubscription", cmsSubscriptionTypeName),
@@ -285,7 +286,7 @@ func (r *cmsSubscriptionResource) Read(ctx context.Context, req resource.ReadReq
 		return
 	}
 
-	object, err := NewService(r.Meta()).DescribeCmsSubscription(state.Id.ValueString(), state.Workspace.ValueString())
+	object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(state.Id.ValueString(), state.Workspace.ValueString())
 	if err != nil {
 		if errs.NotFoundError(err) {
 			resp.State.RemoveResource(ctx)
@@ -344,7 +345,7 @@ func (r *cmsSubscriptionResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	object, err := NewService(r.Meta()).DescribeCmsSubscription(id, state.Workspace.ValueString())
+	object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(id, state.Workspace.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetSubscription", cmsSubscriptionTypeName),
