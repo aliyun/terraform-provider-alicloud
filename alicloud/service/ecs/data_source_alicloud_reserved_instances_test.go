@@ -17,7 +17,7 @@ import (
 func TestAccAliCloudReservedInstancesDataSource(t *testing.T) {
 	rand := tfacctest.RandIntRange(10000, 999999)
 	resourceId := "data.alicloud_reserved_instances.default"
-	name := fmt.Sprintf("tf-testacc-ri-%d", rand)
+	name := fmt.Sprintf("tf-testAcc-ri-%d", rand)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -83,6 +83,14 @@ func TestAccAliCloudReservedInstancesDataSource(t *testing.T) {
 			{
 				Config:      reservedInstancesDataBlock("  scope = \"Zone\"\n"),
 				ExpectError: regexp.MustCompile("must be set when"),
+			},
+			{
+				Config:      reservedInstancesDataBlock("  tags = { \"env\" = \"\" }\n"),
+				ExpectError: regexp.MustCompile(`Invalid Tag Value|must not be empty`),
+			},
+			{
+				Config:      reservedInstancesDataBlock("  tags = { \"acs:env\" = \"test\" }\n"),
+				ExpectError: regexp.MustCompile(`Invalid Tag Key|must not start with`),
 			},
 			{
 				// The destroy phase re-reads the last configuration, so a valid

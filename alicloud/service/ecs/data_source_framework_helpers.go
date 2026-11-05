@@ -2,16 +2,19 @@ package ecs
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sdkretry "github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
@@ -48,6 +51,15 @@ func ecsFwInt64(value interface{}) types.Int64 {
 		return types.Int64Value(int64(v))
 	case float64:
 		return types.Int64Value(int64(v))
+	case json.Number:
+		// The ECS RPC response is decoded with UseNumber, so integer members
+		// arrive as json.Number rather than as int or float64.
+		if n, err := v.Int64(); err == nil {
+			return types.Int64Value(n)
+		}
+		if f, err := v.Float64(); err == nil {
+			return types.Int64Value(int64(f))
+		}
 	case string:
 		trimmed := strings.TrimSpace(v)
 		if n, err := strconv.ParseInt(trimmed, 10, 64); err == nil {
@@ -153,6 +165,81 @@ func ecsFwApplyTags(request map[string]interface{}, tags types.Map) {
 		})
 	}
 	expandTagsToMap(request, list)
+}
+
+const ecsFwTagMaxLength = 128
+
+// ecsFwTagMapValidator enforces the key and value limits that the ECS tag
+// filters document: the key must be present and must not use the reserved
+// aliyun/acs: prefixes, the value length is capped, and neither side may carry
+// a URL. The value emptiness rule differs per API, so it is configurable.
+type ecsFwTagMapValidator struct {
+	allowEmptyValue        bool
+	valueForbiddenPrefixes []string
+}
+
+func (v ecsFwTagMapValidator) Description(context.Context) string {
+	return "Each tag key and value must satisfy the tag limits documented for the API."
+}
+
+func (v ecsFwTagMapValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v ecsFwTagMapValidator) ValidateMap(ctx context.Context, req validator.MapRequest, resp *validator.MapResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	for key, element := range req.ConfigValue.Elements() {
+		value, ok := element.(types.String)
+		if !ok || value.IsNull() || value.IsUnknown() {
+			continue
+		}
+		if message := validateEcsFwTagKey(key); message != "" {
+			resp.Diagnostics.AddAttributeError(req.Path, "Invalid Tag Key", message)
+			return
+		}
+		if message := validateEcsFwTagValue(v, value.ValueString()); message != "" {
+			resp.Diagnostics.AddAttributeError(req.Path, "Invalid Tag Value", message)
+			return
+		}
+	}
+}
+
+func validateEcsFwTagKey(key string) string {
+	if key == "" {
+		return "A tag key must not be empty."
+	}
+	if utf8.RuneCountInString(key) > ecsFwTagMaxLength {
+		return fmt.Sprintf("A tag key must be at most %d characters.", ecsFwTagMaxLength)
+	}
+	for _, prefix := range []string{"aliyun", "acs:"} {
+		if strings.HasPrefix(key, prefix) {
+			return fmt.Sprintf("A tag key must not start with %q.", prefix)
+		}
+	}
+	if strings.Contains(key, "http://") || strings.Contains(key, "https://") {
+		return "A tag key must not contain a URL."
+	}
+	return ""
+}
+
+func validateEcsFwTagValue(v ecsFwTagMapValidator, value string) string {
+	if value == "" && !v.allowEmptyValue {
+		return "A tag value must not be empty."
+	}
+	if utf8.RuneCountInString(value) > ecsFwTagMaxLength {
+		return fmt.Sprintf("A tag value must be at most %d characters.", ecsFwTagMaxLength)
+	}
+	for _, prefix := range v.valueForbiddenPrefixes {
+		if strings.HasPrefix(value, prefix) {
+			return fmt.Sprintf("A tag value must not start with %q.", prefix)
+		}
+	}
+	if strings.Contains(value, "http://") || strings.Contains(value, "https://") {
+		return "A tag value must not contain a URL."
+	}
+	return ""
 }
 
 // ecsFwRpcPost sends one read-only ECS query with the shared retry policy:

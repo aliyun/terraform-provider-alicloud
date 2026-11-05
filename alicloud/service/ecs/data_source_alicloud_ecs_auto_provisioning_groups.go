@@ -95,10 +95,23 @@ var autoProvisioningGroupPayAsYouGoOptionsAttrTypes = map[string]attr.Type{
 	"allocation_strategy": types.StringType,
 }
 
+var autoProvisioningGroupCandidateOptionsAttrTypes = map[string]attr.Type{
+	"timeout_minutes": types.Int64Type,
+}
+
+var autoProvisioningGroupCapacitySpecificationAttrTypes = map[string]attr.Type{
+	"pay_as_you_go_capacity": types.StringType,
+	"pre_paid_capacity":      types.StringType,
+	"spot_capacity":          types.StringType,
+	"total_capacity":         types.StringType,
+}
+
 var autoProvisioningGroupLaunchTemplateConfigObjectType = types.ObjectType{AttrTypes: autoProvisioningGroupLaunchTemplateConfigAttrTypes}
 var autoProvisioningGroupTargetCapacitySpecificationObjectType = types.ObjectType{AttrTypes: autoProvisioningGroupTargetCapacitySpecificationAttrTypes}
 var autoProvisioningGroupSpotOptionsObjectType = types.ObjectType{AttrTypes: autoProvisioningGroupSpotOptionsAttrTypes}
 var autoProvisioningGroupPayAsYouGoOptionsObjectType = types.ObjectType{AttrTypes: autoProvisioningGroupPayAsYouGoOptionsAttrTypes}
+var autoProvisioningGroupCandidateOptionsObjectType = types.ObjectType{AttrTypes: autoProvisioningGroupCandidateOptionsAttrTypes}
+var autoProvisioningGroupCapacitySpecificationObjectType = types.ObjectType{AttrTypes: autoProvisioningGroupCapacitySpecificationAttrTypes}
 
 var autoProvisioningGroupAttrTypes = map[string]attr.Type{
 	"auto_provisioning_group_id":          types.StringType,
@@ -122,6 +135,9 @@ var autoProvisioningGroupAttrTypes = map[string]attr.Type{
 	"target_capacity_specification":       types.ListType{ElemType: autoProvisioningGroupTargetCapacitySpecificationObjectType},
 	"spot_options":                        types.ListType{ElemType: autoProvisioningGroupSpotOptionsObjectType},
 	"pay_as_you_go_options":               types.ListType{ElemType: autoProvisioningGroupPayAsYouGoOptionsObjectType},
+	"candidate_options":                   types.ListType{ElemType: autoProvisioningGroupCandidateOptionsObjectType},
+	"capacity_specification":              types.ListType{ElemType: autoProvisioningGroupCapacitySpecificationObjectType},
+	"suspended_processes":                 types.ListType{ElemType: types.StringType},
 }
 
 var autoProvisioningGroupObjectType = types.ObjectType{AttrTypes: autoProvisioningGroupAttrTypes}
@@ -176,9 +192,10 @@ func (d *autoProvisioningGroupsDataSource) Schema(ctx context.Context, req datas
 			"tags": schema.MapAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
-				Description: "A mapping of tags to filter by. Each entry is sent as a `Tag` filter. A maximum of 20 entries is allowed.",
+				Description: "A mapping of tags to filter by. Each entry is sent as a `Tag` filter. A maximum of 20 entries is allowed. A key must be 1 to 128 characters, must not start with `aliyun` or `acs:`, and must not contain a URL. A value may be empty, is limited to 128 characters and must not contain a URL.",
 				Validators: []validator.Map{
 					mapvalidator.SizeAtMost(20),
+					ecsFwTagMapValidator{allowEmptyValue: true},
 				},
 			},
 			"page_number": schema.Int64Attribute{
@@ -339,6 +356,9 @@ func autoProvisioningGroupObject(object map[string]interface{}) types.Object {
 		"target_capacity_specification":       autoProvisioningGroupTargetCapacitySpecification(object["TargetCapacitySpecification"]),
 		"spot_options":                        autoProvisioningGroupSpotOptions(object["SpotOptions"]),
 		"pay_as_you_go_options":               autoProvisioningGroupPayAsYouGoOptions(object["PayAsYouGoOptions"]),
+		"candidate_options":                   autoProvisioningGroupCandidateOptions(object["CandidateOptions"]),
+		"capacity_specification":              autoProvisioningGroupCapacitySpecification(object["CapacitySpecification"]),
+		"suspended_processes":                 autoProvisioningGroupSuspendedProcesses(object["SuspendedProcesses"]),
 	})
 }
 
@@ -411,4 +431,53 @@ func autoProvisioningGroupPayAsYouGoOptions(value interface{}) types.List {
 		"allocation_strategy": ecsFwString(options["AllocationStrategy"]),
 	}))
 	return types.ListValueMust(autoProvisioningGroupPayAsYouGoOptionsObjectType, elements)
+}
+
+func autoProvisioningGroupCandidateOptions(value interface{}) types.List {
+	elements := make([]attr.Value, 0)
+	options, ok := value.(map[string]interface{})
+	if !ok {
+		return types.ListValueMust(autoProvisioningGroupCandidateOptionsObjectType, elements)
+	}
+	elements = append(elements, types.ObjectValueMust(autoProvisioningGroupCandidateOptionsAttrTypes, map[string]attr.Value{
+		"timeout_minutes": ecsFwInt64(options["TimeoutMinutes"]),
+	}))
+	return types.ListValueMust(autoProvisioningGroupCandidateOptionsObjectType, elements)
+}
+
+func autoProvisioningGroupCapacitySpecification(value interface{}) types.List {
+	elements := make([]attr.Value, 0)
+	specification, ok := value.(map[string]interface{})
+	if !ok {
+		return types.ListValueMust(autoProvisioningGroupCapacitySpecificationObjectType, elements)
+	}
+	elements = append(elements, types.ObjectValueMust(autoProvisioningGroupCapacitySpecificationAttrTypes, map[string]attr.Value{
+		"pay_as_you_go_capacity": ecsFwString(specification["PayAsYouGoCapacity"]),
+		"pre_paid_capacity":      ecsFwString(specification["PrePaidCapacity"]),
+		"spot_capacity":          ecsFwString(specification["SpotCapacity"]),
+		"total_capacity":         ecsFwString(specification["TotalCapacity"]),
+	}))
+	return types.ListValueMust(autoProvisioningGroupCapacitySpecificationObjectType, elements)
+}
+
+func autoProvisioningGroupSuspendedProcesses(value interface{}) types.List {
+	elements := make([]attr.Value, 0)
+	container, ok := value.(map[string]interface{})
+	if !ok {
+		return types.ListValueMust(types.StringType, elements)
+	}
+	raw, ok := container["SuspendedProcess"]
+	if !ok {
+		return types.ListValueMust(types.StringType, elements)
+	}
+	list, ok := raw.([]interface{})
+	if !ok {
+		return types.ListValueMust(types.StringType, elements)
+	}
+	for _, entry := range list {
+		if process, ok := entry.(string); ok {
+			elements = append(elements, types.StringValue(process))
+		}
+	}
+	return types.ListValueMust(types.StringType, elements)
 }

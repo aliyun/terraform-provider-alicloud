@@ -2,7 +2,9 @@ package ecs
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -11,6 +13,45 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestUnitEcsFwInt64DecodesJSONNumber(t *testing.T) {
+	var decoded map[string]interface{}
+	decoder := json.NewDecoder(strings.NewReader(`{"InstancePoolsToUseCount":3,"InstanceAmount":2,"TotalCount":7,"Fractional":4.0}`))
+	decoder.UseNumber()
+	assert.NoError(t, decoder.Decode(&decoded))
+
+	assert.Equal(t, types.Int64Value(3), ecsFwInt64(decoded["InstancePoolsToUseCount"]))
+	assert.Equal(t, types.Int64Value(2), ecsFwInt64(decoded["InstanceAmount"]))
+	assert.Equal(t, types.Int64Value(7), ecsFwInt64(decoded["TotalCount"]))
+	assert.Equal(t, types.Int64Value(4), ecsFwInt64(decoded["Fractional"]))
+}
+
+func TestUnitEcsFwTagMapValidator(t *testing.T) {
+	assertTagMap := func(v ecsFwTagMapValidator, tags map[string]attr.Value, wantError bool) {
+		var response validator.MapResponse
+		v.ValidateMap(context.Background(), validator.MapRequest{
+			ConfigValue: types.MapValueMust(types.StringType, tags),
+			Path:        path.Root("tags"),
+		}, &response)
+		assert.Equal(t, wantError, response.Diagnostics.HasError(), "tags: %v", tags)
+	}
+
+	apg := ecsFwTagMapValidator{allowEmptyValue: true}
+	assertTagMap(apg, map[string]attr.Value{"env": types.StringValue("")}, false)
+	assertTagMap(apg, map[string]attr.Value{"env": types.StringValue("test")}, false)
+	assertTagMap(apg, map[string]attr.Value{"": types.StringValue("test")}, true)
+	assertTagMap(apg, map[string]attr.Value{"aliyun-tag": types.StringValue("test")}, true)
+	assertTagMap(apg, map[string]attr.Value{"acs:tag": types.StringValue("test")}, true)
+	assertTagMap(apg, map[string]attr.Value{"env": types.StringValue("https://example.com")}, true)
+	assertTagMap(apg, map[string]attr.Value{strings.Repeat("k", 129): types.StringValue("test")}, true)
+	assertTagMap(apg, map[string]attr.Value{"env": types.StringValue(strings.Repeat("v", 129))}, true)
+
+	reserved := ecsFwTagMapValidator{valueForbiddenPrefixes: []string{"acs:"}}
+	assertTagMap(reserved, map[string]attr.Value{"env": types.StringValue("")}, true)
+	assertTagMap(reserved, map[string]attr.Value{"env": types.StringValue("acs:reserved")}, true)
+	assertTagMap(reserved, map[string]attr.Value{"env": types.StringValue("http://example.com")}, true)
+	assertTagMap(reserved, map[string]attr.Value{"env": types.StringValue("test")}, false)
+}
 
 func TestUnitEcsImagePipelineExecutionsCollectPagesFollowsTokens(t *testing.T) {
 	var visited []string
@@ -61,19 +102,25 @@ func TestUnitEcsImagePipelineExecutionsCollectPagesFailsWhenBudgetExhausted(t *t
 func TestUnitEcsImagePipelineExecutionsStatusValidator(t *testing.T) {
 	v := imagePipelineExecutionsStatusValidator{}
 
-	var ok validator.StringResponse
-	v.ValidateString(context.Background(), validator.StringRequest{
-		ConfigValue: types.StringValue("SUCCESS, FAILED"),
-		Path:        path.Root("status"),
-	}, &ok)
-	assert.False(t, ok.Diagnostics.HasError())
+	validate := func(value string) bool {
+		var response validator.StringResponse
+		v.ValidateString(context.Background(), validator.StringRequest{
+			ConfigValue: types.StringValue(value),
+			Path:        path.Root("status"),
+		}, &response)
+		return response.Diagnostics.HasError()
+	}
 
-	var bad validator.StringResponse
-	v.ValidateString(context.Background(), validator.StringRequest{
-		ConfigValue: types.StringValue("SUCCESS,not-a-status"),
-		Path:        path.Root("status"),
-	}, &bad)
-	assert.True(t, bad.Diagnostics.HasError())
+	assert.False(t, validate("SUCCESS, FAILED"))
+	assert.False(t, validate("SUCCESS"))
+	assert.False(t, validate(""), "an empty value means every status and is allowed")
+	assert.True(t, validate(" "))
+	assert.True(t, validate(","))
+	assert.True(t, validate(" , "))
+	assert.True(t, validate("SUCCESS,"))
+	assert.True(t, validate(",SUCCESS"))
+	assert.True(t, validate("SUCCESS,,FAILED"))
+	assert.True(t, validate("SUCCESS,not-a-status"))
 }
 
 func TestUnitEcsImagePipelineExecutionsNormalizedStatus(t *testing.T) {
@@ -89,7 +136,7 @@ func TestUnitEcsImagePipelineExecutionObject(t *testing.T) {
 		"CreationTime":    "2026-11-05T10:00:00Z",
 		"Tags": map[string]interface{}{
 			"Tag": []interface{}{
-				map[string]interface{}{"Key": "env", "Value": "test"},
+				map[string]interface{}{"TagKey": "env", "TagValue": "test"},
 			},
 		},
 	})
@@ -129,7 +176,19 @@ func TestUnitEcsAutoProvisioningGroupsObject(t *testing.T) {
 		},
 		"SpotOptions": map[string]interface{}{
 			"AllocationStrategy":      "lowest-price",
-			"InstancePoolsToUseCount": 3,
+			"InstancePoolsToUseCount": json.Number("3"),
+		},
+		"CandidateOptions": map[string]interface{}{
+			"TimeoutMinutes": json.Number("60"),
+		},
+		"CapacitySpecification": map[string]interface{}{
+			"PayAsYouGoCapacity": json.Number("2"),
+			"PrePaidCapacity":    json.Number("0"),
+			"SpotCapacity":       json.Number("3"),
+			"TotalCapacity":      json.Number("5"),
+		},
+		"SuspendedProcesses": map[string]interface{}{
+			"SuspendedProcess": []interface{}{"ScaleOut"},
 		},
 	})
 
@@ -158,22 +217,53 @@ func TestUnitEcsAutoProvisioningGroupsObject(t *testing.T) {
 		assert.Equal(t, types.StringValue("lowest-price"), spotAttributes["allocation_strategy"])
 		assert.Equal(t, types.Int64Value(3), spotAttributes["instance_pools_to_use_count"])
 	}
+
+	candidateOptions, ok := attributes["candidate_options"].(types.List)
+	if assert.True(t, ok) && assert.Len(t, candidateOptions.Elements(), 1) {
+		candidateAttributes := candidateOptions.Elements()[0].(types.Object).Attributes()
+		assert.Equal(t, types.Int64Value(60), candidateAttributes["timeout_minutes"])
+	}
+
+	capacitySpecification, ok := attributes["capacity_specification"].(types.List)
+	if assert.True(t, ok) && assert.Len(t, capacitySpecification.Elements(), 1) {
+		capacityAttributes := capacitySpecification.Elements()[0].(types.Object).Attributes()
+		assert.Equal(t, types.StringValue("2"), capacityAttributes["pay_as_you_go_capacity"])
+		assert.Equal(t, types.StringValue("0"), capacityAttributes["pre_paid_capacity"])
+		assert.Equal(t, types.StringValue("3"), capacityAttributes["spot_capacity"])
+		assert.Equal(t, types.StringValue("5"), capacityAttributes["total_capacity"])
+	}
+
+	suspendedProcesses, ok := attributes["suspended_processes"].(types.List)
+	if assert.True(t, ok) && assert.Len(t, suspendedProcesses.Elements(), 1) {
+		assert.Equal(t, types.StringValue("ScaleOut"), suspendedProcesses.Elements()[0])
+	}
 }
 
 func TestUnitEcsReservedInstanceObject(t *testing.T) {
 	object := reservedInstanceObject(map[string]interface{}{
 		"ReservedInstanceId":   "ri-1",
 		"ReservedInstanceName": "example",
-		"InstanceAmount":       2,
+		"InstanceAmount":       json.Number("2"),
 		"Status":               "Active",
-		"Scope":                "Region",
+		"Scope":                "region",
+		"OperationLocks": map[string]interface{}{
+			"OperationLock": []interface{}{
+				map[string]interface{}{"LockReason": "security"},
+			},
+		},
 	})
 
 	attributes := object.Attributes()
 	assert.Equal(t, types.StringValue("ri-1"), attributes["reserved_instance_id"])
 	assert.Equal(t, types.Int64Value(2), attributes["instance_amount"])
 	assert.Equal(t, types.StringValue("Active"), attributes["status"])
-	assert.Equal(t, types.StringValue("Region"), attributes["scope"])
+	assert.Equal(t, types.StringValue("region"), attributes["scope"])
+
+	operationLocks, ok := attributes["operation_locks"].(types.List)
+	if assert.True(t, ok) && assert.Len(t, operationLocks.Elements(), 1) {
+		lockAttributes := operationLocks.Elements()[0].(types.Object).Attributes()
+		assert.Equal(t, types.StringValue("security"), lockAttributes["lock_reason"])
+	}
 }
 
 func TestUnitEcsAutoProvisioningGroupsCollectPagesStopsAtTotalCount(t *testing.T) {

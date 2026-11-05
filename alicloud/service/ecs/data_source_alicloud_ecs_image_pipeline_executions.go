@@ -88,7 +88,10 @@ var imagePipelineExecutionAttrTypes = map[string]attr.Type{
 var imagePipelineExecutionObjectType = types.ObjectType{AttrTypes: imagePipelineExecutionAttrTypes}
 
 // imagePipelineExecutionsStatusValidator accepts the comma separated multi
-// value form documented for Status and rejects any token outside the enum.
+// value form documented for Status and rejects any token outside the enum. An
+// explicitly empty value keeps the documented "all statuses" meaning, but a
+// non-empty value must not carry empty tokens: dropping them would silently
+// widen the query to every status.
 type imagePipelineExecutionsStatusValidator struct{}
 
 func (v imagePipelineExecutionsStatusValidator) Description(context.Context) string {
@@ -103,10 +106,28 @@ func (v imagePipelineExecutionsStatusValidator) ValidateString(ctx context.Conte
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
-	for _, token := range strings.Split(req.ConfigValue.ValueString(), ",") {
+	raw := req.ConfigValue.ValueString()
+	if raw == "" {
+		// An omitted status is documented to query every status.
+		return
+	}
+	if strings.TrimSpace(raw) == "" {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid Status",
+			"The status must not be blank; omit it to query every status.",
+		)
+		return
+	}
+	for _, token := range strings.Split(raw, ",") {
 		token = strings.TrimSpace(token)
 		if token == "" {
-			continue
+			resp.Diagnostics.AddAttributeError(
+				req.Path,
+				"Invalid Status",
+				"Every comma separated status must be non-empty; omit the attribute to query every status.",
+			)
+			return
 		}
 		valid := false
 		for _, status := range imagePipelineExecutionStatuses {

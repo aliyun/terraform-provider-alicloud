@@ -15,7 +15,7 @@ For information about the API and its fields, see [DescribeReservedInstances](ht
 
 -> **NOTE:** Available since v2.3.0.
 
--> **NOTE:** The data source reads every page returned by `DescribeReservedInstances`, so the result is complete regardless of the number of reserved instances. The `operation_locks` member of the API response is not exported.
+-> **NOTE:** The data source reads every page returned by `DescribeReservedInstances`, so the result is complete regardless of the number of reserved instances.
 
 ## Example Usage
 
@@ -52,7 +52,7 @@ The following arguments are supported:
 * `offering_type` - (Optional, String) The payment type. Valid values: `No Upfront`, `Partial Upfront` and `All Upfront`.
 * `allocation_type` - (Optional, String) The allocation type. Valid values: `Normal` and `Shared`. Defaults to `Normal` on the server side.
 * `status` - (Optional, List of String) A list of statuses to filter by. A maximum of 100 entries is allowed. Valid values: `Creating`, `Active`, `Retired`, `Updating` and `Expired`.
-* `tags` - (Optional, Map of String) A mapping of tags to filter by. A maximum of 20 entries is allowed.
+* `tags` - (Optional, Map of String) A mapping of tags to filter by. A maximum of 20 entries is allowed. A key and a value must be 1 to 128 characters; a key must not start with `aliyun` or `acs:`, a value must not start with `acs:`, and neither may contain `http://` or `https://`.
 * `page_number` - (Optional, Int) The number of the first page to read. Valid values: `1` or greater. Defaults to `1`.
 * `page_size` - (Optional, Int) The number of entries per page. Valid values: `1` to `100`. Defaults to `100`.
 
@@ -74,10 +74,12 @@ The following attributes are exported in addition to the arguments listed above:
   * `instance_amount` - (Int) The number of instances that the reserved instance covers.
   * `region_id` - (String) The ID of the region.
   * `zone_id` - (String) The ID of the zone.
-  * `scope` - (String) The scope of the reserved instance. Valid values: `Region` and `Zone`.
+  * `scope` - (String) The scope of the reserved instance as returned by the service, for example `region`. Use the request-side `scope` values `Region` and `Zone` when filtering.
   * `platform` - (String) The platform of the instances covered by the reserved instance, for example `Linux` or `Windows`.
   * `offering_type` - (String) The payment type. Valid values: `No Upfront`, `Partial Upfront` and `All Upfront`.
   * `allocation_status` - (String) The allocation status of the reserved instance. This value is meaningful only when `allocation_type` is `Shared`. Valid values: `allocated` (allocated to another user) and `beAllocated` (allocated by another user).
   * `description` - (String) The description of the reserved instance.
   * `resource_group_id` - (String) The ID of the resource group.
+  * `operation_locks` - (List of Object) The locks applied to the reserved instance. Each element contains:
+    * `lock_reason` - (String) The reason why the reserved instance is locked. Valid values: `financial` and `security`.
   * `tags` - (Map of String) A mapping of tags.

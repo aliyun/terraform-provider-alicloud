@@ -69,6 +69,12 @@ type reservedInstancesModel struct {
 	Instances            types.List   `tfsdk:"instances"`
 }
 
+var reservedInstanceOperationLockAttrTypes = map[string]attr.Type{
+	"lock_reason": types.StringType,
+}
+
+var reservedInstanceOperationLockObjectType = types.ObjectType{AttrTypes: reservedInstanceOperationLockAttrTypes}
+
 var reservedInstanceAttrTypes = map[string]attr.Type{
 	"reserved_instance_id":   types.StringType,
 	"reserved_instance_name": types.StringType,
@@ -86,6 +92,7 @@ var reservedInstanceAttrTypes = map[string]attr.Type{
 	"allocation_status":      types.StringType,
 	"description":            types.StringType,
 	"resource_group_id":      types.StringType,
+	"operation_locks":        types.ListType{ElemType: reservedInstanceOperationLockObjectType},
 	"tags":                   types.MapType{ElemType: types.StringType},
 }
 
@@ -168,9 +175,10 @@ func (d *reservedInstancesDataSource) Schema(ctx context.Context, req datasource
 			"tags": schema.MapAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
-				Description: "A mapping of tags to filter by. Each entry is sent as a `Tag` filter. A maximum of 20 entries is allowed.",
+				Description: "A mapping of tags to filter by. Each entry is sent as a `Tag` filter. A maximum of 20 entries is allowed. A key and a value must be 1 to 128 characters; a key must not start with `aliyun` or `acs:`, a value must not start with `acs:`, and neither may contain a URL.",
 				Validators: []validator.Map{
 					mapvalidator.SizeAtMost(20),
+					ecsFwTagMapValidator{valueForbiddenPrefixes: []string{"acs:"}},
 				},
 			},
 			"page_number": schema.Int64Attribute{
@@ -199,7 +207,7 @@ func (d *reservedInstancesDataSource) Schema(ctx context.Context, req datasource
 			"instances": schema.ListAttribute{
 				Computed:    true,
 				ElementType: reservedInstanceObjectType,
-				Description: "A list of reserved instances that match the configured filters. The `operation_locks` member of the API response is not exported.",
+				Description: "A list of reserved instances that match the configured filters.",
 			},
 		},
 	}
@@ -350,6 +358,33 @@ func reservedInstanceObject(object map[string]interface{}) types.Object {
 		"allocation_status":      ecsFwString(object["AllocationStatus"]),
 		"description":            ecsFwString(object["Description"]),
 		"resource_group_id":      ecsFwString(object["ResourceGroupId"]),
+		"operation_locks":        reservedInstanceOperationLocks(object["OperationLocks"]),
 		"tags":                   ecsFwTagsValue(object["Tags"]),
 	})
+}
+
+func reservedInstanceOperationLocks(value interface{}) types.List {
+	elements := make([]attr.Value, 0)
+	container, ok := value.(map[string]interface{})
+	if !ok {
+		return types.ListValueMust(reservedInstanceOperationLockObjectType, elements)
+	}
+	raw, ok := container["OperationLock"]
+	if !ok {
+		return types.ListValueMust(reservedInstanceOperationLockObjectType, elements)
+	}
+	list, ok := raw.([]interface{})
+	if !ok {
+		return types.ListValueMust(reservedInstanceOperationLockObjectType, elements)
+	}
+	for _, entry := range list {
+		lock, ok := entry.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		elements = append(elements, types.ObjectValueMust(reservedInstanceOperationLockAttrTypes, map[string]attr.Value{
+			"lock_reason": ecsFwString(lock["LockReason"]),
+		}))
+	}
+	return types.ListValueMust(reservedInstanceOperationLockObjectType, elements)
 }

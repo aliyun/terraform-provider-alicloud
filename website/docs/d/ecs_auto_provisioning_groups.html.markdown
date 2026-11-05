@@ -47,7 +47,7 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, String) The ID of the resource group to which the auto provisioning group belongs.
 * `status` - (Optional, List of String) A list of statuses to filter by. A maximum of 10 entries is allowed. Valid values: `submitted`, `active`, `deleted`, `delete-running` and `modifying`.
 * `types` - (Optional, List of String) A list of auto provisioning group types to filter by. A maximum of 10 entries is allowed. Valid values: `request`, `maintain` and `candidate`.
-* `tags` - (Optional, Map of String) A mapping of tags to filter by. A maximum of 20 entries is allowed.
+* `tags` - (Optional, Map of String) A mapping of tags to filter by. A maximum of 20 entries is allowed. A key must be 1 to 128 characters, must not start with `aliyun` or `acs:`, and must not contain `http://` or `https://`. A value may be empty, is limited to 128 characters and must not contain `http://` or `https://`.
 * `page_number` - (Optional, Int) The number of the first page to read. Valid values: `1` or greater. Defaults to `1`.
 * `page_size` - (Optional, Int) The number of entries per page. Valid values: `1` to `100`. Defaults to `100`.
 
@@ -70,9 +70,9 @@ The following attributes are exported in addition to the arguments listed above:
   * `launch_template_version` - (String) The version of the launch template.
   * `valid_from` - (String) The time when the auto provisioning group takes effect, in UTC and formatted as `2026-11-05T10:00:00Z`.
   * `valid_until` - (String) The time when the auto provisioning group expires, in UTC and formatted as `2026-11-05T10:00:00Z`.
-  * `terminate_instances` - (Bool) Whether instances of the auto provisioning group are released.
-  * `terminate_instances_with_expiration` - (Bool) Whether preemptible instances are shut down when the auto provisioning group expires.
-  * `excess_capacity_termination_policy` - (String) The shutdown policy for excess preemptible instances. Valid values: `no-termination` and `termination`.
+  * `terminate_instances` - (Bool) Whether the instances in the auto provisioning group are released when the group is deleted. When `false`, the instances are retained.
+  * `terminate_instances_with_expiration` - (Bool) Whether the instances in the auto provisioning group are released when the group expires. When `false`, the instances are only removed from the group and are not released.
+  * `excess_capacity_termination_policy` - (String) The policy applied when the current capacity exceeds the target capacity and a scale-in is triggered. `termination` releases the scaled-in instances; `no-termination` only removes them from the auto provisioning group without releasing them. Valid values: `no-termination` and `termination`.
   * `max_spot_price` - (String) The global maximum price for preemptible instances, as returned by the service.
   * `creation_time` - (String) The time when the auto provisioning group was created, in UTC and formatted as `2026-11-05T10:00:00Z`.
   * `tags` - (Map of String) A mapping of tags.
@@ -93,3 +93,11 @@ The following attributes are exported in addition to the arguments listed above:
     * `instance_pools_to_use_count` - (Int) The number of instance pools to use when the strategy is `lowest-price`.
   * `pay_as_you_go_options` - (List of Object) A single-element list with the pay-as-you-go options. Each element contains:
     * `allocation_strategy` - (String) The scale-out policy. Valid values: `lowest-price` and `prioritized`.
+  * `candidate_options` - (List of Object) A single-element list with the candidate auto provisioning group options. Each element contains:
+    * `timeout_minutes` - (Int) The timeout, in minutes, that the group tries to reach the target capacity.
+  * `capacity_specification` - (List of Object) A single-element list with the current capacity distribution of the group. Each element contains:
+    * `pay_as_you_go_capacity` - (String) The current capacity of pay-as-you-go instances.
+    * `pre_paid_capacity` - (String) The current capacity of subscription instances.
+    * `spot_capacity` - (String) The current capacity of preemptible instances.
+    * `total_capacity` - (String) The current total capacity of the group.
+  * `suspended_processes` - (List of String) The processes that are suspended for the group. Valid values: `ScaleIn` and `ScaleOut`.
