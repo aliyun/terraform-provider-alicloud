@@ -49,7 +49,7 @@ resource "alicloud_slb_listener" "tcp" {
 }
 
 data "alicloud_slb_listeners" "sample_ds" {
-  load_balancer_id = alicloud_slb_load_balancer.default.id
+  load_balancer_id = alicloud_slb_listener.tcp.load_balancer_id
 }
 
 output "first_slb_listener_protocol" {
