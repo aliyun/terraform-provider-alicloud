@@ -309,7 +309,7 @@ func (r *vvpNamespaceResource) Create(ctx context.Context, req resource.CreateRe
 		// stops with an explicit uncertain-result diagnostic and leaves the object out of state.
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: the create result is uncertain", vvpNamespaceTypeName),
-			fmt.Sprintf("CreateNamespace failed with %v, and %s now exists. The provider cannot prove the namespace was created by this request (the product exposes no request correlation or idempotency token), so it was not adopted. If it belongs to this configuration, import it with `terraform import %s %s`; otherwise remove it and retry.", err, id, vvpNamespaceTypeName, id),
+			fmt.Sprintf("CreateNamespace failed with %v, and a namespace with the identity %s now exists. Realtime Compute exposes no request correlation or idempotency token, so the provider cannot prove this request created it, and the namespace was left out of Terraform state. Do not delete or reuse it until its ownership is clear: check with the workspace owner whether this namespace belongs to your configuration (who created it and what it is used for). If it is yours, import it with `terraform import %s.<resource_label> %s`. If it belongs to another operator or to a concurrent request, coordinate with its owner or choose a different namespace name and apply again.", err, id, vvpNamespaceTypeName, id),
 		)
 		return
 	}

@@ -3,6 +3,7 @@ package connectivity
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	roaCS "github.com/alibabacloud-go/cs-20151215/v8/client"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	roa "github.com/alibabacloud-go/tea-roa/client"
+	rpcutil "github.com/alibabacloud-go/tea-rpc-utils/service"
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	utilV2 "github.com/alibabacloud-go/tea-utils/v2/service"
@@ -2672,77 +2674,165 @@ func (client *AliyunClient) RpcGet(apiProductCode string, apiVersion string, api
 }
 
 func (client *AliyunClient) rpcRequest(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
-	return client.rpcRequestWithTimeouts(method, apiProductCode, apiVersion, apiName, query, body, autoRetry, endpoint, nil)
+	return client.rpcRequestWithTimeouts(method, apiProductCode, apiVersion, apiName, query, body, autoRetry, endpoint)
 }
 
-// rpcAttemptTimeoutCap bounds one RPC attempt issued through the context-aware entry points. The
-// transport cannot be cancelled directly, so this cap is what makes a cancelled in-flight request
-// end promptly; the caller's retry loop remains the only retry owner.
-const rpcAttemptTimeoutCap = 20 * time.Second
+// contextRpcHTTPClient is used by the context-aware RPC entry points. The request is handed to the
+// transport with the lifecycle context attached, so cancelling the Terraform operation closes the
+// connection in flight; the client itself carries no timeout because the context owns the budget.
+var contextRpcHTTPClient = &http.Client{
+	Transport: &http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           (&net.Dialer{Timeout: 15 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	},
+}
 
-// RpcPostWithContext invokes a POST RPC that belongs to a Terraform operation budget. Unlike RpcPost
-// the HTTP attempt is bounded by ctx: the SDK read/connect timeouts of this request are clipped to
-// the remaining deadline, and a cancelled ctx returns as soon as it fires instead of leaving the
-// socket running until the client-wide timeout.
-func (client *AliyunClient) RpcPostWithContext(ctx context.Context, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
-	return client.rpcRequestWithContext(ctx, "POST", apiProductCode, apiVersion, apiName, query, body, autoRetry)
+// RpcPostWithContext invokes a POST RPC that belongs to a Terraform operation budget. The request is
+// serialized and signed here instead of going through the legacy SDK entry point because that path
+// builds its http.Request without a context: only this form lets cancellation reach the socket in
+// flight and lets the operation deadline bound the request. Retrying stays with the caller, so a
+// cancelled lifecycle never issues another request.
+func (client *AliyunClient) RpcPostWithContext(ctx context.Context, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}) (map[string]interface{}, error) {
+	return client.rpcRequestWithContext(ctx, "POST", apiProductCode, apiVersion, apiName, query, body)
 }
 
 // RpcGetWithContext is the GET variant of RpcPostWithContext.
-func (client *AliyunClient) RpcGetWithContext(ctx context.Context, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
-	return client.rpcRequestWithContext(ctx, "GET", apiProductCode, apiVersion, apiName, query, body, autoRetry)
+func (client *AliyunClient) RpcGetWithContext(ctx context.Context, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}) (map[string]interface{}, error) {
+	return client.rpcRequestWithContext(ctx, "GET", apiProductCode, apiVersion, apiName, query, body)
 }
 
-// rpcRequestWithContext runs one bounded RPC attempt. The request runs in its own goroutine so a
-// lifecycle cancellation returns immediately; the per-attempt timeout keeps that goroutine from
-// outliving the operation when only the deadline passes.
-func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
+// rpcRequestWithContext performs one signed RPC attempt whose HTTP request carries ctx. The RPC
+// envelope mirrors the tea-rpc client (Action/Format/Timestamp/Version/SignatureNonce, HMAC-SHA1
+// signature over query and form body, x-acs-* headers) so the wire format is unchanged; only the
+// context handling differs.
+func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}) (map[string]interface{}, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	var timeoutMillis *int
-	if deadline, ok := ctx.Deadline(); ok {
-		remaining := time.Until(deadline)
-		if remaining <= 0 {
-			return nil, context.DeadlineExceeded
-		}
-		// The SDK cannot attach a context to the HTTP request, so the attempt is bounded by a short
-		// slice instead of the whole remaining budget: after a cancellation the already-issued
-		// request ends within this bound, and the caller's retry loop decides whether to issue
-		// another one (it stops as soon as the lifecycle context is done).
-		if remaining > rpcAttemptTimeoutCap {
-			remaining = rpcAttemptTimeoutCap
-		}
-		millis := int(remaining / time.Millisecond)
-		if millis < 1 {
-			millis = 1
-		}
-		timeoutMillis = &millis
+	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
+	endpoint, err := client.loadApiEndpoint(apiProductCode)
+	if err != nil {
+		return nil, err
 	}
-	type answer struct {
-		response map[string]interface{}
-		err      error
+	credential, err := client.config.Credential.GetCredential()
+	if err != nil || credential == nil {
+		return nil, fmt.Errorf("get credential failed. Error: %#v", err)
 	}
-	done := make(chan answer, 1)
-	go func() {
-		response, err := client.rpcRequestWithTimeouts(method, apiProductCode, apiVersion, apiName, query, body, autoRetry, "", timeoutMillis)
-		done <- answer{response: response, err: err}
-	}()
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case result := <-done:
-		return result.response, result.err
+
+	cfg := client.teaSdkConfig
+	protocol := "https"
+	if value := tea.StringValue(cfg.Protocol); value != "" {
+		protocol = strings.ToLower(value)
 	}
+	method = strings.ToUpper(method)
+	requestQuery, err := rpcutil.FlattenParams(tea.ToMap(map[string]interface{}{
+		"Action":         apiName,
+		"Format":         "json",
+		"Timestamp":      rpcutil.GetTimestamp(),
+		"Version":        apiVersion,
+		"SignatureNonce": util.GetNonce(),
+	}, query))
+	if err != nil {
+		return nil, err
+	}
+	if value := tea.StringValue(cfg.SourceIp); value != "" {
+		requestQuery["SourceIp"] = tea.String(value)
+	}
+	if value := tea.StringValue(cfg.SecureTransport); value != "" {
+		requestQuery["SecureTransport"] = tea.String(value)
+	}
+	var bodyParams map[string]*string
+	formBody := ""
+	if body != nil {
+		bodyParams, err = rpcutil.FlattenParams(body)
+		if err != nil {
+			return nil, err
+		}
+		values := url.Values{}
+		for key, value := range bodyParams {
+			values.Add(key, tea.StringValue(value))
+		}
+		formBody = values.Encode()
+	}
+	if value := tea.StringValue(credential.SecurityToken); value != "" {
+		requestQuery["SecurityToken"] = tea.String(value)
+	}
+	requestQuery["SignatureMethod"] = tea.String("HMAC-SHA1")
+	requestQuery["SignatureVersion"] = tea.String("1.0")
+	requestQuery["AccessKeyId"] = credential.AccessKeyId
+	requestQuery["Signature"] = rpcutil.GetSignatureV1(tea.Merge(requestQuery, bodyParams), tea.String(method), credential.AccessKeySecret)
+
+	values := url.Values{}
+	for key, value := range requestQuery {
+		values.Add(key, tea.StringValue(value))
+	}
+	requestURL := fmt.Sprintf("%s://%s/?%s", protocol, endpoint, values.Encode())
+	var bodyReader io.Reader
+	if formBody != "" {
+		bodyReader = strings.NewReader(formBody)
+	}
+	httpRequest, err := http.NewRequestWithContext(ctx, method, requestURL, bodyReader)
+	if err != nil {
+		return nil, err
+	}
+	httpRequest.Host = endpoint
+	httpRequest.Header.Set("x-acs-version", apiVersion)
+	httpRequest.Header.Set("x-acs-action", apiName)
+	if value := tea.StringValue(cfg.UserAgent); value != "" {
+		httpRequest.Header.Set("User-Agent", value)
+	}
+	if formBody != "" {
+		httpRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}
+
+	response, err := contextRpcHTTPClient.Do(httpRequest)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	decoded, err := util.ReadAsJSON(response.Body)
+	if err != nil {
+		return nil, err
+	}
+	result := util.AssertAsMap(decoded)
+	headers := make(map[string]*string, len(response.Header))
+	for key := range response.Header {
+		headers[key] = tea.String(response.Header.Get(key))
+	}
+	result["_headers"] = headers
+	if response.StatusCode >= http.StatusBadRequest {
+		return nil, formatError(result, tea.NewSDKError(map[string]interface{}{
+			"code":       rpcResponseField(result, "Code", "code"),
+			"statusCode": response.StatusCode,
+			"message": fmt.Sprintf("code: %d, %s request id: %s", response.StatusCode,
+				rpcResponseField(result, "Message", "message"), rpcResponseField(result, "RequestId", "requestId")),
+			"data": result,
+		}))
+	}
+	return result, formatError(result, nil)
 }
 
-// rpcRequestWithTimeouts runs one RPC attempt. When timeoutMillis is set, the SDK applies it to the
-// HTTP read and connect timeouts of this attempt only, so a caller that owns a Terraform operation
-// budget can stop an in-flight request at its deadline instead of the client-wide default.
-func (client *AliyunClient) rpcRequestWithTimeouts(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string, timeoutMillis *int) (map[string]interface{}, error) {
+// rpcResponseField returns the first populated field among the given response keys, covering the
+// PascalCase and lowerCamelCase spellings products use in their error envelopes.
+func rpcResponseField(response map[string]interface{}, keys ...string) string {
+	for _, key := range keys {
+		if value, ok := response[key]; ok && value != nil {
+			return fmt.Sprint(value)
+		}
+	}
+	return ""
+}
+
+// rpcRequestWithTimeouts runs one RPC attempt through the legacy SDK entry point.
+func (client *AliyunClient) rpcRequestWithTimeouts(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
 	var err error
 	if endpoint == "" {
 		apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
@@ -2766,10 +2856,6 @@ func (client *AliyunClient) rpcRequestWithTimeouts(method string, apiProductCode
 	}
 	runtime := &util.RuntimeOptions{}
 	runtime.SetAutoretry(autoRetry)
-	if timeoutMillis != nil && *timeoutMillis > 0 {
-		runtime.SetReadTimeout(*timeoutMillis)
-		runtime.SetConnectTimeout(*timeoutMillis)
-	}
 	response, err := conn.DoRequest(tea.String(apiName), nil, tea.String(method), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
 	return response, formatError(response, err)
 }

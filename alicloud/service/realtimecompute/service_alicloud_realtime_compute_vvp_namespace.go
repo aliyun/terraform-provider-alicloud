@@ -28,13 +28,12 @@ import (
 )
 
 // retryRpcPost runs the write call through the shared context-aware retry path, so cancelling the
-// Terraform lifecycle aborts the backoff instead of continuing to send requests. Each attempt also
-// carries the remaining operation deadline into the HTTP layer, and the SDK's own retry loop is
-// disabled: this wrapper is the only retry owner, so a cancellation stops both the attempt in
-// flight (at its bounded timeout) and every later retry or duplicate write.
+// Terraform lifecycle aborts the backoff instead of continuing to send requests. Each attempt sends
+// the lifecycle context into the HTTP request itself, so cancellation also ends the socket in
+// flight; this wrapper is the only retry owner, so no later retry or duplicate write is sent either.
 func retryRpcPost(ctx context.Context, client *connectivity.AliyunClient, product, version, action string, request map[string]interface{}, timeout time.Duration) (map[string]interface{}, error) {
 	return helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
-		return client.RpcPostWithContext(ctx, product, version, action, nil, request, false)
+		return client.RpcPostWithContext(ctx, product, version, action, nil, request)
 	}, timeout, vvpNamespaceRetryable)
 }
 
@@ -43,7 +42,7 @@ func retryRpcPost(ctx context.Context, client *connectivity.AliyunClient, produc
 // with the write calls.
 func retryRpcGet(ctx context.Context, client *connectivity.AliyunClient, product, version, action string, request map[string]interface{}, timeout time.Duration) (map[string]interface{}, error) {
 	return helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
-		return client.RpcGetWithContext(ctx, product, version, action, request, nil, false)
+		return client.RpcGetWithContext(ctx, product, version, action, request, nil)
 	}, timeout, vvpNamespaceRetryable)
 }
 
@@ -200,6 +199,7 @@ func vvpNamespaceGetWithTimeout(ctx context.Context, client *connectivity.Aliyun
 	if len(parts) > 1 {
 		identities = append(identities, fwadapt.ReadIdentity{Path: "$.Namespace", Value: parts[1], AllowMissing: false})
 	}
+	seenRows := 0
 	for page := 1; page <= vvpNamespaceDescribeMaxPages; page++ {
 		getValues["InstanceId"] = instanceId
 		if len(parts) > 1 {
@@ -233,6 +233,7 @@ func vvpNamespaceGetWithTimeout(ctx context.Context, client *connectivity.Aliyun
 		if rowsErr != nil {
 			return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: %w", id, rowsErr)
 		}
+		seenRows += len(rows)
 		inner, identityErr := fwadapt.SelectReadObject(rows, identities)
 		if identityErr != nil {
 			return nil, fmt.Errorf("selecting DescribeNamespaces resource: %w", identityErr)
@@ -248,99 +249,112 @@ func vvpNamespaceGetWithTimeout(ctx context.Context, client *connectivity.Aliyun
 		if inner != nil {
 			return vvpNamespaceCompleteRead(client, inner, id, completeRead)
 		}
-		totalPage, totalPageErr := vvpNamespaceTotalPage(response)
-		if totalPageErr != nil {
-			// An unreadable or contradictory page count means the search cannot be proven complete.
+		complete, completeErr := vvpNamespaceSearchComplete(response, page, len(rows), seenRows)
+		if completeErr != nil {
+			// An unreadable or contradictory page shape means the search cannot be proven complete.
 			// Reporting not-found here would remove a live namespace from state.
-			return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: %w", id, totalPageErr)
+			return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: %w", id, completeErr)
 		}
-		if totalPage == 0 {
-			// Legacy responses without pagination metadata: a full page cannot prove absence.
-			if len(rows) >= vvpNamespaceDescribePageSize {
-				return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: the response carries no page count and returned a full page of %d namespaces, so absence cannot be proven", id, len(rows))
-			}
-			return nil, nil
-		}
-		if page >= totalPage {
+		if complete {
 			return nil, nil
 		}
 	}
 	return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: the namespace was not found within %d DescribeNamespaces pages", id, vvpNamespaceDescribeMaxPages)
 }
 
-// vvpNamespaceTotalPage reads the reported page count of a DescribeNamespaces response. A value of
-// zero means the response carries no page metadata at all (the legacy single-page shape), which the
-// caller only accepts while the page is not full. An unreadable or contradictory count is an error:
-// silently treating it as one page would turn an incomplete search into a false not-found and drop
-// the namespace from state.
-func vvpNamespaceTotalPage(response map[string]interface{}) (int, error) {
-	raw, present := response["TotalPage"]
-	if !present || raw == nil {
-		return 0, nil
+// vvpNamespaceSearchComplete reports whether a DescribeNamespaces page proves that the requested
+// identity is not in the collection. Absence only counts once the search is complete:
+//   - with a page count, this must be the last page, and the page count has to be able to cover the
+//     reported total (a positive TotalPage that contradicts TotalCount/PageSize is incomplete);
+//   - without a page count (the legacy single-page shape), the page must not be full and the reported
+//     total must not exceed the rows read so far.
+//
+// Anything else keeps the walk going. An unreadable or contradictory field is an error so an
+// incomplete search never turns into a not-found that removes a live namespace from state.
+func vvpNamespaceSearchComplete(response map[string]interface{}, page int, pageRows int, seenRows int) (bool, error) {
+	totalPage, hasTotalPage, err := vvpNamespaceIntField(response, "TotalPage")
+	if err != nil {
+		return false, err
 	}
-	var parsed int
+	totalCount, hasTotalCount, err := vvpNamespaceIntField(response, "TotalCount")
+	if err != nil {
+		return false, err
+	}
+	pageSize, hasPageSize, err := vvpNamespaceIntField(response, "PageSize")
+	if err != nil {
+		return false, err
+	}
+	if hasTotalPage {
+		if totalPage == 0 {
+			if seenRows > 0 {
+				return false, fmt.Errorf("the response returned %d namespace(s) but TotalPage is 0", seenRows)
+			}
+			if hasTotalCount && totalCount > 0 {
+				return false, fmt.Errorf("the response reports %d namespaces but TotalPage is 0", totalCount)
+			}
+			return true, nil
+		}
+		if hasTotalCount && totalCount > seenRows && page >= totalPage {
+			return false, fmt.Errorf("the response reports %d namespaces but only %d namespace(s) were read across %d page(s) with TotalPage %d", totalCount, seenRows, page, totalPage)
+		}
+		if hasTotalCount && hasPageSize && pageSize > 0 && totalCount > totalPage*pageSize {
+			return false, fmt.Errorf("the response reports %d namespaces but TotalPage %d with PageSize %d cannot cover them", totalCount, totalPage, pageSize)
+		}
+		return page >= totalPage, nil
+	}
+	// No page count. A full page, or a reported total above what has been read, leaves the search
+	// open; only a short page without a matching total proves absence.
+	effectivePageSize := vvpNamespaceDescribePageSize
+	if hasPageSize && pageSize > 0 {
+		effectivePageSize = pageSize
+	}
+	if hasTotalCount && totalCount > seenRows {
+		return false, nil
+	}
+	if pageRows >= effectivePageSize {
+		return false, nil
+	}
+	return true, nil
+}
+
+// vvpNamespaceIntField reads an optional non-negative integer field from a DescribeNamespaces
+// response. A missing or null field reports present=false; a mistyped, non-integral or negative value
+// is an error, because guessing a value there could make an incomplete search look complete.
+func vvpNamespaceIntField(response map[string]interface{}, name string) (int, bool, error) {
+	raw, present := response[name]
+	if !present || raw == nil {
+		return 0, false, nil
+	}
+	var parsed int64
 	switch value := raw.(type) {
 	case float64:
-		parsed = int(value)
+		if float64(int64(value)) != value {
+			return 0, false, fmt.Errorf("the %s field %v is not an integer", name, value)
+		}
+		parsed = int64(value)
 	case int:
-		parsed = value
+		parsed = int64(value)
 	case int64:
-		parsed = int(value)
+		parsed = value
 	case json.Number:
 		n, err := value.Int64()
 		if err != nil {
-			return 0, fmt.Errorf("the TotalPage field %q is not an integer", value.String())
+			return 0, false, fmt.Errorf("the %s field %q is not an integer", name, value.String())
 		}
-		parsed = int(n)
+		parsed = n
 	case string:
 		n, err := strconv.Atoi(strings.TrimSpace(value))
 		if err != nil {
-			return 0, fmt.Errorf("the TotalPage field %q is not an integer", value)
+			return 0, false, fmt.Errorf("the %s field %q is not an integer", name, value)
 		}
-		parsed = n
+		parsed = int64(n)
 	default:
-		return 0, fmt.Errorf("the TotalPage field has an unreadable type %T", raw)
+		return 0, false, fmt.Errorf("the %s field has an unreadable type %T", name, raw)
 	}
 	if parsed < 0 {
-		return 0, fmt.Errorf("the TotalPage field is negative (%d)", parsed)
+		return 0, false, fmt.Errorf("the %s field is negative (%d)", name, parsed)
 	}
-	if parsed == 0 {
-		if total := vvpNamespaceTotalCount(response); total > 0 {
-			return 0, fmt.Errorf("the response reports %d namespaces but TotalPage is 0", total)
-		}
-		return 0, nil
-	}
-	if total := vvpNamespaceTotalCount(response); total > 0 && parsed < 1 {
-		return 0, fmt.Errorf("the response reports %d namespaces but TotalPage is %d", total, parsed)
-	}
-	return parsed, nil
-}
-
-// vvpNamespaceTotalCount reads the reported total of a DescribeNamespaces response. It is only used
-// to detect a page count that contradicts the reported collection size; an absent or unreadable
-// total is ignored because the page count alone still bounds the walk.
-func vvpNamespaceTotalCount(response map[string]interface{}) int {
-	raw, present := response["TotalCount"]
-	if !present || raw == nil {
-		return 0
-	}
-	switch value := raw.(type) {
-	case float64:
-		return int(value)
-	case int:
-		return value
-	case int64:
-		return int(value)
-	case json.Number:
-		if n, err := value.Int64(); err == nil {
-			return int(n)
-		}
-	case string:
-		if n, err := strconv.Atoi(strings.TrimSpace(value)); err == nil {
-			return n
-		}
-	}
-	return 0
+	return int(parsed), true, nil
 }
 
 // vvpNamespaceResponseRows extracts the "Namespaces" collection from a DescribeNamespaces response.
