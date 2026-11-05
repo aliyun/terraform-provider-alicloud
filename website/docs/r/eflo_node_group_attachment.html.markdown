@@ -27,6 +27,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -47,6 +55,10 @@ resource "alicloud_eflo_node_group_attachment" "default" {
 }
 ```
 
+VPD Cluster Usage
+
+For a VPD cluster, omit `vpc_id` and `vswitch_id` and configure `vpd_subnets` together with `ip_allocation_policy`, so that the node receives its IP addresses from the cluster subnets of the VPD. `vpd_subnets` lists the cluster subnet IDs that can be used for IP allocation, and `ip_allocation_policy` assigns those subnets to bonds, machine types or specific nodes. The cluster, node group and node must already exist, and the subnet IDs must belong to the VPD of that cluster. For a VPC cluster, keep `vpc_id` and `vswitch_id` configured and omit both VPD arguments.
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eflo_node_group_attachment&spm=docs.r.eflo_node_group_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -55,12 +67,14 @@ The following arguments are supported:
 * `cluster_id` - (Optional, ForceNew, Computed) Cluster ID
 * `data_disk` - (Optional, List) The data disk of the cloud disk to be attached to the node. See [`data_disk`](#data_disk) below.
 * `hostname` - (Required, ForceNew) Node hostname
+* `ip_allocation_policy` - (Optional, ForceNew, Set, Available since v2.3.0) The IP address allocation policies that assign the cluster subnets of a VPD to bonds, machine types or nodes. Each policy can select only one policy type, and multiple policies can be combined. Changing this argument replaces the resource. See [`ip_allocation_policy`](#ip_allocation_policy) below.
 * `login_password` - (Optional) Node login password
 * `node_group_id` - (Optional, ForceNew, Computed) Node group ID
 * `node_id` - (Optional, ForceNew, Computed) Node ID
 * `user_data` - (Optional) User-defined data
-* `vswitch_id` - (Required, ForceNew) vswitch id
-* `vpc_id` - (Required, ForceNew) Vpc id
+* `vpd_subnets` - (Optional, ForceNew, Set, Available since v2.3.0) The cluster subnet IDs used to allocate IP addresses for the node in a VPD cluster. Configure it together with `ip_allocation_policy` and omit `vpc_id` and `vswitch_id` for a VPD cluster. Changing this argument replaces the resource.
+* `vswitch_id` - (Optional, ForceNew, Computed) vswitch id. Required for a VPC cluster; can be omitted for a VPD cluster.
+* `vpc_id` - (Optional, ForceNew, Computed) Vpc id. Required for a VPC cluster; can be omitted for a VPD cluster.
 
 ### `data_disk`
 
@@ -69,6 +83,50 @@ The data_disk supports the following:
 * `delete_with_node` - (Optional) Indicate whether the data disk is released with the node. true indicates that the data disk will be released together when the node unsubscribes.
 * `performance_level` - (Optional) Performance level
 * `size` - (Optional, Int) Data disk size
+
+### `ip_allocation_policy`
+
+The ip_allocation_policy supports the following:
+* `bond_policy` - (Optional, List) Assigns a cluster subnet to each bond. See [`bond_policy`](#ip_allocation_policy-bond_policy) below.
+* `machine_type_policy` - (Optional, Set) Assigns cluster subnets to bonds of a machine type. See [`machine_type_policy`](#ip_allocation_policy-machine_type_policy) below.
+* `node_policy` - (Optional, Set) Assigns cluster subnets to bonds of a specific node. See [`node_policy`](#ip_allocation_policy-node_policy) below.
+
+### `ip_allocation_policy-bond_policy`
+
+The ip_allocation_policy-bond_policy supports the following:
+* `bond_default_subnet` - (Optional) The default cluster subnet of the bond.
+* `bonds` - (Optional, Set) The bond information. See [`bonds`](#ip_allocation_policy-bond_policy-bonds) below.
+
+### `ip_allocation_policy-machine_type_policy`
+
+The ip_allocation_policy-machine_type_policy supports the following:
+* `bonds` - (Optional, Set) The bond information. See [`bonds`](#ip_allocation_policy-machine_type_policy-bonds) below.
+* `machine_type` - (Optional) The machine type.
+
+### `ip_allocation_policy-node_policy`
+
+The ip_allocation_policy-node_policy supports the following:
+* `bonds` - (Optional, Set) The bond information. See [`bonds`](#ip_allocation_policy-node_policy-bonds) below.
+* `hostname` - (Optional) The hostname of the node.
+* `node_id` - (Optional) The ID of the node.
+
+### `ip_allocation_policy-bond_policy-bonds`
+
+The ip_allocation_policy-bond_policy-bonds supports the following:
+* `name` - (Optional) The bond name.
+* `subnet` - (Optional) The cluster subnet that provides IP addresses.
+
+### `ip_allocation_policy-machine_type_policy-bonds`
+
+The ip_allocation_policy-machine_type_policy-bonds supports the following:
+* `name` - (Optional) The bond name.
+* `subnet` - (Optional) The cluster subnet that provides IP addresses.
+
+### `ip_allocation_policy-node_policy-bonds`
+
+The ip_allocation_policy-node_policy-bonds supports the following:
+* `name` - (Optional) The bond name.
+* `subnet` - (Optional) The cluster subnet that provides IP addresses.
 
 ## Attributes Reference
 
