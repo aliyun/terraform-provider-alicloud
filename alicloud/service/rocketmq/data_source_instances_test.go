@@ -2,6 +2,7 @@ package rocketmq_test
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
@@ -44,11 +45,14 @@ data "alicloud_rocketmq_instances" "default" {
 					"instances.0.topic_count":       acctest.CHECKSET,
 					"instances.0.group_count":       acctest.CHECKSET,
 					"instances.0.create_time":       acctest.CHECKSET,
-					"instances.0.tags.#":            acctest.CHECKSET,
-					"ids.#":                         "1",
-					"names.#":                       "1",
-					"names.0":                       name,
-					"id":                            acctest.CHECKSET,
+					// The test instance carries an extra tag added by the
+					// account, so only presence is asserted here; the tags
+					// step below exercises the tag filter itself.
+					"instances.0.tags.#": acctest.CHECKSET,
+					"ids.#":              "1",
+					"names.#":            "1",
+					"names.0":            name,
+					"id":                 acctest.CHECKSET,
 				}),
 			},
 			{
@@ -150,6 +154,21 @@ data "alicloud_rocketmq_instances" "default" {
 // from earlier steps after the result set has shrunk.
 func rocketmqDataSourceChecks(resourceId string, checks map[string]string) resource.TestCheckFunc {
 	return acctest.ResourceAttrInit(resourceId, map[string]string{}).ResourceAttrMapUpdateSet()(checks)
+}
+
+// rocketmqCheckAtLeastInt parses a numeric state value and requires it to be at
+// least min, proving the integer field was decoded instead of defaulted.
+func rocketmqCheckAtLeastInt(min int) func(string) error {
+	return func(value string) error {
+		n, err := strconv.Atoi(value)
+		if err != nil {
+			return fmt.Errorf("expected an integer, got %q: %v", value, err)
+		}
+		if n < min {
+			return fmt.Errorf("expected at least %d, got %d", min, n)
+		}
+		return nil
+	}
 }
 
 // testAccRocketmqDataSourceInstance creates the RocketMQ 5.0 instance that the

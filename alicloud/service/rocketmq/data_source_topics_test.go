@@ -104,6 +104,29 @@ data "alicloud_rocketmq_topics" "default" {
 					"names.#":  "0",
 				}),
 			},
+			{
+				Config: dependence + `
+data "alicloud_rocketmq_topics" "default" {
+  instance_id = alicloud_rocketmq_instance.default.id
+  depends_on  = [alicloud_rocketmq_topic.first, alicloud_rocketmq_topic.second]
+  ids         = [var.name, "${var.name}-second"]
+}
+
+data "alicloud_rocketmq_instances" "default" {
+  ids = [alicloud_rocketmq_instance.default.id]
+}
+`,
+				Check: resource.ComposeTestCheckFunc(
+					rocketmqDataSourceChecks(resourceId, map[string]string{
+						"topics.#": "2",
+					}),
+					resource.TestCheckResourceAttrWith(
+						"data.alicloud_rocketmq_instances.default",
+						"instances.0.topic_count",
+						rocketmqCheckAtLeastInt(2),
+					),
+				),
+			},
 		},
 	})
 }

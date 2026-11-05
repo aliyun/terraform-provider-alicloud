@@ -53,7 +53,6 @@ type consumerGroupModel struct {
 	Remark          types.String `tfsdk:"remark"`
 	InstanceId      types.String `tfsdk:"instance_id"`
 	RegionId        types.String `tfsdk:"region_id"`
-	MessageModel    types.String `tfsdk:"message_model"`
 	TopicName       types.String `tfsdk:"topic_name"`
 	CreateTime      types.String `tfsdk:"create_time"`
 	UpdateTime      types.String `tfsdk:"update_time"`
@@ -66,7 +65,6 @@ var consumerGroupObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
 	"remark":            types.StringType,
 	"instance_id":       types.StringType,
 	"region_id":         types.StringType,
-	"message_model":     types.StringType,
 	"topic_name":        types.StringType,
 	"create_time":       types.StringType,
 	"update_time":       types.StringType,
@@ -193,7 +191,6 @@ func (d *consumerGroupsDataSource) Read(ctx context.Context, req datasource.Read
 			Remark:          types.StringValue(rocketmqString(item, "remark")),
 			InstanceId:      types.StringValue(rocketmqString(item, "instanceId")),
 			RegionId:        types.StringValue(rocketmqString(item, "regionId")),
-			MessageModel:    types.StringValue(rocketmqString(item, "messageModel")),
 			TopicName:       types.StringValue(rocketmqString(item, "topicName")),
 			CreateTime:      types.StringValue(rocketmqString(item, "createTime")),
 			UpdateTime:      types.StringValue(rocketmqString(item, "updateTime")),

@@ -126,7 +126,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `remark` - The remark of the consumer group.
   * `instance_id` - The ID of the instance that the consumer group belongs to.
   * `region_id` - The region ID of the consumer group.
-  * `message_model` - The consumption mode of the consumer group. The field is returned for consumer groups that use a lite topic, for example `LITE_SELECTIVE`.
   * `topic_name` - The name of the lite topic associated with the consumer group.
   * `create_time` - The time when the consumer group was created.
   * `update_time` - The time when the consumer group was last updated.
