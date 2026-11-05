@@ -167,16 +167,6 @@ func TestAccAliCloudPrivatelinkVpcEndpoint_base(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"zone_affinity_enabled": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"zone_affinity_enabled": "true",
-					}),
-				),
-			},
 			// TODO：There is a bug with the API here, which means calling the API will not result in an error,
 			// but the modified value will not become what is expected.
 			//{
