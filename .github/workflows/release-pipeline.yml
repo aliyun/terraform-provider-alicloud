@@ -1,0 +1,385 @@
+# Automated release pipeline for the Terraform Provider.
+#
+# Orchestrates the full pre-release gate: changed-commit unit tests, affected
+# module tests, optional acceptance tests, changelog generation and submission,
+# a mandatory human approval gate, and finally tag creation. The actual
+# goreleaser build (multi-arch binaries, SHA256SUMS, GPG, registry manifest,
+# draft release) is performed by the existing release.yml workflow, which is
+# triggered by the v2.* tag this pipeline creates at the end. The goreleaser
+# contract in .goreleaser.yml is intentionally left untouched.
+#
+# Manual approval is always required: the release-approval job pauses on a
+# GitHub environment with required reviewers. The pipeline never publishes a
+# release without an explicit human decision.
+#
+# Trigger: workflow_dispatch only. Provide the target version (e.g. 2.2.0)
+# and optionally enable acceptance tests.
+
+name: Release Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Target release version (e.g. 2.2.0)"
+        required: true
+        type: string
+      run_acctest:
+        description: "Run acceptance tests before release (requires ACC secrets)"
+        required: false
+        default: false
+        type: boolean
+      acctest_cases:
+        description: "Comma-separated TestAcc function names (empty = all ACC)"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-pipeline-${{ github.event.inputs.version }}
+  cancel-in-progress: false
+
+env:
+  V2_RELEASE_BRANCH: ${{ vars.V2_RELEASE_BRANCH || 'master' }}
+
+jobs:
+  prepare:
+    name: Prepare release
+    runs-on: terraform-ci-route
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tag: ${{ steps.meta.outputs.tag }}
+      last_release_tag: ${{ steps.meta.outputs.last_release_tag }}
+      diff_base: ${{ steps.meta.outputs.diff_base }}
+      head_sha: ${{ steps.meta.outputs.head_sha }}
+      module_tests_affected: ${{ steps.meta.outputs.module_tests_affected }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          source scripts/release/release_common.sh
+
+          version="$(rc_strip_v '${{ github.event.inputs.version }}')"
+          rc_validate_version "$version"
+          tag="$(rc_tag_form "$version")"
+
+          # Locate the most recent release tag and compute the merge-base that
+          # anchors the change range for ci-check-quick and changelog generation.
+          last_tag="$(rc_last_release_tag 2>/dev/null || echo '')"
+          if [[ -z "$last_tag" ]]; then
+            echo "::warning::No prior release tag found; full history is the change range."
+          fi
+          diff_base="$(rc_release_diff_base "$last_tag")"
+          head_sha="$(git rev-parse --verify 'HEAD^{commit}')"
+          rc_require_commit_sha "HEAD" "$head_sha"
+
+          if rc_module_tests_affected "$diff_base" >/dev/null 2>&1; then
+            affected="true"
+          else
+            affected="false"
+          fi
+
+          {
+            echo "version=$version"
+            echo "tag=$tag"
+            echo "last_release_tag=$last_tag"
+            echo "diff_base=$diff_base"
+            echo "head_sha=$head_sha"
+            echo "module_tests_affected=$affected"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "::notice::Releasing $tag from base $diff_base (last tag: ${last_tag:-<none>})"
+
+  pre-release-tests:
+    name: Changed-commit unit tests
+    needs: prepare
+    runs-on: terraform-ci-heavy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Verify base commit is reachable
+        shell: bash
+        env:
+          DIFF_BASE: ${{ needs.prepare.outputs.diff_base }}
+        run: |
+          set -euo pipefail
+          git cat-file -e "${DIFF_BASE}^{commit}" ||
+            { echo "diff_base $DIFF_BASE is not reachable; fetch full history." >&2; exit 1; }
+
+      - name: Run quick CI (quality checks + changed unit tests)
+        shell: bash
+        env:
+          CI_CHECK_BASE: ${{ needs.prepare.outputs.diff_base }}
+        run: |
+          set -euo pipefail
+          echo "Running ci-check-quick with CI_CHECK_BASE=$CI_CHECK_BASE"
+          make ci-check-quick
+
+  module-tests:
+    name: Affected module tests
+    needs: prepare
+    runs-on: terraform-ci-heavy
+    if: needs.prepare.outputs.module_tests_affected == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b364d8a8a7ecbb5c0c1fc84b6f60cea8cf2c7624 # v3.1.2
+        with:
+          terraform_version: latest
+
+      - name: Run module static validation
+        shell: bash
+        env:
+          DIFF_BASE: ${{ needs.prepare.outputs.diff_base }}
+        run: |
+          set -euo pipefail
+          source scripts/release/release_common.sh
+          rc_module_tests_affected "$DIFF_BASE"
+          # Static module gate: every .tf file under examples/ and modules/
+          # must be canonically formatted. This needs no cloud credentials
+          # and no provider download. Example tests that create real resources
+          # belong to the optional acc-tests job.
+          echo "::group::terraform fmt -check -recursive"
+          terraform fmt -check -recursive examples/ modules/ 2>&1 || {
+            echo "::error::terraform fmt violations detected; run 'terraform fmt -recursive examples/ modules/'."
+            exit 1
+          }
+          echo "::endgroup::"
+
+  acc-tests:
+    name: Acceptance tests (optional)
+    needs: prepare
+    runs-on: terraform-ci-heavy
+    if: github.event.inputs.run_acctest == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Guard on ACC secrets
+        id: acc_guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${{ secrets.ALIYUN_ACCESS_KEY_ID }}" || -z "${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}" ]]; then
+            echo "::error::Acceptance tests requested but ALIYUN_ACCESS_KEY_ID / ALIYUN_ACCESS_KEY_SECRET secrets are not configured."
+            echo "status=blocked" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "status=ready" >> "$GITHUB_OUTPUT"
+
+      - name: Run acceptance tests
+        if: steps.acc_guard.outputs.status == 'ready'
+        shell: bash
+        env:
+          ALICLOUD_ACCESS_KEY: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+          ALICLOUD_SECRET_KEY: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+          ALICLOUD_REGION: ${{ vars.ACC_REGION || 'cn-hangzhou' }}
+          TF_ACC: "1"
+          ACC_CASES: ${{ github.event.inputs.acctest_cases }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$ACC_CASES" ]]; then
+            echo "Running selected acceptance tests: $ACC_CASES"
+            TF_ACC=1 go test -count=1 -p=1 -timeout=120m -run="$ACC_CASES" ./alicloud/...
+          else
+            echo "::warning::Running the full acceptance suite is expensive. Prefer scoped ACC_CASES."
+            TF_ACC=1 go test -count=1 -p=1 -timeout=120m ./alicloud/...
+          fi
+
+  generate-changelog:
+    name: Generate changelog
+    needs: prepare
+    runs-on: terraform-ci-route
+    outputs:
+      changelog_branch: ${{ steps.commit.outputs.branch }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Generate CHANGELOG.md (Unreleased merge)
+        shell: bash
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          LAST_TAG: ${{ needs.prepare.outputs.last_release_tag }}
+        run: |
+          set -euo pipefail
+          python3 scripts/release/generate_changelog.py \
+            --from "${LAST_TAG:-}" --version "$VERSION" --update
+          echo "--- Diff preview ---"
+          git diff --stat CHANGELOG.md || true
+
+      - name: Stage changelog
+        id: commit
+        shell: bash
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          branch="changelog/v${VERSION}"
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          git checkout -B "$branch"
+          if git diff --quiet -- CHANGELOG.md; then
+            echo "::notice::CHANGELOG.md already up to date; no changelog commit."
+            echo "branch=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git add CHANGELOG.md
+          git commit -m "ci: update CHANGELOG for v${VERSION}"
+          git push -u origin "$branch" --force-with-lease
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+  submit-changelog:
+    name: Submit changelog PR
+    needs: [prepare, generate-changelog]
+    runs-on: terraform-ci-trusted
+    if: needs.generate-changelog.outputs.changelog_branch != ''
+    outputs:
+      pr_number: ${{ steps.pr.outputs.number }}
+      pr_url: ${{ steps.pr.outputs.url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Create or update changelog PR
+        id: pr
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ needs.generate-changelog.outputs.changelog_branch }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BASE: ${{ env.V2_RELEASE_BRANCH }}
+        run: |
+          set -euo pipefail
+          title="ci: update CHANGELOG for v${VERSION}"
+          body="Automated CHANGELOG.md update for the v${VERSION} release pipeline."
+          existing="$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json number,url --jq '.[0] // empty')"
+          if [[ -n "$existing" ]]; then
+            num="$(printf '%s' "$existing" | jq -r '.number')"
+            url="$(printf '%s' "$existing" | jq -r '.url')"
+            gh pr edit "$num" --title "$title" --body "$body" >/dev/null
+            echo "number=$num" >> "$GITHUB_OUTPUT"
+            echo "url=$url" >> "$GITHUB_OUTPUT"
+          else
+            url="$(gh pr create --base "$BASE" --head "$BRANCH" --title "$title" --body "$body")"
+            num="$(gh pr view --json number --jq '.number' <<<"$url" 2>/dev/null || echo "")"
+            echo "number=$num" >> "$GITHUB_OUTPUT"
+            echo "url=$url" >> "$GITHUB_OUTPUT"
+          fi
+
+  release-approval:
+    name: Release approval (human gate)
+    needs:
+      - prepare
+      - pre-release-tests
+      - module-tests
+      - acc-tests
+      - submit-changelog
+    runs-on: terraform-ci-trusted
+    # Run unless the workflow was cancelled or an upstream job failed. Skipped
+    # optional jobs (module-tests/acc-tests/submit-changelog) are not failures,
+    # so a release with no module changes or no changelog diff still reaches the
+    # approval gate.
+    if: ${{ !cancelled() && !failure() }}
+    # The GitHub environment "release-approval" must be configured with
+    # required reviewers in the repository settings. This is the mandatory
+    # human approval for publishing a release.
+    environment:
+      name: release-approval
+    steps:
+      - name: Confirm approval
+        shell: bash
+        env:
+          VERSION: ${{ needs.prepare.outputs.tag }}
+          PR_URL: ${{ needs.submit-changelog.outputs.pr_url }}
+        run: |
+          set -euo pipefail
+          echo "::notice::Release approved by ${{ github.actor }} for $VERSION."
+          echo "Changelog PR: ${PR_URL:-<none>}"
+          echo "After this job, the tag-and-release job creates $VERSION and triggers release.yml."
+
+  tag-and-release:
+    name: Tag and trigger release
+    needs:
+      - prepare
+      - release-approval
+      - submit-changelog
+    runs-on: terraform-ci-trusted
+    # Proceed only after the human gate approved (release-approval succeeded)
+    # and no upstream failure occurred. submit-changelog may be skipped when
+    # the CHANGELOG is already up to date; that is still a valid release.
+    if: ${{ !cancelled() && !failure() }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ env.V2_RELEASE_BRANCH }}
+
+      - name: Merge changelog PR and create release tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          PR_NUMBER: ${{ needs.submit-changelog.outputs.pr_number }}
+          PR_BRANCH: ${{ needs.generate-changelog.outputs.changelog_branch }}
+          BASE: ${{ env.V2_RELEASE_BRANCH }}
+        run: |
+          set -euo pipefail
+
+          # If a changelog PR exists, merge it into the release branch so the
+          # tagged commit carries the finalized CHANGELOG.md.
+          if [[ -n "$PR_NUMBER" ]]; then
+            echo "Merging changelog PR #$PR_NUMBER into $BASE"
+            gh pr merge "$PR_NUMBER" --squash --delete-branch || \
+              gh pr merge "$PR_NUMBER" --merge --delete-branch || \
+              { echo "::error::Failed to merge changelog PR #$PR_NUMBER" >&2; exit 1; }
+            git fetch origin "$BASE"
+            git checkout "$BASE"
+            git pull --ff-only origin "$BASE"
+          else
+            echo "::notice::No changelog PR; tagging current $BASE HEAD."
+          fi
+
+          tag_commit="$(git rev-parse 'HEAD^{commit}')"
+          git tag -a "$TAG" -m "Release $TAG (created by release-pipeline)" "$tag_commit"
+          git push origin "$TAG"
+
+          echo "::notice::Created tag $TAG at $tag_commit. release.yml will build the release."
