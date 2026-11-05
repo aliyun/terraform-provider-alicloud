@@ -261,7 +261,7 @@ func createListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	writeCtx, cancelWrite := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
 	defer cancelWrite()
 	if err := api.SetAcl(writeCtx, listenerId, aclId, aclType, true); err != nil {
-		if !isUnresolvedListenerAclWrite(ctx, err) {
+		if !isUnresolvedListenerAclWrite(ctx, writeCtx, err) {
 			return listenerAclAttachmentResourceModel{}, nil, err
 		}
 		// The request may have been applied. Confirm the enabled status, the
@@ -311,7 +311,7 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 		writeCtx, cancelWrite := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
 		defer cancelWrite()
 		if err := api.SetAcl(writeCtx, listenerId, aclId, aclType, true); err != nil {
-			if !isUnresolvedListenerAclWrite(ctx, err) {
+			if !isUnresolvedListenerAclWrite(ctx, writeCtx, err) {
 				return listenerAclAttachmentResourceModel{}, nil, err
 			}
 			confirmCtx, cancel := context.WithTimeout(ctx, listenerAclAttachmentConfirmTimeout)
