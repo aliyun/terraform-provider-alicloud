@@ -2108,12 +2108,6 @@ func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"system_disk_categories": []interface{}{"cloud", "cloud_essd"},
 				}),
@@ -2183,12 +2177,6 @@ func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder(t *testing.T
 					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.1", "cloud"),
 					essScalingConfigurationDataDiskCategoriesCheck(t, resourceId, []string{"cloud_essd", "cloud"}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2520,6 +2508,117 @@ func TestAccAliCloudEssScalingConfiguration_SingularPluralConflict(t *testing.T)
 				})),
 				ExpectError: regexp.MustCompile(`data_disk.*category conflicts with data_disk.*categories`),
 				Check:       resource.ComposeTestCheckFunc(),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesImport verifies
+// that each successful configuration step can be imported independently. The
+// reorder convergence itself is covered by SystemDiskCategoriesOrder, where the
+// two applies stay adjacent as required by TypeList order coverage.
+func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesImport(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	resourceId := "alicloud_ess_scaling_configuration.sdi"
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfiguration_NetworkInterfaces)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":       "${alicloud_ess_scaling_group.default.id}",
+					"image_id":               "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":          "${data.alicloud_instance_types.c6.instance_types.0.id}",
+					"security_group_id":      "${alicloud_security_group.default1.id}",
+					"force_delete":           "true",
+					"system_disk_categories": []interface{}{"cloud_essd", "cloud"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.#", "2"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_configuration_name": fmt.Sprintf("%s-updated", name),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.#", "2"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesImport mirrors the
+// per-step import verification for the nested data_disk.categories list.
+func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesImport(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	resourceId := "alicloud_ess_scaling_configuration.ddi"
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEssScalingConfiguration_NetworkInterfaces)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
+					"image_id":             "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.c6.instance_types.0.id}",
+					"security_group_id":    "${alicloud_security_group.default1.id}",
+					"force_delete":         "true",
+					"system_disk_category": "cloud_essd",
+					"data_disk": []map[string]interface{}{
+						{
+							"size":                 "20",
+							"delete_with_instance": "true",
+							"categories":           []interface{}{"cloud_essd", "cloud"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.#", "2"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_configuration_name": fmt.Sprintf("%s-updated", name),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.#", "2"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "credit_specification", "security_group_id", "kms_encryption_context"},
 			},
 		},
 	})
