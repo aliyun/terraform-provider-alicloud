@@ -2,6 +2,7 @@ package connectivity
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,19 +19,28 @@ import (
 )
 
 // newHangingServer accepts the request and holds the response until the client
-// disconnects. It reports arrival and the moment the client went away, so a
-// test can prove the request physically reached the server and was then aborted.
-func newHangingServer(t *testing.T) (*httptest.Server, <-chan struct{}, <-chan struct{}) {
+// disconnects. Draining the request body first is what lets the server notice
+// the disconnect while the handler is still running; without it the connection
+// stays active and the handler never sees the cancellation.
+func newHangingServer(t *testing.T) (server *httptest.Server, arrived, aborted <-chan struct{}) {
 	t.Helper()
-	arrived := make(chan struct{})
-	aborted := make(chan struct{})
+	arrivedCh := make(chan struct{})
+	abortedCh := make(chan struct{})
 	var arrivedOnce, abortedOnce sync.Once
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		arrivedOnce.Do(func() { close(arrived) })
-		<-r.Context().Done()
-		abortedOnce.Do(func() { close(aborted) })
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		arrivedOnce.Do(func() { close(arrivedCh) })
+		_, _ = io.Copy(io.Discard, r.Body)
+		select {
+		case <-r.Context().Done():
+			abortedOnce.Do(func() { close(abortedCh) })
+		case <-time.After(30 * time.Second):
+		}
 	}))
-	return server, arrived, aborted
+	t.Cleanup(func() {
+		server.CloseClientConnections()
+		server.Close()
+	})
+	return server, arrivedCh, abortedCh
 }
 
 func newLoopbackClient(t *testing.T, serverURL string) *AliyunClient {
@@ -69,7 +79,6 @@ func waitForSignal(t *testing.T, signal <-chan struct{}, name string) {
 // request. The numeric timeout alone would leave it running to completion.
 func TestUnitDoWithContextAbortsInFlightRequestOnCancel(t *testing.T) {
 	server, arrived, aborted := newHangingServer(t)
-	defer server.Close()
 	client := newLoopbackClient(t, server.URL)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -96,7 +105,6 @@ func TestUnitDoWithContextAbortsInFlightRequestOnCancel(t *testing.T) {
 // deadline is aborted instead of waiting for the server.
 func TestUnitDoWithContextAbortsInFlightRequestOnDeadline(t *testing.T) {
 	server, arrived, aborted := newHangingServer(t)
-	defer server.Close()
 	client := newLoopbackClient(t, server.URL)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
