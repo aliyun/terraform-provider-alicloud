@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -26,7 +27,7 @@ func ResourceAliCloudGaAccelerator() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-		CustomizeDiff: customizeDiffGaAccelerator,
+		CustomizeDiff: customizeDiffAccelerator,
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(3 * time.Minute),
 			Update: schema.DefaultTimeout(6 * time.Minute),
@@ -181,17 +182,27 @@ func ResourceAliCloudGaAccelerator() *schema.Resource {
 	}
 }
 
-func customizeDiffGaAccelerator(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+func customizeDiffAccelerator(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
 	rawConfig := d.GetRawConfig()
-	if rawConfig.IsNull() || !rawConfig.IsKnown() {
-		return nil
-	}
-	for _, key := range []string{"ddos_id", "ddos_region_id"} {
-		value := rawConfig.GetAttr(key)
-		if value.IsKnown() && !value.IsNull() {
-			return fmt.Errorf("`%s` is read-only and deprecated; use `ddos_config_list` to manage DDoS associations", key)
+	if !rawConfig.IsNull() && rawConfig.IsKnown() {
+		for _, key := range []string{"ddos_id", "ddos_region_id"} {
+			value := rawConfig.GetAttr(key)
+			if value.IsKnown() && !value.IsNull() {
+				return fmt.Errorf("`%s` is read-only and deprecated; use `ddos_config_list` to manage DDoS associations", key)
+			}
+		}
+
+		autoRenew := rawConfig.GetAttr("auto_renew")
+		renewalStatus := rawConfig.GetAttr("renewal_status")
+		if autoRenew.IsKnown() && !autoRenew.IsNull() && renewalStatus.IsKnown() && !renewalStatus.IsNull() {
+			return fmt.Errorf("`auto_renew` conflicts with `renewal_status`")
 		}
 	}
+
+	if v, ok := d.GetOk("ddos_config_list"); ok {
+		return validateDdosConfigList(v)
+	}
+
 	return nil
 }
 
@@ -202,14 +213,18 @@ func resourceAliCloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 	action := "CreateAccelerator"
 	request := make(map[string]interface{})
 	var err error
-	// there is an api bug that the name can not effect
-	//if v, ok := d.GetOk("accelerator_name"); ok {
-	//	request["Name"] = v
-	//}
+
+	if err := validateDdosConfigList(d.Get("ddos_config_list")); err != nil {
+		return errs.WrapErrorf(nil, errs.DefaultErrorMsg, "alicloud_ga_accelerator", err.Error(), errs.AlibabaCloudSdkGoERROR)
+	}
 
 	request["RegionId"] = client.RegionId
 	request["AutoPay"] = d.Get("auto_pay")
 	request["ClientToken"] = helper.BuildClientToken("CreateAccelerator")
+
+	if v, ok := d.GetOk("accelerator_name"); ok {
+		request["Name"] = v
+	}
 
 	request["AutoRenew"] = d.Get("auto_renew")
 	if v, ok := d.GetOk("spec"); ok {
@@ -332,7 +347,7 @@ func resourceAliCloudGaAcceleratorRead(d *schema.ResourceData, meta interface{})
 	}
 	d.Set("status", object["State"])
 
-	ddosConfigs := flattenGaAcceleratorDdosConfigList(object["DdosConfigList"])
+	ddosConfigs := flattenDdosConfigList(object["DdosConfigList"])
 	d.Set("ddos_config_list", ddosConfigs)
 
 	if v, ok := object["DdosId"]; ok && fmt.Sprint(v) != "" {
@@ -379,6 +394,11 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	gaService := Service{client}
 	var response map[string]interface{}
+
+	if err := validateDdosConfigList(d.Get("ddos_config_list")); err != nil {
+		return errs.WrapErrorf(nil, errs.DefaultErrorMsg, "alicloud_ga_accelerator", err.Error(), errs.AlibabaCloudSdkGoERROR)
+	}
+
 	d.Partial(true)
 
 	if d.HasChange("tags") {
@@ -644,16 +664,10 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("ddos_config_list") {
 		oldDdosConfigList, newDdosConfigList := d.GetChange("ddos_config_list")
 
-		oldDdosConfigs := gaAcceleratorDdosConfigsFromSet(oldDdosConfigList)
-		newDdosConfigs := gaAcceleratorDdosConfigsFromSet(newDdosConfigList)
+		oldDdosConfigs := ddosConfigsFromSet(oldDdosConfigList)
+		newDdosConfigs := ddosConfigsFromSet(newDdosConfigList)
 
-		for _, ddosConfig := range newDdosConfigs {
-			if ddosConfig["ddos_id"] == "" || ddosConfig["ddos_region_id"] == "" {
-				return errs.WrapErrorf(nil, errs.DefaultErrorMsg, "alicloud_ga_accelerator", "ddos_id and ddos_region_id are required in ddos_config_list", errs.AlibabaCloudSdkGoERROR)
-			}
-		}
-
-		addDdosConfigs, removeDdosConfigs := gaAcceleratorDdosConfigDiff(oldDdosConfigs, newDdosConfigs)
+		addDdosConfigs, removeDdosConfigs := ddosConfigDiff(oldDdosConfigs, newDdosConfigs)
 
 		if len(removeDdosConfigs) > 0 {
 			detachDdosReq := map[string]interface{}{
@@ -661,7 +675,7 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 				"ClientToken":   helper.BuildClientToken("DetachDdosFromAccelerator"),
 				"AcceleratorId": d.Id(),
 			}
-			buildGaAcceleratorDdosConfigRequest(detachDdosReq, removeDdosConfigs)
+			buildDdosConfigRequest(detachDdosReq, removeDdosConfigs)
 
 			action := "DetachDdosFromAccelerator"
 			var err error
@@ -698,7 +712,7 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 				"ClientToken":   helper.BuildClientToken("AttachDdosToAccelerator"),
 				"AcceleratorId": d.Id(),
 			}
-			buildGaAcceleratorDdosConfigRequest(attachDdosReq, addDdosConfigs)
+			buildDdosConfigRequest(attachDdosReq, addDdosConfigs)
 
 			action := "AttachDdosToAccelerator"
 			var err error
@@ -807,7 +821,26 @@ func convertGaAcceleratorPaymentTypeResponse(source interface{}) interface{} {
 	return source
 }
 
-func gaAcceleratorDdosConfigsFromSet(v interface{}) []map[string]string {
+func validateDdosConfigList(v interface{}) error {
+	set, ok := v.(*schema.Set)
+	if !ok || set.Len() == 0 {
+		return nil
+	}
+	for _, item := range set.List() {
+		config, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		ddosId, _ := config["ddos_id"].(string)
+		ddosRegionId, _ := config["ddos_region_id"].(string)
+		if strings.TrimSpace(ddosId) == "" || strings.TrimSpace(ddosRegionId) == "" {
+			return fmt.Errorf("ddos_id and ddos_region_id are required in ddos_config_list")
+		}
+	}
+	return nil
+}
+
+func ddosConfigsFromSet(v interface{}) []map[string]string {
 	set, ok := v.(*schema.Set)
 	if !ok || set.Len() == 0 {
 		return nil
@@ -823,7 +856,7 @@ func gaAcceleratorDdosConfigsFromSet(v interface{}) []map[string]string {
 	return configs
 }
 
-func buildGaAcceleratorDdosConfigRequest(request map[string]interface{}, configs []map[string]string) map[string]interface{} {
+func buildDdosConfigRequest(request map[string]interface{}, configs []map[string]string) map[string]interface{} {
 	for k, ddosConfig := range configs {
 		request[fmt.Sprintf("DdosConfigList.%d.DdosId", k+1)] = ddosConfig["ddos_id"]
 		request[fmt.Sprintf("DdosConfigList.%d.DdosRegionId", k+1)] = ddosConfig["ddos_region_id"]
@@ -831,7 +864,7 @@ func buildGaAcceleratorDdosConfigRequest(request map[string]interface{}, configs
 	return request
 }
 
-func flattenGaAcceleratorDdosConfigList(v interface{}) []map[string]interface{} {
+func flattenDdosConfigList(v interface{}) []map[string]interface{} {
 	items, ok := v.([]interface{})
 	if !ok {
 		return nil
@@ -850,7 +883,7 @@ func flattenGaAcceleratorDdosConfigList(v interface{}) []map[string]interface{} 
 	return configs
 }
 
-func gaAcceleratorDdosConfigDiff(oldConfigs, newConfigs []map[string]string) (add, remove []map[string]string) {
+func ddosConfigDiff(oldConfigs, newConfigs []map[string]string) (add, remove []map[string]string) {
 	oldKeys := make(map[string]struct{}, len(oldConfigs))
 	for _, config := range oldConfigs {
 		oldKeys[config["ddos_id"]+"|"+config["ddos_region_id"]] = struct{}{}

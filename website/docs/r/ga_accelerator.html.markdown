@@ -35,9 +35,10 @@ terraform {
 }
 
 resource "alicloud_ga_accelerator" "example" {
-  duration        = 1
-  auto_use_coupon = true
-  spec            = "1"
+  accelerator_name = "terraform-example-ga-accelerator"
+  duration         = 1
+  auto_use_coupon  = true
+  spec             = "1"
 }
 ```
 
@@ -74,7 +75,7 @@ The following arguments are supported:
   - `true`: Use.
   - `false`: Not used.
 * `auto_pay` - (Optional, Bool, Available since v2.3.0) Specifies whether to automatically pay the order when the GA instance is created or upgraded. Default value: `true`. **NOTE:** This argument is a write-only payment directive; changing it alone does not trigger a remote update. If you set it to `false`, the order is left unpaid and the instance does not reach the `active` state until the order is paid. It is meaningful only when `payment_type` is `Subscription`.
-* `auto_renew` - (Optional, Bool, Available since v2.3.0) Specifies whether to enable auto renewal for the GA instance. **NOTE:** This argument is mutually exclusive with `renewal_status`; use `renewal_status` when you need `AutoRenewal`, `Normal` or `NotRenewal`. It is meaningful only when `payment_type` is `Subscription`.
+* `auto_renew` - (Optional, Bool, Available since v2.3.0) Specifies whether to enable auto renewal for the GA instance. **NOTE:** This argument is mutually exclusive with `renewal_status`; use `renewal_status` when you need `AutoRenewal`, `Normal` or `NotRenewal`. It is meaningful only when `payment_type` is `Subscription`. If you omit `auto_renew` when the GA instance is created, `false` is sent. After the instance exists, removing `auto_renew` from the configuration keeps the current renewal status instead of disabling auto renewal; set `auto_renew = false` or `renewal_status = "Normal"` explicitly to disable it.
 * `renewal_status` - (Optional, Available since v1.146.0) Whether to renew an accelerator automatically or not. Default value: `Normal`. Valid values:
   - `AutoRenewal`: Enable auto renewal.
   - `Normal`: Disable auto renewal.
@@ -92,7 +93,7 @@ The following arguments are supported:
 
 The ip_set_config supports the following:
 
-* `access_mode` - (Optional, ForceNew) The access mode of the acceleration area. Valid values:
+* `access_mode` - (Optional, String, ForceNew) The access mode of the acceleration area. Valid values:
   - `UserDefine`: Custom nearby access mode. You can specify acceleration areas and regions based on your business requirements. Global Accelerator provides an independent EIP for each acceleration area.
   - `Anycast`: Automatic nearby access mode. You do not need to configure an acceleration area. Global Accelerator provides an Anycast EIP for multiple regions. Users connect to the nearest access point of the Alibaba Cloud network using the Anycast EIP.
 
@@ -102,8 +103,8 @@ The ip_set_config supports the following:
 
 The ddos_config_list supports the following:
 
-* `ddos_id` - (Optional) The ID of the DDoS protection instance. Both `ddos_id` and `ddos_region_id` are required for each entry.
-* `ddos_region_id` - (Optional) The region ID of the DDoS protection instance. Valid values: `cn-hangzhou`, `ap-southeast-1`. Both `ddos_id` and `ddos_region_id` are required for each entry.
+* `ddos_id` - (Optional, String) The ID of the DDoS protection instance. Both `ddos_id` and `ddos_region_id` are required for each entry.
+* `ddos_region_id` - (Optional, String) The region ID of the DDoS protection instance. Valid values: `cn-hangzhou`, `ap-southeast-1`. Both `ddos_id` and `ddos_region_id` are required for each entry.
 
 **NOTE:** To detach all DDoS protection instances, set `ddos_config_list` to an empty list explicitly. Omitting the argument keeps the current associations.
 
@@ -113,8 +114,8 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Accelerator. Value as `accelerator_id`.
 * `status` - The status of the GA instance.
-* `ddos_id` - (Available since v2.3.0, Deprecated since v2.3.0) The ID of the first DDoS protection instance that is associated with the GA instance. Use `ddos_config_list` to manage the associations.
-* `ddos_region_id` - (Available since v2.3.0, Deprecated since v2.3.0) The region ID of the first DDoS protection instance that is associated with the GA instance. Use `ddos_config_list` to manage the associations.
+* `ddos_id` - (String, Available since v2.3.0, Deprecated since v2.3.0) The ID of the first DDoS protection instance that is associated with the GA instance. Use `ddos_config_list` to manage the associations.
+* `ddos_region_id` - (String, Available since v2.3.0, Deprecated since v2.3.0) The region ID of the first DDoS protection instance that is associated with the GA instance. Use `ddos_config_list` to manage the associations.
 
 ## Timeouts
 

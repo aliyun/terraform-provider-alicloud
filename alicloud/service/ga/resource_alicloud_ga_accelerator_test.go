@@ -26,6 +26,25 @@ func init() {
 	})
 }
 
+// gaAcceleratorSweepNamePrefixes lists the cloud-side name prefixes the GA
+// accelerator sweeper may delete. Document examples use the terraform-example
+// prefix, so they stay sweepable even though the PREPAY destroy path is a
+// no-op.
+var gaAcceleratorSweepNamePrefixes = []string{
+	"tf-testAcc",
+	"tf_testAcc",
+	"terraform-example",
+}
+
+func gaAcceleratorNameHasSweepPrefix(name string) bool {
+	for _, prefix := range gaAcceleratorSweepNamePrefixes {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 func testSweepGaAccelerator(region string) error {
 	rawClient, err := gaTestClientForRegion(region)
 	if err != nil {
@@ -33,11 +52,6 @@ func testSweepGaAccelerator(region string) error {
 	}
 
 	client := rawClient.(*connectivity.AliyunClient)
-
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
 
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
@@ -63,14 +77,7 @@ func testSweepGaAccelerator(region string) error {
 			accelerator := v.(map[string]interface{})
 			acceleratorName := fmt.Sprint(accelerator["Name"])
 			acceleratorId := fmt.Sprint(accelerator["AcceleratorId"])
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(acceleratorName, prefix) {
-					skip = false
-					break
-				}
-			}
-			if skip {
+			if !gaAcceleratorNameHasSweepPrefix(acceleratorName) {
 				log.Printf("[INFO] Skipping Ga accelerator: %s(%s) ", acceleratorId, acceleratorName)
 				continue
 			}
@@ -269,6 +276,12 @@ func TestAccAliCloudGaAccelerator_basic0(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_use_coupon", "promotion_option_no", "auto_pay"},
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"auto_renew": "false",
 				}),
@@ -277,6 +290,12 @@ func TestAccAliCloudGaAccelerator_basic0(t *testing.T) {
 						"auto_renew": "false",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_use_coupon", "promotion_option_no", "auto_pay"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -289,6 +308,12 @@ func TestAccAliCloudGaAccelerator_basic0(t *testing.T) {
 						"auto_renew":     "true",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_use_coupon", "promotion_option_no", "auto_pay"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -699,6 +724,29 @@ func TestAccAliCloudGaAccelerator_withAnycast(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestUnitAliCloudGaAcceleratorSweepNamePrefixes keeps the sweeper matcher and
+// the document example naming in sync: the terraform-example prefix used by the
+// example must be sweepable, and unrelated accelerator names must not match.
+// lintignore: R001
+func TestUnitAliCloudGaAcceleratorSweepNamePrefixes(t *testing.T) {
+	testCases := []struct {
+		name string
+		want bool
+	}{
+		{"tf-testAcccn-hangzhouAliCloudGaAccelerator74219", true},
+		{"tf_testAccExample", true},
+		{"terraform-example-ga-accelerator", true},
+		{"ga-bp1dvu3hficunleb8yhcv", false},
+		{"example-accelerator", false},
+		{"", false},
+	}
+	for _, testCase := range testCases {
+		if got := gaAcceleratorNameHasSweepPrefix(testCase.name); got != testCase.want {
+			t.Fatalf("gaAcceleratorNameHasSweepPrefix(%q) = %t, want %t", testCase.name, got, testCase.want)
+		}
+	}
 }
 
 var AliCloudGaAcceleratorMap0 = map[string]string{
