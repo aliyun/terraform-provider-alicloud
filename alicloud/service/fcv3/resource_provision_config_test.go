@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
@@ -20,6 +21,7 @@ import (
 	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // Test Fcv3 ProvisionConfig. >>> Resource test cases, automatically generated.
@@ -777,6 +779,145 @@ func TestAccAliCloudFcv3ProvisionConfig_memberOrderPair(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudFcv3ProvisionConfig_policyTarget locks the PR review
+// regression: while a scheduled action is active the service computes a
+// runtime target (2) that differs from the configured default (1). Read must
+// keep the configured default in state and the replacement PUT performed by a
+// boolean-only update must send that default, otherwise the temporary policy
+// target becomes the persistent default. The first step also confirms the
+// API-reported split (target=2, defaultTarget=1), which a future or inactive
+// policy does not exercise.
+func TestAccAliCloudFcv3ProvisionConfig_policyTarget(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_fcv3_provision_config.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ProvisionConfigMap7183)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeProvisionConfig")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sfcv3provisionpolicy%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ProvisionConfigBasicDependence7183)
+
+	// waitForTarget polls the service because a scheduled action takes effect
+	// asynchronously after the cron trigger, so apply alone does not guarantee
+	// that the policy-computed runtime target is already visible.
+	waitForTarget := func(wantTarget, wantDefaultTarget string) resource.TestCheckFunc {
+		return func(*terraform.State) error {
+			service := fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+			deadline := time.Now().Add(6 * time.Minute)
+			var last string
+			for {
+				object, err := service.DescribeProvisionConfig(name)
+				if err != nil {
+					return err
+				}
+				last = fmt.Sprintf("target=%v defaultTarget=%v", object["target"], object["defaultTarget"])
+				if fmt.Sprint(object["target"]) == wantTarget && fmt.Sprint(object["defaultTarget"]) == wantDefaultTarget {
+					return nil
+				}
+				if time.Now().After(deadline) {
+					return fmt.Errorf("provision config did not reach target=%s defaultTarget=%s: %s", wantTarget, wantDefaultTarget, last)
+				}
+				time.Sleep(10 * time.Second)
+			}
+		}
+	}
+
+	activeScheduledAction := []map[string]interface{}{
+		{
+			"name":                "always-on",
+			"start_time":          "2020-01-01T00:00:00Z",
+			"end_time":            "2035-01-01T00:00:00Z",
+			"schedule_expression": "cron(0 * * * * *)",
+			"target":              "2",
+		},
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			// Configured default 1 with an active scheduled action targeting 2.
+			// The state keeps the configured default even though the API
+			// reports the policy-computed runtime target separately.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_name":       "${alicloud_fcv3_function.function.function_name}",
+					"target":              "1",
+					"always_allocate_cpu": "true",
+					"always_allocate_gpu": "true",
+					"scheduled_actions":   activeScheduledAction,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"target":              "1",
+						"scheduled_actions.#": "1",
+					}),
+					waitForTarget("2", "1"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"current", "current_error"},
+			},
+			// Change only the allocation booleans and omit target from the
+			// configuration: the replacement PUT must preserve defaultTarget=1
+			// instead of writing back the runtime target 2.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"always_allocate_cpu": "false",
+					"always_allocate_gpu": "false",
+					"target":              acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"always_allocate_cpu": "false",
+						"always_allocate_gpu": "false",
+						"target":              "1",
+						"scheduled_actions.#": "1",
+					}),
+					waitForTarget("2", "1"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"current", "current_error"},
+			},
+			// Removing the policy must clear the action list and converge on
+			// the configured default instead of the previously computed
+			// runtime target.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scheduled_actions": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scheduled_actions.#": "0",
+						"target":              "1",
+					}),
+					waitForTarget("1", "1"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"current", "current_error"},
+			},
+		},
+	})
+}
+
 // TestUnitAliCloudFcv3ProvisionConfigRequest verifies the request payload built
 // by the public CRUD entry points. Omitted Optional+Computed fields must be
 // absent, an explicit false must be sent as false, and an update that only
@@ -935,6 +1076,7 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 	}
 	body := lastPut()
 	assertValue(body, "target", float64(1))
+	assertValue(body, "defaultTarget", float64(1))
 	assertMissing(body, "alwaysAllocateCPU")
 	assertMissing(body, "alwaysAllocateGPU")
 
@@ -950,6 +1092,7 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 	}
 	body = lastPut()
 	assertMissing(body, "target")
+	assertMissing(body, "defaultTarget")
 
 	// Boolean-only update from a real prior state: target is unchanged, so the
 	// old implementation omitted it; it must still be present.
@@ -963,6 +1106,7 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 		"always_allocate_gpu": true,
 	})
 	assertValue(body, "target", float64(1))
+	assertValue(body, "defaultTarget", float64(1))
 	assertValue(body, "alwaysAllocateCPU", false)
 	assertValue(body, "alwaysAllocateGPU", true)
 
@@ -1020,6 +1164,7 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 		"always_allocate_gpu": true,
 	})
 	assertValue(body, "target", float64(0))
+	assertValue(body, "defaultTarget", float64(0))
 
 	// The qualifier selects the target object and must reach the request query
 	// on every replacement PUT that the resource performs.
@@ -1110,6 +1255,38 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 	})
 	assertListLength(body, "targetTrackingPolicies", 0)
 	assertListLength(body, "scheduledActions", 0)
+
+	// A policy-computed runtime target must never be stored as the desired
+	// configuration. Read maps target from the API defaultTarget, so the state
+	// keeps the configured default while a scheduled action targets 2.
+	mu.Lock()
+	stored["defaultTarget"] = float64(1)
+	stored["target"] = float64(2)
+	mu.Unlock()
+	readData := schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{
+		"function_name": "unit-provision",
+		"target":        2,
+	})
+	readData.SetId("unit-provision")
+	if err := r.Read(readData, client); err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if got := readData.Get("target"); got != 1 {
+		t.Fatalf("read mapped target = %#v, want the configured defaultTarget 1", got)
+	}
+
+	// Consequently a boolean-only update whose configuration omits target
+	// sends the configured default instead of the runtime value reported by
+	// the service. The prior state comes from the Read above, so this case
+	// fails as soon as Read stores the policy-computed target again.
+	priorPolicy := readData.State()
+	body = applyUpdate(priorPolicy, map[string]interface{}{
+		"function_name":       "unit-provision",
+		"always_allocate_cpu": false,
+		"always_allocate_gpu": true,
+	})
+	assertValue(body, "target", float64(1))
+	assertValue(body, "defaultTarget", float64(1))
 }
 
 func provisionConfigUnitTestClient(t *testing.T, server *httptest.Server) *connectivity.AliyunClient {

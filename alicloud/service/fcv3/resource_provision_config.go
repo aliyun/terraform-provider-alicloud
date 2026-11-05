@@ -205,6 +205,9 @@ func resourceProvisionConfigCreate(d *schema.ResourceData, meta interface{}) err
 
 	if v, ok := d.GetOkExists("target"); ok {
 		request["target"] = v
+		// PutProvisionConfig deprecates target in favour of defaultTarget, so
+		// send the same value through both fields.
+		request["defaultTarget"] = v
 	}
 	if v, ok := d.GetOkExists("always_allocate_cpu"); ok {
 		request["alwaysAllocateCPU"] = v
@@ -265,7 +268,18 @@ func resourceProvisionConfigRead(d *schema.ResourceData, meta interface{}) error
 	if objectRaw["functionArn"] != nil {
 		d.Set("function_arn", objectRaw["functionArn"])
 	}
-	if objectRaw["target"] != nil {
+	// The service reports target as the effective target, which a scheduled
+	// action or a target tracking policy can override while it is active, and
+	// defaultTarget as the configured default of the provision configuration.
+	// Map target from defaultTarget: the policy-computed runtime value must
+	// never become the stored desired configuration, because the replacement
+	// PUT performed by Update sends the value from state and would turn a
+	// temporary policy target into the persistent default. A response that
+	// omits defaultTarget is only trusted when no scaling policy is present,
+	// where the effective target equals the configured default.
+	if objectRaw["defaultTarget"] != nil {
+		d.Set("target", objectRaw["defaultTarget"])
+	} else if objectRaw["target"] != nil && !provisionConfigHasScalingPolicy(objectRaw) {
 		d.Set("target", objectRaw["target"])
 	}
 
@@ -317,6 +331,19 @@ func resourceProvisionConfigRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("function_name", d.Id())
 
 	return nil
+}
+
+// provisionConfigHasScalingPolicy reports whether the response carries any
+// scheduled action or target tracking policy. Without one the effective target
+// equals defaultTarget, so target is a safe fallback when defaultTarget is not
+// returned.
+func provisionConfigHasScalingPolicy(objectRaw map[string]interface{}) bool {
+	for _, key := range []string{"scheduledActions", "targetTrackingPolicies"} {
+		if list, ok := objectRaw[key].([]interface{}); ok && len(list) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -403,11 +430,17 @@ func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) err
 	// PutProvisionConfig replaces the stored provision configuration and
 	// requires target, so every update carries target plus the current
 	// always-allocate values; otherwise a single-field update could drop
-	// them or fall back to the service defaults. target is Optional+Computed,
-	// so when it is omitted or comes from an import the state holds the value
-	// returned by the service and the PUT keeps it instead of writing zero.
+	// them or fall back to the service defaults. target is Optional+Computed:
+	// when it is omitted or comes from an import, state holds the configured
+	// default mapped from defaultTarget by Read, so the replacement PUT keeps
+	// that default instead of writing zero or the policy-computed runtime
+	// target. An explicitly configured value, including zero, is still sent.
 	if update {
-		request["target"] = d.Get("target")
+		target := d.Get("target")
+		request["target"] = target
+		// target is deprecated but still required by PutProvisionConfig; send
+		// the same configured default through defaultTarget as well.
+		request["defaultTarget"] = target
 		request["alwaysAllocateCPU"] = d.Get("always_allocate_cpu")
 		request["alwaysAllocateGPU"] = d.Get("always_allocate_gpu")
 	}
