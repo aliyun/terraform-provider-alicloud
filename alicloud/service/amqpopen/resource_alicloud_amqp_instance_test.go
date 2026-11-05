@@ -895,12 +895,20 @@ func TestAccAliCloudAmqpInstanceResource_basic6128(t *testing.T) {
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
+				// Create the instance with tags to exercise the Create path's
+				// Tags serialization (amqp-open CreateInstance uses style:json,
+				// expecting a single JSON string, not expanded Tags.N.Key/Value)
+				// and assert the tags actually land on the created instance.
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type":           "PayAsYouGo",
 					"vpc_id":                 "${data.alicloud_vswitches.default.vpc_id}",
 					"vswitch_ids":            []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
 					"security_group_id":      "${data.alicloud_security_groups.default.ids.0}",
 					"serverless_charge_type": "onDemand",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -908,8 +916,27 @@ func TestAccAliCloudAmqpInstanceResource_basic6128(t *testing.T) {
 						"vpc_id":            acctest.CHECKSET,
 						"vswitch_ids.#":     "2",
 						"security_group_id": acctest.CHECKSET,
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "Test",
 					}),
 				),
+			},
+			{
+				// PlanOnly: re-plan with the same config to confirm the instance
+				// created with tags has no drift.
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":           "PayAsYouGo",
+					"vpc_id":                 "${data.alicloud_vswitches.default.vpc_id}",
+					"vswitch_ids":            []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
+					"security_group_id":      "${data.alicloud_security_groups.default.ids.0}",
+					"serverless_charge_type": "onDemand",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				PlanOnly: true,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
