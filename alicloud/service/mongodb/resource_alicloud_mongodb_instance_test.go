@@ -1220,20 +1220,25 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 				),
 			},
 			{
+				// The delete branch of ModifyBackupPolicy locates the policy by its source
+				// and destination regions, so both are kept here; the retention and period
+				// attributes belong to the update branch and must not accompany a delete.
 				Config: testAccConfig(map[string]interface{}{
 					"cross_backup_period":       acctest.REMOVEKEY,
 					"cross_retention_type":      acctest.REMOVEKEY,
 					"cross_retention_value":     acctest.REMOVEKEY,
 					"cross_log_retention_type":  acctest.REMOVEKEY,
 					"cross_log_retention_value": acctest.REMOVEKEY,
-					"dest_region":               acctest.REMOVEKEY,
 					"enable_cross_log_backup":   acctest.REMOVEKEY,
-					"src_region":                acctest.REMOVEKEY,
+					"src_region":                "cn-beijing",
+					"dest_region":               "cn-shanghai",
 					"cross_backup_type":         "delete",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cross_backup_type": "delete",
+						"src_region":        "cn-beijing",
+						"dest_region":       "cn-shanghai",
 					}),
 					testAccCheckMongoDBInstanceCrossBackupPolicy(resourceId, false),
 				),
@@ -1819,6 +1824,45 @@ func TestUnitAliCloudMongoDBInstanceBackupPolicyRequestSerialization(t *testing.
 		mongodbBackupPolicyFixtureAssertSent(t, request, "SrcRegion", "cn-beijing")
 		mongodbBackupPolicyFixtureAssertSent(t, request, "EnableCrossLogBackup", "1")
 	})
+
+	t.Run("delete mode carries the regions and omits the retention attributes", func(t *testing.T) {
+		// The service assembles the delete entry from the region and type fields only:
+		// the policy cannot be located without both regions, and the retention/period
+		// fields belong to the update branch. Sending them here used to fail the delete
+		// with an opaque backend error.
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{
+			"cross_backup_type":         "delete",
+			"cross_backup_period":       []interface{}{"Monday"},
+			"cross_retention_type":      "never",
+			"cross_retention_value":     7,
+			"cross_log_retention_type":  "never",
+			"cross_log_retention_value": 7,
+			"enable_cross_log_backup":   1,
+			"src_region":                "cn-beijing",
+			"dest_region":               "cn-shanghai",
+		})
+		values := map[string]cty.Value{
+			"cross_backup_type":         cty.StringVal("delete"),
+			"cross_backup_period":       cty.SetVal([]cty.Value{cty.StringVal("Monday")}),
+			"cross_retention_type":      cty.StringVal("never"),
+			"cross_retention_value":     cty.NumberIntVal(7),
+			"cross_log_retention_type":  cty.StringVal("never"),
+			"cross_log_retention_value": cty.NumberIntVal(7),
+			"enable_cross_log_backup":   cty.NumberIntVal(1),
+			"src_region":                cty.StringVal("cn-beijing"),
+			"dest_region":               cty.StringVal("cn-shanghai"),
+		}
+		state := mongodbBackupPolicyFixtureState(map[string]string{
+			"cross_backup_type": "update",
+			"src_region":        "cn-beijing",
+			"dest_region":       "cn-shanghai",
+		})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossBackupType", "delete")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "SrcRegion", "cn-beijing")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "DestRegion", "cn-shanghai")
+		mongodbBackupPolicyFixtureAssertOmitted(t, request, "CrossBackupPeriod", "CrossRetentionType", "CrossRetentionValue", "CrossLogRetentionType", "CrossLogRetentionValue", "EnableCrossLogBackup")
+	})
 }
 
 // TestUnitAliCloudMongoDBInstanceCrossBackupValidation locks the local contract check
@@ -1883,6 +1927,19 @@ func TestUnitAliCloudMongoDBInstanceCrossBackupValidation(t *testing.T) {
 		}
 		if len(requests) != 0 {
 			t.Fatalf("an incomplete combination must not reach the API, got %d requests", len(requests))
+		}
+	})
+
+	t.Run("delete mode without the regions is rejected", func(t *testing.T) {
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{"cross_backup_type": "delete"})
+		values := map[string]cty.Value{"cross_backup_type": cty.StringVal("delete")}
+		state := mongodbBackupPolicyFixtureState(map[string]string{"cross_backup_type": "update"})
+		errText, requests := mongodbBackupPolicyFixtureRunUpdateError(t, state, raw, values)
+		if !strings.Contains(errText, "src_region") || !strings.Contains(errText, "dest_region") {
+			t.Fatalf("the error must name the missing regions, got %s", errText)
+		}
+		if len(requests) != 0 {
+			t.Fatalf("an incomplete delete must not reach the API, got %d requests", len(requests))
 		}
 	})
 

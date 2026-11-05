@@ -763,6 +763,20 @@ func validateMongoDBCrossBackupPolicy(d *schema.ResourceData) error {
 	if crossBackupType == "" && len(configuredCrossAttributes) > 0 {
 		return fmt.Errorf("cross_backup_type must be set to \"update\" or \"delete\" when the geo-redundant backup attributes %s are configured", strings.Join(configuredCrossAttributes, ", "))
 	}
+	if crossBackupType == "delete" && d.HasChange("cross_backup_type") {
+		// The service locates the geo-redundant policy to delete by its source and
+		// destination regions, so both must accompany the delete request.
+		missing := make([]string, 0, 2)
+		if v, ok := d.GetOk("src_region"); !ok || fmt.Sprint(v) == "" {
+			missing = append(missing, "src_region")
+		}
+		if v, ok := d.GetOk("dest_region"); !ok || fmt.Sprint(v) == "" {
+			missing = append(missing, "dest_region")
+		}
+		if len(missing) > 0 {
+			return fmt.Errorf("cross_backup_type is set to \"delete\", so the geo-redundant backup locations %s must be configured", strings.Join(missing, ", "))
+		}
+	}
 	if crossBackupType != "update" {
 		return nil
 	}
@@ -870,11 +884,15 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 	// therefore never re-sends a stale cross-region payload.
 	crossBackupType, _ := d.Get("cross_backup_type").(string)
 	crossBackupUpdate := crossBackupType == "update"
+	// The delete branch of ModifyBackupPolicy only assembles the region and type fields
+	// of the policy entry, so it must carry both regions and must not receive the
+	// retention/period fields that belong to the update branch.
+	crossBackupDelete := crossBackupType == "delete" && d.HasChange("cross_backup_type")
 	snapshotBackupType, _ := d.Get("snapshot_backup_type").(string)
 	backupInterval, _ := d.Get("backup_interval").(string)
 	highFrequencyBackupApplicable := snapshotBackupType == "Flash" && isMinuteLevelBackupInterval(backupInterval)
 
-	if d.HasChange("cross_backup_period") || crossBackupUpdate {
+	if !crossBackupDelete && (d.HasChange("cross_backup_period") || crossBackupUpdate) {
 		if v, ok := d.GetOk("cross_backup_period"); ok {
 			crossPeriodList := convert.ExpandStringList(v.(*schema.Set).List())
 			request["CrossBackupPeriod"] = strings.Join(crossPeriodList[:], helper.CommaSeparated)
@@ -885,37 +903,37 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 		request["CrossBackupType"] = v
 	}
 
-	if d.HasChange("cross_retention_type") || crossBackupUpdate {
+	if !crossBackupDelete && (d.HasChange("cross_retention_type") || crossBackupUpdate) {
 		if v, ok := d.GetOk("cross_retention_type"); ok {
 			request["CrossRetentionType"] = v
 		}
 	}
 
-	if d.HasChange("cross_retention_value") || crossBackupUpdate {
+	if !crossBackupDelete && (d.HasChange("cross_retention_value") || crossBackupUpdate) {
 		if v, ok := d.GetOk("cross_retention_value"); ok {
 			request["CrossRetentionValue"] = v
 		}
 	}
 
-	if d.HasChange("cross_log_retention_type") || crossBackupUpdate {
+	if !crossBackupDelete && (d.HasChange("cross_log_retention_type") || crossBackupUpdate) {
 		if v, ok := d.GetOk("cross_log_retention_type"); ok {
 			request["CrossLogRetentionType"] = v
 		}
 	}
 
-	if d.HasChange("cross_log_retention_value") || crossBackupUpdate {
+	if !crossBackupDelete && (d.HasChange("cross_log_retention_value") || crossBackupUpdate) {
 		if v, ok := d.GetOk("cross_log_retention_value"); ok {
 			request["CrossLogRetentionValue"] = v
 		}
 	}
 
-	if d.HasChange("dest_region") || crossBackupUpdate {
+	if d.HasChange("dest_region") || crossBackupUpdate || crossBackupDelete {
 		if v, ok := d.GetOk("dest_region"); ok {
 			request["DestRegion"] = v
 		}
 	}
 
-	if v, ok := d.Get("enable_cross_log_backup").(int); ok && (d.HasChange("enable_cross_log_backup") || crossBackupUpdate) {
+	if v, ok := d.Get("enable_cross_log_backup").(int); ok && !crossBackupDelete && (d.HasChange("enable_cross_log_backup") || crossBackupUpdate) {
 		request["EnableCrossLogBackup"] = v
 	}
 
@@ -929,7 +947,7 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 		request["PreserveOneEachHour"] = v
 	}
 
-	if d.HasChange("src_region") || crossBackupUpdate {
+	if d.HasChange("src_region") || crossBackupUpdate || crossBackupDelete {
 		if v, ok := d.GetOk("src_region"); ok {
 			request["SrcRegion"] = v
 		}
