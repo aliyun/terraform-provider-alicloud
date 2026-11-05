@@ -101,7 +101,7 @@ func TestAccAliCloudVodDomain_basic0(t *testing.T) {
 					"cert_type":    "upload",
 					"ssl_pub":      "${var.cert}",
 					"ssl_pri":      "${var.key}",
-					"env":          "staging",
+					"env":          "production",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -110,7 +110,7 @@ func TestAccAliCloudVodDomain_basic0(t *testing.T) {
 						"cert_type":    "upload",
 						"ssl_pub":      acctest.CHECKSET,
 						"ssl_pri":      acctest.CHECKSET,
-						"env":          "staging",
+						"env":          "production",
 					}),
 				),
 			},
