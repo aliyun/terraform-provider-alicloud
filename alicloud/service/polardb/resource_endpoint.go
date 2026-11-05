@@ -115,18 +115,7 @@ func ResourceEndpoint() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
-			},
-			"polar_scc_wait_timeout": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"polar_scc_timeout_action": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"0", "2"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"on", "off"}, false),
 			},
 		},
 	}
@@ -160,12 +149,6 @@ func resourceEndpointCreate(d *schema.ResourceData, meta interface{}) error {
 			return errs.WrapError(err)
 		}
 		request.EndpointConfig = string(endpointConfig)
-	}
-	if polarSccWaitTimeout, ok := d.GetOk("polar_scc_wait_timeout"); ok {
-		request.PolarSccWaitTimeout = polarSccWaitTimeout.(string)
-	}
-	if polarSccTimeoutAction, ok := d.GetOk("polar_scc_timeout_action"); ok {
-		request.PolarSccTimeoutAction = polarSccTimeoutAction.(string)
 	}
 
 	enpoints, err := polarDBService.DescribePolarDBInstanceNetInfo(clusterId)
@@ -245,18 +228,7 @@ func resourceEndpointRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("auto_add_new_nodes", autoAddNewNodes)
 	d.Set("read_write_mode", readWriteMode)
 	if err := d.Set("scc_mode", strings.ToLower(object.SccMode)); err != nil {
-		return WrapError(err)
-	}
-	// Keep the configured value when the API omits these optional SCC settings.
-	if object.PolarSccWaitTimeout != "" {
-		if err := d.Set("polar_scc_wait_timeout", object.PolarSccWaitTimeout); err != nil {
-			return WrapError(err)
-		}
-	}
-	if object.PolarSccTimeoutAction != "" {
-		if err := d.Set("polar_scc_timeout_action", object.PolarSccTimeoutAction); err != nil {
-			return WrapError(err)
-		}
+		return errs.WrapError(err)
 	}
 
 	if err = polarDBService.RefreshEndpointConfig(d); err != nil {
@@ -329,7 +301,7 @@ func resourceEndpointUpdate(d *schema.ResourceData, meta interface{}) error {
 	dbClusterId := parts[0]
 	dbEndpointId := parts[1]
 
-	if d.HasChanges("nodes", "read_write_mode", "auto_add_new_nodes", "endpoint_config", "db_endpoint_description", "scc_mode", "polar_scc_wait_timeout", "polar_scc_timeout_action") {
+	if d.HasChanges("nodes", "read_write_mode", "auto_add_new_nodes", "endpoint_config", "db_endpoint_description", "scc_mode") {
 		modifyEndpointRequest := polardb.CreateModifyDBClusterEndpointRequest()
 		modifyEndpointRequest.RegionId = client.RegionId
 		modifyEndpointRequest.DBClusterId = dbClusterId
@@ -363,19 +335,9 @@ func resourceEndpointUpdate(d *schema.ResourceData, meta interface{}) error {
 			configItem["DBEndpointDescription"] = d.Get("db_endpoint_description").(string)
 		}
 		if d.HasChange("scc_mode") {
-			sccMode := d.Get("scc_mode").(string)
+			sccMode := strings.ToLower(d.Get("scc_mode").(string))
 			modifyEndpointRequest.SccMode = sccMode
 			configItem["SccMode"] = sccMode
-		}
-		if d.HasChange("polar_scc_wait_timeout") {
-			polarSccWaitTimeout := d.Get("polar_scc_wait_timeout").(string)
-			modifyEndpointRequest.PolarSccWaitTimeout = polarSccWaitTimeout
-			configItem["PolarSccWaitTimeout"] = polarSccWaitTimeout
-		}
-		if d.HasChange("polar_scc_timeout_action") {
-			polarSccTimeoutAction := d.Get("polar_scc_timeout_action").(string)
-			modifyEndpointRequest.PolarSccTimeoutAction = polarSccTimeoutAction
-			configItem["PolarSccTimeoutAction"] = polarSccTimeoutAction
 		}
 		if err := retry.Retry(8*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {

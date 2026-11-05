@@ -145,28 +145,12 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
 					"endpoint_config": map[string]string{
 						"ConsistLevel": "0",
 					},
-					"scc_mode":                 "on",
-					"polar_scc_wait_timeout":   "100",
-					"polar_scc_timeout_action": "0",
+					"scc_mode": "on",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"endpoint_config.ConsistLevel": "0",
 						"scc_mode":                     "on",
-						"polar_scc_wait_timeout":       "100",
-						"polar_scc_timeout_action":     "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"polar_scc_wait_timeout":   "200",
-					"polar_scc_timeout_action": "2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"polar_scc_wait_timeout":   "200",
-						"polar_scc_timeout_action": "2",
 					}),
 				),
 			},
@@ -295,7 +279,7 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate_SslConnectionStringAndConnection
 }
 
 func TestUnitPolarDBEndpointSccConfig(t *testing.T) {
-	sccModeSchema := resourceAlicloudPolarDBEndpoint().Schema["scc_mode"]
+	sccModeSchema := ResourceEndpoint().Schema["scc_mode"]
 	for _, input := range []string{"on", "off"} {
 		if _, errors := sccModeSchema.ValidateFunc(input, "scc_mode"); len(errors) > 0 {
 			t.Fatalf("expected %q to be valid, got: %v", input, errors)
@@ -303,17 +287,6 @@ func TestUnitPolarDBEndpointSccConfig(t *testing.T) {
 	}
 	for _, input := range []string{"ON", "OFF", "invalid"} {
 		if _, errors := sccModeSchema.ValidateFunc(input, "scc_mode"); len(errors) == 0 {
-			t.Fatalf("expected %q to be rejected", input)
-		}
-	}
-	timeoutActionSchema := resourceAlicloudPolarDBEndpoint().Schema["polar_scc_timeout_action"]
-	for _, input := range []string{"0", "2"} {
-		if _, errors := timeoutActionSchema.ValidateFunc(input, "polar_scc_timeout_action"); len(errors) > 0 {
-			t.Fatalf("expected %q to be valid, got: %v", input, errors)
-		}
-	}
-	for _, input := range []string{"1", "3", ""} {
-		if _, errors := timeoutActionSchema.ValidateFunc(input, "polar_scc_timeout_action"); len(errors) == 0 {
 			t.Fatalf("expected %q to be rejected", input)
 		}
 	}
