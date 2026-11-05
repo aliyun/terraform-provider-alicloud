@@ -18,6 +18,12 @@ func databaseAccountResponse(records ...map[string]interface{}) map[string]inter
 	}
 }
 
+func databaseAccountResponseForEngine(engine string, records ...map[string]interface{}) map[string]interface{} {
+	response := databaseAccountResponse(records...)
+	response["Engine"] = engine
+	return response
+}
+
 // TestUnitAliCloudPolarDbDatabase_accountSelection covers the multi-account
 // DescribeDatabases responses consumed by the resource read path. The configured
 // account must be selected by name regardless of list order, and an unknown or
@@ -143,6 +149,7 @@ func TestUnitAliCloudPolarDbDatabase_refreshAccountState(t *testing.T) {
 
 	tests := []struct {
 		name            string
+		config          map[string]interface{}
 		response        map[string]interface{}
 		wantAccountName string
 		wantPrivilege   string
@@ -189,14 +196,66 @@ func TestUnitAliCloudPolarDbDatabase_refreshAccountState(t *testing.T) {
 			wantAccountName: "alice",
 			wantPrivilege:   "ReadOnly",
 		},
+		{
+			// Legacy PostgreSQL configuration that only manages account_name: the
+			// owner is transferred to another account outside Terraform, so the
+			// managed binding must become visible even though the privilege field
+			// was never configured.
+			name:            "postgresql owner transfer clears the managed account name",
+			config:          map[string]interface{}{"account_name": "alice"},
+			response:        databaseAccountResponseForEngine("PostgreSQL", accountB),
+			wantAccountName: "",
+			wantPrivilege:   "",
+		},
+		{
+			name:            "oracle owner transfer clears the managed account name",
+			config:          map[string]interface{}{"account_name": "alice"},
+			response:        databaseAccountResponseForEngine("Oracle", accountB),
+			wantAccountName: "",
+			wantPrivilege:   "",
+		},
+		{
+			name:            "postgresql empty owner list clears the managed account name",
+			config:          map[string]interface{}{"account_name": "alice"},
+			response:        databaseAccountResponseForEngine("PostgreSQL"),
+			wantAccountName: "",
+			wantPrivilege:   "",
+		},
+		{
+			name:            "postgresql response containing the configured owner keeps it",
+			config:          map[string]interface{}{"account_name": "alice"},
+			response:        databaseAccountResponseForEngine("PostgreSQL", map[string]interface{}{"AccountName": "alice", "PrivilegeStatus": "Empowered"}),
+			wantAccountName: "alice",
+			wantPrivilege:   "",
+		},
+		{
+			// MySQL authorizes several accounts, so a remaining entry does not
+			// identify the managed binding and must not replace the configured name.
+			name:            "mysql keeps the account name when the managed grant disappears",
+			config:          map[string]interface{}{"account_name": "alice"},
+			response:        databaseAccountResponseForEngine("MySQL", accountB),
+			wantAccountName: "alice",
+			wantPrivilege:   "",
+		},
+		{
+			name:            "non-owner engine keeps the account name on an empty list",
+			config:          map[string]interface{}{"account_name": "alice"},
+			response:        databaseAccountResponseForEngine("MySQL"),
+			wantAccountName: "alice",
+			wantPrivilege:   "",
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			d := schema.TestResourceDataRaw(t, ResourceDatabase().Schema, map[string]interface{}{
-				"account_name":      "alice",
-				"account_privilege": "ReadOnly",
-			})
+			config := test.config
+			if config == nil {
+				config = map[string]interface{}{
+					"account_name":      "alice",
+					"account_privilege": "ReadOnly",
+				}
+			}
+			d := schema.TestResourceDataRaw(t, ResourceDatabase().Schema, config)
 			refreshDatabaseAccountState(d, test.response)
 			if got := d.Get("account_name"); got != test.wantAccountName {
 				t.Fatalf("expected account_name %q, got %v", test.wantAccountName, got)

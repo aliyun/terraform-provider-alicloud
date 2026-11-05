@@ -258,6 +258,16 @@ func refreshDatabaseAccountState(d *schema.ResourceData, objectRaw map[string]in
 		// revoked: clearing the privilege surfaces the ForceNew drift instead of
 		// keeping a stale value.
 		d.Set("account_privilege", "")
+		// PostgreSQL and Oracle bind a database to one owner account, which
+		// DescribeDatabases always reports. When a trustworthy response lacks the
+		// configured account, the managed owner binding itself drifted: clearing
+		// account_name makes that visible so Update's DBOwner branch restores the
+		// configured owner. Other engines authorize several accounts, so the
+		// remaining entries say nothing about the managed binding and clearing the
+		// name there would plan an update that cannot converge.
+		if databaseOwnerEngine(objectRaw) {
+			d.Set("account_name", "")
+		}
 		return
 	}
 
@@ -268,6 +278,15 @@ func refreshDatabaseAccountState(d *schema.ResourceData, objectRaw map[string]in
 	if privilege := strings.TrimSpace(fmt.Sprint(account["AccountPrivilege"])); privilege != "" && privilege != "<nil>" {
 		d.Set("account_privilege", privilege)
 	}
+}
+
+// databaseOwnerEngine reports whether the database engine binds the database to
+// a single owner account, in which case DescribeDatabases reports the owner and
+// an authoritative response without the configured account proves that the
+// managed owner binding is gone.
+func databaseOwnerEngine(objectRaw map[string]interface{}) bool {
+	engine := strings.TrimSpace(fmt.Sprint(objectRaw["Engine"]))
+	return engine == "PostgreSQL" || engine == "Oracle"
 }
 
 // selectDatabaseAccount returns the account entry whose AccountName equals

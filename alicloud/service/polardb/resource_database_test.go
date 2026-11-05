@@ -568,13 +568,18 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 		"account_privilege": "ReadOnly",
 		"db_description":    name,
 	}
-	// Omitting account_privilege lets a step re-grant the account without asking
+	// Removing account_privilege lets a step re-grant the account without asking
 	// Terraform to reconcile the cleared state against the configured value.
+	// The shared config builder merges each step into the previous attributes, so
+	// the key must be dropped explicitly; omitting it would keep
+	// account_privilege="ReadOnly" in the rendered configuration and the restore
+	// step would plan a database replacement.
 	privilegeConfigWithoutPrivilege := map[string]interface{}{
-		"db_cluster_id":  "${alicloud_polardb_account.default.db_cluster_id}",
-		"db_name":        name,
-		"account_name":   "${alicloud_polardb_account.default.account_name}",
-		"db_description": name,
+		"db_cluster_id":     "${alicloud_polardb_account.default.db_cluster_id}",
+		"db_name":           name,
+		"account_name":      "${alicloud_polardb_account.default.account_name}",
+		"account_privilege": acctest.REMOVEKEY,
+		"db_description":    name,
 	}
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { polarDBDatabaseTestPreCheck(t) },
@@ -624,9 +629,16 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 				}),
 			},
 			{
-				// Restore the grant without configuring the privilege, so the
-				// cleared state does not plan a replacement.
+				// Restore the grant without configuring the privilege. The step must
+				// be a no-op for the database itself: if the removal did not reach the
+				// generated configuration, the ForceNew attribute would plan a
+				// replacement and this check would fail before the grant runs.
 				Config: testAccConfig(privilegeConfigWithoutPrivilege),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionNoop),
+					},
+				},
 				Check: resource.ComposeTestCheckFunc(
 					grantDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
 					waitDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
