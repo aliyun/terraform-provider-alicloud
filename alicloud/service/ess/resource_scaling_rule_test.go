@@ -574,34 +574,32 @@ func testAccCheckEssScalingRuleAlarmPeriod(expect string) resource.TestCheckFunc
 			return fmt.Errorf("alicloud_ess_scaling_rule.default is missing from state")
 		}
 		service := essservice.NewEssService(acctest.Provider.Meta().(*connectivity.AliyunClient))
-		var last string
-		err := resource.Retry(4*time.Minute, func() *resource.RetryError {
+		deadline := time.Now().Add(4 * time.Minute)
+		last := "not read yet"
+		for {
 			object, err := service.DescribeEssScalingRuleWithAlarm(rs.Primary.ID)
 			if err != nil {
-				return resource.NonRetryableError(fmt.Errorf("DescribeEssScalingRuleWithAlarm(%s): %v", rs.Primary.ID, err))
+				return fmt.Errorf("DescribeEssScalingRuleWithAlarm(%s): %v", rs.Primary.ID, err)
 			}
 			alarms, _ := object["Alarms"].(map[string]interface{})
 			list, _ := alarms["Alarm"].([]interface{})
 			if len(list) == 0 {
 				last = "no alarm rule returned"
-				return resource.RetryableError(fmt.Errorf("waiting for the alarm rule of %s", rs.Primary.ID))
+			} else if alarm, ok := list[0].(map[string]interface{}); ok {
+				if period, ok := alarm["Period"]; ok {
+					last = fmt.Sprintf("%v", period)
+				} else {
+					last = "alarm rule has no Period"
+				}
 			}
-			alarm, _ := list[0].(map[string]interface{})
-			period, ok := alarm["Period"]
-			if !ok {
-				last = "alarm rule has no Period"
-				return resource.RetryableError(fmt.Errorf("waiting for the Period of the alarm rule of %s", rs.Primary.ID))
+			if last == expect {
+				return nil
 			}
-			last = fmt.Sprintf("%v", period)
-			return nil
-		})
-		if err != nil {
-			return fmt.Errorf("read the remote statistics period of %s: %v (last observation: %s)", rs.Primary.ID, err, last)
+			if time.Now().After(deadline) {
+				return fmt.Errorf("expected the remote statistics period %q, last observation %q", expect, last)
+			}
+			time.Sleep(5 * time.Second)
 		}
-		if last != expect {
-			return fmt.Errorf("expected the remote statistics period %q, got %q", expect, last)
-		}
-		return nil
 	}
 }
 
@@ -724,14 +722,12 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_options(t *testing
 					"metric_name":               "CpuUtilization",
 					"disable_scale_in":          "false",
 					"estimated_instance_warmup": "200",
-					"alarm_options": []map[string]interface{}{
-						{},
-					},
+					"alarm_options":             acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"alarm_options.#":        "1",
-						"alarm_options.0.period": "60",
+						"alarm_options.#":        "0",
+						"alarm_options.0.period": acctest.REMOVEKEY,
 					}),
 					testAccCheckEssScalingRuleAlarmPeriod("60"),
 				),
@@ -750,12 +746,14 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_options(t *testing
 					"metric_name":               "CpuUtilization",
 					"disable_scale_in":          "false",
 					"estimated_instance_warmup": "200",
-					"alarm_options":             acctest.REMOVEKEY,
+					"alarm_options": []map[string]interface{}{
+						{},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"alarm_options.#":        "0",
-						"alarm_options.0.period": acctest.REMOVEKEY,
+						"alarm_options.#":        "1",
+						"alarm_options.0.period": "60",
 					}),
 					testAccCheckEssScalingRuleAlarmPeriod("60"),
 				),
@@ -911,11 +909,10 @@ func TestUnitAliCloudEssScalingRuleAlarmOptionsRequest(t *testing.T) {
 		}
 	}
 	updatePeriod("15")
-	updatePeriod("60")
 
 	removeData := newUpdateData(map[string]*sdktf.ResourceAttrDiff{
 		"alarm_options.#":        {Old: "1", New: "0"},
-		"alarm_options.0.period": {Old: "60", New: ""},
+		"alarm_options.0.period": {Old: "15", New: ""},
 	})
 	if err := res.Update(removeData, client); err != nil {
 		t.Fatalf("remove alarm_options: %v", err)
@@ -929,7 +926,7 @@ func TestUnitAliCloudEssScalingRuleAlarmOptionsRequest(t *testing.T) {
 	}
 
 	modifies := recorder.callsFor("ModifyScalingRule")
-	wantPeriods := []string{"15", "60", "60", ""}
+	wantPeriods := []string{"15", "60", ""}
 	if len(modifies) != len(wantPeriods) {
 		t.Fatalf("expected %d ModifyScalingRule calls, got %d", len(wantPeriods), len(modifies))
 	}
@@ -939,11 +936,11 @@ func TestUnitAliCloudEssScalingRuleAlarmOptionsRequest(t *testing.T) {
 			t.Fatalf("ModifyScalingRule call %d AlarmOptions.Period = %q, want %q", i+1, got, want)
 		}
 	}
-	// The third call is the removal: the provider must explicitly reset the
-	// period instead of dropping the parameter. The fourth call updates an
+	// The second call is the removal: the provider must explicitly reset the
+	// period instead of dropping the parameter. The third call updates an
 	// unrelated field and must not send AlarmOptions.Period at all.
-	if modifies[3].Get("AlarmOptions.Period") != "" {
-		t.Fatalf("an unrelated update must not send AlarmOptions.Period, got %q", modifies[3].Get("AlarmOptions.Period"))
+	if modifies[2].Get("AlarmOptions.Period") != "" {
+		t.Fatalf("an unrelated update must not send AlarmOptions.Period, got %q", modifies[2].Get("AlarmOptions.Period"))
 	}
 }
 

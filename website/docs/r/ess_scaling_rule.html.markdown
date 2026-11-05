@@ -200,7 +200,7 @@ The alarmOptions mapping supports the following. It takes effect only when `scal
 
 * `period` - (Optional, Int, Available since v2.3.0) The period used to collect statistics for the metric of the target tracking scaling rule, in seconds. Valid values: `15`, `60`, `120`, `300`, `900`. Defaults to `60`.
 
-An empty `alarm_options {}` block uses the default period `60`. Removing a previously configured `alarm_options` block is not a state-only change: the next update sends `AlarmOptions.Period=60`, so the period of the alarm rule goes back to the default instead of keeping the old value. Because the block is write-only, neither form can be observed in the resource state or plan, and `terraform import` cannot populate it.
+An empty `alarm_options {}` block uses the default period `60`. Removing a previously configured `alarm_options` block is not a state-only change: the next update sends `AlarmOptions.Period=60`, so the period of the alarm rule goes back to the default instead of keeping the old value. The provider does not read the applied period back, so Terraform cannot detect out-of-band changes to it: the configured block stays in state and adding or removing the block shows up in the plan, but the value actually used by the alarm rule has to be checked through the API. `terraform import` cannot populate the block.
 
 
 ## Attributes Reference
