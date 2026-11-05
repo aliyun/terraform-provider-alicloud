@@ -82,6 +82,10 @@ variable "name" {
   default = "%s"
 }
 
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 resource "alicloud_log_project" "default" {
   project_name = var.name
 }
@@ -114,6 +118,10 @@ func testAccCmsSubscriptionConfigUpdate(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
 }
 
 resource "alicloud_log_project" "default" {
