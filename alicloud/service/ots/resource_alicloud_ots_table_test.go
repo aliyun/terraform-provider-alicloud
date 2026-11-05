@@ -799,51 +799,51 @@ func testAccCheckOtsTableDestroy(s *terraform.State) error {
 }
 
 const (
-	otsUnitInstanceName = "terraform-ex"
-	otsUnitTableName    = "terraform_example"
-	otsUnitResourceId   = "terraform-ex:terraform_example"
+	unitInstanceName = "terraform-ex"
+	unitTableName    = "terraform_example"
+	unitResourceId   = "terraform-ex:terraform_example"
 )
 
-type otsUnitCall struct {
+type unitCall struct {
 	path string
 	body []byte
 }
 
-type otsUnitStream struct {
+type unitStream struct {
 	enabled    bool
 	expiration int32
 }
 
-type otsUnitFailure struct {
+type unitFailure struct {
 	path    string
 	code    string
 	message string
 	times   int
 }
 
-// otsUnitGateway replays the OTS REST and Tablestore endpoints so the resource entry points can be
+// unitGateway replays the OTS REST and Tablestore endpoints so the resource entry points can be
 // exercised without a cloud account and every serialized request can be asserted.
-type otsUnitGateway struct {
+type unitGateway struct {
 	mu       sync.Mutex
-	stream   otsUnitStream
-	calls    []otsUnitCall
-	failures []*otsUnitFailure
+	stream   unitStream
+	calls    []unitCall
+	failures []*unitFailure
 }
 
-func (g *otsUnitGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (g *unitGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	g.mu.Lock()
-	g.calls = append(g.calls, otsUnitCall{path: r.URL.Path, body: body})
+	g.calls = append(g.calls, unitCall{path: r.URL.Path, body: body})
 	stream := g.stream
 	failure := g.takeFailureLocked(r.URL.Path)
 	g.mu.Unlock()
 
 	if failure != nil {
-		writeOtsUnitError(w, failure.code, failure.message)
+		writeUnitError(w, failure.code, failure.message)
 		return
 	}
 
@@ -867,7 +867,7 @@ func (g *otsUnitGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		writeOtsUnitProto(w, otsUnitDescribeResponse(request.GetTableName(), stream))
+		writeUnitProto(w, unitDescribeResponse(request.GetTableName(), stream))
 	case "/UpdateTable":
 		request := new(otsprotocol.UpdateTableRequest)
 		if err := proto.Unmarshal(body, request); err != nil {
@@ -883,13 +883,13 @@ func (g *otsUnitGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			g.stream = stream
 			g.mu.Unlock()
 		}
-		writeOtsUnitProto(w, otsUnitUpdateResponse(stream))
+		writeUnitProto(w, unitUpdateResponse(stream))
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
-func (g *otsUnitGateway) takeFailureLocked(path string) *otsUnitFailure {
+func (g *unitGateway) takeFailureLocked(path string) *unitFailure {
 	for _, failure := range g.failures {
 		if failure.path == path && failure.times > 0 {
 			failure.times--
@@ -899,7 +899,7 @@ func (g *otsUnitGateway) takeFailureLocked(path string) *otsUnitFailure {
 	return nil
 }
 
-func (g *otsUnitGateway) bodies(path string) [][]byte {
+func (g *unitGateway) bodies(path string) [][]byte {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	var result [][]byte
@@ -911,11 +911,11 @@ func (g *otsUnitGateway) bodies(path string) [][]byte {
 	return result
 }
 
-func (g *otsUnitGateway) count(path string) int {
+func (g *unitGateway) count(path string) int {
 	return len(g.bodies(path))
 }
 
-func (g *otsUnitGateway) paths() []string {
+func (g *unitGateway) paths() []string {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	paths := make([]string, 0, len(g.calls))
@@ -925,7 +925,7 @@ func (g *otsUnitGateway) paths() []string {
 	return paths
 }
 
-func writeOtsUnitError(w http.ResponseWriter, code, message string) {
+func writeUnitError(w http.ResponseWriter, code, message string) {
 	payload, err := proto.Marshal(&otsprotocol.Error{Code: proto.String(code), Message: proto.String(message)})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -935,7 +935,7 @@ func writeOtsUnitError(w http.ResponseWriter, code, message string) {
 	_, _ = w.Write(payload)
 }
 
-func writeOtsUnitProto(w http.ResponseWriter, message proto.Message) {
+func writeUnitProto(w http.ResponseWriter, message proto.Message) {
 	payload, err := proto.Marshal(message)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -945,7 +945,7 @@ func writeOtsUnitProto(w http.ResponseWriter, message proto.Message) {
 	_, _ = w.Write(payload)
 }
 
-func otsUnitTableOptions() *otsprotocol.TableOptions {
+func unitTableOptions() *otsprotocol.TableOptions {
 	return &otsprotocol.TableOptions{
 		TimeToLive:                proto.Int32(-1),
 		MaxVersions:               proto.Int32(1),
@@ -953,14 +953,14 @@ func otsUnitTableOptions() *otsprotocol.TableOptions {
 	}
 }
 
-func otsUnitReservedThroughput() *otsprotocol.ReservedThroughputDetails {
+func unitReservedThroughput() *otsprotocol.ReservedThroughputDetails {
 	return &otsprotocol.ReservedThroughputDetails{
 		CapacityUnit:     &otsprotocol.CapacityUnit{Read: proto.Int32(0), Write: proto.Int32(0)},
 		LastIncreaseTime: proto.Int64(0),
 	}
 }
 
-func otsUnitStreamDetails(stream otsUnitStream) *otsprotocol.StreamDetails {
+func unitStreamDetails(stream unitStream) *otsprotocol.StreamDetails {
 	details := &otsprotocol.StreamDetails{EnableStream: proto.Bool(stream.enabled)}
 	if stream.enabled {
 		details.StreamId = proto.String("unit-stream-id")
@@ -970,29 +970,29 @@ func otsUnitStreamDetails(stream otsUnitStream) *otsprotocol.StreamDetails {
 	return details
 }
 
-func otsUnitDescribeResponse(tableName string, stream otsUnitStream) *otsprotocol.DescribeTableResponse {
+func unitDescribeResponse(tableName string, stream unitStream) *otsprotocol.DescribeTableResponse {
 	primaryKeyType := otsprotocol.PrimaryKeyType_INTEGER
 	return &otsprotocol.DescribeTableResponse{
 		TableMeta: &otsprotocol.TableMeta{
 			TableName:  proto.String(tableName),
 			PrimaryKey: []*otsprotocol.PrimaryKeySchema{{Name: proto.String("pk1"), Type: &primaryKeyType}},
 		},
-		ReservedThroughputDetails: otsUnitReservedThroughput(),
-		TableOptions:              otsUnitTableOptions(),
+		ReservedThroughputDetails: unitReservedThroughput(),
+		TableOptions:              unitTableOptions(),
 		TableStatus:               otsprotocol.TableStatus_ACTIVE.Enum(),
-		StreamDetails:             otsUnitStreamDetails(stream),
+		StreamDetails:             unitStreamDetails(stream),
 	}
 }
 
-func otsUnitUpdateResponse(stream otsUnitStream) *otsprotocol.UpdateTableResponse {
+func unitUpdateResponse(stream unitStream) *otsprotocol.UpdateTableResponse {
 	return &otsprotocol.UpdateTableResponse{
-		ReservedThroughputDetails: otsUnitReservedThroughput(),
-		TableOptions:              otsUnitTableOptions(),
-		StreamDetails:             otsUnitStreamDetails(stream),
+		ReservedThroughputDetails: unitReservedThroughput(),
+		TableOptions:              unitTableOptions(),
+		StreamDetails:             unitStreamDetails(stream),
 	}
 }
 
-func newOtsUnitClient(t *testing.T, server *httptest.Server) *connectivity.AliyunClient {
+func newUnitClient(t *testing.T, server *httptest.Server) *connectivity.AliyunClient {
 	t.Helper()
 	credential, err := credentials.NewCredential(new(credentials.Config).
 		SetType("access_key").
@@ -1023,10 +1023,10 @@ func newOtsUnitClient(t *testing.T, server *httptest.Server) *connectivity.Aliyu
 	return client
 }
 
-func otsUnitRaw(streamSpec []interface{}) map[string]interface{} {
+func unitRaw(streamSpec []interface{}) map[string]interface{} {
 	raw := map[string]interface{}{
-		"instance_name": otsUnitInstanceName,
-		"table_name":    otsUnitTableName,
+		"instance_name": unitInstanceName,
+		"table_name":    unitTableName,
 		"primary_key": []interface{}{
 			map[string]interface{}{"name": "pk1", "type": "Integer"},
 		},
@@ -1039,7 +1039,7 @@ func otsUnitRaw(streamSpec []interface{}) map[string]interface{} {
 	return raw
 }
 
-func otsUnitStreamConfig(enableStream bool, expirationTime int) []interface{} {
+func unitStreamConfig(enableStream bool, expirationTime int) []interface{} {
 	spec := map[string]interface{}{"enable_stream": enableStream}
 	if enableStream {
 		spec["expiration_time"] = expirationTime
@@ -1047,32 +1047,32 @@ func otsUnitStreamConfig(enableStream bool, expirationTime int) []interface{} {
 	return []interface{}{spec}
 }
 
-func otsUnitStateStream(t *testing.T, d *schema.ResourceData) otsUnitStream {
+func unitStateStream(t *testing.T, d *schema.ResourceData) unitStream {
 	t.Helper()
 	specs, _ := d.Get("stream_specification").([]interface{})
 	if len(specs) == 0 || specs[0] == nil {
-		return otsUnitStream{}
+		return unitStream{}
 	}
 	spec := specs[0].(map[string]interface{})
-	stream := otsUnitStream{}
+	stream := unitStream{}
 	stream.enabled, _ = spec["enable_stream"].(bool)
 	expirationTime, _ := spec["expiration_time"].(int)
 	stream.expiration = int32(expirationTime)
 	return stream
 }
 
-func TestUnitAliCloudOtsTableStreamCreate(t *testing.T) {
+func TestUnitTableStreamCreate(t *testing.T) {
 	t.Run("enabled stream is sent and response is read back", func(t *testing.T) {
-		gateway := &otsUnitGateway{stream: otsUnitStream{enabled: true, expiration: 48}}
+		gateway := &unitGateway{stream: unitStream{enabled: true, expiration: 48}}
 		server := httptest.NewServer(gateway)
 		defer server.Close()
 
-		d := schema.TestResourceDataRaw(t, ots.ResourceOtsTable().Schema, otsUnitRaw(otsUnitStreamConfig(true, 24)))
-		if err := ots.ResourceOtsTable().Create(d, newOtsUnitClient(t, server)); err != nil {
+		d := schema.TestResourceDataRaw(t, ots.ResourceOtsTable().Schema, unitRaw(unitStreamConfig(true, 24)))
+		if err := ots.ResourceOtsTable().Create(d, newUnitClient(t, server)); err != nil {
 			t.Fatalf("Create with stream: %s (requests: %v)", err, gateway.paths())
 		}
 
-		payload := otsUnitCreateTablePayload(t, gateway)
+		payload := unitCreateTablePayload(t, gateway)
 		if payload.GetStreamSpec() == nil {
 			t.Fatalf("CreateTable payload has no stream_spec")
 		}
@@ -1083,7 +1083,7 @@ func TestUnitAliCloudOtsTableStreamCreate(t *testing.T) {
 			t.Fatalf("CreateTable payload expiration_time = %d, want 24", got)
 		}
 
-		stream := otsUnitStateStream(t, d)
+		stream := unitStateStream(t, d)
 		if !stream.enabled {
 			t.Fatalf("state enable_stream = false, want true")
 		}
@@ -1093,39 +1093,86 @@ func TestUnitAliCloudOtsTableStreamCreate(t *testing.T) {
 	})
 
 	t.Run("absent block sends no stream specification", func(t *testing.T) {
-		gateway := &otsUnitGateway{}
+		gateway := &unitGateway{}
 		server := httptest.NewServer(gateway)
 		defer server.Close()
 
-		d := schema.TestResourceDataRaw(t, ots.ResourceOtsTable().Schema, otsUnitRaw(nil))
-		if err := ots.ResourceOtsTable().Create(d, newOtsUnitClient(t, server)); err != nil {
+		d := schema.TestResourceDataRaw(t, ots.ResourceOtsTable().Schema, unitRaw(nil))
+		if err := ots.ResourceOtsTable().Create(d, newUnitClient(t, server)); err != nil {
 			t.Fatalf("Create without stream: %s (requests: %v)", err, gateway.paths())
 		}
 
-		payload := otsUnitCreateTablePayload(t, gateway)
+		payload := unitCreateTablePayload(t, gateway)
 		if payload.GetStreamSpec() != nil {
 			t.Fatalf("CreateTable payload stream_spec = %#v, want omitted", payload.GetStreamSpec())
 		}
 	})
 
 	t.Run("explicit false block sends no stream specification", func(t *testing.T) {
-		gateway := &otsUnitGateway{}
+		gateway := &unitGateway{}
 		server := httptest.NewServer(gateway)
 		defer server.Close()
 
-		d := schema.TestResourceDataRaw(t, ots.ResourceOtsTable().Schema, otsUnitRaw(otsUnitStreamConfig(false, 0)))
-		if err := ots.ResourceOtsTable().Create(d, newOtsUnitClient(t, server)); err != nil {
+		d := schema.TestResourceDataRaw(t, ots.ResourceOtsTable().Schema, unitRaw(unitStreamConfig(false, 0)))
+		if err := ots.ResourceOtsTable().Create(d, newUnitClient(t, server)); err != nil {
 			t.Fatalf("Create with disabled stream: %s (requests: %v)", err, gateway.paths())
 		}
 
-		payload := otsUnitCreateTablePayload(t, gateway)
+		payload := unitCreateTablePayload(t, gateway)
 		if payload.GetStreamSpec() != nil {
 			t.Fatalf("CreateTable payload stream_spec = %#v, want omitted", payload.GetStreamSpec())
 		}
 	})
+
+	t.Run("transient quota exhaustion is retried", func(t *testing.T) {
+		gateway := &unitGateway{
+			stream: unitStream{enabled: true, expiration: 24},
+			failures: []*unitFailure{{
+				path:    "/CreateTable",
+				code:    "OTSQuotaExhausted",
+				message: "Table operations are too frequent.",
+				times:   1,
+			}},
+		}
+		server := httptest.NewServer(gateway)
+		defer server.Close()
+
+		d := schema.TestResourceDataRaw(t, ots.ResourceOtsTable().Schema, unitRaw(unitStreamConfig(true, 24)))
+		if err := ots.ResourceOtsTable().Create(d, newUnitClient(t, server)); err != nil {
+			t.Fatalf("Create with a transient quota error: %s (requests: %v)", err, gateway.paths())
+		}
+		if calls := gateway.count("/CreateTable"); calls != 2 {
+			t.Fatalf("CreateTable calls = %d, want 2 so the transient error is retried", calls)
+		}
+		if stream := unitStateStream(t, d); !stream.enabled || stream.expiration != 24 {
+			t.Fatalf("state stream = %#v, want enabled with 24", stream)
+		}
+	})
+
+	t.Run("permanent quota exhaustion fails fast", func(t *testing.T) {
+		gateway := &unitGateway{
+			stream: unitStream{enabled: true, expiration: 24},
+			failures: []*unitFailure{{
+				path:    "/CreateTable",
+				code:    "OTSQuotaExhausted",
+				message: "Number of tables exceeds the upper limit.",
+				times:   1,
+			}},
+		}
+		server := httptest.NewServer(gateway)
+		defer server.Close()
+
+		d := schema.TestResourceDataRaw(t, ots.ResourceOtsTable().Schema, unitRaw(unitStreamConfig(true, 24)))
+		if err := ots.ResourceOtsTable().Create(d, newUnitClient(t, server)); err == nil {
+			t.Fatalf("Create with a permanent quota error succeeded, want failure")
+		}
+		if calls := gateway.count("/CreateTable"); calls != 1 {
+			t.Fatalf("CreateTable calls = %d, want 1 so the permanent error is not retried", calls)
+		}
+	})
 }
 
-func otsUnitCreateTablePayload(t *testing.T, gateway *otsUnitGateway) *otsprotocol.CreateTableRequest {
+func unitCreateTablePayload(t *testing.T, gateway *unitGateway) *otsprotocol.CreateTableRequest {
 	t.Helper()
 	bodies := gateway.bodies("/CreateTable")
 	if len(bodies) != 1 {
@@ -1138,7 +1185,7 @@ func otsUnitCreateTablePayload(t *testing.T, gateway *otsUnitGateway) *otsprotoc
 	return payload
 }
 
-func otsUnitUpdateTablePayloads(t *testing.T, gateway *otsUnitGateway) []*otsprotocol.UpdateTableRequest {
+func unitUpdateTablePayloads(t *testing.T, gateway *unitGateway) []*otsprotocol.UpdateTableRequest {
 	t.Helper()
 	bodies := gateway.bodies("/UpdateTable")
 	if len(bodies) == 0 {
@@ -1155,17 +1202,17 @@ func otsUnitUpdateTablePayloads(t *testing.T, gateway *otsUnitGateway) []*otspro
 	return payloads
 }
 
-func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
+func TestUnitTableStreamUpdate(t *testing.T) {
 	unitResource := ots.ResourceOtsTable()
 	schemaMap := schema.InternalMap(unitResource.Schema)
 
-	update := func(t *testing.T, gateway *otsUnitGateway, server *httptest.Server, oldStream, newSpec []interface{}) (*schema.ResourceData, error) {
+	update := func(t *testing.T, gateway *unitGateway, server *httptest.Server, oldStream, newSpec []interface{}) (*schema.ResourceData, error) {
 		t.Helper()
-		oldData := schema.TestResourceDataRaw(t, unitResource.Schema, otsUnitRaw(oldStream))
-		oldData.SetId(otsUnitResourceId)
+		oldData := schema.TestResourceDataRaw(t, unitResource.Schema, unitRaw(oldStream))
+		oldData.SetId(unitResourceId)
 		oldState := oldData.State()
 
-		diff, err := schemaMap.Diff(context.Background(), oldState, sdkterraform.NewResourceConfigRaw(otsUnitRaw(newSpec)), unitResource.CustomizeDiff, nil, false)
+		diff, err := schemaMap.Diff(context.Background(), oldState, sdkterraform.NewResourceConfigRaw(unitRaw(newSpec)), unitResource.CustomizeDiff, nil, false)
 		if err != nil {
 			t.Fatalf("plan diff: %s", err)
 		}
@@ -1173,21 +1220,21 @@ func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 		if err != nil {
 			t.Fatalf("build resource data: %s", err)
 		}
-		d.SetId(otsUnitResourceId)
-		return d, unitResource.Update(d, newOtsUnitClient(t, server))
+		d.SetId(unitResourceId)
+		return d, unitResource.Update(d, newUnitClient(t, server))
 	}
 
 	t.Run("retention update sends the new value only", func(t *testing.T) {
-		gateway := &otsUnitGateway{stream: otsUnitStream{enabled: true, expiration: 24}}
+		gateway := &unitGateway{stream: unitStream{enabled: true, expiration: 24}}
 		server := httptest.NewServer(gateway)
 		defer server.Close()
 
-		d, err := update(t, gateway, server, otsUnitStreamConfig(true, 24), otsUnitStreamConfig(true, 168))
+		d, err := update(t, gateway, server, unitStreamConfig(true, 24), unitStreamConfig(true, 168))
 		if err != nil {
 			t.Fatalf("Update: %s (requests: %v)", err, gateway.paths())
 		}
 
-		payloads := otsUnitUpdateTablePayloads(t, gateway)
+		payloads := unitUpdateTablePayloads(t, gateway)
 		if len(payloads) != 1 {
 			t.Fatalf("UpdateTable calls = %d, want exactly 1", len(payloads))
 		}
@@ -1207,16 +1254,16 @@ func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 			t.Fatalf("UpdateTable payload expiration_time = %d, want 168", got)
 		}
 
-		stream := otsUnitStateStream(t, d)
+		stream := unitStateStream(t, d)
 		if !stream.enabled || stream.expiration != 168 {
 			t.Fatalf("state stream = %#v, want enabled with 168", stream)
 		}
 	})
 
 	t.Run("transient quota exhaustion is retried", func(t *testing.T) {
-		gateway := &otsUnitGateway{
-			stream: otsUnitStream{enabled: true, expiration: 24},
-			failures: []*otsUnitFailure{{
+		gateway := &unitGateway{
+			stream: unitStream{enabled: true, expiration: 24},
+			failures: []*unitFailure{{
 				path:    "/UpdateTable",
 				code:    "OTSQuotaExhausted",
 				message: "Table operations are too frequent.",
@@ -1226,22 +1273,22 @@ func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 		server := httptest.NewServer(gateway)
 		defer server.Close()
 
-		d, err := update(t, gateway, server, otsUnitStreamConfig(true, 24), otsUnitStreamConfig(true, 168))
+		d, err := update(t, gateway, server, unitStreamConfig(true, 24), unitStreamConfig(true, 168))
 		if err != nil {
 			t.Fatalf("Update with a transient quota error: %s (requests: %v)", err, gateway.paths())
 		}
 		if calls := gateway.count("/UpdateTable"); calls != 2 {
 			t.Fatalf("UpdateTable calls = %d, want 2 so the transient error is retried", calls)
 		}
-		if stream := otsUnitStateStream(t, d); !stream.enabled || stream.expiration != 168 {
+		if stream := unitStateStream(t, d); !stream.enabled || stream.expiration != 168 {
 			t.Fatalf("state stream = %#v, want enabled with 168", stream)
 		}
 	})
 
 	t.Run("permanent quota exhaustion fails fast", func(t *testing.T) {
-		gateway := &otsUnitGateway{
-			stream: otsUnitStream{enabled: true, expiration: 24},
-			failures: []*otsUnitFailure{{
+		gateway := &unitGateway{
+			stream: unitStream{enabled: true, expiration: 24},
+			failures: []*unitFailure{{
 				path:    "/UpdateTable",
 				code:    "OTSQuotaExhausted",
 				message: "Number of tables exceeds the upper limit.",
@@ -1251,7 +1298,7 @@ func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 		server := httptest.NewServer(gateway)
 		defer server.Close()
 
-		if _, err := update(t, gateway, server, otsUnitStreamConfig(true, 24), otsUnitStreamConfig(true, 168)); err == nil {
+		if _, err := update(t, gateway, server, unitStreamConfig(true, 24), unitStreamConfig(true, 168)); err == nil {
 			t.Fatalf("Update with a permanent quota error succeeded, want failure")
 		}
 		if calls := gateway.count("/UpdateTable"); calls != 1 {
@@ -1260,16 +1307,16 @@ func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 	})
 
 	t.Run("removing the block disables stream", func(t *testing.T) {
-		gateway := &otsUnitGateway{stream: otsUnitStream{enabled: true, expiration: 12}}
+		gateway := &unitGateway{stream: unitStream{enabled: true, expiration: 12}}
 		server := httptest.NewServer(gateway)
 		defer server.Close()
 
-		d, err := update(t, gateway, server, otsUnitStreamConfig(true, 12), nil)
+		d, err := update(t, gateway, server, unitStreamConfig(true, 12), nil)
 		if err != nil {
 			t.Fatalf("Update: %s (requests: %v)", err, gateway.paths())
 		}
 
-		payloads := otsUnitUpdateTablePayloads(t, gateway)
+		payloads := unitUpdateTablePayloads(t, gateway)
 		for i, payload := range payloads {
 			if payload.GetTableOptions() != nil {
 				t.Fatalf("UpdateTable call %d must not send table_options", i)
@@ -1285,13 +1332,13 @@ func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 			}
 		}
 
-		if stream := otsUnitStateStream(t, d); stream.enabled {
+		if stream := unitStateStream(t, d); stream.enabled {
 			t.Fatalf("state stream = %#v, want disabled", stream)
 		}
 	})
 }
 
-func TestUnitAliCloudOtsTableStreamCustomizeDiff(t *testing.T) {
+func TestUnitTableStreamCustomizeDiff(t *testing.T) {
 	unitResource := ots.ResourceOtsTable()
 	schemaMap := schema.InternalMap(unitResource.Schema)
 	streamType := cty.Object(map[string]cty.Type{"enable_stream": cty.Bool, "expiration_time": cty.Number})
@@ -1305,24 +1352,24 @@ func TestUnitAliCloudOtsTableStreamCustomizeDiff(t *testing.T) {
 		{
 			name:  "known valid retention passes",
 			block: cty.ListVal([]cty.Value{cty.ObjectVal(map[string]cty.Value{"enable_stream": cty.True, "expiration_time": cty.NumberIntVal(24)})}),
-			spec:  otsUnitStreamConfig(true, 24),
+			spec:  unitStreamConfig(true, 24),
 		},
 		{
 			name:      "known zero retention is rejected",
 			block:     cty.ListVal([]cty.Value{cty.ObjectVal(map[string]cty.Value{"enable_stream": cty.True, "expiration_time": cty.NumberIntVal(0)})}),
-			spec:      otsUnitStreamConfig(true, 0),
+			spec:      unitStreamConfig(true, 0),
 			wantError: true,
 		},
 		{
 			name:      "known retention above the limit is rejected",
 			block:     cty.ListVal([]cty.Value{cty.ObjectVal(map[string]cty.Value{"enable_stream": cty.True, "expiration_time": cty.NumberIntVal(169)})}),
-			spec:      otsUnitStreamConfig(true, 169),
+			spec:      unitStreamConfig(true, 169),
 			wantError: true,
 		},
 		{
 			name:  "unknown retention is deferred",
 			block: cty.ListVal([]cty.Value{cty.ObjectVal(map[string]cty.Value{"enable_stream": cty.True, "expiration_time": cty.UnknownVal(cty.Number)})}),
-			spec:  otsUnitStreamConfig(true, 0),
+			spec:  unitStreamConfig(true, 0),
 		},
 		{
 			name:  "absent block passes",
@@ -1334,10 +1381,10 @@ func TestUnitAliCloudOtsTableStreamCustomizeDiff(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			state := &sdkterraform.InstanceState{
-				ID:        otsUnitResourceId,
+				ID:        unitResourceId,
 				RawConfig: cty.ObjectVal(map[string]cty.Value{"stream_specification": tc.block}),
 			}
-			_, err := schemaMap.Diff(context.Background(), state, sdkterraform.NewResourceConfigRaw(otsUnitRaw(tc.spec)), unitResource.CustomizeDiff, nil, false)
+			_, err := schemaMap.Diff(context.Background(), state, sdkterraform.NewResourceConfigRaw(unitRaw(tc.spec)), unitResource.CustomizeDiff, nil, false)
 			if tc.wantError && err == nil {
 				t.Fatalf("expected a plan-time rejection")
 			}
