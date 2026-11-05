@@ -2115,6 +2115,205 @@ func TestUnitRealtimeComputeVvpNamespaceCreateAdoptsUncertainResult(t *testing.T
 	}
 }
 
+// vvpNamespaceCreateRecoveryStatusServer answers CreateNamespace with a 5xx that does not prove the
+// request was rejected, then serves the given statuses on the DescribeNamespaces calls that follow.
+// The last status repeats, so a case can stay in one state until its budget runs out. Reads that
+// happen before the write (the ownership guard) report an empty collection and do not consume a
+// status.
+func vvpNamespaceCreateRecoveryStatusServer(t *testing.T, statuses []string) (*httptest.Server, func() []string) {
+	t.Helper()
+	if len(statuses) == 0 {
+		t.Fatalf("the recovery status server needs at least one status")
+	}
+	var mu sync.Mutex
+	var actions []string
+	created := false
+	reads := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		action := r.FormValue("Action")
+		mu.Lock()
+		actions = append(actions, action)
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if action == "CreateNamespace" {
+			mu.Lock()
+			created = true
+			mu.Unlock()
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"RequestId":"mock","Code":"InternalError","Message":"mock create failure"}`)
+			return
+		}
+		mu.Lock()
+		present := created
+		index := reads
+		if present {
+			reads++
+		}
+		mu.Unlock()
+		if !present {
+			fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[]}`)
+			return
+		}
+		if index >= len(statuses) {
+			index = len(statuses) - 1
+		}
+		fmt.Fprintf(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":%q,"Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"ResourceUsed":{"Cpu":0,"Cu":0,"MemoryGB":0},"Tags":[]}]}`, statuses[index])
+	}))
+	t.Cleanup(func() {
+		server.CloseClientConnections()
+		server.Close()
+	})
+	return server, func() []string {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]string(nil), actions...)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceCreateRecoveryConvergesToSuccess drives the public Create path
+// after a lost CreateNamespace response when the recovered namespace is still CREATING: the provider
+// must persist the identity, then keep polling until the status reaches SUCCESS, and only then report
+// the create as done. Returning right after the adopt would hand the caller a namespace whose
+// capacity allocation has not settled yet, so the extra DescribeNamespaces call is part of the
+// contract, not an implementation detail.
+func TestUnitRealtimeComputeVvpNamespaceCreateRecoveryConvergesToSuccess(t *testing.T) {
+	server, observed := vvpNamespaceCreateRecoveryStatusServer(t, []string{"CREATING", "SUCCESS"})
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	planValue := vvpNamespaceCreateTestValue(t, sch, "2m", 2, 8)
+
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: sch, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: sch}}
+	res.Create(context.Background(), req, resp)
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("create reported an error for a namespace that converged to SUCCESS: %v", resp.Diagnostics)
+	}
+	warned := false
+	for _, warning := range resp.Diagnostics.Warnings() {
+		if strings.Contains(warning.Summary()+warning.Detail(), "create response lost") {
+			warned = true
+		}
+	}
+	if !warned {
+		t.Fatalf("missing the create-response-lost warning: %v", resp.Diagnostics)
+	}
+	var status types.String
+	resp.State.GetAttribute(context.Background(), path.Root("status"), &status)
+	if status.ValueString() != "SUCCESS" {
+		t.Fatalf("state status = %q, want SUCCESS after the wait converged", status.ValueString())
+	}
+	var id types.String
+	resp.State.GetAttribute(context.Background(), path.Root("id"), &id)
+	if id.ValueString() != "inst-unit:demo" {
+		t.Fatalf("state id = %q, want inst-unit:demo", id.ValueString())
+	}
+	actions := observed()
+	if len(actions) == 0 || actions[0] != "DescribeNamespaces" {
+		t.Fatalf("the ownership guard must read the identity before the write, actions: %v", actions)
+	}
+	creates, reads := 0, 0
+	for _, action := range actions {
+		switch action {
+		case "CreateNamespace":
+			creates++
+		case "DescribeNamespaces":
+			reads++
+		}
+	}
+	if creates != 1 {
+		t.Fatalf("CreateNamespace calls = %d, want exactly 1 (actions: %v)", creates, actions)
+	}
+	// guard read + recovery read + at least one wait poll
+	if reads < 3 {
+		t.Fatalf("DescribeNamespaces calls = %d, want the identity guard, the recovery read and the SUCCESS wait (actions: %v)", reads, actions)
+	}
+	if actions[len(actions)-1] != "DescribeNamespaces" {
+		t.Fatalf("the create returned without a final status read, actions: %v", actions)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceCreateRecoveryWaitExhaustionKeepsIdentity pins the bounded
+// recovery wait: when the recovered namespace never reaches SUCCESS inside the create budget, the
+// create fails with a diagnostic but the composite identity stays in state, so the namespace is not
+// left untracked.
+func TestUnitRealtimeComputeVvpNamespaceCreateRecoveryWaitExhaustionKeepsIdentity(t *testing.T) {
+	server, observed := vvpNamespaceCreateRecoveryStatusServer(t, []string{"CREATING"})
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	planValue := vvpNamespaceCreateTestValue(t, sch, "2s", 2, 8)
+
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: sch, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: sch}}
+	res.Create(context.Background(), req, resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("create reported success although the namespace never reached SUCCESS: %v", resp.Diagnostics.Warnings())
+	}
+	detail := ""
+	for _, diag := range resp.Diagnostics.Errors() {
+		detail += diag.Summary() + " " + diag.Detail() + "\n"
+	}
+	if !strings.Contains(strings.ToLower(detail), "stays in state") {
+		t.Fatalf("the diagnostic must say the namespace stays in state, got: %s", detail)
+	}
+	var id types.String
+	resp.State.GetAttribute(context.Background(), path.Root("id"), &id)
+	if id.ValueString() != "inst-unit:demo" {
+		t.Fatalf("state id = %q, want the identity to be preserved as inst-unit:demo", id.ValueString())
+	}
+	var status types.String
+	resp.State.GetAttribute(context.Background(), path.Root("status"), &status)
+	if status.ValueString() != "CREATING" {
+		t.Fatalf("state status = %q, want the last observed CREATING", status.ValueString())
+	}
+	creates := 0
+	for _, action := range observed() {
+		if action == "CreateNamespace" {
+			creates++
+		}
+	}
+	if creates != 1 {
+		t.Fatalf("CreateNamespace calls = %d, want exactly 1", creates)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceCreateRecoveryFailedKeepsIdentity pins the FAILED branch of the
+// recovery: a lost create whose namespace already reached FAILED must not be reported as adopted,
+// but its identity is kept in state so the object stays traceable instead of becoming an orphan.
+func TestUnitRealtimeComputeVvpNamespaceCreateRecoveryFailedKeepsIdentity(t *testing.T) {
+	server, observed := vvpNamespaceCreateRecoveryStatusServer(t, []string{"FAILED"})
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	planValue := vvpNamespaceCreateTestValue(t, sch, "2m", 2, 8)
+
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: sch, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: sch}}
+	res.Create(context.Background(), req, resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("create reported success for a namespace in the FAILED state: %v", resp.Diagnostics.Warnings())
+	}
+	detail := ""
+	for _, diag := range resp.Diagnostics.Errors() {
+		detail += diag.Summary() + " " + diag.Detail() + "\n"
+	}
+	if !strings.Contains(detail, "FAILED") {
+		t.Fatalf("the diagnostic must name the FAILED status, got: %s", detail)
+	}
+	var id types.String
+	resp.State.GetAttribute(context.Background(), path.Root("id"), &id)
+	if id.ValueString() != "inst-unit:demo" {
+		t.Fatalf("state id = %q, want the failed namespace to keep its identity (inst-unit:demo)", id.ValueString())
+	}
+	var status types.String
+	resp.State.GetAttribute(context.Background(), path.Root("status"), &status)
+	if status.ValueString() != "FAILED" {
+		t.Fatalf("state status = %q, want FAILED", status.ValueString())
+	}
+	if actions := observed(); len(actions) == 0 {
+		t.Fatalf("no request reached the service")
+	}
+}
+
 // vvpNamespaceInstancesTestServer answers DescribeInstances with the given status and body and
 // counts the calls, so the destroy wait can be driven without a workspace behind it.
 func vvpNamespaceInstancesTestServer(t *testing.T, status int, body string) (*httptest.Server, func() int) {

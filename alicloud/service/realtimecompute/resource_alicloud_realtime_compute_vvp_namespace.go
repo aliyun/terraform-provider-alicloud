@@ -303,9 +303,45 @@ func (r *vvpNamespaceResource) Create(ctx context.Context, req resource.CreateRe
 			)
 			return
 		}
-		// The namespace exists, so the create was accepted even though its response was lost. Track
-		// the object that was found instead of failing and leaving an untracked namespace; the next
-		// refresh reconciles any remaining asynchronous transition.
+		// The namespace exists, so the create was accepted even though its response was lost. Persist
+		// the composite identity before judging the status: a namespace that failed, or one that is
+		// still being allocated, must stay traceable instead of disappearing from Terraform.
+		resp.Diagnostics.Append(resp.State.Set(ctx, vvpNamespaceState(recovered, &plan))...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		recoveredStatus := strings.ToUpper(strings.TrimSpace(fmt.Sprint(recovered["Status"])))
+		if recoveredStatus == "FAILED" {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Creating %s: the namespace reached FAILED", vvpNamespaceTypeName),
+				fmt.Sprintf("CreateNamespace failed with %v, and %s exists but the service reports FAILED. The namespace is kept in state so it can be inspected, imported or removed explicitly instead of being left untracked.", err, id),
+			)
+			return
+		}
+		if recoveredStatus != "SUCCESS" {
+			// The object is listed as soon as the create is accepted, while its capacity allocation
+			// still runs in the background; follow-up calls fail with 903047 until it settles. The
+			// create is only done once the recovered namespace reaches SUCCESS.
+			successBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+			if budgetErr != nil {
+				resp.Diagnostics.AddError(
+					fmt.Sprintf("Creating %s: operation budget", vvpNamespaceTypeName),
+					fmt.Sprintf("CreateNamespace failed with %v and %s exists, but its status could not be confirmed as SUCCESS: %v. The namespace stays in state.", err, id, budgetErr),
+				)
+				return
+			}
+			object, waitErr := vvpNamespaceWaitForState(operationCtx, r.Meta(), id, "Status", []string{"SUCCESS"}, []string{"FAILED"}, successBudget)
+			if waitErr != nil {
+				resp.Diagnostics.AddError(
+					fmt.Sprintf("Creating %s: waiting for SUCCESS after a lost create response", vvpNamespaceTypeName),
+					errs.WrapErrorf(waitErr, "Creating %s: CreateNamespace failed with %v and %s exists but did not reach SUCCESS; the namespace stays in state", vvpNamespaceTypeName, err, id).Error(),
+				)
+				return
+			}
+			if object != nil {
+				recovered = object
+			}
+		}
 		resp.Diagnostics.AddWarning(
 			fmt.Sprintf("Creating %s: create response lost", vvpNamespaceTypeName),
 			fmt.Sprintf("CreateNamespace failed with %v, but %s exists afterwards; the provider adopted the existing namespace.", err, id),

@@ -130,8 +130,10 @@ func vvpNamespaceCreateResultUncertainDepth(err error, depth int) bool {
 }
 
 // vvpNamespaceRecoverCreate checks the identity after an uncertain CreateNamespace failure. It
-// returns true when the namespace exists, which means the create was accepted even though its
-// response was lost. A lookup failure is returned so the caller can report both causes.
+// returns the object when the namespace exists, which means the create was accepted even though its
+// response was lost. The object is returned in whatever state it is in, FAILED included: the caller
+// has to persist its identity first and then decide whether the create can still succeed. A lookup
+// failure is returned so the caller can report both causes.
 func vvpNamespaceRecoverCreate(ctx context.Context, client *connectivity.AliyunClient, id string, cause error) (map[string]interface{}, error) {
 	if !vvpNamespaceCreateResultUncertain(cause) {
 		return nil, nil
@@ -143,10 +145,6 @@ func vvpNamespaceRecoverCreate(ctx context.Context, client *connectivity.AliyunC
 	object, err := vvpNamespaceGet(lookupCtx, client, id)
 	if err != nil {
 		return nil, fmt.Errorf("checking whether %s was created despite %v failed: %w", id, cause, err)
-	}
-	// A namespace that exists but reached the failure state is not a successful create.
-	if object != nil && fmt.Sprint(object["Status"]) == "FAILED" {
-		return nil, nil
 	}
 	return object, nil
 }
