@@ -699,7 +699,7 @@ resource "alicloud_ots_search_index" "default" {
       sub_field_schemas {
         field_name       = "nested_date"
         field_type       = "Date"
-        date_format_list = ["yyyy-MM-dd HH:mm:ss", "epoch_millis"]
+        date_format_list = ["datetime", "epoch_millis"]
       }
       sub_field_schemas {
         field_name        = "nested_virtual"
@@ -859,8 +859,8 @@ func checkSearchIndexSchemaFields() resource.TestCheckFunc {
 
 		nestedDateFormats := fields["nested_date"].DateFormats
 		expectedNestedDateFormats := map[string]struct{}{
-			"yyyy-MM-dd HH:mm:ss": {},
-			"epoch_millis":        {},
+			"datetime":     {},
+			"epoch_millis": {},
 		}
 		if len(nestedDateFormats) != len(expectedNestedDateFormats) {
 			return fmt.Errorf("nested_date date formats are %v", nestedDateFormats)
