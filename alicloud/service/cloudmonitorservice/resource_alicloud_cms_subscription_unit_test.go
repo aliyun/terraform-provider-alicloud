@@ -428,6 +428,84 @@ func TestUnitCmsSubscriptionExpandKeepsExplicitZeroValues(t *testing.T) {
 	}
 }
 
+// TestUnitCmsSubscriptionStateFlattensLists proves list attributes rebuild with
+// the proper element type instead of nested lists.
+func TestUnitCmsSubscriptionStateFlattensLists(t *testing.T) {
+	object := map[string]interface{}{
+		"subscriptionId":   "sub-1",
+		"subscriptionName": "name",
+		"workspace":        "ws-1",
+		"pushingSetting": map[string]interface{}{
+			"alertActionIds":   []interface{}{"a1"},
+			"restoreActionIds": []interface{}{"a2"},
+		},
+		"workspaceFilterSetting": map[string]interface{}{
+			"workspaceUuids": []interface{}{"w1"},
+		},
+		"agentConfig": map[string]interface{}{
+			"agentUuid": "agent-1",
+			"routes": []interface{}{
+				map[string]interface{}{
+					"channels": []interface{}{
+						map[string]interface{}{
+							"channelType":        "WEBHOOK",
+							"receivers":          []interface{}{"r1"},
+							"enabledSubChannels": []interface{}{"EMAIL"},
+						},
+					},
+					"effectTimeRange": map[string]interface{}{
+						"dayInWeek": []interface{}{1.0, 2.0},
+					},
+				},
+			},
+		},
+	}
+	state := cmsSubscriptionState(object, cmsSubscriptionResourceModel{}, "cn-hangzhou")
+
+	assertStringList := func(name string, list types.List, want []string) {
+		t.Helper()
+		if list.IsNull() {
+			t.Fatalf("%s is null", name)
+		}
+		elements := list.Elements()
+		if len(elements) != len(want) {
+			t.Fatalf("%s has %d elements, want %d", name, len(elements), len(want))
+		}
+		for i, element := range elements {
+			value, ok := element.(types.String)
+			if !ok {
+				t.Fatalf("%s[%d] is %T, want types.String", name, i, element)
+			}
+			if value.ValueString() != want[i] {
+				t.Fatalf("%s[%d] = %q, want %q", name, i, value.ValueString(), want[i])
+			}
+		}
+	}
+
+	if len(state.PushingSetting) != 1 {
+		t.Fatalf("pushing_setting = %v, want one block", state.PushingSetting)
+	}
+	assertStringList("pushing_setting.alert_action_ids", state.PushingSetting[0].AlertActionIds, []string{"a1"})
+	assertStringList("pushing_setting.restore_action_ids", state.PushingSetting[0].RestoreActionIds, []string{"a2"})
+	if len(state.WorkspaceFilterSetting) != 1 {
+		t.Fatalf("workspace_filter_setting = %v, want one block", state.WorkspaceFilterSetting)
+	}
+	assertStringList("workspace_filter_setting.workspace_uuids", state.WorkspaceFilterSetting[0].WorkspaceUuids, []string{"w1"})
+	if len(state.AgentConfig) != 1 || len(state.AgentConfig[0].Routes) != 1 || len(state.AgentConfig[0].Routes[0].Channels) != 1 {
+		t.Fatalf("agent_config = %v, want one route with one channel", state.AgentConfig)
+	}
+	channel := state.AgentConfig[0].Routes[0].Channels[0]
+	assertStringList("agent_config.routes.channels.receivers", channel.Receivers, []string{"r1"})
+	assertStringList("agent_config.routes.channels.enabled_sub_channels", channel.EnabledSubChannels, []string{"EMAIL"})
+	dayInWeek := state.AgentConfig[0].Routes[0].EffectTimeRange[0].DayInWeek
+	if dayInWeek.IsNull() || len(dayInWeek.Elements()) != 2 {
+		t.Fatalf("day_in_week = %v, want two elements", dayInWeek)
+	}
+	if _, ok := dayInWeek.Elements()[0].(types.Int64); !ok {
+		t.Fatalf("day_in_week[0] is %T, want types.Int64", dayInWeek.Elements()[0])
+	}
+}
+
 // TestUnitCmsSubscriptionRequestVisibleComparesNestedContent proves the waiter
 // compares condition content, not only the number of conditions.
 func TestUnitCmsSubscriptionRequestVisibleComparesNestedContent(t *testing.T) {

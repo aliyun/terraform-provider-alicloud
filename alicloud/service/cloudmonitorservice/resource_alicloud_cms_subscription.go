@@ -151,6 +151,7 @@ func (r *cmsSubscriptionResource) Schema(ctx context.Context, req resource.Schem
 			"subscribe_legacy_event": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
+				Default:  booldefault.StaticBool(false),
 			},
 			"user_id": schema.StringAttribute{
 				Computed: true,
@@ -466,6 +467,20 @@ func (r *cmsSubscriptionResource) Update(ctx context.Context, req resource.Updat
 	action := fmt.Sprintf("/subscriptions/%s", id)
 	request := expandCmsSubscriptionRequest(plan)
 	removed := cmsSubscriptionRemovedPaths(plan, state)
+	if len(removed) == 0 && cmsSubscriptionRequestsEqual(expandCmsSubscriptionRequest(state), request) {
+		// Only the enable/disable state changed: the body is untouched, so do not
+		// rewrite the configuration with a full-body update.
+		object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(ctx, id, state.Workspace.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Reading %s: calling GetSubscription", cmsSubscriptionTypeName),
+				errs.WrapErrorf(err, errs.DefaultErrorMsg, cmsSubscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
+			)
+			return
+		}
+		resp.Diagnostics.Append(resp.State.Set(ctx, cmsSubscriptionState(object, plan, r.Meta().RegionId))...)
+		return
+	}
 	var response map[string]interface{}
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
@@ -860,9 +875,6 @@ func cmsSubscriptionRemovedPaths(plan, state cmsSubscriptionResourceModel) [][]s
 	if !state.NotifyStrategyId.IsNull() && plan.NotifyStrategyId.IsNull() {
 		paths = append(paths, []string{"notifyStrategyId"})
 	}
-	if !state.SubscribeLegacyEvent.IsNull() && plan.SubscribeLegacyEvent.IsNull() {
-		paths = append(paths, []string{"subscribeLegacyEvent"})
-	}
 	if len(state.FilterSetting) > 0 {
 		if len(plan.FilterSetting) == 0 {
 			paths = append(paths, []string{"filterSetting"})
@@ -871,9 +883,6 @@ func cmsSubscriptionRemovedPaths(plan, state cmsSubscriptionResourceModel) [][]s
 			after := plan.FilterSetting[0]
 			if !before.Expression.IsNull() && after.Expression.IsNull() {
 				paths = append(paths, []string{"filterSetting", "expression"})
-			}
-			if !before.Relation.IsNull() && after.Relation.IsNull() {
-				paths = append(paths, []string{"filterSetting", "relation"})
 			}
 			if len(before.Conditions) > 0 && len(after.Conditions) == 0 {
 				paths = append(paths, []string{"filterSetting", "conditions"})
@@ -922,6 +931,12 @@ func cmsSubscriptionRemovedPaths(plan, state cmsSubscriptionResourceModel) [][]s
 		}
 	}
 	return paths
+}
+
+func cmsSubscriptionRequestsEqual(left, right map[string]interface{}) bool {
+	leftJSON, leftErr := json.Marshal(left)
+	rightJSON, rightErr := json.Marshal(right)
+	return leftErr == nil && rightErr == nil && string(leftJSON) == string(rightJSON)
 }
 
 func cmsSubscriptionQuery(workspace types.String) map[string]*string {
@@ -1419,10 +1434,10 @@ func cmsSubscriptionBoolStateValue(v interface{}) types.Bool {
 }
 
 func cmsSubscriptionJSONStringList(v interface{}) types.List {
-	elementType := types.ListType{ElemType: types.StringType}
+	listType := types.ListType{ElemType: types.StringType}
 	items, ok := v.([]interface{})
 	if !ok || len(items) == 0 {
-		return types.ListNull(elementType)
+		return types.ListNull(listType)
 	}
 	values := make([]attr.Value, 0, len(items))
 	for _, item := range items {
@@ -1431,9 +1446,9 @@ func cmsSubscriptionJSONStringList(v interface{}) types.List {
 		}
 	}
 	if len(values) == 0 {
-		return types.ListNull(elementType)
+		return types.ListNull(listType)
 	}
-	return types.ListValueMust(elementType, values)
+	return types.ListValueMust(types.StringType, values)
 }
 
 func cmsSubscriptionJSONStringListState(v interface{}, previous types.List) types.List {
@@ -1442,16 +1457,16 @@ func cmsSubscriptionJSONStringListState(v interface{}, previous types.List) type
 		return list
 	}
 	if !previous.IsNull() && !previous.IsUnknown() {
-		return types.ListValueMust(types.ListType{ElemType: types.StringType}, []attr.Value{})
+		return types.ListValueMust(types.StringType, []attr.Value{})
 	}
 	return list
 }
 
 func cmsSubscriptionJSONInt64List(v interface{}) types.List {
-	elementType := types.ListType{ElemType: types.Int64Type}
+	listType := types.ListType{ElemType: types.Int64Type}
 	items, ok := v.([]interface{})
 	if !ok || len(items) == 0 {
-		return types.ListNull(elementType)
+		return types.ListNull(listType)
 	}
 	values := make([]attr.Value, 0, len(items))
 	for _, item := range items {
@@ -1461,9 +1476,9 @@ func cmsSubscriptionJSONInt64List(v interface{}) types.List {
 		}
 	}
 	if len(values) == 0 {
-		return types.ListNull(elementType)
+		return types.ListNull(listType)
 	}
-	return types.ListValueMust(elementType, values)
+	return types.ListValueMust(types.Int64Type, values)
 }
 
 func cmsSubscriptionJSONInt64Value(v interface{}) types.Int64 {
@@ -1506,7 +1521,12 @@ func (v cmsSubscriptionChannelValidator) ValidateResource(ctx context.Context, r
 				}
 				switch channel.ChannelType.ValueString() {
 				case "CONTACT", "GROUP", "DUTY":
-					if channel.EnabledSubChannels.IsNull() || channel.EnabledSubChannels.IsUnknown() || len(channel.EnabledSubChannels.Elements()) == 0 {
+					if channel.EnabledSubChannels.IsUnknown() {
+						// The value is only known after apply; validation runs again
+						// once it is known.
+						continue
+					}
+					if channel.EnabledSubChannels.IsNull() || len(channel.EnabledSubChannels.Elements()) == 0 {
 						resp.Diagnostics.AddAttributeError(
 							path.Root("agent_config").AtListIndex(i).
 								AtName("routes").AtListIndex(j).

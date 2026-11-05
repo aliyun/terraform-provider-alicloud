@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
@@ -44,17 +43,20 @@ func (s *CmsService) DescribeCmsSubscription(ctx context.Context, id, workspace 
 		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	obj, err := jsonpath.Get("$.subscription", response)
-	if err != nil {
-		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.subscription", response)
+	rawSubscription, exists := response["subscription"]
+	if !exists {
+		return object, errs.WrapErrorf(
+			fmt.Errorf("the response does not contain $.subscription"),
+			errs.FailedGetAttributeMsg, id, "$.subscription", response,
+		)
 	}
-	if obj == nil {
+	if rawSubscription == nil {
 		return object, errs.WrapErrorf(errs.NotFoundErr("Cms:Subscription", id), errs.NotFoundWithResponse, response)
 	}
-	subscription, ok := obj.(map[string]interface{})
+	subscription, ok := rawSubscription.(map[string]interface{})
 	if !ok {
 		return object, errs.WrapErrorf(
-			fmt.Errorf("unexpected $.subscription payload type %T", obj),
+			fmt.Errorf("unexpected $.subscription payload type %T", rawSubscription),
 			errs.FailedGetAttributeMsg, id, "$.subscription", response,
 		)
 	}

@@ -68,8 +68,8 @@ resource "alicloud_cms_subscription" "default" {
 The following arguments are supported:
 
 * `subscription_name` - (Required) The name of the subscription.
-* `description` - (Optional) The description of the subscription. Set it to an empty string to clear the description.
-* `notify_strategy_id` - (Optional) The UUID of the notification strategy bound to the subscription. Use the `uuid` attribute of an `alicloud_cms_event_notify_policy` resource, for example `alicloud_cms_event_notify_policy.default.uuid`. Removing the argument clears the binding.
+* `description` - (Optional) The description of the subscription. The value is sent to the service as configured.
+* `notify_strategy_id` - (Optional) The UUID of the notification strategy bound to the subscription. Use the `uuid` attribute of an `alicloud_cms_event_notify_policy` resource, for example `alicloud_cms_event_notify_policy.default.uuid`. Removing the argument stops sending the binding; the service decides how the stored binding is cleared.
 * `workspace` - (Required, ForceNew) The name of the workspace the subscription belongs to. Changing this forces a new subscription to be created.
 * `enable` - (Optional) Whether the subscription is enabled. Defaults to `true`. The enabled state is controlled by the separate enable and disable operations, not by the subscription body.
 * `subscribe_legacy_event` - (Optional) Whether events from CMS 1.0, ARMS and SLS resources that have no workspace are also subscribed. If it is not configured, the service default (`false`) applies. Removing the argument restores the service default.

@@ -66,6 +66,22 @@ func TestAccAliCloudCmsSubscription_basic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
+				// Same condition count with different content: a count-only waiter
+				// would accept the stale response here.
+				Config: testAccCmsSubscriptionConfigFilteredUpdated(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "description", "updated by terraform"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.0.value", "CriticalCPUUsage"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
+				ImportStateVerify: true,
+			},
+			{
 				// Removing every optional value must clear it remotely, and the
 				// explicit false must survive the round trip.
 				Config: testAccCmsSubscriptionConfigCleared(name),
@@ -197,6 +213,27 @@ resource "alicloud_cms_subscription" "default" {
       field = "labels.alertname"
       op    = "EQ"
       value = "HighCPUUsage"
+    }
+  }
+}
+`, testAccCmsSubscriptionDependence(name))
+}
+
+func testAccCmsSubscriptionConfigFilteredUpdated(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_cms_subscription" "default" {
+  subscription_name = var.name
+  workspace         = alicloud_cms_workspace.default.workspace_name
+  description       = "updated by terraform"
+  enable            = false
+
+  filter_setting {
+    relation = "AND"
+
+    conditions {
+      field = "labels.alertname"
+      op    = "EQ"
+      value = "CriticalCPUUsage"
     }
   }
 }
