@@ -63,7 +63,7 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						// The cluster-autoscaler addon is installed asynchronously after
 						// autoscaling is enabled; wait before reading it back on import.
-						acctest.ForceSleep:              "240",
+						acctest.ForceSleep:              "600",
 						"cluster_id":                    acctest.CHECKSET,
 						"cool_down_duration":            acctest.CHECKSET,
 						"unneeded_duration":             acctest.CHECKSET,
