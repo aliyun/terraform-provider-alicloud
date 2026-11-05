@@ -138,6 +138,109 @@ resource "alicloud_api_gateway_app_key" "default" {
 `, name)
 }
 
+// TestAccAliCloudApiGatewayAppKey_update verifies that changing
+// secret_reset_token rotates the AppSecret in place via ResetAppSecret,
+// while the AppKey identity (and the resource id) stays the same.
+func TestAccAliCloudApiGatewayAppKey_update(t *testing.T) {
+	resourceId := "alicloud_api_gateway_app_key.default"
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-apigw-appkey-%d", rand)
+
+	var appSecretBefore, appKeyBefore string
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckApiGatewayAppKeyDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccApiGatewayAppKeyUpdate(name, "initial"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair(resourceId, "app_id", "alicloud_api_gateway_app.default", "id"),
+					resource.TestCheckResourceAttr(resourceId, "secret_reset_token", "initial"),
+					resource.TestCheckResourceAttrSet(resourceId, "app_key"),
+					resource.TestCheckResourceAttrSet(resourceId, "app_secret"),
+					testAccExtractApiGatewayAppKeyAttrs(resourceId, &appKeyBefore, &appSecretBefore),
+				),
+			},
+			{
+				// Changing secret_reset_token drives an in-place ResetAppSecret.
+				Config: testAccApiGatewayAppKeyUpdate(name, "rotated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair(resourceId, "app_id", "alicloud_api_gateway_app.default", "id"),
+					resource.TestCheckResourceAttr(resourceId, "secret_reset_token", "rotated"),
+					resource.TestCheckResourceAttrSet(resourceId, "app_secret"),
+					// The AppKey identity must not change: rotating it would be a ForceNew.
+					testAccCheckApiGatewayAppKeyAttr(resourceId, "app_key", appKeyBefore),
+					// The AppSecret must differ after rotation.
+					testAccCheckApiGatewayAppKeyAttrChanged(resourceId, "app_secret", appSecretBefore),
+				),
+			},
+		},
+	})
+}
+
+func testAccApiGatewayAppKeyUpdate(name, token string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+resource "alicloud_api_gateway_app" "default" {
+  name        = var.name
+  description = "tf_example"
+}
+
+resource "alicloud_api_gateway_app_key" "default" {
+  app_id            = alicloud_api_gateway_app.default.id
+  secret_reset_token = "%s"
+}
+`, name, token)
+}
+
+// testAccExtractApiGatewayAppKeyAttrs captures the current app_key and
+// app_secret from state into the provided pointers so a later step can assert
+// they changed (or stayed the same) across rotation.
+func testAccExtractApiGatewayAppKeyAttrs(id string, appKey, appSecret *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[id]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", id)
+		}
+		*appKey = rs.Primary.Attributes["app_key"]
+		*appSecret = rs.Primary.Attributes["app_secret"]
+		return nil
+	}
+}
+
+func testAccCheckApiGatewayAppKeyAttr(id, attr, expected string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[id]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", id)
+		}
+		if got := rs.Primary.Attributes[attr]; got != expected {
+			return fmt.Errorf("%s: expected %s = %q, got %q", id, attr, expected, got)
+		}
+		return nil
+	}
+}
+
+func testAccCheckApiGatewayAppKeyAttrChanged(id, attr, before string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[id]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", id)
+		}
+		got := rs.Primary.Attributes[attr]
+		if got == before {
+			return fmt.Errorf("%s: expected %s to change after rotation, but it stayed %q", id, attr, got)
+		}
+		return nil
+	}
+}
+
 func testAccCheckApiGatewayAppKeyDestroy(s *terraform.State) error {
 	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
 	cloudApiService := apigateway.NewCloudApiService(client)

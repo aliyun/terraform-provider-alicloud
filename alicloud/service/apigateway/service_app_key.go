@@ -84,6 +84,28 @@ func (s *CloudApiService) CreateAppKey(appId, appKey, appSecret string) error {
 	return nil
 }
 
+// ResetAppSecret rotates the AppSecret of an AppKey by calling
+// CloudAPI/2016-07-14 ResetAppSecret. NewAppKey is intentionally not supplied
+// because changing the AppKey identity would change the resource's primary
+// identifier (the id is `<app_id>:<app_key>`); rotating the AppKey identity is
+// therefore a ForceNew, not an in-place update. NewAppSecret is left empty so
+// the server auto-generates a fresh AppSecret. The response only carries a
+// RequestId, so the caller reads the new AppSecret back through
+// DescribeAppSecurities (FindAppSecurity).
+func (s *CloudApiService) ResetAppSecret(appKey string) error {
+	action := "ResetAppSecret"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"AppKey":   appKey,
+	}
+	response, err := s.client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, appKey, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
 // DeleteAppKey removes an AppKey from its App. A missing App or AppKey is
 // treated as success so a drifted destroy converges.
 func (s *CloudApiService) DeleteAppKey(appId, appKey string) error {

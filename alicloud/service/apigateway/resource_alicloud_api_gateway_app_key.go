@@ -41,13 +41,14 @@ type apiGatewayAppKeyResource struct {
 }
 
 type apiGatewayAppKeyResourceModel struct {
-	Id           types.String `tfsdk:"id"`
-	AppId        types.String `tfsdk:"app_id"`
-	AppKey       types.String `tfsdk:"app_key"`
-	AppSecret    types.String `tfsdk:"app_secret"`
-	AppCode      types.String `tfsdk:"app_code"`
-	CreatedTime  types.String `tfsdk:"created_time"`
-	ModifiedTime types.String `tfsdk:"modified_time"`
+	Id               types.String `tfsdk:"id"`
+	AppId            types.String `tfsdk:"app_id"`
+	SecretResetToken types.String `tfsdk:"secret_reset_token"`
+	AppKey           types.String `tfsdk:"app_key"`
+	AppSecret        types.String `tfsdk:"app_secret"`
+	AppCode          types.String `tfsdk:"app_code"`
+	CreatedTime      types.String `tfsdk:"created_time"`
+	ModifiedTime     types.String `tfsdk:"modified_time"`
 }
 
 func (r *apiGatewayAppKeyResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -73,11 +74,13 @@ func (r *apiGatewayAppKeyResource) Schema(ctx context.Context, req resource.Sche
 				},
 			},
 			// AppKey, AppSecret and AppCode are server-generated credentials.
-			// CreateAppKey (CloudAPI/2016-07-14) optionally accepts AppKey and
-			// AppSecret, but exposing updatable server-generated secrets under
-			// the Framework would re-introduce a perpetual plan diff, so they
-			// are read-only Computed here; rotation happens by recreating the
-			// resource. See the implementation report for the Update-API gap.
+			// They are read-only Computed so that exposing them does not
+			// re-introduce a perpetual plan diff. AppSecret rotation no longer
+			// requires recreating the resource: changing secret_reset_token
+			// drives an in-place ResetAppSecret (CloudAPI/2016-07-14) in Update.
+			// Changing the AppKey identity itself would change the resource's
+			// primary identifier and is therefore a ForceNew, handled via the
+			// app_id RequiresReplace above (the id is `<app_id>:<app_key>`).
 			"app_key": schema.StringAttribute{
 				Computed:    true,
 				Sensitive:   true,
@@ -86,7 +89,11 @@ func (r *apiGatewayAppKeyResource) Schema(ctx context.Context, req resource.Sche
 			"app_secret": schema.StringAttribute{
 				Computed:    true,
 				Sensitive:   true,
-				Description: "The AppSecret generated for the App.",
+				Description: "The AppSecret generated for the App. Rotate it by changing secret_reset_token.",
+			},
+			"secret_reset_token": schema.StringAttribute{
+				Optional:    true,
+				Description: "An arbitrary value that, when changed, rotates the AppSecret by calling ResetAppSecret. The value itself is not sent to the server; only a change between configurations triggers rotation.",
 			},
 			"app_code": schema.StringAttribute{
 				Computed:    true,
@@ -188,6 +195,9 @@ func (r *apiGatewayAppKeyResource) Create(ctx context.Context, req resource.Crea
 	model := apiGatewayAppKeyState(object)
 	model.Id = types.StringValue(fmt.Sprintf("%s:%s", appIdStr, fmt.Sprint(object["AppKey"])))
 	model.AppId = plan.AppId
+	// Persist the rotation trigger so a later change is detectable; the value
+	// itself never reaches the server.
+	model.SecretResetToken = plan.SecretResetToken
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
@@ -232,25 +242,113 @@ func (r *apiGatewayAppKeyResource) Read(ctx context.Context, req resource.ReadRe
 	model := apiGatewayAppKeyState(object)
 	model.Id = state.Id
 	model.AppId = types.StringValue(appIdStr)
+	// DescribeAppSecurities does not return secret_reset_token; preserve the
+	// stored value so refresh does not erase the trigger and cause a spurious
+	// rotation on the next plan.
+	model.SecretResetToken = state.SecretResetToken
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
-// Update is a no-op: every user-configurable attribute (app_id) is marked
-// RequiresReplace, so any change recreates the resource and the Framework
-// never invokes Update. The method exists only to satisfy the
-// resource.Resource interface. The route-designated Update API
-// ResetSecretByAppKeyForInner (CloudAPI 2016-02-01) could not be verified
-// (parameters unavailable via metadata), and the verified public equivalent
-// ResetAppSecret (2016-07-14) would rotate a server-generated secret in place,
-// which the Framework Computed credentials above deliberately avoid. See the
-// implementation report.
+// Update rotates the AppSecret when secret_reset_token changes. The token
+// value is never sent to the server: only a divergence between the configured
+// value and the stored value signals an intent to rotate, mirroring the
+// polardb gateway_consumer api_key_reset_token idiom. Rotation calls
+// CloudAPI/2016-07-14 ResetAppSecret (only AppKey is supplied; NewAppKey is
+// omitted because changing the AppKey identity is a ForceNew, and NewAppSecret
+// is omitted so the server auto-generates a fresh secret). ResetAppSecret's
+// response only carries a RequestId, so the new AppSecret is read back
+// through DescribeAppSecurities (FindAppSecurity) before setting state.
+// app_id is RequiresReplace, so no other attribute reaches Update.
 func (r *apiGatewayAppKeyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan apiGatewayAppKeyResourceModel
+	var plan, state apiGatewayAppKeyResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+
+	parts, err := helper.ParseResourceId(state.Id.ValueString(), 2)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Updating %s: parsing id", apiGatewayAppKeyTypeName),
+			errs.WrapErrorf(err, "Updating %s: parsing id %q", apiGatewayAppKeyTypeName, state.Id.ValueString()).Error(),
+		)
+		return
+	}
+	appIdStr, appKey := parts[0], parts[1]
+	appId, perr := strconv.ParseInt(appIdStr, 10, 64)
+	if perr != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Updating %s: parsing app_id", apiGatewayAppKeyTypeName),
+			errs.WrapErrorf(perr, "Updating %s: app_id %q is not an integer", apiGatewayAppKeyTypeName, appIdStr).Error(),
+		)
+		return
+	}
+
+	cloudApiService := NewCloudApiService(r.Meta())
+
+	// Rotate only when the trigger actually changed and is set. An unset or
+	// unchanged token leaves the AppSecret untouched.
+	if !plan.SecretResetToken.Equal(state.SecretResetToken) && !plan.SecretResetToken.IsNull() && plan.SecretResetToken.ValueString() != "" {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(apiGatewayAppKeyTimeout, func() *retry.RetryError {
+			if e := cloudApiService.ResetAppSecret(appKey); e != nil {
+				if helper.NeedRetry(e) {
+					wait()
+					return retry.RetryableError(e)
+				}
+				return retry.NonRetryableError(e)
+			}
+			return nil
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Updating %s: calling ResetAppSecret", apiGatewayAppKeyTypeName),
+				errs.WrapErrorf(err, "Updating %s: calling ResetAppSecret for AppKey %s", apiGatewayAppKeyTypeName, appKey).Error(),
+			)
+			return
+		}
+	}
+
+	// Read back the (possibly rotated) AppSecret. ResetAppSecret's response
+	// carries only a RequestId, so the current values come from
+	// DescribeAppSecurities. This also converges eventual consistency after
+	// rotation.
+	var object map[string]interface{}
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(apiGatewayAppKeyTimeout, func() *retry.RetryError {
+		m, e := cloudApiService.FindAppSecurity(appId, appKey)
+		if e != nil {
+			if errs.NotFoundError(e) {
+				resp.State.RemoveResource(ctx)
+				return nil
+			}
+			if helper.NeedRetry(e) {
+				wait()
+				return retry.RetryableError(e)
+			}
+			return retry.NonRetryableError(e)
+		}
+		object = m
+		return nil
+	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Updating %s: reading back the AppKey", apiGatewayAppKeyTypeName),
+			errs.WrapErrorf(err, "Updating %s: reading back the AppKey for App %s", apiGatewayAppKeyTypeName, appIdStr).Error(),
+		)
+		return
+	}
+	if object == nil {
+		// FindAppSecurity returned NotFound and removed the resource from state.
+		return
+	}
+
+	model := apiGatewayAppKeyState(object)
+	model.Id = state.Id
+	model.AppId = plan.AppId
+	model.SecretResetToken = plan.SecretResetToken
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
 func (r *apiGatewayAppKeyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
