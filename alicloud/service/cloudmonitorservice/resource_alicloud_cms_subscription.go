@@ -833,7 +833,38 @@ func subscriptionBackoff(ctx context.Context) func() bool {
 // one-based position in `expression`, and every list in the schema is ordered.
 func subscriptionRequestVisible(object, request map[string]interface{}) bool {
 	for key, want := range request {
+		if key == "filterSetting" {
+			if !subscriptionFilterVisible(object[key], want) {
+				return false
+			}
+			continue
+		}
 		if !subscriptionValueVisible(object[key], want) {
+			return false
+		}
+	}
+	return true
+}
+
+// subscriptionFilterVisible compares the filter except relation when an
+// expression is configured: the service ignores relation in that case, so the
+// value it stores is not the requested one and demanding it back could never
+// converge. Every other member keeps the full comparison.
+func subscriptionFilterVisible(actual, want interface{}) bool {
+	wantMap, ok := want.(map[string]interface{})
+	if !ok {
+		return subscriptionValueVisible(actual, want)
+	}
+	actualMap, ok := actual.(map[string]interface{})
+	if !ok {
+		return false
+	}
+	expression, _ := wantMap["expression"].(string)
+	for key, value := range wantMap {
+		if key == "relation" && expression != "" {
+			continue
+		}
+		if !subscriptionValueVisible(actualMap[key], value) {
 			return false
 		}
 	}
@@ -1166,18 +1197,13 @@ func expandSubscriptionFilterSetting(blocks []subscriptionFilterSettingModel) ma
 	}
 	block := blocks[0]
 	result := map[string]interface{}{}
-	expression := ""
 	if !block.Expression.IsNull() && !block.Expression.IsUnknown() {
-		expression = block.Expression.ValueString()
-		if expression != "" {
-			result["expression"] = expression
-		}
+		result["expression"] = block.Expression.ValueString()
 	}
-	// The service ignores relation when expression is set, so it is not sent in
-	// that case: the value the service stores is not the configured one, and a
-	// request that demanded it back could never converge. The read path still
-	// reports the stored relation, which is why the argument is computed.
-	if expression == "" && !block.Relation.IsNull() && !block.Relation.IsUnknown() {
+	if !block.Relation.IsNull() && !block.Relation.IsUnknown() {
+		// relation is always sent: the service keeps the filter only when it is
+		// present, even alongside an expression, although it then ignores the
+		// value for the matching logic.
 		result["relation"] = block.Relation.ValueString()
 	}
 	if len(block.Conditions) > 0 {

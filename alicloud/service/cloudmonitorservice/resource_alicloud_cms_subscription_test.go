@@ -3247,14 +3247,20 @@ func TestUnitCmsSubscriptionUpdateExternalFixtures(t *testing.T) {
 	}
 }
 
-// TestUnitCmsSubscriptionCreateOmitsRelationWithExpression proves a
-// configuration whose expression and relation only resolve at apply time does
-// not send relation: the service ignores it when expression is set, so a
-// request that demanded it back could never converge. The create completes
-// quickly and the stored relation is read back.
-func TestUnitCmsSubscriptionCreateOmitsRelationWithExpression(t *testing.T) {
-	apiClient, recorder := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+// TestUnitCmsSubscriptionCreateToleratesStoredRelationWithExpression proves a
+// filter whose relation and expression only resolve at apply time does not
+// stall: the request still carries relation (the service keeps the filter only
+// when it is present), while the waiter accepts the relation the service
+// stores, because the service ignores the requested value for the matching
+// logic.
+func TestUnitCmsSubscriptionCreateToleratesStoredRelationWithExpression(t *testing.T) {
+	var mu sync.Mutex
+	var createBody map[string]interface{}
+	apiClient, _ := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+		mu.Lock()
+		defer mu.Unlock()
 		if method == http.MethodPost {
+			createBody = body
 			return http.StatusOK, map[string]interface{}{"requestId": "req-1", "subscriptionId": subscriptionUnitServerId}
 		}
 		return http.StatusOK, map[string]interface{}{"requestId": "req-2", "subscription": map[string]interface{}{
@@ -3264,7 +3270,8 @@ func TestUnitCmsSubscriptionCreateOmitsRelationWithExpression(t *testing.T) {
 			"enable":           true,
 			"filterSetting": map[string]interface{}{
 				"expression": "1 and 2",
-				"relation":   "AND",
+				// The service stores its own relation although expression is set.
+				"relation": "AND",
 				"conditions": []interface{}{
 					map[string]interface{}{"field": "labels.alertname", "op": "EQ", "value": "CPU"},
 					map[string]interface{}{"field": "labels.severity", "op": "IN", "value": "P1"},
@@ -3283,7 +3290,7 @@ func TestUnitCmsSubscriptionCreateOmitsRelationWithExpression(t *testing.T) {
 		"filter_setting": []interface{}{
 			subscriptionUnitObject(t, filterType, map[string]interface{}{
 				"expression": "1 and 2",
-				"relation":   "AND",
+				"relation":   "OR",
 				"conditions": []interface{}{
 					subscriptionUnitObject(t, conditionType, map[string]interface{}{"field": "labels.alertname", "op": "EQ", "value": "CPU"}),
 					subscriptionUnitObject(t, conditionType, map[string]interface{}{"field": "labels.severity", "op": "IN", "value": "P1"}),
@@ -3300,23 +3307,18 @@ func TestUnitCmsSubscriptionCreateOmitsRelationWithExpression(t *testing.T) {
 		t.Fatalf("Create returned diagnostics: %v", resp.Diagnostics)
 	}
 
-	bodies := recorder.bodiesFor(http.MethodPost)
-	if len(bodies) != 1 {
-		t.Fatalf("create requests = %d, want one", len(bodies))
-	}
-	filter, ok := bodies[0]["filterSetting"].(map[string]interface{})
-	if !ok || filter["expression"] != "1 and 2" {
-		t.Fatalf("unexpected filterSetting payload: %v", bodies[0]["filterSetting"])
-	}
-	if relation, exists := filter["relation"]; exists {
-		t.Fatalf("filterSetting still carries relation %v although expression is set", relation)
+	mu.Lock()
+	filter, ok := createBody["filterSetting"].(map[string]interface{})
+	mu.Unlock()
+	if !ok || filter["expression"] != "1 and 2" || filter["relation"] != "OR" {
+		t.Fatalf("unexpected filterSetting payload: %v", filter)
 	}
 	var relation types.String
 	if diags := resp.State.GetAttribute(context.Background(), path.Root("filter_setting").AtListIndex(0).AtName("relation"), &relation); diags.HasError() {
 		t.Fatalf("reading relation: %v", diags)
 	}
 	if relation.ValueString() != "AND" {
-		t.Fatalf("state relation = %q, want the stored value", relation.ValueString())
+		t.Fatalf("state relation = %q, want the value the service stores", relation.ValueString())
 	}
 }
 
