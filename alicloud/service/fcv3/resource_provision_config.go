@@ -378,11 +378,16 @@ func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) err
 
 	if d.HasChange("always_allocate_cpu") {
 		update = true
-		request["alwaysAllocateCPU"] = d.Get("always_allocate_cpu")
 	}
 
 	if d.HasChange("always_allocate_gpu") {
 		update = true
+	}
+
+	// Both fields are Optional+Computed and the PUT API fills omitted values
+	// with the service default, so echo the current state on every update.
+	if update {
+		request["alwaysAllocateCPU"] = d.Get("always_allocate_cpu")
 		request["alwaysAllocateGPU"] = d.Get("always_allocate_gpu")
 	}
 
