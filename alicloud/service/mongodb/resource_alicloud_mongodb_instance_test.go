@@ -1140,7 +1140,7 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAccMongoDBInstanceCrossBackup%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMongoDBInstanceBasicDependence1)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMongoDBInstanceCrossBackupDependence)
 	srcRegion := mongodbTestRegion()
 	destRegion := mongodbCrossBackupDestRegion()
 	resource.Test(t, resource.TestCase{
@@ -1535,7 +1535,7 @@ func TestAccAliCloudMongoDBInstance_validation(t *testing.T) {
 	acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(mongodbTestRegion())})
 	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAccMongoDBInstanceValidation%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMongoDBInstanceBasicDependence1)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMongoDBInstanceCrossBackupDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -1641,6 +1641,32 @@ var AliCloudMongoDBInstanceMap1 = map[string]string{
 	"ssl_status":              acctest.CHECKSET,
 	"zone_infos.#":            acctest.CHECKSET,
 	"replica_sets.#":          acctest.CHECKSET,
+}
+
+// AliCloudMongoDBInstanceCrossBackupDependence provides only the network
+// dependencies used by the cross-backup and validation cases. Those cases do not
+// reference the security group, KMS key or global security IP groups, so creating
+// them would only add resources that are not exercised and can be left behind when
+// the test case aborts (NEW-2). Keeping the fixture minimal makes every created
+// resource part of the assertion and cleanup surface.
+func AliCloudMongoDBInstanceCrossBackupDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	resource "alicloud_vpc" "default" {
+		vpc_name   = var.name
+		cidr_block = "192.168.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+		vswitch_name = var.name
+		vpc_id       = alicloud_vpc.default.id
+		cidr_block   = "192.168.192.0/24"
+		zone_id      = "%s"
+	}
+`, name, mongodbTestZonePrimary())
 }
 
 func AliCloudMongoDBInstanceBasicDependence0(name string) string {
