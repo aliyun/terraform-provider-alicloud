@@ -71,7 +71,7 @@ The following arguments are supported:
 * `cert_region` - (Optional, Available since v2.2.0) The region of the certificate. Valid values: `cn-hangzhou`, `ap-southeast-1`.
 * `ssl_pub` - (Optional, Available since v2.2.0) The content of the security certificate.
 * `ssl_pri` - (Optional, Sensitive, Available since v2.2.0) The content of the private key.
-* `env` - (Optional, Available since v2.2.0) Specifies whether the certificate is deployed in canary mode. Valid values: `staging`, `production`. `staging` deploys the certificate in canary mode and requires canary deployment to be enabled for the domain; if you set `production` or do not set this parameter, the certificate is deployed in production mode. This parameter is not returned by the query APIs.
+* `env` - (Optional, Available since v2.3.0) Specifies whether the certificate is deployed in canary mode. Valid values: `staging`, `production`. `staging` deploys the certificate in canary mode and requires canary deployment to be enabled for the domain; if you set `production` or do not set this parameter, the certificate is deployed in production mode. This parameter is not returned by the query APIs.
 * `check_url` - (Optional) The URL for health checks.
 * `top_level_domain` - (Optional) The top-level domain name.
 * `sources` - (Required, Set) The list of origin addresses. See [`sources`](#sources) below.
