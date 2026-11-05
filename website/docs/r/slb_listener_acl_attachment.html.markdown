@@ -17,7 +17,17 @@ For information about Classic Load Balancer (SLB) and how to use it, see [What i
 
 -> **NOTE:** This resource manages only the access control settings of the listener. It can be used with listeners that are not managed by Terraform, for example the listeners created by an ACK cluster. Use the `id` element of `alicloud_slb_listeners` (or the `id` of `alicloud_slb_listener`) as `listener_id`.
 
--> **NOTE:** An SLB listener expresses a single set of ACLs. This resource exclusively manages the ACL binding of its listener and overwrites the ACLs already bound to that listener. Do not manage the same listener through both this resource and the `acl_status`/`acl_type`/`acl_id`/`acl_ids` arguments of `alicloud_slb_listener`.
+-> **NOTE:** An SLB listener expresses a single set of ACLs. This resource exclusively manages the ACL binding of its listener and overwrites the ACLs already bound to that listener. Do not manage the same listener through both this resource and the `acl_status`/`acl_type`/`acl_id`/`acl_ids` arguments of `alicloud_slb_listener`. When the listener itself is still created by `alicloud_slb_listener`, add `ignore_changes = [acl_status, acl_type, acl_id, acl_ids]` to that listener so that only this resource drives the ACL settings:
+
+```terraform
+resource "alicloud_slb_listener" "default" {
+  # ... other listener arguments ...
+
+  lifecycle {
+    ignore_changes = [acl_status, acl_type, acl_id, acl_ids]
+  }
+}
+```
 
 -> **NOTE:** Enabling access control takes effect immediately and may affect traffic. When a white list is enabled with no entries, all requests are forwarded; when a black list is enabled with no entries, all requests are denied. Make sure the policy group is configured before binding it.
 

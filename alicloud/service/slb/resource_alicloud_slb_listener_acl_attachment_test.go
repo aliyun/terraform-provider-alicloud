@@ -142,6 +142,13 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout      = 8
   health_check_interval     = 5
   health_check_http_code    = "http_2xx,http_3xx"
+
+  # The ACL binding is managed by alicloud_slb_listener_acl_attachment, so this
+  # listener (which is only used to provision the listener itself) ignores the
+  # ACL drift on purpose. This mirrors the documented management boundary.
+  lifecycle {
+    ignore_changes = [acl_status, acl_type, acl_id, acl_ids]
+  }
 }
 
 resource "alicloud_slb_acl" "first" {
@@ -161,7 +168,7 @@ resource "alicloud_slb_acl" "second" {
 }
 %s
 data "alicloud_slb_listeners" "default" {
-  load_balancer_id = alicloud_slb_load_balancer.default.id
+  load_balancer_id = alicloud_slb_listener.default.load_balancer_id
 }
 `, name, attachment)
 }
@@ -191,6 +198,10 @@ resource "alicloud_slb_listener" "default" {
   unhealthy_threshold       = 8
   health_check_timeout      = 8
   health_check_interval     = 5
+
+  lifecycle {
+    ignore_changes = [acl_status, acl_type, acl_id, acl_ids]
+  }
 }
 
 resource "alicloud_slb_acl" "first" {
