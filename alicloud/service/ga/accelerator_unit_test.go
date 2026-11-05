@@ -1,6 +1,8 @@
 package ga
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"reflect"
 	"strconv"
@@ -12,6 +14,7 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
@@ -353,4 +356,354 @@ func TestUnitAliCloudGaAccelerator(t *testing.T) {
 		patchDoRequest.Reset()
 		assert.NotNil(t, err)
 	})
+}
+
+// lintignore: R001
+func TestUnitAliCloudGaAcceleratorDdosConfigs(t *testing.T) {
+	add, remove := ddosConfigDiff(
+		[]map[string]string{{"ddos_id": "ddos-a", "ddos_region_id": "cn-hangzhou"}},
+		[]map[string]string{{"ddos_id": "ddos-b", "ddos_region_id": "ap-southeast-1"}},
+	)
+	assert.Len(t, add, 1)
+	assert.Equal(t, "ddos-b", add[0]["ddos_id"])
+	assert.Len(t, remove, 1)
+	assert.Equal(t, "ddos-a", remove[0]["ddos_id"])
+
+	request := buildDdosConfigRequest(map[string]interface{}{}, add)
+	assert.Equal(t, "ddos-b", request["DdosConfigList.1.DdosId"])
+	assert.Equal(t, "ap-southeast-1", request["DdosConfigList.1.DdosRegionId"])
+	request = buildDdosConfigRequest(map[string]interface{}{}, remove)
+	assert.Equal(t, "ddos-a", request["DdosConfigList.1.DdosId"])
+	assert.Equal(t, "cn-hangzhou", request["DdosConfigList.1.DdosRegionId"])
+}
+
+// lintignore: R001
+func TestUnitAliCloudGaAcceleratorDdosUpdateRequest(t *testing.T) {
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := unitTestSharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+	}
+
+	state := &terraform.InstanceState{ID: "MockId", Attributes: map[string]string{"ddos_config_list.#": "0"}}
+	diff, err := newInstanceDiff("alicloud_ga_accelerator", map[string]interface{}{}, map[string]interface{}{
+		"spec":     "2",
+		"auto_pay": false,
+		"ddos_config_list": []interface{}{
+			map[string]interface{}{
+				"ddos_id":        "ddoscoo-cn-test",
+				"ddos_region_id": "cn-hangzhou",
+			},
+		},
+	}, state)
+	assert.Nil(t, err)
+
+	resourceData, err := schema.InternalMap(unitTestProviderResources()["alicloud_ga_accelerator"].Schema).Data(state, diff)
+	assert.Nil(t, err)
+	resourceData.SetId("MockId")
+
+	requests := make(map[string]map[string]interface{})
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, query map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		requests[*action] = query
+		return map[string]interface{}{
+			"Name":              "accelerator_name",
+			"State":             "active",
+			"Description":       "description",
+			"Spec":              "2",
+			"DdosId":            "ddoscoo-cn-test",
+			"RenewalStatus":     "Normal",
+			"AutoRenewDuration": 1,
+		}, nil
+	})
+	err = resourceAliCloudGaAcceleratorUpdate(resourceData, rawClient)
+	patches.Reset()
+	assert.Nil(t, err)
+
+	attachReq, ok := requests["AttachDdosToAccelerator"]
+	assert.True(t, ok)
+	assert.Equal(t, "ddoscoo-cn-test", attachReq["DdosConfigList.1.DdosId"])
+	assert.Equal(t, "cn-hangzhou", attachReq["DdosConfigList.1.DdosRegionId"])
+
+	updateReq, ok := requests["UpdateAccelerator"]
+	assert.True(t, ok)
+	assert.Equal(t, false, updateReq["AutoPay"])
+}
+
+// lintignore: R001
+func TestUnitAliCloudGaAcceleratorCreateRequest(t *testing.T) {
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := unitTestSharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+	}
+
+	d, _ := schema.InternalMap(unitTestProviderResources()["alicloud_ga_accelerator"].Schema).Data(nil, nil)
+	d.MarkNewResource()
+	assert.Nil(t, d.Set("spec", "1"))
+	assert.Nil(t, d.Set("auto_renew", true))
+	assert.Nil(t, d.Set("accelerator_name", "terraform-example-ga-accelerator"))
+
+	requests := make(map[string]map[string]interface{})
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, query map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		requests[*action] = query
+		return map[string]interface{}{
+			"AcceleratorId":     "MockId",
+			"Name":              "accelerator_name",
+			"State":             "active",
+			"Spec":              "1",
+			"RenewalStatus":     "AutoRenewal",
+			"AutoRenewDuration": 1,
+		}, nil
+	})
+	err = resourceAliCloudGaAcceleratorCreate(d, rawClient)
+	patches.Reset()
+	assert.Nil(t, err)
+
+	createReq, ok := requests["CreateAccelerator"]
+	assert.True(t, ok)
+	assert.Equal(t, true, createReq["AutoRenew"])
+	assert.Equal(t, true, createReq["AutoPay"])
+	assert.Equal(t, "terraform-example-ga-accelerator", createReq["Name"])
+}
+
+// lintignore: R001
+func TestUnitAliCloudGaAcceleratorUserDefineBandwidthGuard(t *testing.T) {
+	d, _ := schema.InternalMap(unitTestProviderResources()["alicloud_ga_accelerator"].Schema).Data(nil, nil)
+	d.MarkNewResource()
+	assert.Nil(t, d.Set("bandwidth", 200))
+	assert.Nil(t, d.Set("ip_set_config", []interface{}{
+		map[string]interface{}{"access_mode": "UserDefine"},
+	}))
+
+	err := resourceAliCloudGaAcceleratorCreate(d, &connectivity.AliyunClient{})
+	assert.NotNil(t, err)
+	assert.Contains(t, fmt.Sprint(err), "bandwidth is valid only when access_mode is set to Anycast")
+}
+
+// lintignore: R001
+func TestUnitAliCloudGaAcceleratorDdosDetachRequest(t *testing.T) {
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := unitTestSharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+	}
+
+	state := &terraform.InstanceState{ID: "MockId"}
+	diff, err := newInstanceDiff("alicloud_ga_accelerator", map[string]interface{}{
+		"ddos_config_list": []interface{}{
+			map[string]interface{}{
+				"ddos_id":        "ddoscoo-cn-test",
+				"ddos_region_id": "cn-hangzhou",
+			},
+		},
+	}, map[string]interface{}{
+		"ddos_config_list": []interface{}{},
+	}, state)
+	assert.Nil(t, err)
+
+	resourceData, err := schema.InternalMap(unitTestProviderResources()["alicloud_ga_accelerator"].Schema).Data(state, diff)
+	assert.Nil(t, err)
+	resourceData.SetId("MockId")
+
+	requests := make(map[string]map[string]interface{})
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, query map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		requests[*action] = query
+		return map[string]interface{}{
+			"Name":              "accelerator_name",
+			"State":             "active",
+			"Description":       "description",
+			"Spec":              "1",
+			"DdosId":            "ddoscoo-cn-test",
+			"RenewalStatus":     "Normal",
+			"AutoRenewDuration": 1,
+		}, nil
+	})
+	err = resourceAliCloudGaAcceleratorUpdate(resourceData, rawClient)
+	patches.Reset()
+	assert.Nil(t, err)
+
+	detachReq, ok := requests["DetachDdosFromAccelerator"]
+	assert.True(t, ok)
+	assert.Equal(t, "ddoscoo-cn-test", detachReq["DdosConfigList.1.DdosId"])
+	assert.Equal(t, "cn-hangzhou", detachReq["DdosConfigList.1.DdosRegionId"])
+}
+
+// TestUnitAliCloudGaAcceleratorPlanValidation covers the plan-time rejections
+// through the public Resource.Diff entry with a real RawConfig: incomplete DDoS
+// entries, writes to the deprecated read-only aliases and the mutually
+// exclusive renewal arguments. It also proves the plan never issues a cloud
+// request.
+// lintignore: R001
+func TestUnitAliCloudGaAcceleratorPlanValidation(t *testing.T) {
+	accelerator := ResourceAliCloudGaAccelerator()
+	clientCalls := 0
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
+		clientCalls++
+		return nil, fmt.Errorf("unexpected cloud request during plan")
+	})
+	defer patches.Reset()
+
+	testCases := []struct {
+		name    string
+		raw     map[string]interface{}
+		wantErr string
+	}{
+		{
+			name:    "ddos_config_list entry missing ddos_id",
+			raw:     map[string]interface{}{"spec": "1", "ddos_config_list": []interface{}{map[string]interface{}{"ddos_region_id": "cn-hangzhou"}}},
+			wantErr: "ddos_id and ddos_region_id are required in ddos_config_list",
+		},
+		{
+			name:    "ddos_config_list entry missing ddos_region_id",
+			raw:     map[string]interface{}{"spec": "1", "ddos_config_list": []interface{}{map[string]interface{}{"ddos_id": "ddoscoo-cn-test"}}},
+			wantErr: "ddos_id and ddos_region_id are required in ddos_config_list",
+		},
+		{
+			name:    "explicit ddos_id alias is rejected",
+			raw:     map[string]interface{}{"spec": "1", "ddos_id": "ddoscoo-cn-test"},
+			wantErr: "`ddos_id` is read-only and deprecated",
+		},
+		{
+			name:    "explicit ddos_region_id alias is rejected",
+			raw:     map[string]interface{}{"spec": "1", "ddos_region_id": "cn-hangzhou"},
+			wantErr: "`ddos_region_id` is read-only and deprecated",
+		},
+		{
+			name:    "auto_renew and renewal_status are mutually exclusive",
+			raw:     map[string]interface{}{"spec": "1", "auto_renew": true, "renewal_status": "AutoRenewal"},
+			wantErr: "`auto_renew` conflicts with `renewal_status`",
+		},
+		{
+			name: "valid ddos entry passes plan validation",
+			raw:  map[string]interface{}{"spec": "1", "ddos_config_list": []interface{}{map[string]interface{}{"ddos_id": "ddoscoo-cn-test", "ddos_region_id": "cn-hangzhou"}}},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			state := &terraform.InstanceState{RawConfig: acceleratorRawConfig(testCase.raw)}
+			_, err := accelerator.Diff(context.Background(), state, terraform.NewResourceConfigRaw(testCase.raw), &connectivity.AliyunClient{})
+			if testCase.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			if assert.Error(t, err) {
+				assert.Contains(t, err.Error(), testCase.wantErr)
+			}
+		})
+	}
+
+	assert.Equal(t, 0, clientCalls, "plan validation must not create a cloud client")
+}
+
+// TestUnitAliCloudGaAcceleratorDdosConfigListPreWriteGuard proves the
+// Create/Update entry points reject an incomplete ddos_config_list entry before
+// any cloud request is created, including when other fields would change.
+// lintignore: R001
+func TestUnitAliCloudGaAcceleratorDdosConfigListPreWriteGuard(t *testing.T) {
+	clientCalls := 0
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
+		clientCalls++
+		return nil, fmt.Errorf("unexpected cloud request")
+	})
+	defer patches.Reset()
+
+	t.Run("create rejects incomplete ddos entry before any request", func(t *testing.T) {
+		d, _ := schema.InternalMap(unitTestProviderResources()["alicloud_ga_accelerator"].Schema).Data(nil, nil)
+		d.MarkNewResource()
+		assert.Nil(t, d.Set("spec", "1"))
+		assert.Nil(t, d.Set("ddos_config_list", []interface{}{
+			map[string]interface{}{"ddos_id": "ddoscoo-cn-test"},
+		}))
+
+		err := resourceAliCloudGaAcceleratorCreate(d, &connectivity.AliyunClient{})
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "ddos_id and ddos_region_id are required in ddos_config_list")
+		}
+	})
+
+	t.Run("update rejects incomplete ddos entry before other writes", func(t *testing.T) {
+		state := &terraform.InstanceState{ID: "MockId", Attributes: map[string]string{"spec": "1"}}
+		diff, err := newInstanceDiff("alicloud_ga_accelerator", map[string]interface{}{
+			"spec": "1",
+		}, map[string]interface{}{
+			"spec": "2",
+			"ddos_config_list": []interface{}{
+				map[string]interface{}{"ddos_region_id": "cn-hangzhou"},
+			},
+		}, state)
+		assert.Nil(t, err)
+
+		resourceData, err := schema.InternalMap(unitTestProviderResources()["alicloud_ga_accelerator"].Schema).Data(state, diff)
+		assert.Nil(t, err)
+		resourceData.SetId("MockId")
+
+		err = resourceAliCloudGaAcceleratorUpdate(resourceData, &connectivity.AliyunClient{})
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "ddos_id and ddos_region_id are required in ddos_config_list")
+		}
+	})
+
+	assert.Equal(t, 0, clientCalls, "write guards must reject before any cloud request")
+}
+
+// acceleratorRawConfig builds the plan-time RawConfig value the SDK exposes to
+// CustomizeDiff. Resource.Diff only carries a RawConfig through the state, so
+// the negative cases above pass an InstanceState that holds the same config.
+func acceleratorRawConfig(raw map[string]interface{}) cty.Value {
+	attributeTypes := ResourceAliCloudGaAccelerator().CoreConfigSchema().ImpliedType().AttributeTypes()
+	values := make(map[string]cty.Value, len(attributeTypes))
+	for name, attributeType := range attributeTypes {
+		rawValue, ok := raw[name]
+		if !ok {
+			values[name] = cty.NullVal(attributeType)
+			continue
+		}
+		values[name] = acceleratorRawConfigAttribute(rawValue, attributeType)
+	}
+	return cty.ObjectVal(values)
+}
+
+func acceleratorRawConfigAttribute(rawValue interface{}, attributeType cty.Type) cty.Value {
+	switch {
+	case attributeType.Equals(cty.String):
+		value, _ := rawValue.(string)
+		return cty.StringVal(value)
+	case attributeType.Equals(cty.Number):
+		value, _ := rawValue.(int)
+		return cty.NumberIntVal(int64(value))
+	case attributeType.Equals(cty.Bool):
+		value, _ := rawValue.(bool)
+		return cty.BoolVal(value)
+	case attributeType.IsSetType() || attributeType.IsListType():
+		elementType := attributeType.ElementType()
+		items, _ := rawValue.([]interface{})
+		elements := make([]cty.Value, 0, len(items))
+		for _, item := range items {
+			itemMap, _ := item.(map[string]interface{})
+			elementAttributeTypes := elementType.AttributeTypes()
+			elementValues := make(map[string]cty.Value, len(elementAttributeTypes))
+			for name, elementAttributeType := range elementAttributeTypes {
+				elementRawValue, ok := itemMap[name]
+				if !ok {
+					elementValues[name] = cty.NullVal(elementAttributeType)
+					continue
+				}
+				elementValues[name] = acceleratorRawConfigAttribute(elementRawValue, elementAttributeType)
+			}
+			elements = append(elements, cty.ObjectVal(elementValues))
+		}
+		if attributeType.IsSetType() {
+			if len(elements) == 0 {
+				return cty.SetValEmpty(elementType)
+			}
+			return cty.SetVal(elements)
+		}
+		if len(elements) == 0 {
+			return cty.ListValEmpty(elementType)
+		}
+		return cty.ListVal(elements)
+	default:
+		return cty.NullVal(attributeType)
+	}
 }
