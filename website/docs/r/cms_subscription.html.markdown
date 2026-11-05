@@ -16,6 +16,8 @@ For information about Cms Subscription and how to use it, see [What is Subscript
 
 -> **NOTE:** The subscription belongs to a Cms 2.0 workspace, and every request is sent to the endpoint of the region configured on the provider. Keep `workspace` and the provider `region` in the same region.
 
+-> **NOTE:** Every optional block must configure at least one member. A block that is declared but empty is rejected during `terraform plan`, because the service neither stores nor returns an empty block. Optional strings must not be set to an empty string either: omit the argument to clear a value, and the read path reports a cleared or omitted value as null.
+
 ## Example Usage
 
 Basic Usage
@@ -68,7 +70,7 @@ resource "alicloud_cms_subscription" "default" {
 The following arguments are supported:
 
 * `subscription_name` - (Required, String) The name of the subscription.
-* `description` - (Optional, String) The description of the subscription. The value is sent to the service as configured. Cms does not echo a cleared description, so an argument that was set reads back as it was configured; verify against the workspace before relying on removal to clear a stored value.
+* `description` - (Optional, String) The description of the subscription. Cms does not return a cleared description, so a cleared or omitted value reads back as null; remove the argument to clear it and do not set an empty string.
 * `notify_strategy_id` - (Optional, String) The UUID of the notification strategy bound to the subscription. Use the `uuid` attribute of an `alicloud_cms_event_notify_policy` resource, for example `alicloud_cms_event_notify_policy.default.uuid`. Removing the argument omits the binding from the request; the Cms API does not document whether an omitted member clears or keeps the stored binding, so confirm the effective binding after such an update.
 * `workspace` - (Required, String, ForceNew) The name of the workspace the subscription belongs to. Changing this forces a new subscription to be created.
 * `enable` - (Optional, Bool) Whether the subscription is enabled. The provider default is `true`. The enabled state is controlled by the separate enable and disable operations and is never part of the subscription body.

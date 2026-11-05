@@ -143,6 +143,13 @@ func TestAccAliCloudCmsSubscription_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceId, "filter_setting.#", "0"),
 				),
 			},
+			{
+				// The cleared state must survive import as well.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -181,6 +188,38 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
 				ImportStateVerify: true,
 			},
+			{
+				// A name/description/filter update on the bound subscription: the
+				// binding stays and the changed members must be visible remotely.
+				Config: testAccCmsSubscriptionConfigCompleteUpdated(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "subscription_name", name+"-updated"),
+					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription updated"),
+					resource.TestCheckResourceAttrPair(resourceId, "notify_strategy_id", "alicloud_cms_event_notify_policy.default", "uuid"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.1.value", "P1"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
+				ImportStateVerify: true,
+			},
+			{
+				// Omitting subscribe_legacy_event falls back to the provider default
+				// and the service normalizes the cleared member to false.
+				Config: testAccCmsSubscriptionConfigCompleteLegacyOmitted(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "subscribe_legacy_event", "false"),
+					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription updated"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -206,27 +245,28 @@ func testAccCheckCmsSubscriptionDependenciesDestroy(s *terraform.State) error {
 		var check func() (bool, error)
 		switch rs.Type {
 		case "alicloud_cms_subscription":
+			id, workspace := rs.Primary.ID, rs.Primary.Attributes["workspace"]
 			check = func() (bool, error) {
-				_, err := cloudmonitorservice.NewCmsService(client).DescribeSubscription(context.Background(), rs.Primary.ID, rs.Primary.Attributes["workspace"])
-				if cloudmonitorservice.IsSubscriptionNotFound(err) || errs.NotFoundError(err) {
-					return true, nil
-				}
-				return dependencyDeleted(err)
+				_, err := cloudmonitorservice.NewCmsService(client).DescribeSubscription(context.Background(), id, workspace)
+				return subscriptionDestroyed(err)
 			}
 		case "alicloud_cms_workspace":
+			id := rs.Primary.ID
 			check = func() (bool, error) {
-				_, err := cmsV2.DescribeCmsWorkspace(rs.Primary.ID)
-				return dependencyDeleted(err)
+				_, err := cmsV2.DescribeCmsWorkspace(id)
+				return providerResourceDestroyed(err)
 			}
 		case "alicloud_cms_event_notify_policy":
+			id := rs.Primary.ID
 			check = func() (bool, error) {
-				_, err := cmsV2.DescribeCmsEventNotifyPolicy(rs.Primary.ID)
-				return dependencyDeleted(err)
+				_, err := cmsV2.DescribeCmsEventNotifyPolicy(id)
+				return providerResourceDestroyed(err)
 			}
 		case "alicloud_log_project":
+			id := rs.Primary.ID
 			check = func() (bool, error) {
-				_, err := slsService.DescribeSlsProject(rs.Primary.ID)
-				return dependencyDeleted(err)
+				_, err := slsService.DescribeSlsProject(id)
+				return providerResourceDestroyed(err)
 			}
 		default:
 			continue
@@ -238,15 +278,28 @@ func testAccCheckCmsSubscriptionDependenciesDestroy(s *terraform.State) error {
 	return nil
 }
 
-func dependencyDeleted(err error) (bool, error) {
+// subscriptionDestroyed accepts only the contract-level ResourceNotFound the
+// service documents for GetSubscription; any other failure, including a
+// permission or workspace error whose text mentions not-found, propagates.
+func subscriptionDestroyed(err error) (bool, error) {
 	if err == nil {
 		return false, nil
 	}
-	if errs.NotFoundError(err) {
+	if cloudmonitorservice.IsSubscriptionNotFound(err) {
 		return true, nil
 	}
-	message := strings.ToLower(err.Error())
-	if strings.Contains(message, "not exist") || strings.Contains(message, "not found") || strings.Contains(message, "resourcenotfound") {
+	return false, err
+}
+
+// providerResourceDestroyed accepts only the provider's structured not-found
+// signal built with errs.NotFoundMsg by the workspace, notification-policy and
+// SLS services. Matching free text such as "not found" could otherwise hide a
+// missing dependency, a permission error or a transient service failure.
+func providerResourceDestroyed(err error) (bool, error) {
+	if err == nil {
+		return false, nil
+	}
+	if errs.IsProviderNotFound(err) {
 		return true, nil
 	}
 	return false, err
@@ -490,6 +543,63 @@ resource "alicloud_cms_subscription" "default" {
 `, testAccCmsSubscriptionCompleteDependence(name))
 }
 
+func testAccCmsSubscriptionConfigCompleteUpdated(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_cms_subscription" "default" {
+  subscription_name      = "${var.name}-updated"
+  workspace              = alicloud_cms_workspace.default.workspace_name
+  notify_strategy_id     = alicloud_cms_event_notify_policy.default.uuid
+  description            = "complete subscription updated"
+  enable                 = true
+  subscribe_legacy_event = true
+
+  filter_setting {
+    expression = "1 and 2"
+
+    conditions {
+      field = "labels.alertname"
+      op    = "EQ"
+      value = "HighCPUUsage"
+    }
+
+    conditions {
+      field = "labels.severity"
+      op    = "IN"
+      value = "P1"
+    }
+  }
+}
+`, testAccCmsSubscriptionCompleteDependence(name))
+}
+
+func testAccCmsSubscriptionConfigCompleteLegacyOmitted(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_cms_subscription" "default" {
+  subscription_name  = "${var.name}-updated"
+  workspace          = alicloud_cms_workspace.default.workspace_name
+  notify_strategy_id = alicloud_cms_event_notify_policy.default.uuid
+  description        = "complete subscription updated"
+  enable             = true
+
+  filter_setting {
+    expression = "1 and 2"
+
+    conditions {
+      field = "labels.alertname"
+      op    = "EQ"
+      value = "HighCPUUsage"
+    }
+
+    conditions {
+      field = "labels.severity"
+      op    = "IN"
+      value = "P1"
+    }
+  }
+}
+`, testAccCmsSubscriptionCompleteDependence(name))
+}
+
 // The tests below drive the resource through its public factory, schema and
 // lifecycle entry points against a local Cms endpoint, so the assertions cover
 // the request the resource would send and the state it produces.
@@ -687,8 +797,10 @@ func subscriptionUnitStringAttribute(t *testing.T, state tfsdk.State, name strin
 	return value
 }
 
-// TestUnitCmsSubscriptionCreateRequestShape proves that legal zero values are
-// sent explicitly and that unset values stay absent on the wire.
+// TestUnitCmsSubscriptionCreateRequestShape proves that a legal zero value is
+// sent explicitly and that unset values stay absent on the wire. An empty
+// string is not a legal value: it is rejected by validation and reads back as
+// null, so it is never part of a request.
 func TestUnitCmsSubscriptionCreateRequestShape(t *testing.T) {
 	created := map[string]interface{}{}
 	apiClient, recorder := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
@@ -718,14 +830,11 @@ func TestUnitCmsSubscriptionCreateRequestShape(t *testing.T) {
 	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
 		"id":                     subscriptionUnitUnknown{},
 		"subscription_name":      "zero-values",
-		"description":            "",
 		"workspace":              "ws-1",
 		"enable":                 false,
 		"subscribe_legacy_event": false,
 		"filter_setting": []interface{}{
 			map[string]interface{}{
-				"expression": "",
-				"relation":   "",
 				"conditions": []interface{}{
 					map[string]interface{}{"field": "labels.alertname", "op": "EQ", "value": "CPU"},
 				},
@@ -745,8 +854,8 @@ func TestUnitCmsSubscriptionCreateRequestShape(t *testing.T) {
 		t.Fatalf("expected exactly one CreateSubscription call, got %v", recorder.requests(http.MethodPost))
 	}
 	body := bodies[0]
-	if got, ok := body["description"]; !ok || got != "" {
-		t.Fatalf("description must be sent explicitly as an empty string, got %v (present=%t)", got, ok)
+	if got, ok := body["description"]; ok {
+		t.Fatalf("an unset description must stay absent from the request, got %v", got)
 	}
 	if got, ok := body["subscribeLegacyEvent"]; !ok || got != false {
 		t.Fatalf("subscribeLegacyEvent must be sent explicitly as false, got %v (present=%t)", got, ok)
@@ -755,8 +864,8 @@ func TestUnitCmsSubscriptionCreateRequestShape(t *testing.T) {
 	if !ok {
 		t.Fatalf("filterSetting missing from the request: %v", body)
 	}
-	if got, ok := filter["expression"]; !ok || got != "" {
-		t.Fatalf("expression must be sent explicitly, got %v (present=%t)", got, ok)
+	if got, ok := filter["expression"]; ok {
+		t.Fatalf("an unset expression must stay absent from the request, got %v", got)
 	}
 	conditions, ok := filter["conditions"].([]interface{})
 	if !ok || len(conditions) != 1 {
@@ -1334,5 +1443,399 @@ func TestUnitCmsSubscriptionDescribeRejectsOffContractPayload(t *testing.T) {
 				t.Fatal("an off-contract payload must not be reported as a missing resource")
 			}
 		})
+	}
+}
+
+// TestUnitCmsSubscriptionDescribeRejectsObjectWithoutName proves a successful
+// payload that is empty or has no usable name is rejected instead of being
+// flattened into state, while the contract ResourceNotFound still reads as a
+// deletion and a normal object still succeeds.
+func TestUnitCmsSubscriptionDescribeRejectsObjectWithoutName(t *testing.T) {
+	cases := map[string]struct {
+		statusCode   int
+		subscription interface{}
+		wantErr      bool
+		wantNotFound bool
+	}{
+		"emptyObject": {
+			statusCode:   http.StatusOK,
+			subscription: map[string]interface{}{},
+			wantErr:      true,
+		},
+		"missingName": {
+			statusCode:   http.StatusOK,
+			subscription: map[string]interface{}{"subscriptionId": "sub-1", "workspace": "ws-1"},
+			wantErr:      true,
+		},
+		"emptyName": {
+			statusCode:   http.StatusOK,
+			subscription: map[string]interface{}{"subscriptionId": "sub-1", "subscriptionName": ""},
+			wantErr:      true,
+		},
+		"resourceNotFound": {
+			statusCode:   http.StatusNotFound,
+			subscription: map[string]interface{}{"Code": "ResourceNotFound", "Message": "not found"},
+			wantErr:      true,
+			wantNotFound: true,
+		},
+		"normalObject": {
+			statusCode:   http.StatusOK,
+			subscription: map[string]interface{}{"subscriptionId": "sub-1", "subscriptionName": "name", "workspace": "ws-1"},
+			wantErr:      false,
+		},
+	}
+	for name, testCase := range cases {
+		t.Run(name, func(t *testing.T) {
+			apiClient, _ := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+				if testCase.statusCode != http.StatusOK {
+					return testCase.statusCode, testCase.subscription
+				}
+				return http.StatusOK, map[string]interface{}{"requestId": "req", "subscription": testCase.subscription}
+			})
+			_, err := cloudmonitorservice.NewCmsService(apiClient).DescribeSubscription(context.Background(), "sub-1", "ws-1")
+			if !testCase.wantErr {
+				if err != nil {
+					t.Fatalf("unexpected error for a usable object: %v", err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatal("expected DescribeSubscription to reject the payload")
+			}
+			if cloudmonitorservice.IsSubscriptionNotFound(err) != testCase.wantNotFound {
+				t.Fatalf("IsSubscriptionNotFound = %t, want %t (err: %v)", cloudmonitorservice.IsSubscriptionNotFound(err), testCase.wantNotFound, err)
+			}
+		})
+	}
+}
+
+// TestUnitCmsSubscriptionEmptyConfigurationRejected proves an empty block and
+// an explicit empty optional string are rejected before a request is built;
+// an omitted member is the only way to express "unset".
+func TestUnitCmsSubscriptionEmptyConfigurationRejected(t *testing.T) {
+	r := cloudmonitorservice.NewSubscriptionResource()
+	configValidators, ok := r.(fwresource.ResourceWithConfigValidators)
+	if !ok {
+		t.Fatalf("%T does not implement resource.ResourceWithConfigValidators", r)
+	}
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	agentType := subscriptionUnitObjectType(t, objType, "agent_config")
+	routeType := subscriptionUnitObjectType(t, agentType, "routes")
+	channelType := subscriptionUnitObjectType(t, routeType, "channels")
+	windowType := subscriptionUnitObjectType(t, routeType, "effect_time_range")
+
+	base := func(extra map[string]interface{}) map[string]interface{} {
+		attributes := map[string]interface{}{
+			"subscription_name": "name",
+			"workspace":         "ws-1",
+		}
+		for key, value := range extra {
+			attributes[key] = value
+		}
+		return attributes
+	}
+	agentWith := func(attributes map[string]interface{}) []interface{} {
+		return []interface{}{subscriptionUnitObject(t, agentType, attributes)}
+	}
+
+	cases := map[string]struct {
+		attributes map[string]interface{}
+		wantError  bool
+	}{
+		"emptyFilterSetting": {
+			attributes: base(map[string]interface{}{
+				"filter_setting": []interface{}{subscriptionUnitObject(t, subscriptionUnitObjectType(t, objType, "filter_setting"), map[string]interface{}{})},
+			}),
+			wantError: true,
+		},
+		"emptyPushingSetting": {
+			attributes: base(map[string]interface{}{
+				"pushing_setting": []interface{}{subscriptionUnitObject(t, subscriptionUnitObjectType(t, objType, "pushing_setting"), map[string]interface{}{})},
+			}),
+			wantError: true,
+		},
+		"emptyWorkspaceFilterSetting": {
+			attributes: base(map[string]interface{}{
+				"workspace_filter_setting": []interface{}{subscriptionUnitObject(t, subscriptionUnitObjectType(t, objType, "workspace_filter_setting"), map[string]interface{}{})},
+			}),
+			wantError: true,
+		},
+		"emptyAgentConfig": {
+			attributes: base(map[string]interface{}{
+				"agent_config": agentWith(map[string]interface{}{}),
+			}),
+			wantError: true,
+		},
+		"emptyRoute": {
+			attributes: base(map[string]interface{}{
+				"agent_config": agentWith(map[string]interface{}{
+					"agent_uuid": "agent-1",
+					"routes":     []interface{}{subscriptionUnitObject(t, routeType, map[string]interface{}{})},
+				}),
+			}),
+			wantError: true,
+		},
+		"emptyChannel": {
+			attributes: base(map[string]interface{}{
+				"agent_config": agentWith(map[string]interface{}{
+					"routes": []interface{}{subscriptionUnitObject(t, routeType, map[string]interface{}{
+						"channels": []interface{}{subscriptionUnitObject(t, channelType, map[string]interface{}{})},
+					})},
+				}),
+			}),
+			wantError: true,
+		},
+		"emptyEffectTimeRange": {
+			attributes: base(map[string]interface{}{
+				"agent_config": agentWith(map[string]interface{}{
+					"routes": []interface{}{subscriptionUnitObject(t, routeType, map[string]interface{}{
+						"effect_time_range": []interface{}{subscriptionUnitObject(t, windowType, map[string]interface{}{})},
+					})},
+				}),
+			}),
+			wantError: true,
+		},
+		"emptyDescription": {
+			attributes: base(map[string]interface{}{"description": ""}),
+			wantError:  true,
+		},
+		"emptyExpression": {
+			attributes: base(map[string]interface{}{
+				"filter_setting": []interface{}{subscriptionUnitObject(t, subscriptionUnitObjectType(t, objType, "filter_setting"), map[string]interface{}{"expression": ""})},
+			}),
+			wantError: true,
+		},
+		"omittedValues": {
+			attributes: base(map[string]interface{}{
+				"filter_setting": []interface{}{subscriptionUnitObject(t, subscriptionUnitObjectType(t, objType, "filter_setting"), map[string]interface{}{"relation": "AND"})},
+			}),
+			wantError: false,
+		},
+	}
+	for name, testCase := range cases {
+		t.Run(name, func(t *testing.T) {
+			configValue := subscriptionUnitObject(t, objType, testCase.attributes)
+			req := fwresource.ValidateConfigRequest{Config: tfsdk.Config{Schema: resourceSchema, Raw: configValue}}
+			resp := &fwresource.ValidateConfigResponse{}
+			for _, validator := range configValidators.ConfigValidators(context.Background()) {
+				validator.ValidateResource(context.Background(), req, resp)
+			}
+			if testCase.wantError {
+				if !resp.Diagnostics.HasError() {
+					t.Fatal("expected the configuration to be rejected")
+				}
+				return
+			}
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("unexpected diagnostics: %v", resp.Diagnostics)
+			}
+		})
+	}
+}
+
+// TestUnitCmsSubscriptionUpdateRequiresConvergedEnable proves a combined update
+// whose final read confirms the new body but still reports the previous enabled
+// switch does not converge.
+func TestUnitCmsSubscriptionUpdateRequiresConvergedEnable(t *testing.T) {
+	gets := 0
+	apiClient, _ := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+		if method == http.MethodPut {
+			return http.StatusOK, map[string]interface{}{"requestId": "req"}
+		}
+		gets++
+		enabled := true
+		if gets == 1 {
+			enabled = false
+		}
+		return http.StatusOK, map[string]interface{}{"requestId": "req", "subscription": map[string]interface{}{
+			"subscriptionId":   "sub-1",
+			"subscriptionName": "name",
+			"workspace":        "ws-1",
+			"description":      "new description",
+			"enable":           enabled,
+		}}
+	})
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+
+	stateValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                "sub-1",
+		"subscription_name": "name",
+		"workspace":         "ws-1",
+		"description":       "old description",
+		"enable":            true,
+	})
+	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                "sub-1",
+		"subscription_name": "name",
+		"workspace":         "ws-1",
+		"description":       "new description",
+		"enable":            false,
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 400*time.Millisecond)
+	defer cancel()
+	req := fwresource.UpdateRequest{
+		Plan:  tfsdk.Plan{Schema: resourceSchema, Raw: planValue},
+		State: tfsdk.State{Schema: resourceSchema, Raw: stateValue},
+	}
+	resp := &fwresource.UpdateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: stateValue}}
+	r.Update(ctx, req, resp)
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected Update to fail while the read still reports the previous enabled switch")
+	}
+}
+
+// TestUnitCmsSubscriptionCreateCancellationKeepsLateIdentity proves a create
+// cancelled while the request is on the wire keeps the id returned by the late
+// response, issues no second attempt and stops issuing follow-up reads.
+func TestUnitCmsSubscriptionCreateCancellationKeepsLateIdentity(t *testing.T) {
+	started := make(chan struct{}, 1)
+	release := make(chan struct{})
+	apiClient, recorder := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+		if method == http.MethodPost {
+			started <- struct{}{}
+			<-release
+			return http.StatusOK, map[string]interface{}{"requestId": "req-1", "subscriptionId": subscriptionUnitServerId}
+		}
+		return http.StatusOK, map[string]interface{}{"requestId": "req-2", "subscription": map[string]interface{}{
+			"subscriptionId":   subscriptionUnitServerId,
+			"subscriptionName": "identity",
+			"workspace":        "ws-1",
+		}}
+	})
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                subscriptionUnitUnknown{},
+		"subscription_name": "identity",
+		"workspace":         "ws-1",
+		"enable":            true,
+	})
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		r.Create(ctx, req, resp)
+	}()
+	<-started
+	cancel()
+	close(release)
+	<-done
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected Create to stop once the operation context is cancelled")
+	}
+	if posts := len(recorder.requests(http.MethodPost)); posts != 1 {
+		t.Fatalf("create requests = %d, want exactly one attempt", posts)
+	}
+	if gets := len(recorder.requests(http.MethodGet)); gets != 0 {
+		t.Fatalf("follow-up reads = %d, want none after cancellation", gets)
+	}
+	if got := subscriptionUnitStringAttribute(t, resp.State, "id").ValueString(); got != subscriptionUnitServerId {
+		t.Fatalf("state id = %q, want the id of the late successful response", got)
+	}
+}
+
+// TestUnitCmsSubscriptionCreateKeepsIdentityWithUnknownRelation proves a failed
+// create of an expression configuration whose computed relation is not planned
+// yet returns a state with the confirmed identity and no unknown values.
+func TestUnitCmsSubscriptionCreateKeepsIdentityWithUnknownRelation(t *testing.T) {
+	apiClient, _ := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+		if method == http.MethodPost {
+			return http.StatusOK, map[string]interface{}{"requestId": "req-1", "subscriptionId": subscriptionUnitServerId}
+		}
+		return http.StatusForbidden, map[string]interface{}{"requestId": "req-2", "Code": "Forbidden", "Message": "denied"}
+	})
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	filterType := subscriptionUnitObjectType(t, objType, "filter_setting")
+	conditionType := subscriptionUnitObjectType(t, filterType, "conditions")
+
+	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                subscriptionUnitUnknown{},
+		"subscription_name": "identity",
+		"workspace":         "ws-1",
+		"filter_setting": []interface{}{
+			subscriptionUnitObject(t, filterType, map[string]interface{}{
+				"expression": "1",
+				"relation":   subscriptionUnitUnknown{},
+				"conditions": []interface{}{
+					subscriptionUnitObject(t, conditionType, map[string]interface{}{
+						"field": "labels.alertname", "op": "EQ", "value": "CPU",
+					}),
+				},
+			}),
+		},
+	})
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
+
+	r.Create(context.Background(), req, resp)
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected Create to fail when the first read never succeeds")
+	}
+	if got := subscriptionUnitStringAttribute(t, resp.State, "id").ValueString(); got != subscriptionUnitServerId {
+		t.Fatalf("state id = %q, want the confirmed id", got)
+	}
+	if got := subscriptionUnitStringAttribute(t, resp.State, "workspace").ValueString(); got != "ws-1" {
+		t.Fatalf("state workspace = %q, want ws-1", got)
+	}
+	subscriptionUnitAssertKnown(t, resp.State.Raw, "state")
+}
+
+func subscriptionUnitAssertKnown(t *testing.T, value tftypes.Value, at string) {
+	t.Helper()
+	if value.IsNull() {
+		return
+	}
+	if !value.IsKnown() {
+		t.Fatalf("%s is unknown; the failed create must not return unknown nested values", at)
+	}
+	switch value.Type().(type) {
+	case tftypes.Object:
+		var attributes map[string]tftypes.Value
+		if err := value.As(&attributes); err != nil {
+			t.Fatalf("%s: %v", at, err)
+		}
+		for name, attribute := range attributes {
+			subscriptionUnitAssertKnown(t, attribute, at+"."+name)
+		}
+	case tftypes.List:
+		var items []tftypes.Value
+		if err := value.As(&items); err != nil {
+			t.Fatalf("%s: %v", at, err)
+		}
+		for index, item := range items {
+			subscriptionUnitAssertKnown(t, item, fmt.Sprintf("%s[%d]", at, index))
+		}
+	}
+}
+
+// TestUnitCmsSubscriptionDestroyCheckUsesStructuredSignal proves the destroy
+// check does not treat an arbitrary message that mentions not-found as proof
+// that the object is gone.
+func TestUnitCmsSubscriptionDestroyCheckUsesStructuredSignal(t *testing.T) {
+	structured := errs.WrapErrorf(errs.NotFoundErr("Workspace", "ws-1"), errs.NotFoundMsg, map[string]interface{}{"RequestId": "req"})
+	if gone, err := providerResourceDestroyed(structured); !gone || err != nil {
+		t.Fatalf("structured not-found = (%t, %v), want (true, nil)", gone, err)
+	}
+	textual := fmt.Errorf("the workspace not found because the request was denied")
+	if gone, err := providerResourceDestroyed(textual); gone || err == nil {
+		t.Fatalf("textual not-found = (%t, %v), want (false, err)", gone, err)
+	}
+	if gone, err := providerResourceDestroyed(nil); gone || err != nil {
+		t.Fatalf("existing object = (%t, %v), want (false, nil)", gone, err)
+	}
+	subscriptionTextual := fmt.Errorf("subscription not found")
+	if gone, err := subscriptionDestroyed(subscriptionTextual); gone || err == nil {
+		t.Fatalf("textual subscription not-found = (%t, %v), want (false, err)", gone, err)
+	}
+	subscriptionMissing := errs.WrapErrorf(fmt.Errorf("ResourceNotFound"), errs.DefaultErrorMsg, "sub-1", "/subscriptions/sub-1", errs.AlibabaCloudSdkGoERROR)
+	if gone, _ := subscriptionDestroyed(subscriptionMissing); gone {
+		t.Fatal("a wrapped default error must not be read as a deletion")
 	}
 }

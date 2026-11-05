@@ -9,7 +9,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 // errSubscriptionNotFound marks the contract-level Cms ResourceNotFound. The
@@ -43,7 +42,8 @@ func subscriptionIsResourceNotFound(err error) bool {
 // workspace query parameter is optional on the API; it is forwarded when the
 // caller has it so that workspace-scoped subscriptions resolve consistently.
 // The caller's context carries the operation deadline shared by the request,
-// its retries and the polling loops.
+// its retries and the polling loops; the retry loop runs in the caller's
+// goroutine so a cancelled call never races with a late response.
 func (s *CmsService) DescribeSubscription(ctx context.Context, id, workspace string) (object map[string]interface{}, err error) {
 	client := s.client
 	action := fmt.Sprintf("/subscriptions/%s", id)
@@ -53,34 +53,28 @@ func (s *CmsService) DescribeSubscription(ctx context.Context, id, workspace str
 	}
 
 	var response map[string]interface{}
-	notFound := false
 	wait := subscriptionBackoff(ctx)
-	err = retry.RetryContext(ctx, subscriptionTimeout, func() *retry.RetryError {
+	for {
 		if ctxErr := ctx.Err(); ctxErr != nil {
-			return retry.NonRetryableError(ctxErr)
+			return nil, ctxErr
 		}
 		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
-		if err != nil {
-			if helper.NeedRetry(err) {
-				if !wait() {
-					return retry.NonRetryableError(ctx.Err())
-				}
-				return retry.RetryableError(err)
-			}
-			if subscriptionIsResourceNotFound(err) {
-				notFound = true
-			}
-			return retry.NonRetryableError(err)
+		if err == nil {
+			break
 		}
-		return nil
-	})
+		if subscriptionIsResourceNotFound(err) {
+			logs.AddDebug(action, response, query)
+			return nil, errSubscriptionNotFound
+		}
+		if !helper.NeedRetry(err) {
+			logs.AddDebug(action, response, query)
+			return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+		}
+		if !wait() {
+			return nil, ctx.Err()
+		}
+	}
 	logs.AddDebug(action, response, query)
-	if notFound {
-		return nil, errSubscriptionNotFound
-	}
-	if err != nil {
-		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
-	}
 
 	rawSubscription, exists := response["subscription"]
 	if !exists {
@@ -96,6 +90,16 @@ func (s *CmsService) DescribeSubscription(ctx context.Context, id, workspace str
 		return nil, errs.WrapErrorf(
 			fmt.Errorf("unexpected $.subscription payload type %T", rawSubscription),
 			errs.FailedGetAttributeMsg, id, "$.subscription", response,
+		)
+	}
+	// subscriptionName is required and is the only member that proves the
+	// payload is a usable resource. An empty object, or one without a name,
+	// must not be flattened into state where the required argument would be
+	// written as empty while the identity is backfilled from the request.
+	if name, _ := subscription["subscriptionName"].(string); name == "" {
+		return nil, errs.WrapErrorf(
+			fmt.Errorf("the response does not contain a usable $.subscription.subscriptionName"),
+			errs.FailedGetAttributeMsg, id, "$.subscription.subscriptionName", response,
 		)
 	}
 	return subscription, nil

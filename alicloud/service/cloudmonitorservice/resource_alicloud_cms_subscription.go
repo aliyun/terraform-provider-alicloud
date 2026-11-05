@@ -23,7 +23,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 const subscriptionTypeName = "alicloud_cms_subscription"
@@ -116,7 +115,7 @@ func (r *subscriptionResource) Metadata(ctx context.Context, req resource.Metada
 }
 
 func (r *subscriptionResource) ConfigValidators(ctx context.Context) []resource.ConfigValidator {
-	return []resource.ConfigValidator{subscriptionChannelValidator{}}
+	return []resource.ConfigValidator{subscriptionChannelValidator{}, subscriptionBlockValidator{}}
 }
 
 func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -133,9 +132,15 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 			},
 			"description": schema.StringAttribute{
 				Optional: true,
+				Validators: []validator.String{
+					subscriptionNonEmptyStringValidator{},
+				},
 			},
 			"notify_strategy_id": schema.StringAttribute{
 				Optional: true,
+				Validators: []validator.String{
+					subscriptionNonEmptyStringValidator{},
+				},
 			},
 			"workspace": schema.StringAttribute{
 				Required: true,
@@ -190,6 +195,9 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 					Attributes: map[string]schema.Attribute{
 						"expression": schema.StringAttribute{
 							Optional: true,
+							Validators: []validator.String{
+								subscriptionNonEmptyStringValidator{},
+							},
 						},
 						"relation": schema.StringAttribute{
 							// The service defaults the relation to AND and echoes it even
@@ -242,9 +250,15 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 						"template_uuid": schema.StringAttribute{
 							Optional: true,
+							Validators: []validator.String{
+								subscriptionNonEmptyStringValidator{},
+							},
 						},
 						"response_plan_id": schema.StringAttribute{
 							Optional: true,
+							Validators: []validator.String{
+								subscriptionNonEmptyStringValidator{},
+							},
 						},
 					},
 				},
@@ -270,6 +284,9 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 					Attributes: map[string]schema.Attribute{
 						"agent_uuid": schema.StringAttribute{
 							Optional: true,
+							Validators: []validator.String{
+								subscriptionNonEmptyStringValidator{},
+							},
 						},
 					},
 					Blocks: map[string]schema.Block{
@@ -281,6 +298,9 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 											Attributes: map[string]schema.Attribute{
 												"channel_type": schema.StringAttribute{
 													Optional: true,
+													Validators: []validator.String{
+														subscriptionNonEmptyStringValidator{},
+													},
 												},
 												"receivers": schema.ListAttribute{
 													Optional:    true,
@@ -301,6 +321,9 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 											Attributes: map[string]schema.Attribute{
 												"time_zone": schema.StringAttribute{
 													Optional: true,
+													Validators: []validator.String{
+														subscriptionNonEmptyStringValidator{},
+													},
 												},
 												"day_in_week": schema.ListAttribute{
 													Optional:    true,
@@ -346,7 +369,8 @@ func (r *subscriptionResource) Create(ctx context.Context, req resource.CreateRe
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: calling CreateSubscription", subscriptionTypeName),
-			errs.WrapErrorf(err, errs.DefaultErrorMsg, subscriptionTypeName, action, errs.AlibabaCloudSdkGoERROR).Error(),
+			errs.WrapErrorf(err, errs.DefaultErrorMsg, subscriptionTypeName, action, errs.AlibabaCloudSdkGoERROR).Error()+
+				subscriptionUnknownWriteSuffix(ctx, fmt.Sprintf(" Check the workspace for a subscription named %q before retrying: a request already on the wire when the operation stopped may have created it.", plan.SubscriptionName.ValueString())),
 		)
 		return
 	}
@@ -455,9 +479,11 @@ func (r *subscriptionResource) Update(ctx context.Context, req resource.UpdateRe
 	id := state.Id.ValueString()
 	var object map[string]interface{}
 	var err error
+	var expectedEnable *bool
 
 	if !plan.Enable.Equal(state.Enable) && !plan.Enable.IsNull() && !plan.Enable.IsUnknown() {
 		enable := plan.Enable.ValueBool()
+		expectedEnable = &enable
 		suffix := "enable"
 		if !enable {
 			suffix = "disable"
@@ -518,7 +544,7 @@ func (r *subscriptionResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	object, err = r.waitSubscriptionUpdate(ctx, id, state.Workspace, request, removed)
+	object, err = r.waitSubscriptionUpdate(ctx, id, state.Workspace, request, removed, expectedEnable)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetSubscription", subscriptionTypeName),
@@ -581,31 +607,41 @@ func (r *subscriptionResource) ImportState(ctx context.Context, req resource.Imp
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace"), parts[0])...)
 }
 
-// roaCall runs one Cms write with a bounded retry loop. The caller owns the
-// deadline: every attempt, every backoff and every follow-up read share the
-// same context, so a cancelled operation stops issuing requests.
+// roaCall runs one Cms write with a bounded retry loop. The loop runs in the
+// caller's goroutine instead of retry.RetryContext, whose callback goroutine may
+// outlive the cancelled call and race with the caller on the response value.
+// The caller's context is checked before every attempt and every backoff, so no
+// request is issued after the deadline; an attempt already on the wire still
+// finishes and its response, including a created id, is returned to the caller.
 func (r *subscriptionResource) roaCall(ctx context.Context, action string, logPayload interface{}, call func() (map[string]interface{}, error)) (map[string]interface{}, error) {
-	var response map[string]interface{}
-	var err error
 	wait := subscriptionBackoff(ctx)
-	err = retry.RetryContext(ctx, subscriptionTimeout, func() *retry.RetryError {
+	for {
 		if ctxErr := ctx.Err(); ctxErr != nil {
-			return retry.NonRetryableError(ctxErr)
+			return nil, ctxErr
 		}
-		response, err = call()
-		if err != nil {
-			if helper.NeedRetry(err) {
-				if !wait() {
-					return retry.NonRetryableError(ctx.Err())
-				}
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
+		response, err := call()
+		if err == nil {
+			logs.AddDebug(action, response, logPayload)
+			return response, nil
 		}
-		return nil
-	})
-	logs.AddDebug(action, response, logPayload)
-	return response, err
+		if !helper.NeedRetry(err) {
+			logs.AddDebug(action, response, logPayload)
+			return response, err
+		}
+		if !wait() {
+			return nil, ctx.Err()
+		}
+	}
+}
+
+// subscriptionUnknownWriteSuffix marks a failed write whose outcome cannot be
+// known: the shared connectivity client issues requests without a context, so a
+// request already on the wire when the operation stopped may still complete.
+func subscriptionUnknownWriteSuffix(ctx context.Context, detail string) string {
+	if ctx.Err() == nil {
+		return ""
+	}
+	return fmt.Sprintf(" The operation stopped (%v) while a request may have been in flight, so the server-side result is unknown.", ctx.Err()) + detail
 }
 
 func (r *subscriptionResource) setSubscriptionEnable(ctx context.Context, id string, workspace types.String, enable bool) error {
@@ -663,16 +699,18 @@ func (r *subscriptionResource) waitSubscriptionReadable(ctx context.Context, id 
 }
 
 // waitSubscriptionUpdate polls GetSubscription until the configuration sent
-// to UpdateSubscription is visible on the read path and every removed key is
-// gone. The Cms event subscription reads are eventually consistent, so an
-// immediate read can return the values from before the update.
-func (r *subscriptionResource) waitSubscriptionUpdate(ctx context.Context, id string, workspace types.String, request map[string]interface{}, removed []subscriptionPath) (map[string]interface{}, error) {
+// to UpdateSubscription is visible on the read path, every removed key is
+// gone and, when the same update also toggled the subscription, the enabled
+// switch reports the requested value. The Cms event subscription reads are
+// eventually consistent, so an immediate read can return the values from
+// before the update.
+func (r *subscriptionResource) waitSubscriptionUpdate(ctx context.Context, id string, workspace types.String, request map[string]interface{}, removed []subscriptionPath, enable *bool) (map[string]interface{}, error) {
 	for {
 		object, err := NewCmsService(r.Meta()).DescribeSubscription(ctx, id, workspace.ValueString())
 		if err == nil {
 			if cleared, clearErr := subscriptionPathsCleared(object, removed); clearErr != nil {
 				return nil, clearErr
-			} else if cleared && subscriptionRequestVisible(object, request) {
+			} else if cleared && subscriptionRequestVisible(object, request) && subscriptionEnableMatches(object, enable) {
 				return object, nil
 			}
 		} else if !subscriptionNotFound(err) {
@@ -682,6 +720,17 @@ func (r *subscriptionResource) waitSubscriptionUpdate(ctx context.Context, id st
 			return nil, err
 		}
 	}
+}
+
+// subscriptionEnableMatches reports whether the read object carries the
+// requested enabled state. A missing switch is not a match: the combined
+// update must not be accepted on a response that does not confirm it.
+func subscriptionEnableMatches(object map[string]interface{}, enable *bool) bool {
+	if enable == nil {
+		return true
+	}
+	current, ok := object["enable"].(bool)
+	return ok && current == *enable
 }
 
 func subscriptionSleep(ctx context.Context, duration time.Duration) error {
@@ -1361,8 +1410,8 @@ func subscriptionState(object map[string]interface{}, intent, identity subscript
 	return subscriptionResourceModel{
 		Id:                     types.StringValue(actualId),
 		SubscriptionName:       subscriptionJSONStringValue(object["subscriptionName"]),
-		Description:            subscriptionStringStateValue(object["description"], intent.Description),
-		NotifyStrategyId:       subscriptionStringStateValue(object["notifyStrategyId"], intent.NotifyStrategyId),
+		Description:            subscriptionStringStateValue(object["description"]),
+		NotifyStrategyId:       subscriptionStringStateValue(object["notifyStrategyId"]),
 		Workspace:              types.StringValue(actualWorkspace),
 		Enable:                 subscriptionJSONBoolValue(object["enable"]),
 		SubscribeLegacyEvent:   subscriptionBoolStateValue(object["subscribeLegacyEvent"]),
@@ -1403,19 +1452,13 @@ func flattenSubscriptionFilterSetting(raw interface{}, previous []subscriptionFi
 	if !present {
 		return nil, nil
 	}
-	previousExpression := types.StringNull()
-	previousRelation := types.StringNull()
-	if len(previous) > 0 {
-		previousExpression = previous[0].Expression
-		previousRelation = previous[0].Relation
-	}
 	conditions, err := flattenSubscriptionConditions(setting["conditions"])
 	if err != nil {
 		return nil, err
 	}
 	return []subscriptionFilterSettingModel{{
-		Expression: subscriptionStringStateValue(setting["expression"], previousExpression),
-		Relation:   subscriptionStringStateValue(setting["relation"], previousRelation),
+		Expression: subscriptionStringStateValue(setting["expression"]),
+		Relation:   subscriptionStringStateValue(setting["relation"]),
 		Conditions: conditions,
 	}}, nil
 }
@@ -1450,19 +1493,15 @@ func flattenSubscriptionPushingSetting(raw interface{}, previous []subscriptionP
 	}
 	previousAlert := types.ListNull(types.StringType)
 	previousRestore := types.ListNull(types.StringType)
-	previousTemplate := types.StringNull()
-	previousResponsePlan := types.StringNull()
 	if len(previous) > 0 {
 		previousAlert = previous[0].AlertActionIds
 		previousRestore = previous[0].RestoreActionIds
-		previousTemplate = previous[0].TemplateUuid
-		previousResponsePlan = previous[0].ResponsePlanId
 	}
 	return []subscriptionPushingSettingModel{{
 		AlertActionIds:   subscriptionJSONStringListState(setting["alertActionIds"], previousAlert),
 		RestoreActionIds: subscriptionJSONStringListState(setting["restoreActionIds"], previousRestore),
-		TemplateUuid:     subscriptionStringStateValue(setting["templateUuid"], previousTemplate),
-		ResponsePlanId:   subscriptionStringStateValue(setting["responsePlanId"], previousResponsePlan),
+		TemplateUuid:     subscriptionStringStateValue(setting["templateUuid"]),
+		ResponsePlanId:   subscriptionStringStateValue(setting["responsePlanId"]),
 	}}, nil
 }
 
@@ -1618,16 +1657,14 @@ func subscriptionJSONStringValue(v interface{}) types.String {
 	return types.StringNull()
 }
 
-// subscriptionStringStateValue mirrors the configuration: the service drops a
-// cleared string from the response, so a value that was configured (including
-// an explicit empty string) reads back as an empty string, while an argument
-// that was never configured stays null.
-func subscriptionStringStateValue(v interface{}, previous types.String) types.String {
+// subscriptionStringStateValue defines one representation for every optional
+// string: the service drops a cleared value from the response, and an explicit
+// empty string is rejected by validation, so an absent or empty member always
+// reads back as null. Refresh and a bare Import therefore produce the same
+// state for the same GET response.
+func subscriptionStringStateValue(v interface{}) types.String {
 	if s := subscriptionJSONString(v); s != "" {
 		return types.StringValue(s)
-	}
-	if !previous.IsNull() && !previous.IsUnknown() {
-		return types.StringValue("")
 	}
 	return types.StringNull()
 }
@@ -1708,6 +1745,126 @@ func subscriptionJSONInt64Value(v interface{}) types.Int64 {
 		return types.Int64Value(n)
 	}
 	return types.Int64Null()
+}
+
+// subscriptionNonEmptyStringValidator keeps one representation for an unset
+// optional string: the read path maps an empty or missing member to null, so a
+// configured empty string would never converge.
+type subscriptionNonEmptyStringValidator struct{}
+
+func (v subscriptionNonEmptyStringValidator) Description(ctx context.Context) string {
+	return "must not be an empty string; remove the argument to unset it"
+}
+
+func (v subscriptionNonEmptyStringValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v subscriptionNonEmptyStringValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	if req.ConfigValue.ValueString() != "" {
+		return
+	}
+	resp.Diagnostics.AddAttributeError(
+		req.Path,
+		"Empty string is not a valid value",
+		fmt.Sprintf("%s must not be an empty string: remove the argument to unset it.", req.Path),
+	)
+}
+
+// subscriptionBlockValidator rejects blocks that declare no member. A block
+// with no configured member is omitted from the request, dropped from the read
+// response and therefore cannot round-trip through apply.
+type subscriptionBlockValidator struct{}
+
+func (v subscriptionBlockValidator) Description(ctx context.Context) string {
+	return "a declared block must configure at least one member"
+}
+
+func (v subscriptionBlockValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v subscriptionBlockValidator) ValidateResource(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var config subscriptionResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	for i, block := range config.FilterSetting {
+		if subscriptionStringConfigured(block.Expression) || subscriptionStringConfigured(block.Relation) || len(block.Conditions) > 0 {
+			continue
+		}
+		resp.Diagnostics.AddAttributeError(
+			path.Root("filter_setting").AtListIndex(i),
+			"Empty filter_setting block",
+			"filter_setting must configure expression, relation or at least one conditions block.",
+		)
+	}
+	for i, block := range config.PushingSetting {
+		if subscriptionStringConfigured(block.TemplateUuid) || subscriptionStringConfigured(block.ResponsePlanId) ||
+			subscriptionListConfigured(block.AlertActionIds) || subscriptionListConfigured(block.RestoreActionIds) {
+			continue
+		}
+		resp.Diagnostics.AddAttributeError(
+			path.Root("pushing_setting").AtListIndex(i),
+			"Empty pushing_setting block",
+			"pushing_setting must configure at least one member: alert_action_ids, restore_action_ids, template_uuid or response_plan_id.",
+		)
+	}
+	for i, block := range config.WorkspaceFilterSetting {
+		if subscriptionListConfigured(block.WorkspaceUuids) {
+			continue
+		}
+		resp.Diagnostics.AddAttributeError(
+			path.Root("workspace_filter_setting").AtListIndex(i),
+			"Empty workspace_filter_setting block",
+			"workspace_filter_setting must configure workspace_uuids.",
+		)
+	}
+	for i, block := range config.AgentConfig {
+		if !subscriptionStringConfigured(block.AgentUuid) && len(block.Routes) == 0 {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("agent_config").AtListIndex(i),
+				"Empty agent_config block",
+				"agent_config must configure agent_uuid or at least one routes block.",
+			)
+		}
+		for j, route := range block.Routes {
+			routePath := path.Root("agent_config").AtListIndex(i).AtName("routes").AtListIndex(j)
+			if len(route.Channels) == 0 && len(route.EffectTimeRange) == 0 {
+				resp.Diagnostics.AddAttributeError(routePath, "Empty routes block", "routes must configure at least one channels or effect_time_range block.")
+			}
+			for k, channel := range route.Channels {
+				if subscriptionStringConfigured(channel.ChannelType) || subscriptionListConfigured(channel.Receivers) ||
+					subscriptionListConfigured(channel.EnabledSubChannels) {
+					continue
+				}
+				resp.Diagnostics.AddAttributeError(routePath.AtName("channels").AtListIndex(k), "Empty channels block", "channels must configure channel_type, receivers or enabled_sub_channels.")
+			}
+			for k, window := range route.EffectTimeRange {
+				if subscriptionStringConfigured(window.TimeZone) || subscriptionListConfigured(window.DayInWeek) ||
+					subscriptionInt64Configured(window.StartTimeInMinute) || subscriptionInt64Configured(window.EndTimeInMinute) {
+					continue
+				}
+				resp.Diagnostics.AddAttributeError(routePath.AtName("effect_time_range").AtListIndex(k), "Empty effect_time_range block", "effect_time_range must configure at least one member.")
+			}
+		}
+	}
+}
+
+func subscriptionStringConfigured(v types.String) bool {
+	return !v.IsNull() && !v.IsUnknown()
+}
+
+func subscriptionListConfigured(v types.List) bool {
+	return !v.IsNull() && !v.IsUnknown()
+}
+
+func subscriptionInt64Configured(v types.Int64) bool {
+	return !v.IsNull() && !v.IsUnknown()
 }
 
 type subscriptionChannelValidator struct{}
