@@ -148,6 +148,7 @@ func TestUnitDecodeRpcResponse(t *testing.T) {
 		{name: "json array", status: 200, body: `[1,2,3]`},
 		{name: "json scalar", status: 200, body: `"text"`},
 		{name: "invalid json", status: 200, body: `{"Code":`},
+		{name: "bad body on a 5xx response", status: 500, body: `<html>gateway</html>`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			status := tc.status
@@ -158,8 +159,52 @@ func TestUnitDecodeRpcResponse(t *testing.T) {
 			if !errors.Is(err, ErrUnreadableResponse) {
 				t.Fatalf("expected ErrUnreadableResponse, got %v", err)
 			}
+			if errors.Is(err, ErrRpcRejectedResponse) {
+				t.Fatalf("an unreadable 2xx/5xx body must stay unknown, got a rejection: %v", err)
+			}
 		})
 	}
+
+	t.Run("bad body on a 4xx response is an explicit rejection", func(t *testing.T) {
+		for _, body := range []string{"", "<html>Bad Request</html>", `{"Code":`} {
+			_, err := decodeRpcResponse(newResponse(400, body))
+			if !errors.Is(err, ErrRpcRejectedResponse) {
+				t.Fatalf("a 4xx rejection with body %q must be explicit, got %v", body, err)
+			}
+			if errors.Is(err, ErrUnreadableResponse) {
+				t.Fatalf("a 4xx rejection must not be reported as an unknown outcome: %v", err)
+			}
+		}
+	})
+
+	t.Run("bad body on a 404 response stays a not found error", func(t *testing.T) {
+		_, err := decodeRpcResponse(newResponse(404, ""))
+		if errors.Is(err, ErrUnreadableResponse) {
+			t.Fatalf("a 404 must keep its status classification, got an unknown outcome: %v", err)
+		}
+		sdkErr, ok := err.(*tea.SDKError)
+		if !ok || tea.IntValue(sdkErr.StatusCode) != 404 {
+			t.Fatalf("expected a typed 404 SDK error, got %T: %v", err, err)
+		}
+	})
+
+	t.Run("decoded error does not echo the signed request url", func(t *testing.T) {
+		// A gateway error page may quote the request URL. The decoded error is
+		// sanitized before it can reach a Terraform diagnostic.
+		_, err := decodeRpcResponse(newResponse(400, `{"Code":"InvalidAction","Message":"bad request https://slb.aliyuncs.com/?AccessKeyId=LTAI-test&Signature=abc123&SecurityToken=token-value","RequestId":"r-1"}`))
+		if err == nil {
+			t.Fatal("expected the 400 response to fail")
+		}
+		message := sanitizeRpcError(err).Error()
+		for _, secret := range []string{"AccessKeyId", "Signature=", "SecurityToken", "LTAI-test", "abc123", "token-value"} {
+			if strings.Contains(message, secret) {
+				t.Fatalf("the decoded error exposes %q: %s", secret, message)
+			}
+		}
+		if !strings.Contains(message, "InvalidAction") {
+			t.Fatalf("the decoded error lost its classification: %s", message)
+		}
+	})
 
 	t.Run("nil response", func(t *testing.T) {
 		if _, err := decodeRpcResponse(nil); !errors.Is(err, ErrUnreadableResponse) {

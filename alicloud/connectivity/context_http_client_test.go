@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -320,5 +322,78 @@ func TestUnitRpcTransportErrorIsSanitized(t *testing.T) {
 	var urlErr *url.Error
 	if !errors.As(err, &urlErr) {
 		t.Fatalf("the transport error classification was lost: %T %v", err, err)
+	}
+}
+
+const rpcDebugChildEnv = "TF_UNIT_RPC_DEBUG_CHILD"
+
+// The SDK debug logger prints the complete signed request URL before any custom
+// transport is entered, so a valid endpoint leaks the access key, signature and
+// security token whenever DEBUG includes "tea". The child process enables that
+// logger and drives the real Set and Describe actions; the parent asserts that
+// neither the access key nor the signature reached its output.
+func TestUnitSignedUrlNeverReachesDebugOutput(t *testing.T) {
+	if os.Getenv(rpcDebugChildEnv) == "1" {
+		runSignedRpcDebugChild(t)
+		return
+	}
+
+	command := exec.Command(os.Args[0], "-test.run=^TestUnitSignedUrlNeverReachesDebugOutput$", "-test.v")
+	env := make([]string, 0, len(os.Environ())+2)
+	for _, item := range os.Environ() {
+		if strings.HasPrefix(item, "DEBUG=") || strings.HasPrefix(item, rpcDebugChildEnv+"=") {
+			continue
+		}
+		env = append(env, item)
+	}
+	command.Env = append(env, "DEBUG=tea", rpcDebugChildEnv+"=1")
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("the debug enabled Set/Describe run failed: %s\n%s", err, output)
+	}
+	for _, secret := range []string{"unit-test-access-key", "Signature=", "AccessKeyId", "SecurityToken", "SignatureNonce"} {
+		if strings.Contains(string(output), secret) {
+			t.Fatalf("the SDK debug output leaked %q:\n%s", secret, output)
+		}
+	}
+}
+
+// runSignedRpcDebugChild performs the same Set and Describe requests the
+// resource issues. It also proves that signing still happens: without it the
+// leak assertion above would pass for the wrong reason.
+func runSignedRpcDebugChild(t *testing.T) {
+	clearProxyEnv(t)
+	var sawSignature atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query()
+		if query.Get("AccessKeyId") != "" && query.Get("Signature") != "" {
+			sawSignature.Add(1)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"RequestId":"r-1","ListenerPort":80,"AclStatus":"on","AclType":"white","AclId":"acl-1"}`))
+	}))
+	defer server.Close()
+
+	client := newLocalRpcClient(t, strings.TrimPrefix(server.URL, "http://"))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	requests := []struct {
+		action  string
+		request map[string]interface{}
+	}{
+		{action: "SetLoadBalancerHTTPListenerAttribute", request: map[string]interface{}{
+			"LoadBalancerId": "lb-unit-test", "ListenerPort": 80, "AclStatus": "on", "AclId": "acl-unit-test", "AclType": "white",
+		}},
+		{action: "DescribeLoadBalancerHTTPListenerAttribute", request: map[string]interface{}{
+			"LoadBalancerId": "lb-unit-test", "ListenerPort": 80,
+		}},
+	}
+	for _, item := range requests {
+		if _, err := client.RpcPostWithContext(ctx, "Slb", "2014-05-15", item.action, nil, item.request, false); err != nil {
+			t.Fatalf("%s failed: %s", item.action, err)
+		}
+	}
+	if got := sawSignature.Load(); got != int32(len(requests)) {
+		t.Fatalf("expected both requests to be signed, got %d", got)
 	}
 }
