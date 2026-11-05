@@ -20,6 +20,7 @@ func ServicePackage() conns.ServicePackage {
 			{TypeName: "alicloud_api_gateway_group_plugin_attachment", Factory: ResourceGroupPluginAttachment},
 			{TypeName: "alicloud_api_gateway_instance", Factory: ResourceInstance},
 			{TypeName: "alicloud_api_gateway_instance_acl_attachment", Factory: ResourceInstanceAclAttachment},
+			{TypeName: "alicloud_api_gateway_ip_control", Factory: ResourceIpControl},
 			{TypeName: "alicloud_api_gateway_log_config", Factory: ResourceLogConfig},
 			{TypeName: "alicloud_api_gateway_model", Factory: ResourceModel},
 			{TypeName: "alicloud_api_gateway_plugin", Factory: ResourcePlugin},
