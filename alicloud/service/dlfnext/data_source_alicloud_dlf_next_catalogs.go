@@ -78,20 +78,6 @@ func (d *catalogsDataSource) Metadata(ctx context.Context, req datasource.Metada
 }
 
 func (d *catalogsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	itemAttrs := map[string]schema.Attribute{
-		"name":       schema.StringAttribute{Computed: true},
-		"type":       schema.StringAttribute{Computed: true},
-		"options":    schema.MapAttribute{Computed: true, ElementType: types.StringType},
-		"is_shared":  schema.BoolAttribute{Computed: true},
-		"share_id":   schema.StringAttribute{Computed: true},
-		"id":         schema.StringAttribute{Computed: true, Description: "The catalog name, which is also the Terraform resource id."},
-		"status":     schema.StringAttribute{Computed: true},
-		"owner":      schema.StringAttribute{Computed: true},
-		"created_at": schema.StringAttribute{Computed: true},
-		"created_by": schema.StringAttribute{Computed: true},
-		"updated_at": schema.StringAttribute{Computed: true},
-		"updated_by": schema.StringAttribute{Computed: true},
-	}
 	resp.Schema = schema.Schema{
 		Description: "Provides a list of DLF Next Catalogs.",
 		Attributes: map[string]schema.Attribute{
@@ -118,10 +104,12 @@ func (d *catalogsDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 			"output_file": schema.StringAttribute{
 				Optional: true,
 			},
-			"catalogs": schema.ListNestedAttribute{
-				Computed:     true,
-				NestedObject: schema.NestedAttributeObject{Attributes: itemAttrs},
-				Description:  "The matched catalogs.",
+			// Protocol 5 (the muxed provider) cannot serve nested attributes;
+			// a list of objects carries the same shape.
+			"catalogs": schema.ListAttribute{
+				Computed:    true,
+				ElementType: catalogItemObjectType(),
+				Description: "The matched catalogs.",
 			},
 		},
 	}
