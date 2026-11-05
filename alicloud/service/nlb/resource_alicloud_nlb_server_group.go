@@ -162,7 +162,7 @@ func ResourceServerGroup() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validators.StringInSlice([]string{"TCP", "UDP", "TCP_UDP"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"TCP", "UDP", "TCP_UDP", "TCPSSL"}, false),
 			},
 			"region_id": {
 				Type:     schema.TypeString,
