@@ -76,7 +76,7 @@ resource "alicloud_star_rocks_instance" "default" {
   }
   backend_node_groups {
     cu                          = "8"
-    storage_size                = "100"
+    storage_size                = "200"
     resident_node_number        = "3"
     disk_number                 = "1"
     storage_performance_level   = "pl1"

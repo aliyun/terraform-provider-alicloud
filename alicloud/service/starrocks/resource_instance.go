@@ -639,8 +639,7 @@ func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if d.HasChange("tags") {
-		starrocksService := NewService(client)
-		if err := starrocksService.SetResourceTags(d, "instance"); err != nil {
+		if err := starrocksService.SetResourceTagsWithDeadline(d, "instance", deadline); err != nil {
 			return errs.WrapError(err)
 		}
 	}
@@ -685,11 +684,7 @@ func resourceInstanceResolveBackendNodeGroupResizes(d *schema.ResourceData, serv
 		return nil, fmt.Errorf("backend_node_groups can only be modified in place, got %d -> %d group(s)", len(oldGroups), len(newGroups))
 	}
 
-	budget, err := remainingUpdateDuration(deadline)
-	if err != nil {
-		return nil, err
-	}
-	groups, err := service.DescribeBackendNodeGroups(d.Id(), budget)
+	groups, err := service.DescribeBackendNodeGroups(d.Id(), deadline)
 	if err != nil {
 		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DescribeNodeGroups", errs.AlibabaCloudSdkGoERROR)
 	}
@@ -754,46 +749,50 @@ func resourceInstanceApplyBackendNodeGroupResize(d *schema.ResourceData, service
 	body := request
 	var response map[string]interface{}
 	var err error
-	budget, budgetErr := remainingUpdateDuration(deadline)
-	if budgetErr != nil {
+	if _, budgetErr := remainingUpdateDuration(deadline); budgetErr != nil {
 		return budgetErr
 	}
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	logErr := retry.Retry(budget, func() *retry.RetryError {
-		// The SDK level auto retry is disabled for this billable change: it would resend
-		// the request without looking at the remote disk, while the retry below re-reads
-		// the node group first and skips the write when the response was merely lost.
-		response, err = service.client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, false)
-		if err != nil {
-			if helper.NeedRetry(err) {
-				// The resize may already be applied even though the response was lost.
-				// Re-read the group before sending the billable change again so a retry
-				// cannot expand the same disk twice.
-				reached, checkErr := backendNodeGroupStorageSizeReached(service, d.Id(), resize.nodeGroupId, resize.target, deadline)
-				if checkErr == nil && reached {
-					return nil
-				}
-				wait()
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
-	})
+	// The SDK level auto retry is disabled for this billable change: it would resend the
+	// request without looking at the remote disk.
+	response, err = service.client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, false)
 	logs.AddDebug(action, response, request)
-	if logErr != nil {
-		return errs.WrapErrorf(logErr, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	if err != nil {
+		if !helper.NeedRetry(err) {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		// The request was accepted but the response was lost, or the service failed: the
+		// resize may or may not be applied. Sending the billable request again could
+		// expand the same disk twice, so wait for the reported size instead and report an
+		// unknown result when it never converges.
+		reached, checkErr := backendNodeGroupStorageSizeReached(service, d.Id(), resize.nodeGroupId, resize.target, deadline)
+		if !reached {
+			return errs.WrapErrorf(fmt.Errorf("the result of the disk expansion for node group %s is unknown, the request may or may not have been applied: %v (last size check: %v)", resize.nodeGroupId, err, checkErr), errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
 	}
 	nodeGroupStateId := d.Id() + ":" + resize.nodeGroupId
 	stateBudget, budgetErr := remainingUpdateDuration(deadline)
 	if budgetErr != nil {
 		return budgetErr
 	}
-	stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, stateBudget, 20*time.Second, service.NodeGroupStateRefreshFunc(nodeGroupStateId, "Status", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, stateBudget, 20*time.Second, service.NodeGroupStateRefreshFuncWithApi(nodeGroupStateId, "Status", []string{}, func(id string) (map[string]interface{}, error) {
+		return service.DescribeNodeGroupWithDeadline(id, deadline)
+	}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return errs.WrapErrorf(err, errs.IdMsg, nodeGroupStateId)
 	}
 	return nil
+}
+
+// backendNodeGroupResizeConvergenceWindow bounds how long a lost resize response waits
+// for the remote disk size to converge before the result is reported as unknown.
+var backendNodeGroupResizeConvergenceWindow = 30 * time.Second
+
+// BackendNodeGroupResizeConvergenceWindowForTest overrides the convergence window used
+// before a lost resize response is reported as unknown, and returns the previous value.
+func BackendNodeGroupResizeConvergenceWindowForTest(window time.Duration) time.Duration {
+	previous := backendNodeGroupResizeConvergenceWindow
+	backendNodeGroupResizeConvergenceWindow = window
+	return previous
 }
 
 // backendNodeGroupStorageSizeReached waits briefly for the remote group to report at
@@ -801,17 +800,16 @@ func resourceInstanceApplyBackendNodeGroupResize(d *schema.ResourceData, service
 // not turn into a second billable resize, while a genuinely failed call still retries.
 // The wait is bounded by the shared update deadline and by a short convergence window.
 func backendNodeGroupStorageSizeReached(service *Service, instanceId, nodeGroupId string, target int, deadline time.Time) (bool, error) {
-	waitUntil := time.Now().Add(30 * time.Second)
+	waitUntil := time.Now().Add(backendNodeGroupResizeConvergenceWindow)
 	if remaining := time.Until(deadline); remaining < time.Until(waitUntil) {
 		waitUntil = deadline
 	}
 	var lastErr error
 	for {
-		budget := time.Until(waitUntil)
-		if budget <= 0 {
+		if time.Until(waitUntil) <= 0 {
 			return false, lastErr
 		}
-		object, err := service.DescribeNodeGroupWithTimeout(instanceId+":"+nodeGroupId, budget)
+		object, err := service.DescribeNodeGroupWithDeadline(instanceId+":"+nodeGroupId, waitUntil)
 		if err == nil {
 			if current, convErr := strconv.Atoi(fmt.Sprint(object["StorageSize"])); convErr == nil && current >= target {
 				return true, nil
@@ -829,19 +827,16 @@ func backendNodeGroupStorageSizeReached(service *Service, instanceId, nodeGroupI
 // matchBackendNodeGroup resolves the single remote backend node group described by
 // the pre-update configuration entry. Node group ids are never persisted, so an
 // entry that matches zero or several groups cannot be resolved safely and must not
-// be guessed.
+// be guessed. The zone is deliberately not part of the match: the API reports it for
+// some compute groups and omits or relocates it for others, so a group that differs
+// only by the reported zone could still be the configured one.
 func matchBackendNodeGroup(groups []map[string]interface{}, config map[string]interface{}) (string, error) {
-	candidates := backendNodeGroupCandidates(groups, config, true)
-	if len(candidates) == 1 {
-		return candidates[0], nil
+	candidates := make([]string, 0)
+	for _, group := range groups {
+		if backendNodeGroupAttributesMatch(group, config) {
+			candidates = append(candidates, fmt.Sprint(group["NodeGroupId"]))
+		}
 	}
-	if len(candidates) > 1 {
-		return "", fmt.Errorf("multiple backend node groups match the configured attributes (%s), refusing to guess", strings.Join(candidates, ", "))
-	}
-	// The API does not report the zone of every compute group (ECI based groups may
-	// omit or relocate it), so retry without the zone and still require one match.
-	// Groups that stay indistinguishable are reported instead of being guessed.
-	candidates = backendNodeGroupCandidates(groups, config, false)
 	switch len(candidates) {
 	case 0:
 		return "", fmt.Errorf("no backend node group matches the configured cu/spec/disk attributes, cannot determine which group to expand")
@@ -852,24 +847,11 @@ func matchBackendNodeGroup(groups []map[string]interface{}, config map[string]in
 	}
 }
 
-func backendNodeGroupCandidates(groups []map[string]interface{}, config map[string]interface{}, checkZone bool) []string {
-	candidates := make([]string, 0)
-	for _, group := range groups {
-		if backendNodeGroupAttributesMatch(group, config, checkZone) {
-			candidates = append(candidates, fmt.Sprint(group["NodeGroupId"]))
-		}
-	}
-	return candidates
-}
-
-func backendNodeGroupAttributesMatch(group map[string]interface{}, config map[string]interface{}, checkZone bool) bool {
+func backendNodeGroupAttributesMatch(group map[string]interface{}, config map[string]interface{}) bool {
 	stringAttributes := map[string]string{
 		"spec_type":                   "SpecType",
 		"storage_performance_level":   "StoragePerformanceLevel",
 		"local_storage_instance_type": "LocalStorageInstanceType",
-	}
-	if checkZone {
-		stringAttributes["zone_id"] = "ZoneId"
 	}
 	for configKey, remoteKey := range stringAttributes {
 		value, _ := config[configKey].(string)
