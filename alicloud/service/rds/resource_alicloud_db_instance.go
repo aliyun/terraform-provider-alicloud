@@ -25,9 +25,10 @@ const (
 	// whitelist template owns; such groups must never be managed directly.
 	DBInstanceIpArrayAttributeTemplate = "template"
 	// DBInstanceIPArrayGroupLimit is the documented maximum number of IP
-	// whitelist groups per instance. The legacy group configured through
-	// security_ips is always present and counts against it, so the block set
-	// itself may hold at most one group less.
+	// whitelist groups per instance. The default group and the group managed
+	// through security_ips both count against it; they are the same group only
+	// when security_ips manages the default group, so the block set reserves
+	// two slots and may hold at most two fewer groups.
 	DBInstanceIPArrayGroupLimit = 200
 )
 
@@ -196,7 +197,7 @@ func resourceAliCloudDBInstance() *schema.Resource {
 			"db_instance_ip_arrays": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				MaxItems: DBInstanceIPArrayGroupLimit - 1,
+				MaxItems: DBInstanceIPArrayGroupLimit - 2,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -2968,12 +2969,17 @@ func modifyDBInstanceIpArrays(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 
+	oldGroups := make(map[string]bool)
 	removed := make([]string, 0)
 	if oldSet != nil {
 		for _, item := range oldSet.List() {
 			group := item.(map[string]interface{})
 			name, _ := group["name"].(string)
-			if name == "" || newGroups[name] != nil {
+			if name == "" {
+				continue
+			}
+			oldGroups[name] = true
+			if newGroups[name] != nil {
 				continue
 			}
 			removed = append(removed, name)
@@ -3008,6 +3014,30 @@ func modifyDBInstanceIpArrays(d *schema.ResourceData, meta interface{}) error {
 		}
 		if attribute, _ := existing["DBInstanceIPArrayAttribute"].(string); attribute == DBInstanceIpArrayAttributeHidden {
 			return WrapError(fmt.Errorf("db_instance_ip_arrays cannot manage group %q: it is a hidden system group used by DMS, DTS or DAS", name))
+		}
+	}
+
+	// The plan-time legacy name can be unknown, so check the reserved names
+	// again with the value resolved during apply before the first write.
+	for _, name := range names {
+		if isProtectedDBInstanceIpArrayName(name, legacyGroupName) {
+			return WrapError(fmt.Errorf("db_instance_ip_arrays group %q is reserved: manage the default group with security_ips and db_instance_ip_array_name", name))
+		}
+	}
+
+	// A group that already exists on the instance but was not managed by this
+	// resource is not adopted implicitly: overwriting it would discard
+	// addresses that were configured outside Terraform.
+	for _, name := range names {
+		if oldGroups[name] {
+			continue
+		}
+		existing, ok := findDBInstanceIpArray(apiIpArrays, name)
+		if !ok {
+			continue
+		}
+		if attribute, _ := existing["DBInstanceIPArrayAttribute"].(string); attribute == "" {
+			return WrapError(fmt.Errorf("db_instance_ip_arrays group %q already exists on the instance but is not managed by this resource; refusing to overwrite it", name))
 		}
 	}
 
@@ -3113,16 +3143,10 @@ func validateDBInstanceIpArrays(d *schema.ResourceDiff) error {
 		legacyGroupName = DefaultDBInstanceIpArrayName
 	}
 	groups := d.Get("db_instance_ip_arrays").(*schema.Set).List()
-	if len(groups) >= DBInstanceIPArrayGroupLimit {
-		return fmt.Errorf("db_instance_ip_arrays supports at most %d groups; the whitelist group managed through security_ips counts against the instance limit of %d", DBInstanceIPArrayGroupLimit-1, DBInstanceIPArrayGroupLimit)
-	}
 	seen := make(map[string]bool, len(groups))
 	for _, item := range groups {
 		group := item.(map[string]interface{})
 		name, _ := group["name"].(string)
-		if name == "" {
-			return fmt.Errorf("db_instance_ip_arrays requires a non-empty name")
-		}
 		if isProtectedDBInstanceIpArrayName(name, legacyGroupName) {
 			return fmt.Errorf("db_instance_ip_arrays group %q is reserved: manage the default group with security_ips and db_instance_ip_array_name", name)
 		}
@@ -3130,9 +3154,6 @@ func validateDBInstanceIpArrays(d *schema.ResourceDiff) error {
 			return fmt.Errorf("db_instance_ip_arrays contains duplicate group %q", name)
 		}
 		seen[name] = true
-		if len(expandStringList(group["security_ips"].(*schema.Set).List())) == 0 {
-			return fmt.Errorf("db_instance_ip_arrays group %q requires at least one security_ips entry", name)
-		}
 	}
 	return nil
 }

@@ -5292,6 +5292,34 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 			},
 			importAfterConfigStep(resourceId),
 			{
+				// A group that exists but is not managed by this resource must not
+				// be adopted by declaring it; the update is rejected and its IPs
+				// stay unchanged.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_array_name": "legacygrp",
+					"security_ips":              []string{"10.0.0.9"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": "external", "security_ips": []string{"10.99.0.0/24"}},
+					},
+				}),
+				ExpectError: regexp.MustCompile(`already exists on the instance but is not managed by this resource`),
+			},
+			{
+				// The refused update leaves the unmanaged group's addresses intact.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_array_name": "legacygrp",
+					"security_ips":              []string{"10.0.0.9"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": "officev2", "security_ips": []string{"10.10.10.0/24", "10.10.12.0/24"}},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceIpArrayExists(resourceId, "external", "10.0.0.6"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "officev2", "10.10.10.0/24,10.10.12.0/24"),
+				),
+			},
+			importAfterConfigStep(resourceId),
+			{
 				// Switching the legacy group leaves "external" behind; direct group
 				// deletion must not touch it or the hidden group.
 				Config: testAccConfig(map[string]interface{}{
@@ -5371,7 +5399,7 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 						{"name": "office group", "security_ips": []string{"10.10.23.0/24"}},
 					},
 				}),
-				ExpectError: regexp.MustCompile(`(?i)invalid|malformed|format|illegal|not valid|not supported|parameter`),
+				ExpectError: regexp.MustCompile(`(?i)(InvalidParameter|Parameters\.Invalid|InvalidDBInstanceIPArray|InvalidSecurityIPList|InvalidGroupName|Malformed)`),
 			},
 			{
 				// End with a valid configuration so the post-test destroy can plan.
@@ -5392,12 +5420,60 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 			},
 			importAfterConfigStep(resourceId),
 			{
+				// Manage the default group through security_ips so the imported
+				// state and the configuration agree on the legacy fields; the only
+				// remaining plan difference is then the db_instance_ip_arrays
+				// block.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_array_name":      acctest.REMOVEKEY,
+					"db_instance_ip_array_attribute": acctest.REMOVEKEY,
+					"security_ips":                   []string{"10.0.0.1"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": "finalgrp", "security_ips": []string{"10.10.30.0/24"}},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "1",
+						"security_ips.#":          "1",
+					}),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "finalgrp", "10.10.30.0/24"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "default", "10.0.0.1"),
+				),
+			},
+			importAfterConfigStep(resourceId),
+			{
+				// A bare import reads the default group and does not select a
+				// legacy group; those values are asserted here so the import plan
+				// below can only differ because of the new block.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected one imported state, got %d", len(states))
+					}
+					if got := states[0].Attributes["db_instance_ip_array_name"]; got != "" {
+						return fmt.Errorf("a bare import must not select a legacy group, got %q", got)
+					}
+					if got := states[0].Attributes["db_instance_ip_arrays.#"]; got != "" && got != "0" {
+						return fmt.Errorf("import must not adopt whitelist groups, got %q", got)
+					}
+					if got := states[0].Attributes["security_ips.#"]; got != "1" {
+						return fmt.Errorf("import must read the default group's one address, got security_ips.#=%q", got)
+					}
+					if got := states[0].Attributes["security_ips.0"]; got != "10.0.0.1" {
+						return fmt.Errorf("import must read the default group's address, got security_ips.0=%q", got)
+					}
+					return nil
+				},
+			},
+			{
 				// Plannable import runs a real plan against the imported state.
-				// The imported state has no groups, so the plan must update the
-				// resource to add the configured groups instead of a silent
-				// no-op, proving import does not adopt whitelist groups.
-				// ExpectNonEmptyPlan allows the non-noop import plan; the plan
-				// check below requires the concrete update action.
+				// The imported state has no groups and matches the configured
+				// legacy fields, so the only possible difference is the configured
+				// db_instance_ip_arrays block. The update action therefore proves
+				// the block is not adopted by import.
 				ResourceName:       resourceId,
 				ImportState:        true,
 				ImportStateKind:    resource.ImportBlockWithID,
@@ -5728,6 +5804,12 @@ func importAfterConfigStep(resourceId string) resource.TestStep {
 			}
 			if got := states[0].Attributes["db_instance_ip_arrays.#"]; got != "" && got != "0" {
 				return fmt.Errorf("import must not adopt whitelist groups, got db_instance_ip_arrays.#=%q", got)
+			}
+			if got := states[0].Attributes["db_instance_ip_array_name"]; got != "" {
+				return fmt.Errorf("a bare import must not select a legacy group, got db_instance_ip_array_name=%q", got)
+			}
+			if _, ok := states[0].Attributes["security_ips.#"]; !ok {
+				return fmt.Errorf("import must read back the default group's security_ips")
 			}
 			return nil
 		},

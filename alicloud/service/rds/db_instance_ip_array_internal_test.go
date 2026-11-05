@@ -104,8 +104,8 @@ func TestUnitAliCloudDBInstanceIpArrayGroupLimit(t *testing.T) {
 	resource := resourceAliCloudDBInstance()
 	block, ok := resource.Schema["db_instance_ip_arrays"]
 	assert.True(t, ok)
-	assert.Equal(t, DBInstanceIPArrayGroupLimit-1, block.MaxItems)
-	assert.Equal(t, 199, block.MaxItems)
+	assert.Equal(t, DBInstanceIPArrayGroupLimit-2, block.MaxItems)
+	assert.Equal(t, 198, block.MaxItems)
 }
 
 func TestUnitAliCloudDBInstanceModifySecurityIpsRetryGate(t *testing.T) {

@@ -247,7 +247,7 @@ terraform {
 }
 
 variable "name" {
-  default = "tf_example"
+  default = "terraform-example"
 }
 
 data "alicloud_db_zones" "example" {
@@ -319,7 +319,7 @@ terraform {
 }
 
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
 data "alicloud_db_zones" "example" {
@@ -389,7 +389,7 @@ terraform {
 }
 
 variable "name" {
-  default = "tf-accdbinstance"
+  default = "terraform-example"
 }
 
 provider "alicloud" {
@@ -465,7 +465,7 @@ terraform {
 }
 
 variable "name" {
-  default = "tf-accdbinstance"
+  default = "terraform-example"
 }
 
 provider "alicloud" {
@@ -528,7 +528,7 @@ terraform {
 }
 
 variable "name" {
-  default = "tf-accdbinstance"
+  default = "terraform-example"
 }
 
 provider "alicloud" {
@@ -749,11 +749,11 @@ The following arguments are supported:
 * `db_instance_ip_array_attribute` - (Optional, Available since v1.125.0) The attribute of the IP address whitelist. By default, this parameter is empty.
 
   -> **NOTE:** The IP address whitelists that have the hidden attribute are not displayed in the ApsaraDB RDS console. These IP address whitelists are used to access Alibaba Cloud services, such as Data Transmission Service (DTS).
-* `db_instance_ip_arrays` - (Optional, Set, Available since v2.3.0) A set of IP address whitelist group blocks. Each block manages one whitelist group, and all configured groups are created, updated or deleted within a single apply. At most 199 groups can be declared here: an instance supports 200 whitelist groups in total and the group managed through `security_ips` always counts against that limit. See [`db_instance_ip_arrays`](#db_instance_ip_arrays) below.
+* `db_instance_ip_arrays` - (Optional, Set, Available since v2.3.0) A set of IP address whitelist group blocks. Each block manages one whitelist group, and all configured groups are created, updated or deleted within a single apply. At most 198 groups can be declared here: an instance supports 200 whitelist groups in total, and this block set reserves one slot for the `default` group and one slot for the group managed through `security_ips`. See [`db_instance_ip_arrays`](#db_instance_ip_arrays) below.
 
-  -> **NOTE:** Group names must be unique and must differ from `db_instance_ip_array_name`. The group configured through `security_ips` is managed separately and is not managed by `db_instance_ip_arrays`. Removing a block deletes that group from the instance and renaming a block deletes the old group and creates the new one. The `default` group and groups that are not managed by this resource are never deleted. Groups whose attribute is `hidden` are system groups used by DMS, DTS and DAS and are not managed by this resource.
+  -> **NOTE:** Group names must be unique and must differ from `db_instance_ip_array_name`. The group configured through `security_ips` is managed separately and is not managed by `db_instance_ip_arrays`. Removing a block deletes that group from the instance and renaming a block deletes the old group and creates the new one. The `default` group and groups that are not managed by this resource are never deleted. Groups whose attribute is `hidden` are system groups used by DMS, DTS and DAS and are not managed by this resource. Group removal relies on the RDS API behavior that an emptied custom group disappears; this behavior is verified on the MySQL and PostgreSQL instances used by this resource's acceptance tests, and an engine that rejects the removal reports the API error instead of silently keeping the group.
 
-  -> **NOTE:** Import does not populate `db_instance_ip_arrays`, so that whitelist groups created outside Terraform are not adopted. Declare the groups in the configuration and apply to start managing them.
+  -> **NOTE:** Import does not populate `db_instance_ip_arrays`, so that whitelist groups created outside Terraform are not adopted. A group that already exists on the instance but is not tracked in the Terraform state is also not taken over: declaring it in `db_instance_ip_arrays` fails before any write, so delete or rename that group outside Terraform before declaring the same name.
 
   -> **NOTE:** Groups provided by a whitelist template through `template_id_list` are managed by the template, not by this resource. They are returned with the `template` attribute and never exposed through `db_instance_ip_arrays`. Declaring a group whose name matches a template-provided group fails with an error before any change is made, so the template group and its association stay intact.
 * `security_ip_type` - (Optional, Available since v1.125.0) The type of IP address in the IP address whitelist.
@@ -993,7 +993,7 @@ The following arguments are supported:
 
 The db_instance_ip_arrays mapping supports the following:
 
-* `name` - (Required, String, Available since v2.3.0) The name of the IP address whitelist group. It must be 1 to 64 characters long, must be unique within this block set, and must differ from `db_instance_ip_array_name`. Renaming the group deletes the old group and creates the new one.
+* `name` - (Required, String, Available since v2.3.0) The name of the IP address whitelist group. It must be 1 to 64 characters long, must be unique within this block set, and must differ from `db_instance_ip_array_name`. The RDS API validates the name format and rejects invalid characters. Renaming the group deletes the old group and creates the new one.
 * `security_ips` - (Optional, Set, Available since v2.3.0) A set of IP addresses in the group. At least one IP address or CIDR block is required; a group without any entry is rejected during plan.
 
 ### `parameters`
