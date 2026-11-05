@@ -28,6 +28,14 @@ Provides a PolarDB endpoint resource to manage custom endpoint of PolarDB cluste
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_polardb_node_classes" "default" {
   db_type    = "MySQL"
   db_version = "8.0"
@@ -83,7 +91,7 @@ The following arguments are supported:
 * `db_endpoint_description` - (Optional, Available since v1.201.0) The name of the endpoint.
 * `connection_prefix` - (Optional, Available since v1.217.0) Prefix of the specified endpoint. The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter.
 * `port` - (Optional, Available since v1.217.0) Port of the specified endpoint. Valid values: 3000 to 5999.
-* `scc_mode` - (Optional, Computed, String, Available since v2.2.0) Specifies whether to enable global consistency (high-performance mode). Valid values: `on`, `off`. Before setting this argument to `on`, set `ConsistLevel` in `endpoint_config` to `0` (eventual consistency).
+* `scc_mode` - (Optional, Computed, String, Available since v2.3.0) Specifies whether to enable global consistency (high-performance mode). Valid values: `on`, `off`. Before setting this argument to `on`, set `ConsistLevel` in `endpoint_config` to `0` (eventual consistency).
 
 ## Attributes Reference
 
