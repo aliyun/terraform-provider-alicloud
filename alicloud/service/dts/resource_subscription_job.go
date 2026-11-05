@@ -26,7 +26,7 @@ func ResourceSubscriptionJob() *schema.Resource {
 		Update: resourceSubscriptionJobUpdate,
 		Delete: resourceSubscriptionJobDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: resourceSubscriptionJobImport,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Update: schema.DefaultTimeout(5 * time.Minute),
@@ -277,6 +277,12 @@ func resourceSubscriptionJobCreate(d *schema.ResourceData, meta interface{}) err
 
 	return resourceSubscriptionJobUpdate(d, meta)
 }
+func resourceSubscriptionJobImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	client := meta.(*connectivity.AliyunClient)
+	dtsService := NewService(client)
+	return importJob(d, dtsService.DescribeDtsSubscriptionJob)
+}
+
 func resourceSubscriptionJobRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dtsService := NewService(client)
@@ -288,6 +294,9 @@ func resourceSubscriptionJobRead(d *schema.ResourceData, meta interface{}) error
 			return nil
 		}
 		return errs.WrapError(err)
+	}
+	if err := validateJobIdentity(d.Id(), object); err != nil {
+		return err
 	}
 	actualCheckpoint, err := convert.FormatInt(object["Checkpoint"])
 	if err != nil {
