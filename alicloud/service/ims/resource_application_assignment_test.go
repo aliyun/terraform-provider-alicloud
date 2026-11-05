@@ -63,11 +63,19 @@ func testSweepImsApplications(region string) error {
 }
 
 func TestAccAliCloudImsApplicationAssignment_basic(t *testing.T) {
-	// Build the IMS application before resource.Test so its AppId is known
-	// when the step configs are formatted. The shared sweeper client reads
-	// the same credentials and region as the provider under test, so the
-	// application lives in the account and region that the assignment will
-	// target.
+	// The IMS application itself is not managed by a Terraform resource, so the
+	// AppId it provides must be known before the step configs are formatted.
+	// It is therefore built before resource.Test, which means the TF_ACC Skip
+	// inside resource.Test can no longer protect the prerequisite CreateApplication
+	// call. Replicate the acceptance-test gate here, ahead of any shared client
+	// construction or cloud request, so the prerequisite only fires under the
+	// same opt-in that governs resource.Test (R7.17).
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("TF_ACC is not set")
+	}
+	// The shared sweeper client reads the same credentials and region as the
+	// provider under test, so the application lives in the account and region
+	// that the assignment will target.
 	region := os.Getenv("ALICLOUD_REGION")
 	if region == "" {
 		region = "cn-beijing"
