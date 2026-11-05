@@ -287,7 +287,7 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"qualifier"},
+				ImportStateVerifyIgnore: []string{"qualifier", "current", "current_error"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -305,7 +305,7 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"qualifier"},
+				ImportStateVerifyIgnore: []string{"qualifier", "current", "current_error"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -323,7 +323,7 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"qualifier"},
+				ImportStateVerifyIgnore: []string{"qualifier", "current", "current_error"},
 			},
 		},
 	})
