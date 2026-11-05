@@ -283,6 +283,17 @@ func resourceLoadBalancerRead(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
+// loadBalancerUpdateWaitTarget reports the state an attribute update must reach and whether the
+// traffic-mode-aware refresh is needed. When traffic_mode is unchanged the mode is deliberately
+// left out of the target: state written by provider versions before 2.3.0 carries no traffic_mode
+// value, so a combined target would degrade to "Active/" and never converge.
+func loadBalancerUpdateWaitTarget(trafficModeChanged bool, trafficMode interface{}) (string, bool) {
+	if trafficModeChanged {
+		return fmt.Sprintf("Active/%v", trafficMode), true
+	}
+	return "Active", false
+}
+
 func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
@@ -304,7 +315,8 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 		update = true
 		request["LoadBalancerName"] = d.Get("load_balancer_name")
 	}
-	if d.HasChange("traffic_mode") {
+	trafficModeChanged := d.HasChange("traffic_mode")
+	if trafficModeChanged {
 		update = true
 		request["TrafficMode"] = d.Get("traffic_mode")
 	}
@@ -327,11 +339,12 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		gwlbService := NewService(client)
+		target, waitForTrafficMode := loadBalancerUpdateWaitTarget(trafficModeChanged, d.Get("traffic_mode"))
 		var stateConf *retry.StateChangeConf
-		if d.HasChange("traffic_mode") {
-			stateConf = helper.BuildStateConf([]string{}, []string{fmt.Sprintf("Active/%v", d.Get("traffic_mode"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbService.LoadBalancerTrafficModeStateRefreshFunc(d.Id(), []string{}))
+		if waitForTrafficMode {
+			stateConf = helper.BuildStateConf([]string{}, []string{target}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbService.LoadBalancerTrafficModeStateRefreshFunc(d.Id(), []string{}))
 		} else {
-			stateConf = helper.BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbService.LoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
+			stateConf = helper.BuildStateConf([]string{}, []string{target}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbService.LoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
 		}
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())

@@ -109,6 +109,8 @@ The following arguments are supported:
 
   - `LoadBalance`: The GWLB instance distributes network traffic across backend servers. Defaults to `LoadBalance`.
   - `ByPass`: The GWLB instance forwards traffic to the associated ENI without load balancing.
+
+  If the parameter is not set when the instance is created, the service default is `LoadBalance`. After `traffic_mode` has been configured, removing it from the configuration keeps the current value returned by the API; it is not reset to `LoadBalance`.
 * `vpc_id` - (Required, ForceNew) The virtual private cloud (VPC) ID.
 * `zone_mappings` - (Required, Set) The mappings between zones and vSwitches. You must specify at least one zone. You can specify at most 20 zones. If the region supports two or more zones, we recommend that you select two or more zones. See [`zone_mappings`](#zone_mappings) below.
 
