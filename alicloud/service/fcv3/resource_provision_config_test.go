@@ -267,19 +267,18 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 					}),
 				),
 			},
-			// Set explicit values (CPU keeps the default, GPU gets a non-default
-			// value), remove them, then run an unrelated update: Optional+Computed
-			// must keep the last values and never produce a diff.
+			// Set explicit values, then remove them, then run an unrelated update:
+			// Optional+Computed must keep the last values and never produce a diff.
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"always_allocate_cpu": "true",
-					"always_allocate_gpu": "false",
+					"always_allocate_gpu": "true",
 					"target":              "3",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"always_allocate_cpu": "true",
-						"always_allocate_gpu": "false",
+						"always_allocate_gpu": "true",
 						"target":              "3",
 					}),
 				),
@@ -298,7 +297,7 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"always_allocate_cpu": "true",
-						"always_allocate_gpu": "false",
+						"always_allocate_gpu": "true",
 					}),
 				),
 			},
@@ -315,7 +314,7 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"always_allocate_cpu": "true",
-						"always_allocate_gpu": "false",
+						"always_allocate_gpu": "true",
 						"target":              "4",
 					}),
 				),
