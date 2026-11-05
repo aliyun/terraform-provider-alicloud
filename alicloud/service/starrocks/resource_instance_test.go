@@ -986,6 +986,7 @@ type starRocksNodeGroupsHandler struct {
 	pendingSize   map[string]int
 	// delayedAction delays one action, e.g. to exhaust the update budget.
 	delayedAction   string
+	delayedStatus   int
 	delay           time.Duration
 	modifyResponses []int
 	modifyCalls     int
@@ -1002,6 +1003,11 @@ func (h *starRocksNodeGroupsHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	h.actions = append(h.actions, action)
 	if action == h.delayedAction && h.delay > 0 {
 		time.Sleep(h.delay)
+		if h.delayedStatus != 0 {
+			w.WriteHeader(h.delayedStatus)
+			writeTestJSON(w, map[string]interface{}{"Code": "InternalError", "Message": "code: 500, injected slow failure", "RequestId": "rid"})
+			return
+		}
 	}
 	switch action {
 	case "/webapi/nodegroup/describeNodeGroups":
@@ -1236,12 +1242,14 @@ func applyStarRocksInstance(t *testing.T, client *connectivity.AliyunClient, att
 	t.Helper()
 	resource := starrocks.ResourceInstance()
 	state := &sdktf.InstanceState{ID: "c-fixture", Attributes: attributes}
-	if updateTimeout > 0 {
-		state.Meta = map[string]interface{}{schema.TimeoutKey: map[string]interface{}{"update": updateTimeout.String()}}
-	}
 	diff, err := resource.Diff(context.Background(), state, sdktf.NewResourceConfigRaw(config), nil)
 	if err != nil {
 		t.Fatalf("diff: %s", err)
+	}
+	if updateTimeout > 0 {
+		// Apply reads the resource timeouts from the diff or state meta, which is how a
+		// real plan carries the practitioner's timeouts block.
+		diff.Meta = map[string]interface{}{schema.TimeoutKey: map[string]interface{}{"update": updateTimeout.String()}}
 	}
 	_, diags := resource.Apply(context.Background(), state, diff, client)
 	if diags.HasError() {
@@ -1418,7 +1426,7 @@ func TestUnitBackendNodeGroupSharedUpdateBudget(t *testing.T) {
 	handler := &starRocksNodeGroupsHandler{
 		t: t, groups: []map[string]interface{}{testBackendGroup("ng-target", "cn-hangzhou-i")},
 		total: 1, instanceStatus: "RUNNING",
-		delayedAction: "/webapi/cluster/update_name", delay: 3 * time.Second,
+		delayedAction: "/webapi/cluster/update_name", delayedStatus: http.StatusInternalServerError, delay: 3 * time.Second,
 	}
 	client := starRocksTestClient(t, handler.ServeHTTP)
 	config := backendGroupConfig(300, nil)
@@ -1533,7 +1541,7 @@ func TestUnitBackendNodeGroupSlowDiscoveryExhaustsBudget(t *testing.T) {
 	handler := &starRocksNodeGroupsHandler{
 		t: t, groups: []map[string]interface{}{testBackendGroup("ng-target", "cn-hangzhou-i")},
 		total: 1, instanceStatus: "RUNNING",
-		delayedAction: "/webapi/nodegroup/describeNodeGroups", delay: 3 * time.Second,
+		delayedAction: "/webapi/nodegroup/describeNodeGroups", delayedStatus: http.StatusInternalServerError, delay: 3 * time.Second,
 	}
 	client := starRocksTestClient(t, handler.ServeHTTP)
 	config := backendGroupConfig(300, nil)
