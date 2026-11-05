@@ -1144,7 +1144,7 @@ func accountDescribeResponse(instanceId, dbName, accountName, characterType, des
 
 func TestUnitAccountSchemaContract(t *testing.T) {
 	r := unitAccountResourceSchema(t)
-	assert.NotNil(t, r.CustomizeDiff, "roles members are validated at plan time")
+	assert.NotNil(t, acctest.Provider.ResourcesMap["alicloud_mongodb_account"].CustomizeDiff, "roles members are validated at plan time")
 	assert.True(t, r["db_name"].ForceNew, "db_name is part of the account identity")
 	assert.True(t, r["db_name"].Computed)
 	assert.True(t, r["roles"].Computed, "roles are returned by DescribeAccounts")
