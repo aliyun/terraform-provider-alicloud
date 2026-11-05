@@ -344,7 +344,12 @@ func testAccKvstorePrepareClusterBackupSource(t *testing.T, name string) (string
 		"InstanceId": sourceId,
 	}
 	if _, err = client.RpcPost("R-kvstore", "2015-01-01", "CreateBackup", nil, backupRequest, true); err != nil {
-		t.Fatalf("failed to create cluster backup for source instance %s: %s", sourceId, err)
+		// A backup job is already running on a freshly created instance; wait for
+		// that job instead of failing the fixture.
+		if !strings.Contains(err.Error(), "BackupJobExists") {
+			t.Fatalf("failed to create cluster backup for source instance %s: %s", sourceId, err)
+		}
+		t.Logf("[INFO] source instance %s already has a running backup job; waiting for it", sourceId)
 	}
 	clusterBackupId := testAccKvstoreWaitClusterBackupId(t, client, sourceId, 30*time.Minute)
 	return sourceId, clusterBackupId, zoneId, secondaryZoneId, vswitchId
@@ -485,12 +490,18 @@ func testAccKvstoreDeleteInstanceOutOfBand(t *testing.T, instanceId string) {
 		"InstanceId":                instanceId,
 		"InstanceReleaseProtection": false,
 	}, true)
-	if _, err = client.RpcPost("R-kvstore", "2015-01-01", "DeleteInstance", nil, map[string]interface{}{
-		"RegionId":   client.RegionId,
-		"InstanceId": instanceId,
-	}, true); err != nil {
-		t.Logf("[ERROR] failed to delete source instance %s: %s", instanceId, err)
+	// A running backup job can temporarily reject the delete, so retry briefly.
+	for i := 0; i < 12; i++ {
+		if _, err = client.RpcPost("R-kvstore", "2015-01-01", "DeleteInstance", nil, map[string]interface{}{
+			"RegionId":   client.RegionId,
+			"InstanceId": instanceId,
+		}, true); err == nil {
+			return
+		}
+		t.Logf("[WARN] delete source instance %s (attempt %d): %s", instanceId, i+1, err)
+		time.Sleep(20 * time.Second)
 	}
+	t.Logf("[ERROR] failed to delete source instance %s", instanceId)
 }
 
 func testSweepKVStoreInstances(region string) error {
