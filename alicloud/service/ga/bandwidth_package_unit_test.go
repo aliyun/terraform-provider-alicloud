@@ -5,7 +5,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
-	"time"
+	"unsafe"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
@@ -346,6 +346,10 @@ func TestUnitAliCloudGaBandwidthPackage(t *testing.T) {
 func TestUnitAliCloudGaBandwidthPackagePricingCycle(t *testing.T) {
 	p := unitTestProviderResources()
 	rawClient := &connectivity.AliyunClient{RegionId: "cn-hangzhou"}
+	// Create reads the unexported client config for retry timeouts; seed a minimal
+	// config so the assertions can run without cloud credentials.
+	configField := reflect.ValueOf(rawClient).Elem().FieldByName("config")
+	reflect.NewAt(configField.Type(), unsafe.Pointer(configField.UnsafeAddr())).Elem().Set(reflect.ValueOf(&connectivity.Config{RegionId: "cn-hangzhou", MaxRetryTimeout: 30}))
 
 	describedResponse := func() map[string]interface{} {
 		return map[string]interface{}{
@@ -385,9 +389,6 @@ func TestUnitAliCloudGaBandwidthPackagePricingCycle(t *testing.T) {
 			}
 
 			var createRequest map[string]interface{}
-			retryPatches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "GetRetryTimeout", func(_ *connectivity.AliyunClient, defaultTimeout time.Duration) time.Duration {
-				return 30 * time.Second
-			})
 			rpcPatches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, apiName string, _ map[string]interface{}, body map[string]interface{}, _ bool) (map[string]interface{}, error) {
 				if apiName == "CreateBandwidthPackage" {
 					createRequest = make(map[string]interface{}, len(body))
@@ -400,7 +401,6 @@ func TestUnitAliCloudGaBandwidthPackagePricingCycle(t *testing.T) {
 			})
 			err := resourceAliCloudGaBandwidthPackageCreate(d, rawClient)
 			rpcPatches.Reset()
-			retryPatches.Reset()
 
 			assert.Nil(t, err)
 			if !assert.NotNil(t, createRequest, "CreateBandwidthPackage request was not captured") {
