@@ -3052,14 +3052,16 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 			{
 				// Import with automatic storage scaling disabled: the bound is not
 				// reported by the API, so only the attributes the API returns can
-				// be compared. ImportStatePersist keeps this imported state for the
-				// next step, which is what the convergence check below has to prove;
-				// without it plugin-testing discards the imported state and reuses
-				// the applied one.
-				ResourceName:       resourceId,
-				ImportState:        true,
-				ImportStateVerify:  true,
-				ImportStatePersist: true,
+				// be compared. ImportStatePersist cannot be used here: with
+				// terraform-plugin-testing v1.16.0 it runs `terraform import` in the
+				// main working directory, and the address is still present in the
+				// applied state ("Resource already managed by Terraform"). The
+				// imported state is therefore verified through ImportStateCheck
+				// only, and convergence of the following apply is checked by the
+				// framework's post-apply plan.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 				// storage_upper_bound is not reported while automatic storage
 				// scaling is disabled; apply-time convergence is covered by step 3.
 				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "storage_upper_bound"},
@@ -3087,13 +3089,12 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				},
 			},
 			{
-				// Convergence after import while auto scaling is disabled: the
-				// imported state has no readable bound because the API does not
-				// report it while scaling is disabled, so applying this
-				// configuration plans no change instead of diffing the configured
-				// 300 GB away. The bound is not asserted here: without an API value
-				// the provider cannot store it in the imported state. The following
-				// step re-enables scaling and then verifies the value end to end.
+				// Convergence while auto scaling stays disabled: the applied state
+				// already holds the 300 GB bound, so re-applying the same
+				// configuration plans no change and the value is kept even though
+				// the API does not report it. (The imported state is verified
+				// separately above; it carries no bound because the API cannot
+				// report one while scaling is disabled.)
 				//
 				// planned_flashing_off_time is only carried in the configuration
 				// here: the attribute coverage gate needs it, but it cannot be sent
@@ -3111,7 +3112,8 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"storage_auto_scale": "Disable",
+						"storage_auto_scale":  "Disable",
+						"storage_upper_bound": "300",
 					}),
 				),
 			},
