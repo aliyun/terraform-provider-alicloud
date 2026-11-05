@@ -166,7 +166,7 @@ resource "alicloud_polardb_aicluster" "default" {
   vswitch_id             = alicloud_vswitch.default.id
   vpc_id                 = alicloud_vpc.default.id
   kube_type              = "ainode"
-  model_name             = "GLM-4.7"
+  model_name             = "Qwen3.5-9B"
   extension              = "maas"
   inference_engine       = "sglang"
   db_cluster_id          = alicloud_polardb_cluster.cluster.id
