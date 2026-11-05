@@ -13,7 +13,7 @@ Provides a Classic Load Balancer (SLB) Listener ACL Attachment resource. It bind
 
 For information about Classic Load Balancer (SLB) and how to use it, see [What is Classic Load Balancer (SLB)](https://www.alibabacloud.com/help/en/slb/classic-load-balancer/product-overview/what-is-slb).
 
--> **NOTE:** Available since v2.2.0.
+-> **NOTE:** Available since v2.3.0.
 
 -> **NOTE:** This resource manages only the access control settings of the listener. It can be used with listeners that are not managed by Terraform, for example the listeners created by an ACK cluster. Use the `id` element of `alicloud_slb_listeners` (or the `id` of `alicloud_slb_listener`) as `listener_id`.
 

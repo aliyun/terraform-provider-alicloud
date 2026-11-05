@@ -73,7 +73,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `slb_listeners` - A list of SLB listeners. Each element contains the following attributes:
-  * `id` - (String, Available since v2.2.0) The listener ID, in the format of `<load_balancer_id>:<protocol>:<frontend_port>`. It is the same as the import ID of `alicloud_slb_listener`.
+  * `id` - (String, Available since v2.3.0) The listener ID, in the format of `<load_balancer_id>:<protocol>:<frontend_port>`. It is the same as the import ID of `alicloud_slb_listener`.
   * `frontend_port` - Frontend port used to receive incoming traffic and distribute it to the backend servers.
   * `backend_port` - Port opened on the backend server to receive requests.
   * `protocol` - Listener protocol. Possible values: `http`, `https`, `tcp` and `udp`.
