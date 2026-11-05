@@ -5139,7 +5139,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id":    "",
+						"security_group_id":    acctest.CHECKSET,
 						"network_interfaces.#": "1",
 					}),
 				),
@@ -6043,7 +6043,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceIPv6Transition(t *te
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id":    "",
+						"security_group_id":    acctest.CHECKSET,
 						"network_interfaces.#": "1",
 					}),
 					essScalingConfigurationNetworkInterfaceIPv6Check(t, resourceId, "1", "1"),
@@ -6196,7 +6196,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceIPv6Negative(t *test
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id":    "",
+						"security_group_id":    acctest.CHECKSET,
 						"network_interfaces.#": "1",
 					}),
 					essScalingConfigurationNetworkInterfaceIPv6Check(t, resourceId, "1", "1"),
