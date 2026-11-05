@@ -2931,7 +2931,7 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourcePolarDBClusterSENormalConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourcePolarDBClusterSENormalArchitectureConfigDependence)
 
 	// A near-future flashing time is required for ModifyDBNodeClass in the
 	// update step; it must stay inside the 24 hour scheduling window.
@@ -2959,9 +2959,9 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 					"db_version":           "8.0",
 					"pay_type":             "PostPaid",
 					"db_node_count":        "2",
-					"db_node_class":        "polar.mysql.x4.large.c",
+					"db_node_class":        "${local.create_node_class}",
 					"vswitch_id":           "${local.vswitch_id}",
-					"zone_id":              "${data.alicloud_polardb_node_classes.this.classes.0.zone_id}",
+					"zone_id":              "${local.zone_id}",
 					"creation_category":    "SENormal",
 					"architecture":         "X86",
 					"cluster_network_type": "VPC",
@@ -3011,7 +3011,7 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				// 300: the API only reports the bound while scaling is enabled, so
 				// this is the state that the import step below has to converge.
 				Config: testAccConfig(map[string]interface{}{
-					"db_node_class":       "polar.mysql.x4.xlarge.c",
+					"db_node_class":       "${local.upgrade_node_class}",
 					"storage_auto_scale":  "Disable",
 					"storage_upper_bound": "300",
 					"encrypt_new_tables":  "OFF",
@@ -3048,11 +3048,14 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 			{
 				// Import with automatic storage scaling disabled: the bound is not
 				// reported by the API, so only the attributes the API returns can
-				// be compared. The plan check below proves the configured 300 GB is
-				// kept instead of producing a diff.
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				// be compared. ImportStatePersist keeps this imported state for the
+				// next step, which is what the convergence check below has to prove;
+				// without it plugin-testing discards the imported state and reuses
+				// the applied one.
+				ResourceName:       resourceId,
+				ImportState:        true,
+				ImportStateVerify:  true,
+				ImportStatePersist: true,
 				// storage_upper_bound is not reported while automatic storage
 				// scaling is disabled; apply-time convergence is covered by step 3.
 				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "storage_upper_bound"},
@@ -3082,25 +3085,27 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 			{
 				// Convergence after import while auto scaling is disabled: the
 				// persisted imported state has no readable bound, so applying this
-				// configuration keeps 300 GB instead of diffing it away. The
-				// write-side attributes are declared here (without changing
-				// db_node_class or standby_az) so they stay covered without
-				// scheduling another modify call.
+				// configuration plans no change instead of diffing the configured
+				// 300 GB away.
+				//
+				// planned_flashing_off_time is only carried in the configuration
+				// here: the attribute coverage gate needs it, but it cannot be sent
+				// by an update without deferring the node switch past the provider
+				// wait, and the API rejected a near-future value with
+				// InvalidPlannedStartTime.Malformed in an earlier run. Its write
+				// path therefore stays unverified. The standby-zone write path
+				// (zone_type / is_switch_over_for_disaster) is exercised with real
+				// values by TestAccAliCloudPolarDBClusterSENormalEqualCreate.
 				Config: testAccConfig(map[string]interface{}{
-					"encrypt_new_tables":          "OFF",
-					"storage_auto_scale":          "Disable",
-					"storage_upper_bound":         "300",
-					"planned_flashing_off_time":   plannedFlashingOffTime,
-					"zone_type":                   "Standby",
-					"is_switch_over_for_disaster": "false",
+					"encrypt_new_tables":        "OFF",
+					"storage_auto_scale":        "Disable",
+					"storage_upper_bound":       "300",
+					"planned_flashing_off_time": plannedFlashingOffTime,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"storage_auto_scale":          "Disable",
-						"storage_upper_bound":         "300",
-						"planned_flashing_off_time":   plannedFlashingOffTime,
-						"zone_type":                   "Standby",
-						"is_switch_over_for_disaster": "false",
+						"storage_auto_scale":  "Disable",
+						"storage_upper_bound": "300",
 					}),
 				),
 			},
@@ -3133,11 +3138,20 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				ExpectError: regexp.MustCompile(`expected db_node_type to be one of \[DLNode\]`),
 			},
 			{
+				// Only the standby zone can be moved in place; a Primary switch
+				// cannot converge with the ForceNew zone_id and is rejected.
+				Config: testAccConfig(map[string]interface{}{
+					"zone_type": "Primary",
+				}),
+				ExpectError: regexp.MustCompile(`expected zone_type to be one of \[Standby\]`),
+			},
+			{
 				// Restore a valid configuration after the negative steps so the
 				// final destroy runs with accepted values instead of the rejected
 				// ones from the expectations above.
 				Config: testAccConfig(map[string]interface{}{
 					"db_node_type":        REMOVEKEY,
+					"zone_type":           REMOVEKEY,
 					"storage_auto_scale":  "Disable",
 					"storage_upper_bound": "300",
 					"encrypt_new_tables":  "OFF",
@@ -3426,6 +3440,70 @@ func resourcePolarDBClusterSENormalConfigDependence(name string) string {
 	  db_version = "8.0"
       pay_type   = "PostPaid"
 	  category   = "SENormal"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+		status = "OK"
+	}
+
+	resource "alicloud_security_group" "default" {
+		count = 2
+		name   = var.name
+		vpc_id = alicloud_vpc.default.id
+	}
+
+`, name)
+}
+
+// resourcePolarDBClusterSENormalArchitectureConfigDependence derives the create
+// zone, the create class and the upgrade class from
+// DescribeDBClusterAvailableResources instead of assuming that the first zone of
+// an unfiltered list sells both classes. The upgrade lookup is restricted to the
+// zone that sells the create class, so an environment that does not sell both
+// classes in one zone fails explicitly instead of mixing zones.
+func resourcePolarDBClusterSENormalArchitectureConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_vpcs" "default" {
+		name_regex = "^default-NODELETING$"
+	}
+
+	resource "alicloud_vpc" "default" {
+		vpc_name = var.name
+	}
+
+	data "alicloud_polardb_node_classes" "create" {
+		db_type       = "MySQL"
+		db_version    = "8.0"
+		pay_type      = "PostPaid"
+		category      = "SENormal"
+		db_node_class = "polar.mysql.x4.large.c"
+	}
+
+	data "alicloud_polardb_node_classes" "upgrade" {
+		db_type       = "MySQL"
+		db_version    = "8.0"
+		pay_type      = "PostPaid"
+		category      = "SENormal"
+		db_node_class = "polar.mysql.x4.xlarge.c"
+		zone_id       = data.alicloud_polardb_node_classes.create.classes.0.zone_id
+	}
+
+	resource "alicloud_vswitch" "default" {
+		zone_id = data.alicloud_polardb_node_classes.create.classes.0.zone_id
+		vpc_id = alicloud_vpc.default.id
+		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
+	}
+
+	locals {
+		vpc_id = alicloud_vpc.default.id
+		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
+		zone_id = data.alicloud_polardb_node_classes.create.classes.0.zone_id
+		create_node_class = data.alicloud_polardb_node_classes.create.classes.0.supported_engines.0.available_resources.0.db_node_class
+		upgrade_node_class = data.alicloud_polardb_node_classes.upgrade.classes.0.supported_engines.0.available_resources.0.db_node_class
 	}
 
 	data "alicloud_resource_manager_resource_groups" "default" {

@@ -19,6 +19,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -41,8 +42,14 @@ func ResourceCluster() *schema.Resource {
 
 		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
 			if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) == "Enable" {
-				if bound, ok := d.GetOk("storage_upper_bound"); !ok || bound.(int) < 20 {
-					return fmt.Errorf("storage_upper_bound must be set to a value between 20 and 64000 when storage_auto_scale is Enable")
+				// A bound that references another resource is unknown at plan
+				// time; SDKv2 reports unknown values as absent, so validate only
+				// known values here and leave the apply-time guard in the update
+				// path to reject a genuinely missing bound.
+				if d.NewValueKnown("storage_upper_bound") {
+					if bound, ok := d.GetOk("storage_upper_bound"); !ok || bound.(int) < 20 {
+						return fmt.Errorf("storage_upper_bound must be set to a value between 20 and 64000 when storage_auto_scale is Enable")
+					}
 				}
 			}
 			if payType, ok := d.GetOk("pay_type"); ok && payType.(string) == "PrePaid" {
@@ -56,6 +63,9 @@ func ResourceCluster() *schema.Resource {
 							return fmt.Errorf("duration %q is not valid for period_unit %q: Month supports 1, 2, 3, 6, 12 and Year supports 1, 2, 3", duration.(string), unit.(string))
 						}
 					}
+				}
+				if err := validatePolarDBAutoRenewSource(d); err != nil {
+					return err
 				}
 			}
 			return nil
@@ -164,9 +174,13 @@ func ResourceCluster() *schema.Resource {
 				DiffSuppressFunc: polardbPostPaidDiffSuppressFunc,
 			},
 			"auto_renew_period": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Default:          1,
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+				// No schema default: the renewal duration is a single API value
+				// shared with duration/period_unit. A default here would make the
+				// two sources overwrite each other on every apply. The value is
+				// read back from DescribeAutoRenewAttribute instead.
 				ValidateFunc:     validators.IntInSlice([]int{1, 2, 3, 6, 12, 24, 36}),
 				DiffSuppressFunc: polardbPostPaidAndRenewDiffSuppressFunc,
 			},
@@ -443,15 +457,13 @@ func ResourceCluster() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validators.IntBetween(20, 64000),
 				// DescribeDBClusterAttribute only reports StorageUpperBound while
-				// automatic storage scaling is enabled. When it is disabled the
-				// bound cannot be read back (empty in the import/refresh state), so
-				// keep the configured value instead of diffing against it. When the
-				// state does hold a value the diff is evaluated normally, so an
-				// explicit bound change is still sent.
+				// automatic storage scaling is enabled, and ModifyDBCluster does not
+				// apply it while scaling is disabled. Suppressing the diff in both
+				// directions therefore keeps an imported/refreshed empty value from
+				// planning a change, and does not pretend that a bound edited while
+				// disabled was applied: the configured value is sent by the update
+				// that re-enables storage_auto_scale.
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if old != "" && old != "0" {
-						return false
-					}
 					if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) == "Disable" {
 						return true
 					}
@@ -488,9 +500,13 @@ func ResourceCluster() *schema.Resource {
 				ValidateFunc: validators.StringInSlice([]string{"true", "false"}, false),
 			},
 			"zone_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validators.StringInSlice([]string{"Primary", "Standby"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
+				// Only the standby zone can be moved in place. zone_id is ForceNew
+				// and there is no separate primary-zone target, so a Primary switch
+				// would move the primary away from the configured zone_id and never
+				// converge; changing the primary zone is a replacement.
+				ValidateFunc: validators.StringInSlice([]string{"Standby"}, false),
 			},
 			"hot_standby_cluster": {
 				Type:         schema.TypeString,
@@ -756,6 +772,47 @@ func ResourceCluster() *schema.Resource {
 	}
 }
 
+// polardbConfigHasAttribute reports whether the attribute is present in the raw
+// configuration, which distinguishes an omitted attribute from a value that is
+// only known after read. d.Get cannot make that distinction for Optional
+// attributes that are also Computed.
+func polardbConfigHasAttribute(d *schema.ResourceDiff, key string) bool {
+	rawConfig := d.GetRawConfig()
+	if rawConfig == cty.NilVal || !rawConfig.IsKnown() || rawConfig.IsNull() || !rawConfig.Type().IsObjectType() {
+		return false
+	}
+	value := rawConfig.GetAttr(key)
+	return value.IsKnown() && !value.IsNull()
+}
+
+// validatePolarDBAutoRenewSource rejects configurations that set both renewal
+// duration sources to different values. duration/period_unit and
+// auto_renew_period write the same ModifyAutoRenewAttribute Duration/PeriodUnit
+// pair, so a stable source requires at most one of them.
+func validatePolarDBAutoRenewSource(d *schema.ResourceDiff) error {
+	if !polardbConfigHasAttribute(d, "auto_renew_period") {
+		return nil
+	}
+	if !polardbConfigHasAttribute(d, "duration") && !polardbConfigHasAttribute(d, "period_unit") {
+		return nil
+	}
+	months := 0
+	if duration, err := strconv.Atoi(d.Get("duration").(string)); err == nil {
+		months = duration
+	}
+	if d.Get("period_unit").(string) == string(Year) {
+		months *= 12
+	}
+	if months == 0 {
+		return nil
+	}
+	if period := d.Get("auto_renew_period").(int); period != months {
+		return fmt.Errorf("auto_renew_period (%d months) conflicts with duration %q and period_unit %q (%d months); configure only one of them",
+			period, d.Get("duration").(string), d.Get("period_unit").(string), months)
+	}
+	return nil
+}
+
 func resourceClusterCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	polarDBService := Service{client}
@@ -919,8 +976,10 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 		request.RenewalStatus = status
 		if status == string(RenewAutoRenewal) {
 			if d.HasChanges("duration", "period_unit") {
-				// duration and period_unit carry the raw API values and take
-				// precedence over the month-based auto_renew_period.
+				// duration/period_unit carry the raw API values. They only reach
+				// this branch when the configuration moves them, because both are
+				// Computed for PrePaid clusters and CustomizeDiff rejects a
+				// competing auto_renew_period.
 				duration := d.Get("duration").(string)
 				periodUnit := d.Get("period_unit").(string)
 				if duration == "" {
@@ -933,6 +992,9 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 				request.PeriodUnit = periodUnit
 			} else {
 				period := d.Get("auto_renew_period").(int)
+				if period == 0 {
+					period = 1
+				}
 				request.Duration = strconv.Itoa(period)
 				request.PeriodUnit = string(Month)
 				if period > 9 {
@@ -1434,9 +1496,8 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 			return nil
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) {
-				return nil
-			}
+			// A NotFound here means the write itself failed; reporting it as a
+			// success would keep a stale ID and hide the failure from the user.
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, ProviderERROR)
 		}
 		stateConf := BuildStateConf([]string{"ConfigSwitching"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 4*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
@@ -1806,6 +1867,10 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChange("standby_az") {
 		action := "ModifyDBClusterPrimaryZone"
 		standbyAz := d.Get("standby_az").(string)
+		// zone_type is validated to Standby: the target of this update is the
+		// standby zone that Read backfills from ZoneIds, so write and read stay
+		// on the same role. A Primary switch is a cluster replacement (zone_id
+		// is ForceNew).
 		zoneType := "Standby"
 		if v, ok := d.GetOk("zone_type"); ok && v.(string) != "" {
 			zoneType = v.(string)
