@@ -2225,7 +2225,7 @@ func TestUnitListenerAclAttachmentProtocolGoneClassification(t *testing.T) {
 		{
 			name: "the documented message without a business code",
 			derive: func() (map[string]interface{}, error) {
-				return nil, &tea.SDKError{StatusCode: tea.Int(400), Message: tea.String("The specified resource does not exist."), Data: tea.String("{}")}
+				return nil, &tea.SDKError{StatusCode: tea.Int(400), Code: tea.String(""), Message: tea.String("The specified resource does not exist."), Data: tea.String("{}")}
 			},
 			readError: true,
 		},
