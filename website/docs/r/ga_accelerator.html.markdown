@@ -26,6 +26,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "alicloud_ga_accelerator" "example" {
   duration        = 1
   auto_use_coupon = true
@@ -51,7 +59,7 @@ The following arguments are supported:
   - `CDT`: billed based on data transfer.
 * `bandwidth` - (Optional, Int, Available since v1.294.0) The bandwidth of the GA instance. Unit: Mbps. Valid values: `200` to `5000`. **NOTE:** This parameter is required only when `access_mode` in `ip_set_config` is set to `Anycast`.
 * `payment_type` - (Optional, ForceNew, Available since v1.208.1) The payment type. Default value: `Subscription`. Valid values: `PayAsYouGo`, `Subscription`.
-* `cross_border_status` - (Optional, Bool, Available since v1.208.1) Indicates whether cross-border acceleration is enabled. Default value: `false`. Valid values:
+* `cross_border_status` - (Optional, Bool, Available since v1.208.1) Specifies whether to enable the cross-border acceleration feature for the GA instance. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
 **NOTE:** `cross_border_status` is valid only when `bandwidth_billing_type` is set to `CDT`.
@@ -65,6 +73,8 @@ The following arguments are supported:
 * `auto_use_coupon` - (Optional, Bool) Use coupons to pay bills automatically. Default value: `false`. Valid values:
   - `true`: Use.
   - `false`: Not used.
+* `auto_pay` - (Optional, Bool, Available since v2.3.0) Specifies whether to automatically pay the order of the GA instance. Default value: `true`.
+* `auto_renew` - (Optional, Bool, Available since v2.3.0) Specifies whether to enable auto renewal for the GA instance. If you want to configure the detailed renewal policy, use `renewal_status` and `auto_renew_duration` instead. **NOTE:** `renewal_status` takes precedence over `auto_renew` when both are updated in the same request.
 * `renewal_status` - (Optional, Available since v1.146.0) Whether to renew an accelerator automatically or not. Default value: `Normal`. Valid values:
   - `AutoRenewal`: Enable auto renewal.
   - `Normal`: Disable auto renewal.
@@ -75,14 +85,25 @@ The following arguments are supported:
 * `accelerator_name` - (Optional) The Name of the GA instance.
 * `description` - (Optional) Descriptive information of the global acceleration instance.
 * `ip_set_config` - (Optional, ForceNew, Available since v1.294.0) The configurations of the acceleration area. See [`ip_set_config`](#ip_set_config) below.
+* `ddos_id` - (Optional, Available since v2.3.0, Deprecated since v2.3.0) The ID of the DDoS protection instance that is associated with the GA instance. **NOTE:** This parameter is deprecated and will be removed in a future release. Use `ddos_config_list` instead. It is read-only when `ddos_config_list` is configured.
+* `ddos_region_id` - (Optional, Available since v2.3.0, Deprecated since v2.3.0) The region ID of the DDoS protection instance. Valid values: `cn-hangzhou`, `ap-southeast-1`. **NOTE:** This parameter is deprecated and will be removed in a future release. Use `ddos_config_list` instead. It must be specified together with `ddos_id`.
+* `ddos_config_list` - (Optional, Available since v2.3.0) The DDoS protection instances that are associated with the GA instance. See [`ddos_config_list`](#ddos_config_list) below.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
 
 ### `ip_set_config`
 
 The ip_set_config supports the following:
 
-* `access_mode` - (Optional, ForceNew) The access mode of the acceleration area. Valid value:
+* `access_mode` - (Optional, ForceNew) The access mode of the acceleration area. Valid values:
+  - `UserDefine`: Custom nearby access mode. You can specify acceleration areas and regions based on your business requirements. Global Accelerator provides an independent EIP for each acceleration area.
   - `Anycast`: Automatic nearby access mode. You do not need to configure an acceleration area. Global Accelerator provides an Anycast EIP for multiple regions. Users connect to the nearest access point of the Alibaba Cloud network using the Anycast EIP.
+
+### `ddos_config_list`
+
+The ddos_config_list supports the following:
+
+* `ddos_id` - (Required) The ID of the DDoS protection instance.
+* `ddos_region_id` - (Required) The region ID of the DDoS protection instance. Valid values: `cn-hangzhou`, `ap-southeast-1`.
 
 ## Attributes Reference
 

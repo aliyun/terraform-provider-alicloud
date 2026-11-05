@@ -251,14 +251,37 @@ func TestAccAliCloudGaAccelerator_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spec":     "1",
-						"duration": "1",
+						"spec":       "1",
+						"duration":   "1",
+						"auto_pay":   "true",
+						"auto_renew": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew": "false",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"renewal_status": "AutoRenewal",
+					"auto_renew":     acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -332,10 +355,23 @@ func TestAccAliCloudGaAccelerator_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_pay": "false",
+					"ddos_config_list": []map[string]interface{}{
+						{
+							"ddos_id":        "ddoscoo-cn-0000000000",
+							"ddos_region_id": "cn-hangzhou",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_use_coupon", "promotion_option_no"},
+				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_use_coupon", "promotion_option_no", "auto_pay"},
 			},
 		},
 	})
@@ -369,6 +405,7 @@ func TestAccAliCloudGaAccelerator_basic0_twin(t *testing.T) {
 					"duration":               "1",
 					"pricing_cycle":          "Month",
 					"auto_use_coupon":        "false",
+					"auto_renew":             "true",
 					"renewal_status":         "AutoRenewal",
 					"auto_renew_duration":    "1",
 					"promotion_option_no":    "1234",
@@ -388,6 +425,7 @@ func TestAccAliCloudGaAccelerator_basic0_twin(t *testing.T) {
 						"duration":               "1",
 						"pricing_cycle":          "Month",
 						"auto_use_coupon":        "false",
+						"auto_renew":             "true",
 						"renewal_status":         "AutoRenewal",
 						"auto_renew_duration":    "1",
 						"promotion_option_no":    "1234",
@@ -404,7 +442,7 @@ func TestAccAliCloudGaAccelerator_basic0_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_use_coupon", "promotion_option_no"},
+				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_use_coupon", "promotion_option_no", "auto_pay"},
 			},
 		},
 	})
@@ -511,7 +549,7 @@ func TestAccAliCloudGaAccelerator_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_use_coupon", "promotion_option_no"},
+				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_use_coupon", "promotion_option_no", "auto_pay"},
 			},
 		},
 	})
@@ -570,7 +608,7 @@ func TestAccAliCloudGaAccelerator_basic1_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_use_coupon", "promotion_option_no"},
+				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_use_coupon", "promotion_option_no", "auto_pay"},
 			},
 		},
 	})
@@ -639,10 +677,26 @@ func TestAccAliCloudGaAccelerator_withAnycast(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth": acctest.REMOVEKEY,
+					"ip_set_config": []map[string]interface{}{
+						{
+							"access_mode": "UserDefine",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth":                   acctest.REMOVEKEY,
+						"ip_set_config.0.access_mode": "UserDefine",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_use_coupon", "promotion_option_no"},
+				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_use_coupon", "promotion_option_no", "auto_pay"},
 			},
 		},
 	})

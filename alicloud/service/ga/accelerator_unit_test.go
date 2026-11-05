@@ -354,3 +354,70 @@ func TestUnitAliCloudGaAccelerator(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 }
+
+// lintignore: R001
+func TestUnitAliCloudGaAcceleratorDdosConfigs(t *testing.T) {
+	add, remove := gaAcceleratorDdosConfigDiff(
+		[]map[string]string{{"ddos_id": "ddos-a", "ddos_region_id": "cn-hangzhou"}},
+		[]map[string]string{{"ddos_id": "ddos-b", "ddos_region_id": "ap-southeast-1"}},
+	)
+	assert.Len(t, add, 1)
+	assert.Equal(t, "ddos-b", add[0]["ddos_id"])
+	assert.Len(t, remove, 1)
+	assert.Equal(t, "ddos-a", remove[0]["ddos_id"])
+
+	assert.Nil(t, gaAcceleratorDdosConfigsFromLegacy("ddos-a", ""))
+	assert.Len(t, gaAcceleratorDdosConfigsFromLegacy("ddos-a", "cn-hangzhou"), 1)
+}
+
+// lintignore: R001
+func TestUnitAliCloudGaAcceleratorDdosUpdateRequest(t *testing.T) {
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := unitTestSharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+	}
+
+	state := &terraform.InstanceState{ID: "MockId", Attributes: map[string]string{"ddos_config_list.#": "0"}}
+	diff, err := newInstanceDiff("alicloud_ga_accelerator", map[string]interface{}{}, map[string]interface{}{
+		"spec":     "2",
+		"auto_pay": false,
+		"ddos_config_list": []interface{}{
+			map[string]interface{}{
+				"ddos_id":        "ddoscoo-cn-test",
+				"ddos_region_id": "cn-hangzhou",
+			},
+		},
+	}, state)
+	assert.Nil(t, err)
+
+	resourceData, err := schema.InternalMap(unitTestProviderResources()["alicloud_ga_accelerator"].Schema).Data(state, diff)
+	assert.Nil(t, err)
+	resourceData.SetId("MockId")
+
+	requests := make(map[string]map[string]interface{})
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, query map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		requests[*action] = query
+		return map[string]interface{}{
+			"Name":              "accelerator_name",
+			"State":             "active",
+			"Description":       "description",
+			"Spec":              "2",
+			"DdosId":            "ddoscoo-cn-test",
+			"RenewalStatus":     "Normal",
+			"AutoRenewDuration": 1,
+		}, nil
+	})
+	err = resourceAliCloudGaAcceleratorUpdate(resourceData, rawClient)
+	patches.Reset()
+	assert.Nil(t, err)
+
+	attachReq, ok := requests["AttachDdosToAccelerator"]
+	assert.True(t, ok)
+	assert.Equal(t, "ddoscoo-cn-test", attachReq["DdosConfigList.1.DdosId"])
+	assert.Equal(t, "cn-hangzhou", attachReq["DdosConfigList.1.DdosRegionId"])
+
+	updateReq, ok := requests["UpdateAccelerator"]
+	assert.True(t, ok)
+	assert.Equal(t, false, updateReq["AutoPay"])
+}
