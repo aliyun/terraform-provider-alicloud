@@ -72,7 +72,7 @@ The following arguments are supported:
 * `port` - (Optional) Internet connection port. Valid value: [1000-5999]. Default to 3306.
 * `babelfish_port` - (Optional, Available since v1.176.0) The Tabular Data Stream (TDS) port of the instance for which Babelfish is enabled.
 
--> **NOTE:** This parameter applies only to ApsaraDB RDS for PostgreSQL instances. For more information about Babelfish for ApsaraDB RDS for PostgreSQL, see [Introduction to Babelfish](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/babelfish-for-pg).
+  -> **NOTE:** This parameter applies only to ApsaraDB RDS for PostgreSQL instances. For more information about Babelfish for ApsaraDB RDS for PostgreSQL, see [Introduction to Babelfish](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/babelfish-for-pg).
 
 ## Attributes Reference
 

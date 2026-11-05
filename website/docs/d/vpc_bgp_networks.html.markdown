@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Vpc Bgp Networks of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.153.0+.
+-> **NOTE:** Available since v1.153.0.
 
 ## Example Usage
 
@@ -49,12 +49,12 @@ The following arguments are supported:
 * `router_id` - (Optional, ForceNew) The ID of the router to which the route table belongs.
 * `status` - (Optional, ForceNew) The state of the advertised BGP network. Valid values: `Available`, `Pending`, `Deleting`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `networks` - A list of Vpc Bgp Networks. Each element contains the following attributes:
-	* `dst_cidr_block` - Advertised BGP networks.
-	* `id` - The ID of the Bgp Network. The value formats as `<router_id>:<dst_cidr_block>`.
-	* `router_id` - The ID of the vRouter.
-	* `status` - The state of the advertised BGP network.
+  * `dst_cidr_block` - Advertised BGP networks.
+  * `id` - The ID of the Bgp Network. The value formats as `<router_id>:<dst_cidr_block>`.
+  * `router_id` - The ID of the vRouter.
+  * `status` - The state of the advertised BGP network.

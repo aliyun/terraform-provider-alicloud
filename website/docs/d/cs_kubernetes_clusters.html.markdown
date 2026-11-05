@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cs_kubernetes_clusters
 
--> **DEPRECATION NOTICE:** This data source has been deprecated since v1.276.0 and will be removed in a future release. Please use `alicloud_cs_clusters` instead.
+-> **DEPRECATED:** This data source has been deprecated since v1.276.0 and will be removed in a future release. Please use `alicloud_cs_clusters` instead.
 
 This data source provides a list Container Service Kubernetes Clusters on Alibaba Cloud.
 
@@ -76,7 +76,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `id` - ID of the node.
     * `name` - Node name.
     * `private_ip` - The private IP address of node.
-  * `connections` - Map of kubernetes cluster connection information.
+  * `connections` - A list of kubernetes cluster connection information.
     * `api_server_internet` - API Server Internet endpoint.
     * `api_server_intranet` - API Server Intranet endpoint.
     * `master_public_ip` - Master node SSH IP address.

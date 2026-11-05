@@ -1,0 +1,253 @@
+package ecd
+
+import (
+	"fmt"
+	"regexp"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func DataSourceImages() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceImagesRead,
+		Schema: map[string]*schema.Schema{
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"image_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"CUSTOM", "SYSTEM"}, false),
+			},
+			"os_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Windows", "Linux"}, false),
+			},
+			"desktop_instance_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Available", "CreateFailed", "Creating"}, false),
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"images": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"create_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"data_disk_size": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"gpu_category": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"image_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"image_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"image_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"os_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"progress": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"size": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceImagesRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "DescribeImages"
+	request := make(map[string]interface{})
+
+	if v, ok := d.GetOk("image_type"); ok {
+		request["ImageType"] = v
+	}
+	if v, ok := d.GetOk("os_type"); ok {
+		request["OsType"] = v
+	}
+	if v, ok := d.GetOk("desktop_instance_type"); ok {
+		request["DesktopInstanceType"] = v
+	}
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("status"); ok {
+		request["ImageStatus"] = v
+	}
+	request["MaxResults"] = helper.PageSizeLarge
+	var objects []map[string]interface{}
+	var imageNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		imageNameRegex = r
+	}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+	var response map[string]interface{}
+	var err error
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ecd_images", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.Images", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Images", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if imageNameRegex != nil && !imageNameRegex.MatchString(fmt.Sprint(item["Name"])) {
+				continue
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["ImageId"])]; !ok {
+					continue
+				}
+			}
+			objects = append(objects, item)
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+
+		data_disk_sizeVal, err := convert.FormatInt(object["DataDiskSize"])
+		if err != nil {
+			return err
+		}
+
+		sizeVal, err := convert.FormatInt(object["Size"])
+		if err != nil {
+			return err
+		}
+		mapping := map[string]interface{}{
+			"create_time":    object["CreationTime"],
+			"data_disk_size": data_disk_sizeVal,
+			"description":    object["Description"],
+			"gpu_category":   object["GpuCategory"],
+			"id":             fmt.Sprint(object["ImageId"]),
+			"image_id":       fmt.Sprint(object["ImageId"]),
+			"image_name":     object["Name"],
+			"image_type":     object["ImageType"],
+			"os_type":        object["OsType"],
+			"progress":       object["Progress"],
+			"size":           sizeVal,
+			"status":         object["Status"],
+		}
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["Name"])
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("images", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

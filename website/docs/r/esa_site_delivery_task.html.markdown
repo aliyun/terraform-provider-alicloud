@@ -99,24 +99,24 @@ The following arguments are supported:
 * `field_name` - (Required) The list of delivery fields to be modified, separated by commas.
 * `http_delivery` - (Optional, List) HTTP delivery configuration parameters. See [`http_delivery`](#http_delivery) below.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `kafka_delivery` - (Optional, List) Kafka delivery configuration parameters. See [`kafka_delivery`](#kafka_delivery) below.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `oss_delivery` - (Optional, List) OSS delivery configuration. See [`oss_delivery`](#oss_delivery) below.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `s3_delivery` - (Optional, List) S3/S3 compatible delivery configuration parameters. See [`s3_delivery`](#s3_delivery) below.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `site_id` - (Required, ForceNew) The site ID, which can be obtained by calling the [ListSites](https://help.aliyun.com/document_detail/2850189.html) interface.
 * `sls_delivery` - (Optional, List) SLS delivery configuration. See [`sls_delivery`](#sls_delivery) below.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `status` - (Optional, Computed) Task status, value:
   - `online`: push in.

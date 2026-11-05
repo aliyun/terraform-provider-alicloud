@@ -56,7 +56,7 @@ The following arguments are supported:
 
   - `all`: Add all check items.
 
--> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `cycle_days` - (Optional, List) Cycle detection time.
 * `enable_add_check` - (Optional) Whether to check by default when there are new check items in the selected regulation. Values available:
@@ -75,11 +75,11 @@ The following arguments are supported:
   - `true`
   - `false`
 
--> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `vendors` - (Optional, List) The cloud service providers.
 
--> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `selected_checks` - (Optional) The check items selected in the policy. See [`selected_checks`](#selected_checks) below.
 

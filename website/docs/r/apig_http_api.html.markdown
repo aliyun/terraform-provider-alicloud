@@ -64,25 +64,25 @@ resource "alicloud_apig_http_api" "default" {
 The following arguments are supported:
 * `ai_protocols` - (Optional, List, Available since v1.285.0) AI API protocols. Currently the supported value is `OpenAI/v1`.
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `base_path` - (Optional) API base path. It must start with a forward slash (/), be at most 256 bytes long, and must not contain spaces. It is required when `type` is `Rest`; when `type` is `LLM`, `Ai`, or `Agent`, it can be omitted and defaults to `/`.
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `deploy_configs` - (Optional, List, Available since v1.285.0) API deployment configurations. It is required when `type` is `LLM` or `Ai`, and only a single deployment configuration can be specified. Other types do not need this field.
 
--> **NOTE:** This parameter is only evaluated during resource creation and update. Modifying it in isolation will not trigger any action.
+  -> **NOTE:** This parameter is only evaluated during resource creation and update. Modifying it in isolation will not trigger any action.
 
 * `description` - (Optional) API description.
 * `enable_auth` - (Optional, Available since v1.285.0) Whether to enable authentication.
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `http_api_name` - (Required, ForceNew) Perform an exact search by name.
 * `model_category` - (Optional, Available since v1.285.0) AI model category
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `protocols` - (Required, List) List of API access protocols. Valid values: `HTTP`, `HTTPS`.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group. It can be modified to migrate the resource to another resource group.

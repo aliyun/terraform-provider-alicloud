@@ -56,11 +56,11 @@ The following arguments are supported:
 * `payment_type` - (Required, ForceNew) The payment type of the resource
 * `period` - (Optional, Int) Prepaid cycle. Unit for year
 
--> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `renew_period` - (Optional, Int) Automatic renewal period, in years.
 
--> **NOTE:**  When setting `RenewalStatus` to `AutoRenewal`, it must be set.
+  -> **NOTE:**  When setting `RenewalStatus` to `AutoRenewal`, it must be set.
 
 * `renew_status` - (Optional) The renewal status of the specified instance. Valid values:
 

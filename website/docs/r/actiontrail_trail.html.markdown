@@ -64,6 +64,9 @@ resource "alicloud_actiontrail_trail" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
+-> **NOTE:** At least one of `oss_bucket_name`, `sls_project_arn`, and `max_compute_project_arn` must be specified to define the delivery target of the trail. Omitting all three is rejected by the ActionTrail `CreateTrail`/`UpdateTrail` API at apply time, so set one of them to avoid an apply-time error.
+
 * `data_event_trail_region` - (Optional, Available since v1.264.0) The regions where the trail tracks data events. The value is a comma-separated list of region IDs.
 * `event_rw` - (Optional) The read/write type of the events to be delivered. Default value: `All`. Valid values: `Read`, `Write`, `All`.
 * `event_selectors` - (Optional, Available since v1.264.0) The configuration of the data event selector. This parameter is a JSON array that can contain a maximum of 20 elements.

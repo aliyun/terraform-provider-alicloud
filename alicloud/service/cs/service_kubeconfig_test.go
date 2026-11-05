@@ -1,0 +1,361 @@
+package cs
+
+import (
+	"crypto/x509"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"testing"
+
+	roacs "github.com/alibabacloud-go/cs-20151215/v8/client"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+)
+
+var (
+	csKubeconfigServerOnce sync.Once
+	csKubeconfigServer     *httptest.Server
+	csKubeconfigHandlerMu  sync.RWMutex
+	csKubeconfigHandlerFn  http.HandlerFunc
+)
+
+// csKubeconfigFixture starts one shared local TLS test server per test process
+// and replaces the process-wide system root pool with one that trusts the
+// server certificate. The ROA CS SDK always dials HTTPS and verifies against
+// the system root pool, and both that pool and SetFallbackRoots are
+// once-per-process, hence the single shared server instead of one per test.
+func csKubeconfigFixture(t *testing.T, handler http.HandlerFunc) {
+	t.Helper()
+	// SetFallbackRoots only replaces an already-loaded system pool when
+	// GODEBUG=x509usefallbackroots=1 is set before the call.
+	if g := os.Getenv("GODEBUG"); !strings.Contains(g, "x509usefallbackroots") {
+		ng := "x509usefallbackroots=1"
+		if g != "" {
+			ng = g + "," + ng
+		}
+		t.Setenv("GODEBUG", ng)
+	}
+	csKubeconfigServerOnce.Do(func() {
+		csKubeconfigServer = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			csKubeconfigHandlerMu.RLock()
+			fn := csKubeconfigHandlerFn
+			csKubeconfigHandlerMu.RUnlock()
+			if fn != nil {
+				fn(w, r)
+				return
+			}
+			http.NotFound(w, r)
+		}))
+		pool := x509.NewCertPool()
+		pool.AddCert(csKubeconfigServer.Certificate())
+		x509.SetFallbackRoots(pool)
+	})
+	csKubeconfigHandlerMu.Lock()
+	csKubeconfigHandlerFn = handler
+	csKubeconfigHandlerMu.Unlock()
+}
+
+// csKubeconfigTestClient returns an AliyunClient whose "cs" endpoint points at
+// the shared local TLS test server.
+func csKubeconfigTestClient(t *testing.T, handler http.HandlerFunc) *connectivity.AliyunClient {
+	t.Helper()
+	csKubeconfigFixture(t, handler)
+	endpoint := strings.TrimPrefix(csKubeconfigServer.URL, "https://")
+	t.Setenv("NO_PROXY", endpoint)
+
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("cs", endpoint)
+	return client
+}
+
+func kubeConfigJSONResponse(t *testing.T, config string) []byte {
+	t.Helper()
+	body, err := json.Marshal(map[string]string{"config": config, "expiration": "2099-01-01T00:00:00Z"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return body
+}
+
+func csKubeconfigHandler(t *testing.T, config string) http.HandlerFunc {
+	t.Helper()
+	body := kubeConfigJSONResponse(t, config)
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/k8s/c1/user_config" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(body)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"Code":"InvalidParameter","Message":"test api error"}`))
+	}
+}
+
+func csKubeconfigAPIErrorHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusBadRequest)
+	_, _ = w.Write([]byte(`{"Code":"InvalidParameter","Message":"test api error"}`))
+}
+
+func testCertificateAuthorityState(t *testing.T, d *schema.ResourceData) map[string]interface{} {
+	t.Helper()
+	list, ok := d.Get("certificate_authority").([]interface{})
+	if !ok || len(list) != 1 {
+		t.Fatalf("certificate_authority = %#v, want a one-element list", d.Get("certificate_authority"))
+	}
+	value, ok := list[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("certificate_authority[0] = %#v, want a map", list[0])
+	}
+	return value
+}
+
+func TestUnitSetCertsKubeconfigSuccess(t *testing.T) {
+	client := csKubeconfigTestClient(t, csKubeconfigHandler(t, testKubeConfigYaml))
+	d := schema.TestResourceDataRaw(t, ResourceCSKubernetes().Schema, map[string]interface{}{})
+	d.SetId("c1")
+	if err := setCerts(d, client, false, true); err != nil {
+		t.Fatalf("setCerts returned error: %s", err)
+	}
+	want := map[string]string{
+		"cluster_cert": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==",
+		"client_cert":  "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==",
+		"client_key":   "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQo=",
+	}
+	got := testCertificateAuthorityState(t, d)
+	for k, v := range want {
+		if got[k] != v {
+			t.Fatalf("certificate_authority[%s] = %q, want %q", k, got[k], v)
+		}
+	}
+}
+
+func TestUnitSetCertsKubeconfigSkipSetCertificateAuthority(t *testing.T) {
+	client := csKubeconfigTestClient(t, csKubeconfigHandler(t, testKubeConfigYaml))
+	d := schema.TestResourceDataRaw(t, ResourceCSKubernetes().Schema, map[string]interface{}{})
+	d.SetId("c1")
+	if err := setCerts(d, client, true, true); err != nil {
+		t.Fatalf("setCerts returned error: %s", err)
+	}
+	got := testCertificateAuthorityState(t, d)
+	for _, k := range []string{"cluster_cert", "client_cert", "client_key"} {
+		if v, exists := got[k]; !exists || v != "" {
+			t.Fatalf("certificate_authority[%s] = %q, want an empty string", k, v)
+		}
+	}
+}
+
+func TestUnitSetCertsKubeconfigWithoutCertificateAuthority(t *testing.T) {
+	client := csKubeconfigTestClient(t, csKubeconfigHandler(t, testKubeConfigYaml))
+	d := schema.TestResourceDataRaw(t, ResourceCSServerlessKubernetes().Schema, map[string]interface{}{})
+	d.SetId("c1")
+	if err := setCerts(d, client, false, false); err != nil {
+		t.Fatalf("setCerts returned error: %s", err)
+	}
+}
+
+func TestUnitSetCertsKubeconfigMalformed(t *testing.T) {
+	client := csKubeconfigTestClient(t, csKubeconfigHandler(t, "clusters: []\n"))
+	d := schema.TestResourceDataRaw(t, ResourceCSKubernetes().Schema, map[string]interface{}{})
+	d.SetId("c1")
+	err := setCerts(d, client, false, true)
+	if err == nil || !strings.Contains(err.Error(), "failed to parse kubeconfig") {
+		t.Fatalf("setCerts error = %v, want it to contain 'failed to parse kubeconfig'", err)
+	}
+}
+
+func TestUnitSetCertsKubeconfigAPIError(t *testing.T) {
+	client := csKubeconfigTestClient(t, csKubeconfigAPIErrorHandler)
+	d := schema.TestResourceDataRaw(t, ResourceCSKubernetes().Schema, map[string]interface{}{})
+	d.SetId("c1")
+	err := setCerts(d, client, false, true)
+	if err == nil || !strings.Contains(err.Error(), "failed to get kubeconfig") {
+		t.Fatalf("setCerts error = %v, want it to contain 'failed to get kubeconfig'", err)
+	}
+}
+
+func csClusterCredentialTestData(t *testing.T) *schema.ResourceData {
+	t.Helper()
+	return schema.TestResourceDataRaw(t, DataSourceCSClusterCredential().Schema, map[string]interface{}{
+		"cluster_id": "c1",
+	})
+}
+
+func TestUnitCSClusterCredentialReadSuccess(t *testing.T) {
+	client := csKubeconfigTestClient(t, csKubeconfigHandler(t, testKubeConfigYaml))
+	d := csClusterCredentialTestData(t)
+	cluster := &roacs.DescribeClusterDetailResponseBody{
+		ClusterId: tea.String("c1"),
+		Name:      tea.String("tf-test"),
+	}
+	if err := CsClusterAuthDescriptionAttributes(d, client, cluster); err != nil {
+		t.Fatalf("read returned error: %s", err)
+	}
+	if d.Id() == "" {
+		t.Fatal("data source id is empty")
+	}
+	if got := d.Get("cluster_name"); got != "tf-test" {
+		t.Fatalf("cluster_name = %q, want %q", got, "tf-test")
+	}
+	got := testCertificateAuthorityState(t, d)
+	if got["cluster_cert"] != "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==" {
+		t.Fatalf("certificate_authority.cluster_cert = %q", got["cluster_cert"])
+	}
+}
+
+func TestUnitCSClusterCredentialReadMalformed(t *testing.T) {
+	client := csKubeconfigTestClient(t, csKubeconfigHandler(t, "clusters: []\n"))
+	d := csClusterCredentialTestData(t)
+	cluster := &roacs.DescribeClusterDetailResponseBody{ClusterId: tea.String("c1")}
+	err := CsClusterAuthDescriptionAttributes(d, client, cluster)
+	if err == nil || !strings.Contains(err.Error(), "failed to parse kubeconfig") {
+		t.Fatalf("read error = %v, want it to contain 'failed to parse kubeconfig'", err)
+	}
+}
+
+func TestUnitCSClusterCredentialReadAPIError(t *testing.T) {
+	client := csKubeconfigTestClient(t, csKubeconfigAPIErrorHandler)
+	d := csClusterCredentialTestData(t)
+	cluster := &roacs.DescribeClusterDetailResponseBody{ClusterId: tea.String("c1")}
+	err := CsClusterAuthDescriptionAttributes(d, client, cluster)
+	if err == nil || !strings.Contains(err.Error(), "DescribeClusterKubeConfigWithExpiration") {
+		t.Fatalf("read error = %v, want it to contain 'DescribeClusterKubeConfigWithExpiration'", err)
+	}
+}
+
+func csKubeconfigForbiddenHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusForbidden)
+	_, _ = w.Write([]byte(`{"code":"StatusForbidden","message":"STSToken policy Forbidden for action cs:DescribeClusterUserKubeconfig"}`))
+}
+
+func TestUnitSetCertsKubeconfigForbiddenOptional(t *testing.T) {
+	for _, tc := range []struct {
+		name                 string
+		resource             func() *schema.Resource
+		certificateAuthority bool
+	}{
+		{"managed", ResourceCSManagedKubernetes, true},
+		{"dedicated", ResourceCSKubernetes, true},
+		{"edge", ResourceCSEdgeKubernetes, true},
+		{"serverless", ResourceCSServerlessKubernetes, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client := csKubeconfigTestClient(t, csKubeconfigHandler(t, testKubeConfigYaml))
+			d := schema.TestResourceDataRaw(t, tc.resource().Schema, map[string]interface{}{})
+			d.SetId("c1")
+			// Populate credentials through a successful read before access is denied.
+			if err := setCerts(d, client, false, tc.certificateAuthority); err != nil {
+				t.Fatalf("initial credential read: %v", err)
+			}
+			if tc.certificateAuthority {
+				for _, field := range []string{"cluster_cert", "client_cert", "client_key"} {
+					if d.State().Attributes["certificate_authority.0."+field] == "" {
+						t.Fatalf("initial read did not populate %s", field)
+					}
+				}
+			}
+
+			csKubeconfigFixture(t, csKubeconfigForbiddenHandler)
+			// Preserve existing values without opt-out, then clear them when
+			// opt-out is enabled and keep them cleared on subsequent refresh.
+			for _, skip := range []bool{false, true, true} {
+				if tc.certificateAuthority {
+					if err := d.Set("skip_set_certificate_authority", skip); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if err := setCerts(d, client, skip, tc.certificateAuthority); err != nil {
+					t.Fatalf("optional kubeconfig must not block resource refresh: %v", err)
+				}
+				state := d.State()
+				if state.ID != "c1" {
+					t.Fatal("permission denial must not remove the cluster from state")
+				}
+				if tc.certificateAuthority {
+					if got := d.Get("skip_set_certificate_authority").(bool); got != skip {
+						t.Fatalf("skip_set_certificate_authority = %t, want %t", got, skip)
+					}
+					for _, field := range []string{"cluster_cert", "client_cert", "client_key"} {
+						value, exists := state.Attributes["certificate_authority.0."+field]
+						if !exists || (skip && value != "") || (!skip && value == "") {
+							t.Fatalf("unexpected persisted %s state for skip=%t (exists=%t, empty=%t)", field, skip, exists, value == "")
+						}
+					}
+				} else {
+					for key := range state.Attributes {
+						if strings.HasPrefix(key, "certificate_authority.") {
+							t.Fatal("serverless must not acquire undeclared credential state")
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestUnitSetCertsKubeconfigForbiddenExplicitOutput(t *testing.T) {
+	for _, field := range []string{"kube_config", "client_cert", "client_key", "cluster_ca_cert"} {
+		t.Run(field, func(t *testing.T) {
+			client := csKubeconfigTestClient(t, csKubeconfigForbiddenHandler)
+			path := filepath.Join(t.TempDir(), "credential")
+			resource := ResourceCSManagedKubernetes()
+			if field == "kube_config" {
+				// Managed clusters no longer expose the legacy kube_config path.
+				resource = ResourceCSEdgeKubernetes()
+			}
+			d := schema.TestResourceDataRaw(t, resource.Schema, map[string]interface{}{field: path})
+			d.SetId("c1")
+			for _, skip := range []bool{false, true} {
+				if err := setCerts(d, client, skip, true); err == nil || !strings.Contains(err.Error(), "StatusForbidden") {
+					t.Fatalf("explicit %s output must report permission denial: %v", field, err)
+				}
+			}
+			if _, err := os.Stat(path); !os.IsNotExist(err) {
+				t.Fatalf("failed credential fetch must not write a file: %v", err)
+			}
+		})
+	}
+}
+
+func TestUnitCSClusterCredentialReadForbidden(t *testing.T) {
+	client := csKubeconfigTestClient(t, csKubeconfigForbiddenHandler)
+	d := csClusterCredentialTestData(t)
+	cluster := &roacs.DescribeClusterDetailResponseBody{ClusterId: tea.String("c1")}
+	if err := CsClusterAuthDescriptionAttributes(d, client, cluster); err == nil || !strings.Contains(err.Error(), "StatusForbidden") {
+		t.Fatalf("credential data source must report permission denial: %v", err)
+	}
+}
+
+func TestUnitSetCertsKubeconfigUnrelatedError(t *testing.T) {
+	client := csKubeconfigTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"code":"InvalidParameter","message":"diagnostic contains StatusForbidden and 403"}`))
+	})
+	d := schema.TestResourceDataRaw(t, ResourceCSManagedKubernetes().Schema, map[string]interface{}{})
+	d.SetId("c1")
+	if err := setCerts(d, client, false, true); err == nil || !strings.Contains(err.Error(), "InvalidParameter") {
+		t.Fatalf("unrelated API errors must not be suppressed by matching diagnostic text: %v", err)
+	}
+}

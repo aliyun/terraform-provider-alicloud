@@ -49,12 +49,34 @@ resource "alicloud_ecs_disk" "example" {
 }
 ```
 
+### Destroying a disk with `force_delete`
+
+The following example creates a pay-as-you-go disk with `force_delete = true`; destroying the resource releases the disk:
+
+```terraform
+data "alicloud_zones" "force_delete" {
+  available_resource_creation = "VSwitch"
+  available_disk_category     = "cloud_essd"
+}
+
+resource "alicloud_ecs_disk" "force_delete" {
+  zone_id      = data.alicloud_zones.force_delete.zones.0.id
+  disk_name    = "terraform-example"
+  category     = "cloud_essd"
+  size         = "40"
+  force_delete = true
+}
+```
+
 ### Deleting `alicloud_ecs_disk` or removing it from your configuration
 
-The `alicloud_ecs_disk` resource allows you to manage `payment_type = "Subscription"` and `delete_with_instance = true` disk, 
-but Terraform cannot destroy it. Deleting the subscription resource or removing it from your configuration will 
-remove it from your state file and management, but will not destroy it.
-If you want to delete it, you can change it to `PayAsYouGo` and setting `delete_with_instance = true` and detach it from instance.
+By default, destroying an `alicloud_ecs_disk` resource or removing it from your configuration only removes the disk from your state file and management, without releasing it, when the disk is PrePaid (`payment_type = "Subscription"`) **and** ECS reports `DeleteWithInstance = true` for it, which is the case for a disk released together with its Subscription instance. This is the only state-only path. Every other case, including a PrePaid disk whose `delete_with_instance` is `false`, calls `DeleteDisk` during destroy; if ECS rejects the release, the destroy fails with the returned error and the disk is kept, rather than being silently removed from the state.
+
+Set `force_delete = true` to release such a disk: during destroy, the provider converts the disk to pay-as-you-go, detaches it with `DeleteWithInstance=false` and releases it once it is available. **`force_delete` deletes the disk and all data on it, and the release cannot be undone.** `force_delete` takes priority over the legacy state-only behavior; when it is `false` or not set, the behavior above is unchanged.
+
+Multi-attach disks (`multi_attach = "Enabled"`) are not supported by `force_delete`: the destroy fails with an actionable error and the disk is kept. The PrePaid to pay-as-you-go conversion requires the disk to be attached to a Subscription instance and is limited to one successful call per disk every five minutes; the refund of the remaining subscription fee is handled by ECS according to your account settings.
+
+If you want to delete a disk without `force_delete`, convert it to `PayAsYouGo` and detach it from its instance before deleting it.
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_disk&spm=docs.r.ecs_disk.example&intl_lang=EN_US)
 
@@ -63,7 +85,7 @@ If you want to delete it, you can change it to `PayAsYouGo` and setting `delete_
 The following arguments are supported:
 * `advanced_features` - (Optional) The advanced features configured for the disk.
 * `bursting_enabled` - (Optional, Bool, Available since v1.237.0) Specifies whether to enable the performance burst feature. Valid values: `true`, `false`. **NOTE:** `bursting_enabled` is only valid when `category` is `cloud_auto`; specifying it for other categories is rejected by the API. When `category` is changed to `cloud_auto` in the same apply (for example from `cloud_essd`), the provider defers the `BurstingEnabled` update until the disk category has been confirmed as `cloud_auto` by `ModifyDiskSpec` and `WaitForState`, because the API rejects `BurstingEnabled` on a non-`cloud_auto` disk.
-* `category` - (Optional) The category of the data disk. Default value: `cloud_efficiency`. Valid Values: `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_essd_entry`, `elastic_ephemeral_disk_standard`, `elastic_ephemeral_disk_premium`. **NOTE:** When `category` is `cloud_auto`, the `bursting_enabled` and `provisioned_iops` parameters become applicable; they are rejected by the API for other categories.
+* `category` - (Optional) The category of the data disk. Default value: `cloud_efficiency`. Valid Values: `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_essd_entry`, `elastic_ephemeral_disk_standard`, `elastic_ephemeral_disk_premium`. **NOTE:** When `category` is `cloud_auto`, the `bursting_enabled` and `provisioned_iops` parameters become applicable; they are rejected by the API for other categories. **NOTE:** Category conversion (for example from `cloud_essd` to `cloud_auto`) is applied asynchronously by the API: the disk may report the transitional status `Modifying` while the conversion runs, and even after the status returns to `Available` the category may still report the previous value for some time. The provider therefore waits within a single `DescribeDisks` response until the status is `Available`/`In_use` and the category already equals the requested value before completing the update, and this wait is bounded by the `update` timeout (default 30 mins). Conversion duration depends on the disk (throughput, capacity and the previous category) and has no completion guarantee; set `timeouts.update` explicitly for large disks whose conversion may take longer.
 * `delete_auto_snapshot` - (Optional, Bool) Specifies whether to delete the automatic snapshots of the disk when the disk is released. Default value: `false`.
 * `delete_with_instance` - (Optional, Bool) Specifies whether to release the disk along with its associated instance. Default value: `false`.
 * `description` - (Optional) The description of the disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
@@ -76,6 +98,7 @@ The following arguments are supported:
 * `encrypted` - (Optional, ForceNew, Bool) Specifies whether to encrypt the disk. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
+* `force_delete` - (Optional, Bool, Available since v2.1.1) Specifies whether to release the disk during destroy even when the default behavior cannot release it, for example a `payment_type = "Subscription"` disk. Defaults to `false`. When set to `true`, the provider converts the disk to `PayAsYouGo` (`ModifyDiskChargeType`), detaches it with `DeleteWithInstance=false`, waits until the disk is `Available` and then releases it (`DeleteDisk`). **NOTE:** `force_delete` deletes the disk and all data on it, and the release cannot be undone. It takes priority over the legacy behavior that only removes a PrePaid disk with `delete_with_instance = true` from the state. `force_delete` does not support multi-attach disks (`multi_attach = "Enabled"`); the destroy fails with an actionable error and the disk is kept. The billing method conversion requires the disk to be attached to a Subscription instance and is limited to one successful call per disk every five minutes.
 * `instance_id` - (Optional, ForceNew) The ID of the instance to which the created subscription disk is automatically attached.
   * After you specify the instance ID, the specified `resource_group_id`, `tags`, and `kms_key_id` parameters are ignored.
   * One of the `zone_id` and `instance_id` must be set but can not be set at the same time.
@@ -113,7 +136,7 @@ The following arguments are supported:
 * `availability_zone` - (Deprecated since v1.122.0) Field `availability_zone` has been deprecated from provider version 1.122.0. New field `zone_id` instead.
 * `name` - (Optional, Deprecated since v1.122.0) Field `name` has been deprecated from provider version 1.122.0. New field `disk_name` instead.
 
--> **NOTE:** Disk category `cloud` has been outdated, and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
+  -> **NOTE:** Disk category `cloud` has been outdated, and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
 ## Attributes Reference
 
@@ -127,7 +150,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Disk.
-* `delete` - (Defaults to 5 mins) Used when delete the Disk.
+* `delete` - (Defaults to 5 mins) Used when delete the Disk. When `force_delete` is `true`, this timeout applies to each step of the forced sequence: converting the billing method, detaching the disk and waiting until it is available, and releasing it. Adjust it when a step needs more time, for example a slow billing method conversion.
 * `update` - (Defaults to 30 mins) Used when update the Disk.
 
 ## Import

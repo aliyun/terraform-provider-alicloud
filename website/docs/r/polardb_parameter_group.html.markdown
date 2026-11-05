@@ -57,7 +57,7 @@ The following arguments are supported:
   - It must be 8 to 64 characters in length.
 * `parameters` - (Required, ForceNew, Set) Details about the parameters. See [`parameters`](#parameters) below.
 
--> **NOTE:**  You can view all parameter details for the target database engine version database cluster through the [DescribeParameterTemplates](https://next.api.alibabacloud.com/document/polardb/2017-08-01/DescribeParameterTemplates), including parameter name, value.
+  -> **NOTE:**  You can view all parameter details for the target database engine version database cluster through the [DescribeParameterTemplates](https://next.api.alibabacloud.com/document/polardb/2017-08-01/DescribeParameterTemplates), including parameter name, value.
 
 
 The following arguments will be discarded. Please use new fields as soon as possible:

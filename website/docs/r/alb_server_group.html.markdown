@@ -124,7 +124,7 @@ The following arguments are supported:
   - `true` (default)
   - `false`
 
--> **NOTE:**  
+  -> **NOTE:**
 
   *   Basic ALB instances do not support server groups that have cross-zone load balancing disabled. Only Standard and WAF-enabled ALB instances support server groups that have cross-zone load balancing.
 
@@ -137,7 +137,7 @@ false (default): Send a normal request.
 * `health_check_config` - (Required, List) The configuration of health checks See [`health_check_config`](#health_check_config) below.
 * `health_check_template_id` - (Optional, Available since v1.242.0) The ID of the resource group to which you want to transfer the cloud resource.
 
--> **NOTE:**   You can use resource groups to manage resources within your Alibaba Cloud account by group. This helps you resolve issues such as resource grouping and permission management for your Alibaba Cloud account. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
+  -> **NOTE:**   You can use resource groups to manage resources within your Alibaba Cloud account by group. This helps you resolve issues such as resource grouping and permission management for your Alibaba Cloud account. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
 
 * `ipv6_enabled` - (Optional, ForceNew, Available since v1.243.0) Enable Ipv6
 * `protocol` - (Optional, ForceNew, Computed) The backend protocol. Valid values:
@@ -148,7 +148,7 @@ false (default): Send a normal request.
 
   *   `gRPC`: allows you to associate an HTTPS or QUIC listener with the server group.
 
--> **NOTE:**   You do not need to specify a backend protocol if you set `ServerGroupType` to `Fc`.
+  -> **NOTE:**   You do not need to specify a backend protocol if you set `ServerGroupType` to `Fc`.
 
 * `resource_group_id` - (Optional, Computed) Elegant interrupt configuration.
 * `scheduler` - (Optional, Computed) The scheduling algorithm. Valid values:
@@ -159,7 +159,7 @@ false (default): Send a normal request.
 
   *   `Sch`: The consistent hashing algorithm is used. Requests from the same source IP address are distributed to the same backend server.
 
--> **NOTE:**  This parameter takes effect when the `ServerGroupType` parameter is set to `Instance` or `Ip`.
+  -> **NOTE:**  This parameter takes effect when the `ServerGroupType` parameter is set to `Instance` or `Ip`.
 
 * `server_group_name` - (Required) The name of the server group. The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (\_), and hyphens (-). The name must start with a letter.
 * `server_group_type` - (Optional, ForceNew, Computed, Available since v1.193.0) The type of server group. Valid values:
@@ -176,7 +176,7 @@ false (default): Send a normal request.
 * `upstream_keepalive_enabled` - (Optional, Available since v1.242.0) Specifies whether to enable persistent TCP connections.
 * `vpc_id` - (Optional, ForceNew) The ID of the virtual private cloud (VPC). You can add only servers that are deployed in the specified VPC to the server group.
 
--> **NOTE:**   This parameter takes effect when the `ServerGroupType` parameter is set to `Instance` or `Ip`.
+  -> **NOTE:**   This parameter takes effect when the `ServerGroupType` parameter is set to `Instance` or `Ip`.
 
 
 ### `connection_drain_config`
@@ -202,7 +202,7 @@ The health_check_config supports the following:
 
   If you set the value to `0`, the backend port is used for health checks.
 
--> **NOTE:**   This parameter takes effect only if you set `HealthCheckEnabled` to `true`.
+  -> **NOTE:**   This parameter takes effect only if you set `HealthCheckEnabled` to `true`.
 
 * `health_check_enabled` - (Required) Specifies whether to enable the health check feature. Valid values:
 
@@ -210,7 +210,7 @@ The health_check_config supports the following:
 
   *   `false`
 
--> **NOTE:**   If the `ServerGroupType` parameter is set to `Instance` or `Ip`, the health check feature is enabled by default. If the `ServerGroupType` parameter is set to `Fc`, the health check feature is disabled by default.
+  -> **NOTE:**   If the `ServerGroupType` parameter is set to `Instance` or `Ip`, the health check feature is enabled by default. If the `ServerGroupType` parameter is set to `Fc`, the health check feature is disabled by default.
 
 * `health_check_host` - (Optional, Computed) The domain name that is used for health checks.
 
@@ -224,7 +224,7 @@ The health_check_config supports the following:
     *   The rightmost domain label of the domain name can contain only letters, and cannot contain digits or hyphens (-).
     *   The domain name cannot start or end with a hyphen (-).
 
--> **NOTE:**   This parameter takes effect only if `HealthCheckProtocol` is set to `HTTP`, `HTTPS`, or `gRPC`.
+  -> **NOTE:**   This parameter takes effect only if `HealthCheckProtocol` is set to `HTTP`, `HTTPS`, or `gRPC`.
 
 * `health_check_http_version` - (Optional, Computed) The HTTP version that is used for health checks. Valid values:
 
@@ -232,13 +232,13 @@ The health_check_config supports the following:
 
   *   **HTTP1.1**
 
--> **NOTE:**   This parameter takes effect only if you set `HealthCheckEnabled` to true and `HealthCheckProtocol` to `HTTP` or `HTTPS`.
+  -> **NOTE:**   This parameter takes effect only if you set `HealthCheckEnabled` to true and `HealthCheckProtocol` to `HTTP` or `HTTPS`.
 
 * `health_check_interval` - (Optional, Computed, Int) The interval at which health checks are performed. Unit: seconds.
 
   Valid values: `1` to `50`.
 
--> **NOTE:**   This parameter takes effect only if you set `HealthCheckEnabled` to `true`.
+  -> **NOTE:**   This parameter takes effect only if you set `HealthCheckEnabled` to `true`.
 
 * `health_check_method` - (Optional, Computed) The HTTP method that is used for health checks. Valid values:
 
@@ -248,13 +248,13 @@ The health_check_config supports the following:
 
   *   `HEAD`: HTTP and HTTPS health checks use the HEAD method by default.
 
--> **NOTE:**   This parameter takes effect only if you set `HealthCheckEnabled` to true and `HealthCheckProtocol` to `HTTP`, `HTTPS`, or `gRPC`.
+  -> **NOTE:**   This parameter takes effect only if you set `HealthCheckEnabled` to true and `HealthCheckProtocol` to `HTTP`, `HTTPS`, or `gRPC`.
 
 * `health_check_path` - (Optional, Computed) The URL that is used for health checks.
 
   The URL must be 1 to 80 characters in length, and can contain letters, digits, and the following special characters: `- / . % ? # & =`. It can also contain the following extended characters: `_ ; ~ ! ( ) * [ ] @ $ ^ : ' , +`. The URL must start with a forward slash (`/`).
 
--> **NOTE:**   This parameter takes effect only if you set `HealthCheckEnabled` to `true` and `HealthCheckProtocol` to `HTTP` or `HTTPS`.
+  -> **NOTE:**   This parameter takes effect only if you set `HealthCheckEnabled` to `true` and `HealthCheckProtocol` to `HTTP` or `HTTPS`.
 
 * `health_check_protocol` - (Optional, Computed) The protocol that is used for health checks. Valid values:
 
@@ -266,7 +266,7 @@ The health_check_config supports the following:
 
   Valid values: `1` to `300`.
 
--> **NOTE:**   This parameter takes effect only if you set `HealthCheckEnabled` to `true`.
+  -> **NOTE:**   This parameter takes effect only if you set `HealthCheckEnabled` to `true`.
 
 * `healthy_threshold` - (Optional, Computed, Int) The number of times that an unhealthy backend server must consecutively pass health checks before it is declared healthy. In this case, the health check status of the backend server changes from `fail` to `success`.
 
@@ -285,7 +285,7 @@ The servers supports the following:
 * `description` - (Optional) The description of the backend server. The description must be 2 to 256 characters in length, and cannot start with http:// or https://.
 * `port` - (Optional, Int) The port that is used by the backend server. Valid values: `1` to `65535`. You can specify at most 200 servers in each call.
 
--> **NOTE:**   This parameter is required if you set `ServerType` to `Ecs`, `Eni`, `Eci`, or `Ip`. You do not need to set this parameter if `ServerType` is set to `Fc`.
+  -> **NOTE:**   This parameter is required if you set `ServerType` to `Ecs`, `Eni`, `Eci`, or `Ip`. You do not need to set this parameter if `ServerType` is set to `Fc`.
 
 * `remote_ip_enabled` - (Optional, Available since v1.194.0) Specifies whether to enable the remote IP feature. You can specify at most 200 servers in each call. Default values:
 
@@ -293,7 +293,7 @@ The servers supports the following:
 
   *   `false`: disables the feature.
 
--> **NOTE:**   This parameter takes effect only when `ServerType` is set to `Ip`.
+  -> **NOTE:**   This parameter takes effect only when `ServerType` is set to `Ip`.
 
 * `server_id` - (Required) The ID of the backend server. You can specify at most 200 servers in each call.
 
@@ -301,11 +301,11 @@ The servers supports the following:
 
   *   If the server group is of the `Ip` type, set ServerId to IP addresses.
 
--> **NOTE:**   You cannot perform this operation on a server group of the Function Compute type. You can call the [ListServerGroups](https://www.alibabacloud.com/help/en/doc-detail/213627.html) operation to query the type of server groups.
+  -> **NOTE:**   You cannot perform this operation on a server group of the Function Compute type. You can call the [ListServerGroups](https://www.alibabacloud.com/help/en/doc-detail/213627.html) operation to query the type of server groups.
 
 * `server_ip` - (Optional) The IP address of the backend server. You can specify at most 200 servers in each call.
 
--> **NOTE:**   You do not need to set this parameter if you set `ServerType` to `Fc`.
+  -> **NOTE:**   You do not need to set this parameter if you set `ServerType` to `Fc`.
 
 * `server_type` - (Required, Available since v1.194.0) The type of the backend server. You can specify at most 200 servers in each call. Default values:
 
@@ -316,8 +316,9 @@ The servers supports the following:
   - `Fc`: Function Compute
 * `weight` - (Optional, Computed, Int) The weight of the backend server. Valid values: `0` to `100`. Default value: `0`. If the value is set to `0`, no requests are forwarded to the server. You can specify at most 200 servers in each call.
 
--> **NOTE:**   Default value: `0`. We strongly recommend specifying this parameter.
--> **NOTE:**   You do not need to set this parameter if you set `ServerType` to `Fc`.
+  -> **NOTE:**   Default value: `0`. We strongly recommend specifying this parameter.
+
+  -> **NOTE:**   You do not need to set this parameter if you set `ServerType` to `Fc`.
 
 
 ### `slow_start_config`
@@ -340,7 +341,7 @@ The sticky_session_config supports the following:
 
   The cookie must be 1 to 200 characters in length and can contain only ASCII characters and digits. It cannot contain commas (,), semicolons (;), or space characters. It cannot start with a dollar sign ($).
 
--> **NOTE:**  This parameter takes effect when the `StickySessionEnabled` parameter is set to `true` and the `StickySessionType` parameter is set to `Server`.
+  -> **NOTE:**  This parameter takes effect when the `StickySessionEnabled` parameter is set to `true` and the `StickySessionType` parameter is set to `Server`.
 
 * `cookie_timeout` - (Optional, Computed, Int) The maximum amount of time to wait before the session cookie expires. Unit: seconds.
 
@@ -348,7 +349,7 @@ The sticky_session_config supports the following:
 
   Default value: `1000`.
 
--> **NOTE:**   This parameter takes effect only when `StickySessionEnabled` is set to `true` and `StickySessionType` is set to `Insert`.
+  -> **NOTE:**   This parameter takes effect only when `StickySessionEnabled` is set to `true` and `StickySessionType` is set to `Insert`.
 
 * `sticky_session_enabled` - (Optional) Specifies whether to enable session persistence. Valid values:
 
@@ -356,7 +357,7 @@ The sticky_session_config supports the following:
 
   *   `false`
 
--> **NOTE:**   This parameter takes effect when the `ServerGroupType` parameter is set to `Instance` or `Ip`.
+  -> **NOTE:**   This parameter takes effect when the `ServerGroupType` parameter is set to `Instance` or `Ip`.
 
 * `sticky_session_type` - (Optional, Computed) The method that is used to handle a cookie. Valid values:
 
@@ -368,7 +369,7 @@ The sticky_session_config supports the following:
 
   When ALB detects a user-defined cookie, it overwrites the original cookie with the user-defined cookie. Subsequent requests to ALB carry this user-defined cookie, and ALB determines the destination servers of the requests based on the cookies.
 
--> **NOTE:**  This parameter takes effect when the `StickySessionEnabled` parameter is set to `true` for the server group.
+  -> **NOTE:**  This parameter takes effect when the `StickySessionEnabled` parameter is set to `true` for the server group.
 
 
 ### `uch_config`

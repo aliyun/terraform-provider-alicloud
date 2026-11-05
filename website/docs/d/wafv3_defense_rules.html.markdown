@@ -153,7 +153,7 @@ The following arguments are supported:
 * `instance_id` - (Required) The ID of the Web Application Firewall (WAF) instance.
 * `query` - (Optional) The query condition is converted into a string in JSON format constructed with a series of parameters.
 
--> **NOTE:**  The results of the protection rules vary according to different query conditions. For more information, see **Query parameter description**.
+  -> **NOTE:**  The results of the protection rules vary according to different query conditions. For more information, see **Query parameter description**.
 
 * `rule_type` - (Optional) The protection rule type. Value:
   - `whitelist`: whitelist rules

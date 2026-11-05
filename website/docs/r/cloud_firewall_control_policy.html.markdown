@@ -58,7 +58,8 @@ The following arguments are supported:
 * `destination_type` - (Required) The type of the destination address in the access control policy. Valid values: `net`, `group`, `domain`, `location`.
 * `proto` - (Required) The protocol type supported by the access control policy. Valid values: `ANY`, ` TCP`, `UDP`, `ICMP`.
 * `application_name` - (Optional) The application type supported by the access control policy. Valid values: `ANY`, `HTTP`, `HTTPS`, `MQTT`, `Memcache`, `MongoDB`, `MySQL`, `RDP`, `Redis`, `SMTP`, `SMTPS`, `SSH`, `SSL`, `VNC`.
--> **NOTE:** If `proto` is set to `TCP`, you can set `application_name` to any valid value. If `proto` is set to `UDP`, `ICMP`, or `ANY`, you can only set `application_name` to `ANY`.
+
+  -> **NOTE:** If `proto` is set to `TCP`, you can set `application_name` to any valid value. If `proto` is set to `UDP`, `ICMP`, or `ANY`, you can only set `application_name` to `ANY`.
 * `dest_port` - (Optional) The destination port in the access control policy. **Note:** If `dest_port_type` is set to `port`, you must specify `dest_port`.
 * `dest_port_group` - (Optional) The name of the destination port address book in the access control policy. **Note:** If `dest_port_type` is set to `group`, you must specify `dest_port_group`.
 * `dest_port_type` - (Optional) The type of the destination port in the access control policy. Valid values: `port`, `group`.
@@ -77,16 +78,20 @@ The following arguments are supported:
   - `Monthly`: The policy takes effect on a monthly basis.
 * `start_time` - (Optional, Int, Available since v1.232.0) The time when the access control policy starts to take effect. The value is a UNIX timestamp. Unit: seconds. The value must be on the hour or on the half hour, and at least 30 minutes earlier than the end time.
 * `end_time` - (Optional, Int, Available since v1.232.0) The time when the access control policy stops taking effect. The value is a UNIX timestamp. Unit: seconds. The value must be on the hour or on the half hour, and at least 30 minutes later than the start time.
--> **NOTE:** If `repeat_type` is set to `None`, `Daily`, `Weekly`, or `Monthly`, `start_time` and `end_time` must be set.
+
+  -> **NOTE:** If `repeat_type` is set to `None`, `Daily`, `Weekly`, or `Monthly`, `start_time` and `end_time` must be set.
 * `repeat_start_time` - (Optional, Available since v1.232.0) The point in time when the recurrence starts. Example: `08:00`. The start time must be on the hour or on the half hour, and at least 30 minutes earlier than the end time.
 * `repeat_end_time` - (Optional, Available since v1.232.0) The point in time when the recurrence ends. Example: `23:30`. The end time must be on the hour or on the half hour, and at least 30 minutes later than the start time.
--> **NOTE:** If `repeat_type` is set to `Daily`, `Weekly`, or `Monthly`, `repeat_start_time` and `repeat_end_time` must be set.
+
+  -> **NOTE:** If `repeat_type` is set to `Daily`, `Weekly`, or `Monthly`, `repeat_start_time` and `repeat_end_time` must be set.
 * `repeat_days` - (Optional, List, Available since v1.232.0) The days of a week or of a month on which the access control policy takes effect. Valid values:
   - If `repeat_type` is set to `Weekly`. Valid values: `0` to `6`.
   - If `repeat_type` is set to `Monthly`. Valid values: `1` to `31`.
--> **NOTE:** If `repeat_type` is set to `Weekly`, or `Monthly`, `repeat_days` must be set.
+
+  -> **NOTE:** If `repeat_type` is set to `Weekly`, or `Monthly`, `repeat_days` must be set.
 * `application_name_list` - (Optional, List, Available since v1.232.0) The application types supported by the access control policy.
--> **NOTE:** If `proto` is set to `TCP`, you can set `application_name_list` to any valid value. If `proto` is set to `UDP`, `ICMP`, or `ANY`, you can only set `application_name_list` to `["ANY"]`. From version 1.232.0, You must specify at least one of the `application_name_list` and `application_name`. If you specify both `application_name_list` and `application_name`, only the `application_name_list` takes effect.
+
+  -> **NOTE:** If `proto` is set to `TCP`, you can set `application_name_list` to any valid value. If `proto` is set to `UDP`, `ICMP`, or `ANY`, you can only set `application_name_list` to `["ANY"]`. From version 1.232.0, You must specify at least one of the `application_name_list` and `application_name`. If you specify both `application_name_list` and `application_name`, only the `application_name_list` takes effect.
 * `release` - (Optional) The status of the access control policy. Valid values: `true`, `false`.
 * `source_ip` - (Optional) The source IP address of the request.
 * `lang` - (Optional) The language of the content within the request and response. Valid values: `zh`, `en`.

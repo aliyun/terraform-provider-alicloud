@@ -7,13 +7,15 @@ description: |-
     Provides a list of server load balancer rules to the user.
 ---
 
-# alicloud\_slb_rules
+# alicloud_slb_rules
 
 This data source provides the rules associated with a server load balancer listener.
 
+-> **NOTE:** Available since v1.15.0.
+
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "slbrulebasicconfig"
 }
@@ -29,15 +31,15 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/16"
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/16"
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
 }
 
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = var.name
-  vswitch_id = alicloud_vswitch.default.id
+  vswitch_id         = alicloud_vswitch.default.id
 }
 
 resource "alicloud_slb_listener" "default" {
@@ -76,8 +78,8 @@ output "first_slb_rule_id" {
 
 The following arguments are supported:
 
-* `load_balancer_id` - ID of the SLB with listener rules.
-* `frontend_port` - SLB listener port.
+* `load_balancer_id` - (Required) ID of the SLB with listener rules.
+* `frontend_port` - (Required) SLB listener port.
 * `ids` - (Optional) A list of rules IDs to filter results.
 * `name_regex` - (Optional) A regex string to filter results by rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).

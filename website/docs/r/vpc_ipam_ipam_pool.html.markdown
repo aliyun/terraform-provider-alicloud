@@ -73,7 +73,7 @@ IPv4 network mask value range: 0 to 32 bits, and the IPv6 network mask value ran
   - `true`: Yes.
   - `false`: No.
 
--> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
+  -> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
 
 * `ip_version` - (Optional, ForceNew, Computed) The IP protocol version. Values: IPv4、IPv6.
 * `ipam_pool_description` - (Optional) The description of the IPAM address pool.
@@ -85,7 +85,7 @@ It must be 2 to 256 characters in length and must start with an English letter o
 * `resource_group_id` - (Optional, Computed, Available since v1.242.0) The ID of the resource group.
 * `source_ipam_pool_id` - (Optional, ForceNew, Computed) The instance ID of the source IPAM address pool.
 
--> **NOTE:**  If this parameter is not entered, the created address pool is the parent address pool.
+  -> **NOTE:**  If this parameter is not entered, the created address pool is the parent address pool.
 
 * `tags` - (Optional, Map) The tag of the resource.
 

@@ -1,0 +1,215 @@
+package dataworks
+
+import (
+	"fmt"
+	"log"
+	"path"
+	"strings"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func ResourceFolder() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceFolderCreate,
+		Read:   resourceFolderRead,
+		Update: resourceFolderUpdate,
+		Delete: resourceFolderDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Schema: map[string]*schema.Schema{
+			"folder_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"folder_path": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"project_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"project_identifier": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+		},
+	}
+}
+
+func resourceFolderCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "CreateFolder"
+	request := make(map[string]interface{})
+	var err error
+	folderPath := ConvertDataWorksFrontEndFolderPathToBackEndFolderPath(d.Get("folder_path").(string))
+	request["FolderPath"] = folderPath
+	if v, ok := d.GetOk("project_id"); ok {
+		request["ProjectId"] = v
+	}
+	if v, ok := d.GetOk("project_identifier"); ok {
+		request["ProjectIdentifier"] = v
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("dataworks-public", "2020-05-18", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_data_works_folder", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["Data"], ":", request["ProjectId"]))
+
+	return resourceFolderRead(d, meta)
+}
+func resourceFolderRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	dataworksPublicService := NewService(client)
+	object, err := dataworksPublicService.DescribeDataWorksFolder(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_data_works_folder dataworksPublicService.DescribeDataWorksFolder Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	parts, err := helper.ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	d.Set("folder_id", parts[0])
+	d.Set("project_id", parts[1])
+	d.Set("folder_path", object["FolderPath"].(string))
+	return nil
+}
+func resourceFolderUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	parts, err := helper.ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	request := map[string]interface{}{
+		"FolderId":  parts[0],
+		"ProjectId": parts[1],
+	}
+	if d.HasChange("folder_path") {
+		folderPath := ConvertDataWorksFrontEndFolderPathToBackEndFolderPath(d.Get("folder_path").(string))
+		absolutePath := folderPath
+		_, lastDir := path.Split(absolutePath)
+		request["FolderName"] = lastDir
+	}
+	if v, ok := d.GetOk("project_identifier"); ok {
+		request["ProjectIdentifier"] = v
+	}
+	action := "UpdateFolder"
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+		response, err = client.RpcPost("dataworks-public", "2020-05-18", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return resourceFolderRead(d, meta)
+}
+func resourceFolderDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	action := "DeleteFolder"
+	var response map[string]interface{}
+	request := map[string]interface{}{
+		"FolderId":  parts[0],
+		"ProjectId": parts[1],
+	}
+
+	if v, ok := d.GetOk("project_identifier"); ok {
+		request["ProjectIdentifier"] = v
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("dataworks-public", "2020-05-18", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+func getConvertMap() map[string]string {
+	convertMap := make(map[string]string)
+	convertMap["Business Flow"] = "业务流程"
+	convertMap["folderAlgm"] = "算法"
+	convertMap["folderCDH"] = "CDH"
+	convertMap["folderDi"] = "数据集成"
+	convertMap["folderFlink"] = "Flink"
+	convertMap["folderGeneral"] = "通用"
+	convertMap["folderHologres"] = "Hologres"
+	convertMap["folderMaxCompute"] = "MaxCompute"
+	convertMap["folderUserDefined"] = "自定义"
+	convertMap["folderEMR"] = "EMR"
+	convertMap["folderErd"] = "数据模型"
+	convertMap["folderADB"] = "AnalyticDB for PostgreSQL"
+	convertMap["folderJdbc"] = "数据库"
+	return convertMap
+}
+
+func ConvertDataWorksFrontEndFolderPathToBackEndFolderPath(source string) string {
+	result := source
+	convertMap := getConvertMap()
+
+	for convert := range convertMap {
+		result = strings.Replace(result, convert, convertMap[convert], 1)
+	}
+	return result
+}
+
+func ConvertDataWorksBackEndFolderPathToFrontEndFolderPath(source string) string {
+	result := source
+	convertMap := getConvertMap()
+
+	for convert := range convertMap {
+		result = strings.Replace(result, convertMap[convert], convert, 1)
+	}
+	return result
+}

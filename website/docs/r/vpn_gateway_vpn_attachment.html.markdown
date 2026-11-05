@@ -215,9 +215,9 @@ Whether to enable the DPD (peer survival detection) function.
 Specifies whether to enable NAT traversal. Valid values:
   - true (default): enables NAT traversal. After NAT traversal is enabled, the initiator does not check the UDP ports during IKE negotiations and can automatically discover NAT gateway devices along the vpn attachment tunnel.
   - false: disables NAT traversal.
-* `enable_tunnels_bgp` - (Optional, Computed, Available since v1.246.0) You can configure this parameter when you create a vpn attachment in dual-tunnel mode.Whether to enable the BGP function for the tunnel. Value: `true` or `false` (default).
+* `enable_tunnels_bgp` - (Optional, Computed, Available since v1.246.0) You can configure this parameter when you create a vpn attachment in dual-tunnel mode.Whether to enable the BGP function for the tunnel. Value: `true` or `false` (default). When enabling BGP in-place (`false` to `true`), the `tunnel_bgp_config` blocks in `tunnel_options_specification` are submitted together so the API receives the required BGP configuration.
 
--> **NOTE:**  before adding BGP configuration, we recommend that you understand the working mechanism and usage restrictions of the BGP dynamic routing function.
+  -> **NOTE:**  before adding BGP configuration, we recommend that you understand the working mechanism and usage restrictions of the BGP dynamic routing function.
 
 * `tunnel_bandwidth` - (Optional, Computed, ForceNew) The bandwidth specification of a single VPN tunnel. Valid values:
   - `Standard` (default): 1 Gbps.
@@ -291,10 +291,16 @@ The ipsec_config supports the following:
 
 ### `tunnel_options_specification`
 
+-> **NOTE:** This argument is an unordered set. Each `tunnel_index` must be unique and identifies the tunnel to update; the order of configuration blocks has no effect. Changes to nested IKE, IPsec and BGP settings are applied to the tunnel with the corresponding index.
+
+On an in-place update, existing tunnels cannot be removed and an empty nested BGP, IKE, or IPsec list cannot reset the remote configuration. Changing `tunnel_bandwidth` or `network_type` replaces the whole attachment, allowing the new resource to use a reduced configuration. Omit optional fields or nested blocks to retain the corresponding tunnel's current settings; use `enable_tunnels_bgp = false` to disable BGP. Updating an existing IKE block requires a PSK, either configured or retained in state. If the PSK is unavailable after import, configure it before updating IKE settings.
+
+The API can omit the `psk` value in read responses. In that case the provider retains the PSK already in state instead of storing the empty value, so an omitted read does not produce a perpetual diff. Any non-empty value returned by the API is adopted into state, including a value consisting only of `*` characters: `*` is a legal PSK character and such a value may be the result of an external rotation, which then appears as a plan diff instead of staying hidden. When the PSK is empty in state (for example after an import), an update that submits an IKE block must set `psk` explicitly; the apply fails with an explicit error otherwise, because the API generates a random 16-character key when `psk` is absent. The same rule applies to the top-level `ike_config` block.
+
 The tunnel_options_specification supports the following:
 * `customer_gateway_id` - (Required, Available since v1.246.0) The ID of the user gateway associated with the tunnel.
 
--> **NOTE:**  This parameter is required when creating a dual-tunnel mode IPsec-VPN connection.
+  -> **NOTE:**  This parameter is required when creating a dual-tunnel mode IPsec-VPN connection.
 
 * `enable_dpd` - (Optional, Computed, Available since v1.246.0) Whether the DPD (peer alive detection) function is enabled for the tunnel. Value:
   - `true` (default): enable the DPD function. IPsec initiator will send DPD message to check whether the peer device is alive. If the peer device does not receive a correct response within the set time, it is considered that the peer has been disconnected. IPsec will delete ISAKMP SA and the corresponding IPsec SA, and the security tunnel will also be deleted.
@@ -302,13 +308,13 @@ The tunnel_options_specification supports the following:
 * `enable_nat_traversal` - (Optional, Computed, Available since v1.246.0) Whether the NAT crossing function is enabled for the tunnel. Value:
   - `true` (default): Enables the NAT Traversal function. When enabled, the IKE negotiation process deletes the verification process of the UDP port number and realizes the discovery function of the NAT gateway device in the tunnel.
   - `false`: does not enable the NAT Traversal function.
-* `role` - (Optional, Computed, Available since v1.276.0) The role of the tunnel. Valid values: `master`, `slave`. The role is determined by the order in which the tunnel is added to the IPsec-VPN connection.
+* `role` - (Optional, Computed, Available since v1.276.0) The role reported by the service. The attachment create and update APIs do not accept this field. Configuration is accepted for backward compatibility but is ignored: it does not affect tunnel identity or trigger an update. State always reflects the role returned by the service.
 * `tunnel_bgp_config` - (Optional, Computed, List, Available since v1.246.0) Add the BGP configuration for the tunnel.
 
--> **NOTE:**  After you enable the BGP function for IPsec connections (that is, specify `EnableTunnelsBgp` as `true`), you must configure this parameter.
- See [`tunnel_bgp_config`](#tunnel_options_specification-tunnel_bgp_config) below.
-* `tunnel_ike_config` - (Optional, Computed, Set, Available since v1.246.0) Configuration information for the first phase negotiation. See [`tunnel_ike_config`](#tunnel_options_specification-tunnel_ike_config) below.
-* `tunnel_index` - (Required, Int, Available since v1.246.0) The order in which the tunnel was created.
+  -> **NOTE:**  After you enable the BGP function for IPsec connections (that is, specify `EnableTunnelsBgp` as `true`), you must configure this parameter.
+  See [`tunnel_bgp_config`](#tunnel_options_specification-tunnel_bgp_config) below.
+* `tunnel_ike_config` - (Optional, Computed, List, Available since v1.246.0) Configuration information for the first phase negotiation. See [`tunnel_ike_config`](#tunnel_options_specification-tunnel_ike_config) below.
+* `tunnel_index` - (Required, Int, Available since v1.246.0) The logical index identifying the tunnel. Each tunnel must have a unique index; configuration block order does not determine the index.
   - `1`: First tunnel.
   - `2`: The second tunnel.
 * `tunnel_ipsec_config` - (Optional, Computed, List, Available since v1.246.0) Configuration information for the second-stage negotiation. See [`tunnel_ipsec_config`](#tunnel_options_specification-tunnel_ipsec_config) below.
@@ -318,12 +324,12 @@ The tunnel_options_specification supports the following:
 The tunnel_options_specification-tunnel_bgp_config supports the following:
 * `local_asn` - (Optional, Computed, Int, Available since v1.246.0) The number of the local (Alibaba Cloud) autonomous system of the tunnel. The value range of the autonomous system number is `1` to `4294967295`. Default value: `45104`.
 
--> **NOTE:**  We recommend that you use the private number of the autonomous system number to establish a BGP connection with Alibaba Cloud. The private number range of the autonomous system number please consult the document yourself.
+  -> **NOTE:**  We recommend that you use the private number of the autonomous system number to establish a BGP connection with Alibaba Cloud. The private number range of the autonomous system number please consult the document yourself.
 
 * `local_bgp_ip` - (Optional, Computed, Available since v1.246.0) The local BGP address of the tunnel (on the Alibaba Cloud side). This address is an IP address in the BGP network segment.
 * `tunnel_cidr` - (Optional, Computed, Available since v1.246.0) The BGP network segment of the tunnel. The network segment must be a network segment with a mask length of 30 in 169.254.0.0/16, and cannot be 169.254.0.0/30, 169.254.1.0/30, 169.254.2.0/30, 169.254.3.0/30, 169.254.4.0/30, 169.254.5.0/30, 169.254.6.0/30, and 169.254.169.252/30.
 
--> **NOTE:**  the network segments of two tunnels under an IPsec connection cannot be the same.
+  -> **NOTE:**  the network segments of two tunnels under an IPsec connection cannot be the same.
 
 
 ### `tunnel_options_specification-tunnel_ike_config`
@@ -347,7 +353,7 @@ Compared with IKEv1, IKEv2 simplifies the SA negotiation process and provides be
   - The key can be 1 to 100 characters in length. It supports numbers, upper and lower case English letters, and characters on the right. It cannot contain spaces. '''~! \'@#$%^& *()_-+ ={}[]|;:',./? '''
   - If you do not specify a pre-shared key, the system randomly generates a 16-bit string as the pre-shared key. 
 
--> **NOTE:**  The pre-shared key of the tunnel and the tunnel peer must be the same, otherwise the system cannot establish the tunnel normally.
+  -> **NOTE:**  The pre-shared key of the tunnel and the tunnel peer must be the same, otherwise the system cannot establish the tunnel normally.
 
 * `remote_id` - (Optional, Computed, Available since v1.246.0) Identifier of the tunnel peer, which is used for the first-stage negotiation. The length is limited to 100 characters and cannot contain spaces. The default value is the IP address of the user gateway associated with the tunnel.
   - `RemoteId` supports the FQDN format. If you use the FQDN format, we recommend that you select `aggressive` (barbaric mode) as the negotiation mode.
@@ -370,7 +376,6 @@ The following attributes are exported:
 * `bgp_config` - Bgp configuration information.
   * `status` - The negotiation status of Bgp.
 * `create_time` - The creation time of the resource
-* `tunnel_bandwidth` - The bandwidth specification of a single VPN tunnel.
 * `health_check_config` - This parameter is supported if you create an vpn attachment in single-tunnel mode.
   * `status` - health check status
 * `status` - The status of the resource

@@ -7,11 +7,11 @@ description: |-
   Provides a list of Cloud Sso Scim Server Credentials to the user.
 ---
 
-# alicloud\_cloud\_sso\_scim\_server\_credentials
+# alicloud_cloud_sso_scim_server_credentials
 
 This data source provides the Cloud Sso Scim Server Credentials of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.138.0+.
+-> **NOTE:** Available since v1.138.0.
 
 -> **NOTE:** Cloud SSO Only Support `cn-shanghai` And `us-west-1` Region
 
@@ -39,16 +39,16 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The Status of the resource. Valid values: `Disabled`, `Enabled`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `credentials` - A list of Cloud Sso Scim Server Credentials. Each element contains the following attributes:
-	* `create_time` - The CreateTime of the resource.
-	* `credential_id` - The CredentialId of the resource.
-	* `credential_secret` - The CredentialSecret of the resource.
-	* `credential_type` - The CredentialType of the resource.
-	* `directory_id` - The ID of the Directory.
-	* `expire_time` - The ExpireTime of the resource.
-	* `id` - The ID of the SCIM Server Credential.
-	* `status` - The Status of the resource. Valid values: `Disabled`, `Enabled`.
+  * `create_time` - The CreateTime of the resource.
+  * `credential_id` - The CredentialId of the resource.
+  * `credential_secret` - The CredentialSecret of the resource.
+  * `credential_type` - The CredentialType of the resource.
+  * `directory_id` - The ID of the Directory.
+  * `expire_time` - The ExpireTime of the resource.
+  * `id` - The ID of the SCIM Server Credential.
+  * `status` - The Status of the resource. Valid values: `Disabled`, `Enabled`.

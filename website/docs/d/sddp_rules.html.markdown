@@ -45,10 +45,8 @@ The following arguments are supported:
 * `custom_type` - (Optional, ForceNew)  Sensitive Data Identification Rules of Type. Valid values: 
   * `0`: the Built-in.
   * `1`: The User-Defined.
+* `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `ids` - (Optional, ForceNew, Computed)  A list of Rule IDs.
-* `lang` - (Optional, ForceNew) The Request and Receive the Language of the Message Type. Valid values: 
-  * `zh`: Chinese.
-  * `en`: English.
 * `name` - (Optional, ForceNew) The name of rule.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -83,10 +81,10 @@ The following attributes are exported in addition to the arguments listed above:
   * `description` - Sensitive Data Identification a Description of the Rule Information.
   * `display_name` - Sensitive Data Identification Rules, Founder of Account Display Name.
   * `gmt_modified` - Sensitive Data Identification Rules to the Modified Time of the Number of Milliseconds.
-  * `group_id` - Group ID.
   * `id` - The ID of the Rule.
   * `login_name` - Sensitive Data Identification Rules, Founder Of Account Login.
   * `major_key` - The Primary Key.
+  * `name` - The name of rule.
   * `product_code` - Product Code.
   * `product_id` - Product ID.
   * `risk_level_id` - Sensitive Data Identification Rules of Risk Level ID. Valid values:1:S1, Weak Risk Level. 2:S2, Medium Risk Level. 3:S3 High Risk Level. 4:S4, the Highest Risk Level.

@@ -47,15 +47,15 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Check Structure IDs.
 * `structures` - A list of Check Structure Entries. Each element contains the following attributes:
-    * `standard_type` - The type of the check item. Valid values: `RISK` (security risk), `IDENTITY_PERMISSION` (Cloud Infrastructure Entitlement Management, CIEM), `COMPLIANCE` (security compliance).
-    * `standards` - The structure information about the check items of the business type.
-      * `id` - The standard ID of the check item.
-      * `show_name` - The display name of the standard for the check item.
-      * `type` - The standard type of the check item. Valid values: `RISK` (security risk), `IDENTITY_PERMISSION` (CIEM), `COMPLIANCE` (security compliance).
-      * `requirements` - The standards of the check items.
-        * `id` - The ID of the requirement item for the check item.
-        * `show_name` - The display name of the requirement item for the check item.
-        * `total_check_count` - The total number of check items for the requirement.
-        * `sections` - The information about the sections of check items.
-          * `id` - The ID of the section for the check item.
-          * `show_name` - The display name of the section for the check item.
+  * `standard_type` - The type of the check item. Valid values: `RISK` (security risk), `IDENTITY_PERMISSION` (Cloud Infrastructure Entitlement Management, CIEM), `COMPLIANCE` (security compliance).
+  * `standards` - The structure information about the check items of the business type.
+    * `id` - The standard ID of the check item.
+    * `show_name` - The display name of the standard for the check item.
+    * `type` - The standard type of the check item. Valid values: `RISK` (security risk), `IDENTITY_PERMISSION` (CIEM), `COMPLIANCE` (security compliance).
+    * `requirements` - The standards of the check items.
+      * `id` - The ID of the requirement item for the check item.
+      * `show_name` - The display name of the requirement item for the check item.
+      * `total_check_count` - The total number of check items for the requirement.
+      * `sections` - The information about the sections of check items.
+        * `id` - The ID of the section for the check item.
+        * `show_name` - The display name of the section for the check item.

@@ -13,6 +13,8 @@ Provides a MSE Cluster resource. It is a one-stop microservice platform for the 
 
 -> **NOTE:** Available since v1.94.0.
 
+-> **NOTE:** Destroying a `Subscription` instance fails with an error since v1.295.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">

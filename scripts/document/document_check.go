@@ -9,16 +9,24 @@ import (
 )
 
 func main() {
-	docsFileName := strings.TrimSpace(os.Args[1])
+	os.Exit(checkDocument(strings.TrimSpace(os.Args[1])))
+}
+
+func checkDocument(docsFileName string) int {
 	docsFile, err := os.OpenFile(docsFileName, os.O_RDONLY, 0644)
 	if err != nil {
 		log.Printf("open docs file %s failed. Error:%s", docsFileName, err)
-		os.Exit(1)
+		return 1
 	}
 	defer docsFile.Close()
 	scanner := bufio.NewScanner(docsFile)
 	docsFileNameParts := strings.Split(docsFileName, "/")
 	resourceName := "alicloud_" + strings.TrimSuffix(docsFileNameParts[len(docsFileNameParts)-1], ".html.markdown")
+	expectedTitle := "# " + resourceName
+	if len(docsFileNameParts) > 1 &&
+		(docsFileNameParts[len(docsFileNameParts)-2] == "e" || docsFileNameParts[len(docsFileNameParts)-2] == "ephemeral-resources") {
+		expectedTitle = "# Ephemeral: " + resourceName
+	}
 	exitCode := 0
 	fmt.Printf("\n==> Checking docs content of %s ...", docsFileName)
 	titleCheck := false
@@ -87,8 +95,8 @@ func main() {
 					fmt.Printf("\n[WARNING] line %d: please remove the \\", line)
 					text = strings.Replace(text, "\\", "", -1)
 				}
-				if text != "# "+resourceName {
-					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "# "+resourceName, text)
+				if text != expectedTitle {
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, expectedTitle, text)
 					exitCode = 1
 				}
 				continue
@@ -327,6 +335,6 @@ func main() {
 		fmt.Println("\n[Error] Error: import block has not been closed.")
 		exitCode = 1
 	}
-	fmt.Println("\n--- Finished!\n")
-	os.Exit(exitCode)
+	fmt.Println("\n--- Finished!")
+	return exitCode
 }

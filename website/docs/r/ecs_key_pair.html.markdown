@@ -55,7 +55,7 @@ The following arguments are supported:
 * `key_file` - (Optional, ForceNew) The key file.
 * `key_name` - (Optional, ForceNew, Deprecated since v1.121.0) Field `key_name` has been deprecated from provider version 1.121.0. New field `key_pair_name` instead.
 
--> **NOTE:** If `key_pair_name` and `key_name_prefix` are not set, terraform will produce a specified ID to replace.
+  -> **NOTE:** If `key_pair_name` and `key_name_prefix` are not set, terraform will produce a specified ID to replace.
 
 ## Attributes Reference
 

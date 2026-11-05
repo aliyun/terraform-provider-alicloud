@@ -17,6 +17,8 @@ For information about Global Accelerator (GA) Bandwidth Package and how to use i
 
 -> **NOTE:** Available since v1.112.0.
 
+-> **NOTE:** Destroying a `Subscription` instance fails with an error since v2.1.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
+
 ## Example Usage
 
 Basic Usage
@@ -46,9 +48,10 @@ The following arguments are supported:
 * `bandwidth` - (Required, Int) The bandwidth value of bandwidth packet.
 * `type` - (Required, ForceNew) The type of the bandwidth packet. China station only supports return to basic. Valid values: `Basic`, `CrossDomain`.
 * `bandwidth_type` - (Optional) The bandwidth type of the bandwidth. Valid values: `Advanced`, `Basic`, `Enhanced`. If `type` is set to `Basic`, this parameter is required.
--> **NOTE:** At present, only basic can be configured to enhanced, but not enhanced and advanced to other types of accelerated bandwidth.
+
+  -> **NOTE:** At present, only basic can be configured to enhanced, but not enhanced and advanced to other types of accelerated bandwidth.
 * `payment_type` - (Optional, ForceNew) The payment type of the bandwidth. Default value: `Subscription`. Valid values: `PayAsYouGo`, `Subscription`.
-* `pricing_cycle` - (Optional, ForceNew) The billing cycle of the bandwidth package. Valid values: `Month`, `Year`. **NOTE:** `pricing_cycle` is valid only when `payment_type` is set to `Subscription`. If not specified, it defaults to `Month`.
+* `pricing_cycle` - (Optional, ForceNew, Available since v2.3.0) The billing cycle of the bandwidth package. Valid values: `Month`, `Year`. **NOTE:** `pricing_cycle` is valid only when `payment_type` is set to `Subscription`. If not specified, it defaults to `Month`. When `pricing_cycle` is set to `Month`, `duration` ranges from `1` to `9`; when it is set to `Year`, `duration` ranges from `1` to `3`.
 * `billing_type` - (Optional, ForceNew) The billing type. Valid values: `PayBy95`, `PayByTraffic`. **NOTE:** `billing_type` is valid only when `payment_type` is set to `PayAsYouGo`.
 * `ratio` - (Optional, ForceNew, Int) The minimum percentage for the pay-by-95th-percentile metering method. Valid values: `30` to `100`. **NOTE:** `ratio` is valid only when `billing_type` is set to `PayBy95`.
 * `cbn_geographic_region_ida` - (Optional, ForceNew) Interworking area A of cross domain acceleration package. Only international stations support returning this parameter. Default value: `China-mainland`.

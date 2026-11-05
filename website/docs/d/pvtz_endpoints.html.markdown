@@ -7,11 +7,11 @@ description: |-
   Provides a list of Pvtz Endpoints to the user.
 ---
 
-# alicloud\_pvtz\_endpoints
+# alicloud_pvtz_endpoints
 
 This data source provides the Pvtz Endpoints of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.143.0+.
+-> **NOTE:** Available since v1.143.0.
 
 ## Example Usage
 
@@ -44,21 +44,22 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `CHANGE_FAILED`, `CHANGE_INIT`, `EXCEPTION`, `FAILED`, `INIT`, `SUCCESS`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Endpoint names.
 * `endpoints` - A list of Pvtz Endpoints. Each element contains the following attributes:
-	* `create_time` - The creation time of the resource.
-	* `endpoint_name` - The name of the resource.
-	* `ip_configs` - The Ip Configs.
-		* `ip` - The IP address within the parameter range of the subnet mask. **NOTE:** It is recommended to use the IP address assigned by the system.
-		* `vswitch_id` - The Vswitch id.
-		* `zone_id` - The Zone ID.
-		* `cidr_block` - The Subnet mask.
-	* `security_group_id` - The ID of the Security Group.
-	* `status` - The status of the resource. Valid values: `CHANGE_FAILED`, `CHANGE_INIT`, `EXCEPTION`, `FAILED`, `INIT`, `SUCCESS`.
-	* `vpc_id` - The VPC ID.
-	* `vpc_name` - The name of the VPC.
-	* `vpc_region_id` - The Region of the VPC.
+  * `create_time` - The creation time of the resource.
+  * `endpoint_name` - The name of the resource.
+  * `id` - The ID of the Endpoint.
+  * `ip_configs` - The Ip Configs. Each element contains the following attributes:
+    * `ip` - The IP address within the parameter range of the subnet mask. **NOTE:** It is recommended to use the IP address assigned by the system.
+    * `vswitch_id` - The Vswitch id.
+    * `zone_id` - The Zone ID.
+    * `cidr_block` - The Subnet mask.
+  * `security_group_id` - The ID of the Security Group.
+  * `status` - The status of the resource. Valid values: `CHANGE_FAILED`, `CHANGE_INIT`, `EXCEPTION`, `FAILED`, `INIT`, `SUCCESS`.
+  * `vpc_id` - The VPC ID.
+  * `vpc_name` - The name of the VPC.
+  * `vpc_region_id` - The Region of the VPC.

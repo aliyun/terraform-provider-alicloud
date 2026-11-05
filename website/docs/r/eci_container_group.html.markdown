@@ -152,7 +152,6 @@ The following arguments are supported:
 * `init_containers` - (Optional, Set) The list of initContainers. See [`init_containers`](#init_containers) below.
 * `dns_policy` - (Optional, ForceNew, Available since v1.232.0) The policy of DNS. Default value: `Default`. Valid values: `Default` and `None`.
 * `dns_config` - (Optional, Set) The structure of dnsConfig. See [`dns_config`](#dns_config) below.
-* `eci_security_context` - (Deprecated since 1.215.0, Optional, ForceNew, Set) The security context of the container group. See [`eci_security_context`](#eci_security_context) below.
 * `security_context` - (Optional, ForceNew, Set, Available since v1.215.0) The security context of the container group. See [`security_context`](#security_context) below.
 * `host_aliases` - (Optional, ForceNew, Set) HostAliases. See [`host_aliases`](#host_aliases) below.
 * `volumes` - (Optional, Set) The list of volumes. See [`volumes`](#volumes) below.
@@ -197,7 +196,8 @@ The volumes supports the following:
 * `nfs_volume_server` - (Optional, ForceNew) The address of the NFS server.
 * `nfs_volume_read_only` - (Optional, ForceNew, Bool) The nfs volume read only. Default value: `false`.
 * `config_file_volume_config_file_to_paths` - (Optional, Set, ForceNew) The paths of the ConfigFile volume. See [`config_file_volume_config_file_to_paths`](#volumes-config_file_volume_config_file_to_paths) below.
--> **NOTE:** Every volumes mounted must have `name` and `type` attributes.
+
+  -> **NOTE:** Every volumes mounted must have `name` and `type` attributes.
 
 ### `volumes-config_file_volume_config_file_to_paths`
 
@@ -212,19 +212,6 @@ The host_aliases supports the following:
 
 * `ip` - (Optional, ForceNew) The IP address of the host.
 * `hostnames` - (Optional, ForceNew, List) The information about the host.
-
-### `eci_security_context`
-
-The eci_security_context supports the following:
-
-* `sysctls` - (Optional, ForceNew, Set) Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch. See [`sysctls`](#eci_security_context-sysctls) below.
-
-### `eci_security_context-sysctls`
-
-The sysctls supports the following:
-
-* `name` - (Optional, ForceNew) The name of the security context that the container group runs.
-* `value` - (Optional, ForceNew) The variable value of the security context that the container group runs.
 
 ### `security_context`
 
@@ -376,7 +363,7 @@ The liveness_probe supports the following:
 * `tcp_socket` - (Optional, Set) Health check using TCP socket method. See [`tcp_socket`](#containers-liveness_probe-tcp_socket) below.
 * `http_get` - (Optional, Set) Health check using HTTP request method. See [`http_get`](#containers-liveness_probe-http_get) below.
 
--> **NOTE:** When you configure `liveness_probe`, you can select only one of the `exec`, `tcp_socket`, `http_get`.
+  -> **NOTE:** When you configure `liveness_probe`, you can select only one of the `exec`, `tcp_socket`, `http_get`.
 
 ### `containers-liveness_probe-exec`
 
@@ -411,7 +398,7 @@ The readiness_probe supports the following:
 * `tcp_socket` - (Optional) Health check using TCP socket method. See [`tcp_socket`](#containers-readiness_probe-tcp_socket) below.
 * `http_get` - (Optional) Health check using HTTP request method. See [`http_get`](#containers-readiness_probe-http_get) below.
 
--> **NOTE:** When you configure `readiness_probe`, you can select only one of the `exec`, `tcp_socket`, `http_get`.
+  -> **NOTE:** When you configure `readiness_probe`, you can select only one of the `exec`, `tcp_socket`, `http_get`.
 
 ### `containers-readiness_probe-exec`
 

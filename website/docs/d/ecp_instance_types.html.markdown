@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ecp available instance types to the user.
 ---
 
-# alicloud\_ecp\_instance\_types
+# alicloud_ecp_instance_types
 
 This data source provides the available instance types with the Cloud Phone (ECP) Instance of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.158.0+.
+-> **NOTE:** Available since v1.158.0.
 
 ## Example Usage
 
@@ -31,13 +31,14 @@ The following arguments are supported:
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `instance_types` - A list of ecp Instance types. Each element contains the following attributes:
-    * `instance_type` - The list of available instance type.
-    * `default_resolution` - The default resolution of the current instance type.
-    * `cpu_core_count` - The cpu core count of the current instance type.
-    * `name` - The name of the current instance type.
-    * `name_en` - The English name of the current instance type.
+  * `instance_type` - The list of available instance type.
+  * `default_resolution` - The default resolution of the current instance type.
+  * `cpu_core_count` - The cpu core count of the current instance type.
+  * `name` - The name of the current instance type.
+  * `name_en` - The English name of the current instance type.
+  * `instance_type_family` - The family of the current instance type.

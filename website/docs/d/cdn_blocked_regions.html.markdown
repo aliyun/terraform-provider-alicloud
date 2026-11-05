@@ -7,11 +7,11 @@ description: |-
   Provides a list of Cdn Blocked Regions to the user.
 ---
 
-# alicloud\_cdn\_blocked\_regions
+# alicloud_cdn_blocked_regions
 
 This data source provides the Cdn blocked regions.
 
--> **NOTE:** Available in v1.173.0+.
+-> **NOTE:** Available since v1.173.0.
 
 ## Example Usage
 
@@ -29,7 +29,7 @@ The following arguments are supported:
 
 * `language` - (Required, ForceNew) The language. Valid values: `zh`, `en`, `jp`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

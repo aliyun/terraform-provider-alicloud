@@ -7,19 +7,19 @@ description: |-
     Provides a list of alikafka consumer groups available to the user.
 ---
 
-# alicloud\_alikakfa\_consumer\_groups
+# alicloud\_alikafka\_consumer\_groups
 
 This data source provides a list of ALIKAFKA Consumer Groups in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.56.0+
+-> **NOTE:** Available since v1.56.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_alikafka_consumer_groups" "consumer_groups_ds" {
-  instance_id = "xxx"
+  instance_id       = "xxx"
   consumer_id_regex = "CID-alikafkaGroupDatasourceName"
-  output_file = "consumerGroups.txt"
+  output_file       = "consumerGroups.txt"
 }
 
 output "first_group_name" {
@@ -36,14 +36,19 @@ The following arguments are supported:
 * `consumer_id_regex` - (Optional) A regex string to filter results by the consumer group id. 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
+### `groups`
+
+* `tags` - (Optional) A mapping of tags to assign to the consumer group.
+
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of consumer group names.
-* `groups` - A list of consumer group. Each element contains the following attributes:
-    * `id` - The ID of the consumer group, It is formatted to `<instance_id>:<consumer_id>`.
-    * `consumer_id` - The name of the consumer group.
-    * `remark` - The remark of the consumer group.
-    * `instance_id` - The instance_id of the instance.
-    * `tags` - A mapping of tags to assign to the consumer group.
+* `consumer_ids` - A list of consumer group ids.
+* `groups` - A list of consumer group. Each element contains the following attributes. See [`groups`](#groups) for the optional argument block.
+  * `id` - The ID of the consumer group, It is formatted to `<instance_id>:<consumer_id>`.
+  * `consumer_id` - The name of the consumer group.
+  * `remark` - The remark of the consumer group.
+  * `instance_id` - The instance_id of the instance.
+  * `tags` - A mapping of tags to assign to the consumer group.

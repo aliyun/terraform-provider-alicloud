@@ -47,11 +47,11 @@ The following arguments are supported:
   - true: Allow sharing to any account.
 * `permission_names` - (Optional, List, Available since v1.261.0) Share permission name. When it is empty, the system automatically binds the default permissions associated with the resource type. For more information, see [Permission Library](https://www.alibabacloud.com/help/en/resource-management/resource-sharing/user-guide/permissions-for-resource-sharing).
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `resource_arns` - (Optional, List, Available since v1.268.0) ResourceArns
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `resource_group_id` - (Optional, Computed, Available since v1.261.0) The ID of the resource group
 * `resource_properties` - (Optional, Set, Available since v1.274.0) A list of resource properties. See [`resource_properties`](#resource_properties) below.
@@ -59,12 +59,12 @@ The following arguments are supported:
 * `resource_share_name` - (Required) The name of resource share.
 * `resources` - (Optional, List, Available since v1.261.0) List of shared resources. See [`resources`](#resources) below.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `tags` - (Optional, Map, Available since v1.261.0) The tag of the resource
 * `targets` - (Optional, List) Resource user.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 ### `resource_properties`
 

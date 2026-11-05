@@ -1,0 +1,432 @@
+package maxcompute_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/maxcompute"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+// Test MaxCompute RoleUserAttachment. >>> Resource test cases, automatically generated.
+// Case RoleUserAttachment_terraform测试(RamRole) 9962
+func TestAccAliCloudMaxComputeRoleUserAttachment_basic9962(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_max_compute_role_user_attachment.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudMaxComputeRoleUserAttachmentMap9962)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return maxcompute.NewMaxComputeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMaxComputeRoleUserAttachment")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMaxComputeRoleUserAttachmentBasicDependence9962)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"role_name":    "${alicloud_max_compute_role.default.role_name}",
+					"user":         "${local.user}",
+					"project_name": "${alicloud_maxcompute_project.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"role_name":    acctest.CHECKSET,
+						"user":         acctest.CHECKSET,
+						"project_name": acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudMaxComputeRoleUserAttachmentMap9962 = map[string]string{}
+
+func AlicloudMaxComputeRoleUserAttachmentBasicDependence9962(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "aliyun_user" {
+  default = "ALIYUN$openapiautomation_testcloud_com"
+}
+
+variable "ram_user" {
+  default = "RAM$openapiautomation_testcloud_com:tf-example"
+}
+
+variable "ram_role" {
+  default = "RAM$openapiautomation_testcloud_com:role/terraform-no-ak-assumerole-no-deleting"
+}
+
+resource "alicloud_ram_role" "default" {
+  name     = replace(var.name, "_", "-")
+  document = <<EOF
+{
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": ["ecs.aliyuncs.com"]
+      }
+    }
+  ],
+  "Version": "1"
+}
+EOF
+  force    = true
+}
+
+locals {
+  user = format("RAM$%%s:role/%%s", var.account_name, alicloud_ram_role.default.name)
+}
+
+
+`, name)
+}
+
+// Case RoleUserAttachment_terraform测试(RamUser) 9961
+func TestAccAliCloudMaxComputeRoleUserAttachment_basic9961(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_max_compute_role_user_attachment.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudMaxComputeRoleUserAttachmentMap9961)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return maxcompute.NewMaxComputeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMaxComputeRoleUserAttachment")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMaxComputeRoleUserAttachmentBasicDependence9961)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"role_name":    "${alicloud_max_compute_role.default.role_name}",
+					"user":         "${local.user}",
+					"project_name": "${alicloud_maxcompute_project.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"role_name":    acctest.CHECKSET,
+						"user":         acctest.CHECKSET,
+						"project_name": acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudMaxComputeRoleUserAttachmentMap9961 = map[string]string{}
+
+func AlicloudMaxComputeRoleUserAttachmentBasicDependence9961(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "aliyun_user" {
+  default = "ALIYUN$openapiautomation_testcloud_com"
+}
+
+variable "ram_user" {
+  default = "RAM$openapiautomation_testcloud_com:tf-example"
+}
+
+variable "ram_role" {
+  default = "RAM$openapiautomation_testcloud_com:role/terraform-no-ak-assumerole-no-deleting"
+}
+
+resource "alicloud_ram_user" "default" {
+  name = var.name
+}
+
+locals {
+  user = format("RAM$%%s:%%s", var.account_name, alicloud_ram_user.default.name)
+}
+
+
+`, name)
+}
+
+// Case RoleUserAttachment_terraform测试(adminRole) 9966
+func TestAccAliCloudMaxComputeRoleUserAttachment_basic9966(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_max_compute_role_user_attachment.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudMaxComputeRoleUserAttachmentMap9966)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return maxcompute.NewMaxComputeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMaxComputeRoleUserAttachment")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMaxComputeRoleUserAttachmentBasicDependence9966)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"role_name":    "admin",
+					"user":         "${local.user}",
+					"project_name": "${alicloud_maxcompute_project.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"role_name":    "admin",
+						"user":         acctest.CHECKSET,
+						"project_name": acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudMaxComputeRoleUserAttachmentMap9966 = map[string]string{}
+
+func AlicloudMaxComputeRoleUserAttachmentBasicDependence9966(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "aliyun_user" {
+  default = "ALIYUN$openapiautomation_testcloud_com"
+}
+
+variable "ram_user" {
+  default = "RAM$openapiautomation_testcloud_com:tf-example"
+}
+
+variable "ram_role" {
+  default = "RAM$openapiautomation_testcloud_com:role/terraform-no-ak-assumerole-no-deleting"
+}
+
+resource "alicloud_ram_user" "default" {
+  name = var.name
+}
+
+locals {
+  user = format("RAM$%%s:%%s", var.account_name, alicloud_ram_user.default.name)
+}
+
+
+`, name)
+}
+
+// Case RoleUserAttachment_terraform测试(super_administratorRole) 9967
+func TestAccAliCloudMaxComputeRoleUserAttachment_basic9967(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_max_compute_role_user_attachment.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudMaxComputeRoleUserAttachmentMap9967)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return maxcompute.NewMaxComputeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMaxComputeRoleUserAttachment")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMaxComputeRoleUserAttachmentBasicDependence9967)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"role_name":    "${alicloud_max_compute_role.default.role_name}",
+					"user":         "${local.user}",
+					"project_name": "${alicloud_maxcompute_project.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"role_name":    acctest.CHECKSET,
+						"user":         acctest.CHECKSET,
+						"project_name": acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudMaxComputeRoleUserAttachmentMap9967 = map[string]string{}
+
+func AlicloudMaxComputeRoleUserAttachmentBasicDependence9967(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "aliyun_user" {
+  default = "ALIYUN$openapiautomation_testcloud_com"
+}
+
+variable "ram_user" {
+  default = "RAM$openapiautomation_testcloud_com:tf-example"
+}
+
+variable "ram_role" {
+  default = "RAM$openapiautomation_testcloud_com:role/terraform-no-ak-assumerole-no-deleting"
+}
+
+resource "alicloud_ram_user" "default" {
+  name = var.name
+}
+
+locals {
+  user = format("RAM$%%s:%%s", var.account_name, alicloud_ram_user.default.name)
+}
+
+
+`, name)
+}
+
+// Case RoleUserAttachment_terraform测试(AliyunUser) 9960
+func TestAccAliCloudMaxComputeRoleUserAttachment_basic9960(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_max_compute_role_user_attachment.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudMaxComputeRoleUserAttachmentMap9960)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return maxcompute.NewMaxComputeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMaxComputeRoleUserAttachment")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MaxComputeProjectSupportRegions)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMaxComputeRoleUserAttachmentBasicDependence9960)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"role_name":    "${alicloud_max_compute_role.default.role_name}",
+					"user":         "${local.user}",
+					"project_name": "${alicloud_maxcompute_project.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"role_name":    acctest.CHECKSET,
+						"user":         acctest.CHECKSET,
+						"project_name": acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudMaxComputeRoleUserAttachmentMap9960 = map[string]string{}
+
+func AlicloudMaxComputeRoleUserAttachmentBasicDependence9960(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "aliyun_user" {
+  default = "ALIYUN$openapiautomation_testcloud_com"
+}
+
+variable "ram_user" {
+  default = "RAM$openapiautomation_testcloud_com:tf-example"
+}
+
+variable "ram_role" {
+  default = "RAM$openapiautomation_testcloud_com:role/terraform-no-ak-assumerole-no-deleting"
+}
+
+variable "account_name" {
+  default = "openapiautomation_testcloud_com"
+}
+
+resource "alicloud_maxcompute_project" "default" {
+  default_quota = "默认后付费Quota"
+  project_name  = var.name
+  comment       = var.name
+  product_type  = "PayAsYouGo"
+}
+
+resource "alicloud_max_compute_role" "default" {
+  project_name = alicloud_maxcompute_project.default.id
+  role_name    = "role_project_admin"
+  type         = "admin"
+  policy       = jsonencode({
+    Statement = [{
+      Action   = ["odps:*"]
+      Effect   = "Allow"
+      Resource = ["acs:odps:*:projects/project_name/authorization/roles", "acs:odps:*:projects/project_name/authorization/roles/*/*"]
+    }]
+    Version = "1"
+  })
+}
+
+locals {
+  user = format("ALIYUN$%%s", var.account_name)
+}
+
+
+`, name)
+}
+
+// Test MaxCompute RoleUserAttachment. <<< Resource test cases, automatically generated.

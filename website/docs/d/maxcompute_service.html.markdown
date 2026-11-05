@@ -7,7 +7,7 @@ description: |-
     Provides a datasource to open the Maxcompute service automatically.
 ---
 
-# alicloud\_maxcompute\_service
+# alicloud_maxcompute_service
 
 -> **NOTE:** When you open MaxCompute service, you'd better open [DataWorks service](https://www.alibabacloud.com/help/en/product/72772.htm) as well.
 
@@ -15,9 +15,11 @@ Using this data source can open Maxcompute service automatically. If the service
 
 For information about Maxcompute and how to use it, see [What is Maxcompute](https://www.alibabacloud.com/help/en/product/27797.htm).
 
--> **NOTE:** Available in v1.117.0+
+-> **NOTE:** Available since v1.117.0
 
 ~> **NOTE:** This datasource has been deprecated since provider version v1.228.0. Please use the resource `alicloud_max_compute_quota` instead.
+
+~> **NOTE:** The `OpenMaxComputeService` API this datasource relied on has been decommissioned, so this datasource can no longer activate the MaxCompute service. Setting `enable = "On"` now only checks whether the service has been activated in the current region: it returns `Opened` when activated, and reports an error otherwise. Please activate MaxCompute in the [Alibaba Cloud console](https://www.alibabacloud.com/help/en/maxcompute/getting-started/activate-maxcompute-and-dataworks) instead.
 
 ## Example Usage
 
@@ -33,7 +35,7 @@ The following arguments are supported:
 
 * `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: `On` or `Off`. Default to `Off`.
 
--> **NOTE:** Setting `enable = "On"` to open the Maxcompute service that means you have read and agreed the [Maxcompute Terms of Service](https://help.aliyun.com/document_detail/98605.html). The service can not closed once it is opened.
+  -> **NOTE:** Setting `enable = "On"` to open the Maxcompute service that means you have read and agreed the [Maxcompute Terms of Service](https://help.aliyun.com/document_detail/98605.html). The service can not closed once it is opened.
 
 ## Attributes Reference
 

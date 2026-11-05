@@ -77,14 +77,14 @@ The following arguments are supported:
   - `IPv6`: IPv6 is supported only if the VBR for which you want to create the BGP group has IPv6 enabled.
 * `is_fake_asn` - (Optional, Computed) Specifies whether to use a fake AS number. Valid values: `true`, `false`.
 
--> **NOTE:** Note A router that runs BGP typically belongs to only one AS. If you need to replace an AS with a new one, but you cannot immediately modify BGP configurations due to business requirements, you can specify a fake AS number to establish a connection with the local end. This ensures service continuity in scenarios such as AS migration or AS merging.
+  -> **NOTE:** Note A router that runs BGP typically belongs to only one AS. If you need to replace an AS with a new one, but you cannot immediately modify BGP configurations due to business requirements, you can specify a fake AS number to establish a connection with the local end. This ensures service continuity in scenarios such as AS migration or AS merging.
 
 * `local_asn` - (Optional, Computed) The custom ASN on the Alibaba Cloud side. Valid values:
   - `45104`
   - **64512~65534** 
   - **4200000000~4294967294**.
 
--> **NOTE:**  `65025` is reserved by Alibaba Cloud. By default, Alibaba Cloud uses `45104` as `LocalAsn`. If you use custom `LocalAsn` in multi-line access scenarios, loops in BGP may occur. 
+  -> **NOTE:**  `65025` is reserved by Alibaba Cloud. By default, Alibaba Cloud uses `45104` as `LocalAsn`. If you use custom `LocalAsn` in multi-line access scenarios, loops in BGP may occur.
 
 * `peer_asn` - (Required) The ASN of the gateway device in the data center. 
 * `route_limit` - (Optional, Computed, Int, Available since v1.261.0) The maximum number of routes supported by a BGP peer. Default value: 110.

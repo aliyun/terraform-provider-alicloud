@@ -77,7 +77,6 @@ The following arguments are supported:
 * `disk_category` - (Required, ForceNew) The disk type of instance. Valid values: `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_essd_pl0`, `capacity_cloud_storage`, `local_ssd_pro`, `local_hdd_pro`. **NOTE:** From version 1.207.0, `disk_category` can be set to `cloud_essd_pl0`.
 * `payment_type` - (Required, ForceNew) The billing method. Valid values: `PayAsYouGo` and `Subscription`.
 * `cold_storage` - (Optional, Int) The cold storage capacity of the instance. Unit: GB. Valid values: [800, 1000000].
-* `core_num` - (Removed since v1.207.0) The core num. **NOTE:** Field `core_num` has been deprecated from provider version 1.188.0, and it has been removed from provider version 1.207.0.
 * `core_spec` - (Optional, ForceNew) The core spec. When `disk_category` is `local_ssd_pro` or `local_hdd_pro`, this filed is valid.
    - When `disk_category` is `local_ssd_pro`, the valid values is `lindorm.i2.xlarge`, `lindorm.i2.2xlarge`, `lindorm.i2.4xlarge`, `lindorm.i2.8xlarge`.
    - When `disk_category` is `local_hdd_pro`, the valid values is `lindorm.d2c.6xlarge`, `lindorm.d2c.12xlarge`, `lindorm.d2c.24xlarge`, `lindorm.d2s.5xlarge`, `lindorm.d2s.10xlarge`, `lindorm.d1.2xlarge`, `lindorm.d1.4xlarge`, `lindorm.d1.6xlarge`.
@@ -85,14 +84,11 @@ The following arguments are supported:
 * `duration` - (Optional) The duration of paid. Valid when the `payment_type` is `Subscription`.  When `pricing_cycle` set to `Month`, the valid value id `1` to `9`.  When `pricing_cycle` set to `Year`, the valid value id `1` to `3`.
 * `file_engine_node_count` - (Optional, Int) The count of file engine.
 * `file_engine_specification` - (Optional) The specification of file engine. Valid values: `lindorm.c.xlarge`.
-* `group_name` - (Removed since v1.211.0) The group name. **NOTE:** Field `group_name` has been removed from provider version 1.211.0.
 * `instance_name` - (Optional) The name of the instance.
 * `instance_storage` - (Optional) The storage capacity of the instance. Unit: GB. Valid values: [80, 10485760], and the value must be divisible by 80.
 * `ip_white_list` - (Optional, List) The ip white list of instance.
 * `lts_node_count` - (Optional, Int) The count of lindorm tunnel service.
 * `lts_node_specification` - (Optional) The specification of lindorm tunnel service. Valid values: `lindorm.g.2xlarge`, `lindorm.g.xlarge`.
-* `phoenix_node_count` - (Removed since v1.211.0) The count of phoenix. **NOTE:** Field `phoenix_node_count` has been removed from provider version 1.211.0.
-* `phoenix_node_specification` - (Removed since v1.211.0) The specification of phoenix. **NOTE:** Field `phoenix_node_specification` has been removed from provider version 1.211.0.
 * `pricing_cycle` - (Optional) The pricing cycle. Valid when the `payment_type` is `Subscription`. Valid values: `Month` and `Year`.
 * `search_engine_node_count` - (Optional, Int) The count of search engine.
 * `search_engine_specification` - (Optional) The specification of search engine. Valid values: `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`, `lindorm.g.xlarge`.
@@ -103,7 +99,6 @@ The following arguments are supported:
 * `time_series_engine_specification` - (Optional, Available since v1.182.0) The specification of time series engine. Valid values: `lindorm.g.xlarge`, `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`, `lindorm.r.8xlarge`.
 * `stream_engine_node_count` - (Optional, Int, Available since v1.211.0) The number of LindormStream nodes in the instance.
 * `stream_engine_specification` - (Optional, Available since v1.211.0) The specification of the LindormStream nodes in the instance. Valid values: `lindorm.g.xlarge`, `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`.
-* `upgrade_type` - (Removed since v1.207.0) The upgrade type. **NOTE:** Field `upgrade_type` has been deprecated from provider version 1.163.0, and it has been removed from provider version 1.207.0.
 * `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The VPC ID of the instance.
 * `zone_id` - (Optional, ForceNew) The zone ID of the instance.
 * `resource_group_id` - (Optional, ForceNew, Available since v1.177.0) The ID of the resource group.
