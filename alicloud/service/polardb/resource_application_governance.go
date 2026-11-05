@@ -520,8 +520,38 @@ func storagePlanIsBackfillOnly(configured, previous []map[string]interface{}) bo
 				return false
 			}
 		}
+		// A write-only attribute the configuration used to set but no longer
+		// declares is a real removal, not a Read back-fill: dropping its diff
+		// would leave the state and the configuration permanently different.
+		// Attributes the query API returns may disappear from the configuration
+		// without a change because the service value is the intended state.
+		for key, raw := range previous[index] {
+			previousValue, _ := raw.(string)
+			if strings.TrimSpace(previousValue) == "" {
+				continue
+			}
+			if _, configuredKey := configuredItem[key]; configuredKey {
+				continue
+			}
+			if storageAttributeIsReadBack(key) {
+				continue
+			}
+			return false
+		}
 	}
 	return true
+}
+
+// storageAttributeIsReadBack reports whether DescribeApplicationAttribute fills
+// the storages attribute, so a configuration that omits it keeps the service
+// value instead of planning a removal.
+func storageAttributeIsReadBack(key string) bool {
+	for _, field := range storagesReadableFields {
+		if field.schemaKey == key {
+			return true
+		}
+	}
+	return false
 }
 
 // pairConfiguredStorageMember returns the index of the state member a
@@ -843,24 +873,23 @@ func applicationWhitelistFromResponse(arrays []interface{}, configuredName strin
 
 // mergeApplicationEndpoints reconciles the configured endpoints with the
 // response. The query API returns an endpoint description but no endpoint
-// type, so a response member can only be attributed by an equal description; a
-// single configured member paired with a single response member adopts the
-// response description so a server-side change surfaces as drift instead of
-// being hidden. Response-only members are not invented because their type is
-// unknown. It returns nil when there is nothing identity-safe to write.
+// type, so a response member can only be attributed by an equal description.
+// A description the configuration sets is kept verbatim: it is a ForceNew
+// attribute, so replacing it with a different service value would plan a
+// replacement on every run. A single configured member that omits the
+// description adopts the response value, and an import (no configured
+// members) rebuilds the members from the response. Response-only members are
+// not invented because their type is unknown. It returns nil when there is
+// nothing identity-safe to write.
 func mergeApplicationEndpoints(configured interface{}, remote []interface{}) []map[string]interface{} {
 	configuredItems := blockItems(configured)
 	remoteItems := make([]map[string]interface{}, 0, len(remote))
-	descriptions := make(map[string]bool, len(remote))
 	for _, raw := range remote {
 		item, ok := raw.(map[string]interface{})
 		if !ok || item == nil {
 			continue
 		}
 		remoteItems = append(remoteItems, item)
-		if description, _ := item["Description"].(string); strings.TrimSpace(description) != "" {
-			descriptions[strings.TrimSpace(description)] = true
-		}
 	}
 	if len(remoteItems) == 0 {
 		return nil
@@ -890,7 +919,7 @@ func mergeApplicationEndpoints(configured interface{}, remote []interface{}) []m
 		}
 		description, _ := member["description"].(string)
 		description = strings.TrimSpace(description)
-		if description != "" && descriptions[description] {
+		if description != "" {
 			member["description"] = description
 		} else if len(configuredItems) == 1 && len(remoteItems) == 1 {
 			if remoteDescription, _ := remoteItems[0]["Description"].(string); strings.TrimSpace(remoteDescription) != "" {

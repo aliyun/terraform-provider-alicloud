@@ -1007,6 +1007,42 @@ func TestUnitPolarDBApplicationStoragesPlanConfiguredChanges(t *testing.T) {
 	}
 }
 
+// TestUnitPolarDBApplicationStoragesPlanRemovedWriteOnlyAttribute proves that
+// deleting a write-only attribute the state still carries is a real change:
+// CustomizeDiff must not clear it as a Read back-fill.
+func TestUnitPolarDBApplicationStoragesPlanRemovedWriteOnlyAttribute(t *testing.T) {
+	state := polardbStorageBackFilledMember()
+	configured := polardbStorageMember(map[string]interface{}{
+		"container_mount_path": "/data/container",
+		"storage_endpoint":     "oss.example.invalid",
+		"endpoint_id":          "pe-1",
+	})
+	diff := polardbPlanDiff(t, []interface{}{state}, []interface{}{configured})
+	if polardbPlanIsEmpty(diff) {
+		t.Fatal("removing a configured mount_path must stay visible in the plan")
+	}
+	if !diff.RequiresNew() {
+		t.Fatal("removing a ForceNew attribute must plan a replacement")
+	}
+}
+
+// TestUnitPolarDBApplicationStoragesPlanRemovedReadBackAttribute proves that
+// omitting an attribute Read fills (the service value is the intended state)
+// still plans no change.
+func TestUnitPolarDBApplicationStoragesPlanRemovedReadBackAttribute(t *testing.T) {
+	state := polardbStorageBackFilledMember()
+	configured := polardbStorageMember(map[string]interface{}{
+		"mount_path":           "/data/source",
+		"container_mount_path": "/data/container",
+		"storage_endpoint":     "oss.example.invalid",
+		"endpoint_id":          "pe-1",
+	})
+	diff := polardbPlanDiff(t, []interface{}{state}, []interface{}{configured})
+	if !polardbPlanIsEmpty(diff) {
+		t.Fatalf("omitting Read back-filled attributes must not plan a change, got %#v", diff.Attributes)
+	}
+}
+
 // TestUnitPolarDBApplicationStoragesPlanCapacityForms proves that an equivalent
 // capacity spelling plans no change while a real capacity change does.
 func TestUnitPolarDBApplicationStoragesPlanCapacityForms(t *testing.T) {
@@ -1269,11 +1305,32 @@ func TestUnitPolarDBApplicationReadWhitelistTypeAndEndpointDescription(t *testin
 		t.Fatalf("endpoints = %#v, want one member", d.Get("endpoints"))
 	}
 	member := endpoints.List()[0].(map[string]interface{})
-	if member["description"] != "server-side-description" {
-		t.Errorf("endpoints description = %#v, want the server-side value", member["description"])
+	if member["description"] != "configured-description" {
+		t.Errorf("endpoints description = %#v, want the configured value kept", member["description"])
 	}
 	if member["endpoint_type"] != "Primary" {
 		t.Errorf("endpoints endpoint_type = %#v, want the configured value kept", member["endpoint_type"])
+	}
+
+	// A configuration that omits the description adopts the reported value, so
+	// an import restores it; a configured value must never be overwritten.
+	imported := schema.TestResourceDataRaw(t, ResourceApplication().Schema, map[string]interface{}{
+		"application_type": "polarclaw",
+		"architecture":     "x86",
+		"region_id":        "cn-beijing",
+		"endpoints":        []interface{}{map[string]interface{}{"endpoint_type": "Primary"}},
+	})
+	imported.SetId("app-endpoint-import")
+	if err := ResourceApplication().Read(imported, client); err != nil {
+		t.Fatalf("resource read returned error: %v", err)
+	}
+	importedEndpoints, ok := imported.Get("endpoints").(*schema.Set)
+	if !ok || importedEndpoints.Len() != 1 {
+		t.Fatalf("imported endpoints = %#v, want one member", imported.Get("endpoints"))
+	}
+	importedMember := importedEndpoints.List()[0].(map[string]interface{})
+	if importedMember["description"] != "server-side-description" {
+		t.Errorf("imported endpoints description = %#v, want the server-side value", importedMember["description"])
 	}
 }
 

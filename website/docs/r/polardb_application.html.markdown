@@ -13,7 +13,7 @@ Provides a PolarDB Application resource. A PolarDB Application is an AI-driven d
 
 -> **NOTE:** Available since v1.279.0.
 
--> **NOTE:** `vpc_nat_gateway_id`, `security_ip_type`, `security_ip_list`, `component_id`, the `storage_type`/`storage_instance_id`/`storage_capacity`/`storage_performance_level` members of `storages` and the database/model members of `mem_application_spec` are read back from the application, so `terraform import` restores them. `storages`, `endpoints`, `security_ip_list`, `security_ip_array_name` and `component_id` are `Computed` because the query API reports them even when the configuration declares none. Two values have an environment boundary: the query API may report only the default whitelist entry, in which case an imported custom `security_ip_array_name` is reported as `default`, and the endpoint description is only restored when the query reports it (the default endpoint may not). The remaining create-only inputs — `parameters`, `modify_mode`, `model_api_key`, `model_from`, `model_base_url`, `model_name`, `model_api`, `ai_db_cluster_id`, `resource_group_id`, `target_version`, `skill_template_id`, `dnat_ip_address`, `dnat_entries`, `auth_provider`, `auth_provider_config`, `auto_allocate_public_eip`, `agentic_db_cluster_id`, `agentic_db_branch_spec`, `knowledge_application_spec`, `storages.storage_endpoint`, `storages.endpoint_id`, `storages.mount_path`, `storages.container_mount_path`, `mem_application_spec.db_password`, `mem_application_spec.embedder_model_dimension`, `mem_application_spec.shard`, `architecture` and `upgrade_version` — are not returned by the query API (or are operation triggers) and keep their configured value; spell them out in the configuration after an import. `dnat_entries` is a special case: `DescribeApplicationAttribute` reports `DnatMappings`, but the front port is allocated by the service when it is omitted and the member has no computed attribute, so the collection is left at the configured value.
+-> **NOTE:** `vpc_nat_gateway_id`, `architecture` (when the query reports it), `security_ip_type`, `security_ip_list`, `component_id`, the `storage_type`/`storage_instance_id`/`storage_capacity`/`storage_performance_level` members of `storages` and the database/model members of `mem_application_spec` are read back from the application, so `terraform import` restores them. `storages`, `endpoints`, `security_ip_list`, `security_ip_array_name` and `component_id` are `Computed` because the query API reports them even when the configuration declares none. Two values have an environment boundary: the query API may report only the default whitelist entry, in which case an imported custom `security_ip_array_name` is reported as `default`, and the endpoint description is only restored when the query reports it (the default endpoint may not). The remaining create-only inputs — `parameters`, `modify_mode`, `model_api_key`, `model_from`, `model_base_url`, `model_name`, `model_api`, `ai_db_cluster_id`, `resource_group_id`, `target_version`, `skill_template_id`, `dnat_ip_address`, `dnat_entries`, `auth_provider`, `auth_provider_config`, `auto_allocate_public_eip`, `agentic_db_cluster_id`, `agentic_db_branch_spec`, `knowledge_application_spec`, `storages.storage_endpoint`, `storages.endpoint_id`, `storages.mount_path`, `storages.container_mount_path`, `mem_application_spec.db_password`, `mem_application_spec.embedder_model_dimension`, `mem_application_spec.shard` and `upgrade_version` — are not returned by the query API (or are operation triggers) and keep their configured value; spell them out in the configuration after an import. `dnat_entries` is a special case: `DescribeApplicationAttribute` reports `DnatMappings`, but the front port is allocated by the service when it is omitted and the member has no computed attribute, so the collection is left at the configured value.
 
 ## Example Usage
 
@@ -26,6 +26,14 @@ Create a PolarDB Application
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "alicloud_vpc" "default" {
   vpc_name   = "terraform-example"
   cidr_block = "172.16.0.0/16"
@@ -59,6 +67,7 @@ resource "alicloud_polardb_application" "default" {
   model_from       = "bailian"
   model_base_url   = "https://dashscope.aliyuncs.com/compatible-mode/v1"
   model_name       = "qwen3.6-plus"
+  model_api        = "openai-completions"
 
   components {
     component_type    = "polarclaw_comp"
@@ -109,20 +118,24 @@ The following arguments are supported:
 * `model_api_key` - (Optional, ForceNew) The API key for the model.
 * `model_base_url` - (Optional, ForceNew) The base URL for the model API.
 * `model_api` - (Optional, ForceNew) The API endpoint for the model.
+
+  -> **NOTE:** The service requires `model_api` when `model_from` is `bailian`; omitting it fails the create request with `InvalidApplicationModel.Malformed`.
 * `model_name` - (Optional, ForceNew) The name of the model.
 * `upgrade_version` - (Optional, Computed) Whether to upgrade the version. Valid values are `true`, `false`.
 * `parameters` - (Optional, Type: list) The parameters of the application. See [`parameters`](#parameters) below.
 * `component_id` - (Optional, Computed) The ID of the component.
 * `security_ip_list` - (Optional, Computed, Type: list) The list of IP addresses allowed to access the application. Read back from the application whitelist entry, so an import restores it.
+
+  -> **NOTE:** The service rejects an empty whitelist (`InvalidSecurityIPList.NotFound`); removing every address from the configuration keeps the current list instead of clearing it.
 * `security_ip_array_name` - (Optional, Computed) The name of the IP whitelist group. Read back from the application whitelist entry.
 * `modify_mode` - (Optional) The method for modifying the IP whitelist. Valid values are `Cover`, `Append`, `Delete`.
-* `target_version` - (Optional, ForceNew, String) The target version of the application. Available since v2.2.0.
+* `target_version` - (Optional, ForceNew, String) The target version of the application, for example `latest`. Available since v2.2.0.
 * `skill_template_id` - (Optional, ForceNew, String) The ID of the skill template. Available since v2.2.0.
 * `dnat_ip_address` - (Optional, ForceNew, String) The DNAT IP address of the application. Available since v2.2.0.
-* `auth_provider` - (Optional, ForceNew, String) The authentication provider. Available since v2.2.0.
+* `auth_provider` - (Optional, ForceNew, String) The authentication provider, for example `feishu`. Available since v2.2.0.
 * `auth_provider_config` - (Optional, ForceNew, String) The configuration of the authentication provider. Available since v2.2.0.
 * `vpc_nat_gateway_id` - (Optional, Computed, ForceNew, String) The ID of the VPC NAT gateway. Available since v2.2.0.
-* `security_ip_type` - (Optional, Computed, ForceNew, String) The type of the security IP. Read back from the application whitelist entry, so an import restores it. Available since v2.2.0.
+* `security_ip_type` - (Optional, Computed, ForceNew, String) The type of the security IP. Valid value: `ipv4`. Read back from the application whitelist entry, so an import restores it. Available since v2.2.0.
 * `auto_allocate_public_eip` - (Optional, ForceNew, Bool) Whether to automatically allocate a public EIP for the application. Available since v2.2.0.
 * `agentic_db_cluster_id` - (Optional, ForceNew, String) The ID of the agentic database cluster. Available since v2.2.0.
 * `storages` - (Optional, Computed, ForceNew, Set) The storage mounts of the application. See [`storages`](#storages) below. Available since v2.2.0.
@@ -154,14 +167,14 @@ The `storages` block supports the following:
 
 When a storage member is declared, the attributes the configuration omits keep the values the application reports: leaving `storage_type`, `storage_instance_id`, `storage_capacity` or `storage_performance_level` out of the block does not plan a replacement, and `storage_capacity` is compared without its unit (`20` and `20Gi` are the same capacity). Declaring one of them and changing it later plans a replacement, because every `storages` member attribute is `ForceNew`.
 
-* `storage_type` - (Optional, Computed, ForceNew, String) The type of the storage. Available since v2.2.0.
+* `storage_type` - (Optional, Computed, ForceNew, String) The type of the storage, for example `oss`. Available since v2.2.0.
 * `storage_instance_id` - (Optional, Computed, ForceNew, String) The ID of the storage instance. Available since v2.2.0.
 * `endpoint_id` - (Optional, ForceNew, String) The ID of the endpoint. Available since v2.2.0.
 * `mount_path` - (Optional, ForceNew, String) The mount path of the storage. Available since v2.2.0.
 * `container_mount_path` - (Optional, ForceNew, String) The mount path inside the container. Available since v2.2.0.
 * `storage_capacity` - (Optional, Computed, ForceNew, String) The capacity of the storage. Available since v2.2.0.
 * `storage_endpoint` - (Optional, ForceNew, String) The endpoint of the storage. Available since v2.2.0.
-* `storage_performance_level` - (Optional, Computed, ForceNew, String) The performance level of the storage. Available since v2.2.0.
+* `storage_performance_level` - (Optional, Computed, ForceNew, String) The performance level of the storage, for example `PL1`. Available since v2.2.0.
 
 ### `mem_application_spec`
 
@@ -174,7 +187,7 @@ The `mem_application_spec` block supports the following:
 * `embedder_model_dimension` - (Optional, ForceNew, Int) The dimension of the embedder model. Available since v2.2.0.
 * `graph_llm_model` - (Optional, Computed, ForceNew, String) The graph LLM model. Available since v2.2.0.
 * `llm_model` - (Optional, Computed, ForceNew, String) The LLM model. Available since v2.2.0.
-* `memory_type` - (Optional, Computed, ForceNew, String) The type of the memory. Available since v2.2.0.
+* `memory_type` - (Optional, Computed, ForceNew, String) The type of the memory, for example `MULTIMODAL_TEXT`. Available since v2.2.0.
 * `project_name` - (Optional, Computed, ForceNew, String) The name of the project. Available since v2.2.0.
 * `reranker_model` - (Optional, Computed, ForceNew, String) The reranker model. Available since v2.2.0.
 * `shard` - (Optional, ForceNew, Int) The shard count. Available since v2.2.0.
@@ -198,8 +211,8 @@ The `agentic_db_branch_spec` block supports the following:
 
 The `endpoints` block supports the following:
 
-* `endpoint_type` - (Optional, ForceNew, String) The type of the endpoint. Available since v2.2.0.
-* `description` - (Optional, ForceNew, String) The description of the endpoint. Available since v2.2.0.
+* `endpoint_type` - (Optional, ForceNew, String) The type of the endpoint. Valid value: `Primary`. Available since v2.2.0.
+* `description` - (Optional, Computed, ForceNew, String) The description of the endpoint. A configured value is kept; an omitted value is restored from the query API on import. Available since v2.2.0.
 
 ### `knowledge_application_spec`
 
@@ -213,8 +226,8 @@ The `knowledge_application_spec` block supports the following:
 
 The `dnat_entries` block supports the following:
 
-* `port_name` - (Optional, ForceNew, String) The name of the port. Available since v2.2.0.
-* `front_port` - (Optional, ForceNew, Int) The front port. Available since v2.2.0.
+* `port_name` - (Optional, ForceNew, String) The name of the port. Valid values: `webui`, `hermesagent`, `dashboard`, `ssh`. Available since v2.2.0.
+* `front_port` - (Optional, ForceNew, Int) The front port. When omitted, the service allocates an unused port. Available since v2.2.0.
 
 ## Attributes Reference
 

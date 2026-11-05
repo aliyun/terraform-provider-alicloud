@@ -191,9 +191,9 @@ func TestAccAliCloudPolarDBApplication_Create(t *testing.T) {
 					"agentic_db_branch_spec",
 					"knowledge_application_spec",
 					// The endpoint set cannot be compared as a whole because the
-					// query API does not return EndpointType, and it does not
-					// report the default endpoint's description either, so no
-					// description assertion is possible here.
+					// query API does not return EndpointType, and the default
+					// endpoint's description is not populated in the same-version
+					// import runs, so no description assertion is possible here.
 					"endpoints",
 					// tags converge through ListTagResources: an empty result
 					// is only written back when state already holds tags, so an
@@ -202,9 +202,10 @@ func TestAccAliCloudPolarDBApplication_Create(t *testing.T) {
 					// The whitelist IP type is reported per array; an import
 					// relies on the service echoing the configured value.
 					"security_ip_type",
-					// DescribeApplicationAttribute does not return the CPU
-					// architecture for this application type, so an imported
-					// state cannot hold a required create input.
+					// Architecture is part of the DescribeApplicationAttribute
+					// contract, but the same-version import runs did not return
+					// it for this application type; Read restores it when it is
+					// present.
 					"architecture",
 				},
 				ImportStateCheck: testAccCheckPolarDBApplicationImportedState,
@@ -306,6 +307,7 @@ data "alicloud_polardb_node_classes" "this" {
 func testAccPolardbApplicationCreateInputs(parameterValue string) string {
 	return fmt.Sprintf(`
 	security_ip_type = "ipv4"
+	model_api        = "openai-completions"
 	endpoints {
 		endpoint_type = "Primary"
 		description   = "my_endpoint"

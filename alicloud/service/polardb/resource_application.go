@@ -136,7 +136,7 @@ func ResourceApplication() *schema.Resource {
 				ValidateFunc:     validators.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				ForceNew:         true,
-				DiffSuppressFunc: postPaidDiffSuppressFunc,
+				DiffSuppressFunc: polardbPostPaidDiffSuppressFunc,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -465,8 +465,11 @@ func ResourceApplication() *schema.Resource {
 						"endpoint_type": {
 							Type: schema.TypeString, Optional: true, ForceNew: true,
 						},
+						// Computed because Read restores the description the
+						// query API reports (needed for import); a configured
+						// value still wins, so it does not plan a replacement.
 						"description": {
-							Type: schema.TypeString, Optional: true, ForceNew: true,
+							Type: schema.TypeString, Optional: true, Computed: true, ForceNew: true,
 						},
 					},
 				},
