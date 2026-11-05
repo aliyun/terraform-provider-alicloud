@@ -258,10 +258,32 @@ The field_schema supports the following:
 * `date_format_list` - (Optional, ForceNew, Set) Specifies the date formats supported by the field. This parameter is required for `Date` fields. Available since v2.3.0.
 * `is_virtual_field` - (Optional, ForceNew, Bool) Specifies whether the field is a virtual column. Defaults to `false`. When you set this parameter to `true`, `source_field_name` is required. Available since v2.3.0.
 * `source_field_name` - (Optional, ForceNew, String) Specifies the source field to which the virtual column maps. This parameter is required for virtual columns, and only one source field is supported. This parameter can be set only when `is_virtual_field` is `true`. Available since v2.3.0.
-* `sub_field_schemas` - (Optional, ForceNew, Set) Specifies the sub-fields of a `Nested` field. This parameter is required for `Nested` fields. Each sub-field supports the same arguments as `field_schema`; up to two levels of sub-fields are supported. Available since v2.3.0.
+* `sub_field_schemas` - (Optional, ForceNew, Set) Specifies the sub-fields of a `Nested` field. This parameter is required for `Nested` fields. Each sub-field supports the same arguments as `field_schema`. A sub-field cannot contain a further `sub_field_schemas` block. Available since v2.3.0.
 * `vector_options` - (Optional, ForceNew, List) Specifies the vector configuration. This parameter is required for `Vector` fields. See [`vector_options`](#schema-field_schema-vector_options) below. Available since v2.3.0.
 
 ### `schema-field_schema-vector_options`
+
+The vector_options supports the following:
+* `data_type` - (Required, ForceNew, String) Specifies the vector data type. Valid values: `float32`. Available since v2.3.0.
+* `dimension` - (Required, ForceNew, Int) Specifies the vector dimension. Valid values: 1-4096. Available since v2.3.0.
+* `metric_type` - (Required, ForceNew, String) Specifies the distance metric that is used between vectors. Valid values: `euclidean`, `cosine`, `dot_product`. Available since v2.3.0.
+
+### `schema-field_schema-sub_field_schemas`
+
+The sub_field_schemas supports the following:
+* `field_name` - (Required, ForceNew, String) Specifies the name of the sub-field. Available since v2.3.0.
+* `field_type` - (Required, ForceNew, String) Specifies the type of the sub-field. Valid values: `Text`, `Long`, `Double`, `Boolean`, `Keyword`, `FuzzyKeyword`, `Date`, `GeoPoint`, `Vector`. Available since v2.3.0.
+* `is_array` - (Optional, ForceNew, Bool) Specifies whether the value is an array. Available since v2.3.0.
+* `index` - (Optional, ForceNew, Bool) Specifies whether to enable indexing for the sub-field. Available since v2.3.0.
+* `analyzer` - (Optional, ForceNew, String) Specifies the type of the analyzer that you want to use. Available since v2.3.0.
+* `enable_sort_and_agg` - (Optional, ForceNew, Bool) Specifies whether to enable sorting and aggregation for the sub-field. Available since v2.3.0.
+* `store` - (Optional, ForceNew, Bool) Specifies whether to store the value of the sub-field in the search index. Available since v2.3.0.
+* `date_format_list` - (Optional, ForceNew, Set) Specifies the date formats supported by the sub-field. This parameter is required for `Date` sub-fields. Available since v2.3.0.
+* `is_virtual_field` - (Optional, ForceNew, Bool) Specifies whether the sub-field is a virtual column. Defaults to `false`. Available since v2.3.0.
+* `source_field_name` - (Optional, ForceNew, String) Specifies the source field to which the virtual sub-field maps. Available since v2.3.0.
+* `vector_options` - (Optional, ForceNew, List) Specifies the vector configuration. This parameter is required for `Vector` sub-fields. See [`vector_options`](#schema-field_schema-sub_field_schemas-vector_options) below. Available since v2.3.0.
+
+### `schema-field_schema-sub_field_schemas-vector_options`
 
 The vector_options supports the following:
 * `data_type` - (Required, ForceNew, String) Specifies the vector data type. Valid values: `float32`. Available since v2.3.0.

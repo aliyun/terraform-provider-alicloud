@@ -163,9 +163,24 @@ func ResourceOtsSearchIndex() *schema.Resource {
 // maxSearchIndexFieldNestingDepth limits how many sub_field_schemas levels the
 // static Terraform schema exposes. Terraform requires a finite schema tree, so
 // arbitrarily deep Nested fields cannot be represented recursively.
-const maxSearchIndexFieldNestingDepth = 2
+const maxSearchIndexFieldNestingDepth = 1
 
 func otsSearchIndexFieldSchema(remainingNestingDepth int) *schema.Resource {
+	fieldTypes := []string{
+		string(OtsSearchTypeLong),
+		string(OtsSearchTypeDouble),
+		string(OtsSearchTypeBoolean),
+		string(OtsSearchTypeKeyword),
+		string(OtsSearchTypeText),
+		string(OtsSearchTypeDate),
+		string(OtsSearchTypeGeoPoint),
+		string(OtsSearchTypeVector),
+		string(OtsSearchTypeFuzzyKeyword),
+	}
+	if remainingNestingDepth > 0 {
+		fieldTypes = append(fieldTypes, string(OtsSearchTypeNested))
+	}
+
 	fieldSchema := &schema.Resource{
 		Schema: map[string]*schema.Schema{
 			"field_name": {
@@ -174,21 +189,10 @@ func otsSearchIndexFieldSchema(remainingNestingDepth int) *schema.Resource {
 				ForceNew: true,
 			},
 			"field_type": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(OtsSearchTypeLong),
-					string(OtsSearchTypeDouble),
-					string(OtsSearchTypeBoolean),
-					string(OtsSearchTypeKeyword),
-					string(OtsSearchTypeText),
-					string(OtsSearchTypeDate),
-					string(OtsSearchTypeGeoPoint),
-					string(OtsSearchTypeNested),
-					string(OtsSearchTypeVector),
-					string(OtsSearchTypeFuzzyKeyword)},
-					false),
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice(fieldTypes, false),
 			},
 			"is_array": {
 				Type:     schema.TypeBool,
