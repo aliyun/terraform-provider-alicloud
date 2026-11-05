@@ -56,7 +56,7 @@ func (s *scalingConfigurationUnitTestServer) handler(t *testing.T) http.HandlerF
 				},
 			})
 		default:
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"RequestId": "unit-test"})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{})
 		}
 	}
 }
