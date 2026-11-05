@@ -986,6 +986,11 @@ type starRocksNodeGroupsHandler struct {
 	pendingSize   map[string]int
 	// byIdStatus forces the by-id node group read to fail.
 	byIdStatus int
+	// byIdOtherGroup makes the by-id read answer with another node group id.
+	byIdOtherGroup bool
+	// applyBeforeStatus applies the resize even when the status is an error, simulating a
+	// lost response for a change that landed.
+	applyBeforeStatus bool
 	// delayedAction delays one action, e.g. to exhaust the update budget.
 	delayedAction   string
 	delayedStatus   int
@@ -1029,6 +1034,9 @@ func (h *starRocksNodeGroupsHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 				"ClusterId": query.Get("ClusterId"), "nodeGroupIds": nodeGroupId,
 			})
 			item := h.groupById(nodeGroupId)
+			if h.byIdOtherGroup {
+				item = testBackendGroup("ng-unrelated", "")
+			}
 			item["Status"] = "RUNNING"
 			if h.instanceStatus != "" {
 				item["Status"] = h.instanceStatus
@@ -1097,6 +1105,21 @@ func (h *starRocksNodeGroupsHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		})
 		target := 0
 		fmt.Sscan(query.Get("Target"), &target)
+		status := http.StatusOK
+		if len(h.modifyResponses) > 0 {
+			status = h.modifyResponses[0]
+			h.modifyResponses = h.modifyResponses[1:]
+		}
+		if status != http.StatusOK && !h.applyBeforeStatus {
+			// A rejected request was not executed.
+			message := "code: 500, injected failure"
+			if status == http.StatusTooManyRequests {
+				message = "code: 429, Throttling.RequestLimit"
+			}
+			w.WriteHeader(status)
+			writeTestJSON(w, map[string]interface{}{"Code": "InternalError", "Message": message, "RequestId": "rid"})
+			return
+		}
 		if h.convergeAfter > 0 {
 			if h.pendingSize == nil {
 				h.pendingSize = make(map[string]int)
@@ -1110,18 +1133,9 @@ func (h *starRocksNodeGroupsHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 				}
 			}
 		}
-		status := http.StatusOK
-		if len(h.modifyResponses) > 0 {
-			status = h.modifyResponses[0]
-			h.modifyResponses = h.modifyResponses[1:]
-		}
 		if status != http.StatusOK {
-			message := "code: 500, injected failure"
-			if status == http.StatusTooManyRequests {
-				message = "code: 429, Throttling.RequestLimit"
-			}
 			w.WriteHeader(status)
-			writeTestJSON(w, map[string]interface{}{"Code": "InternalError", "Message": message, "RequestId": "rid"})
+			writeTestJSON(w, map[string]interface{}{"Code": "InternalError", "Message": "code: 500, lost response", "RequestId": "rid"})
 			return
 		}
 		writeTestJSON(w, map[string]interface{}{"Success": true})
@@ -1411,6 +1425,7 @@ func TestUnitBackendNodeGroupLostResponseDoesNotResend(t *testing.T) {
 	handler := &starRocksNodeGroupsHandler{
 		t: t, groups: []map[string]interface{}{testBackendGroup("ng-target", "cn-hangzhou-i")},
 		total: 1, instanceStatus: "RUNNING", modifyResponses: []int{http.StatusInternalServerError},
+		applyBeforeStatus: true,
 	}
 	client := starRocksTestClient(t, handler.ServeHTTP)
 	if err := applyStarRocksInstance(t, client, backendGroupStateAttributes("200"), backendGroupConfig(300, nil), 0); err != nil {
@@ -1650,21 +1665,22 @@ func TestUnitDescribeNodeGroupsKeepsPagingOnFullPages(t *testing.T) {
 	t.Fatal("the group that only exists after a full first page was not returned")
 }
 
-func TestUnitBackendNodeGroupThrottledResizeIsRetried(t *testing.T) {
+func TestUnitBackendNodeGroupRejectedResizeIsNotResent(t *testing.T) {
+	// A throttled (and any other 4xx) answer is not treated as "not executed": the API
+	// does not promise that, so the request is sent once and the outcome is reported as
+	// unknown instead of being repeated.
 	handler := &starRocksNodeGroupsHandler{
 		t: t, groups: []map[string]interface{}{testBackendGroup("ng-target", "cn-hangzhou-i")},
 		total: 1, instanceStatus: "RUNNING",
-		modifyResponses: []int{http.StatusTooManyRequests, http.StatusOK},
+		modifyResponses: []int{http.StatusTooManyRequests},
 	}
 	client := starRocksTestClient(t, handler.ServeHTTP)
-	if err := applyStarRocksInstance(t, client, backendGroupStateAttributes("200"), backendGroupConfig(300, nil), 0); err != nil {
-		t.Fatalf("apply: %s", err)
+	err := applyStarRocksInstance(t, client, backendGroupStateAttributes("200"), backendGroupConfig(300, nil), 0)
+	if err == nil || !strings.Contains(err.Error(), "is unknown") {
+		t.Fatalf("a rejected resize must report an unknown result, got %v", err)
 	}
-	if handler.modifyCalls != 2 {
-		t.Fatalf("a throttled resize must be retried once, got %d calls", handler.modifyCalls)
-	}
-	if size := fmt.Sprint(handler.groups[0]["StorageSize"]); size != "300" {
-		t.Fatalf("expected the remote group to reach 300 GiB, got %s", size)
+	if handler.modifyCalls != 1 {
+		t.Fatalf("a rejected resize must not be resent, got %d calls", handler.modifyCalls)
 	}
 }
 
@@ -1733,5 +1749,63 @@ func TestUnitBackendNodeGroupPersistentReadError(t *testing.T) {
 	}
 	if handler.modifyCalls != 1 {
 		t.Fatalf("the unknown result must not trigger another billable write, got %d", handler.modifyCalls)
+	}
+}
+
+func TestUnitBackendNodeGroupByIdWrongIdentity(t *testing.T) {
+	// The by-id read answers with another node group: it must not be used as evidence
+	// that the resize of the requested group landed.
+	handler := &starRocksNodeGroupsHandler{
+		t: t, groups: []map[string]interface{}{testBackendGroup("ng-target", "cn-hangzhou-i")},
+		total: 1, instanceStatus: "RUNNING", byIdOtherGroup: true,
+		modifyResponses: []int{http.StatusInternalServerError}, applyBeforeStatus: true,
+	}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	err := applyStarRocksInstance(t, client, backendGroupStateAttributes("200"), backendGroupConfig(300, nil), 0)
+	if err == nil || !strings.Contains(err.Error(), "is unknown") {
+		t.Fatalf("a mismatched by-id response must leave the result unknown, got %v", err)
+	}
+	if handler.modifyCalls != 1 {
+		t.Fatalf("the mismatched read must not trigger another write, got %d", handler.modifyCalls)
+	}
+}
+
+func TestUnitBackendNodeGroupListWrongInstance(t *testing.T) {
+	foreign := testBackendGroup("ng-foreign", "cn-hangzhou-i")
+	foreign["InstanceId"] = "c-other"
+	handler := &starRocksNodeGroupsHandler{
+		t: t, groups: []map[string]interface{}{foreign}, total: 1, instanceStatus: "RUNNING",
+	}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	err := applyStarRocksInstance(t, client, backendGroupStateAttributes("200"), backendGroupConfig(300, nil), 0)
+	if err == nil || !strings.Contains(err.Error(), "no backend node group matches") {
+		t.Fatalf("a group of another instance must not be accepted, got %v", err)
+	}
+	if handler.modifyCalls != 0 {
+		t.Fatalf("no resize may be sent when only a foreign instance group is returned, got %d", handler.modifyCalls)
+	}
+}
+
+func TestUnitBackendNodeGroupMixedTagBudget(t *testing.T) {
+	handler := &starRocksNodeGroupsHandler{
+		t: t, groups: []map[string]interface{}{testBackendGroup("ng-target", "cn-hangzhou-i")},
+		total: 1, instanceStatus: "RUNNING",
+		delayedAction: "/webapi/tags", delayedStatus: http.StatusInternalServerError, delay: 3 * time.Second,
+	}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	attributes := backendGroupStateAttributes("200")
+	attributes["tags.%"] = "1"
+	attributes["tags.old"] = "1"
+	config := backendGroupConfig(300, nil)
+	config["tags"] = map[string]interface{}{"new": "2"}
+	err := applyStarRocksInstance(t, client, attributes, config, time.Second)
+	if err == nil {
+		t.Fatal("the mixed tag update must exhaust the shared update budget")
+	}
+	if handler.countAction("/webapi/tags") == 0 {
+		t.Fatal("the tag writes should have been attempted")
+	}
+	if handler.modifyCalls != 0 {
+		t.Fatalf("no resize may run after the tag writes exhausted the budget, got %d", handler.modifyCalls)
 	}
 }

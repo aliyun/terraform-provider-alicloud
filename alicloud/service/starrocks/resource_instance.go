@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -754,30 +753,14 @@ func resourceInstanceApplyBackendNodeGroupResize(d *schema.ResourceData, service
 		return budgetErr
 	}
 	// The SDK level auto retry is disabled for this billable change: it would resend the
-	// request without looking at the remote disk.
+	// request without looking at the remote disk. The request itself is sent at most once
+	// per update: no error class is assumed to mean "not executed", because the API does
+	// not promise that for any status, so a repeat could expand the same disk twice.
 	response, err = service.client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, false)
 	logs.AddDebug(action, response, request)
-	if err != nil && backendNodeGroupResizeRejected(err) {
-		// A rejection (throttling or another 4xx) means the service did not execute the
-		// change, so sending it again is safe while the remaining budget allows it.
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-		for err != nil && backendNodeGroupResizeRejected(err) {
-			if _, budgetErr := remainingUpdateDuration(deadline); budgetErr != nil {
-				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
-			}
-			wait()
-			response, err = service.client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, false)
-			logs.AddDebug(action, response, request)
-		}
-	}
 	if err != nil {
-		if !helper.NeedRetry(err) {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
-		}
-		// The request was accepted but the response was lost, or the service failed: the
-		// resize may or may not be applied. Sending the billable request again could
-		// expand the same disk twice, so wait for the reported size instead and report an
-		// unknown result when it never converges.
+		// Re-read the same instance/group: if the change landed the update can continue,
+		// otherwise the outcome stays unknown and no second billable write is sent.
 		reached, checkErr := backendNodeGroupStorageSizeReached(service, d.Id(), resize.nodeGroupId, resize.target, deadline)
 		if !reached {
 			return errs.WrapErrorf(fmt.Errorf("the result of the disk expansion for node group %s is unknown, the request may or may not have been applied: %v (last size check: %v)", resize.nodeGroupId, err, checkErr), errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
@@ -795,19 +778,6 @@ func resourceInstanceApplyBackendNodeGroupResize(d *schema.ResourceData, service
 		return errs.WrapErrorf(err, errs.IdMsg, nodeGroupStateId)
 	}
 	return nil
-}
-
-// backendNodeGroupResizeRejected reports whether the service refused the resize before
-// executing it, which makes an immediate repeat safe. Throttling and other 4xx answers
-// are rejections; 5xx and transport errors may have executed the change and must not be
-// repeated blindly.
-var backendNodeGroupResizeRejectedRegex = regexp.MustCompile(`(?i)throttling|^code: 4[0-9]{2}`)
-
-func backendNodeGroupResizeRejected(err error) bool {
-	if err == nil {
-		return false
-	}
-	return backendNodeGroupResizeRejectedRegex.MatchString(err.Error())
 }
 
 // backendNodeGroupResizeConvergenceWindow bounds how long a lost resize response waits

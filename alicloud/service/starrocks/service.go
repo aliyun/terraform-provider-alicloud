@@ -272,16 +272,33 @@ func (s *Service) DescribeNodeGroupWithDeadline(id string, deadline time.Time) (
 		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Data[*]", response)
 	}
 
-	if len(v.([]interface{})) == 0 {
+	// The response must describe the requested group of the requested instance. A list
+	// answer that carries another group (or another parent instance) is not evidence for
+	// this group, even when it is the only row returned.
+	requestedGroupId := parts[1]
+	var matched map[string]interface{}
+	for _, raw := range v.([]interface{}) {
+		item, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(item["NodeGroupId"]) != requestedGroupId {
+			continue
+		}
+		if instanceId := fmt.Sprint(item["InstanceId"]); instanceId != "" && instanceId != "<nil>" && instanceId != parts[0] {
+			continue
+		}
+		matched = item
+		break
+	}
+	if matched == nil {
+		return object, errs.WrapErrorf(errs.NotFoundErr("NodeGroup", id), errs.NotFoundMsg, response)
+	}
+	if fmt.Sprint(matched["Status"]) == "DELETED" {
 		return object, errs.WrapErrorf(errs.NotFoundErr("NodeGroup", id), errs.NotFoundMsg, response)
 	}
 
-	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
-	if fmt.Sprint(currentStatus) == "DELETED" {
-		return object, errs.WrapErrorf(errs.NotFoundErr("NodeGroup", id), errs.NotFoundMsg, response)
-	}
-
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	return matched, nil
 }
 
 func (s *Service) NodeGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
@@ -388,18 +405,31 @@ func (s *Service) DescribeNodeGroupsByComponentType(clusterId, componentType str
 		if err != nil {
 			return nil, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, clusterId, "$.Data[*]", response)
 		}
+		// Accept only rows that belong to the requested instance and component type: the
+		// filters are client validated as well, so a server side drift cannot feed another
+		// instance or another component into the matcher.
+		rawCount := 0
 		batch := make([]map[string]interface{}, 0)
 		for _, raw := range v.([]interface{}) {
-			if item, ok := raw.(map[string]interface{}); ok {
-				batch = append(batch, item)
+			item, ok := raw.(map[string]interface{})
+			if !ok {
+				continue
 			}
+			rawCount++
+			if instanceId := fmt.Sprint(item["InstanceId"]); instanceId != "" && instanceId != "<nil>" && instanceId != clusterId {
+				continue
+			}
+			if component := fmt.Sprint(item["ComponentType"]); component != "" && component != "<nil>" && component != componentType {
+				continue
+			}
+			batch = append(batch, item)
 		}
 		items = append(items, batch...)
 
-		if len(batch) == 0 {
+		if rawCount == 0 {
 			break
 		}
-		if len(batch) == pageSize {
+		if rawCount == pageSize {
 			// A full page always means more rows may follow. Stopping here on Total alone
 			// would be unsafe: Total may or may not count the deleted groups that this
 			// listing still returns, and a missed group can look unique to the matcher.
