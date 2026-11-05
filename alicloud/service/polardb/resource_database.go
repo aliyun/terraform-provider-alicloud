@@ -401,13 +401,10 @@ func resourceDatabaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 	update = false
-	objectRaw, _ = polarDbServiceV2.DescribePolarDbDatabase(d.Id())
-	enableGrantAccountPrivilege1 := false
-	checkValue00 := objectRaw["Engine"]
-
-	if helper.InArray(fmt.Sprint(checkValue00), []string{"PostgreSQL", "Oracle"}) {
-		enableGrantAccountPrivilege1 = true
-	}
+	// The engine does not change during the update, and a failed first describe
+	// already aborts when account_name changes; reuse that response instead of a
+	// second describe whose discarded error could silently skip the grant.
+	enableGrantAccountPrivilege1 := databaseOwnerEngine(objectRaw)
 	parts = strings.Split(d.Id(), ":")
 	action = "GrantAccountPrivilege"
 	request = make(map[string]interface{})

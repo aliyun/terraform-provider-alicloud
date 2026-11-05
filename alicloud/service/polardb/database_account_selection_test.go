@@ -430,6 +430,24 @@ func TestUnitAliCloudPolarDbDatabase_waitAccountEmpowered(t *testing.T) {
 		}
 	})
 
+	t.Run("retries a malformed account list", func(t *testing.T) {
+		responses := []map[string]interface{}{
+			{"Engine": "PostgreSQL", "Accounts": map[string]interface{}{"Account": "unexpected"}},
+			empowered("Empowered"),
+		}
+		calls := 0
+		describe := func(string) (map[string]interface{}, error) {
+			index := calls
+			if calls < len(responses)-1 {
+				calls++
+			}
+			return responses[index], nil
+		}
+		if err := waitDatabaseAccountEmpowered(describe, "pc-1:db", "alice", 60*time.Second); err != nil {
+			t.Fatalf("expected the wait to retry the malformed account list, got %v", err)
+		}
+	})
+
 	t.Run("empty account name is a no-op", func(t *testing.T) {
 		describe := func(string) (map[string]interface{}, error) {
 			t.Fatal("must not describe the database for an empty account name")

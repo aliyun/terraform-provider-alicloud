@@ -722,22 +722,16 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 				}),
 			},
 			{
-				// The grant is restored outside Terraform: the refresh still sees the
-				// cleared identity, and the check re-grants the privilege.
-				RefreshState:       true,
-				ExpectNonEmptyPlan: true,
+				// Applying the configuration after the drift replaces the database
+				// (account_privilege is ForceNew), which restores the managed binding.
+				Config: testAccConfig(privilegeConfig),
 				Check: resource.ComposeTestCheckFunc(
-					grantDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
-					waitDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
+					testAccCheck(map[string]string{
+						"account_name":      name,
+						"account_privilege": "ReadOnly",
+					}),
+					checkDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
 				),
-			},
-			{
-				// A refresh reads the restored binding and privilege back into state.
-				RefreshState: true,
-				Check: testAccCheck(map[string]string{
-					"account_name":      name,
-					"account_privilege": "ReadOnly",
-				}),
 			},
 			{
 				// The MySQL engine cannot re-grant an account on update, so changing
@@ -832,20 +826,16 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 				),
 			},
 			{
-				// Restore the grant before the legacy scenario starts.
-				RefreshState:       true,
-				ExpectNonEmptyPlan: true,
+				// Apply the configuration again so the next scenario starts from a
+				// managed binding; the ForceNew privilege replaces the database.
+				Config: testAccConfig(privilegeConfig),
 				Check: resource.ComposeTestCheckFunc(
-					grantDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
-					waitDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
+					testAccCheck(map[string]string{
+						"account_name":      name,
+						"account_privilege": "ReadOnly",
+					}),
+					checkDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
 				),
-			},
-			{
-				RefreshState: true,
-				Check: testAccCheck(map[string]string{
-					"account_name":      name,
-					"account_privilege": "ReadOnly",
-				}),
 			},
 			{
 				// Legacy configuration that only manages account_name: dropping the
@@ -873,22 +863,6 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 				Check: testAccCheck(map[string]string{
 					"account_name":      "",
 					"account_privilege": "",
-				}),
-			},
-			{
-				// Restoring the grant makes the binding visible again.
-				RefreshState:       true,
-				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeTestCheckFunc(
-					grantDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
-					waitDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
-				),
-			},
-			{
-				RefreshState: true,
-				Check: testAccCheck(map[string]string{
-					"account_name":      name,
-					"account_privilege": "ReadOnly",
 				}),
 			},
 		},
@@ -993,6 +967,17 @@ func TestAccAliCloudPolarDbDatabase_oracleAccountPrivilege(t *testing.T) {
 						"account_privilege": "ReadOnly",
 					}),
 				),
+			},
+			{
+				// The first successful create is followed by an import: the database
+				// fields are recovered and the owner account fields stay empty.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name": name,
+					"engine":  "Oracle",
+				}),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
