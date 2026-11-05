@@ -9,6 +9,9 @@ import (
 // alicloud root package; generation markers and original SDKv2 framework preserved.
 // alicloud_esa_site_environment is a native Framework-style resource already
 // living in this package; it stays registered here alongside the migrated types.
+// alicloud_esa_load_balancer_origin_status and alicloud_esa_load_balancer_regions
+// are native Framework data sources for the read-only ListLoadBalancerOriginStatus
+// and ListLoadBalancerRegions APIs.
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "ESA",
@@ -75,6 +78,10 @@ func ServicePackage() conns.ServicePackage {
 			{TypeName: "alicloud_esa_routine_code_versions", Factory: dataSourceAliCloudEsaRoutineCodeVersions},
 			{TypeName: "alicloud_esa_sites", Factory: dataSourceAliCloudEsaSites},
 			{TypeName: "alicloud_esa_waf_rulesets", Factory: dataSourceAliCloudEsaWafRuleSets},
+		},
+		DataSources: []conns.DataSource{
+			{TypeName: "alicloud_esa_load_balancer_origin_status", Factory: NewLoadBalancerOriginStatusDataSource},
+			{TypeName: "alicloud_esa_load_balancer_regions", Factory: NewLoadBalancerRegionsDataSource},
 		},
 	}
 }
