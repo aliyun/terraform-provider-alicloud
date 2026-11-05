@@ -3175,6 +3175,32 @@ func TestAccAliCloudESAWafRuleresource_wafrule_coverage_modify_test(t *testing.T
 						{
 							"status": "on",
 							"type":   "http_directory_traversal",
+							"rate_limit": []map[string]interface{}{
+								{
+									"characteristics": []map[string]interface{}{
+										{
+											"criteria": []map[string]interface{}{
+												{
+													"match_type": "http.request.session",
+												},
+											},
+										},
+									},
+									"ttl": "1800",
+									"threshold": []map[string]interface{}{
+										{
+											"request": "50",
+											"response_status": []map[string]interface{}{
+												{
+													"count": "50",
+													"ratio": "70",
+												},
+											},
+										},
+									},
+									"interval": "10",
+								},
+							},
 						},
 					},
 					"shared": []map[string]interface{}{
@@ -3240,8 +3266,8 @@ func TestAccAliCloudESAWafRuleresource_wafrule_coverage_modify_test(t *testing.T
 											"request": "51",
 											"response_status": []map[string]interface{}{
 												{
-													"ratio": "70",
-													"count": "50",
+													"ratio": "71",
+													"count": "51",
 													"code":  "404",
 												},
 											},
