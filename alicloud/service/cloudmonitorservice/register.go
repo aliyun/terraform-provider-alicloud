@@ -15,7 +15,7 @@ func ServicePackage() conns.ServicePackage {
 		Resources: []conns.Resource{
 			{
 				TypeName: "alicloud_cms_subscription",
-				Factory:  NewCmsSubscriptionResource,
+				Factory:  NewSubscriptionResource,
 			},
 		},
 		SDKResources: []conns.SDKResource{
