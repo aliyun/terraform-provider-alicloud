@@ -841,7 +841,16 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_noTagsRefresh(t *testing.T) {
 				RefreshState: true,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "resource.#", "2"),
-					resource.TestCheckNoResourceAttr(resourceId, "tags.nonexistent"),
+					func(state *terraform.State) error {
+						rs := state.RootModule().Resources[resourceId]
+						for key, value := range rs.Primary.Attributes {
+							if strings.HasPrefix(key, "tags.") && (key != "tags.%" || value != "0") {
+								return fmt.Errorf("unexpected tags state: %s=%s", key, value)
+							}
+						}
+						t.Logf("ordinary refresh: tags count=%q, resource count=%q", rs.Primary.Attributes["tags.%"], rs.Primary.Attributes["resource.#"])
+						return nil
+					},
 				),
 			},
 			{
