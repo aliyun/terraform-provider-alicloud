@@ -299,7 +299,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
   system_disk_category = "cloud_essd"
   system_disk_size     = 40
-  image_type           = "AliyunLinux3"
+  image_type           = "AliyunLinux3ContainerOptimized"
   scaling_config {
     enable   = true
     min_size = 0
