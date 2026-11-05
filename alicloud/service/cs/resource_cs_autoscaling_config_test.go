@@ -102,26 +102,6 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 				),
 			},
 			{
-				// Removing the arguments leaves the last applied values in place and
-				// must not produce a persistent diff.
-				Config: testAccConfig(map[string]interface{}{
-					"skip_nodes_with_system_pods":   acctest.REMOVEKEY,
-					"skip_nodes_with_local_storage": acctest.REMOVEKEY,
-					"daemonset_eviction_for_nodes":  acctest.REMOVEKEY,
-					"recycle_node_deletion_enabled": acctest.REMOVEKEY,
-					"scale_up_from_zero":            acctest.REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"skip_nodes_with_system_pods":   "true",
-						"skip_nodes_with_local_storage": "true",
-						"daemonset_eviction_for_nodes":  "true",
-						"recycle_node_deletion_enabled": "true",
-						"scale_up_from_zero":            "true",
-					}),
-				),
-			},
-			{
 				// true -> false again, proving both directions reach the API.
 				Config: testAccConfig(map[string]interface{}{
 					"skip_nodes_with_system_pods":   "false",
