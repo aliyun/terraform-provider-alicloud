@@ -36,27 +36,39 @@ func TestAccAliCloudESAOriginProtectionresource_OriginProtection_test(t *testing
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"site_id":         "${alicloud_esa_site.resource_Site_OriginClientCertificate_test.id}",
-					"origin_converge": "on",
+					"site_id":              "${alicloud_esa_site.resource_Site_OriginClientCertificate_test.id}",
+					"origin_converge":      "on",
+					"auto_confirm_ip_list": "on",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"origin_converge":      "on",
+						"auto_confirm_ip_list": "on",
+					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"origin_converge": "on",
+					"origin_converge":      "on",
+					"auto_confirm_ip_list": "off",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"origin_converge":      "on",
+						"auto_confirm_ip_list": "off",
+					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"origin_converge": "off",
+					"origin_converge":      "off",
+					"auto_confirm_ip_list": "on",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"origin_converge":      "off",
+						"auto_confirm_ip_list": "on",
+					}),
 				),
 			},
 			{

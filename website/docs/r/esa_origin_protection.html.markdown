@@ -44,8 +44,9 @@ resource "alicloud_esa_site" "default" {
 
 
 resource "alicloud_esa_origin_protection" "default" {
-  origin_converge = "on"
-  site_id         = alicloud_esa_site.default.id
+  origin_converge      = "on"
+  auto_confirm_ip_list = "off"
+  site_id              = alicloud_esa_site.default.id
 }
 ```
 
@@ -54,6 +55,7 @@ resource "alicloud_esa_origin_protection" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+* `auto_confirm_ip_list` - (Optional) Whether to automatically enable the latest origin IP whitelist. Valid values: `on`, `off`.
 * `origin_converge` - (Optional) The IP convergence status.
 
   - on
