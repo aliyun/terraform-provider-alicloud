@@ -10,6 +10,12 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "dataworks-public",
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_data_works_dsg_user_group",
+				Factory:  NewDsgUserGroupResource,
+			},
+		},
 		SDKResources: []conns.SDKResource{
 			{
 				TypeName: "alicloud_data_works_data_source_shared_rule",
