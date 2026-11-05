@@ -101,14 +101,20 @@ variable "name" {
   default = %q
 }
 
+data "alicloud_instance_types" "default" {
+  instance_type_family = "ecs.g6"
+  cpu_core_count       = 2
+}
+
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
+  available_instance_type     = data.alicloud_instance_types.default.instance_types.0.id
 }
 
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu"
-  most_recent = true
-  owners      = "system"
+  name_regex   = "^ubuntu"
+  most_recent  = true
+  owners       = "system"
   architecture = "x86_64"
 }
 
@@ -128,6 +134,7 @@ resource "alicloud_ecs_image_pipeline" "default" {
   base_image                 = data.alicloud_images.default.images.0.id
   base_image_type            = "IMAGE"
   vswitch_id                 = alicloud_vswitch.default.id
+  instance_type              = data.alicloud_instance_types.default.instance_types.0.id
   build_content              = "RUN echo terraform-acceptance-test"
   system_disk_size           = 40
   internet_max_bandwidth_out = 5
