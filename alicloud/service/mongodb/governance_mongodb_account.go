@@ -51,6 +51,7 @@ func mongoDBAccountGovernanceSchema() map[string]*schema.Schema {
 }
 
 func mongoDBGovernanceReadAccount(d *schema.ResourceData, client *connectivity.AliyunClient) {
+	d.Set("account_roles", []map[string]interface{}{})
 	parts := strings.Split(d.Id(), ":")
 	if len(parts) != 2 {
 		return

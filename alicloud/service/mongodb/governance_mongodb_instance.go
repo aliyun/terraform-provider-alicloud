@@ -250,7 +250,7 @@ func mongoDBGovernanceRpcPost(client *connectivity.AliyunClient, timeout time.Du
 	err = retry.Retry(timeout, func() *retry.RetryError {
 		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"OperationDenied.TooFrequent"}) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -315,6 +315,19 @@ func mongoDBGovernanceInt(v interface{}) int {
 
 func mongoDBGovernanceReadInstance(d *schema.ResourceData, client *connectivity.AliyunClient) {
 	id := d.Id()
+
+	// Seed the computed aggregates with empty values so a failed optional read
+	// does not leave them unknown and produce a non-empty follow-up plan.
+	d.Set("databases", []string{})
+	d.Set("sync_source", []map[string]interface{}{})
+	d.Set("ai_assistant", []map[string]interface{}{})
+	d.Set("cold_data_tables", []map[string]interface{}{})
+	d.Set("hot_data_tables", []map[string]interface{}{})
+	d.Set("table_recovery_support", []map[string]interface{}{})
+	d.Set("ai_performance_values", []map[string]interface{}{})
+	if policies, ok := d.Get("advanced_backup_policy").([]interface{}); !ok || len(policies) == 0 {
+		d.Set("advanced_backup_policy", []interface{}{})
+	}
 
 	if response, err := mongoDBGovernanceRpcPost(client, 2*time.Minute, "DescribeDatabases", map[string]interface{}{"DBInstanceId": id}); err != nil {
 		log.Printf("[DEBUG] DescribeDatabases for %s: %s", id, err)
