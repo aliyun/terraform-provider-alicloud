@@ -153,6 +153,12 @@ func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable_global_domain_name", "resource_group_id"},
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"enable_global_domain_name": "false",
 				}),
