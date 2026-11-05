@@ -2956,7 +2956,7 @@ func TestUnitCmsSubscriptionReadDropsBlocksWithoutMembers(t *testing.T) {
 				"templateUuid":   "",
 			},
 			"workspaceFilterSetting": map[string]interface{}{
-				"workspaceUuids": []interface{}{},
+				"workspaceUuids": []interface{}{""},
 			},
 			"agentConfig": map[string]interface{}{
 				"agentUuid": "",
@@ -3070,7 +3070,12 @@ func TestUnitCmsSubscriptionCreateDoesNotReplayTransportFailure(t *testing.T) {
 	})
 	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
 	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
-	r.Create(context.Background(), req, resp)
+	// The deadline is longer than the first retry backoff but far below the
+	// five-minute operation timeout, so a regression that replays the POST fails
+	// this test quickly instead of waiting for the operation deadline.
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+	defer cancel()
+	r.Create(ctx, req, resp)
 
 	mu.Lock()
 	defer mu.Unlock()
@@ -3239,5 +3244,121 @@ func TestUnitCmsSubscriptionUpdateExternalFixtures(t *testing.T) {
 		if !blocks.IsNull() || len(blocks.Elements()) != 0 {
 			t.Fatalf("%s = %v, want no block after clearing", attribute, blocks)
 		}
+	}
+}
+
+// TestUnitCmsSubscriptionCreateOmitsRelationWithExpression proves a
+// configuration whose expression and relation only resolve at apply time does
+// not send relation: the service ignores it when expression is set, so a
+// request that demanded it back could never converge. The create completes
+// quickly and the stored relation is read back.
+func TestUnitCmsSubscriptionCreateOmitsRelationWithExpression(t *testing.T) {
+	apiClient, recorder := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+		if method == http.MethodPost {
+			return http.StatusOK, map[string]interface{}{"requestId": "req-1", "subscriptionId": subscriptionUnitServerId}
+		}
+		return http.StatusOK, map[string]interface{}{"requestId": "req-2", "subscription": map[string]interface{}{
+			"subscriptionId":   subscriptionUnitServerId,
+			"subscriptionName": "dynamic-filter",
+			"workspace":        "ws-1",
+			"enable":           true,
+			"filterSetting": map[string]interface{}{
+				"expression": "1 and 2",
+				"relation":   "AND",
+				"conditions": []interface{}{
+					map[string]interface{}{"field": "labels.alertname", "op": "EQ", "value": "CPU"},
+					map[string]interface{}{"field": "labels.severity", "op": "IN", "value": "P1"},
+				},
+			},
+		}}
+	})
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	filterType := subscriptionUnitObjectType(t, objType, "filter_setting")
+	conditionType := subscriptionUnitObjectType(t, filterType, "conditions")
+	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                subscriptionUnitUnknown{},
+		"subscription_name": "dynamic-filter",
+		"workspace":         "ws-1",
+		"filter_setting": []interface{}{
+			subscriptionUnitObject(t, filterType, map[string]interface{}{
+				"expression": "1 and 2",
+				"relation":   "AND",
+				"conditions": []interface{}{
+					subscriptionUnitObject(t, conditionType, map[string]interface{}{"field": "labels.alertname", "op": "EQ", "value": "CPU"}),
+					subscriptionUnitObject(t, conditionType, map[string]interface{}{"field": "labels.severity", "op": "IN", "value": "P1"}),
+				},
+			}),
+		},
+	})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
+	r.Create(ctx, req, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Create returned diagnostics: %v", resp.Diagnostics)
+	}
+
+	bodies := recorder.bodiesFor(http.MethodPost)
+	if len(bodies) != 1 {
+		t.Fatalf("create requests = %d, want one", len(bodies))
+	}
+	filter, ok := bodies[0]["filterSetting"].(map[string]interface{})
+	if !ok || filter["expression"] != "1 and 2" {
+		t.Fatalf("unexpected filterSetting payload: %v", bodies[0]["filterSetting"])
+	}
+	if relation, exists := filter["relation"]; exists {
+		t.Fatalf("filterSetting still carries relation %v although expression is set", relation)
+	}
+	var relation types.String
+	if diags := resp.State.GetAttribute(context.Background(), path.Root("filter_setting").AtListIndex(0).AtName("relation"), &relation); diags.HasError() {
+		t.Fatalf("reading relation: %v", diags)
+	}
+	if relation.ValueString() != "AND" {
+		t.Fatalf("state relation = %q, want the stored value", relation.ValueString())
+	}
+}
+
+// TestUnitCmsSubscriptionCreateRetriesThrottling proves a throttled create is
+// retried: the gateway rejected the request before processing it, so resending
+// cannot duplicate the subscription.
+func TestUnitCmsSubscriptionCreateRetriesThrottling(t *testing.T) {
+	var mu sync.Mutex
+	posts := 0
+	apiClient, recorder := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+		mu.Lock()
+		defer mu.Unlock()
+		if method == http.MethodPost {
+			posts++
+			if posts == 1 {
+				return http.StatusTooManyRequests, map[string]interface{}{"Code": "Throttling", "Message": "code: 429, Throttling"}
+			}
+			return http.StatusOK, map[string]interface{}{"requestId": "req-1", "subscriptionId": subscriptionUnitServerId}
+		}
+		return http.StatusOK, map[string]interface{}{"requestId": "req-2", "subscription": map[string]interface{}{
+			"subscriptionId":   subscriptionUnitServerId,
+			"subscriptionName": "throttled",
+			"workspace":        "ws-1",
+			"enable":           true,
+		}}
+	})
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                subscriptionUnitUnknown{},
+		"subscription_name": "throttled",
+		"workspace":         "ws-1",
+	})
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
+	r.Create(ctx, req, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Create returned diagnostics: %v", resp.Diagnostics)
+	}
+	if calls := len(recorder.requests(http.MethodPost)); calls != 2 {
+		t.Fatalf("create requests = %d, want a retry after the throttling rejection", calls)
 	}
 }

@@ -651,7 +651,8 @@ func (r *subscriptionResource) ImportState(ctx context.Context, req resource.Imp
 // finishes and its response, including a created id, is returned to the caller.
 // replay reports whether the verb is safe to resend: PUT and DELETE are applied
 // at most once for the same payload, while CreateSubscription has no idempotency
-// token and is therefore sent exactly once.
+// token and is therefore sent exactly once, except for a throttling rejection,
+// which proves the service never processed the request.
 func (r *subscriptionResource) roaCall(ctx context.Context, action string, logPayload interface{}, replay bool, call func() (map[string]interface{}, error)) (map[string]interface{}, error) {
 	wait := subscriptionBackoff(ctx)
 	for {
@@ -663,7 +664,7 @@ func (r *subscriptionResource) roaCall(ctx context.Context, action string, logPa
 			logs.AddDebug(action, response, logPayload)
 			return response, nil
 		}
-		if !replay || !subscriptionRetryable(err) {
+		if !subscriptionRetryable(err) || (!replay && !subscriptionThrottled(err)) {
 			logs.AddDebug(action, response, logPayload)
 			return response, err
 		}
@@ -705,17 +706,33 @@ func subscriptionWriteOutcomeUnknown(ctx context.Context, err error) bool {
 	if ctx.Err() != nil {
 		return true
 	}
-	var transportErr *url.Error
-	if stderrors.As(err, &transportErr) {
-		return true
-	}
 	var sdkErr *tea.SDKError
 	if stderrors.As(err, &sdkErr) {
-		status := tea.IntValue(sdkErr.StatusCode)
-		// 5xx and throttling responses do not prove the request was rejected.
-		return status >= http.StatusInternalServerError || status == http.StatusTooManyRequests
+		// A throttling rejection answers before the service processes the
+		// request, so it proves the write was not applied.
+		if subscriptionThrottled(err) {
+			return false
+		}
+		// A 5xx answer does not prove the request was rejected.
+		return tea.IntValue(sdkErr.StatusCode) >= http.StatusInternalServerError
 	}
-	return false
+	var transportErr *url.Error
+	return stderrors.As(err, &transportErr)
+}
+
+// subscriptionThrottled reports whether the service rejected the request for
+// rate limiting, which is the one transient failure that is safe to resend for
+// a non-replayable verb.
+func subscriptionThrottled(err error) bool {
+	var sdkErr *tea.SDKError
+	if !stderrors.As(err, &sdkErr) {
+		return false
+	}
+	if tea.IntValue(sdkErr.StatusCode) == http.StatusTooManyRequests {
+		return true
+	}
+	code := tea.StringValue(sdkErr.Code)
+	return code == "Rejected.Throttling" || strings.Contains(code, "Throttling")
 }
 
 func (r *subscriptionResource) setSubscriptionEnable(ctx context.Context, id string, workspace types.String, enable bool) error {
@@ -1149,10 +1166,18 @@ func expandSubscriptionFilterSetting(blocks []subscriptionFilterSettingModel) ma
 	}
 	block := blocks[0]
 	result := map[string]interface{}{}
+	expression := ""
 	if !block.Expression.IsNull() && !block.Expression.IsUnknown() {
-		result["expression"] = block.Expression.ValueString()
+		expression = block.Expression.ValueString()
+		if expression != "" {
+			result["expression"] = expression
+		}
 	}
-	if !block.Relation.IsNull() && !block.Relation.IsUnknown() {
+	// The service ignores relation when expression is set, so it is not sent in
+	// that case: the value the service stores is not the configured one, and a
+	// request that demanded it back could never converge. The read path still
+	// reports the stored relation, which is why the argument is computed.
+	if expression == "" && !block.Relation.IsNull() && !block.Relation.IsUnknown() {
 		result["relation"] = block.Relation.ValueString()
 	}
 	if len(block.Conditions) > 0 {
@@ -1757,7 +1782,8 @@ func subscriptionBoolStateValue(v interface{}) types.Bool {
 }
 
 // subscriptionJSONStringList defines one representation for every optional
-// list: an omitted, empty or unusable member reads back as null. The response
+// list: an omitted, empty or unusable member reads back as null, including an
+// empty string member, which the configuration cannot express. The response
 // alone decides the value, never the previous state, so Refresh and a bare
 // Import of the same response produce the same state and a configuration that
 // omits the argument plans no change.
@@ -1768,7 +1794,7 @@ func subscriptionJSONStringList(v interface{}) types.List {
 	}
 	values := make([]attr.Value, 0, len(items))
 	for _, item := range items {
-		if s, ok := item.(string); ok {
+		if s, ok := item.(string); ok && s != "" {
 			values = append(values, types.StringValue(s))
 		}
 	}
