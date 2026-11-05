@@ -70,7 +70,7 @@ resource "alicloud_mongodb_account" "default" {
 
 ### Deleting `alicloud_mongodb_account` or removing it from your configuration
 
-Terraform cannot destroy resource `alicloud_mongodb_account`. Terraform will remove this resource from the state file, however resources may remain.
+By default Terraform cannot destroy resource `alicloud_mongodb_account`: it removes the resource from the state file while the account remains on the instance. Set `force_destroy = true` to delete the account from the instance when the resource is destroyed.
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mongodb_account&spm=docs.r.mongodb_account.example&intl_lang=EN_US)
 
@@ -85,17 +85,36 @@ The following arguments are supported:
 * `account_password` - (Required) Account Password
 * `character_type` - (Optional, ForceNew, Computed, Available since v1.241.0) The account Comment Information type. Value:
   - `db`: shard account.
+  - `cs`: config server account.
   - `normal`: The replica set account. (The default value).
 
   -> **NOTE:** When setting the account type to normal, the AccountName must be root. This selection does not create a new account; instead, Terraform will update the password for the existing root account.
 
+  -> **NOTE:** A `cs` account carries the database roles configured in `privilege`; `db` and `normal` accounts have fixed roles, so setting `privilege` on them is rejected.
+
 * `instance_id` - (Required, ForceNew) Instance Id
+* `privilege` - (Optional, Set, Available since v2.3.0) The database roles granted to a config server (`cs`) account. The order of the blocks is not significant. See [`privilege`](#privilege) below.
+
+  -> **NOTE:** To revoke roles, keep them in `privilege` and set `privilege_reset_type = "revoke"`. Removing the `privilege` block from the configuration does not call the API, so the roles remain on the account.
+
+* `privilege_reset_type` - (Optional, Available since v2.3.0) How `privilege` is applied. Valid values: `update`, `grant`, `revoke`. Default value: `update`.
+* `force_destroy` - (Optional, Bool, Available since v2.3.0) Whether to delete the account when the resource is destroyed. Default value: `false`.
+
+### `privilege`
+
+The privilege supports the following:
+
+* `role` - (Required) The role name, for example `read`, `readWrite` or `dbAdmin`.
+* `db_name` - (Required) The database the role applies to.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<account_name>`.
 * `status` - Account Status
+* `account_roles` - (Available since v2.3.0) The roles assigned to the account.
+  * `role` - The role name.
+  * `db_name` - The database the role applies to.
 
 ## Timeouts
 

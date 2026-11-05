@@ -165,6 +165,22 @@ The following arguments are supported:
 * `parameters` - (Optional, Set, Available since v1.203.0) Set of parameters needs to be set after mongodb instance was launched. See [`parameters`](#parameters) below.
 * `global_security_group_list` - (Optional, List, Available since v1.257.0) The list of Global Security Group Ids.
 * `tags` - (Optional, Available since v1.66.0) A mapping of tags to assign to the resource.
+* `advanced_backup_policy` - (Optional, List, Available since v2.3.0) Advanced backup policy. See [`advanced_backup_policy`](#advanced_backup_policy) below.
+* `advanced_backup_status` - (Optional, Bool, Available since v2.3.0) Whether to enable the advanced backup capability of the instance.
+* `archive_operation` - (Optional, Available since v2.3.0) Enables or disables the cold data archiving capability. Valid values: `enable`, `disable`.
+* `archived_tables` - (Optional, Available since v2.3.0) The JSON-encoded list of tables to archive, for example `[{"dbName":"testdb","collection":"testcoll"}]`.
+* `restored_tables` - (Optional, Available since v2.3.0) The JSON-encoded list of archived tables to restore.
+* `restore_category` - (Optional, Available since v2.3.0) The recovery category used when changing the table recovery state.
+* `table_restore` - (Optional, List, Available since v2.3.0) Restores a table to a point in time. See [`table_restore`](#table_restore) below. Changing this block triggers one restore request.
+* `instance_config` - (Optional, List, Available since v2.3.0) Modifies a single instance configuration item. See [`instance_config`](#instance_config) below.
+* `transform_to_ecs` - (Optional, List, Available since v2.3.0) Converts the instance to an ECS-based deployment. See [`transform_to_ecs`](#transform_to_ecs) below. This is a one-time order and may incur charges.
+* `ai_gateway` - (Optional, List, Available since v2.3.0) Creates an AI gateway for the instance. Removing the block deletes the gateway. See [`ai_gateway`](#ai_gateway) below.
+* `ai_gateway_api_key_reset` - (Optional, Bool, Available since v2.3.0) Set to `true` to reset the AI gateway API key. The new key is exported as `ai_gateway_api_key`.
+* `replication_link` - (Optional, List, Available since v2.3.0) Creates a replication link from this instance. Removing the block deletes the link. See [`replication_link`](#replication_link) below.
+* `ai_performance_key` - (Optional, Available since v2.3.0) The performance metric key used by `DescribeDBInstanceAiPerformance`. When this argument, `ai_performance_start_time` and `ai_performance_end_time` are all set, the metric is read into `ai_performance_values`.
+* `ai_performance_start_time` - (Optional, Available since v2.3.0) The start time of the AI performance query.
+* `ai_performance_end_time` - (Optional, Available since v2.3.0) The end time of the AI performance query.
+* `ai_performance_interval` - (Optional, Available since v2.3.0) The interval of the AI performance query.
 
 ### `security_ip_groups`
 
@@ -180,6 +196,58 @@ The parameters supports the following:
 
 * `name` - (Required) The name of the parameter.
 * `value` - (Required) The value of the parameter.
+
+### `advanced_backup_policy`
+
+The advanced_backup_policy supports the following:
+
+* `preferred_backup_time` - (Optional) The preferred backup time in the `HH:mmZ-HH:mmZ` format.
+* `snapshot_backup_type` - (Optional) The snapshot backup type. Valid values: `Standard`, `Flash`.
+* `backup_retention_policy_on_cluster_deletion` - (Optional, Int) The backup retention policy on cluster deletion. Valid values: `0`, `1`, `2`.
+* `backup_tamper_proof_enabled` - (Optional, Bool) Whether to enable backup tamper protection. It cannot be disabled after it is enabled.
+* `advanced_backup_data_policies` - (Optional) The JSON-encoded advanced backup data policies.
+* `advanced_backup_log_policies` - (Optional) The JSON-encoded advanced backup log policies.
+
+### `table_restore`
+
+The table_restore supports the following:
+
+* `table_meta` - (Required) The JSON-encoded tables to restore.
+* `restore_type` - (Optional) The restore type. Default value: `RestoreTime`.
+* `restore_time` - (Optional) The point in time to restore to.
+
+### `instance_config`
+
+The instance_config supports the following:
+
+* `config_name` - (Required) The name of the configuration item.
+* `config_value` - (Required) The value of the configuration item.
+
+### `transform_to_ecs`
+
+The transform_to_ecs supports the following:
+
+* `target_class` - (Required) The target instance class after the conversion.
+* `coupon_no` - (Optional) The coupon number.
+* `auto_pay` - (Optional, Bool) Whether to automatically pay for the order.
+* `storage` - (Optional, Int) The storage size after the conversion. Unit: GB.
+* `order_type` - (Optional) The order type. Valid values: `UPGRADE`, `DOWNGRADE`.
+* `db_instance_storage_type` - (Optional) The storage type after the conversion.
+* `effective_time` - (Optional) The time when the conversion takes effect.
+
+### `ai_gateway`
+
+The ai_gateway supports the following:
+
+* `db_instance_class` - (Optional) The instance class of the AI gateway.
+* `effective_time` - (Optional, Int) The effective time of the gateway operation.
+
+### `replication_link`
+
+The replication_link supports the following:
+
+* `source_instance_id` - (Required) The ID of the source instance.
+* `source_instance_region_id` - (Required) The region ID of the source instance.
 
 ## Attributes Reference
 
@@ -205,6 +273,43 @@ The following attributes are exported:
   * `connection_domain` - The connection address of the node.
   * `connection_port` - The connection port of the node.
   * `role_id` - The id of the role.
+* `databases` - (Available since v2.3.0) The databases on the instance.
+* `sync_source` - (Available since v2.3.0) The synchronization sources of the replica set nodes.
+  * `role_id` - The role ID of the node.
+  * `role` - The role of the node.
+  * `target_role_id` - The role ID of the synchronization source.
+  * `target_role` - The role of the synchronization source.
+  * `ip` - The IP address of the synchronization source.
+  * `port` - The port of the synchronization source.
+* `ai_assistant` - (Available since v2.3.0) The AI assistant subscription bound to the instance.
+  * `db_instance_id` - The instance ID.
+  * `charge_type` - The billing method.
+  * `status` - The subscription status.
+  * `base_quota` - The token quota included in the edition.
+  * `extra_quota` - The token quota of purchased packages.
+  * `total_quota` - The total token quota of the current period.
+  * `start_time` - The subscription start time.
+  * `expire_time` - The subscription expiration time.
+  * `product_edition` - The product edition.
+* `cold_data_tables` - (Available since v2.3.0) The archived (cold) tables of the instance.
+  * `db_name` - The database name.
+  * `table_name` - The table name.
+  * `table_size` - The table size.
+* `hot_data_tables` - (Available since v2.3.0) The hot tables of the instance.
+  * `db_name` - The database name.
+  * `table_name` - The table name.
+  * `table_size` - The table size.
+* `table_recovery_support` - (Available since v2.3.0) The table recovery capabilities of the instance.
+  * `database_lazy_load_support` - Whether database lazy loading is supported.
+  * `db_tables_support` - Whether database table recovery is supported.
+  * `instant_db_tables_support` - Whether instant database table recovery is supported.
+* `transform_order_id` - (Available since v2.3.0) The order ID of the ECS conversion.
+* `ai_gateway_instance_name` - (Available since v2.3.0) The name of the AI gateway instance.
+* `ai_gateway_task_id` - (Available since v2.3.0) The task ID of the AI gateway operation.
+* `ai_gateway_api_key` - (Available since v2.3.0, Sensitive) The AI gateway API key returned by the last reset.
+* `ai_performance_values` - (Available since v2.3.0) The AI performance values returned for the configured query.
+  * `value` - The metric value.
+  * `date` - The timestamp of the metric value.
 
 ## Timeouts
 

@@ -89,7 +89,7 @@ func TestAccAliCloudMongoDBAccount_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password"},
+				ImportStateVerifyIgnore: []string{"account_password", "force_destroy", "privilege_reset_type"},
 			},
 		},
 	})
@@ -454,7 +454,7 @@ func TestAccAliCloudMongodbAccount_basic9243(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password"},
+				ImportStateVerifyIgnore: []string{"account_password", "force_destroy", "privilege_reset_type"},
 			},
 		},
 	})
@@ -569,7 +569,7 @@ func TestAccAliCloudMongodbAccount_basic8763(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password"},
+				ImportStateVerifyIgnore: []string{"account_password", "force_destroy", "privilege_reset_type"},
 			},
 		},
 	})
@@ -625,3 +625,120 @@ resource "alicloud_mongodb_instance" "default7eOftZ" {
 }
 
 // Test Mongodb Account. <<< Resource test cases, automatically generated.
+
+// TestAccAliCloudMongoDBAccount_governance covers the account-level Dds APIs
+// that are exposed on alicloud_mongodb_account: roles read-back, privilege
+// update and opt-in account deletion.
+func TestAccAliCloudMongoDBAccount_governance(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_account.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudMongodbAccountMap9243)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mongodb.NewMongodbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMongodbAccount")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfgov%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMongodbAccountBasicDependence9243)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      nil,
+		Steps: []resource.TestStep{
+			{
+				// The root account only accepts ResetType=update with empty Roles
+				// and a shard direct-connection (db) account rejects Roles, so
+				// privilege management is exercised on a config server account.
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":          "${alicloud_mongodb_sharding_instance.default7eOftZ.id}",
+					"account_name":         name,
+					"account_password":     "qwer1234!!!",
+					"character_type":       "cs",
+					"force_destroy":        true,
+					"privilege_reset_type": "update",
+					"privilege": []map[string]interface{}{
+						{
+							"role":    "read",
+							"db_name": "admin",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name":   name,
+						"character_type": "cs",
+					}),
+				),
+			},
+			{
+				// Changing the role set is applied through ModifyAccountPrivilege.
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":          "${alicloud_mongodb_sharding_instance.default7eOftZ.id}",
+					"account_name":         name,
+					"account_password":     "qwer1234!!!",
+					"character_type":       "cs",
+					"force_destroy":        true,
+					"privilege_reset_type": "update",
+					"privilege": []map[string]interface{}{
+						{
+							"role":    "read",
+							"db_name": "admin",
+						},
+						{
+							"role":    "readWrite",
+							"db_name": "testdb",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name":   name,
+						"character_type": "cs",
+					}),
+					resource.TestCheckResourceAttrSet(resourceId, "account_roles.0.role"),
+				),
+			},
+			{
+				// Reordering the same set must converge: privilege is unordered.
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":          "${alicloud_mongodb_sharding_instance.default7eOftZ.id}",
+					"account_name":         name,
+					"account_password":     "qwer1234!!!",
+					"character_type":       "cs",
+					"force_destroy":        true,
+					"privilege_reset_type": "update",
+					"privilege": []map[string]interface{}{
+						{
+							"role":    "readWrite",
+							"db_name": "testdb",
+						},
+						{
+							"role":    "read",
+							"db_name": "admin",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name":   name,
+						"character_type": "cs",
+						// Let the account operations settle before the sharding
+						// instance is destroyed, which rejects DeleteDBInstance
+						// while the instance is still modifying.
+						acctest.ForceSleep: "60",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "privilege", "privilege_reset_type", "force_destroy"},
+			},
+		},
+	})
+}

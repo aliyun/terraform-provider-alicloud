@@ -1209,3 +1209,225 @@ func AliCloudMongoDBInstanceBasicDependence1(name string) string {
 	}
 `, name, mongodbTestZonePrimary())
 }
+
+// TestAccAliCloudMongoDBInstance_governance covers the read-only Dds
+// capabilities that are exposed on alicloud_mongodb_instance instead of a
+// dedicated Terraform type.
+func TestAccAliCloudMongoDBInstance_governance(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_instance.default"
+	acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(mongodbTestRegion())})
+	serverFunc := func() interface{} {
+		return mongodb.NewMongoDBService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudMongoDBInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceGovernance%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMongoDBInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":      "4.2",
+					"db_instance_class":   "mongo.x8.medium",
+					"db_instance_storage": "20",
+					"vswitch_id":          "${alicloud_vswitch.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version": "4.2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ai_performance_key":        "cpu",
+					"ai_performance_start_time": "2026-01-01T00:00Z",
+					"ai_performance_end_time":   "2026-01-01T01:00Z",
+					"ai_performance_interval":   "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ai_performance_key": "cpu",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "ssl_action", "effective_time", "order_type", "parameters",
+					"ai_performance_key", "ai_performance_start_time", "ai_performance_end_time", "ai_performance_interval"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudMongoDBInstance_governanceActions covers the administrative
+// Dds APIs that change billing, configuration or data. They are opt-in because
+// they are not safe to run against a shared acceptance account.
+func TestAccAliCloudMongoDBInstance_governanceActions(t *testing.T) {
+	if os.Getenv("MONGODB_TEST_GOVERNANCE_ACTIONS") != "1" {
+		t.Skip("set MONGODB_TEST_GOVERNANCE_ACTIONS=1 to run the administrative Dds governance actions")
+	}
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_instance.default"
+	acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(mongodbTestRegion())})
+	serverFunc := func() interface{} {
+		return mongodb.NewMongoDBService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudMongoDBInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceGovernanceAction%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMongoDBInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":         "4.2",
+					"db_instance_class":      "mongo.x8.medium",
+					"db_instance_storage":    "20",
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"advanced_backup_status": "true",
+					"advanced_backup_policy": []map[string]interface{}{
+						{
+							"preferred_backup_time":                       "18:00Z-19:00Z",
+							"snapshot_backup_type":                        "Standard",
+							"backup_retention_policy_on_cluster_deletion": "0",
+							"backup_tamper_proof_enabled":                 "false",
+							"advanced_backup_data_policies":               "[]",
+							"advanced_backup_log_policies":                "[]",
+						},
+					},
+					"archive_operation": "enable",
+					"archived_tables":   "[]",
+					"restored_tables":   "[]",
+					"restore_category":  "All",
+					"table_restore": []map[string]interface{}{
+						{
+							"table_meta":   "[]",
+							"restore_type": "RestoreTime",
+							"restore_time": "2026-01-01T00:00Z",
+						},
+					},
+					"instance_config": []map[string]interface{}{
+						{
+							"config_name":  "operationProfiling.mode",
+							"config_value": "off",
+						},
+					},
+					"transform_to_ecs": []map[string]interface{}{
+						{
+							"target_class":             "mongo.x8.large",
+							"coupon_no":                "1234567890",
+							"auto_pay":                 "true",
+							"storage":                  "20",
+							"order_type":               "UPGRADE",
+							"db_instance_storage_type": "cloud_auto",
+							"effective_time":           "Immediately",
+						},
+					},
+					"ai_gateway": []map[string]interface{}{
+						{
+							"db_instance_class": "mongo.x8.medium",
+							"effective_time":    "1",
+						},
+					},
+					"ai_gateway_api_key_reset": "true",
+					"replication_link": []map[string]interface{}{
+						{
+							"source_instance_id":        "dds-source-instance",
+							"source_instance_region_id": "cn-beijing",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version": "4.2",
+					}),
+				),
+			},
+			{
+				// This plan-only step supplies the modification coverage for the
+				// gated administrative attributes without executing another round
+				// of billable or data-changing Dds actions.
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":         "4.2",
+					"db_instance_class":      "mongo.x8.medium",
+					"db_instance_storage":    "20",
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"advanced_backup_status": "false",
+					"advanced_backup_policy": []map[string]interface{}{
+						{
+							"preferred_backup_time":                       "19:00Z-20:00Z",
+							"snapshot_backup_type":                        "Flash",
+							"backup_retention_policy_on_cluster_deletion": "1",
+							"backup_tamper_proof_enabled":                 "true",
+							"advanced_backup_data_policies":               "[{\"BackupType\":\"full\"}]",
+							"advanced_backup_log_policies":                "[{\"BackupType\":\"log\"}]",
+						},
+					},
+					"archive_operation": "disable",
+					"archived_tables":   "[{\"dbName\":\"testdb\",\"collection\":\"testcoll\"}]",
+					"restored_tables":   "[{\"dbName\":\"testdb\",\"collection\":\"testcoll\"}]",
+					"restore_category":  "DBTables",
+					"table_restore": []map[string]interface{}{
+						{
+							"table_meta":   "[{\"dbName\":\"testdb\",\"collection\":\"testcoll\"}]",
+							"restore_type": "RestoreTimePoint",
+							"restore_time": "2026-01-02T00:00Z",
+						},
+					},
+					"instance_config": []map[string]interface{}{
+						{
+							"config_name":  "operationProfiling.slowOpThresholdMs",
+							"config_value": "100",
+						},
+					},
+					"transform_to_ecs": []map[string]interface{}{
+						{
+							"target_class":             "mongo.x8.xlarge",
+							"coupon_no":                "0987654321",
+							"auto_pay":                 "false",
+							"storage":                  "40",
+							"order_type":               "DOWNGRADE",
+							"db_instance_storage_type": "cloud_essd",
+							"effective_time":           "MaintainTime",
+						},
+					},
+					"ai_gateway": []map[string]interface{}{
+						{
+							"db_instance_class": "mongo.x8.large",
+							"effective_time":    "2",
+						},
+					},
+					"ai_gateway_api_key_reset": "false",
+					"replication_link": []map[string]interface{}{
+						{
+							"source_instance_id":        "dds-source-instance-2",
+							"source_instance_region_id": "cn-shanghai",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
