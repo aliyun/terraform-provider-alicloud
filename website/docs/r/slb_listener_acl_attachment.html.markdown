@@ -174,7 +174,7 @@ The following attributes are exported:
 * `acl_status` - (String) The access control status of the listener, as reported by the last successful read.
 * `acl_pending` - (Bool) Whether the last access control write has not been confirmed by the listener yet. It is `true` after a write whose result could not be verified: the planned `acl_id` and `acl_type` are kept in state, a refresh does not remove the resource while the listener still reports the previous group or a disabled ACL, and a destroy only releases the binding that is attributed to this resource. It becomes `false` once the listener reports the planned binding.
 
--> **NOTE:** When `acl_pending` is `true`, the configuration and the state agree, so the next `terraform apply` has nothing to change. Run `terraform apply -replace=alicloud_slb_listener_acl_attachment.<name>` (or `terraform taint`) to write the binding again. Destroying the resource in this state only disables access control when the listener actually reports the planned policy group, so a binding that was never applied does not release a group managed by something else.
+  -> **NOTE:** When `acl_pending` is `true`, the configuration and the state agree, so the next `terraform apply` has nothing to change. Run `terraform apply -replace=alicloud_slb_listener_acl_attachment.<name>` (or `terraform taint`) to write the binding again. Destroying the resource in this state only disables access control when the listener actually reports the planned policy group, so a binding that was never applied does not release a group managed by something else.
 
 ## Import
 
