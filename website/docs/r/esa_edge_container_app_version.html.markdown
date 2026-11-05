@@ -22,7 +22,7 @@ Basic Usage
 terraform {
   required_providers {
     alicloud = {
-      source  = "aliyun/alicloud"
+      source = "aliyun/alicloud"
     }
   }
 }
@@ -38,9 +38,9 @@ resource "alicloud_esa_edge_container_app" "default" {
 }
 
 resource "alicloud_esa_edge_container_app_version" "default" {
-  app_id    = alicloud_esa_edge_container_app.default.id
-  name      = var.name
-  remarks   = "tf example version"
+  app_id      = alicloud_esa_edge_container_app.default.id
+  name        = var.name
+  remarks     = "tf example version"
   publish_env = "staging"
   containers {
     name         = "tf-example-container"
@@ -69,7 +69,7 @@ The following arguments are supported:
 * `app_id` - (Required, ForceNew) The ID of the edge container application. The application must be created first via `alicloud_esa_edge_container_app`.
 * `name` - (Required, ForceNew) The version name. The length must be 6 to 128 characters.
 * `remarks` - (Optional, ForceNew) The remarks of the version.
-* `containers` - (Required, ForceNew) The container group to deploy for this version. See [containers](#containers) below.
+* `containers` - (Required, ForceNew) The container group to deploy for this version. See [`containers`](#containers) below.
 * `publish_env` - (Optional) The environment to publish the version to. Valid values: `prod`, `staging`. When set, the version is published on create and re-published whenever a publish parameter changes.
 * `publish_type` - (Optional) The publish type. Valid values: `percentage`, `region`. Default value: `percentage`.
 * `percentage` - (Optional) The publish percentage. Valid values: 1 to 100. Default value: 100. Only effective when `publish_type` is `percentage`.
@@ -84,7 +84,7 @@ The `containers` block supports:
 * `name` - (Required) The container name, unique within the container group.
 * `image` - (Required) The image address.
 * `is_acr_image` - (Required) Whether the image is an ACR image.
-* `acr_image_info` - (Optional) The ACR image information. See [acr_image_info](#acr_image_info) below.
+* `acr_image_info` - (Optional) The ACR image information. See [`acr_image_info`](#acr_image_info) below.
 * `spec` - (Required) The container spec. Valid values: `1C2G`, `2C4G`, `2C8G`, `4C8G`, `4C16G`, `8C16G`, `8C32G`.
 * `command` - (Optional) The startup command, with multiple arguments separated by spaces.
 * `args` - (Optional) The startup arguments, with multiple arguments separated by spaces.
@@ -93,7 +93,7 @@ The `containers` block supports:
 * `post_start` - (Optional) The command executed before the container starts.
 * `pre_stop` - (Optional) The command executed before the container stops.
 * `probe_type` - (Required) The probe type. Valid values: `exec`, `tcpSocket`, `httpGet`.
-* `probe_content` - (Required) The probe configuration. See [probe_content](#probe_content) below.
+* `probe_content` - (Required) The probe configuration. See [`probe_content`](#probe_content) below.
 
 ### acr_image_info
 
