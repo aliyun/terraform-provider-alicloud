@@ -228,6 +228,21 @@ func listenerAclErrorCause(err error) error {
 	return err
 }
 
+// listenerAclStatus reads the AclStatus field of a Describe response. The
+// Describe contract always reports it as `on` or `off`; an absent or non string
+// value means the response is incomplete and can neither confirm a binding nor
+// prove that access control is off.
+func listenerAclStatus(object map[string]interface{}) (status string, ok bool) {
+	if object == nil {
+		return "", false
+	}
+	value, ok := object["AclStatus"].(string)
+	if !ok || strings.TrimSpace(value) == "" {
+		return "", false
+	}
+	return value, true
+}
+
 // listenerAclAttachmentConfirms reports whether the listener proves the planned
 // binding: access control must be enabled, the policy group must be a member,
 // and the reported type must match the plan when the response carries one.
@@ -235,7 +250,8 @@ func listenerAclAttachmentConfirms(object map[string]interface{}, aclId, aclType
 	if object == nil {
 		return false
 	}
-	if status, _ := object["AclStatus"].(string); !strings.EqualFold(status, "on") {
+	status, ok := listenerAclStatus(object)
+	if !ok || !strings.EqualFold(status, "on") {
 		return false
 	}
 	if !listenerAclContains(object, aclId) {

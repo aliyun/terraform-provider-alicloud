@@ -2725,16 +2725,51 @@ var signedURLPattern = regexp.MustCompile(`https?://[^\s"']+`)
 // URL in the message. Signed request URLs carry the access key, signature and
 // security token as query parameters and must never reach Terraform diagnostics.
 func redactSignedURLs(message string) string {
-	return signedURLPattern.ReplaceAllStringFunc(message, func(raw string) string {
-		parsed, err := url.Parse(raw)
-		if err != nil {
-			return raw
-		}
+	return signedURLPattern.ReplaceAllStringFunc(message, redactURL)
+}
+
+// redactURL strips the secret bearing parts of one URL. A malformed escape in
+// the endpoint makes url.Parse fail, which is exactly the case that used to
+// echo the whole signed request URL, so the fallback removes the query and the
+// userinfo textually instead of returning the input unchanged.
+func redactURL(raw string) string {
+	if parsed, err := url.Parse(raw); err == nil {
 		parsed.RawQuery = ""
 		parsed.Fragment = ""
 		parsed.User = nil
 		return parsed.String()
-	})
+	}
+	// The query always starts at the first question mark; everything from there
+	// on may carry the access key, signature and security token.
+	if index := strings.IndexAny(raw, "?#"); index >= 0 {
+		raw = raw[:index]
+	}
+	// Remove userinfo from the authority without reparsing the broken URL.
+	if index := strings.Index(raw, "://"); index >= 0 {
+		rest := raw[index+3:]
+		if at := strings.IndexAny(rest, "/"); at >= 0 {
+			authority := rest[:at]
+			if userinfo := strings.LastIndex(authority, "@"); userinfo >= 0 {
+				raw = raw[:index+3] + rest[userinfo+1:]
+			}
+		} else if userinfo := strings.LastIndex(rest, "@"); userinfo >= 0 {
+			raw = raw[:index+3] + rest[userinfo+1:]
+		}
+	}
+	return raw
+}
+
+// validateRpcEndpointURL rejects an endpoint that cannot form a request URL
+// before tea builds and debug logs the signed request URL. Only the scheme,
+// host and path are inspected here; the query is encoded by tea itself and the
+// endpoint never carries the credentials, so the returned error is safe to
+// surface.
+func validateRpcEndpointURL(protocol, endpoint string) error {
+	raw := fmt.Sprintf("%s://%s/", strings.ToLower(protocol), endpoint)
+	if _, err := url.Parse(raw); err != nil {
+		return fmt.Errorf("invalid %s endpoint %q: %v", strings.ToLower(protocol), endpoint, err)
+	}
+	return nil
 }
 
 // sanitizeRpcError strips signed URLs from transport errors while preserving the
@@ -2762,21 +2797,28 @@ func sanitizeRpcError(err error) error {
 	return &redactedError{cause: err, message: sanitized}
 }
 
-// splitRpcBudget divides one operation budget between the transport dial and
-// the response read. Neither phase may consume the whole allowance, and a short
-// remaining budget still leaves at least one millisecond for the read so the
-// header wait is never compressed to nothing.
-func splitRpcBudget(budget time.Duration) (connect, read time.Duration) {
-	connect = budget / 2
+// rpcTransportTimeouts maps one operation budget to the tea transport
+// timeouts. The dial keeps its own cap so a stalled connect cannot consume the
+// whole allowance, while the response header wait may use the whole remaining
+// budget: the real deadline is enforced by the request context and the client
+// timeout, so a fast dial must never shrink the header window to a fraction of
+// the remaining budget.
+func rpcTransportTimeouts(budget time.Duration) (connect, read time.Duration) {
+	if budget <= 0 {
+		// Without a deadline the transport keeps its defaults; the header wait
+		// must not collapse to a sub-millisecond window.
+		return 0, 0
+	}
+	connect = budget
 	if connect > 10*time.Second {
 		connect = 10 * time.Second
 	}
-	read = budget - connect
+	if connect < time.Millisecond {
+		connect = time.Millisecond
+	}
+	read = budget
 	if read < time.Millisecond {
 		read = time.Millisecond
-		if connect > time.Millisecond {
-			connect = budget - read
-		}
 	}
 	return connect, read
 }
@@ -2842,6 +2884,12 @@ func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method st
 
 	request := tea.NewRequest()
 	request.Protocol = util.DefaultString(conn.Protocol, tea.String("HTTPS"))
+	// Reject a malformed endpoint before tea builds the signed request URL: tea
+	// logs that URL when its debug output is enabled, and its own http request
+	// construction reports the failure with the complete signed query attached.
+	if err := validateRpcEndpointURL(tea.StringValue(request.Protocol), endpoint); err != nil {
+		return nil, err
+	}
 	request.Method = tea.String(method)
 	request.Pathname = tea.String("/")
 	request.Query, err = rpcutil.FlattenParams(tea.ToMap(map[string]interface{}{
@@ -2908,9 +2956,9 @@ func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method st
 		}
 	}
 	// The transport dial budget is part of the single client budget, so the
-	// connect and read phases cannot each consume a full allowance and a short
-	// remaining budget still leaves time to wait for the response headers.
-	connectBudget, readBudget := splitRpcBudget(budget)
+	// connect phase cannot consume the whole allowance, while the header wait
+	// keeps the remaining budget instead of a fixed half of it.
+	connectBudget, readBudget := rpcTransportTimeouts(budget)
 	runtime := map[string]interface{}{
 		"connectTimeout": int(connectBudget / time.Millisecond),
 		"readTimeout":    int(readBudget / time.Millisecond),

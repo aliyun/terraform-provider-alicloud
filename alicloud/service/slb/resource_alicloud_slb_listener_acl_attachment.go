@@ -387,10 +387,19 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 	}
 
 	// SLB has no dedicated de-association API: the binding is considered gone
-	// once access control is disabled or the configured policy group is no
-	// longer part of the listener ACLs.
-	if status, _ := object["AclStatus"].(string); !strings.EqualFold(status, "on") {
+	// only when access control is explicitly off, the configured policy group is
+	// no longer part of the listener ACLs, or the listener is gone. An incomplete
+	// response proves none of that, so the existing state is kept instead of
+	// dropping a resource that may still be bound.
+	status, statusKnown := listenerAclStatus(object)
+	if !statusKnown {
+		return state, true, nil
+	}
+	if strings.EqualFold(status, "off") {
 		return listenerAclAttachmentResourceModel{}, false, nil
+	}
+	if !strings.EqualFold(status, "on") {
+		return state, true, nil
 	}
 
 	if targetAclId == "" {
@@ -431,8 +440,15 @@ func deleteListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 		}
 		return err
 	}
-	if status, _ := object["AclStatus"].(string); !strings.EqualFold(status, "on") {
+	status, statusKnown := listenerAclStatus(object)
+	if !statusKnown {
+		return fmt.Errorf("cannot confirm that listener %s no longer uses access control: the describe response did not report a usable AclStatus, so the binding is not proven to be removed", listenerId)
+	}
+	if strings.EqualFold(status, "off") {
 		return nil
+	}
+	if !strings.EqualFold(status, "on") {
+		return fmt.Errorf("cannot confirm that listener %s no longer uses access control: the describe response reported AclStatus %q", listenerId, status)
 	}
 	if err := api.SetAcl(ctx, listenerId, "", "", false); err != nil {
 		return err
@@ -452,8 +468,15 @@ func deleteListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 			}
 			return err
 		}
-		if status, _ := current["AclStatus"].(string); !strings.EqualFold(status, "on") {
+		status, statusKnown := listenerAclStatus(current)
+		if !statusKnown {
+			return fmt.Errorf("cannot confirm that listener %s no longer uses access control: the describe response did not report a usable AclStatus, so the binding is not proven to be removed", listenerId)
+		}
+		if strings.EqualFold(status, "off") {
 			return nil
+		}
+		if !strings.EqualFold(status, "on") {
+			return fmt.Errorf("cannot confirm that listener %s no longer uses access control: the describe response reported AclStatus %q", listenerId, status)
 		}
 		if err := waitListenerAclWithContext(ctx, listenerAclAttachmentPollInterval); err != nil {
 			return err

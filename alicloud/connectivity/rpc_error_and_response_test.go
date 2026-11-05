@@ -8,33 +8,67 @@ import (
 	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 )
 
-func TestUnitSplitRpcBudget(t *testing.T) {
+func TestUnitRpcTransportTimeouts(t *testing.T) {
 	cases := []struct {
-		name            string
-		budget          time.Duration
-		wantConnect     time.Duration
-		wantRead        time.Duration
-		wantReadMinimum bool
+		name        string
+		budget      time.Duration
+		wantConnect time.Duration
+		wantRead    time.Duration
 	}{
-		{name: "long budget caps connect", budget: 300 * time.Second, wantConnect: 10 * time.Second, wantRead: 290 * time.Second},
-		{name: "short budget is split", budget: 5 * time.Second, wantConnect: 2500 * time.Millisecond, wantRead: 2500 * time.Millisecond},
-		{name: "very short budget keeps a read window", budget: 2 * time.Millisecond, wantConnect: time.Millisecond, wantRead: time.Millisecond, wantReadMinimum: true},
+		{name: "long budget caps only the dial", budget: 300 * time.Second, wantConnect: 10 * time.Second, wantRead: 300 * time.Second},
+		{name: "short budget keeps the whole header window", budget: 5 * time.Second, wantConnect: 5 * time.Second, wantRead: 5 * time.Second},
+		{name: "very short budget keeps a dial and header window", budget: 2 * time.Millisecond, wantConnect: 2 * time.Millisecond, wantRead: 2 * time.Millisecond},
+		{name: "sub millisecond budget is rounded up", budget: 500 * time.Microsecond, wantConnect: time.Millisecond, wantRead: time.Millisecond},
+		{name: "no deadline keeps the transport defaults", budget: 0, wantConnect: 0, wantRead: 0},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			connect, read := splitRpcBudget(tc.budget)
+			connect, read := rpcTransportTimeouts(tc.budget)
 			if connect != tc.wantConnect || read != tc.wantRead {
-				t.Fatalf("split(%s) = (%s, %s), want (%s, %s)", tc.budget, connect, read, tc.wantConnect, tc.wantRead)
-			}
-			if connect+read > tc.budget {
-				t.Fatalf("split(%s) exceeds the operation budget: (%s, %s)", tc.budget, connect, read)
-			}
-			if read < time.Millisecond {
-				t.Fatalf("read budget %s is below the header wait floor", read)
+				t.Fatalf("timeouts(%s) = (%s, %s), want (%s, %s)", tc.budget, connect, read, tc.wantConnect, tc.wantRead)
 			}
 		})
+	}
+
+	// The header wait is not a fixed share of the budget: a fast dial must leave
+	// the whole remaining budget for the response headers.
+	if connect, read := rpcTransportTimeouts(10 * time.Second); connect+read <= 10*time.Second {
+		t.Fatalf("the header window was pre-split: connect %s, read %s", connect, read)
+	}
+}
+
+func TestUnitRedactURLMalformedEscape(t *testing.T) {
+	// url.Parse rejects the malformed path escape, which used to make the
+	// redactor return the complete signed URL unchanged.
+	raw := `https://slb.aliyuncs.com/%zz?Action=SetLoadBalancerHTTPListenerAttribute&AccessKeyId=LTAI-test&Signature=abc123&SignatureNonce=xyz&SecurityToken=token-value`
+	redacted := redactURL(raw)
+	for _, secret := range []string{"Action=", "AccessKeyId", "Signature=", "SignatureNonce", "SecurityToken", "LTAI-test", "abc123", "token-value"} {
+		if strings.Contains(redacted, secret) {
+			t.Fatalf("the redacted URL still exposes %q: %s", secret, redacted)
+		}
+	}
+	if !strings.Contains(redacted, "slb.aliyuncs.com") {
+		t.Fatalf("the redacted URL lost the endpoint: %s", redacted)
+	}
+}
+
+func TestUnitSanitizeRpcErrorRedactsMalformedSignedUrl(t *testing.T) {
+	cause := errors.New(`parse "https://slb.aliyuncs.com/%zz?AccessKeyId=LTAI-test&Signature=abc123&SecurityToken=token-value": invalid URL escape "%zz"`)
+	sanitized := sanitizeRpcError(cause)
+	message := sanitized.Error()
+	for _, secret := range []string{"AccessKeyId", "Signature=", "SecurityToken", "LTAI-test", "abc123", "token-value"} {
+		if strings.Contains(message, secret) {
+			t.Fatalf("the sanitized error still exposes %q: %s", secret, message)
+		}
+	}
+	if !errors.Is(sanitized, cause) {
+		t.Fatal("the sanitized error no longer wraps the original error")
+	}
+	if helper.NeedRetry(sanitized) && !helper.NeedRetry(cause) {
+		t.Fatal("the redaction changed the retry classification")
 	}
 }
 
