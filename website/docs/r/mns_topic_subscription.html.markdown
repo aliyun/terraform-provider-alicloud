@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud MNS Topic Subscription resource.
 ---
 
-# alicloud\_mns\_topic\_subscription
+# alicloud_mns_topic_subscription
 
 Provides a MNS topic subscription resource.
 
@@ -36,7 +36,7 @@ resource "alicloud_mns_topic_subscription" "subscription" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mns_topic_subscription&spm=docs.r.mns_topic_subscription.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mns_topic_subscription&spm=docs.r.mns_topic_subscription.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mns_topic_subscription&spm=docs.r.mns_topic_subscription.example&intl_lang=EN_US)
 
 ## Argument Reference
 

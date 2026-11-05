@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_elasticsearch_instance&exampleId=ff9aa1ff-143b-55d0-84a7-5f970be0be6c0f659aa5&activeTab=example&spm=docs.r.elasticsearch_instance.0.ff9aa1ff14&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_elasticsearch_instance&exampleId=ff9aa1ff-143b-55d0-84a7-5f970be0be6c0f659aa5&activeTab=example&spm=docs.r.elasticsearch_instance.0.ff9aa1ff14&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -63,7 +63,7 @@ resource "alicloud_elasticsearch_instance" "default" {
 ```
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_elasticsearch_instance&spm=docs.r.elasticsearch_instance.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_elasticsearch_instance&spm=docs.r.elasticsearch_instance.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_elasticsearch_instance&spm=docs.r.elasticsearch_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -148,7 +148,7 @@ The following arguments are supported:
   - 5.6_with_X-Pack
   - 5.5.3_with_X-Pack
 
-  -> **NOTE:**  The versions listed above might not include all versions supported by Elasticsearch instances. You can call the [GetRegionConfiguration](https://help.aliyun.com/document_detail/254099.html) operation to view the actual supported versions.
+  -> **NOTE:**  The versions listed above might not include all versions supported by Elasticsearch instances. You can call the [GetRegionConfiguration](https://www.alibabacloud.com/help/document_detail/254099.html) operation to view the actual supported versions.
 
 * `warm_node_configuration` - (Optional, Computed, Set, Available since v1.267.0) Cold data node configuration for the Elasticsearch cluster. See [`warm_node_configuration`](#warm_node_configuration) below.
 * `zone_count` - (Optional, ForceNew, Computed, Int) The number of zones for the instance. Valid values: 1, 2, and 3. Default value: 1.  
@@ -181,7 +181,7 @@ The client_node_configuration supports the following:
 * `amount` - (Optional, Int, Available since v1.267.0) Number of nodes.  
 * `disk` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) Node storage capacity, in GB.
 * `disk_type` - (Optional, ForceNew, Available since v1.267.0) Storage type of the node. Only ultra disk (cloud_efficiency) is supported.  
-* `spec` - (Optional) Node specification. You can view specification details in [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
+* `spec` - (Optional) Node specification. You can view specification details in [Product Specifications](https://www.alibabacloud.com/help/document_detail/271718.html).
 
 ### `data_node_configuration`
 
@@ -195,7 +195,7 @@ The data_node_configuration supports the following:
   - cloud_ssd: SSD cloud disk
   - cloud_efficiency: Ultra cloud disk.
 * `performance_level` - (Optional, Computed, Available since v1.267.0) Performance level of ESSD cloud disks. This parameter is required when diskType is set to cloud_essd. Supported values: PL1, PL2, PL3.
-* `spec` - (Required, Available since v1.267.0) Node specification. For more information about specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
+* `spec` - (Required, Available since v1.267.0) Node specification. For more information about specifications, see [Product Specifications](https://www.alibabacloud.com/help/document_detail/271718.html).
 
 ### `index_node_configuration`
 
@@ -204,14 +204,14 @@ The index_node_configuration supports the following:
 * `disk` - (Optional, Computed, Int, Available since v1.295.0) Storage capacity per node, in GB.
 * `disk_type` - (Optional, ForceNew, Computed, Available since v1.295.0) Storage type of the node. ESSD (`cloud_essd`) is supported. Changing this forces recreation.
 * `performance_level` - (Optional, Computed, Available since v1.295.0) Performance level of ESSD cloud disks. This parameter is required when diskType is set to cloud_essd. Supported values: PL1, PL2, PL3.
-* `spec` - (Required, Available since v1.295.0) Node specification. **Note: The parameter is immutable after resource creation.** For more information about specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
+* `spec` - (Required, Available since v1.295.0) Node specification. **Note: The parameter is immutable after resource creation.** For more information about specifications, see [Product Specifications](https://www.alibabacloud.com/help/document_detail/271718.html).
 
 ### `kibana_configuration`
 
 The kibana_configuration supports the following:
 * `amount` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) The number of nodes.
 * `disk` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) Storage capacity per node, in GB.
-* `spec` - (Required, Available since v1.267.0) Node specification. For specification details, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
+* `spec` - (Required, Available since v1.267.0) Node specification. For specification details, see [Product Specifications](https://www.alibabacloud.com/help/document_detail/271718.html).
 
 ### `master_configuration`
 
@@ -219,7 +219,7 @@ The master_configuration supports the following:
 * `amount` - (Optional, ForceNew, Int, Available since v1.267.0) Number of nodes.
 * `disk` - (Optional, ForceNew, Int, Available since v1.267.0) Node storage capacity, in GB.
 * `disk_type` - (Optional, ForceNew, Available since v1.267.0) Node storage type. Only cloud_ssd (SSD cloud disk) is supported.
-* `spec` - (Optional, Available since v1.267.0) Node specification. For specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
+* `spec` - (Optional, Available since v1.267.0) Node specification. For specifications, see [Product Specifications](https://www.alibabacloud.com/help/document_detail/271718.html).
 
 ### `search_node_configuration`
 
@@ -228,7 +228,7 @@ The search_node_configuration supports the following:
 * `disk` - (Optional, Computed, Int, Available since v1.295.0) Storage capacity per node, in GB.
 * `disk_type` - (Optional, ForceNew, Computed, Available since v1.295.0) Storage type of the node. ESSD (`cloud_essd`) is supported. Changing this forces recreation.
 * `performance_level` - (Optional, Computed, Available since v1.295.0) Performance level of ESSD cloud disks. This parameter is required when diskType is set to cloud_essd. Supported values: PL1, PL2, PL3.
-* `spec` - (Required, Available since v1.295.0) Node specification. **Note: The parameter is immutable after resource creation.** For more information about specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
+* `spec` - (Required, Available since v1.295.0) Node specification. **Note: The parameter is immutable after resource creation.** For more information about specifications, see [Product Specifications](https://www.alibabacloud.com/help/document_detail/271718.html).
 
 ### `warm_node_configuration`
 
@@ -239,7 +239,7 @@ The warm_node_configuration supports the following:
   - true: Enabled.
   - false: Disabled.
 * `disk_type` - (Optional, ForceNew, Available since v1.267.0) Storage type for the node. Only `cloud_efficiency` (ultra disk) is supported.
-* `spec` - (Optional, Available since v1.267.0) Node specification. For specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
+* `spec` - (Optional, Available since v1.267.0) Node specification. For specifications, see [Product Specifications](https://www.alibabacloud.com/help/document_detail/271718.html).
 
 ## Attributes Reference
 

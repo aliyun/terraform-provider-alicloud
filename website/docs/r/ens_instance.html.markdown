@@ -22,7 +22,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ens_instance&exampleId=9a65ef92-61f4-4b21-e60d-0731269974d7689744af&activeTab=example&spm=docs.r.ens_instance.0.9a65ef9261&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ens_instance&exampleId=9a65ef92-61f4-4b21-e60d-0731269974d7689744af&activeTab=example&spm=docs.r.ens_instance.0.9a65ef9261&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -75,7 +75,7 @@ The `alicloud_ens_instance` resource allows you to manage  `payment_type = "Subs
 Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
 You can resume managing the subscription instance via the AlibabaCloud Console.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ens_instance&spm=docs.r.ens_instance.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ens_instance&spm=docs.r.ens_instance.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ens_instance&spm=docs.r.ens_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -97,7 +97,7 @@ The following arguments are supported:
   - unicom
   - telecom
 * `data_disk` - (Optional, ForceNew, Set, Available since v1.208.0) Data disk specifications See [`data_disk`](#data_disk) below.
-* `ens_region_id` - (Optional, ForceNew, Available since v1.208.0) The node ID. When ScheduleAreaLevel is Region, EnsRegionId is required. When ScheduleAreaLevel is Big,Middle,Small, EnsRegionId is invalid.
+* `ens_region_id` - (Optional, ForceNew, Available since v1.208.0) The node ID. When ScheduleAreaLevel is Region, EnsRegionId is required. When ScheduleAreaLevel is Big, Middle, Small, EnsRegionId is invalid.
 * `force_stop` - (Optional) Whether to force the identity when operating the instance. Optional values:
   - true: Force
   - false (default): non-mandatory

@@ -56,7 +56,7 @@ resource "alicloud_adb_cluster" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_adb_cluster&spm=docs.r.adb_cluster.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_adb_cluster&spm=docs.r.adb_cluster.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_adb_cluster&spm=docs.r.adb_cluster.example&intl_lang=EN_US)
 
 ### Removing alicloud_adb_cluster from your configuration
 
@@ -71,7 +71,7 @@ The following arguments are supported:
 * `db_cluster_category` - (Required) The db cluster category. Valid values: `Basic`, `Cluster`, `MixedStorage`.
 * `db_cluster_class` - (Deprecated since v1.121.2) It duplicates with attribute db_node_class and is deprecated from 1.121.2.
 * `db_cluster_version` - (Optional, ForceNew) The db cluster version. Valid values: `3.0`. Default Value: `3.0`.
-* `db_node_class` - (Optional) The db node class. For more information, see [DBClusterClass](https://help.aliyun.com/document_detail/190519.html)
+* `db_node_class` - (Optional) The db node class. For more information, see [DBClusterClass](https://www.alibabacloud.com/help/document_detail/190519.html)
 * `db_node_count` - (Optional, Int) The db node count.
 * `db_node_storage` - (Optional, Int) The db node storage.
 * `description` - (Optional) The description of DBCluster.

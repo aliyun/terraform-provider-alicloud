@@ -53,7 +53,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=66279bbd-218c-c7d1-b075-cf3d0013a3536bfa116b&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.0.66279bbd21&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=66279bbd-218c-c7d1-b075-cf3d0013a3536bfa116b&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.0.66279bbd21&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -331,7 +331,7 @@ Create Target mode private pools with `alicloud_ecs_capacity_reservation` and `a
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=3fbf422e-4652-b0a9-429d-81a4b1071e7ad5019e74&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.1.3fbf422e46&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=3fbf422e-4652-b0a9-429d-81a4b1071e7ad5019e74&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.1.3fbf422e46&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -435,7 +435,7 @@ Nodepools enable Auto Mode can only be created in Auto Mode clusters. An Auto Mo
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=c5601ff1-e32a-cd27-cd93-52aa3e24ae143cb018a1&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.2.c5601ff1e3&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=c5601ff1-e32a-cd27-cd93-52aa3e24ae143cb018a1&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.2.c5601ff1e3&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -775,7 +775,7 @@ resource "alicloud_cs_kubernetes_node_pool" "upgrade_nodepool" {
 ```
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_node_pool&spm=docs.r.cs_kubernetes_node_pool.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_node_pool&spm=docs.r.cs_kubernetes_node_pool.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_node_pool&spm=docs.r.cs_kubernetes_node_pool.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -857,7 +857,7 @@ The following arguments are supported:
   -> **NOTE:** `resource_pool_options` only takes effect when creating PostPaid (pay-as-you-go) instances, and it cannot be set together with `private_pool_options.private_pool_options_match_criteria` and `private_pool_options.private_pool_options_id`.
 * `ram_role_name` - (Optional, ForceNew, Computed, Available since v1.242.0) The name of the Worker RAM role.
 * If it is empty, the default Worker RAM role created in the cluster will be used.
-* If the specified RAM role is not empty, the specified RAM role must be a **Common Service role**, and its **trusted service** configuration must be **cloud server**. For more information, see [Create a common service role](https://help.aliyun.com/document_detail/116800.html). If the specified RAM role is not the default Worker RAM role created in the cluster, the role name cannot start with 'KubernetesMasterRole-'or 'KubernetesWorkerRole.
+* If the specified RAM role is not empty, the specified RAM role must be a **Common Service role**, and its **trusted service** configuration must be **cloud server**. For more information, see [Create a common service role](https://www.alibabacloud.com/help/document_detail/116800.html). If the specified RAM role is not the default Worker RAM role created in the cluster, the role name cannot start with 'KubernetesMasterRole-'or 'KubernetesWorkerRole.
 
   -> **NOTE:**  This parameter is only supported for ACK-managed clusters of 1.22 or later versions.
 
@@ -878,7 +878,7 @@ The following arguments are supported:
 * `security_hardening_os` - (Optional, ForceNew) Alibaba Cloud OS security reinforcement. Default value: `false`. Value:
   -`true`: enable Alibaba Cloud OS security reinforcement.
   -`false`: does not enable Alibaba Cloud OS security reinforcement.
-* `soc_enabled` - (Optional, ForceNew) Whether enable worker node to support soc security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. See [SOC Reinforcement](https://help.aliyun.com/document_detail/196148.html).
+* `soc_enabled` - (Optional, ForceNew) Whether enable worker node to support soc security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. See [SOC Reinforcement](https://www.alibabacloud.com/help/document_detail/196148.html).
 
   -> **NOTE:**  It is forbidden to set both `security_hardening_os` and `soc_enabled` to `true` at the same time.
 
@@ -1036,10 +1036,10 @@ The instance_patterns supports the following:
   - EnterpriseLevel: Enterprise level. Stable performance and exclusive resources, suitable for business scenarios that require high stability. For more information, see Instance Specification Family.
 * `instance_type_families` - (Optional, List, Available since v1.266.0) Specifies the instance type family. Example values:["ecs.g8i","ecs.c8i"]
 * `max_cpu_cores` - (Optional, Int, Available since v1.266.0) The maximum number of vCPU cores of the instance type. Example value: 8. MaxCpuCores cannot exceed 4 times of MinCpuCores.
-* `max_memory_size` - (Optional, Float, Available since v1.266.0) The maximum memory of the instance type. Unit: GiB, example value: 8,MaxMemoryCores does not support more than 4 times MinMemoryCores.
+* `max_memory_size` - (Optional, Float, Available since v1.266.0) The maximum memory of the instance type. Unit: GiB, example value: 8, MaxMemoryCores does not support more than 4 times MinMemoryCores.
 * `memory` - (Optional, Float, Available since v1.266.0) The memory size of the instance type, in GiB. Example value: 8.
 * `min_cpu_cores` - (Optional, Int, Available since v1.266.0) The minimum number of vCPU cores of the instance type. Example value: 4. MaxCpuCores cannot exceed 4 times of MinCpuCores.
-* `min_memory_size` - (Optional, Float, Available since v1.266.0) The minimum memory of the instance type. Unit: GiB, example value: 4,MaxMemoryCores does not support more than 4 times MinMemoryCores.
+* `min_memory_size` - (Optional, Float, Available since v1.266.0) The minimum memory of the instance type. Unit: GiB, example value: 4, MaxMemoryCores does not support more than 4 times MinMemoryCores.
 
 ### `kubelet_configuration`
 

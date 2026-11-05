@@ -22,7 +22,7 @@ For information about RDS Upgrade DB Instance and how to use it, see [What is Ap
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_rds_upgrade_db_instance&exampleId=16470adf-305c-f2bc-ab65-c8ec477b1143a99a176a&activeTab=example&spm=docs.r.rds_upgrade_db_instance.0.16470adf30&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_rds_upgrade_db_instance&exampleId=16470adf-305c-f2bc-ab65-c8ec477b1143a99a176a&activeTab=example&spm=docs.r.rds_upgrade_db_instance.0.16470adf30&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -89,7 +89,7 @@ resource "alicloud_rds_upgrade_db_instance" "example" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_upgrade_db_instance&spm=docs.r.rds_upgrade_db_instance.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_upgrade_db_instance&spm=docs.r.rds_upgrade_db_instance.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_upgrade_db_instance&spm=docs.r.rds_upgrade_db_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 

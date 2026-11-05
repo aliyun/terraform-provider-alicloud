@@ -11,14 +11,14 @@ description: |-
 
 Provides a PolarDB cluster backup policy resource and used to configure cluster backup policy.
 
--> **NOTE:** Available since v1.66.0+. Each PolarDB cluster has a backup policy.
+-> **NOTE:** Available since v1.66.0. Each PolarDB cluster has a backup policy.
 
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_backup_policy&exampleId=f5565a5b-5785-c4dd-9d94-fc3aba351fc27569cf8d&activeTab=example&spm=docs.r.polardb_backup_policy.0.f5565a5b57&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_polardb_backup_policy&exampleId=f5565a5b-5785-c4dd-9d94-fc3aba351fc27569cf8d&activeTab=example&spm=docs.r.polardb_backup_policy.0.f5565a5b57&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -64,6 +64,12 @@ The following example manages a custom advanced data backup rule. Use a separate
 
 For a same-region rule such as this example, the provider fills omitted `src_region` and `dest_region` with its configured region because the API requires both values. For a cross-region rule (`src_type` or `dest_type` is `level2Cross`), set both regions explicitly.
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_backup_policy&exampleId=b56956c9-a5aa-631f-88cc-1ba378574cd060399ec4&activeTab=example&spm=docs.r.polardb_backup_policy.1.b56956c9a5&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_polardb_backup_policy&exampleId=b56956c9-a5aa-631f-88cc-1ba378574cd060399ec4&activeTab=example&spm=docs.r.polardb_backup_policy.1.b56956c9a5&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
+</div></div>
+
 ```terraform
 resource "alicloud_polardb_backup_policy" "advanced" {
   db_cluster_id                               = alicloud_polardb_cluster.default.id
@@ -92,7 +98,7 @@ In Advanced mode, the legacy data-backup and log-backup arguments cannot be chan
  
 The `alicloud_polardb_backup_policy` resource manages a cluster policy, but Terraform cannot destroy the policy itself. Removing a Normal policy resource only removes it from Terraform state. Removing an Advanced policy resource deletes its managed custom advanced rules but leaves the cluster policy, its Advanced level, and service-generated rules in place.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_backup_policy&spm=docs.r.polardb_backup_policy.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_backup_policy&spm=docs.r.polardb_backup_policy.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_backup_policy&spm=docs.r.polardb_backup_policy.example&intl_lang=EN_US)
  
 ## Argument Reference
 

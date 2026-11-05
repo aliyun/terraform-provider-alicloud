@@ -22,7 +22,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_arms_integration_exporter&exampleId=db888e39-4cf1-8899-133c-7226c483a5769ec780dd&activeTab=example&spm=docs.r.arms_integration_exporter.0.db888e394c&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_arms_integration_exporter&exampleId=db888e39-4cf1-8899-133c-7226c483a5769ec780dd&activeTab=example&spm=docs.r.arms_integration_exporter.0.db888e394c&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -73,7 +73,7 @@ resource "alicloud_arms_integration_exporter" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_arms_integration_exporter&spm=docs.r.arms_integration_exporter.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_arms_integration_exporter&spm=docs.r.arms_integration_exporter.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_arms_integration_exporter&spm=docs.r.arms_integration_exporter.example&intl_lang=EN_US)
 
 ## Argument Reference
 

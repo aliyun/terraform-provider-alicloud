@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_nat_ip_cidr&exampleId=6049371f-2af9-3c61-f2a3-b369cb923f00ad4678d9&activeTab=example&spm=docs.r.vpc_nat_ip_cidr.0.6049371f2a&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_vpc_nat_ip_cidr&exampleId=6049371f-2af9-3c61-f2a3-b369cb923f00ad4678d9&activeTab=example&spm=docs.r.vpc_nat_ip_cidr.0.6049371f2a&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -60,7 +60,7 @@ resource "alicloud_vpc_nat_ip_cidr" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_nat_ip_cidr&spm=docs.r.vpc_nat_ip_cidr.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_nat_ip_cidr&spm=docs.r.vpc_nat_ip_cidr.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_nat_ip_cidr&spm=docs.r.vpc_nat_ip_cidr.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -79,7 +79,7 @@ The newly created CIDR block must meet the following requirements:
 - It must belong to the 10.0.0.0/8, 172.16.0.0/12, or 192.168.0.0/16 CIDR blocks or their subnets.
 - The subnet mask length must be between 16 and 32 bits.
 - It must not overlap with the private CIDR block of the VPC to which the VPC NAT gateway belongs. If you need to translate a private IP address to another address within the VPC's private CIDR block, create a vSwitch in the corresponding VPC private CIDR block and then create a new VPC NAT gateway in that vSwitch to provide private address translation.
-- If you want to use a public CIDR block as the NAT IP CIDR block, the CIDR block must belong to the customer CIDR block of the VPC to which the VPC NAT gateway belongs. For more information about customer CIDR blocks, see [What is a customer CIDR block?](https://help.aliyun.com/document_detail/185311.html).
+- If you want to use a public CIDR block as the NAT IP CIDR block, the CIDR block must belong to the customer CIDR block of the VPC to which the VPC NAT gateway belongs. For more information about customer CIDR blocks, see [What is a customer CIDR block?](https://www.alibabacloud.com/help/document_detail/185311.html).
 * `nat_ip_cidr_description` - (Optional) The description of the NAT IP CIDR block to modify.
   The description must be 2 to 256 characters in length, start with a letter or Chinese character, and cannot start with `http://` or `https://`.
 * `nat_ip_cidr_name` - (Required) The name of the NAT IP address block.

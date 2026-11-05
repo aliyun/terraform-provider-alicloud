@@ -24,9 +24,9 @@ For information about RDS Database and how to use it, see [What is Database](htt
 
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_db_database&exampleId=7331e217-bfa5-6f58-36cf-e9568a53de6e55163ae0&activeTab=example&spm=docs.r.db_database.0.7331e217bf&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_db_database&exampleId=b9562bfa-c01e-6238-1dad-1236062aa84cc311cb1c&activeTab=example&spm=docs.r.db_database.0.b9562bfac0&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_db_database&exampleId=b9562bfa-c01e-6238-1dad-1236062aa84cc311cb1c&activeTab=example&spm=docs.r.db_database.0.b9562bfac0&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -89,7 +89,7 @@ resource "alicloud_db_database" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_db_database&spm=docs.r.db_database.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_db_database&spm=docs.r.db_database.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_db_database&spm=docs.r.db_database.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -102,7 +102,7 @@ The following arguments are supported:
   The name must start with a lowercase letter and end with a lowercase letter or digit.
   The name can contain lowercase letters, digits, underscores (_), and hyphens (-).
   The name must be unique within the instance.
-  For more information about invalid characters, see [Forbidden keywords table](https://help.aliyun.com/zh/rds/developer-reference/forbidden-keywords?spm=api-workbench.api_explorer.0.0.20e15f16d1z52p).
+  For more information about invalid characters, see [Forbidden keywords table](https://www.alibabacloud.com/help/zh/rds/developer-reference/forbidden-keywords?spm=api-workbench.api_explorer.0.0.20e15f16d1z52p).
 * `character_set` - (Optional, ForceNew) Character set. The value range is limited to the following:
   - MySQL: [ utf8, gbk, latin1, utf8mb4 ] \(`utf8mb4` only supports versions 5.5 and 5.6\).
   - SQLServer: [ Chinese_PRC_CI_AS, Chinese_PRC_CS_AS, SQL_Latin1_General_CP1_CI_AS, SQL_Latin1_General_CP1_CS_AS, Chinese_PRC_BIN ]

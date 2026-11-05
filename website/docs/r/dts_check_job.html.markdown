@@ -27,6 +27,12 @@ For information about DTS Check Job and how to use it, see [What is DTS Job](htt
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_dts_check_job&exampleId=aa4ec246-8673-5f9b-7fb6-d6dc4d08b36759fa799c&activeTab=example&spm=docs.r.dts_check_job.0.aa4ec24686&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_dts_check_job&exampleId=aa4ec246-8673-5f9b-7fb6-d6dc4d08b36759fa799c&activeTab=example&spm=docs.r.dts_check_job.0.aa4ec24686&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -135,16 +141,20 @@ resource "alicloud_dts_check_job" "example" {
 }
 ```
 
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dts_check_job&spm=docs.r.dts_check_job.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dts_check_job&spm=docs.r.dts_check_job.example&intl_lang=EN_US)
+
+
 ## Argument Reference
 
 The following arguments supported:
 
 * `dts_job_name` - (Required, String, Available since v2.1.1) The name of check job.
-* `db_list` - (Required, String, ForceNew, Available since v2.1.1) Migration object, in the format of JSON strings. For detailed definition instructions, please refer to [the description of migration, synchronization or subscription objects](https://help.aliyun.com/document_detail/209545.html).
-* `data_check_configure` - (Optional, String, ForceNew, Available since v2.1.1) The data verification configuration of the check job, in the format of a JSON string, such as parameter limits or alarm configurations. The `dataCheckDbList` field is required when this argument is set. For more information, see the DataCheckConfigure parameter description [datacheckconfigure-parameter](https://help.aliyun.com/zh/dts/developer-reference/datacheckconfigure-parameter).
+* `db_list` - (Required, String, ForceNew, Available since v2.1.1) Migration object, in the format of JSON strings. For detailed definition instructions, please refer to [the description of migration, synchronization or subscription objects](https://www.alibabacloud.com/help/document_detail/209545.html).
+* `data_check_configure` - (Optional, String, ForceNew, Available since v2.1.1) The data verification configuration of the check job, in the format of a JSON string, such as parameter limits or alarm configurations. The `dataCheckDbList` field is required when this argument is set. For more information, see the DataCheckConfigure parameter description [datacheckconfigure-parameter](https://www.alibabacloud.com/help/zh/dts/developer-reference/datacheckconfigure-parameter).
 * `instance_class` - (Optional, String, ForceNew, Computed, Available since v2.1.1) The instance class of the check instance. Valid values: `large`, `medium`, `small`, `xlarge`, `2xlarge`, `4xlarge`. Default value: `small`. Changing this forces a new resource to be created; the class of an existing check job cannot be changed in place.
 * `checkpoint` - (Optional, String, ForceNew, Computed, Available since v2.1.1) The start point of the check job, the format is Unix timestamp, and the unit is seconds.
-* `reserve` - (Optional, String, ForceNew, Computed, Available since v2.1.1) DTS reserves parameters, the format is a JSON string, you can pass in this parameter to complete the source and target database information (such as the data storage format of the target Kafka database, the instance ID of the cloud enterprise network CEN). For more information, please refer to the parameter [description of the Reserve parameter](https://help.aliyun.com/document_detail/273111.html).
+* `reserve` - (Optional, String, ForceNew, Computed, Available since v2.1.1) DTS reserves parameters, the format is a JSON string, you can pass in this parameter to complete the source and target database information (such as the data storage format of the target Kafka database, the instance ID of the cloud enterprise network CEN). For more information, please refer to the parameter [description of the Reserve parameter](https://www.alibabacloud.com/help/document_detail/273111.html).
 
   -> **NOTE:** The `srcSSL` and `destSSL` keys are managed by the properties `source_endpoint_ssl` and `destination_endpoint_ssl`. If either property is set, it overrides the corresponding key here.
 
@@ -153,7 +163,7 @@ The following arguments supported:
 * `source_endpoint_instance_type` - (Required, String, ForceNew, Available since v2.1.1) The type of source instance. Valid values: `CEN`, `DG`, `DISTRIBUTED_DMSLOGICDB`, `ECS`, `EXPRESS`, `MONGODB`, `OTHER`, `PolarDB`, `POLARDBX20`, `RDS`, `REDIS`, `DISTRIBUTED_POLARDBX10`.
 * `source_endpoint_engine_name` - (Required, String, ForceNew, Available since v2.1.1) The type of source database. Valid values: `AS400`, `DB2`, `DMSPOLARDB`, `HBASE`, `MONGODB`, `MSSQL`, `MySQL`, `ORACLE`, `PolarDB`, `POLARDBX20`, `POLARDB_O`, `POSTGRESQL`, `TERADATA`, `POLARDB_PG`, `MARIADB`, `POLARDBX10`, `TiDB`, `REDIS`.
 * `source_endpoint_instance_id` - (Optional, String, ForceNew, Computed, Available since v2.1.1) The ID of source instance.
-* `source_endpoint_region` - (Optional, String, ForceNew, Computed, Available since v2.1.1) Source instance area, please refer to the [list of supported areas](https://help.aliyun.com/document_detail/141033.htm) for details. Note if the source is an Alibaba Cloud database, this parameter must be passed in.
+* `source_endpoint_region` - (Optional, String, ForceNew, Computed, Available since v2.1.1) Source instance area, please refer to the [list of supported areas](https://www.alibabacloud.com/help/document_detail/141033.htm) for details. Note if the source is an Alibaba Cloud database, this parameter must be passed in.
 * `source_endpoint_ip` - (Optional, String, ForceNew, Computed, Available since v2.1.1) The IP of source endpoint. When `source_endpoint_instance_type` is `OTHER`, `EXPRESS`, `DG`, `CEN`, this parameter is available and must be passed in.
 * `source_endpoint_port` - (Optional, String, ForceNew, Computed, Available since v2.1.1) The port of source endpoint. When the source instance is a self-built database, this parameter is available and must be passed in.
 * `source_endpoint_oracle_sid` - (Optional, String, ForceNew, Computed, Available since v2.1.1) The SID of Oracle database. When the value of SourceEndpointEngineName is Oracle and the Oracle database is a non-RAC instance, this parameter is available and must be passed in.
@@ -168,7 +178,7 @@ The following arguments supported:
 * `destination_endpoint_instance_type` - (Required, String, ForceNew, Available since v2.1.1) The type of destination instance. Valid values: `ADS`, `CEN`, `DATAHUB`, `DG`, `ECS`, `EXPRESS`, `GREENPLUM`, `MONGODB`, `OTHER`, `PolarDB`, `POLARDBX20`, `RDS`, `REDIS`, `ELK`, `Tablestore`, `ODPS`.
 * `destination_endpoint_engine_name` - (Required, String, ForceNew, Available since v2.1.1) The type of destination database. Valid values: `ADB20`, `ADS`, `ADB30`, `AS400`, `DATAHUB`, `DB2`, `GREENPLUM`, `KAFKA`, `MONGODB`, `MSSQL`, `MySQL`, `ORACLE`, `PolarDB`, `POLARDBX20`, `POLARDB_O`, `PostgreSQL`, `POLARDB_PG`, `MARIADB`, `POLARDBX10`, `ODPS`, `Tablestore`, `ELK`, `REDIS`.
 * `destination_endpoint_instance_id` - (Optional, String, ForceNew, Computed, Available since v2.1.1) The ID of destination instance.
-* `destination_endpoint_region` - (Optional, String, ForceNew, Computed, Available since v2.1.1) The region of destination instance. For the target instance region, please refer to the [list of supported regions](https://help.aliyun.com/document_detail/141033.htm). Note: if the target is an Alibaba Cloud database, this parameter must be passed in.
+* `destination_endpoint_region` - (Optional, String, ForceNew, Computed, Available since v2.1.1) The region of destination instance. For the target instance region, please refer to the [list of supported regions](https://www.alibabacloud.com/help/document_detail/141033.htm). Note: if the target is an Alibaba Cloud database, this parameter must be passed in.
 * `destination_endpoint_ip` - (Optional, String, ForceNew, Computed, Available since v2.1.1) The IP of destination endpoint. When `destination_endpoint_instance_type` is `OTHER`, `EXPRESS`, `DG`, `CEN`, this parameter is available and must be passed in.
 * `destination_endpoint_port` - (Optional, String, ForceNew, Computed, Available since v2.1.1) The port of destination endpoint. When the target instance is a self-built database, this parameter is available and must be passed in.
 * `destination_endpoint_database_name` - (Optional, String, ForceNew, Computed, Available since v2.1.1) The name of the database to which the migration object belongs in the target instance.

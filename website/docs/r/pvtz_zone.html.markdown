@@ -22,7 +22,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_pvtz_zone&exampleId=996411e1-9008-9cba-134f-db2e142804cf4085f3e0&activeTab=example&spm=docs.r.pvtz_zone.0.996411e190&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_pvtz_zone&exampleId=996411e1-9008-9cba-134f-db2e142804cf4085f3e0&activeTab=example&spm=docs.r.pvtz_zone.0.996411e190&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -32,7 +32,7 @@ resource "alicloud_pvtz_zone" "foo" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pvtz_zone&spm=docs.r.pvtz_zone.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pvtz_zone&spm=docs.r.pvtz_zone.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pvtz_zone&spm=docs.r.pvtz_zone.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -48,7 +48,7 @@ The following arguments are supported:
 * `dns_group` - (Optional) The built-in authoritative location zone of the Private Zone. Valid values: `NORMAL_ZONE` (normal zone) and `FAST_ZONE` (fast zone). If not specified, the system uses the account default (accounts opened after April 30, 2025 default to `FAST_ZONE`). Updating this field switches the zone from `NORMAL_ZONE` to `FAST_ZONE`; the reverse direction (`FAST_ZONE` -> `NORMAL_ZONE`) is not supported by the API.
 * `user_client_ip` - (Optional, Available in 1.69.0+) The IP address of the client.
 * `lang` - (Optional, Available in 1.69.0+) The language. Valid values: "zh", "en", "jp".
-* `resource_group_id` - (Optional, ForceNew, Available in v1.86.0+) The Id of resource group which the Private Zone belongs.
+* `resource_group_id` - (Optional, ForceNew, Available since v1.86.0) The Id of resource group which the Private Zone belongs.
 * `sync_status` - (Optional, Available in 1.146.0+) The status of the host synchronization task. Valid values:  `ON`,`OFF`. **NOTE:** You can update the `sync_status` to enable/disable the host synchronization task.
 * `user_info` - (Optional, Available in 1.146.0+) The user information of the host synchronization task. See [`user_info`](#user_info) below.
 * `tags` - (Optional, Map) The tags of the Private Zone.

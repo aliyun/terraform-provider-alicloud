@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud MNS Queue resource.
 ---
 
-# alicloud\_mns\_queue
+# alicloud_mns_queue
 
 Provides a MNS queue resource.
 
@@ -30,7 +30,7 @@ resource "alicloud_mns_queue" "queue" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mns_queue&spm=docs.r.mns_queue.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mns_queue&spm=docs.r.mns_queue.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mns_queue&spm=docs.r.mns_queue.example&intl_lang=EN_US)
 
 ## Argument Reference
 

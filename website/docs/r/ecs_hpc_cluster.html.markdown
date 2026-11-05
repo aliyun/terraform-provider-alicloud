@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ECS Hpc Cluster resource.
 ---
 
-# alicloud\_ecs\_hpc\_cluster
+# alicloud_ecs_hpc_cluster
 
 Provides a ECS Hpc Cluster resource.
 
 For information about ECS Hpc Cluster and how to use it, see [What is Hpc Cluster](https://www.alibabacloud.com/help/en/doc-detail/109138.htm).
 
--> **NOTE:** Available in v1.116.0+.
+-> **NOTE:** Available since v1.116.0.
 
 ## Example Usage
 
@@ -22,18 +22,18 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ecs_hpc_cluster&exampleId=f89770ff-c9df-6eb1-a7fc-4962e10ffb0da51368ca&activeTab=example&spm=docs.r.ecs_hpc_cluster.0.f89770ffc9&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ecs_hpc_cluster&exampleId=f89770ff-c9df-6eb1-a7fc-4962e10ffb0da51368ca&activeTab=example&spm=docs.r.ecs_hpc_cluster.0.f89770ffc9&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
 resource "alicloud_ecs_hpc_cluster" "example" {
-  name        = "tf-testAcc"
+  name        = "tf-exampleAcc"
   description = "For Terraform Test"
 }
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_hpc_cluster&spm=docs.r.ecs_hpc_cluster.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_hpc_cluster&spm=docs.r.ecs_hpc_cluster.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_hpc_cluster&spm=docs.r.ecs_hpc_cluster.example&intl_lang=EN_US)
 
 ## Argument Reference
 

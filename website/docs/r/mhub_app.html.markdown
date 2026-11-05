@@ -11,9 +11,9 @@ description: |-
 
 Provides a MHUB App resource.
 
-For information about MHUB App and how to use it, see [What is App](https://help.aliyun.com/product/65109.html).
+For information about MHUB App and how to use it, see [What is App](https://www.alibabacloud.com/help/product/65109.html).
 
--> **NOTE:** Available since v1.138.0+.
+-> **NOTE:** Available since v1.138.0.
 
 -> **NOTE:** At present, the resource only supports cn-shanghai region.
 
@@ -24,7 +24,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_mhub_app&exampleId=6ba13854-db17-db2b-fcb6-4123543594605aedb177&activeTab=example&spm=docs.r.mhub_app.0.6ba13854db&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_mhub_app&exampleId=6ba13854-db17-db2b-fcb6-4123543594605aedb177&activeTab=example&spm=docs.r.mhub_app.0.6ba13854db&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -48,7 +48,7 @@ resource "alicloud_mhub_app" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mhub_app&spm=docs.r.mhub_app.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mhub_app&spm=docs.r.mhub_app.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mhub_app&spm=docs.r.mhub_app.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -59,7 +59,7 @@ The following arguments are supported:
 * `encoded_icon` - (Optional) Base64 string of picture.
 * `product_id` - (Required)  The ID of the Product.
 * `type` - (Required) The type of the Product. Valid values: `Android` and `iOS`.  
-* `industry_id` - (Optional) The Industry ID of the app. For information about Industry and how to use it, MHUB[Industry](https://help.aliyun.com/document_detail/201638.html).
+* `industry_id` - (Optional) The Industry ID of the app. For information about Industry and how to use it, MHUB[Industry](https://www.alibabacloud.com/help/document_detail/201638.html).
 * `package_name` - (Optional) Android App package name. **NOTE:** Either `bundle_id` or `package_name` must be set.
 
 

@@ -21,7 +21,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ecs_disk&exampleId=d536ac89-4604-be47-91a8-9a65cc0b8245cb6ba4a8&activeTab=example&spm=docs.r.ecs_disk.0.d536ac8946&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ecs_disk&exampleId=d536ac89-4604-be47-91a8-9a65cc0b8245cb6ba4a8&activeTab=example&spm=docs.r.ecs_disk.0.d536ac8946&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -53,6 +53,12 @@ resource "alicloud_ecs_disk" "example" {
 
 The following example creates a pay-as-you-go disk with `force_delete = true`; destroying the resource releases the disk:
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ecs_disk&exampleId=763527be-4d94-0bba-1bb8-e691a717deaba9654d27&activeTab=example&spm=docs.r.ecs_disk.1.763527be4d&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ecs_disk&exampleId=763527be-4d94-0bba-1bb8-e691a717deaba9654d27&activeTab=example&spm=docs.r.ecs_disk.1.763527be4d&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
+</div></div>
+
 ```terraform
 data "alicloud_zones" "force_delete" {
   available_resource_creation = "VSwitch"
@@ -78,7 +84,7 @@ Multi-attach disks (`multi_attach = "Enabled"`) are not supported by `force_dele
 
 If you want to delete a disk without `force_delete`, convert it to `PayAsYouGo` and detach it from its instance before deleting it.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_disk&spm=docs.r.ecs_disk.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_disk&spm=docs.r.ecs_disk.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_disk&spm=docs.r.ecs_disk.example&intl_lang=EN_US)
 
 ## Argument Reference
 

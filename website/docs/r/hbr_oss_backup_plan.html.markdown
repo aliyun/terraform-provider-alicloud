@@ -15,7 +15,6 @@ For information about HBR Oss Backup Plan and how to use it, see [What is Oss Ba
 
 -> **NOTE:** Available since v1.131.0.
 
--> **NOTE:** Deprecated since v1.249.0.
 
 -> **DEPRECATED:** This resource has been deprecated from version `1.249.0`. Please use new resource [alicloud_hbr_policy](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/hbr_policy) and [alicloud_hbr_policy_binding](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/hbr_policy_binding).
 
@@ -49,7 +48,7 @@ resource "alicloud_hbr_oss_backup_plan" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_hbr_oss_backup_plan&spm=docs.r.hbr_oss_backup_plan.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_hbr_oss_backup_plan&spm=docs.r.hbr_oss_backup_plan.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_hbr_oss_backup_plan&spm=docs.r.hbr_oss_backup_plan.example&intl_lang=EN_US)
 
 ## Argument Reference
 

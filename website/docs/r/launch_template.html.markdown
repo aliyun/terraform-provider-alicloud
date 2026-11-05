@@ -7,7 +7,7 @@ description: |-
   Provides an ECS Launch Template resource.
 ---
 
-# alicloud\_launch\_template
+# alicloud_launch_template
 
 Provides an ECS Launch Template resource.
 
@@ -76,7 +76,7 @@ resource "alicloud_launch_template" "template" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_launch_template&spm=docs.r.launch_template.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_launch_template&spm=docs.r.launch_template.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_launch_template&spm=docs.r.launch_template.example&intl_lang=EN_US)
 
 ## Argument Reference
 

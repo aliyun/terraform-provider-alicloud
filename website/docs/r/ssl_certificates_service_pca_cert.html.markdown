@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ssl_certificates_service_pca_cert&exampleId=3f88b177-bf06-c1c3-13e3-fb4ecab5f5b9a411eebd&activeTab=example&spm=docs.r.ssl_certificates_service_pca_cert.0.3f88b177bf&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ssl_certificates_service_pca_cert&exampleId=3f88b177-bf06-c1c3-13e3-fb4ecab5f5b9a411eebd&activeTab=example&spm=docs.r.ssl_certificates_service_pca_cert.0.3f88b177bf&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -79,7 +79,7 @@ resource "alicloud_ssl_certificates_service_pca_cert" "default" {
 ```
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_pca_cert&spm=docs.r.ssl_certificates_service_pca_cert.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_pca_cert&spm=docs.r.ssl_certificates_service_pca_cert.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_pca_cert&spm=docs.r.ssl_certificates_service_pca_cert.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -102,7 +102,7 @@ The following arguments are supported:
 
 The encryption algorithm of the client certificate must match that of the subordinate CA certificate, but the key length may differ. For example, if the key algorithm of the subordinate CA certificate is RSA_2048, the key algorithm of the client certificate must be one of RSA_1024, RSA_2048, or RSA_4096.
 
--> **NOTE:** You can call [DescribeCACertificate](https://help.aliyun.com/document_detail/465954.html) to query the key algorithm of the subordinate CA certificate.
+-> **NOTE:** You can call [DescribeCACertificate](https://www.alibabacloud.com/help/document_detail/465954.html) to query the key algorithm of the subordinate CA certificate.
 
 * `alias_name` - (Optional) The name assigned to the issued certificate.  
 * `before_time` - (Optional, Int) The issuance time of the client certificate, in timestamp format. By default, it is set to the time when you call this API. Unit: seconds.
@@ -111,7 +111,7 @@ The encryption algorithm of the client certificate must match that of the subord
 
 * `common_name` - (Optional, ForceNew) Name of the certificate subject. For a Client Authentication (ClientAuth) certificate, the subject is typically an individual, company, organization, or application. We recommend using the common name of the subject—for example, Zhang San, Alibaba, Alibaba Cloud KMS, or Tmall Genie.  
 * `country_code` - (Optional, ForceNew) Country code of the organization associated with the subordinate CA certificate that issued this certificate.  
-For the meanings of different country codes, see the **International Codes** section in [Manage Company Information](https://help.aliyun.com/document_detail/198289.html).  
+For the meanings of different country codes, see the **International Codes** section in [Manage Company Information](https://www.alibabacloud.com/help/document_detail/198289.html).
 * `custom_identifier` - (Optional, ForceNew) A user-defined unique identifier.
 * `days` - (Optional, ForceNew, Computed, Int) Validity period of the client certificate, in days.  
 
@@ -120,7 +120,7 @@ The `days`, `before_time`, and `after_time` parameters cannot all be empty. Addi
   - If you do not set the `days` parameter, you must set both `before_time` and `after_time`.  
 
 -> **NOTE:** - If you set `days`, `before_time`, and `after_time` simultaneously, the validity period of the client certificate is determined by the value of `days`.  
-  - The validity period of the client certificate cannot exceed that of the issuing subordinate CA certificate. You can call [DescribeCACertificate](https://help.aliyun.com/document_detail/465954.html) to check the validity period of the subordinate CA certificate.  
+  - The validity period of the client certificate cannot exceed that of the issuing subordinate CA certificate. You can call [DescribeCACertificate](https://www.alibabacloud.com/help/document_detail/465954.html) to check the validity period of the subordinate CA certificate.
 * `enable_crl` - (Optional, Int) Whether to include the CRL URL. Valid values:
   - `0`: No.
   - `1`: Yes.  
@@ -143,7 +143,7 @@ By default, this value is the same as the city name of the organization associat
 * `organization` - (Optional, ForceNew) Name of the organization associated with the subordinate CA certificate that issued this certificate.  
 * `organization_unit` - (Optional, ForceNew) Department name. Default: Aliyun CDN.
 * `parent_identifier` - (Required, ForceNew) The unique identifier of the subordinate CA certificate that issued this certificate.
-* `resource_group_id` - (Optional, Computed) The resource group ID. You can obtain this ID by calling the [ListResources](https://help.aliyun.com/document_detail/2716559.html) operation.  
+* `resource_group_id` - (Optional, Computed) The resource group ID. You can obtain this ID by calling the [ListResources](https://www.alibabacloud.com/help/document_detail/2716559.html) operation.
 * `san_type` - (Optional) The Subject Alternative Name (SAN) type supported by the client certificate. Valid values:
   - `1`: Email address.
   - `6`: Uniform Resource Identifier (URI).

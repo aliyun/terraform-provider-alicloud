@@ -51,7 +51,7 @@ resource "alicloud_ram_group_membership" "membership" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_group_membership&spm=docs.r.ram_group_membership.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_group_membership&spm=docs.r.ram_group_membership.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_group_membership&spm=docs.r.ram_group_membership.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -67,6 +67,7 @@ The following attributes are exported:
 * `id` - The membership ID, it's set to `group_name`
 
 ## Import
+
 RAM Group membership can be imported using the id, e.g.
 
 ```shell

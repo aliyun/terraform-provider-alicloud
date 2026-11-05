@@ -7,7 +7,7 @@ description: |-
   Provides a DNS Group resource.
 ---
 
-# alicloud\_dns\_group
+# alicloud_dns_group
 
 -> **DEPRECATED:**  This resource  has been deprecated from version `1.84.0`. Please use new resource [alicloud_alidns_domain_group](https://www.terraform.io/docs/providers/alicloud/r/alidns_domain_group).
 
@@ -18,12 +18,12 @@ Provides a DNS Group resource.
 ```terraform
 # Add a new Domain group.
 resource "alicloud_dns_group" "group" {
-  name = "testgroup"
+  name = "examplegroup"
 }
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dns_group&spm=docs.r.dns_group.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dns_group&spm=docs.r.dns_group.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dns_group&spm=docs.r.dns_group.example&intl_lang=EN_US)
 
 ## Argument Reference
 

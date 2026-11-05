@@ -26,7 +26,7 @@ Because the generation time of the disaster recovery set is uncertain, the query
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_rds_ddr_instance&exampleId=a6fc5b56-b9bd-39a0-52d8-30c6c67349f849fe0fa4&activeTab=example&spm=docs.r.rds_ddr_instance.0.a6fc5b56b9&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_rds_ddr_instance&exampleId=a6fc5b56-b9bd-39a0-52d8-30c6c67349f849fe0fa4&activeTab=example&spm=docs.r.rds_ddr_instance.0.a6fc5b56b9&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -110,7 +110,7 @@ resource "alicloud_rds_ddr_instance" "default" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_rds_ddr_instance&exampleId=f2acaba7-6c8c-2823-c1d8-1c4e5658901224039095&activeTab=example&spm=docs.r.rds_ddr_instance.1.f2acaba76c&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_rds_ddr_instance&exampleId=f2acaba7-6c8c-2823-c1d8-1c4e5658901224039095&activeTab=example&spm=docs.r.rds_ddr_instance.1.f2acaba76c&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -197,7 +197,7 @@ The `alicloud_rds_ddr_instance` resource allows you to manage `payment_type = "S
 Deleting the subscription resource or removing it from your configuration will remove it from your statefile and management, but will not destroy the DB Instance.
 You can resume managing the subscription db instance via the AlibabaCloud Console.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_ddr_instance&spm=docs.r.rds_ddr_instance.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_ddr_instance&spm=docs.r.rds_ddr_instance.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_ddr_instance&spm=docs.r.rds_ddr_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -401,6 +401,7 @@ The pg_hba_conf mapping supports the following:
 * `user` - (Required) The user that is allowed to access the instance. If you specify multiple users, separate the usernames with commas (,).
 * `method` - (Required) The authentication method of Lightweight Directory Access Protocol (LDAP). Valid values: `trust`, `reject`, `scram-sha-256`, `md5`, `password`, `gss`, `sspi`, `ldap`, `radius`, `cert`, `pam`.
 * `option` - (Optional) Optional. The value of this parameter is based on the value of the HbaItem.N.Method parameter. In this topic, LDAP is used as an example. You must configure this parameter. For more information, see [Authentication Methods](https://www.postgresql.org/docs/11/auth-methods.html).
+
 ## Attributes Reference
 
 The following attributes are exported:

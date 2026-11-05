@@ -21,7 +21,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ack_one_membership_attachment&exampleId=19b8d166-e942-7d41-5ffc-efc9ee5856172c52c8fb&activeTab=example&spm=docs.r.ack_one_membership_attachment.0.19b8d166e9&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ack_one_membership_attachment&exampleId=19b8d166-e942-7d41-5ffc-efc9ee5856172c52c8fb&activeTab=example&spm=docs.r.ack_one_membership_attachment.0.19b8d166e9&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -85,7 +85,6 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 }
 
 resource "alicloud_ack_one_cluster" "default" {
-  depends_on = [alicloud_cs_managed_kubernetes.default]
   network {
     vpc_id    = alicloud_vpc.default.id
     vswitches = [alicloud_vswitch.default.id]
@@ -99,7 +98,7 @@ resource "alicloud_ack_one_membership_attachment" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ack_one_membership_attachment&spm=docs.r.ack_one_membership_attachment.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ack_one_membership_attachment&spm=docs.r.ack_one_membership_attachment.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ack_one_membership_attachment&spm=docs.r.ack_one_membership_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
 

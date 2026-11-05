@@ -26,7 +26,7 @@ data "alicloud_tsdb_zones" "example" {}
 
 resource "alicloud_vpc" "example" {
   cidr_block = "192.168.0.0/16"
-  name       = "tf-testaccTsdbInstance"
+  name       = "tf-exampleaccTsdbInstance"
 }
 
 resource "alicloud_vswitch" "example" {
@@ -46,7 +46,7 @@ resource "alicloud_tsdb_instance" "example" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_tsdb_instance&spm=docs.r.tsdb_instance.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_tsdb_instance&spm=docs.r.tsdb_instance.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_tsdb_instance&spm=docs.r.tsdb_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 

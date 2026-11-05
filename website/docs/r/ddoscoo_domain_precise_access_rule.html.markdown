@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ddoscoo_domain_precise_access_rule&exampleId=71ff8ba6-9b26-a2e2-1dd5-824142bab2716e012213&activeTab=example&spm=docs.r.ddoscoo_domain_precise_access_rule.0.71ff8ba69b&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ddoscoo_domain_precise_access_rule&exampleId=71ff8ba6-9b26-a2e2-1dd5-824142bab2716e012213&activeTab=example&spm=docs.r.ddoscoo_domain_precise_access_rule.0.71ff8ba69b&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -68,7 +68,7 @@ resource "alicloud_ddoscoo_domain_precise_access_rule" "default" {
 ```
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ddoscoo_domain_precise_access_rule&spm=docs.r.ddoscoo_domain_precise_access_rule.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ddoscoo_domain_precise_access_rule&spm=docs.r.ddoscoo_domain_precise_access_rule.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ddoscoo_domain_precise_access_rule&spm=docs.r.ddoscoo_domain_precise_access_rule.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -80,7 +80,7 @@ The following arguments are supported:
 * `condition` - (Required, List) List of matching conditions. See [`condition`](#condition) below.
 * `domain` - (Required, ForceNew) Domain name of the website service.
 
-  -> **NOTE:**  The domain name must already have a website service forwarding rule configured. You can call [DescribeDomains](https://help.aliyun.com/document_detail/91724.html) to query all domain names.
+  -> **NOTE:**  The domain name must already have a website service forwarding rule configured. You can call [DescribeDomains](https://www.alibabacloud.com/help/document_detail/91724.html) to query all domain names.
 * `expires` - (Optional, Int) Rule validity period, in seconds. This parameter takes effect only when the rule's matching action is set to block (`action` is `block`), blocking access requests during the validity period. If this parameter is not specified, the rule remains effective permanently.
 * `name` - (Required, ForceNew) Rule name.
 

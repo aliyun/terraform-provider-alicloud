@@ -20,9 +20,9 @@ For information about DTS Subscription Job and how to use it, see [What is Subsc
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_dts_subscription_job&exampleId=a7dcbf9d-1018-b303-0995-ba44ea716f5b2e6ae759&activeTab=example&spm=docs.r.dts_subscription_job.0.a7dcbf9d10&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_dts_subscription_job&exampleId=ddf09916-37d8-7ae5-2927-8a8ba53f6d551e7017da&activeTab=example&spm=docs.r.dts_subscription_job.0.ddf0991637&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_dts_subscription_job&exampleId=ddf09916-37d8-7ae5-2927-8a8ba53f6d551e7017da&activeTab=example&spm=docs.r.dts_subscription_job.0.ddf0991637&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -126,7 +126,7 @@ resource "alicloud_dts_subscription_job" "example" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dts_subscription_job&spm=docs.r.dts_subscription_job.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dts_subscription_job&spm=docs.r.dts_subscription_job.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dts_subscription_job&spm=docs.r.dts_subscription_job.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -135,21 +135,21 @@ The following arguments were support:
 * `dts_instance_id` - (Optional, ForceNew) The ID of subscription instance.
 * `dts_job_name` - (Optional) The name of subscription task.
 * `checkpoint` - (Optional, OtherParam) Subscription start time in Unix timestamp format.
-* `compute_unit` - (Optional, OtherParam) [ETL specifications](https://help.aliyun.com/document_detail/212324.html). The unit is the computing unit ComputeUnit (CU), 1CU=1vCPU+4 GB memory. The value range is an integer greater than or equal to 2.
+* `compute_unit` - (Optional, OtherParam) [ETL specifications](https://www.alibabacloud.com/help/document_detail/212324.html). The unit is the computing unit ComputeUnit (CU), 1CU=1vCPU+4 GB memory. The value range is an integer greater than or equal to 2.
 * `database_count` - (Optional, OtherParam) The number of private customized RDS instances under PolarDB-X. The default value is 1. This parameter needs to be passed only when `source_endpoint_engine_name` equals `drds`.
-* `db_list` - (Optional) Subscription object, in the format of JSON strings. For detailed definitions, please refer to the description of migration, synchronization or subscription objects [document](https://help.aliyun.com/document_detail/209545.html).
+* `db_list` - (Optional) Subscription object, in the format of JSON strings. For detailed definitions, please refer to the description of migration, synchronization or subscription objects [document](https://www.alibabacloud.com/help/document_detail/209545.html).
 * `delay_notice` - (Optional) This parameter decides whether to monitor the delay status. Valid values: `true`, `false`.
 * `delay_phone` - (Optional) The mobile phone number of the contact who delayed the alarm. Multiple mobile phone numbers separated by English commas `,`. This parameter currently only supports China stations, and only supports mainland mobile phone numbers, and up to 10 mobile phone numbers can be passed in.
 * `delay_rule_time` - (Optional) When `delay_notice` is set to `true`, this parameter must be passed in. The threshold for triggering the delay alarm. The unit is second and needs to be an integer. The threshold can be set according to business needs. It is recommended to set it above 10 seconds to avoid delay fluctuations caused by network and database load.
 * `destination_endpoint_engine_name` - (Optional) The destination endpoint engine name. Valid values: `ADS`, `DB2`, `DRDS`, `DataHub`, `Greenplum`, `MSSQL`, `MySQL`, `PolarDB`, `PostgreSQL`, `Redis`, `Tablestore`, `as400`, `clickhouse`, `kafka`, `mongodb`, `odps`, `oracle`, `polardb_o`, `polardb_pg`, `tidb`.
-* `destination_region` - (Optional) The destination region. List of [supported regions](https://help.aliyun.com/document_detail/141033.html).
+* `destination_region` - (Optional) The destination region. List of [supported regions](https://www.alibabacloud.com/help/document_detail/141033.html).
 * `error_notice` - (Optional) This parameter decides whether to monitor abnormal status. Valid values: `true`, `false`.
 * `error_phone` - (Optional) The mobile phone number of the contact for abnormal alarm. Multiple mobile phone numbers separated by English commas `,`. This parameter currently only supports China stations, and only supports mainland mobile phone numbers, and up to 10 mobile phone numbers can be passed in.
 * `instance_class` - (Optional) The instance class. Valid values: `large`, `medium`, `micro`, `small`, `xlarge`, `xxlarge`.
 * `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `Subscription`, `PayAsYouGo`.
 * `payment_duration_unit` - (Optional) The payment duration unit. Valid values: `Month`, `Year`. When `payment_type` is `Subscription`, this parameter is valid and must be passed in.
 * `payment_duration` - (Optional) The duration of prepaid instance purchase. When `payment_type` is `Subscription`, this parameter is valid and must be passed in.
-* `reserve` - (Optional) DTS reserves parameters, the format is a JSON string, you can pass in this parameter to complete the source and target database information (such as the data storage format of the target Kafka database, the instance ID of the cloud enterprise network CEN). For more information, please refer to the parameter description of the [Reserve parameter](https://help.aliyun.com/document_detail/176470.html).
+* `reserve` - (Optional) DTS reserves parameters, the format is a JSON string, you can pass in this parameter to complete the source and target database information (such as the data storage format of the target Kafka database, the instance ID of the cloud enterprise network CEN). For more information, please refer to the parameter description of the [Reserve parameter](https://www.alibabacloud.com/help/document_detail/176470.html).
 * `source_endpoint_database_name` - (Optional) To subscribe to the name of the database.
 * `source_endpoint_engine_name` - (Required) The source database type value is MySQL or Oracle. Valid values: `MySQL`, `Oracle`.
 * `source_endpoint_instance_id` - (Optional) The ID of source instance. Only when the type of source database instance was RDS MySQL, PolarDB-X 1.0, PolarDB MySQL, this parameter can be available and must be set.

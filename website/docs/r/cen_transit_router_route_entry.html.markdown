@@ -20,7 +20,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_transit_router_route_entry&exampleId=1903c1c5-f6e2-90bf-7d28-3d44b13102b1bd7533a1&activeTab=example&spm=docs.r.cen_transit_router_route_entry.0.1903c1c5f6&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cen_transit_router_route_entry&exampleId=1903c1c5-f6e2-90bf-7d28-3d44b13102b1bd7533a1&activeTab=example&spm=docs.r.cen_transit_router_route_entry.0.1903c1c5f6&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -82,7 +82,7 @@ resource "alicloud_cen_transit_router_route_entry" "example" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_route_entry&spm=docs.r.cen_transit_router_route_entry.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_route_entry&spm=docs.r.cen_transit_router_route_entry.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_route_entry&spm=docs.r.cen_transit_router_route_entry.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -90,7 +90,7 @@ The following arguments are supported:
 
 * `transit_router_route_table_id` - (Required, ForceNew) The ID of the transit router route table.
 * `transit_router_route_entry_destination_cidr_block` - (Required, ForceNew) The CIDR of the transit router route entry.
-* `transit_router_route_entry_next_hop_type` - (Required, ForceNew) The Type of the transit router route entry next hop,Valid values `Attachment` and `BlackHole`.
+* `transit_router_route_entry_next_hop_type` - (Required, ForceNew) The Type of the transit router route entry next hop, Valid values `Attachment` and `BlackHole`.
 * `transit_router_route_entry_name` - (Optional) The name of the transit router route entry.
 * `transit_router_route_entry_description` - (Optional) The description of the transit router route entry.
 * `transit_router_route_entry_next_hop_id` - (Optional, ForceNew) The ID of the transit router route entry next hop.

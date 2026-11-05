@@ -99,7 +99,7 @@ resource "alicloud_cs_kubernetes_autoscaler" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_autoscaler&spm=docs.r.cs_kubernetes_autoscaler.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_autoscaler&spm=docs.r.cs_kubernetes_autoscaler.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_autoscaler&spm=docs.r.cs_kubernetes_autoscaler.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -123,6 +123,7 @@ The nodepools mapping supports the following:
 ## Ignoring Changes to tags and user_data
 
 -> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://www.terraform.io/docs/configuration/resources.html) with `ignore_changes` to create a  a autoscaler group, then ignore any changes to that tags and user_data caused externally (e.g. Application Autoscaling).
+
 ```
   # ... ignore the change about tags and user_data in alicloud_ess_scaling_configuration
   lifecycle {

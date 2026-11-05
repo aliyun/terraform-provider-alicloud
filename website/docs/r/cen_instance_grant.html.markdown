@@ -13,7 +13,7 @@ Provides a CEN child instance grant resource, which allow you to authorize a VPC
 
 For more information about how to use it, see [Attach a network in a different account](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-attachcenchildinstance). 
 
--> **NOTE:** Deprecated since v1.241.0. The resource have been deprecated and new resource type [alicloud_cen_transit_router_grant_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_grant_attachment) is recommended.
+-> **DEPRECATED:** This resource has been deprecated from v1.241.0. The resource have been deprecated and new resource type [alicloud_cen_transit_router_grant_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_grant_attachment) is recommended.
 
 -> **NOTE:** Available since v1.37.0.
 
@@ -24,7 +24,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_instance_grant&exampleId=53269692-a358-5a74-e55d-be8b1b6aefcfea760c20&activeTab=example&spm=docs.r.cen_instance_grant.0.53269692a3&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cen_instance_grant&exampleId=53269692-a358-5a74-e55d-be8b1b6aefcfea760c20&activeTab=example&spm=docs.r.cen_instance_grant.0.53269692a3&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -81,7 +81,7 @@ resource "alicloud_cen_instance_grant" "child_account" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_instance_grant&spm=docs.r.cen_instance_grant.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_instance_grant&spm=docs.r.cen_instance_grant.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_instance_grant&spm=docs.r.cen_instance_grant.example&intl_lang=EN_US)
 
 ## Argument Reference
 

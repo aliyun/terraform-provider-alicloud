@@ -7,13 +7,13 @@ description: |-
   Provides a Web Application Firewall Certificate resource.
 ---
 
-# alicloud\_waf\_certificate
+# alicloud_waf_certificate
 
 Provides a WAF Certificate resource.
 
 For information about WAF Certificate and how to use it, see [What is Certificate](https://www.alibabacloud.com/help/doc-detail/28517.htm).
 
--> **NOTE:** Available in v1.135.0+.
+-> **NOTE:** Available since v1.135.0.
 
 ## Example Usage
 
@@ -22,7 +22,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_waf_certificate&exampleId=8fa3caa5-7920-7d0c-8dc0-50b4d30b1e9edcd44744&activeTab=example&spm=docs.r.waf_certificate.0.8fa3caa579&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_waf_certificate&exampleId=8fa3caa5-7920-7d0c-8dc0-50b4d30b1e9edcd44744&activeTab=example&spm=docs.r.waf_certificate.0.8fa3caa579&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -40,7 +40,7 @@ resource "alicloud_waf_certificate" "default2" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_waf_certificate&spm=docs.r.waf_certificate.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_waf_certificate&spm=docs.r.waf_certificate.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_waf_certificate&spm=docs.r.waf_certificate.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -51,7 +51,7 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The ID of the WAF instance.
 * `domain` - (Required, ForceNew) The domain that you want to add to WAF.
 * `private_key` - (Optional, ForceNew, Conflicts with `certificate_id`) The private key.
-* `certificate_id` - (Optional, ForceNew, Conflicts with `certificate`, `certificate_name`,`private_key`) The certificate id is automatically generated when you upload your certificate content.**NOTE:** you can also use Certificate ID saved in SSL.
+* `certificate_id` - (Optional, ForceNew, Conflicts with `certificate`, `certificate_name`, `private_key`) The certificate id is automatically generated when you upload your certificate content.**NOTE:** you can also use Certificate ID saved in SSL.
 
 ## Attributes Reference
 

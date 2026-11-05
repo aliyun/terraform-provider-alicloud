@@ -20,7 +20,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_pvtz_user_vpc_authorization&exampleId=6944948e-7ede-d082-3de8-c2510d1e784483cb5417&activeTab=example&spm=docs.r.pvtz_user_vpc_authorization.0.6944948e7e&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_pvtz_user_vpc_authorization&exampleId=6944948e-7ede-d082-3de8-c2510d1e784483cb5417&activeTab=example&spm=docs.r.pvtz_user_vpc_authorization.0.6944948e7e&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -40,7 +40,7 @@ When `auth_type` is not set, the server defaults to `NORMAL` and the resource ID
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_pvtz_user_vpc_authorization&exampleId=8aeb4888-2087-4642-ffdf-2a376ac025d421a18be0&activeTab=example&spm=docs.r.pvtz_user_vpc_authorization.1.8aeb488820&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_pvtz_user_vpc_authorization&exampleId=8aeb4888-2087-4642-ffdf-2a376ac025d421a18be0&activeTab=example&spm=docs.r.pvtz_user_vpc_authorization.1.8aeb488820&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -51,7 +51,7 @@ resource "alicloud_pvtz_user_vpc_authorization" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pvtz_user_vpc_authorization&spm=docs.r.pvtz_user_vpc_authorization.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pvtz_user_vpc_authorization&spm=docs.r.pvtz_user_vpc_authorization.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pvtz_user_vpc_authorization&spm=docs.r.pvtz_user_vpc_authorization.example&intl_lang=EN_US)
 
 ## Argument Reference
 

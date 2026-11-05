@@ -11,11 +11,11 @@ description: |-
 
 Provides a Cloudauth Face Config resource.
 
-For information about Cloudauth Face Config and how to use it, see [What is Face Config](https://help.aliyun.com/zh/id-verification/cloudauth/product-overview/end-of-integration-announcement-on-id-verification).
+For information about Cloudauth Face Config and how to use it, see [What is Face Config](https://www.alibabacloud.com/help/zh/id-verification/cloudauth/product-overview/end-of-integration-announcement-on-id-verification).
 
 -> **NOTE:** Available since v1.137.0.
 
--> **NOTE:** In order to provide you with more perfect product capabilities, the real person certification service has stopped access, it is recommended that you use the upgraded version of the [real person certification financial real person certification service](https://help.aliyun.com/zh/id-verification/product-overview/what-is-id-verification-for-financial-services). Users that have access to real person authentication are not affected.
+-> **NOTE:** In order to provide you with more perfect product capabilities, the real person certification service has stopped access, it is recommended that you use the upgraded version of the [real person certification financial real person certification service](https://www.alibabacloud.com/help/zh/id-verification/product-overview/what-is-id-verification-for-financial-services). Users that have access to real person authentication are not affected.
 
 ## Example Usage
 
@@ -24,7 +24,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cloudauth_face_config&exampleId=7668b7e4-1823-81e1-b8aa-0e3c777150af2b7fee6c&activeTab=example&spm=docs.r.cloudauth_face_config.0.7668b7e418&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cloudauth_face_config&exampleId=7668b7e4-1823-81e1-b8aa-0e3c777150af2b7fee6c&activeTab=example&spm=docs.r.cloudauth_face_config.0.7668b7e418&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -44,7 +44,7 @@ resource "alicloud_cloudauth_face_config" "example" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloudauth_face_config&spm=docs.r.cloudauth_face_config.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloudauth_face_config&spm=docs.r.cloudauth_face_config.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloudauth_face_config&spm=docs.r.cloudauth_face_config.example&intl_lang=EN_US)
 
 ## Argument Reference
 

@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_waiting_room_event&exampleId=20edd2d2-c7c1-982c-e81e-a6f67d2f191166378cb0&activeTab=example&spm=docs.r.esa_waiting_room_event.0.20edd2d2c7&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_esa_waiting_room_event&exampleId=20edd2d2-c7c1-982c-e81e-a6f67d2f191166378cb0&activeTab=example&spm=docs.r.esa_waiting_room_event.0.20edd2d2c7&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -86,7 +86,7 @@ resource "alicloud_esa_waiting_room_event" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_waiting_room_event&spm=docs.r.esa_waiting_room_event.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_waiting_room_event&spm=docs.r.esa_waiting_room_event.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_waiting_room_event&spm=docs.r.esa_waiting_room_event.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -129,7 +129,7 @@ The following arguments are supported:
   - `off`: Disable waiting room events
 * `total_active_users` - (Required) Total number of active users.
 * `waiting_room_event_name` - (Required) Event name, custom event description.
-* `waiting_room_id` - (Optional, ForceNew, Computed) Waiting room ID, used to identify a specific waiting room. It can be obtained by calling the [listwaitingroom](https://help.aliyun.com/document_detail/2850279.html) interface.
+* `waiting_room_id` - (Optional, ForceNew, Computed) Waiting room ID, used to identify a specific waiting room. It can be obtained by calling the [listwaitingroom](https://www.alibabacloud.com/help/document_detail/2850279.html) interface.
 * `waiting_room_type` - (Required) Waiting room type. The following types are supported:
   - `default`: the default type.
   - `custom`: custom type.
@@ -138,7 +138,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<waiting_room_id>:<waiting_room_event_id>`.
-* `waiting_room_event_id` - The waiting room event ID, which can be obtained by calling the [ListWaitingRoomEvents](https://help.aliyun.com/document_detail/2850279.html) operation.
+* `waiting_room_event_id` - The waiting room event ID, which can be obtained by calling the [ListWaitingRoomEvents](https://www.alibabacloud.com/help/document_detail/2850279.html) operation.
 
 ## Timeouts
 

@@ -7,11 +7,11 @@ description: |-
   Provides bind the domain name to the DNS instance resource.
 ---
 
-# alicloud\_dns\_domain\_attachment
+# alicloud_dns_domain_attachment
 
 Provides bind the domain name to the DNS instance resource.
 
--> **NOTE:** Available in v1.80.0+.
+-> **NOTE:** Available since v1.80.0.
 
 -> **DEPRECATED:**  This resource has been deprecated from version `1.99.0`. Please use new resource [alicloud_alidns_domain_attachment](https://www.terraform.io/docs/providers/alicloud/r/alidns_domain_attachment).
 
@@ -25,7 +25,7 @@ resource "alicloud_dns_domain_attachment" "dns" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dns_domain_attachment&spm=docs.r.dns_domain_attachment.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dns_domain_attachment&spm=docs.r.dns_domain_attachment.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dns_domain_attachment&spm=docs.r.dns_domain_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
 

@@ -24,7 +24,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_eipanycast_anycast_eip_address_attachment&exampleId=60808d6d-90eb-3d4f-6291-9cc92150dba73d9e2abf&activeTab=example&spm=docs.r.eipanycast_anycast_eip_address_attachment.0.60808d6d90&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_eipanycast_anycast_eip_address_attachment&exampleId=60808d6d-90eb-3d4f-6291-9cc92150dba73d9e2abf&activeTab=example&spm=docs.r.eipanycast_anycast_eip_address_attachment.0.60808d6d90&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -82,7 +82,7 @@ Multiple Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_eipanycast_anycast_eip_address_attachment&exampleId=aa4fd8d3-f48b-e412-01d0-81401540669093b77a06&activeTab=example&spm=docs.r.eipanycast_anycast_eip_address_attachment.1.aa4fd8d3f4&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_eipanycast_anycast_eip_address_attachment&exampleId=aa4fd8d3-f48b-e412-01d0-81401540669093b77a06&activeTab=example&spm=docs.r.eipanycast_anycast_eip_address_attachment.1.aa4fd8d3f4&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -223,7 +223,7 @@ resource "alicloud_eipanycast_anycast_eip_address_attachment" "normal" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eipanycast_anycast_eip_address_attachment&spm=docs.r.eipanycast_anycast_eip_address_attachment.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eipanycast_anycast_eip_address_attachment&spm=docs.r.eipanycast_anycast_eip_address_attachment.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eipanycast_anycast_eip_address_attachment&spm=docs.r.eipanycast_anycast_eip_address_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
 

@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_live_domain&exampleId=1f2838fb-dded-56b4-3c02-8151c41f11862dcc6e05&activeTab=example&spm=docs.r.live_domain.0.1f2838fbdd&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_live_domain&exampleId=1f2838fb-dded-56b4-3c02-8151c41f11862dcc6e05&activeTab=example&spm=docs.r.live_domain.0.1f2838fbdd&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -44,7 +44,7 @@ resource "alicloud_live_domain" "default" {
 ```
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_live_domain&spm=docs.r.live_domain.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_live_domain&spm=docs.r.live_domain.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_live_domain&spm=docs.r.live_domain.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -63,7 +63,7 @@ The following arguments are supported:
   - `liveVideo`: Playback domain.  
   - `liveEdge`: Edge ingest domain.
 * `region` - (Required, ForceNew) Region to which the domain belongs.
-* `resource_group_id` - (Optional, Computed) Resource group ID. For more information about resource groups, see [What is a resource group?](https://help.aliyun.com/document_detail/2381067.html).
+* `resource_group_id` - (Optional, Computed) Resource group ID. For more information about resource groups, see [What is a resource group?](https://www.alibabacloud.com/help/document_detail/2381067.html).
 * `scope` - (Optional, Computed) Acceleration region. This parameter takes effect only for international users and China site users with L3 or higher privileges. Valid values:  
   - `domestic` (default): Mainland China.  
   - `overseas`: Acceleration in regions outside mainland China, including Hong Kong, Macao, and Taiwan.  

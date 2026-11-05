@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_max_compute_role_user_attachment&exampleId=6b4c228c-a906-0297-68af-d4adf3c269ef36980d2f&activeTab=example&spm=docs.r.max_compute_role_user_attachment.0.6b4c228ca9&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_max_compute_role_user_attachment&exampleId=6b4c228c-a906-0297-68af-d4adf3c269ef36980d2f&activeTab=example&spm=docs.r.max_compute_role_user_attachment.0.6b4c228ca9&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -36,15 +36,15 @@ provider "alicloud" {
 }
 
 variable "aliyun_user" {
-  default = "ALIYUN$openapiautomation@test.aliyunid.com"
+  default = "ALIYUN$openapiautomation@example.aliyunid.com"
 }
 
 variable "ram_user" {
-  default = "RAM$openapiautomation@test.aliyunid.com:tf-example"
+  default = "RAM$openapiautomation@example.aliyunid.com:tf-example"
 }
 
 variable "ram_role" {
-  default = "RAM$openapiautomation@test.aliyunid.com:role/terraform-no-ak-assumerole-no-deleting"
+  default = "RAM$openapiautomation@example.aliyunid.com:role/terraform-no-ak-assumerole-no-deleting"
 }
 
 variable "role_name" {
@@ -62,7 +62,7 @@ resource "alicloud_max_compute_role_user_attachment" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_max_compute_role_user_attachment&spm=docs.r.max_compute_role_user_attachment.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_max_compute_role_user_attachment&spm=docs.r.max_compute_role_user_attachment.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_max_compute_role_user_attachment&spm=docs.r.max_compute_role_user_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
 

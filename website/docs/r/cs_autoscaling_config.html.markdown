@@ -22,6 +22,7 @@ This resource will help you configure auto scaling for the kubernetes cluster, s
 -> **NOTE:** From version 1.256.0, support for setting the priority of scaling groups by parameter `priorities`.
 
 ## Example Usage
+
 If you do not have an existing cluster, you need to create an ACK cluster through [alicloud_cs_managed_kubernetes](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_managed_kubernetes) first, and then configure automatic scaling.
 
 Basic Usage
@@ -29,7 +30,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_autoscaling_config&exampleId=580a36e2-202d-1eae-0cfa-f1b6c560ee5863927387&activeTab=example&spm=docs.r.cs_autoscaling_config.0.580a36e220&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cs_autoscaling_config&exampleId=580a36e2-202d-1eae-0cfa-f1b6c560ee5863927387&activeTab=example&spm=docs.r.cs_autoscaling_config.0.580a36e220&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -112,7 +113,7 @@ resource "alicloud_cs_autoscaling_config" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_autoscaling_config&spm=docs.r.cs_autoscaling_config.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_autoscaling_config&spm=docs.r.cs_autoscaling_config.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_autoscaling_config&spm=docs.r.cs_autoscaling_config.example&intl_lang=EN_US)
 
 ## Argument Reference
 

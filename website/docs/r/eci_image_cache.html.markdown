@@ -22,7 +22,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_eci_image_cache&exampleId=4f400e0a-d6a3-4598-1420-1d7f846d2e95da5df9cd&activeTab=example&spm=docs.r.eci_image_cache.0.4f400e0ad6&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_eci_image_cache&exampleId=4f400e0a-d6a3-4598-1420-1d7f846d2e95da5df9cd&activeTab=example&spm=docs.r.eci_image_cache.0.4f400e0ad6&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -69,7 +69,7 @@ resource "alicloud_eci_image_cache" "default" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eci_image_cache&spm=docs.r.eci_image_cache.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eci_image_cache&spm=docs.r.eci_image_cache.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eci_image_cache&spm=docs.r.eci_image_cache.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -79,7 +79,7 @@ The following arguments are supported:
 * `images` - (Required, ForceNew) The images to be cached. The image name must be versioned.
 * `security_group_id` - (Required, ForceNew) The ID of the security group. You do not need to specify the same security group as the container group.
 * `vswitch_id` - (Required, ForceNew) The ID of the VSwitch. You do not need to specify the same VSwitch as the container group.
-* `eip_instance_id` - (Optional, ForceNew) The instance ID of the Elastic IP Address (EIP). If you want to pull images from the Internet, you must specify an EIP to make sure that the container group can access the Internet. You can also configure the network address translation (NAT) gateway. We recommend that you configure the NAT gateway for the Internet access. Refer to [Public Network Access Method](https://help.aliyun.com/document_detail/99146.html)
+* `eip_instance_id` - (Optional, ForceNew) The instance ID of the Elastic IP Address (EIP). If you want to pull images from the Internet, you must specify an EIP to make sure that the container group can access the Internet. You can also configure the network address translation (NAT) gateway. We recommend that you configure the NAT gateway for the Internet access. Refer to [Public Network Access Method](https://www.alibabacloud.com/help/document_detail/99146.html)
 * `image_cache_size`   - (Optional, ForceNew) The size of the image cache. Default to `20`. Unit: GiB.
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
 * `retention_days` - (Optional, ForceNew) The retention days of the image cache. Once the image cache expires, it will be cleared. By default, the image cache never expires. Note: The image cache that fails to be created is retained for only one day.
@@ -87,6 +87,7 @@ The following arguments are supported:
 * `image_registry_credential` - (Optional, ForceNew) The Image Registry parameters about the image to be cached. See [`image_registry_credential`](#image_registry_credential) below.
 
 ### `image_registry_credential`
+
 * `server` - (Optional) The address of Image Registry without `http://` or `https://`.
 * `user_name` - (Optional) The user name of Image Registry.
 * `password` - (Optional) The password of the Image Registry.

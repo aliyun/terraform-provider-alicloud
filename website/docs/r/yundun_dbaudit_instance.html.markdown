@@ -15,7 +15,7 @@ Cloud DBaudit instance resource ("Yundun_dbaudit" is the short term of this prod
 
 -> **NOTE:** Destroying a `Subscription` instance fails with an error since v2.1.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
 
--> **NOTE:** Available since v1.62.0+.
+-> **NOTE:** Available since v1.62.0.
 
 -> **NOTE:** In order to destroy Cloud DBaudit instance , users are required to apply for white list first
 
@@ -26,7 +26,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_yundun_dbaudit_instance&exampleId=e879359e-94c4-313b-85a0-25da5642294787674a37&activeTab=example&spm=docs.r.yundun_dbaudit_instance.0.e879359e94&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_yundun_dbaudit_instance&exampleId=e879359e-94c4-313b-85a0-25da5642294787674a37&activeTab=example&spm=docs.r.yundun_dbaudit_instance.0.e879359e94&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -65,7 +65,7 @@ will remove it from your state file and management, but will not destroy the `yu
 You can resume managing the subscription yundun_dbaudit_instance via the AlibabaCloud Console.
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_yundun_dbaudit_instance&spm=docs.r.yundun_dbaudit_instance.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_yundun_dbaudit_instance&spm=docs.r.yundun_dbaudit_instance.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_yundun_dbaudit_instance&spm=docs.r.yundun_dbaudit_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -77,8 +77,8 @@ The following arguments are supported:
 
   -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `vswitch_id` - (Required, ForceNew) vSwtich ID configured to audit
-* `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
-* `resource_group_id` - (Optional, Available in v1.87.0+) The Id of resource group which the DBaudit Instance belongs. If not set, the resource is created in the default resource group.
+* `tags` - (Optional, Available since v1.67.0) A mapping of tags to assign to the resource.
+* `resource_group_id` - (Optional, Available since v1.87.0) The Id of resource group which the DBaudit Instance belongs. If not set, the resource is created in the default resource group.
 
 ## Attributes Reference
 

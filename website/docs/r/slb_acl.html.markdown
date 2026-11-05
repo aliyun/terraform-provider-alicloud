@@ -41,7 +41,7 @@ For information about acl and how to use it, see [Configure an access control li
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_slb_acl&exampleId=0e9c45ca-74dc-f6c1-9742-a347a0c0f3bed90775c8&activeTab=example&spm=docs.r.slb_acl.0.0e9c45ca74&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_slb_acl&exampleId=0e9c45ca-74dc-f6c1-9742-a347a0c0f3bed90775c8&activeTab=example&spm=docs.r.slb_acl.0.0e9c45ca74&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -52,7 +52,7 @@ resource "alicloud_slb_acl" "acl" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_acl&spm=docs.r.slb_acl.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_acl&spm=docs.r.slb_acl.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_acl&spm=docs.r.slb_acl.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -61,8 +61,8 @@ The following arguments are supported:
 * `name` - (Required) Name of the access control list.
 * `ip_version` - (Optional, ForceNew) The IP Version of access control list is the type of its entry (IP addresses or CIDR blocks). It values ipv4/ipv6. Our plugin provides a default ip_version: "ipv4".
 * `entry_list` - (Deprecated from v1.162.0) A list of entry (CIDR blocks) to be added. It contains two sub-fields as `Entry Block` follows. See [`entry_list`](#entry_list) below. **NOTE:** "Field 'entry_list' has been deprecated from provider version 1.162.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_acl_entry_attachment'.",
-* `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
-* `resource_group_id` - (Optional, ForceNew, Available in v1.67.0+) Resource group ID.
+* `tags` - (Optional, Available since v1.66.0) A mapping of tags to assign to the resource.
+* `resource_group_id` - (Optional, ForceNew, Available since v1.67.0) Resource group ID.
 
 ### `entry_list`
 

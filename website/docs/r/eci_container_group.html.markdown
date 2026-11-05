@@ -22,7 +22,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_eci_container_group&exampleId=f86e77f9-0e1a-75b0-7cf6-56e74d282bd54f7e8421&activeTab=example&spm=docs.r.eci_container_group.0.f86e77f90e&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_eci_container_group&exampleId=f86e77f9-0e1a-75b0-7cf6-56e74d282bd54f7e8421&activeTab=example&spm=docs.r.eci_container_group.0.f86e77f90e&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -124,7 +124,7 @@ resource "alicloud_eci_container_group" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eci_container_group&spm=docs.r.eci_container_group.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eci_container_group&spm=docs.r.eci_container_group.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eci_container_group&spm=docs.r.eci_container_group.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -278,6 +278,7 @@ The environment_vars supports the following:
 * `field_ref` - (Optional) The reference of the environment variable. See [`field_ref`](#init_containers-environment_vars-field_ref) below.
 
 ### `init_containers-environment_vars-field_ref`
+
 * `field_path` - (Optional) The path of the reference.
 
 ### `init_containers-volume_mounts`
@@ -340,6 +341,7 @@ The environment_vars supports the following:
 * `field_ref` - (Optional) The reference of the environment variable. See [`field_ref`](#containers-environment_vars-field_ref) below.
 
 ### `containers-environment_vars-field_ref`
+
 * `field_path` - (Optional) The path of the reference.
 
 ### `containers-volume_mounts`

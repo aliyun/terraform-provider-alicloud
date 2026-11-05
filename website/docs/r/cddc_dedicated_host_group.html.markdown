@@ -42,7 +42,7 @@ resource "alicloud_cddc_dedicated_host_group" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cddc_dedicated_host_group&spm=docs.r.cddc_dedicated_host_group.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cddc_dedicated_host_group&spm=docs.r.cddc_dedicated_host_group.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cddc_dedicated_host_group&spm=docs.r.cddc_dedicated_host_group.example&intl_lang=EN_US)
 
 ## Argument Reference
 

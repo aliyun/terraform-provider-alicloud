@@ -24,7 +24,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_kms_secret&exampleId=68224472-99c1-346b-99d0-cc5a967a7ca4febb016a&activeTab=example&spm=docs.r.kms_secret.0.6822447299&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_kms_secret&exampleId=68224472-99c1-346b-99d0-cc5a967a7ca4febb016a&activeTab=example&spm=docs.r.kms_secret.0.6822447299&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -56,7 +56,7 @@ resource "alicloud_kms_secret" "default" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_kms_secret&exampleId=a95ee61b-cd3a-884a-bfdb-78004d17d64ca8ba3909&activeTab=example&spm=docs.r.kms_secret.1.a95ee61bcd&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_kms_secret&exampleId=a95ee61b-cd3a-884a-bfdb-78004d17d64ca8ba3909&activeTab=example&spm=docs.r.kms_secret.1.a95ee61bcd&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -89,7 +89,7 @@ resource "alicloud_kms_secret" "generic" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_kms_secret&exampleId=103ed624-4935-f65b-34d7-c81e6b829b69cad7e96c&activeTab=example&spm=docs.r.kms_secret.2.103ed62449&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_kms_secret&exampleId=103ed624-4935-f65b-34d7-c81e6b829b69cad7e96c&activeTab=example&spm=docs.r.kms_secret.2.103ed62449&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -132,7 +132,7 @@ resource "alicloud_kms_secret" "rds" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_kms_secret&exampleId=786b554c-de16-edcc-3b5e-9ff7736b8e021a204a97&activeTab=example&spm=docs.r.kms_secret.3.786b554cde&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_kms_secret&exampleId=786b554c-de16-edcc-3b5e-9ff7736b8e021a204a97&activeTab=example&spm=docs.r.kms_secret.3.786b554cde&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -172,7 +172,7 @@ resource "alicloud_kms_secret" "redis" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_kms_secret&exampleId=5298eb4f-8202-af31-9dca-7467108d5aa0adc351a1&activeTab=example&spm=docs.r.kms_secret.4.5298eb4f82&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_kms_secret&exampleId=5298eb4f-8202-af31-9dca-7467108d5aa0adc351a1&activeTab=example&spm=docs.r.kms_secret.4.5298eb4f82&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -215,7 +215,7 @@ resource "alicloud_kms_secret" "ram" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_kms_secret&exampleId=0669e523-b207-9756-4594-ff9c26b54f25f10b88cb&activeTab=example&spm=docs.r.kms_secret.5.0669e523b2&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_kms_secret&exampleId=0669e523-b207-9756-4594-ff9c26b54f25f10b88cb&activeTab=example&spm=docs.r.kms_secret.5.0669e523b2&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -255,7 +255,7 @@ resource "alicloud_kms_secret" "ecs" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_kms_secret&exampleId=7de5758a-418d-ced4-5e62-f7ac4681bd8cd0e8ee52&activeTab=example&spm=docs.r.kms_secret.6.7de5758a41&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_kms_secret&exampleId=7de5758a-418d-ced4-5e62-f7ac4681bd8cd0e8ee52&activeTab=example&spm=docs.r.kms_secret.6.7de5758a41&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -293,7 +293,7 @@ resource "alicloud_kms_secret" "polardb" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kms_secret&spm=docs.r.kms_secret.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kms_secret&spm=docs.r.kms_secret.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kms_secret&spm=docs.r.kms_secret.example&intl_lang=EN_US)
 
 ## Argument Reference
 

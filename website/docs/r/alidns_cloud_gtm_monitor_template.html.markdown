@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_alidns_cloud_gtm_monitor_template&exampleId=d96e5ba9-7a22-9589-0f45-7558f28beee96c84c7d6&activeTab=example&spm=docs.r.alidns_cloud_gtm_monitor_template.0.d96e5ba97a&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_alidns_cloud_gtm_monitor_template&exampleId=d96e5ba9-7a22-9589-0f45-7558f28beee96c84c7d6&activeTab=example&spm=docs.r.alidns_cloud_gtm_monitor_template.0.d96e5ba97a&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -63,7 +63,7 @@ resource "alicloud_alidns_cloud_gtm_monitor_template" "default" {
 ```
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_cloud_gtm_monitor_template&spm=docs.r.alidns_cloud_gtm_monitor_template.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_cloud_gtm_monitor_template&spm=docs.r.alidns_cloud_gtm_monitor_template.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_cloud_gtm_monitor_template&spm=docs.r.alidns_cloud_gtm_monitor_template.example&intl_lang=EN_US)
 
 
 ## Argument Reference
@@ -77,7 +77,7 @@ The following arguments are supported:
 * `timeout` - (Required) Probe request timeout, in milliseconds. Probe packets that do not return within this duration are treated as timeouts. Valid values: `2000`, `3000`, `5000`, `10000`.
 * `evaluation_count` - (Required, Int) The number of retries after a probe failure. A service is marked abnormal only after this many consecutive failures, preventing transient network fluctuations from triggering false alarms. Valid values: `1`, `2`, `3`.
 * `failure_rate` - (Required, Int) The failure-rate threshold (%) among selected probe nodes. If the percentage of failing nodes exceeds this value, the service address is marked as abnormal. Valid values: `0`, `20`, `50`, `80`, `100`.
-* `isp_city_nodes` - (Required, Set) The set of monitoring nodes that this template will probe from. Use the [ListCloudGtmMonitorNodes](https://help.aliyun.com/document_detail/2797349.html) API to look up available `city_code` / `isp_code` combinations. See [`isp_city_nodes`](#isp_city_nodes) below.
+* `isp_city_nodes` - (Required, Set) The set of monitoring nodes that this template will probe from. Use the [ListCloudGtmMonitorNodes](https://www.alibabacloud.com/help/document_detail/2797349.html) API to look up available `city_code` / `isp_code` combinations. See [`isp_city_nodes`](#isp_city_nodes) below.
 * `extend_info` - (Optional, Computed) A JSON string containing protocol-specific probe configuration. The supported keys depend on `protocol`. See [`extend_info`](#extend_info) below.
 * `remark` - (Optional) The remark of the monitor template. Passing an empty value clears the existing remark.
 

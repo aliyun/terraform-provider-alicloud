@@ -21,9 +21,9 @@ For information about Cloud Firewall Vpc Cen Tr Firewall and how to use it, see 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_firewall_vpc_cen_tr_firewall&exampleId=37a1e48f-5e2b-3aa6-5c58-4d9edb62f71ef8f83c50&activeTab=example&spm=docs.r.cloud_firewall_vpc_cen_tr_firewall.0.37a1e48f5e&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_firewall_vpc_cen_tr_firewall&exampleId=035eb744-dde7-3cfb-2684-698186de4c5543a267d0&activeTab=example&spm=docs.r.cloud_firewall_vpc_cen_tr_firewall.0.035eb744dd&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cloud_firewall_vpc_cen_tr_firewall&exampleId=035eb744-dde7-3cfb-2684-698186de4c5543a267d0&activeTab=example&spm=docs.r.cloud_firewall_vpc_cen_tr_firewall.0.035eb744dd&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -119,30 +119,27 @@ resource "alicloud_cen_transit_router_vpc_attachment" "tr-vpc1" {
   vpc_id            = alicloud_vpc.vpc1.id
   cen_id            = alicloud_cen_instance.cen.id
   transit_router_id = alicloud_cen_transit_router.tr.transit_router_id
-  depends_on        = [alicloud_route_table.foo]
 }
 
 resource "time_sleep" "wait_10_minutes" {
-  depends_on = [alicloud_cen_transit_router_vpc_attachment.tr-vpc1]
 
   create_duration = "10m"
 }
 
 resource "alicloud_cloud_firewall_vpc_cen_tr_firewall" "default" {
-  cen_id                    = alicloud_cen_transit_router_vpc_attachment.tr-vpc1.cen_id
-  firewall_name             = var.name
-  firewall_description      = "VpcCenTrFirewall created by terraform"
-  region_no                 = var.region
-  firewall_vpc_cidr         = var.firewall_vpc_cidr
-  transit_router_id         = alicloud_cen_transit_router.tr.transit_router_id
-  route_mode                = "managed"
+  cen_id               = alicloud_cen_transit_router_vpc_attachment.tr-vpc1.cen_id
+  firewall_name        = var.name
+  firewall_description = "VpcCenTrFirewall created by terraform"
+  region_no            = var.region
+  firewall_vpc_cidr    = var.firewall_vpc_cidr
+  transit_router_id    = alicloud_cen_transit_router.tr.transit_router_id
+  route_mode           = "managed"
 
-  depends_on = [time_sleep.wait_10_minutes]
 }
 ```
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_vpc_cen_tr_firewall&spm=docs.r.cloud_firewall_vpc_cen_tr_firewall.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_vpc_cen_tr_firewall&spm=docs.r.cloud_firewall_vpc_cen_tr_firewall.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_vpc_cen_tr_firewall&spm=docs.r.cloud_firewall_vpc_cen_tr_firewall.example&intl_lang=EN_US)
 
 
 ## Argument Reference

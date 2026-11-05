@@ -121,7 +121,7 @@ The `alicloud_eais_client_instance_attachment` resource allows you to manage  `c
 Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
 You can resume managing the subscription instance via the AlibabaCloud Console.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eais_client_instance_attachment&spm=docs.r.eais_client_instance_attachment.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eais_client_instance_attachment&spm=docs.r.eais_client_instance_attachment.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eais_client_instance_attachment&spm=docs.r.eais_client_instance_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
 

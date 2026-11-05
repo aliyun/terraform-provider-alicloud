@@ -31,7 +31,7 @@ Basic usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_nat_gateway&exampleId=db0b3938-fe52-60c0-dbbc-5d69bbc282dbcb073981&activeTab=example&spm=docs.r.nat_gateway.0.db0b3938fe&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_nat_gateway&exampleId=db0b3938-fe52-60c0-dbbc-5d69bbc282dbcb073981&activeTab=example&spm=docs.r.nat_gateway.0.db0b3938fe&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -69,7 +69,7 @@ resource "alicloud_nat_gateway" "default" {
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_nat_gateway&exampleId=690738fa-c76a-212e-6a46-8df639ab287a9e7e8b40&activeTab=example&spm=docs.r.nat_gateway.1.690738fac7&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_nat_gateway&exampleId=690738fa-c76a-212e-6a46-8df639ab287a9e7e8b40&activeTab=example&spm=docs.r.nat_gateway.1.690738fac7&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -100,14 +100,14 @@ resource "alicloud_nat_gateway" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nat_gateway&spm=docs.r.nat_gateway.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nat_gateway&spm=docs.r.nat_gateway.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nat_gateway&spm=docs.r.nat_gateway.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
 
 * `vpc_id` - (Required, ForceNew) The VPC ID.
-* `specification` - (Optional) The specification of the nat gateway. Valid values are `Small`, `Middle` and `Large`. Effective when `internet_charge_type` is `PayBySpec` and `network_type` is `internet`. Details refer to [Nat Gateway Specification](https://help.aliyun.com/document_detail/203500.html).
+* `specification` - (Optional) The specification of the nat gateway. Valid values are `Small`, `Middle` and `Large`. Effective when `internet_charge_type` is `PayBySpec` and `network_type` is `internet`. Details refer to [Nat Gateway Specification](https://www.alibabacloud.com/help/document_detail/203500.html).
 * `nat_gateway_name` - (Optional, Available since v1.121.0) Name of the nat gateway. The value can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Defaults to null.
 * `description` - (Optional) Description of the nat gateway, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Defaults to null.
 * `dry_run` - (Optional) Specifies whether to only precheck this request. Default value: `false`.

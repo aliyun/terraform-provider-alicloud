@@ -28,7 +28,7 @@ The official website mark  more regions. or you can call [DescribeRegions](https
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_hbase_instance&exampleId=3771916a-d79a-64d1-0710-57192fe23dd053cd92f2&activeTab=example&spm=docs.r.hbase_instance.0.3771916ad7&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_hbase_instance&exampleId=3771916a-d79a-64d1-0710-57192fe23dd053cd92f2&activeTab=example&spm=docs.r.hbase_instance.0.3771916ad7&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -67,7 +67,7 @@ resource "alicloud_hbase_instance" "default" {
 
 this is a example for class netType instance. you can find more detail with the examples/hbase dir.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_hbase_instance&spm=docs.r.hbase_instance.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_hbase_instance&spm=docs.r.hbase_instance.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_hbase_instance&spm=docs.r.hbase_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -77,8 +77,8 @@ The following arguments are supported:
 * `zone_id` - (Optional, ForceNew) The Zone to launch the HBase instance. If vswitch_id is not empty, this zone_id can be "" or consistent.
 * `engine` - (Optional, ForceNew) Valid values are "hbase/hbaseue/bds". The following types are supported after v1.73.0: `hbaseue` and `bds`. Single hbase instance need to set engine=hbase, core_instance_quantity=1.
 * `engine_version` - (Required, ForceNew) HBase major version. hbase:1.1/2.0, hbaseue:2.0, bds:1.0, unsupport other engine temporarily. Value options can refer to the latest docs [CreateInstance](https://www.alibabacloud.com/help/en/data-lake-analytics/latest/createinstance).
-* `master_instance_type` - (Required) Instance specification. See [Instance specifications](https://help.aliyun.com/document_detail/53532.html), or you can call describeInstanceType api.
-* `core_instance_type` - (Required) Instance specification. See [Instance specifications](https://help.aliyun.com/document_detail/53532.html), or you can call describeInstanceType api.
+* `master_instance_type` - (Required) Instance specification. See [Instance specifications](https://www.alibabacloud.com/help/document_detail/53532.html), or you can call describeInstanceType api.
+* `core_instance_type` - (Required) Instance specification. See [Instance specifications](https://www.alibabacloud.com/help/document_detail/53532.html), or you can call describeInstanceType api.
 * `core_instance_quantity`- (Optional) Default=2, [1-200]. If core_instance_quantity > 1, this is cluster's instance. If core_instance_quantity = 1, this is a single instance.
 * `core_disk_type`- (Optional, ForceNew) Valid values are `cloud_ssd`, `cloud_essd_pl1`, `cloud_efficiency`, `local_hdd_pro`, `local_ssd_pro`，``, local_disk size is fixed. When engine=bds, no need to set disk type(or empty string).
 * `core_disk_size` - (Optional) User-defined HBase instance one core node's storage. Valid when engine=hbase/hbaseue. Bds engine no need core_disk_size, space.Unit: GB. Value range:
@@ -99,7 +99,7 @@ The following arguments are supported:
 * `password` - (Optional, Available in 1.105.0+) The password of the cluster web ui account. Size [0-128].
 * `ip_white` - (Optional, Available in 1.105.0+) The white ip list of the cluster.
 * `security_groups` - (Optional, Available in 1.105.0+) The security group resource of the cluster.
-* `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The id of the VPC.
+* `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The id of the VPC.
 * `ui_proxy_conn_addrs` - (Available in 1.105.0+) The Web UI proxy addresses of the cluster. See [`ui_proxy_conn_addrs`](#ui_proxy_conn_addrs) below.
 * `zk_conn_addrs` - (Available in 1.105.0+) The zookeeper addresses of the cluster. See [`zk_conn_addrs`](#zk_conn_addrs) below.
 * `slb_conn_addrs` - (Available in 1.105.0+) The slb service addresses of the cluster. See [`slb_conn_addrs`](#slb_conn_addrs) below.

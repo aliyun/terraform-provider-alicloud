@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_fcv3_trigger&exampleId=27eb3c9b-5693-567a-b806-d095e2f839501d608279&activeTab=example&spm=docs.r.fcv3_trigger.0.27eb3c9b56&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_fcv3_trigger&exampleId=27eb3c9b-5693-567a-b806-d095e2f839501d608279&activeTab=example&spm=docs.r.fcv3_trigger.0.27eb3c9b56&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -78,7 +78,7 @@ HTTP Trigger
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_fcv3_trigger&exampleId=17b0b99e-bc39-9405-cad2-50772d0586c71bba4d44&activeTab=example&spm=docs.r.fcv3_trigger.1.17b0b99ebc&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_fcv3_trigger&exampleId=17b0b99e-bc39-9405-cad2-50772d0586c71bba4d44&activeTab=example&spm=docs.r.fcv3_trigger.1.17b0b99ebc&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -135,7 +135,7 @@ output "output_calicloud_fcv3_trigger_intranet" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_fcv3_trigger&spm=docs.r.fcv3_trigger.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_fcv3_trigger&spm=docs.r.fcv3_trigger.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_fcv3_trigger&spm=docs.r.fcv3_trigger.example&intl_lang=EN_US)
 
 ## Argument Reference
 

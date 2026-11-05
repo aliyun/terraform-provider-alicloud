@@ -9,11 +9,11 @@ description: |-
 
 # alicloud_dbfs_snapshot
 
-~> **NOTE:** This resource has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://help.aliyun.com/en/dbfs/).
+-> **DEPRECATED:** This resource has been deprecated from v1.279.0.
 
 Provides a Database File System (DBFS) Snapshot resource.
 
-For information about Database File System (DBFS) Snapshot and how to use it, see [What is Snapshot](https://help.aliyun.com/zh/dbfs/developer-reference/api-dbfs-2020-04-18-createsnapshot).
+For information about Database File System (DBFS) Snapshot and how to use it, see [What is Snapshot](https://www.alibabacloud.com/help/zh/dbfs/developer-reference/api-dbfs-2020-04-18-createsnapshot).
 
 -> **NOTE:** Available since v1.156.0.
 
@@ -24,7 +24,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_dbfs_snapshot&exampleId=135d92d4-7aa3-a5c3-9737-98713dcd086f2359e22e&activeTab=example&spm=docs.r.dbfs_snapshot.0.135d92d47a&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_dbfs_snapshot&exampleId=135d92d4-7aa3-a5c3-9737-98713dcd086f2359e22e&activeTab=example&spm=docs.r.dbfs_snapshot.0.135d92d47a&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -47,7 +47,7 @@ resource "alicloud_dbfs_snapshot" "example" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dbfs_snapshot&spm=docs.r.dbfs_snapshot.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dbfs_snapshot&spm=docs.r.dbfs_snapshot.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dbfs_snapshot&spm=docs.r.dbfs_snapshot.example&intl_lang=EN_US)
 
 ## Argument Reference
 

@@ -22,7 +22,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ess_instance_refresh&exampleId=36c0c7b1-51ca-80c7-4692-88ba02e441a3e4680173&activeTab=example&spm=docs.r.ess_instance_refresh.0.36c0c7b151&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ess_instance_refresh&exampleId=36c0c7b1-51ca-80c7-4692-88ba02e441a3e4680173&activeTab=example&spm=docs.r.ess_instance_refresh.0.36c0c7b151&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -106,13 +106,14 @@ resource "alicloud_ess_instance_refresh" "default" {
   }
 }
 ```
+
 ### Deleting `alicloud_ess_instance_refresh` or removing it from your configuration
 
 The `alicloud_ess_instance_refresh` resource allows you to manage  `status = "RollbackInProgress"`  instance refresh, but Terraform cannot destroy it.
 Deleting will remove it from your state file and management, but will not destroy the Instance Refresh.
 You can resume managing the instance refresh via the AlibabaCloud Console.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_instance_refresh&spm=docs.r.ess_instance_refresh.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_instance_refresh&spm=docs.r.ess_instance_refresh.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_instance_refresh&spm=docs.r.ess_instance_refresh.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -134,11 +135,11 @@ The following arguments are supported:
     - CheckpointPause: The task is paused because it has reached a checkpoint (Checkpoint.Percentage).
     - Failed: The instance refresh task failed.
     - Successful: The instance refresh task was successful.
-    - Cancelling: The instance refresh task is being canceled. 
+    - Canceling: The instance refresh task is being canceled.
     - RollbackInProgress: The instance refresh task is being rolled back. 
     - RollbackSuccessful: The instance refresh task was rolled back successfully. Set RollbackSuccessful to rollback the instance refresh task.
     - RollbackFailed: The rollback of the instance refresh task failed.
-    - Cancelled:  The instance refresh task is canceled. Set Cancelled to cancel the instance refresh task.
+    - Canceled:  The instance refresh task is canceled. Set Canceled to cancel the instance refresh task.
 * `checkpoints` - (Optional, ForceNew) The checkpoints for the refresh task. The task automatically pauses for the duration specified by CheckpointPauseTime when the percentage of new instances reaches a specified value. See [`checkpoints`](#checkpoints) below for details.
 * `checkpoint_pause_time` - (Optional, ForceNew) The duration of the pause when the task reaches a checkpoint. Unit: minutes.
 

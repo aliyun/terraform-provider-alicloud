@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_monitor_service_metric_alarm_rule&exampleId=5a3f3a96-4f6b-bfba-6207-6fb588d8c115b6531288&activeTab=example&spm=docs.r.cloud_monitor_service_metric_alarm_rule.0.5a3f3a964f&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cloud_monitor_service_metric_alarm_rule&exampleId=5a3f3a96-4f6b-bfba-6207-6fb588d8c115b6531288&activeTab=example&spm=docs.r.cloud_monitor_service_metric_alarm_rule.0.5a3f3a964f&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -61,7 +61,7 @@ resource "alicloud_cloud_monitor_service_metric_alarm_rule" "default" {
 ```
 
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_monitor_service_metric_alarm_rule&spm=docs.r.cloud_monitor_service_metric_alarm_rule.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_monitor_service_metric_alarm_rule&spm=docs.r.cloud_monitor_service_metric_alarm_rule.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_monitor_service_metric_alarm_rule&spm=docs.r.cloud_monitor_service_metric_alarm_rule.example&intl_lang=EN_US)
 
 
 ## Argument Reference
@@ -73,14 +73,14 @@ The following arguments are supported:
   See [`composite_expression`](#composite_expression) below.
 * `contact_groups` - (Required, ForceNew) Alarm contact groups. Alarm notifications are sent to the contacts in these groups.
 
-  -> **NOTE:**  An alarm contact group is a collection of one or more alarm contacts. For information about how to create alarm contacts and alarm contact groups, see [PutContact](https://help.aliyun.com/document_detail/114923.html) and [PutContactGroup](https://help.aliyun.com/document_detail/114929.html).
+  -> **NOTE:**  An alarm contact group is a collection of one or more alarm contacts. For information about how to create alarm contacts and alarm contact groups, see [PutContact](https://www.alibabacloud.com/help/document_detail/114923.html) and [PutContactGroup](https://www.alibabacloud.com/help/document_detail/114929.html).
 
 * `effective_interval` - (Optional) The time range during which the alert rule is effective.
 * `email_subject` - (Optional) Subject of alert emails.
 * `escalations` - (Optional, Set) The trigger conditions for alert levels. See [`escalations`](#escalations) below.
 * `interval` - (Optional) The trigger interval of the alarm rule. Unit: seconds.
 
-  -> **NOTE:** For information about how to query the statistical period of a metric, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
+  -> **NOTE:** For information about how to query the statistical period of a metric, see [Cloud Service Metrics](https://www.alibabacloud.com/help/document_detail/163515.html).
 
 
   -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
@@ -91,15 +91,15 @@ The following arguments are supported:
   See [`labels`](#labels) below.
 * `metric_alarm_rule_id` - (Required, ForceNew) The ID of the alarm rule.
 
-You can specify a new alarm rule ID or use an existing alarm rule ID from CloudMonitor. For information about how to query alarm rule IDs, see [DescribeMetricRuleList](https://help.aliyun.com/document_detail/114941.html).
+You can specify a new alarm rule ID or use an existing alarm rule ID from CloudMonitor. For information about how to query alarm rule IDs, see [DescribeMetricRuleList](https://www.alibabacloud.com/help/document_detail/114941.html).
 
 -> **NOTE:**  Specifying a new alarm rule ID creates a threshold-based alarm rule.
 
-* `metric_name` - (Required, ForceNew) The name of the metric. For information about how to query metric names, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
+* `metric_name` - (Required, ForceNew) The name of the metric. For information about how to query metric names, see [Cloud Service Metrics](https://www.alibabacloud.com/help/document_detail/163515.html).
 
-  -> **NOTE:**  When you create a Prometheus alert rule for Enterprise Cloud Monitoring, this parameter specifies the metric store name. For information about how to obtain the metric store name, see [DescribeHybridMonitorNamespaceList](https://help.aliyun.com/document_detail/428880.html).
+  -> **NOTE:**  When you create a Prometheus alert rule for Enterprise Cloud Monitoring, this parameter specifies the metric store name. For information about how to obtain the metric store name, see [DescribeHybridMonitorNamespaceList](https://www.alibabacloud.com/help/document_detail/428880.html).
 
-* `namespace` - (Required, ForceNew) The namespace of the cloud service metric data. For information about how to query the namespace of a cloud service, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
+* `namespace` - (Required, ForceNew) The namespace of the cloud service metric data. For information about how to query the namespace of a cloud service, see [Cloud Service Metrics](https://www.alibabacloud.com/help/document_detail/163515.html).
 
   -> **NOTE:**  When you create a Prometheus alert rule for Enterprise Cloud Monitoring, this parameter must be set to `acs_prometheus`.
 
@@ -110,17 +110,17 @@ You can specify a new alarm rule ID or use an existing alarm rule ID from CloudM
 * `no_effective_interval` - (Optional) The time range during which the alarm rule is inactive.
 * `period` - (Optional) The statistical period of the metric. Unit: seconds. By default, this is the original reporting period of the metric.
 
-  -> **NOTE:**  For information about how to query the statistical period of a metric, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
+  -> **NOTE:**  For information about how to query the statistical period of a metric, see [Cloud Service Metrics](https://www.alibabacloud.com/help/document_detail/163515.html).
 
 * `prometheus` - (Optional, Set) Prometheus alert.
 
   -> **NOTE:**  You must specify this parameter only when you create a Prometheus alert rule for Enterprise Cloud Monitor.
   See [`prometheus`](#prometheus) below.
 * `resources` - (Required) Resource information, for example: `[{"instanceId":"i-uf6j91r34rnwawoo****"}]`, `[{"userId":"100931896542****"}]`.
-For dimensions supported in resource information, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
+For dimensions supported in resource information, see [Cloud Service Metrics](https://www.alibabacloud.com/help/document_detail/163515.html).
 * `rule_name` - (Required, ForceNew) Alert rule name.
 
-You can enter a new alert rule name or use an existing alert rule name in CloudMonitor. For information about how to query alert rule names, see [DescribeMetricRuleList](https://help.aliyun.com/document_detail/114941.html).
+You can enter a new alert rule name or use an existing alert rule name in CloudMonitor. For information about how to query alert rule names, see [DescribeMetricRuleList](https://www.alibabacloud.com/help/document_detail/114941.html).
 
 -> **NOTE:**  Entering a new alert rule name creates a threshold-based alert rule.
 
@@ -176,7 +176,7 @@ Unit: seconds.
   - $Average: average value.
   - $Availability: availability rate (typically used for site monitoring).
 
-  -> **NOTE:**  `$` is the unified prefix symbol for metrics. For supported cloud services, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
+  -> **NOTE:**  `$` is the unified prefix symbol for metrics. For supported cloud services, see [Cloud Service Metrics](https://www.alibabacloud.com/help/document_detail/163515.html).
 
 * `threshold` - (Optional) Alert threshold.
 

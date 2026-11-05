@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Web Application Firewall(WAF) Protection Module resource.
 ---
 
-# alicloud\_waf\_protection\_module
+# alicloud_waf_protection_module
 
 Provides a Web Application Firewall(WAF) Protection Module resource.
 
 For information about Web Application Firewall(WAF) Protection Module and how to use it, see [What is Protection Module](https://www.alibabacloud.com/help/en/doc-detail/160775.htm).
 
--> **NOTE:** Available in v1.141.0+.
+-> **NOTE:** Available since v1.141.0.
 
 ## Example Usage
 
@@ -22,7 +22,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_waf_protection_module&exampleId=e901e729-44fb-c563-461e-a921968ebf283afc8082&activeTab=example&spm=docs.r.waf_protection_module.0.e901e72944&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_waf_protection_module&exampleId=e901e729-44fb-c563-461e-a921968ebf283afc8082&activeTab=example&spm=docs.r.waf_protection_module.0.e901e72944&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -56,7 +56,7 @@ resource "alicloud_waf_protection_module" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_waf_protection_module&spm=docs.r.waf_protection_module.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_waf_protection_module&spm=docs.r.waf_protection_module.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_waf_protection_module&spm=docs.r.waf_protection_module.example&intl_lang=EN_US)
 
 ## Argument Reference
 

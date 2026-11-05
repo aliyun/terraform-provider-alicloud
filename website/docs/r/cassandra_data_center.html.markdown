@@ -60,7 +60,7 @@ resource "alicloud_cassandra_data_center" "default" {
 
 This is a example for class netType dataCenter. You can find more detail with the examples/cassandra_data_center dir.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_data_center&spm=docs.r.cassandra_data_center.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_data_center&spm=docs.r.cassandra_data_center.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_data_center&spm=docs.r.cassandra_data_center.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -69,7 +69,7 @@ The following arguments are supported:
 * `cluster_id` - (Required, ForceNew) Cassandra cluster id of dataCenter-2 belongs to.
 * `data_center_name` - (Optional) Cassandra dataCenter-2 name. Length must be 2~128 characters long. Only Chinese characters, English letters, numbers, period `.`, underline `_`, or dash `-` are permitted.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the Cassandra dataCenter-2. If vswitch_id is not empty, this zone_id can be "" or consistent.
-* `instance_type` - (Required) Instance specification. See [Instance specifications](https://help.aliyun.com/document_detail/157445.html). Or you can call describeInstanceType api.
+* `instance_type` - (Required) Instance specification. See [Instance specifications](https://www.alibabacloud.com/help/document_detail/157445.html). Or you can call describeInstanceType api.
 * `node_count` - (Required) The node count of Cassandra dataCenter-2, default to 2.
 * `disk_type` - (Optional, ForceNew) The disk type of Cassandra dataCenter-2. Valid values are `cloud_ssd`, `cloud_efficiency`, `local_hdd_pro`, `local_ssd_pro`, local_disk size is fixed.
 * `disk_size` - (Optional) User-defined Cassandra dataCenter one core node's storage space.Unit: GB. Value range:

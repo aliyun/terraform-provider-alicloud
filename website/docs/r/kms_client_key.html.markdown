@@ -21,7 +21,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_kms_client_key&exampleId=531e3cfb-b06e-d765-cb63-25e7cf45557c262ac784&activeTab=example&spm=docs.r.kms_client_key.0.531e3cfbb0&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_kms_client_key&exampleId=531e3cfb-b06e-d765-cb63-25e7cf45557c262ac784&activeTab=example&spm=docs.r.kms_client_key.0.531e3cfbb0&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -44,7 +44,7 @@ resource "alicloud_kms_client_key" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kms_client_key&spm=docs.r.kms_client_key.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kms_client_key&spm=docs.r.kms_client_key.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kms_client_key&spm=docs.r.kms_client_key.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -52,7 +52,7 @@ The following arguments are supported:
 * `aap_name` - (Required, ForceNew) ClientKey's parent Application Access Point name.
 * `not_after` - (Optional, ForceNew) The ClientKey expiration time. Example: "2027-08-10 T08:03:30Z".
 * `not_before` - (Optional, ForceNew) The valid start time of the ClientKey. Example: "2022-08-10 T08:03:30Z".
-* `password` - (Required, ForceNew) To enhance security, set a password for the downloaded Client Key,When an application accesses KMS, you must use the ClientKey content and this password to initialize the SDK client.
+* `password` - (Required, ForceNew) To enhance security, set a password for the downloaded Client Key, When an application accesses KMS, you must use the ClientKey content and this password to initialize the SDK client.
 * `private_key_data_file` - (Optional, ForceNew) The name of file that can save access key id and access key secret. Strongly suggest you to specified it when you creating access key, otherwise, you wouldn't get its secret ever.
 
 ## Attributes Reference

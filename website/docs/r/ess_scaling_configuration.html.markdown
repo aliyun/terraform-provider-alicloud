@@ -20,7 +20,7 @@ Provides a ESS scaling configuration resource.
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ess_scaling_configuration&exampleId=b267e7e3-c488-163d-07f7-a284fc35f79aedae919e&activeTab=example&spm=docs.r.ess_scaling_configuration.0.b267e7e3c4&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ess_scaling_configuration&exampleId=b267e7e3-c488-163d-07f7-a284fc35f79aedae919e&activeTab=example&spm=docs.r.ess_scaling_configuration.0.b267e7e3c4&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -104,7 +104,7 @@ resource "alicloud_ess_scaling_configuration" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_scaling_configuration&spm=docs.r.ess_scaling_configuration.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_scaling_configuration&spm=docs.r.ess_scaling_configuration.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_scaling_configuration&spm=docs.r.ess_scaling_configuration.example&intl_lang=EN_US)
 
 ## Module Support
 
@@ -255,7 +255,7 @@ The instancePatternInfo mapping supports the following:
 * `maximum_gpu_amount` - (Optional, Available since v1.263.0) The maximum number of GPUs per instance. The value must be a positive integer.
 * `minimum_initial_credit` - (Optional, Available since v1.263.0) The initial vCPU credits per t5 or t6 burstable instance.
 * `physical_processor_models` - (Optional, Available since v1.263.0) Processor model N of the ECS instances. Valid values of N: 1 to 10.
-* `cpu_architectures` - (Optional, Available since v1.263.0) CPU architecture N of the instance types. Valid values: x86,Arm.
+* `cpu_architectures` - (Optional, Available since v1.263.0) CPU architecture N of the instance types. Valid values: x86, Arm.
 * `gpu_specs` - (Optional, Available since v1.263.0) The GPU model.
 * `instance_categories` - (Optional, Available since v1.263.0) Category N of the instances type. Valid values: General-purpose, Compute-optimized, Memory-optimized, Big data, Local SSDs, Enhanced, Shared, Compute-optimized with GPU, Visual Compute-optimized, Heterogeneous Service, Compute-optimized with FPGA, Compute-optimized with NPU, ECS Bare Metal, High Performance Compute.
 * `instance_type_families` - (Optional, Available since v1.263.0) Instance family N that is queried. Valid values of N: 1 to 10.

@@ -11,7 +11,6 @@ description: |-
 
 Provides a RAM role attachment resource to bind role for several ECS instances.
 
--> **NOTE:** Deprecated since v1.250.0.
 
 -> **DEPRECATED:** This resource has been deprecated from version `1.250.0`. Please use new resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment).
 
@@ -112,7 +111,7 @@ resource "alicloud_ram_role_attachment" "attach" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_role_attachment&spm=docs.r.ram_role_attachment.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_role_attachment&spm=docs.r.ram_role_attachment.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_role_attachment&spm=docs.r.ram_role_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
 

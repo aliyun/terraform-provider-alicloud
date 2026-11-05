@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Cassandra Backup Plan resource.
 ---
 
-# alicloud\_cassandra\_backup\_plan
+# alicloud_cassandra_backup_plan
 
 Provides a Cassandra Backup Plan resource.
 
 For information about Cassandra Backup Plan and how to use it, see [What is Backup Plan](https://www.alibabacloud.com/help/doc-detail/157522.htm).
 
--> **NOTE:** Available in v1.128.0+.
+-> **NOTE:** Available since v1.128.0.
 
 -> **DEPRECATED:**  This resource has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-cassandra/latest/cassandra-delisting-notice) from version `1.220.0`.
 
@@ -24,7 +24,7 @@ Basic Usage
 ```terraform
 
 variable "name" {
-  default = "tf-testAccCassandrBackupPlan"
+  default = "tf-exampleAccCassandrBackupPlan"
 }
 
 data "alicloud_cassandra_zones" "example" {
@@ -68,7 +68,7 @@ resource "alicloud_cassandra_backup_plan" "example" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_backup_plan&spm=docs.r.cassandra_backup_plan.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_backup_plan&spm=docs.r.cassandra_backup_plan.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_backup_plan&spm=docs.r.cassandra_backup_plan.example&intl_lang=EN_US)
 
 ## Argument Reference
 

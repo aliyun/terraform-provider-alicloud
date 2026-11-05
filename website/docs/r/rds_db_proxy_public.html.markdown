@@ -21,7 +21,7 @@ For information about Resource AlicloudRdsDBProxyPublic and how to use it, see [
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_rds_db_proxy_public&exampleId=dd8413b6-00fe-a3e4-66f6-5c0ac2abc03335013f07&activeTab=example&spm=docs.r.rds_db_proxy_public.0.dd8413b600&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_rds_db_proxy_public&exampleId=dd8413b6-00fe-a3e4-66f6-5c0ac2abc03335013f07&activeTab=example&spm=docs.r.rds_db_proxy_public.0.dd8413b600&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -108,7 +108,7 @@ resource "alicloud_rds_db_proxy_public" "default" {
 
 -> **NOTE:** Resource `alicloud_rds_db_proxy_public` should be created after `alicloud_rds_db_proxy`, so the `depends_on` statement is necessary.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_db_proxy_public&spm=docs.r.rds_db_proxy_public.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_db_proxy_public&spm=docs.r.rds_db_proxy_public.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_db_proxy_public&spm=docs.r.rds_db_proxy_public.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -116,7 +116,7 @@ The following arguments are supported:
 * `db_instance_id` - (Required, ForceNew) Instance ID.
 * `db_proxy_endpoint_id` - (Required, ForceNew)Database proxy connection address ID.
 * `connection_string_prefix` - (Required)The prefix for the new database proxy connection address can be customized.
-* `db_proxy_connection_string_net_type` - (Required, ForceNew)The network type of the new database proxy connection address,This resource defaults to Public.
+* `db_proxy_connection_string_net_type` - (Required, ForceNew)The network type of the new database proxy connection address, This resource defaults to Public.
 * `db_proxy_new_connect_string_port` - (Not required, Optional)The port for the new database proxy connection address is 3306 by default for MySQL and 5432 by default for PostgreSQL, which can be customized.
 
 ## Attributes Reference

@@ -20,6 +20,12 @@ For information about Direct Mail Config Set and how to use it, see [What is Con
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_direct_mail_config_set&exampleId=8692209d-2b16-ea91-ccf5-a4e3063795534bcfaf7f&activeTab=example&spm=docs.r.direct_mail_config_set.0.8692209d2b&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_direct_mail_config_set&exampleId=8692209d-2b16-ea91-ccf5-a4e3063795534bcfaf7f&activeTab=example&spm=docs.r.direct_mail_config_set.0.8692209d2b&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -31,6 +37,12 @@ resource "alicloud_direct_mail_config_set" "default" {
 ```
 
 Associate with a dedicated IP pool and enable address validation:
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_direct_mail_config_set&exampleId=bf4bb87a-f568-2a88-4d6b-eeb4604c806c9daae4b9&activeTab=example&spm=docs.r.direct_mail_config_set.1.bf4bb87af5&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_direct_mail_config_set&exampleId=bf4bb87a-f568-2a88-4d6b-eeb4604c806c9daae4b9&activeTab=example&spm=docs.r.direct_mail_config_set.1.bf4bb87af5&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
+</div></div>
 
 ```terraform
 variable "name" {
@@ -52,6 +64,10 @@ resource "alicloud_direct_mail_config_set" "with_pool" {
   }
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_direct_mail_config_set&spm=docs.r.direct_mail_config_set.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_direct_mail_config_set&spm=docs.r.direct_mail_config_set.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

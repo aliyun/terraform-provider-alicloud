@@ -29,7 +29,16 @@ for index in "${!arr[@]}"; do
 done
 
 example_usage_header="## Example Usage"
-more_examples_line="📚 Need more examples\\? \\[VIEW MORE EXAMPLES\\]\\(https:\\/\\/api\\.aliyun\\.com\\/terraform\\?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_${file_name}&spm=docs\\.r\\.${file_name}\\.example&intl_lang=EN_US\\)"
+more_examples_line="📚 Need more examples\\? \\[VIEW MORE EXAMPLES\\]\\(https:\\/\\/api\\.aliyun\\.com\\/terraform\\?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_${file_name}&spm=docs\\.r\\.${file_name}\\.example&intl_lang=EN_US\\) \\| \\[VIEW MORE EXAMPLES \\(International\\)\\]\\(https:\\/\\/api\\.alibabacloud\\.com\\/terraform\\?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_${file_name}&spm=docs\\.r\\.${file_name}\\.example&intl_lang=EN_US\\)"
+
+# Replace existing single-site "Need more examples" line with dual-site version
+if [[ `uname` == "Darwin" ]]; then
+  sed -i '' "/Need more examples/c\\
+${more_examples_line}" "$file_path"
+else
+  sed -i "/Need more examples/c\\
+${more_examples_line}" "$file_path"
+fi
 
 if ! grep -q "Need more examples" "$file_path"; then
   example_usage_line=$(grep -n "$example_usage_header" "$file_path" | head -1 | cut -d':' -f1)
@@ -113,7 +122,7 @@ for ((index=$max_index; index>=0; index--)); do
     spm="docs.r.${file_name}.${index}.${sha1_hash:0:10}"
     example_id="${sha1_hash:0:8}-${sha1_hash:8:4}-${sha1_hash:12:4}-${sha1_hash:16:4}-${sha1_hash:20:20}"
 
-    link_section="<div style=\"display: block;margin-bottom: 40px;\"><div class=\"oics-button\" style=\"float: right;position: absolute;margin-bottom: 10px;\">\n  <a href=\"https:\/\/api.aliyun.com\/terraform?resource=alicloud_${file_name}\&exampleId=$example_id\&activeTab=example\&spm=$spm\&intl_lang=EN_US\" target=\"_blank\">\n    <img alt=\"Open in AliCloud\" src=\"https:\/\/img.alicdn.com\/imgextra\/i1\/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg\" style=\"max-height: 44px; max-width: 100%;\">\n  <\/a>\n<\/div><\/div>"
+    link_section="<div style=\"display: block;margin-bottom: 40px;\"><div class=\"oics-button\" style=\"float: right;position: absolute;margin-bottom: 10px;\">\n  <a href=\"https:\/\/api.aliyun.com\/terraform?resource=alicloud_${file_name}\&exampleId=$example_id\&activeTab=example\&spm=$spm\&intl_lang=EN_US\" target=\"_blank\">\n    <img alt=\"Open in AliCloud\" src=\"https:\/\/img.alicdn.com\/imgextra\/i1\/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg\" style=\"max-height: 44px; max-width: 100%;\">\n  <\/a><a href=\"https:\/\/api.alibabacloud.com\/terraform?resource=alicloud_${file_name}\&exampleId=$example_id\&activeTab=example\&spm=$spm\&intl_lang=EN_US\" target=\"_blank\" style=\"display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;\">Open in AlibabaCloud<\/a>\n<\/div><\/div>"
     link_section="$link_section\n\n\`\`\`terraform"
     
     $SED "s/\`\`\`terraform${index}/$link_section/g" "$file_path"

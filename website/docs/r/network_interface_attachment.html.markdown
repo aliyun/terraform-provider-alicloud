@@ -7,7 +7,7 @@ description: |-
   Provides an Alicloud ECS Elastic Network Interface Attachment as a resource to attach ENI to or detach ENI from ECS Instances.
 ---
 
-# alicloud\_network\_interface\_attachment
+# alicloud_network_interface_attachment
 
 -> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_network_interface_attachment](https://www.terraform.io/docs/providers/alicloud/r/ecs_network_interface_attachment) from version 1.123.1.
 
@@ -87,7 +87,7 @@ resource "alicloud_network_interface_attachment" "attachment" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_network_interface_attachment&spm=docs.r.network_interface_attachment.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_network_interface_attachment&spm=docs.r.network_interface_attachment.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_network_interface_attachment&spm=docs.r.network_interface_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
 

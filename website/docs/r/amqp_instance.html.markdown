@@ -23,7 +23,7 @@ Create a RabbitMQ (AMQP) enterprise edition Instance.
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_amqp_instance&exampleId=245eb6fa-b3c6-fff4-f584-1ee4248fc423c0181288&activeTab=example&spm=docs.r.amqp_instance.0.245eb6fab3&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_amqp_instance&exampleId=245eb6fa-b3c6-fff4-f584-1ee4248fc423c0181288&activeTab=example&spm=docs.r.amqp_instance.0.245eb6fab3&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -52,7 +52,7 @@ Create a RabbitMQ (AMQP) serverless edition Instance.
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_amqp_instance&exampleId=b34af7bf-3b36-1d1d-2e09-c25cf4259857d88194c2&activeTab=example&spm=docs.r.amqp_instance.1.b34af7bf3b&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_amqp_instance&exampleId=b34af7bf-3b36-1d1d-2e09-c25cf4259857d88194c2&activeTab=example&spm=docs.r.amqp_instance.1.b34af7bf3b&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -88,7 +88,7 @@ Create a RabbitMQ (AMQP) serverless instance with the provisioned (reserved + el
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_amqp_instance&exampleId=a4b19e84-fbe2-0ea9-da1c-ea143fb189f92c01cb18&activeTab=example&spm=docs.r.amqp_instance.2.a4b19e84fb&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_amqp_instance&exampleId=a4b19e84-fbe2-0ea9-da1c-ea143fb189f92c01cb18&activeTab=example&spm=docs.r.amqp_instance.2.a4b19e84fb&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -126,7 +126,7 @@ Create a RabbitMQ (AMQP) serverless instance with the provisioned (reserved + el
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_amqp_instance&exampleId=9e96b870-cf6a-156c-5db1-1c44d3537abd6598629b&activeTab=example&spm=docs.r.amqp_instance.3.9e96b870cf&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_amqp_instance&exampleId=9e96b870-cf6a-156c-5db1-1c44d3537abd6598629b&activeTab=example&spm=docs.r.amqp_instance.3.9e96b870cf&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -177,7 +177,7 @@ The `alicloud_amqp_instance` resource allows you to manage  `payment_type = "Pay
 Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
 You can resume managing the subscription instance via the AlibabaCloud Console.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_amqp_instance&spm=docs.r.amqp_instance.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_amqp_instance&spm=docs.r.amqp_instance.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_amqp_instance&spm=docs.r.amqp_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 

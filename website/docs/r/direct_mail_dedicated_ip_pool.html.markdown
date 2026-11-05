@@ -20,6 +20,12 @@ For information about Direct Mail Dedicated Ip Pool and how to use it, see [What
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_direct_mail_dedicated_ip_pool&exampleId=72bfb390-8270-6462-1519-f54492ee10acbbd57023&activeTab=example&spm=docs.r.direct_mail_dedicated_ip_pool.0.72bfb39082&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_direct_mail_dedicated_ip_pool&exampleId=72bfb390-8270-6462-1519-f54492ee10acbbd57023&activeTab=example&spm=docs.r.direct_mail_dedicated_ip_pool.0.72bfb39082&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -31,6 +37,12 @@ resource "alicloud_direct_mail_dedicated_ip_pool" "default" {
 ```
 
 Create an IP pool from purchased dedicated IP instances:
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_direct_mail_dedicated_ip_pool&exampleId=c580fef4-67bc-a565-d2fa-b58de8534e79ffe3becf&activeTab=example&spm=docs.r.direct_mail_dedicated_ip_pool.1.c580fef467&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_direct_mail_dedicated_ip_pool&exampleId=c580fef4-67bc-a565-d2fa-b58de8534e79ffe3becf&activeTab=example&spm=docs.r.direct_mail_dedicated_ip_pool.1.c580fef467&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
+</div></div>
 
 ```terraform
 variable "name" {
@@ -44,6 +56,10 @@ resource "alicloud_direct_mail_dedicated_ip_pool" "with_ips" {
   buy_resource_ids = "your-purchased-ip-instance-id-1,your-purchased-ip-instance-id-2"
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_direct_mail_dedicated_ip_pool&spm=docs.r.direct_mail_dedicated_ip_pool.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_direct_mail_dedicated_ip_pool&spm=docs.r.direct_mail_dedicated_ip_pool.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

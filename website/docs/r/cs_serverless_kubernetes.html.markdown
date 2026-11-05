@@ -77,7 +77,7 @@ resource "alicloud_cs_serverless_kubernetes" "serverless" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_serverless_kubernetes&spm=docs.r.cs_serverless_kubernetes.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_serverless_kubernetes&spm=docs.r.cs_serverless_kubernetes.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_serverless_kubernetes&spm=docs.r.cs_serverless_kubernetes.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -102,7 +102,7 @@ The following arguments are supported:
 * `cluster_ca_cert` - (Optional, Deprecated  from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.cluster_cert](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#cluster_cert) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.
 * `security_group_id` - (Optional, ForceNew, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `resource_group_id` - (Optional, Available since v1.101.0) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-* `load_balancer_spec` - (Optional, Deprecated since v1.229.1) The cluster api server load balance instance specification, default `slb.s2.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html). Only works for **Create** Operation. 
+* `load_balancer_spec` - (Optional, Deprecated since v1.229.1) The cluster api server load balance instance specification, default `slb.s2.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://www.alibabacloud.com/help/document_detail/85931.html). Only works for **Create** Operation.
 * `addons` - (Optional, Available since v1.91.0) You can specific network plugin, log component, ingress component and so on. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created. **Note: The parameter is immutable after resource creation.**
 * `time_zone` - (Optional, Available since v1.123.1) The time zone of the cluster.
 * `zone_id` - (Optional, Available since v1.123.1) When creating a cluster using automatic VPC creation, you need to specify the zone where the VPC is located. Only works for **Create** Operation.  
@@ -175,7 +175,7 @@ operation_policy {
 
 The addons supports the following:
 
-* `name` - (Optional) Name of the ACK add-on. The name must match one of the names returned by [DescribeAddons](https://help.aliyun.com/document_detail/171524.html).
+* `name` - (Optional) Name of the ACK add-on. The name must match one of the names returned by [DescribeAddons](https://www.alibabacloud.com/help/document_detail/171524.html).
 * `config` - (Optional) The ACK add-on configurations. For more config information, see [cs_kubernetes_addon_metadata](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_kubernetes_addon_metadata).
 * `version` - (Optional, Available since v1.229.1) It specifies the version of the component.
 * `disabled` - (Optional) Disables the automatic installation of a component. Default is `false`.

@@ -22,7 +22,7 @@ Using `vpc_ids` to attach being in same region several vpc instances to a privat
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_pvtz_zone_attachment&exampleId=02f04c34-15d7-20e1-1003-a4e6d3e74d3fc6ac4d63&activeTab=example&spm=docs.r.pvtz_zone_attachment.0.02f04c3415&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_pvtz_zone_attachment&exampleId=02f04c34-15d7-20e1-1003-a4e6d3e74d3fc6ac4d63&activeTab=example&spm=docs.r.pvtz_zone_attachment.0.02f04c3415&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -50,7 +50,7 @@ Using `vpcs` to attach being in same region several vpc instances to a private z
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_pvtz_zone_attachment&exampleId=3bd0e378-5295-5e66-2129-51bd7780f5511d3f6ebd&activeTab=example&spm=docs.r.pvtz_zone_attachment.1.3bd0e37852&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_pvtz_zone_attachment&exampleId=3bd0e378-5295-5e66-2129-51bd7780f5511d3f6ebd&activeTab=example&spm=docs.r.pvtz_zone_attachment.1.3bd0e37852&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -84,7 +84,7 @@ Using `vpcs` to attach being in different regions several vpc instances to a pri
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_pvtz_zone_attachment&exampleId=fa7a7da7-a003-aa6f-1e19-5fd998e8b3727ed6e2ef&activeTab=example&spm=docs.r.pvtz_zone_attachment.2.fa7a7da7a0&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_pvtz_zone_attachment&exampleId=fa7a7da7-a003-aa6f-1e19-5fd998e8b3727ed6e2ef&activeTab=example&spm=docs.r.pvtz_zone_attachment.2.fa7a7da7a0&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -127,7 +127,7 @@ resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pvtz_zone_attachment&spm=docs.r.pvtz_zone_attachment.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pvtz_zone_attachment&spm=docs.r.pvtz_zone_attachment.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pvtz_zone_attachment&spm=docs.r.pvtz_zone_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -140,6 +140,7 @@ The following arguments are supported:
 * `user_client_ip` - (Optional, ForceNew, Available since v1.62.1) The user custom IP address.
 
 ### `vpcs`
+
 The vpcs support the following:
 * `vpc_id` - (Required) The Id of the vpc.
 * `region_id` - (Optional) The region of the vpc. If not set, the current region will instead of.

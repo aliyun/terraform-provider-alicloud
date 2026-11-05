@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_eflo_vsc&exampleId=1d0b20df-8116-170f-16d9-ad4a83d1ec1e78fdc7c9&activeTab=example&spm=docs.r.eflo_vsc.0.1d0b20df81&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_eflo_vsc&exampleId=1d0b20df-8116-170f-16d9-ad4a83d1ec1e78fdc7c9&activeTab=example&spm=docs.r.eflo_vsc.0.1d0b20df81&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -42,7 +42,7 @@ resource "alicloud_eflo_vsc" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eflo_vsc&spm=docs.r.eflo_vsc.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eflo_vsc&spm=docs.r.eflo_vsc.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eflo_vsc&spm=docs.r.eflo_vsc.example&intl_lang=EN_US)
 
 ## Argument Reference
 

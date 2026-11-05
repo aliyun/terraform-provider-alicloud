@@ -13,7 +13,6 @@ Provides a DAS Switch Das Pro resource.
 
 For information about DAS Switch Das Pro and how to use it, see [What is Switch Das Pro](https://www.alibabacloud.com/help/en/database-autonomy-service/latest/enabledaspro).
 
--> **NOTE:** Deprecated since v1.249.0.
 
 -> **DEPRECATED:**  This resource has been deprecated from version `1.249.0`.
 
@@ -65,7 +64,7 @@ resource "alicloud_das_switch_das_pro" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_das_switch_das_pro&spm=docs.r.das_switch_das_pro.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_das_switch_das_pro&spm=docs.r.das_switch_das_pro.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_das_switch_das_pro&spm=docs.r.das_switch_das_pro.example&intl_lang=EN_US)
 
 ## Argument Reference
 

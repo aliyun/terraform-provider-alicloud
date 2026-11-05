@@ -46,7 +46,7 @@ resource "alicloud_cassandra_cluster" "default" {
 
 This is a example for class netType cluster. You can find more detail with the examples/cassandra_cluster dir.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_cluster&spm=docs.r.cassandra_cluster.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_cluster&spm=docs.r.cassandra_cluster.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cassandra_cluster&spm=docs.r.cassandra_cluster.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -56,13 +56,13 @@ The following arguments are supported:
 * `data_center_name` - (Optional) Cassandra dataCenter-1 name. Length must be 2~128 characters long. Only Chinese characters, English letters, numbers, period `.`, underline `_`, or dash `-` are permitted.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the Cassandra cluster. If vswitch_id is not empty, this zone_id can be "" or consistent.
 * `major_version` - (Required, ForceNew) Cassandra major version. Now only support version `3.11`.
-* `instance_type` - (Required) Instance specification. See [Instance specifications](https://help.aliyun.com/document_detail/157445.html). Or you can call describeInstanceType api.
+* `instance_type` - (Required) Instance specification. See [Instance specifications](https://www.alibabacloud.com/help/document_detail/157445.html). Or you can call describeInstanceType api.
 * `node_count` - (Required) The node count of Cassandra dataCenter-1 default to 2.
 * `disk_type` - (Optional, ForceNew) The disk type of Cassandra dataCenter-1. Valid values are `cloud_ssd`, `cloud_efficiency`, `local_hdd_pro`, `local_ssd_pro`, local_disk size is fixed.
 * `disk_size` - (Optional) User-defined Cassandra dataCenter-1 one node's storage space.Unit: GB. Value range:
   - Custom storage space; value range: [160, 2000].
   - 80-GB increments.
-* `pay_type` - (Required, ForceNew) The pay type of Cassandra dataCenter-1. Valid values are `Subscription`, `PayAsYouGo`,System default to `PayAsYouGo`.
+* `pay_type` - (Required, ForceNew) The pay type of Cassandra dataCenter-1. Valid values are `Subscription`, `PayAsYouGo`, System default to `PayAsYouGo`.
 * `auto_renew` - (Optional, ForceNew) Auto renew of dataCenter-1,`true` or `false`. System default to `false`, valid when pay_type = PrePaid.
 * `auto_renew_period` - (Optional, ForceNew) Period of dataCenter-1 auto renew, if auto renew is `true`, one of `1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, 60`, valid when pay_type = Subscription. Unit: month.
 * `vswitch_id` - (Required, ForceNew) The vswitch_id of dataCenter-1, can not empty.

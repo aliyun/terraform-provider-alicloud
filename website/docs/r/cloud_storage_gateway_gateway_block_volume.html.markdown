@@ -22,7 +22,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_storage_gateway_gateway_block_volume&exampleId=618b2bca-021c-40f8-be14-548407d915147685e0be&activeTab=example&spm=docs.r.cloud_storage_gateway_gateway_block_volume.0.618b2bca02&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cloud_storage_gateway_gateway_block_volume&exampleId=618b2bca-021c-40f8-be14-548407d915147685e0be&activeTab=example&spm=docs.r.cloud_storage_gateway_gateway_block_volume.0.618b2bca02&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -93,7 +93,7 @@ resource "alicloud_cloud_storage_gateway_gateway_block_volume" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_storage_gateway_gateway_block_volume&spm=docs.r.cloud_storage_gateway_gateway_block_volume.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_storage_gateway_gateway_block_volume&spm=docs.r.cloud_storage_gateway_gateway_block_volume.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_storage_gateway_gateway_block_volume&spm=docs.r.cloud_storage_gateway_gateway_block_volume.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -101,13 +101,13 @@ The following arguments are supported:
 
 * `cache_mode` - (Optional, ForceNew) The Block volume set mode to cache mode. Valid values: `Cache`, `WriteThrough`.
 * `chap_enabled` - (Optional) Whether to enable iSCSI access of CHAP authentication, which currently supports both CHAP inbound authentication.  Default value: `false`.
-* `chap_in_password` - (Optional) The password for inbound authentication when the block volume enables iSCSI access to CHAP authentication. **NOTE:** When the `chap_enabled` is  `true` is,The `chap_in_password` is valid.
-* `chap_in_user` - (Optional) The Inbound CHAP user. The `chap_in_user` must be 1 to 32 characters in length, and can contain letters and digits. **NOTE:** When the `chap_enabled` is  `true` is,The `chap_in_password` is valid. 
+* `chap_in_password` - (Optional) The password for inbound authentication when the block volume enables iSCSI access to CHAP authentication. **NOTE:** When the `chap_enabled` is  `true` is, The `chap_in_password` is valid.
+* `chap_in_user` - (Optional) The Inbound CHAP user. The `chap_in_user` must be 1 to 32 characters in length, and can contain letters and digits. **NOTE:** When the `chap_enabled` is  `true` is, The `chap_in_password` is valid.
 * `chunk_size` - (Optional, ForceNew) The Block volume storage allocation unit.  Valid values: `8192`, `16384`, `32768`, `65536`, `131072`. Default value: `32768`. Unit: `Byte`.
 * `gateway_block_volume_name` - (Required, ForceNew) The Block volume name. The name must be 1 to 32 characters in length, and can contain lower case letters and digits.
 * `gateway_id` - (Required, ForceNew) The Gateway ID.
 * `is_source_deletion` - (Optional) Whether to delete the source data. Default value `true`. **NOTE:** When `is_source_deletion` is `true`, the data in the OSS Bucket on the cloud is also deleted when deleting the block gateway volume. Please operate with caution.
-* `local_path` - (Optional, ForceNew) The Cache disk to local path. **NOTE:**  When the `cache_mode` is  `Cache` is,The `chap_in_password` is valid.
+* `local_path` - (Optional, ForceNew) The Cache disk to local path. **NOTE:**  When the `cache_mode` is  `Cache` is, The `chap_in_password` is valid.
 * `oss_bucket_name` - (Required, ForceNew) The name of the OSS Bucket. 
 * `oss_bucket_ssl` - (Optional, ForceNew) Whether to enable SSL access your OSS Buckets. Default value: `true`.
 * `oss_endpoint` - (Required, ForceNew) The endpoint of the OSS Bucket.

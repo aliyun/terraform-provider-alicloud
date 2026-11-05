@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud MNS Topic resource.
 ---
 
-# alicloud\_mns\_topic
+# alicloud_mns_topic
 
 Provides a MNS topic resource.
 
@@ -27,7 +27,7 @@ resource "alicloud_mns_topic" "topic" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mns_topic&spm=docs.r.mns_topic.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mns_topic&spm=docs.r.mns_topic.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mns_topic&spm=docs.r.mns_topic.example&intl_lang=EN_US)
 
 ## Argument Reference
 

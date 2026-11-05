@@ -24,7 +24,7 @@ For information about ess scaling rule, see [CreateScalingGroup](https://www.ali
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ess_scaling_group&exampleId=4e5fd0ed-2555-7bf7-862a-260b88252787575ca4c6&activeTab=example&spm=docs.r.ess_scaling_group.0.4e5fd0ed25&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_ess_scaling_group&exampleId=4e5fd0ed-2555-7bf7-862a-260b88252787575ca4c6&activeTab=example&spm=docs.r.ess_scaling_group.0.4e5fd0ed25&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -103,7 +103,7 @@ resource "alicloud_ess_scaling_group" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_scaling_group&spm=docs.r.ess_scaling_group.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_scaling_group&spm=docs.r.ess_scaling_group.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_scaling_group&spm=docs.r.ess_scaling_group.example&intl_lang=EN_US)
 
 ## Module Support
 
@@ -147,7 +147,7 @@ The following arguments are supported:
 * `capacity_options_on_demand_percentage_above_base_capacity` - (Optional, Available since v1.245.0) The percentage of pay-as-you-go instances in the excess instances when the minimum number of pay-as-you-go instances is reached. 'on_demand_base_capacity' specifies the minimum number of pay-as-you-go instances that must be contained in the scaling group. Valid values: 0 to 100. If you set 'multi_az_policy' to COMPOSABLE, the default value of this parameter is 100.
 * `capacity_options_compensate_with_on_demand` - (Optional, Available since v1.245.0) Specifies whether to automatically create pay-as-you-go instances to meet the requirement on the number of ECS instances when the expected capacity of preemptible instances cannot be provided due to reasons such as cost-related issues and insufficient resources. This parameter is supported only if you set 'multi_az_policy' to COST_OPTIMIZED. Valid values: true, false.
 * `capacity_options_spot_auto_replace_on_demand` - (Optional, Available since v1.245.0) Specifies whether to replace pay-as-you-go instances with preemptible instances. If you specify 'compensate_with_on_demand', it may result in a higher percentage of pay-as-you-go instances compared to the value of 'on_demand_percentage_above_base_capacity'. If you specify this parameter, Auto Scaling preferentially deploys preemptible instances to replace the surplus pay-as-you-go instances when preemptible instance types are available. If you specify 'compensate_with_on_demand', Auto Scaling creates pay-as-you-go instances when preemptible instance types are insufficient. To avoid retaining these pay-as-you-go instances for extended periods, Auto Scaling attempts to replace them with preemptible instances when sufficient preemptible instance types become available. Valid values: true, false.
-* `capacity_options_price_comparison_mode` - (Optional, Available since v1.249.0) The price comparison mode. Valid values: PricePerUnit,PricePerVCpu. Default value: PricePerUnit.
+* `capacity_options_price_comparison_mode` - (Optional, Available since v1.249.0) The price comparison mode. Valid values: PricePerUnit, PricePerVCpu. Default value: PricePerUnit.
 * `on_demand_percentage_above_base_capacity` - (Optional, Available since v1.54.0) Controls the percentages of On-Demand Instances and Spot Instances for your additional capacity beyond OnDemandBaseCapacity.  
 * `spot_instance_pools` - (Optional, Available since v1.54.0) The number of Spot pools to use to allocate your Spot capacity. The Spot pools is composed of instance types of lowest price.
 * `spot_instance_remedy` - (Optional, Available since v1.54.0) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.

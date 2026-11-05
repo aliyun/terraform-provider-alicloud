@@ -29,7 +29,7 @@ provider "alicloud" {
 }
 
 resource "alicloud_mns_topic" "example" {
-  name = "test-topic"
+  name = "example-topic"
 }
 
 # Example for create a MNS delivery channel
@@ -55,7 +55,7 @@ resource "alicloud_config_delivery_channel" "example" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_config_delivery_channel&spm=docs.r.config_delivery_channel.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_config_delivery_channel&spm=docs.r.config_delivery_channel.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_config_delivery_channel&spm=docs.r.config_delivery_channel.example&intl_lang=EN_US)
 
 ## Argument Reference
 

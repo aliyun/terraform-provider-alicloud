@@ -21,7 +21,7 @@ Create a subscription kms instance
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_kms_instance&exampleId=50f16f43-baa1-2b6c-6234-cf91838823c60b3149b2&activeTab=example&spm=docs.r.kms_instance.0.50f16f43ba&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_kms_instance&exampleId=50f16f43-baa1-2b6c-6234-cf91838823c60b3149b2&activeTab=example&spm=docs.r.kms_instance.0.50f16f43ba&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -127,7 +127,7 @@ Create a pay-as-you-go kms instance
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_kms_instance&exampleId=20570abd-25c8-8f37-382f-db85438021960c9477b3&activeTab=example&spm=docs.r.kms_instance.1.20570abd25&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_kms_instance&exampleId=20570abd-25c8-8f37-382f-db85438021960c9477b3&activeTab=example&spm=docs.r.kms_instance.1.20570abd25&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -220,7 +220,7 @@ resource "alicloud_kms_instance" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kms_instance&spm=docs.r.kms_instance.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kms_instance&spm=docs.r.kms_instance.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kms_instance&spm=docs.r.kms_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 

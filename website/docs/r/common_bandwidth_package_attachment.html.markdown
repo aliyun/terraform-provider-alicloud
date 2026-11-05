@@ -27,7 +27,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_common_bandwidth_package_attachment&exampleId=bf59f4a7-ea27-1130-efdb-dc000fab2c0587d5a448&activeTab=example&spm=docs.r.common_bandwidth_package_attachment.0.bf59f4a7ea&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_common_bandwidth_package_attachment&exampleId=bf59f4a7-ea27-1130-efdb-dc000fab2c0587d5a448&activeTab=example&spm=docs.r.common_bandwidth_package_attachment.0.bf59f4a7ea&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -53,16 +53,16 @@ resource "alicloud_common_bandwidth_package_attachment" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_common_bandwidth_package_attachment&spm=docs.r.common_bandwidth_package_attachment.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_common_bandwidth_package_attachment&spm=docs.r.common_bandwidth_package_attachment.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_common_bandwidth_package_attachment&spm=docs.r.common_bandwidth_package_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
 * `bandwidth_package_bandwidth` - (Optional, Computed) The maximum bandwidth for the EIP. This value cannot be larger than the maximum bandwidth of the Internet Shared Bandwidth instance. Unit: Mbit/s.
 
-  -> **NOTE:**  From version 1.261.0, If you want to cancel the maximum bandwidth configuration for the EIP, you can set `bandwidth_package_bandwidth` to `Cancelled`.
+  -> **NOTE:**  From version 1.261.0, If you want to cancel the maximum bandwidth configuration for the EIP, you can set `bandwidth_package_bandwidth` to `Canceled`.
 * `bandwidth_package_id` - (Required, ForceNew) The ID of the Internet Shared Bandwidth instance.
-* `cancel_common_bandwidth_package_ip_bandwidth` - (Deprecated since v1.261.0). Field `cancel_common_bandwidth_package_ip_bandwidth` has been deprecated from provider version 1.261.0. Replace with `bandwidth_package_bandwidth` = `"Cancelled"`.
+* `cancel_common_bandwidth_package_ip_bandwidth` - (Deprecated since v1.261.0). Field `cancel_common_bandwidth_package_ip_bandwidth` has been deprecated from provider version 1.261.0. Replace with `bandwidth_package_bandwidth` = `"Canceled"`.
 * `instance_id` - (Required, ForceNew) The ID of the EIP that you want to query.
 
 You can specify up to 50 EIP IDs. Separate multiple IDs with commas (,).

@@ -23,7 +23,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_open_api_explorer_api_mcp_server&exampleId=7a051bd9-3d05-d9fb-4f24-9ecd60128e221924d64b&activeTab=example&spm=docs.r.open_api_explorer_api_mcp_server.0.7a051bd93d&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_open_api_explorer_api_mcp_server&exampleId=7a051bd9-3d05-d9fb-4f24-9ecd60128e221924d64b&activeTab=example&spm=docs.r.open_api_explorer_api_mcp_server.0.7a051bd93d&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -200,7 +200,7 @@ resource "alicloud_vpc" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_open_api_explorer_api_mcp_server&spm=docs.r.open_api_explorer_api_mcp_server.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_open_api_explorer_api_mcp_server&spm=docs.r.open_api_explorer_api_mcp_server.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_open_api_explorer_api_mcp_server&spm=docs.r.open_api_explorer_api_mcp_server.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -300,7 +300,7 @@ The prompts-arguments supports the following:
 
 The terraform_tools supports the following:
 * `async` - (Optional) Specifies whether execution is asynchronous. If enabled, the system immediately proceeds to the next task after initiating a task, without waiting for each resource operation to complete.
-* `code` - (Optional) Terraform Tool code. [Overview of the HCL Language](https://help.aliyun.com/zh/terraform/terraform-configuration-and-hcl-language-overview)
+* `code` - (Optional) Terraform Tool code. [Overview of the HCL Language](https://www.alibabacloud.com/help/zh/terraform/terraform-configuration-and-hcl-language-overview)
 * `description` - (Optional) Description of the Terraform Tool. This description will be used as the description for the MCP tool.
 * `destroy_policy` - (Optional) The cleanup policy applied to temporary resources after task completion, based on the task execution status:
   - NEVER: Do not delete any created resources, regardless of whether the task succeeds or fails.

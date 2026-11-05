@@ -47,7 +47,7 @@ ACK cluster
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=b0eb1ce5-600c-72f9-4f22-48dd1a98bae886cee4d4&activeTab=example&spm=docs.r.cs_managed_kubernetes.0.b0eb1ce560&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=b0eb1ce5-600c-72f9-4f22-48dd1a98bae886cee4d4&activeTab=example&spm=docs.r.cs_managed_kubernetes.0.b0eb1ce560&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -183,7 +183,7 @@ ACK Cluster with Auto Mode
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=60e29c41-4080-b619-5a95-b85ec420a8a4e95bb70b&activeTab=example&spm=docs.r.cs_managed_kubernetes.1.60e29c4140&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=60e29c41-4080-b619-5a95-b85ec420a8a4e95bb70b&activeTab=example&spm=docs.r.cs_managed_kubernetes.1.60e29c4140&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -352,7 +352,7 @@ When `load_balancer_id` is omitted, ACK automatically creates and manages a priv
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=d7768390-cf8f-03db-c010-4a05267c2a3dbf058138&activeTab=example&spm=docs.r.cs_managed_kubernetes.2.d7768390cf&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=d7768390-cf8f-03db-c010-4a05267c2a3dbf058138&activeTab=example&spm=docs.r.cs_managed_kubernetes.2.d7768390cf&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -408,7 +408,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_managed_kubernetes&spm=docs.r.cs_managed_kubernetes.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_managed_kubernetes&spm=docs.r.cs_managed_kubernetes.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_managed_kubernetes&spm=docs.r.cs_managed_kubernetes.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -478,7 +478,7 @@ Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes com
   -> **Note:** When enabling encryption, you must explicitly set `disable_encryption = false` along with `encryption_provider_key`. When disabling encryption, you only need to set `disable_encryption = true`, and the `encryption_provider_key` will be ignored.
 * `maintenance_window` - (Optional, Available since v1.109.1) The cluster maintenance window. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
 * `operation_policy` - (Optional, Available since v1.232.0) The cluster automatic operation policy, only works when `maintenance_window` is enabled. See [`operation_policy`](#operation_policy) below.
-* `load_balancer_spec` - (Optional, Deprecated since v1.232.0) The cluster api server load balancer instance specification. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html). Only works for **Create** Operation. The spec will not take effect because the charge of the load balancer has been changed to PayByCLCU.
+* `load_balancer_spec` - (Optional, Deprecated since v1.232.0) The cluster api server load balancer instance specification. For more information on how to select a LB instance specification, see [SLB instance overview](https://www.alibabacloud.com/help/document_detail/85931.html). Only works for **Create** Operation. The spec will not take effect because the charge of the load balancer has been changed to PayByCLCU.
 * `control_plane_log_ttl` - (Optional, Available since v1.141.0) Control plane log retention duration (unit: day). Default `30`. If control plane logs are to be collected, `control_plane_log_ttl` and `control_plane_log_components` must be specified.
 * `control_plane_log_components` - (Optional, Available since v1.141.0) List of target components for which logs need to be collected. Supports `apiserver`, `kcm`, `scheduler`, `ccm` and `controlplane-events`.
 * `control_plane_log_project` - (Optional, Available since v1.141.0) Control plane log project. If this field is not set, a log service project named k8s-log-{ClusterID} will be automatically created.

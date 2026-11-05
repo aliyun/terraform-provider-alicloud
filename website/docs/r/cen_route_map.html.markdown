@@ -24,7 +24,7 @@ Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_route_map&exampleId=20f13b8e-3e2b-a139-a615-7a9170d9ee436d31d7b8&activeTab=example&spm=docs.r.cen_route_map.0.20f13b8e3e&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
+  </a><a href="https://api.alibabacloud.com/terraform?resource=alicloud_cen_route_map&exampleId=20f13b8e-3e2b-a139-a615-7a9170d9ee436d31d7b8&activeTab=example&spm=docs.r.cen_route_map.0.20f13b8e3e&intl_lang=EN_US" target="_blank" style="display: inline-block; vertical-align: middle; margin-left: 10px; line-height: 44px; font-size: 14px; color: #1890ff; text-decoration: none;">Open in AlibabaCloud</a>
 </div></div>
 
 ```terraform
@@ -104,7 +104,7 @@ resource "alicloud_cen_route_map" "default" {
 
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_route_map&spm=docs.r.cen_route_map.example&intl_lang=EN_US)
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_route_map&spm=docs.r.cen_route_map.example&intl_lang=EN_US) | [VIEW MORE EXAMPLES (International)](https://api.alibabacloud.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_route_map&spm=docs.r.cen_route_map.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -137,7 +137,7 @@ The following arguments are supported:
 * `operate_community_set` - (Optional) An action statement that operates the community attribute. The format of each community is nn:nn, which ranges from 1 to 65535. You can enter a maximum of 32 communities. Communities must comply with RFC 1997. Large communities (RFC 8092) are not supported. 
 * `preference` - (Optional) An action statement that modifies the priority of the route. Value range: 1 to 100. The default priority of a route is 50. A lower value indicates a higher preference. 
 * `prepend_as_path` - (Optional) An action statement that indicates an AS path is prepended when the regional gateway receives or advertises a route.
-* `transit_router_route_table_id` - (Optional, ForceNew, Computed, Available in v1.167.0+) The routing table ID of the forwarding router. If you do not enter the routing table ID, the routing policy is automatically associated with the default routing table of the forwarding router.
+* `transit_router_route_table_id` - (Optional, ForceNew, Computed, Available since v1.167.0) The routing table ID of the forwarding router. If you do not enter the routing table ID, the routing policy is automatically associated with the default routing table of the forwarding router.
 
 ## Attributes Reference
 
