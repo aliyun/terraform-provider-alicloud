@@ -48,6 +48,7 @@ func ServicePackage() conns.ServicePackage {
 		},
 		Resources: []conns.Resource{
 			{TypeName: "alicloud_oss_access_point_policy", Factory: NewAccessPointPolicyResource},
+			{TypeName: "alicloud_oss_bucket_lifecycle", Factory: NewOssBucketLifecycleResource},
 		},
 	}
 }
