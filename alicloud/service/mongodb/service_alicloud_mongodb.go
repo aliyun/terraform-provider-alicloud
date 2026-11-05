@@ -773,27 +773,13 @@ func attributeConfiguredInConfig(d *schema.ResourceData, key string) bool {
 // request is built: geo-redundant backup attributes need the operation selector, and
 // enabling the policy requires the full parameter set plus a retention value for each
 // "delay" retention type.
+//
+// The selector requirement is expressed structurally: every geo-redundant attribute
+// declares RequiredWith cross_backup_type, so the plan rejects a partial configuration
+// before Update runs (and an explicit 0 still counts as configured). The checks below
+// only cover the rules that depend on the selector value.
 func validateMongoDBCrossBackupPolicy(d *schema.ResourceData) error {
 	crossBackupType, _ := d.Get("cross_backup_type").(string)
-
-	configuredCrossAttributes := make([]string, 0, 8)
-	for _, key := range []string{
-		"cross_backup_period",
-		"cross_retention_type",
-		"cross_retention_value",
-		"cross_log_retention_type",
-		"cross_log_retention_value",
-		"dest_region",
-		"src_region",
-		"enable_cross_log_backup",
-	} {
-		if attributeConfiguredInConfig(d, key) {
-			configuredCrossAttributes = append(configuredCrossAttributes, key)
-		}
-	}
-	if crossBackupType == "" && len(configuredCrossAttributes) > 0 {
-		return fmt.Errorf("cross_backup_type must be set to \"update\" or \"delete\" when the geo-redundant backup attributes %s are configured", strings.Join(configuredCrossAttributes, ", "))
-	}
 	if crossBackupDeleteSelected(d) {
 		// The service locates the geo-redundant policy to delete by its source and
 		// destination regions, so both must accompany the delete request. The selector

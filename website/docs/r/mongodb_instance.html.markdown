@@ -42,12 +42,16 @@ variable "name" {
   default = "terraform-example"
 }
 
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
 data "alicloud_mongodb_zones" "default" {
 }
 
 locals {
-  index   = length(data.alicloud_mongodb_zones.default.zones) - 1
-  zone_id = data.alicloud_mongodb_zones.default.zones[local.index].id
+  vswitch_zone_ids = toset(data.alicloud_zones.default.zones[*].id)
+  zone_id          = [for zone in data.alicloud_mongodb_zones.default.zones : zone.id if contains(local.vswitch_zone_ids, zone.id)][0]
 }
 
 resource "alicloud_vpc" "default" {
@@ -149,7 +153,7 @@ The following arguments are supported:
   - `update`: Create or modify the geo-redundancy policy.
   - `delete`: Delete the geo-redundant policy. **NOTE:** A delete must carry the same `src_region` and `dest_region` as the policy to remove; the retention, backup period and cross-region log backup switch parameters do not apply to `delete`.
 
-  -> **NOTE:** This argument is a write-only action selector. It selects the operation sent to the service and is not reported back by the backup policy API, so Terraform keeps the configured value in state. An imported instance does not have it: set it again before you modify or delete an existing geo-redundant policy. Changing another geo-redundant attribute while this argument stays `delete` still sends a delete, which is located by `src_region` and `dest_region`.
+  -> **NOTE:** This argument is a write-only action selector. It selects the operation sent to the service and is not reported back by the backup policy API, so Terraform keeps the configured value in state. An imported instance does not have it: set it again before you modify or delete an existing geo-redundant policy. Changing another geo-redundant attribute while this argument stays `delete` still sends a delete, which is located by `src_region` and `dest_region`. Removing `src_region` and `dest_region` from the configuration does not locate a different policy: both arguments are Optional+Computed, so the last values remain in state and no request is sent. To address another policy, change their values explicitly or set the selector again.
 * `cross_retention_type` - (Optional, String, Available since v2.3.0) The retention policy for geo-redundant backups. Valid values: `delay`, `never`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`.
 * `cross_retention_value` - (Optional, Int, Available since v2.3.0) The number of days to retain geo-redundant backups. Valid values: `3` to `1825`. **NOTE:** This parameter is required when `cross_retention_type` is set to `delay`.
 * `cross_log_retention_type` - (Optional, String, Available since v2.3.0) The retention policy for cross-region log backups. Valid values: `delay`, `never`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`.
