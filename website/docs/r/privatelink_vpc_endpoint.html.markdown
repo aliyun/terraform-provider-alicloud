@@ -147,6 +147,9 @@ The following arguments are supported:
   - `true`: enables user authentication. After user authentication is enabled, only the user who creates the endpoint can modify or delete the endpoint in STS mode.
   - **false (default)**: disables user authentication.
 * `resource_group_id` - (Optional, Computed, Available since v1.212.0) The resource group ID.
+* `reset_policy` - (Optional, Available since v2.1.0) Specifies whether to reset the endpoint policy. Valid values:
+  - `true`: resets the endpoint policy.
+  - `false`: does not reset the endpoint policy.
 * `security_group_ids` - (Optional, Set) The ID of the security group that is associated with the endpoint ENI. The security group can be used to control data transfer between the VPC and the endpoint ENI.
 
   The endpoint can be associated with up to 10 security groups.
@@ -156,6 +159,9 @@ The following arguments are supported:
 * `tags` - (Optional, Map, Available since v1.212.0) The list of tags.
 * `vpc_endpoint_name` - (Optional) The name of the endpoint.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC to which the endpoint belongs.
+* `zone_affinity_enabled` - (Optional, Computed, Available since v2.1.0) Specifies whether to enable zone affinity, which resolves the endpoint domain name to the nearest zone. Valid values:
+  - `true`: enables zone affinity.
+  - `false`: disables zone affinity.
 * `zone_private_ip_address_count` - (Optional, ForceNew, Computed, Int, Available since v1.212.0) The number of private IP addresses that are assigned to an elastic network interface (ENI) in each zone. Only 1 is returned.
 
 ## Attributes Reference
