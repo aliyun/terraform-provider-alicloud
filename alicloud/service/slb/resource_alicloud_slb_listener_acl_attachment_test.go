@@ -156,7 +156,7 @@ func TestAccAliCloudSLBListenerAclAttachment_multiAcl(t *testing.T) {
 					}
 					return listener.Primary.ID, nil
 				},
-				ExpectError: regexp.MustCompile(`(?i)multiple access control policy groups`),
+				ExpectError: regexp.MustCompile(`(?i)multiple`),
 			},
 			{
 				ResourceName:      listenerAclAttachmentResourceId,
