@@ -137,27 +137,12 @@ provider "alicloud" {
 }
 
 resource "alicloud_ga_accelerator" "default" {
-  duration        = 1
-  auto_use_coupon = true
-  spec            = "1"
-}
-
-resource "alicloud_ga_bandwidth_package" "default" {
-  bandwidth      = 100
-  type           = "Basic"
-  bandwidth_type = "Basic"
-  payment_type   = "PayAsYouGo"
-  billing_type   = "PayBy95"
-  ratio          = 30
-}
-
-resource "alicloud_ga_bandwidth_package_attachment" "default" {
-  accelerator_id       = alicloud_ga_accelerator.default.id
-  bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+  bandwidth_billing_type = "CDT"
+  payment_type           = "PayAsYouGo"
 }
 
 resource "alicloud_ga_listener" "default" {
-  accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+  accelerator_id = alicloud_ga_accelerator.default.id
   port_ranges {
     from_port = 8080
     to_port   = 8080
@@ -227,27 +212,12 @@ provider "alicloud" {
 }
 
 resource "alicloud_ga_accelerator" "default" {
-  duration        = 1
-  auto_use_coupon = true
-  spec            = "1"
-}
-
-resource "alicloud_ga_bandwidth_package" "default" {
-  bandwidth      = 100
-  type           = "Basic"
-  bandwidth_type = "Basic"
-  payment_type   = "PayAsYouGo"
-  billing_type   = "PayBy95"
-  ratio          = 30
-}
-
-resource "alicloud_ga_bandwidth_package_attachment" "default" {
-  accelerator_id       = alicloud_ga_accelerator.default.id
-  bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+  bandwidth_billing_type = "CDT"
+  payment_type           = "PayAsYouGo"
 }
 
 resource "alicloud_ga_listener" "default" {
-  accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+  accelerator_id = alicloud_ga_accelerator.default.id
   port_ranges {
     from_port = 80
     to_port   = 80
@@ -269,7 +239,6 @@ resource "alicloud_ga_endpoint_group" "default" {
   listener_id           = alicloud_ga_listener.default.id
   endpoint_group_region = var.region
   name                  = "terraform-example"
-  endpoint_ip_version   = "IPv4"
   health_check_enabled  = true
   health_check_protocol = "HTTP"
   health_check_path     = "/healthCheck"
@@ -315,6 +284,8 @@ The following arguments are supported:
   - `IPv4`: Global Accelerator uses only IPv4 addresses to communicate with the endpoint service. This is the default value.
   - `IPv6`: Global Accelerator uses only IPv6 addresses to communicate with the endpoint service.
   - `ProtocolAffinity`: Global Accelerator uses the same IP version as the client request to communicate with the endpoint service.
+
+  -> **NOTE:** The accelerator instance must support this parameter. If it does not, `CreateEndpointGroup` or `UpdateEndpointGroup` fails with the error code `NotSupport.EndpointIpVersion`.
 * `health_check_enabled` - (Optional, Bool, Available since v1.215.0) Specifies whether to enable the health check feature. Valid values:
   - `true`: Enables the health check feature.
   - `false`: Disables the health check feature.

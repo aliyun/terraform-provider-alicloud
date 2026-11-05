@@ -1427,7 +1427,6 @@ func TestAccAliCloudGaEndpointGroup_probeAndAccessLog(t *testing.T) {
 					"listener_id":           "${alicloud_ga_listener.default.id}",
 					"endpoint_group_region": acctest.DefaultRegionToTest,
 					"name":                  name,
-					"endpoint_ip_version":   "IPv4",
 					"health_check_enabled":  "true",
 					"health_check_protocol": "HTTP",
 					"health_check_path":     "/healthCheck",
@@ -1450,7 +1449,6 @@ func TestAccAliCloudGaEndpointGroup_probeAndAccessLog(t *testing.T) {
 						"listener_id":                              acctest.CHECKSET,
 						"endpoint_group_region":                    acctest.DefaultRegionToTest,
 						"name":                                     name,
-						"endpoint_ip_version":                      "IPv4",
 						"health_check_enabled":                     "true",
 						"health_check_protocol":                    "HTTP",
 						"health_check_path":                        "/healthCheck",
@@ -1471,8 +1469,7 @@ func TestAccAliCloudGaEndpointGroup_probeAndAccessLog(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"endpoint_ip_version": "ProtocolAffinity",
-					"health_check_host":   "www.example.com",
+					"health_check_host": "www.example.com",
 					"endpoint_configurations": []map[string]interface{}{
 						{
 							"endpoint":       "${alicloud_eip_address.default.0.ip_address}",
@@ -1485,7 +1482,6 @@ func TestAccAliCloudGaEndpointGroup_probeAndAccessLog(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"endpoint_ip_version":                      "ProtocolAffinity",
 						"health_check_host":                        "www.example.com",
 						"endpoint_configurations.0.probe_port":     "8080",
 						"endpoint_configurations.0.probe_protocol": "icmp",
@@ -1564,6 +1560,75 @@ func TestAccAliCloudGaEndpointGroup_probeAndAccessLog(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"enable"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGaEndpointGroup_endpointIpVersion(t *testing.T) {
+	var v map[string]interface{}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_endpoint_group.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudGaEndpointGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ga.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeGaEndpointGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaEndpointGroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudGaEndpointGroupBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accelerator_id":        "${alicloud_ga_listener.default.accelerator_id}",
+					"listener_id":           "${alicloud_ga_listener.default.id}",
+					"endpoint_group_region": acctest.DefaultRegionToTest,
+					"name":                  name,
+					"endpoint_ip_version":   "IPv4",
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint": "${alicloud_eip_address.default.0.ip_address}",
+							"type":     "PublicIp",
+							"weight":   "20",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accelerator_id":            acctest.CHECKSET,
+						"listener_id":               acctest.CHECKSET,
+						"endpoint_group_region":     acctest.DefaultRegionToTest,
+						"endpoint_ip_version":       "IPv4",
+						"endpoint_configurations.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_ip_version": "ProtocolAffinity",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_ip_version": "ProtocolAffinity",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
