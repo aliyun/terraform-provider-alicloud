@@ -136,6 +136,10 @@ func ServicePackage() conns.ServicePackage {
 				TypeName: "alicloud_cms_metric_rule_black_list",
 				Factory:  resourceAlicloudCmsMetricRuleBlackList,
 			},
+			{
+				TypeName: "alicloud_cms_escalation_policy",
+				Factory:  resourceAliCloudCmsEscalationPolicy,
+			},
 		},
 		SDKDataSources: []conns.SDKDataSource{
 			{
@@ -225,6 +229,10 @@ func ServicePackage() conns.ServicePackage {
 			{
 				TypeName: "alicloud_cms_site_monitors",
 				Factory:  dataSourceAliCloudCloudMonitorServiceSiteMonitors,
+			},
+			{
+				TypeName: "alicloud_cms_escalation_policies",
+				Factory:  dataSourceAliCloudCmsEscalationPolicies,
 			},
 		},
 		DataSources: []conns.DataSource{
