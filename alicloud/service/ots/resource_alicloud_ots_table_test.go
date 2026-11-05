@@ -273,27 +273,6 @@ func TestAccAliCloudOtsTable_stream(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"stream_specification": []map[string]interface{}{
 						{
-							"enable_stream": false,
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"stream_specification.0.enable_stream":   acctest.REMOVEKEY,
-						"stream_specification.0.expiration_time": acctest.REMOVEKEY,
-						"stream_specification.#":                 "0",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"stream_specification": []map[string]interface{}{
-						{
 							"enable_stream": true,
 						},
 					},
@@ -321,6 +300,27 @@ func TestAccAliCloudOtsTable_stream(t *testing.T) {
 					},
 				}),
 				ExpectError: regexp.MustCompile("expiration_time"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stream_specification": []map[string]interface{}{
+						{
+							"enable_stream": false,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"stream_specification.0.enable_stream":   acctest.REMOVEKEY,
+						"stream_specification.0.expiration_time": acctest.REMOVEKEY,
+						"stream_specification.#":                 "0",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
