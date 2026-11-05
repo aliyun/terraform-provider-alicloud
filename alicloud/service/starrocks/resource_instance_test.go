@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/starrocks"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // The following multi-member TypeList attributes of alicloud_star_rocks_instance
@@ -651,6 +652,125 @@ resource "alicloud_vswitch" "default106DkE" {
 
 
 `, name)
+}
+
+// TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize verifies that
+// increasing backend_node_groups.*.storage_size expands the backend node group
+// disks in place: the instance keeps its id and the new size is applied.
+func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T) {
+	var v map[string]interface{}
+	var instanceId string
+	resourceId := "alicloud_star_rocks_instance.default"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccstarrocks%d", rand)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return starrocks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, acctest.ResourceAttrInit(resourceId, map[string]string{}))
+	checkInstanceNotReplaced := func(s *terraform.State) error {
+		instance, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		if instanceId == "" {
+			instanceId = instance.Primary.ID
+			return nil
+		}
+		if instance.Primary.ID != instanceId {
+			return fmt.Errorf("instance was replaced during in-place disk expansion: %s -> %s", instanceId, instance.Primary.ID)
+		}
+		return nil
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: starRocksInstanceBackendNodeGroupsStorageSizeConfig(name, 200),
+				Check: resource.ComposeTestCheckFunc(
+					checkInstanceNotReplaced,
+					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.0.storage_size", "200"),
+				),
+			},
+			{
+				Config: starRocksInstanceBackendNodeGroupsStorageSizeConfig(name, 300),
+				Check: resource.ComposeTestCheckFunc(
+					checkInstanceNotReplaced,
+					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.0.storage_size", "300"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"admin_password", "auto_renew", "backend_node_groups", "cluster_zone_id", "duration", "frontend_node_groups", "observer_node_groups", "oss_accessing_role_name", "pricing_cycle", "promotion_option_no"},
+			},
+		},
+	})
+}
+
+func starRocksInstanceBackendNodeGroupsStorageSizeConfig(name string, storageSize int) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpc" "defaultB21JUD" {
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default106DkE" {
+  vpc_id       = alicloud_vpc.defaultB21JUD.id
+  cidr_block   = "172.16.1.0/24"
+  vswitch_name = "sr-test"
+  zone_id      = "cn-hangzhou-i"
+}
+
+resource "alicloud_star_rocks_instance" "default" {
+  admin_password    = "1qaz@QAZ"
+  cluster_zone_id   = "cn-hangzhou-i"
+  duration          = 1
+  pay_type          = "postPaid"
+  vpc_id            = alicloud_vpc.defaultB21JUD.id
+  version           = "3.3"
+  run_mode          = "shared_data"
+  package_type      = "official"
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+
+  vswitches {
+    vswitch_id = alicloud_vswitch.default106DkE.id
+    zone_id    = "cn-hangzhou-i"
+  }
+
+  frontend_node_groups {
+    cu                        = 8
+    storage_size              = 100
+    storage_performance_level = "pl1"
+    disk_number               = 1
+    resident_node_number      = 3
+    spec_type                 = "standard"
+    zone_id                   = "cn-hangzhou-i"
+  }
+
+  backend_node_groups {
+    cu                        = 8
+    storage_size              = %d
+    storage_performance_level = "pl1"
+    disk_number               = 1
+    resident_node_number      = 3
+    spec_type                 = "standard"
+    zone_id                   = "cn-hangzhou-i"
+  }
+}
+`, name, storageSize)
 }
 
 // Test StarRocks Instance. <<< Resource test cases, automatically generated.

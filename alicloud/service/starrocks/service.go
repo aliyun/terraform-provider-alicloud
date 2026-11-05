@@ -298,3 +298,67 @@ func (s *Service) NodeGroupStateRefreshFuncWithApi(id string, field string, fail
 }
 
 // DescribeNodeGroup >>> Encapsulated.
+
+// DescribeBackendNodeGroups lists the backend compute groups of an instance. A BE
+// or a CN group is a backend group depending on the run mode, and the instance
+// resource does not persist node group ids, so both component types are read and
+// returned together for attribute based matching.
+func (s *Service) DescribeBackendNodeGroups(instanceId string) ([]map[string]interface{}, error) {
+	groups := make([]map[string]interface{}, 0)
+	for _, componentType := range []string{"BE", "CN"} {
+		items, err := s.describeNodeGroups(instanceId, componentType)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range items {
+			if fmt.Sprint(item["Status"]) == "DELETED" {
+				continue
+			}
+			groups = append(groups, item)
+		}
+	}
+	return groups, nil
+}
+
+func (s *Service) describeNodeGroups(clusterId, componentType string) ([]map[string]interface{}, error) {
+	client := s.client
+	query := make(map[string]*string)
+	query["ClusterId"] = helper.StringPointer(clusterId)
+	query["RegionId"] = helper.StringPointer(client.RegionId)
+	query["PageNumber"] = helper.StringPointer("1")
+	query["PageSize"] = helper.StringPointer("100")
+	request := map[string]interface{}{"componentType": componentType}
+	action := fmt.Sprintf("/webapi/nodegroup/describeNodeGroups")
+	var response map[string]interface{}
+	var err error
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, clusterId, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data[*]", response)
+	if err != nil {
+		return nil, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, clusterId, "$.Data[*]", response)
+	}
+
+	items := make([]map[string]interface{}, 0)
+	for _, raw := range v.([]interface{}) {
+		if item, ok := raw.(map[string]interface{}); ok {
+			items = append(items, item)
+		}
+	}
+	return items, nil
+}
