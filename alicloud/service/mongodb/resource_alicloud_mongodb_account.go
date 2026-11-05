@@ -20,6 +20,11 @@ import (
 func resourceAliCloudMongodbAccount() *schema.Resource {
 	return &schema.Resource{
 		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+			// Only user configuration is validated; values returned by
+			// DescribeAccounts must not be able to block later plans.
+			if !d.HasChange("roles") {
+				return nil
+			}
 			return validateAccountRoles(d.Get("roles"))
 		},
 		Create: resourceAliCloudMongodbAccountCreate,
@@ -199,6 +204,11 @@ func resourceAliCloudMongodbAccountCreate(d *schema.ResourceData, meta interface
 	// db, cs and replica set accounts with custom roles are created through
 	// CreateAccount. A db account with roles is not rejected locally so the
 	// documented InvalidRoles.NotSupported response comes from the API itself.
+	// CreateAccount defaults CharacterType to db, which never accepts roles, so
+	// an omitted character_type falls back to the documented replica set default.
+	if characterType == "" {
+		characterType = "normal"
+	}
 	action := "CreateAccount"
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -210,9 +220,7 @@ func resourceAliCloudMongodbAccountCreate(d *schema.ResourceData, meta interface
 	request["RegionId"] = client.RegionId
 	request["AccountPassword"] = d.Get("account_password")
 	request["DBName"] = dbName
-	if characterType != "" {
-		request["CharacterType"] = characterType
-	}
+	request["CharacterType"] = characterType
 	if v, ok := d.GetOk("account_description"); ok {
 		request["AccountDescription"] = v
 	}

@@ -807,6 +807,12 @@ func TestAccAliCloudMongodbAccount_completeNormalAccountRoles(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password"},
+			},
+			{
 				Config: testAccAccountNormalRolesConfig(name, accountName, "qwer12345!!!", updatedDescription),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "account_description", updatedDescription),
@@ -1337,6 +1343,36 @@ func TestUnitAccountCreateSendsRolesForReplicaSet(t *testing.T) {
 	assert.Equal(t, "read", fmt.Sprint(role["Role"]))
 	assert.Equal(t, "admin", fmt.Sprint(role["DBName"]))
 	assert.Equal(t, "dds-1:admin:normal_acc", d.Id())
+}
+
+// TestUnitAccountCreateDefaultsNormalForRoles covers the documented default:
+// when character_type is omitted, roles are created as a replica set (normal)
+// account instead of falling back to the API default db.
+func TestUnitAccountCreateDefaultsNormalForRoles(t *testing.T) {
+	client := accountTestClient(t)
+	d := schema.TestResourceDataRaw(t, unitAccountResourceSchema(t), map[string]interface{}{
+		"instance_id":      "dds-1",
+		"account_name":     "normal_def_acc",
+		"account_password": "YourPassword+12345",
+		"roles": []interface{}{
+			map[string]interface{}{"role": "read", "db_name": "admin"},
+		},
+	})
+	calls := make([]accountApiCall, 0)
+	responses := map[string]interface{}{
+		"CreateAccount":    map[string]interface{}{},
+		"DescribeAccounts": accountDescribeResponse("dds-1", "admin", "normal_def_acc", "normal", "", []map[string]string{{"role": "read", "db_name": "admin"}}),
+	}
+	patches := patchAccountDoRequest(t, &calls, responses)
+	defer patches.Reset()
+
+	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountCreate(d, client))
+	call := accountApiCallByName(calls, "CreateAccount")
+	if call == nil {
+		t.Fatal("expected an account with roles to reach CreateAccount")
+	}
+	assert.Equal(t, "normal", fmt.Sprint(call.Body["CharacterType"]))
+	assert.Equal(t, "admin", fmt.Sprint(call.Body["DBName"]))
 }
 
 // TestUnitAccountCreateForwardsShardRolesToApi proves the provider no longer

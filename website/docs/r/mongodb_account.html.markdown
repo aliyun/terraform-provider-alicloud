@@ -16,7 +16,9 @@ For information about Mongodb Account and how to use it, see [What is Account](h
 
 -> **NOTE:** Available since v1.148.0.
 
--> **NOTE:** The resource id is `<instance_id>:<db_name>:<account_name>`. The former `<instance_id>:<account_name>` id is still accepted when the account name is unique in the instance, and the id is upgraded to the database scoped form on the next read.
+-> **NOTE:** The resource id is `<instance_id>:<db_name>:<account_name>`. A `:` or `%` inside `db_name` is escaped in the id as `%3A` and `%25`. The former `<instance_id>:<account_name>` id is still accepted when the account name is unique in the instance, and the id is upgraded to the database scoped form on the next read.
+
+-> **NOTE:** `db_name`, `character_type` and `roles` force a new resource when changed. MongoDB accounts cannot be deleted, so a replacement cannot reuse the same `account_name`: change `account_name` together with the force-new argument, or the apply fails because the account already exists.
 
 ## Example Usage
 
@@ -111,7 +113,7 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) Instance Id
 * `roles` - (Optional, ForceNew, Set, Available since v2.3.0) The list of roles granted to the account. See [`roles`](#roles) below.
 
-  -> **NOTE:** `roles` are supported for replica set accounts (`character_type = "normal"`) and config server accounts (`character_type = "cs"`), where `CreateAccount` requires them. Shard direct-connection accounts (`character_type = "db"`) have fixed privileges, and the API rejects a configured `roles` with the error code `InvalidRoles.NotSupported`.
+  -> **NOTE:** `roles` are supported for replica set accounts (`character_type = "normal"`) and config server accounts (`character_type = "cs"`), where `CreateAccount` requires them. When `character_type` is omitted it defaults to `normal`, the replica set account type. Shard direct-connection accounts (`character_type = "db"`) have fixed privileges, and the API rejects a configured `roles` with the error code `InvalidRoles.NotSupported`. Changing `roles` forces a new resource; see the replacement note above.
 
 ### `roles`
 
@@ -133,7 +135,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Mongodb Account can be imported using the id, which consists of instance_id, db_name and account_name, e.g.
+Mongodb Account can be imported using the id, which consists of instance_id, db_name and account_name, e.g. A `:` or `%` inside `db_name` is written as `%3A` and `%25` in the id.
 
 ```shell
 $ terraform import alicloud_mongodb_account.example <instance_id>:<db_name>:<account_name>
