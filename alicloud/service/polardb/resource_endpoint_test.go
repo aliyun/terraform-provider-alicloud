@@ -18,7 +18,7 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
 	var v *sdkpolardb.DBEndpoint
 	rand := tfacctest.RandStringFromCharSet(10, tfacctest.CharSetAlphaNum)
 	name := fmt.Sprintf("tf-testAccPolarDBendpoint-%s", rand)
-	connectionPrefix := fmt.Sprintf("tf-testacc-%s", acctest.RandString(8))
+	connectionPrefix := fmt.Sprintf("tf-testacc-%s", tfacctest.RandStringFromCharSet(8, tfacctest.CharSetAlphaNum))
 	var basicMap = map[string]string{
 		"db_cluster_id": CHECKSET,
 	}
@@ -178,7 +178,7 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate_SslConnectionStringAndConnection
 	var v *sdkpolardb.DBEndpoint
 	rand := tfacctest.RandStringFromCharSet(10, tfacctest.CharSetAlphaNum)
 	name := fmt.Sprintf("tf-testAccPolarDBendpoint-%s", rand)
-	connectionPrefix := fmt.Sprintf("tf-testacc-%s", acctest.RandString(8))
+	connectionPrefix := fmt.Sprintf("tf-testacc-%s", tfacctest.RandStringFromCharSet(8, tfacctest.CharSetAlphaNum))
 	var basicMap = map[string]string{
 		"db_cluster_id": CHECKSET,
 	}
@@ -279,7 +279,7 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate_SslConnectionStringAndConnection
 }
 
 func TestUnitPolarDBEndpointSccConfig(t *testing.T) {
-	sccModeSchema := ResourceEndpoint().Schema["scc_mode"]
+	sccModeSchema := polardb.ResourceEndpoint().Schema["scc_mode"]
 	for _, input := range []string{"on", "off"} {
 		if _, errors := sccModeSchema.ValidateFunc(input, "scc_mode"); len(errors) > 0 {
 			t.Fatalf("expected %q to be valid, got: %v", input, errors)
