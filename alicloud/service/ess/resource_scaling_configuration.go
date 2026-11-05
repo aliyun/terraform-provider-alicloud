@@ -614,6 +614,11 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 						"bursting_enabled": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							// The service keeps the previous value when the parameter is
+							// omitted, so the attribute is computed as well: a removed
+							// value mirrors the service instead of producing a diff that
+							// can never be applied.
+							Computed: true,
 						},
 					},
 				},
@@ -990,6 +995,11 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 						"match_criteria": {
 							Type:     schema.TypeString,
 							Optional: true,
+							// None is the service representation of "no private pool" and is
+							// what the provider sends when the block is removed, so it is not
+							// accepted as user input: configuring it would make the block
+							// unrepresentable in state and the plan would never converge.
+							ValidateFunc: validators.StringInSlice([]string{"Open", "Target"}, false),
 						},
 						"pool_id": {
 							Type:     schema.TypeString,
@@ -1804,8 +1814,11 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		// SchedulerOptions has no documented "no scheduler" value: the parameter is
 		// an object that only carries ManagedPrivateSpaceId. Omitting it keeps the
 		// previously applied value, and the Optional+Computed schema reflects that
-		// retained value without a perpetual diff.
-		update = true
+		// retained value without a perpetual diff. A removal therefore issues no
+		// write at all instead of an empty ModifyScalingConfiguration call.
+		if _, ok := request["SchedulerOptions"]; ok {
+			update = true
+		}
 	}
 
 	hasChangeInstanceType := d.HasChange("instance_type")
@@ -2328,13 +2341,14 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 		d.Set("private_pool_options", []map[string]interface{}{})
 	}
 	if v := response["SchedulerOptions"]; v != nil {
-		m := v.(map[string]interface{})
-		result := make([]map[string]interface{}, 0, 1)
-		item := map[string]interface{}{
-			"managed_private_space_id": m["ManagedPrivateSpaceId"],
+		if m, ok := v.(map[string]interface{}); ok {
+			result := make([]map[string]interface{}, 0, 1)
+			item := map[string]interface{}{
+				"managed_private_space_id": m["ManagedPrivateSpaceId"],
+			}
+			result = append(result, item)
+			d.Set("scheduler_options", result)
 		}
-		result = append(result, item)
-		d.Set("scheduler_options", result)
 	}
 	if v := response["SystemDiskCategories"]; v != nil {
 		if m, ok := v.(map[string]interface{}); ok {

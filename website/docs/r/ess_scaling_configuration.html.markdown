@@ -15,6 +15,10 @@ Provides a ESS scaling configuration resource.
 
 -> **NOTE:** Available since v1.39.0.
 
+-> **NOTE:** The read response resolves several values that the configuration may not set, and import restores them: `instance_type`, `credit_specification` and (when the service reports one) `security_group_id` are populated from the describe response. A `network_interfaces`-only configuration can omit the top-level `security_group_id`, in which case only the per-interface groups are reported. `force_delete` and `kms_encryption_context` are configuration-only and are not restored; add them to `ignore_changes` if the configuration still uses them.
+
+-> **NOTE:** `system_disk_categories` and `data_disk.*.categories` are computed attributes. Removing them from the configuration stops managing the preferred disk category list, and the state keeps the categories the service reports afterwards. To pin a single disk category, configure the singular `system_disk_category` or `data_disk.*.category` instead; the singular and plural forms of the same disk cannot be set together.
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -192,7 +196,7 @@ The following arguments are supported:
   - `PublicPoolFirst`: Public pool first. The system prioritizes the public pool to create instances. If the public pool has insufficient resources, the system uses private pool resources as a supplement. The system first tries to automatically match an open private pool. If no suitable private pool is found, the system uses the Target-type private pool specified by ResourcePoolOptions.PrivatePoolIds or a Target-type private pool that meets the conditions of PrivatePoolTags.
   - `None`: Does not use a resource pool policy.
 * `spot_interruption_behavior` - (Optional, String) The interruption mode of the preemptible instance when inventory is insufficient. Valid value: `Terminate`. Available since v2.3.0.
-* `load_balancer_weight` - (Optional, Int) The weight of the backend server. Valid values: 1 to 100. Defaults to `50`. Available since v2.3.0.
+* `load_balancer_weight` - (Optional, Int) The weight of the backend server. Valid values: 1 to 100. The service default is `50`. Available since v2.3.0.
 * `memory` - (Optional, Int) The memory size of the ECS instance, in GiB. Must be used together with `cpu`, and cannot be set together with `instance_type`, `instance_types` or `instance_type_override`. CPU+Memory instance selection requires the referenced scaling group to be a cost-optimized scaling group. Available since v2.3.0.
 * `cpu` - (Optional, Int) The number of vCPUs of the ECS instance. Must be used together with `memory`, and cannot be set together with `instance_type`, `instance_types` or `instance_type_override`. CPU+Memory instance selection requires the referenced scaling group to be a cost-optimized scaling group. Available since v2.3.0.
 * `image_family` - (Optional, String) The name of the image family to which the image belongs. Cannot be set together with `image_id`. Available since v2.3.0.
@@ -311,7 +315,7 @@ The resourcePoolOptionsPrivatePoolTags mapping supports the following:
 
 The privatePoolOptions mapping supports the following:
 
-* `match_criteria` - (Optional, String) The matching mode of the private pool. Valid values: `Open`, `Target`, `None`. Available since v2.3.0.
+* `match_criteria` - (Optional, String) The matching mode of the private pool. Valid values: `Open`, `Target`. Removing the block disables the private pool, which the provider sends as the service-side `None` value. Available since v2.3.0.
 * `pool_id` - (Optional, String) The ID of the private pool. Required when `match_criteria` is `Target`. Available since v2.3.0.
 
 -> **NOTE:** Removing the `private_pool_options` block sends `PrivatePoolOptions.MatchCriteria=None`, which disables the private pool. A configuration imported while the service reports `None` has no `private_pool_options` block.
@@ -337,7 +341,3 @@ ESS scaling configuration can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_ess_scaling_configuration.example asc-abc123456
 ```
-
--> **NOTE:** The read response resolves several values that the configuration may not set, and import restores them: `instance_type`, `credit_specification` and (when the service reports one) `security_group_id` are populated from the describe response. A `network_interfaces`-only configuration can omit the top-level `security_group_id`, in which case only the per-interface groups are reported. `force_delete` and `kms_encryption_context` are configuration-only and are not restored; add them to `ignore_changes` if the configuration still uses them.
-
--> **NOTE:** `system_disk_categories` and `data_disk.*.categories` are computed attributes. Removing them from the configuration stops managing the preferred disk category list, and the state keeps the categories the service reports afterwards. To pin a single disk category, configure the singular `system_disk_category` or `data_disk.*.category` instead; the singular and plural forms of the same disk cannot be set together.

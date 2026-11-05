@@ -6628,6 +6628,108 @@ func TestAccAliCloudEssScalingConfiguration_CpuMemory(t *testing.T) {
 	})
 }
 
+func resourceScalingConfigurationPrerequisiteDependence(name string) string {
+	return fmt.Sprintf(`
+	%s
+
+	variable "name" {
+		default = "%s"
+	}
+	data "alicloud_instance_types" "prerequisite" {
+		instance_charge_type = "PostPaid"
+		instance_type_family = "ecs.r5"
+		availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+	}
+	data "alicloud_images" "prerequisite" {
+		name_regex   = "^ubuntu_22_04_x64_20G_alibase"
+		most_recent  = true
+		owners       = "system"
+	}
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size           = 1
+		max_size           = 1
+		scaling_group_name = "${var.name}"
+		removal_policies   = ["OldestInstance", "NewestInstance"]
+		vswitch_ids        = ["${alicloud_vswitch.default.id}"]
+	}
+	resource "alicloud_ecs_deployment_set" "default" {
+		deployment_set_name = "${var.name}-ds"
+		strategy            = "Availability"
+	}
+	resource "alicloud_ecs_hpc_cluster" "default" {
+		name        = "${var.name}-hpc"
+		description = "terraform ess scaling configuration prerequisite"
+	}`, EcsInstanceCommonTestCase, name)
+}
+
+// prerequisiteRemoteCheck asserts the dependency-backed attributes reached the
+// service instead of being dropped from the create request.
+func prerequisiteRemoteCheck(t *testing.T, resourceId string) resource.TestCheckFunc {
+	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+		for _, key := range []string{"DeploymentSetId", "HpcClusterId", "ZoneId"} {
+			if v := fmt.Sprint(response[key]); v == "" || v == "<nil>" {
+				return fmt.Errorf("remote %s is empty", key)
+			}
+		}
+		return nil
+	})
+}
+
+// TestAccAliCloudEssScalingConfiguration_PrerequisiteAttributes provisions the
+// deployment set and HPC cluster inside the same configuration, so the
+// dependency-backed attributes carry real, cleaned-up prerequisites instead of
+// being recorded as unverified.
+func TestAccAliCloudEssScalingConfiguration_PrerequisiteAttributes(t *testing.T) {
+	var v ess.ScalingConfiguration
+	resourceId := "alicloud_ess_scaling_configuration.pre"
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", tfcacctest.RandIntRange(1000, 999999))
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceScalingConfigurationPrerequisiteDependence)
+	ra := acctest.ResourceAttrInit(resourceId, map[string]string{
+		"scaling_group_id":  acctest.CHECKSET,
+		"instance_type":     acctest.CHECKSET,
+		"security_group_id": acctest.CHECKSET,
+	})
+	rc := acctest.ResourceCheckInit(resourceId, &v, func() interface{} {
+		return essservice.NewEssService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	})
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
+					"image_id":             "${data.alicloud_images.prerequisite.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.prerequisite.instance_types.0.id}",
+					"security_group_id":    "${alicloud_security_group.default.id}",
+					"force_delete":         "true",
+					"system_disk_category": "cloud_essd",
+					"deployment_set_id":    "${alicloud_ecs_deployment_set.default.id}",
+					"hpc_cluster_id":       "${alicloud_ecs_hpc_cluster.default.id}",
+					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair(resourceId, "deployment_set_id", "alicloud_ecs_deployment_set.default", "id"),
+					resource.TestCheckResourceAttrPair(resourceId, "hpc_cluster_id", "alicloud_ecs_hpc_cluster.default", "id"),
+					resource.TestCheckResourceAttrPair(resourceId, "zone_id", "data.alicloud_zones.default", "zones.0.id"),
+					prerequisiteRemoteCheck(t, resourceId),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+		},
+	})
+}
+
 // scalingConfigurationUnitTestClient returns a provider client whose ESS
 // endpoint is a local HTTP server, so the request matrix can inspect exactly
 // what the provider serializes without reaching the cloud. It only uses the
@@ -6848,8 +6950,8 @@ func TestUnitScalingConfigurationCreateRequestMatrix(t *testing.T) {
 			"memory":                       cty.NumberIntVal(4),
 			"load_balancer_weight":         cty.NumberIntVal(50),
 			"system_disk_bursting_enabled": cty.False,
-			"private_pool_options":         cty.ListValEmpty(cty.EmptyObject),
-			"scheduler_options":            cty.ListValEmpty(cty.EmptyObject),
+			"private_pool_options":         cty.ListVal([]cty.Value{cty.EmptyObjectVal}),
+			"scheduler_options":            cty.ListVal([]cty.Value{cty.EmptyObjectVal}),
 		}))
 		creates := server.captured("CreateScalingConfiguration")
 		if len(creates) != 1 {
@@ -7004,7 +7106,7 @@ func TestUnitScalingConfigurationUpdateRequestMatrix(t *testing.T) {
 			"SystemDisk.BurstingEnabled", "PrivatePoolOptions.Id", "SchedulerOptions")
 	})
 
-	t.Run("pure unrelated update resends unchanged configured attributes", func(t *testing.T) {
+	t.Run("a pure unrelated update does not resend the other configured attributes", func(t *testing.T) {
 		server := newScalingConfigurationUnitTestServer(t)
 		applyScalingConfigurationUnitTest(t, server, scalingConfigurationOptionalBaseState(), map[string]interface{}{
 			"scaling_group_id":             "asg-unit-test",
@@ -7129,6 +7231,39 @@ func TestUnitScalingConfigurationUpdateRequestMatrix(t *testing.T) {
 		}
 		if got := modifies[0]["Memory"]; got != "8" {
 			t.Fatalf("Memory = %q, expected 8", got)
+		}
+	})
+
+	t.Run("removing a data disk bursting value sends no stale key", func(t *testing.T) {
+		previous := &sdktf.InstanceState{
+			ID: "asc-unit-test",
+			Attributes: map[string]string{
+				"id":                           "asc-unit-test",
+				"scaling_group_id":             "asg-unit-test",
+				"security_group_id":            "sg-unit-test",
+				"data_disk.#":                  "1",
+				"data_disk.0.size":             "20",
+				"data_disk.0.bursting_enabled": "true",
+			},
+		}
+		server := newScalingConfigurationUnitTestServer(t)
+		applyScalingConfigurationUnitTest(t, server, previous, map[string]interface{}{
+			"scaling_group_id":  "asg-unit-test",
+			"security_group_id": "sg-unit-test",
+			"data_disk": []interface{}{map[string]interface{}{
+				"size": 20,
+			}},
+		}, cty.ObjectVal(map[string]cty.Value{
+			"data_disk": cty.ListVal([]cty.Value{cty.ObjectVal(map[string]cty.Value{
+				"size": cty.NumberIntVal(20),
+			})}),
+		}))
+		modifies := server.captured("ModifyScalingConfiguration")
+		if len(modifies) != 1 {
+			t.Fatalf("expected one ModifyScalingConfiguration request, got %d", len(modifies))
+		}
+		if got := requestSerializedValue(modifies[0], "DataDisk"); strings.Contains(got, "BurstingEnabled") {
+			t.Fatalf("DataDisk = %q, expected no stale BurstingEnabled after the removal", got)
 		}
 	})
 
