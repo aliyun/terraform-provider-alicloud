@@ -39,9 +39,9 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `policies` - A list of Mongodb Audit Policies. Each element contains the following attributes:
-	* `db_instance_id` - The ID of the instance.
-	* `id` - The ID of the Audit Policy.
-	* `audit_status` - The status of the log audit feature.
-	* `service_type` - (Available since v1.284.0) The edition of the audit log, e.g. `Standard` or `V2_Standard`.
-	* `storage_period` - (Available since v1.284.0) The audit log retention duration, in days. For `V2_Standard` this is the cold storage duration.
-	* `hot_storage_period` - (Available since v1.284.0) The hot storage duration (days) of the V2 audit log.
+  * `db_instance_id` - The ID of the instance.
+  * `id` - The ID of the Audit Policy.
+  * `audit_status` - The status of the log audit feature.
+  * `service_type` - (Available since v1.284.0) The edition of the audit log, e.g. `Standard` or `V2_Standard`.
+  * `storage_period` - (Available since v1.284.0) The audit log retention duration, in days. For `V2_Standard` this is the cold storage duration.
+  * `hot_storage_period` - (Available since v1.284.0) The hot storage duration (days) of the V2 audit log.

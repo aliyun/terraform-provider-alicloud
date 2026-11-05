@@ -7,13 +7,15 @@ description: |-
     Provides a list of CEN Route Entries owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_cen\_route\_entries
+# alicloud_cen_route_entries
 
 This data source provides CEN Route Entries available to the user.
 
+-> **NOTE:** Available since v1.20.0+
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cen_route_entries" "entry" {
   instance_id    = "cen-id1"
   route_table_id = "vtb-id1"
@@ -46,8 +48,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `operational_mode` - Whether to allow the route entry to be published or removed to or from CEN.
   * `publish_status` - The publish status of the route entry in CEN, including "Published" and "NonPublished".
   * `conflicts` - A list of conflicted Route Entries. Each element contains the following attributes:
-      * `cidr_block` - The destination CIDR block of the conflicted route entry.
-      * `region_id` - ID of the region where the conflicted route entry is located.
-      * `instance_id` - ID of the CEN child instance.
-      * `instance_type` - The type of the CEN child instance.
-      * `status` - Reasons of exceptions.
+    * `cidr_block` - The destination CIDR block of the conflicted route entry.
+    * `region_id` - ID of the region where the conflicted route entry is located.
+    * `instance_id` - ID of the CEN child instance.
+    * `instance_type` - The type of the CEN child instance.
+    * `status` - Reasons of exceptions.

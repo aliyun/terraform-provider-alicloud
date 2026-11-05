@@ -7,11 +7,11 @@ description: |-
   Provides a list of Time Series Database (TSDB) Instances to the user.
 ---
 
-# alicloud\_tsdb\_instances
+# alicloud_tsdb_instances
 
 This data source provides the Time Series Database (TSDB) Instances of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.112.0+.
+-> **NOTE:** Available since v1.112.0.
 
 ## Example Usage
 
@@ -40,26 +40,26 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) Instance status, enumerative: `ACTIVATION`, `DELETED`, `CREATING`, `CLASS_CHANGING`, `LOCKED`.
 * `status_list` - (Optional, ForceNew) The status list.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `instances` - A list of TSDB Instances. Each element contains the following attributes:
-	* `auto_renew` - Auto renew.
-	* `cpu_number` - The cpu core number of instance.
-	* `disk_category` - The disk type of instance. `cloud_ssd` refers to SSD disk, `cloud_efficiency` refers to efficiency disk,cloud_essd refers to ESSD PL1 disk.
-	* `engine_type` - The engine type of instance. Enumerative: `tsdb_tsdb` refers to TSDB, `tsdb_influxdb` refers to TSDB for InfluxDB️.
-	* `expired_time` - Instance expiration time.
-	* `id` - The ID of the Instance.
-	* `instance_alias` - The alias of the instance.
-	* `instance_class` - The specification of the instance. 
-	* `instance_id` - The ID of the instance.
-	* `instance_storage` - The storage capacity of the instance. Unit: GB. For example, the value 50 indicates 50 GB.
-	* `memory_size` - The memory size of instance.
-	* `network_type` - Instance network type.
-	* `payment_type` - The billing method. Valid values: `PayAsYouGo` and `Subscription`. The `PayAsYouGo` value indicates the pay-as-you-go method, and the `Subscription` value indicates the subscription method.
-	* `status` - Instance status, enumerative: ACTIVATION,DELETED, CREATING,CLASS_CHANGING,LOCKED.
-	* `vpc_connection_address` - The vpc connection address of instance.
-	* `vpc_id` - The ID of the virtual private cloud (VPC) that is connected to the instance.
-	* `vswitch_id` - The vswitch id.
-	* `zone_id` - The zone ID of the instance.
+  * `auto_renew` - Auto renew.
+  * `cpu_number` - The cpu core number of instance.
+  * `disk_category` - The disk type of instance. `cloud_ssd` refers to SSD disk, `cloud_efficiency` refers to efficiency disk,cloud_essd refers to ESSD PL1 disk.
+  * `engine_type` - The engine type of instance. Enumerative: `tsdb_tsdb` refers to TSDB, `tsdb_influxdb` refers to TSDB for InfluxDB️.
+  * `expired_time` - Instance expiration time.
+  * `id` - The ID of the Instance.
+  * `instance_alias` - The alias of the instance.
+  * `instance_class` - The specification of the instance.
+  * `instance_id` - The ID of the instance.
+  * `instance_storage` - The storage capacity of the instance. Unit: GB. For example, the value 50 indicates 50 GB.
+  * `memory_size` - The memory size of instance.
+  * `network_type` - Instance network type.
+  * `payment_type` - The billing method. Valid values: `PayAsYouGo` and `Subscription`. The `PayAsYouGo` value indicates the pay-as-you-go method, and the `Subscription` value indicates the subscription method.
+  * `status` - Instance status, enumerative: ACTIVATION,DELETED, CREATING,CLASS_CHANGING,LOCKED.
+  * `vpc_connection_address` - The vpc connection address of instance.
+  * `vpc_id` - The ID of the virtual private cloud (VPC) that is connected to the instance.
+  * `vswitch_id` - The vswitch id.
+  * `zone_id` - The zone ID of the instance.

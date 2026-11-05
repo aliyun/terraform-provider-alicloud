@@ -19,10 +19,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-// The account-site and monthly-day gates live in the root package's test files
-// and are not importable from a service package, so they are kept here with the
-// same semantics. The region is pinned in PreCheck, the same way the Cloudauth
-// split package does it.
+// Keep the existing local names while delegating account selection to the shared helper.
+// The monthly-day gate and region checks remain resource-specific.
 type AccountSite string
 
 const (
@@ -31,17 +29,7 @@ const (
 )
 
 func testAccPreCheckWithAccountSiteType(t *testing.T, account AccountSite) {
-	defaultAccount := string(DomesticSite)
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_ACCOUNT_SITE")); v != "" {
-		defaultAccount = v
-	} else if v = strings.TrimSpace(os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")); v != "" {
-		defaultAccount = v
-	} else if v = strings.TrimSpace(os.Getenv("ALICLOUD_ACCOUNT_TYPE")); v != "" {
-		defaultAccount = v
-	}
-	if defaultAccount != string(account) {
-		t.Skipf("Skipping unsupported account type %s-Site. It only supports %s-Site.", defaultAccount, account)
-	}
+	acctest.PreCheckWithAccountSiteType(t, acctest.AccountSite(account))
 }
 
 func testAccPreCheckWithTime(t *testing.T, days []int) {

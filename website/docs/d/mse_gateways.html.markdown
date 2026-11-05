@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Mse Gateways of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.157.0+.
+-> **NOTE:** Available since v1.157.0.
 
 ## Example Usage
 
@@ -52,7 +52,7 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The status of the gateway. Valid values: `0`, `1`, `2`, `3`, `4`, `6`, `8`, `9`, `10`, `11`, `12`, `13`.
 * `vpc_id` - (Optional, ForceNew) The ID of the VPC.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

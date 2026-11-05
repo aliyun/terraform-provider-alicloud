@@ -52,6 +52,20 @@ var (
 		"total_count": {},
 		"max_results": {},
 	}
+	// Attribute-phase modifiers are matched only inside a CLOSED parenthesized
+	// modifier group whose members are modifier tokens — "(Optional)",
+	// "(Required, ForceNew)" — not free-form prose. attributeFieldRegex
+	// captures the whole description tail in words[2], so a plain Contains
+	// would mistake prose like "Optional metadata returned by the service."
+	// or "Required for subsequent API calls." for a modifier, and the prior
+	// \([^)]*\b<modifier>\b would also match an unclosed "(Optional" or a
+	// prose parenthesis like "(Required for subsequent API calls)" /
+	// "(Optional metadata returned by the service)". The group regex requires
+	// a closing ")" and only modifier tokens (Optional/Required/ForceNew/
+	// Deprecated, comma-separated) inside, so prose and unclosed parens are
+	// rejected; multi-token groups and Deprecated's legacy Contains behavior
+	// are preserved.
+	attrModifierGroupRe = regexp.MustCompile(`\(\s*(?:Optional|Required|ForceNew|Deprecated)(?:\s*,\s*(?:Optional|Required|ForceNew|Deprecated))*\s*\)`)
 )
 
 type ResourceAttribute struct {
@@ -234,6 +248,12 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 	line := 0
 	rootPrefixLen := 0
 	rootName := ""
+	// indentStep is the per-list indentation increment detected from the
+	// first descent in the Attribute phase. The project's markdownlint
+	// (MD007) mandates a two-space step, while legacy docs use four; both
+	// must be parsed. The step is detected dynamically so the back-up
+	// arithmetic is not hard-coded to a single indent width.
+	indentStep := 0
 	extraResourceAttribute := map[string]struct{}{}
 	for scanner.Scan() {
 		line += 1
@@ -256,6 +276,13 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 			record = true
 			parts := strings.Split(strings.TrimSpace(text), " ")
 			subAttributeName = strings.Replace(strings.Trim(parts[len(parts)-1], "`"), "-", ".", -1)
+			// A `### `block`` heading opens a fresh attribute scope. The
+			// indentation context of the previous list (depth, current field
+			// and detected step) must not bleed into the new scope, otherwise
+			// a block following a nested list would mis-parse its first field.
+			rootPrefixLen = 0
+			rootName = ""
+			indentStep = 0
 			continue
 		}
 		if record {
@@ -271,6 +298,27 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 					thisLen := len(strings.Split(m[0], "*")[0])
 
 					if rootPrefixLen < thisLen {
+						// Descending one indentation level. The step is
+						// established by the first descent and every
+						// subsequent descent must reuse the same step; a
+						// different delta means the list is inconsistently
+						// indented (e.g. a two-space list that suddenly widens
+						// by four, or a skip-level child), which this gate
+						// rejects.
+						diff := thisLen - rootPrefixLen
+						if indentStep == 0 {
+							// With a "* " marker, a child list starts two to
+							// five columns after its parent. One column is
+							// still a sibling; six or more is paragraph/code
+							// content, not a nested attribute list. MD007
+							// separately enforces the project's indent style.
+							if diff < 2 || diff > 5 {
+								return fmt.Errorf("resource %s docs %s: indentation delta %d is not a nested attribute list", resourceName, docsPath, diff)
+							}
+							indentStep = diff
+						} else if diff != indentStep {
+							return fmt.Errorf("resource %s docs %s have not been formatted: inconsistent indentation step", resourceName, docsPath)
+						}
 						if subAttributeName != "" {
 							subAttributeName += "." + rootName
 						} else {
@@ -280,11 +328,15 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 					} else if rootPrefixLen > thisLen {
 						parts := strings.Split(subAttributeName, ".")
 						backIndex := rootPrefixLen - thisLen
-						if backIndex%4 == 0 {
-							backIndex /= 4
-						} else {
-							return fmt.Errorf("resource %s docs %s have not been formatted.", resourceName, docsPath)
+						// Ascending back toward a sibling or ancestor. The
+						// indent delta must be a whole multiple of the
+						// detected step; otherwise the list is malformed. The
+						// number of levels to pop is delta / step, which works
+						// for both two-space and four-space indentation.
+						if indentStep == 0 || backIndex%indentStep != 0 {
+							return fmt.Errorf("resource %s docs %s have not been formatted: indent step %d does not divide indent delta %d", resourceName, docsPath, indentStep, backIndex)
 						}
+						backIndex /= indentStep
 						if len(parts) > 0 {
 							for backIndex > 0 {
 								backIndex--
@@ -359,6 +411,28 @@ func parseMatchLine(words []string, phase, rootName string) *ResourceAttribute {
 			result.Name = rootName + "." + words[1]
 		} else {
 			result.Name = words[1]
+		}
+		// Attribute-phase docs embed the modifier inside a CLOSED parenthesized
+		// modifier group (e.g. "- (Optional) The tag ..."). attributeFieldRegex
+		// captures the whole description tail in words[2], unlike
+		// argumentsFieldRegex whose second capture group is the modifier group
+		// itself. A plain Contains on words[2] would therefore treat free-form
+		// prose like "Optional metadata returned by the service." or "Required
+		// for subsequent API calls." as modifiers, and an unclosed "(Optional"
+		// or a prose parenthesis like "(Required for subsequent API calls)" /
+		// "(Optional metadata returned by the service)" would also be wrong.
+		// Match only a closed modifier group whose members are modifier tokens;
+		// Deprecated keeps its legacy Contains behavior.
+		for _, group := range attrModifierGroupRe.FindAllString(words[2], -1) {
+			if strings.Contains(group, "Optional") {
+				result.Optional = "true"
+			}
+			if strings.Contains(group, "Required") {
+				result.Required = "true"
+			}
+			if strings.Contains(group, "ForceNew") {
+				result.ForceNew = true
+			}
 		}
 		if strings.Contains(words[2], "Deprecated") {
 			result.Deprecated = "Deprecated since"

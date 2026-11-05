@@ -1,5 +1,7 @@
 // Package sweep provides shared sweeper client setup and filtering helpers.
-// Test runners, registrations, and resource-specific cleanup remain with callers.
+// Product-owned cleanup stays with each product. The external sweep_test package
+// hosts the remaining standalone sweepers and their shared dependency graph;
+// the make sweep entry resolves each registration to its owning test binary.
 package sweep
 
 import (

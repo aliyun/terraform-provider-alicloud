@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Resource Manager Control Policy Attachments of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.120.0+.
+-> **NOTE:** Available since v1.120.0.
 
 ## Example Usage
 
@@ -36,15 +36,15 @@ The following arguments are supported:
 * `target_id` - (Required, ForceNew) The Id of target.
 * `policy_type` - (Optional, ForceNew) The policy type of control policy. Valid values: `Custom` and `System`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Control Policy Attachment IDs.
 * `attachments` - A list of Resource Manager Control Policy Attachments. Each element contains the following attributes:
-	* `attach_date` - The attach date.
-	* `description` - The description of policy.
-	* `id` - The ID of the Control Policy Attachment.
-	* `policy_id` - The ID of policy.
-	* `policy_name` - The name of policy.
-	* `policy_type` - The type of policy.
+  * `attach_date` - The attach date.
+  * `description` - The description of policy.
+  * `id` - The ID of the Control Policy Attachment.
+  * `policy_id` - The ID of policy.
+  * `policy_name` - The name of policy.
+  * `policy_type` - The type of policy.

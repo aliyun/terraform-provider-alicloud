@@ -1,0 +1,465 @@
+package mnsopen
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	tfconvert "github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	tferrs "github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	tfhelper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	tflogs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	tftags "github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	tfvalidators "github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func resourceAliCloudMessageServiceQueue() *schema.Resource {
+	return &schema.Resource{
+		Create: ResourceAliCloudMessageServiceQueueCreate,
+		Read:   ResourceAliCloudMessageServiceQueueRead,
+		Update: ResourceAliCloudMessageServiceQueueUpdate,
+		Delete: ResourceAliCloudMessageServiceQueueDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"create_time": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"delay_seconds": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: tfvalidators.IntBetween(0, 604800),
+			},
+			"dlq_policy": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"max_receive_count": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"dead_letter_target_queue": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"enable_sse": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"encryption_enabled": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"kms_key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"logging_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"maximum_message_size": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: tfvalidators.IntBetween(1024, 65536),
+			},
+			"message_retention_period": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: tfvalidators.IntBetween(60, 604800),
+			},
+			"polling_wait_seconds": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: tfvalidators.IntBetween(0, 30),
+			},
+			"queue_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"queue_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: tfvalidators.StringInSlice([]string{"normal", "fifo"}, false),
+			},
+			"sse_algorithm": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: tfvalidators.StringInSlice([]string{"AES-256-GCM"}, false),
+			},
+			"sse_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: tfvalidators.StringInSlice([]string{"SMQ", "KMS"}, false),
+			},
+			"tags": tftags.TagsSchemaWithElements(),
+			"visibility_timeout": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: tfvalidators.IntBetween(0, 43200),
+			},
+		},
+	}
+}
+
+func ResourceAliCloudMessageServiceQueueCreate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "CreateQueue"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["QueueName"] = d.Get("queue_name")
+
+	if v, ok := d.GetOkExists("message_retention_period"); ok {
+		request["MessageRetentionPeriod"] = v
+	}
+	if v, ok := d.GetOkExists("polling_wait_seconds"); ok {
+		request["PollingWaitSeconds"] = v
+	}
+	if v, ok := d.GetOkExists("visibility_timeout"); ok {
+		request["VisibilityTimeout"] = v
+	}
+	if v, ok := d.GetOkExists("delay_seconds"); ok {
+		request["DelaySeconds"] = v
+	}
+	if v, ok := d.GetOkExists("maximum_message_size"); ok {
+		request["MaximumMessageSize"] = v
+	}
+	if v, ok := d.GetOkExists("logging_enabled"); ok {
+		request["EnableLogging"] = v
+	}
+	// A new queue has SSE off by default, so EnableSSE is only sent when
+	// true. d.Get is used instead of GetOkExists, which may treat an
+	// existing value as non-existent.
+	if v := d.Get("enable_sse"); v.(bool) {
+		request["EnableSSE"] = v
+	}
+	if v, ok := d.GetOk("sse_type"); ok {
+		request["SseType"] = v
+	}
+	if v, ok := d.GetOk("sse_algorithm"); ok {
+		request["SseAlgorithm"] = v
+	}
+	if v, ok := d.GetOk("kms_key_id"); ok {
+		request["KmsKeyId"] = v
+	}
+	if v, ok := d.GetOk("queue_type"); ok {
+		request["QueueType"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := tftags.ConvertTags(v.(map[string]interface{}))
+		request = tftags.ExpandTagsToMap(request, tagsMap)
+	}
+
+	objectDataLocalMap := make(map[string]interface{})
+
+	if v := d.Get("dlq_policy"); !tfhelper.IsNil(v) {
+		enabled1, _ := jsonpath.Get("$[0].enabled", v)
+		if enabled1 != nil && enabled1 != "" {
+			objectDataLocalMap["Enabled"] = enabled1
+		}
+
+		deadLetterTargetQueue1, _ := jsonpath.Get("$[0].dead_letter_target_queue", v)
+		if deadLetterTargetQueue1 != nil && deadLetterTargetQueue1 != "" {
+			objectDataLocalMap["DeadLetterTargetQueue"] = deadLetterTargetQueue1
+		}
+		maxReceiveCount1, _ := jsonpath.Get("$[0].max_receive_count", v)
+		if maxReceiveCount1 != nil && maxReceiveCount1 != "" {
+			objectDataLocalMap["MaxReceiveCount"] = maxReceiveCount1
+		}
+
+		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+		if err != nil {
+			return tferrs.WrapError(err)
+		}
+		request["DlqPolicy"] = string(objectDataLocalMapJson)
+	}
+
+	wait := tfhelper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
+		if err != nil {
+			if tfhelper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	tflogs.AddDebug(action, response, request)
+
+	if err != nil {
+		return tferrs.WrapErrorf(err, tferrs.DefaultErrorMsg, "alicloud_message_service_queue", action, tferrs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(request["QueueName"]))
+
+	return ResourceAliCloudMessageServiceQueueRead(d, meta)
+}
+
+func ResourceAliCloudMessageServiceQueueRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	messageServiceServiceV2 := MessageServiceServiceV2{client}
+
+	objectRaw, err := messageServiceServiceV2.DescribeMessageServiceQueue(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && tferrs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_message_service_queue DescribeMessageServiceQueue Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return tferrs.WrapError(err)
+	}
+
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("delay_seconds", objectRaw["DelaySeconds"])
+	d.Set("enable_sse", objectRaw["EnableSSE"])
+	d.Set("encryption_enabled", objectRaw["EncryptionEnabled"])
+	d.Set("kms_key_id", objectRaw["KmsKeyId"])
+	d.Set("logging_enabled", objectRaw["LoggingEnabled"])
+	d.Set("maximum_message_size", objectRaw["MaximumMessageSize"])
+	d.Set("message_retention_period", objectRaw["MessageRetentionPeriod"])
+	d.Set("polling_wait_seconds", objectRaw["PollingWaitSeconds"])
+	d.Set("queue_type", objectRaw["QueueType"])
+	d.Set("sse_algorithm", objectRaw["SseAlgorithm"])
+	d.Set("sse_type", objectRaw["SseType"])
+	d.Set("visibility_timeout", objectRaw["VisibilityTimeout"])
+	d.Set("queue_name", objectRaw["QueueName"])
+
+	dlqPolicyMaps := make([]map[string]interface{}, 0)
+	dlqPolicyMap := make(map[string]interface{})
+	dlqPolicyRaw := make(map[string]interface{})
+	if objectRaw["DlqPolicy"] != nil {
+		dlqPolicyRaw = objectRaw["DlqPolicy"].(map[string]interface{})
+	}
+	if len(dlqPolicyRaw) > 0 {
+		dlqPolicyMap["dead_letter_target_queue"] = dlqPolicyRaw["DeadLetterTargetQueue"]
+		dlqPolicyMap["enabled"] = dlqPolicyRaw["Enabled"]
+		maxReceiveCount, err := tfconvert.FormatInt(dlqPolicyRaw["MaxReceiveCount"])
+		if err != nil {
+			return err
+		}
+		dlqPolicyMap["max_receive_count"] = maxReceiveCount
+
+		dlqPolicyMaps = append(dlqPolicyMaps, dlqPolicyMap)
+	}
+	if err := d.Set("dlq_policy", dlqPolicyMaps); err != nil {
+		return err
+	}
+	tagsMaps := objectRaw["Tags"]
+	d.Set("tags", tftags.TagsToMap(tagsMaps))
+
+	return nil
+}
+
+func ResourceAliCloudMessageServiceQueueUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+	d.Partial(true)
+
+	action := "SetQueueAttributes"
+	var err error
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["QueueName"] = d.Id()
+	if !d.IsNewResource() && d.HasChange("message_retention_period") {
+		update = true
+
+		if v, ok := d.GetOk("message_retention_period"); ok {
+			request["MessageRetentionPeriod"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("polling_wait_seconds") {
+		update = true
+
+		if v, ok := d.GetOkExists("polling_wait_seconds"); ok {
+			request["PollingWaitSeconds"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("visibility_timeout") {
+		update = true
+
+		if v, ok := d.GetOk("visibility_timeout"); ok {
+			request["VisibilityTimeout"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("delay_seconds") {
+		update = true
+
+		if v, ok := d.GetOkExists("delay_seconds"); ok {
+			request["DelaySeconds"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("maximum_message_size") {
+		update = true
+
+		if v, ok := d.GetOkExists("maximum_message_size"); ok {
+			request["MaximumMessageSize"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("logging_enabled") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("logging_enabled"); ok {
+		request["EnableLogging"] = v
+	}
+
+	if !d.IsNewResource() && (d.HasChange("enable_sse") || d.HasChange("sse_type") || d.HasChange("sse_algorithm") || d.HasChange("kms_key_id")) {
+		update = true
+
+		// The whole SSE family is sent together on any SSE change. EnableSSE
+		// is set unconditionally via d.Get (not GetOkExists, which may treat
+		// an existing value as non-existent), so the current switch value is
+		// always sent, including the explicit false that disables SSE.
+		request["EnableSSE"] = d.Get("enable_sse")
+		if v, ok := d.GetOk("sse_type"); ok {
+			request["SseType"] = v
+		}
+		if v, ok := d.GetOk("sse_algorithm"); ok {
+			request["SseAlgorithm"] = v
+		}
+		if v, ok := d.GetOk("kms_key_id"); ok {
+			request["KmsKeyId"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("dlq_policy") {
+		update = true
+		objectDataLocalMap := make(map[string]interface{})
+
+		if v := d.Get("dlq_policy"); v != nil {
+			enabled1, _ := jsonpath.Get("$[0].enabled", v)
+			if enabled1 != nil && (d.HasChange("dlq_policy.0.enabled") || enabled1 != "") {
+				objectDataLocalMap["Enabled"] = enabled1
+
+				if objectDataLocalMap["Enabled"].(bool) {
+					deadLetterTargetQueue1, _ := jsonpath.Get("$[0].dead_letter_target_queue", v)
+					if deadLetterTargetQueue1 != nil && (d.HasChange("dlq_policy.0.dead_letter_target_queue") || deadLetterTargetQueue1 != "") {
+						objectDataLocalMap["DeadLetterTargetQueue"] = deadLetterTargetQueue1
+					}
+					maxReceiveCount1, _ := jsonpath.Get("$[0].max_receive_count", v)
+					if maxReceiveCount1 != nil && (d.HasChange("dlq_policy.0.max_receive_count") || maxReceiveCount1 != "") {
+						objectDataLocalMap["MaxReceiveCount"] = maxReceiveCount1
+					}
+				}
+			}
+
+			objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+			if err != nil {
+				return tferrs.WrapError(err)
+			}
+			request["DlqPolicy"] = string(objectDataLocalMapJson)
+		}
+	}
+
+	if update {
+		wait := tfhelper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
+			if err != nil {
+				if tfhelper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		tflogs.AddDebug(action, response, request)
+		if err != nil {
+			return tferrs.WrapErrorf(err, tferrs.DefaultErrorMsg, d.Id(), action, tferrs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("tags") {
+		messageServiceServiceV2 := MessageServiceServiceV2{client}
+		if err := messageServiceServiceV2.SetResourceTags(d, "queue"); err != nil {
+			return tferrs.WrapError(err)
+		}
+	}
+	d.Partial(false)
+	return ResourceAliCloudMessageServiceQueueRead(d, meta)
+}
+
+func ResourceAliCloudMessageServiceQueueDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteQueue"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["QueueName"] = d.Id()
+
+	wait := tfhelper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
+
+		if err != nil {
+			if tfhelper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	tflogs.AddDebug(action, response, request)
+
+	if err != nil {
+		if tferrs.NotFoundError(err) {
+			return nil
+		}
+		return tferrs.WrapErrorf(err, tferrs.DefaultErrorMsg, d.Id(), action, tferrs.AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}

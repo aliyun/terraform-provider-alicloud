@@ -1,0 +1,239 @@
+package vpcpeer
+
+import (
+	"fmt"
+	"regexp"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func DataSourcePeerConnections() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourcePeerConnectionsRead,
+		Schema: map[string]*schema.Schema{
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"peer_connection_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Accepting", "Activated", "Creating", "Deleted", "Deleting", "Expired", "Rejected", "Updating"}, false),
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"connections": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"accepting_ali_uid": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"accepting_region_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"accepting_vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"bandwidth": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"create_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"peer_connection_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"peer_connection_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourcePeerConnectionsRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "ListVpcPeerConnections"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOk("peer_connection_name"); ok {
+		request["Name"] = v
+	}
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VpcId"] = v
+	}
+	request["MaxResults"] = helper.PageSizeLarge
+	var objects []map[string]interface{}
+	var peerConnectionNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		peerConnectionNameRegex = r
+	}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+	status, statusOk := d.GetOk("status")
+	var response map[string]interface{}
+	var err error
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("VpcPeer", "2022-01-01", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_vpc_peer_connections", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.VpcPeerConnects", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.VpcPeerConnects", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if peerConnectionNameRegex != nil && !peerConnectionNameRegex.MatchString(fmt.Sprint(item["Name"])) {
+				continue
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["InstanceId"])]; !ok {
+					continue
+				}
+			}
+			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
+				continue
+			}
+			objects = append(objects, item)
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+
+		accepting_ali_uidVal, err := convert.FormatInt(object["AcceptingOwnerUid"])
+		if err != nil {
+			return err
+		}
+
+		bandwidthVal, err := convert.FormatInt(object["Bandwidth"])
+		if err != nil {
+			return err
+		}
+		mapping := map[string]interface{}{
+			"accepting_ali_uid":    accepting_ali_uidVal,
+			"accepting_region_id":  object["AcceptingRegionId"],
+			"accepting_vpc_id":     object["AcceptingVpc"].(map[string]interface{})["VpcId"],
+			"bandwidth":            bandwidthVal,
+			"create_time":          object["GmtCreate"],
+			"description":          object["Description"],
+			"id":                   fmt.Sprint(object["InstanceId"]),
+			"peer_connection_id":   fmt.Sprint(object["InstanceId"]),
+			"peer_connection_name": object["Name"],
+			"status":               object["Status"],
+			"vpc_id":               object["Vpc"].(map[string]interface{})["VpcId"],
+		}
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["Name"])
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("connections", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

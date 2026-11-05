@@ -1,0 +1,51 @@
+package rkvstore
+
+import (
+	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func dataSourceAlicloudKVStorePermission() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceAlicloudKVStorePermissionRead,
+
+		Schema: map[string]*schema.Schema{
+			"enable": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"On", "Off"}, false),
+				Optional:     true,
+				Default:      "Off",
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+		},
+	}
+}
+func dataSourceAlicloudKVStorePermissionRead(d *schema.ResourceData, meta interface{}) error {
+	if v, ok := d.GetOk("enable"); !ok || v.(string) != "On" {
+		d.SetId("KVStorePermissionHasNotBeenInitialize")
+		d.Set("status", "")
+		return nil
+	}
+
+	client := meta.(*connectivity.AliyunClient)
+	request := r_kvstore.CreateInitializeKvstorePermissionRequest()
+	raw, err := client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+		return rkvClient.InitializeKvstorePermission(request)
+	})
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	d.SetId("KVStorePermissionHasBeenInitialize")
+	d.Set("status", "Initialized")
+
+	return nil
+}

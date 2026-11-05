@@ -1,0 +1,299 @@
+package dts
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bssopenapi"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func ResourceSynchronizationInstance() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceSynchronizationInstanceCreate,
+		Read:   resourceSynchronizationInstanceRead,
+		Update: resourceSynchronizationInstanceUpdate,
+		Delete: resourceSynchronizationInstanceDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Schema: map[string]*schema.Schema{
+			"compute_unit": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"database_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"quantity": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"auto_pay": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"true", "false"}, false),
+			},
+			"auto_start": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"true", "false"}, false),
+			},
+			"sync_architecture": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"bidirectional", "oneway"}, false),
+			},
+			"destination_endpoint_engine_name": {
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"MySQL", "PolarDB", "polardb_o", "polardb_pg", "Redis", "DRDS", "PostgreSQL", "odps", "oracle", "mongodb", "tidb", "ADS", "ADB30", "Greenplum", "MSSQL", "kafka", "DataHub", "clickhouse", "DB2", "as400", "Tablestore"}, true),
+				DiffSuppressFunc: validators.UpperLowerCaseDiffSuppressFunc,
+			},
+			"destination_endpoint_region": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"source_endpoint_engine_name": {
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"MySQL", "PolarDB", "polardb_o", "polardb_pg", "Redis", "DRDS", "PostgreSQL", "odps", "oracle", "mongodb", "tidb", "ADS", "ADB30", "Greenplum", "MSSQL", "kafka", "DataHub", "clickhouse", "DB2", "as400", "Tablestore"}, true),
+				DiffSuppressFunc: validators.UpperLowerCaseDiffSuppressFunc,
+			},
+			"source_endpoint_region": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"instance_class": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"xmicro", "micro", "small", "medium", "large", "xlarge", "2xlarge", "4xlarge", "6xlarge", "8xlarge"}, false),
+			},
+			"payment_type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+			},
+			"payment_duration_unit": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
+			},
+			"payment_duration": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+		},
+	}
+}
+
+func resourceSynchronizationInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "CreateDtsInstance"
+	request := make(map[string]interface{})
+	var err error
+
+	request["AutoPay"] = false
+	request["AutoStart"] = true
+	request["InstanceClass"] = "small"
+	if v, ok := d.GetOk("auto_pay"); ok {
+		request["AutoPay"] = v
+	}
+	if v, ok := d.GetOk("auto_start"); ok {
+		request["AutoStart"] = v
+	}
+	if v, ok := d.GetOk("instance_class"); ok {
+		request["InstanceClass"] = v
+	}
+	if v, ok := d.GetOk("compute_unit"); ok {
+		request["ComputeUnit"] = v
+	}
+	if v, ok := d.GetOk("database_count"); ok {
+		request["DatabaseCount"] = v
+	}
+	if v, ok := d.GetOk("destination_endpoint_engine_name"); ok {
+		request["DestinationEndpointEngineName"] = v
+	}
+	if v, ok := d.GetOk("destination_endpoint_region"); ok {
+		request["DestinationRegion"] = v
+	}
+	if v, ok := d.GetOk("payment_type"); ok {
+		request["PayType"] = convertDtsSyncPaymentTypeRequest(v.(string))
+	}
+	if v, ok := d.GetOk("payment_duration_unit"); ok {
+		request["Period"] = v
+	}
+	if v, ok := d.GetOk("quantity"); ok {
+		request["Quantity"] = v
+	}
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("source_endpoint_engine_name"); ok {
+		request["SourceEndpointEngineName"] = v
+	}
+	if v, ok := d.GetOk("source_endpoint_region"); ok {
+		request["SourceRegion"] = v
+	}
+	if v, ok := d.GetOk("sync_architecture"); ok {
+		request["SyncArchitecture"] = v
+	}
+	request["Type"] = "SYNC"
+	if v, ok := d.GetOk("payment_duration"); ok {
+		request["UsedTime"] = v
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_dts_synchronization_instance", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["InstanceId"]))
+
+	return resourceSynchronizationInstanceRead(d, meta)
+}
+func resourceSynchronizationInstanceRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	dtsService := NewService(client)
+	object, err := dtsService.DescribeDtsSynchronizationInstance(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_dts_synchronization_instance dtsService.DescribeDtsSynchronizationInstance Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	d.Set("instance_class", object["DtsJobClass"])
+	paymentTypeRaw := convertDtsSyncPaymentTypeResponse(object["PayType"])
+	d.Set("payment_type", paymentTypeRaw)
+	if v, ok := object["SourceEndpoint"].(map[string]interface{}); ok {
+		d.Set("source_endpoint_engine_name", v["EngineName"])
+		d.Set("source_endpoint_region", v["Region"])
+	}
+	if v, ok := object["DestinationEndpoint"].(map[string]interface{}); ok {
+		d.Set("destination_endpoint_engine_name", v["EngineName"])
+		d.Set("destination_endpoint_region", v["Region"])
+	}
+	if fmt.Sprint(paymentTypeRaw) == "Subscription" && !d.IsNewResource() {
+		// DTS does not return the renewal setting; it is read back from BSS. A
+		// just-created instance is skipped because BSS may not list it yet.
+		renewObject, err := bssopenapi.NewBssOpenApiService(client).QueryAvailableInstancesWithoutProductType(d.Id(), "", "dts", "dts")
+		if err != nil {
+			if !errs.NotFoundError(err) {
+				return errs.WrapError(err)
+			}
+		} else if renewStatus, ok := renewObject["RenewStatus"]; ok && renewStatus != nil {
+			d.Set("auto_pay", convertDtsSynchronizationInstanceAutoPayResponse(renewStatus))
+		}
+	}
+	return nil
+}
+func resourceSynchronizationInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+	if d.HasChange("auto_pay") {
+		if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
+			if err := setDtsSynchronizationInstanceRenewal(d, meta); err != nil {
+				return err
+			}
+		} else {
+			log.Printf("[WARN] auto_pay only takes effect for Subscription instances, skip changing the renewal status of %s", d.Id())
+		}
+	}
+	return resourceSynchronizationInstanceRead(d, meta)
+}
+func resourceSynchronizationInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+
+	if v, ok := d.GetOk("payment_type"); ok {
+		if v.(string) == "Subscription" {
+			log.Printf("[WARN] Cannot destroy resource: alicloud_dts_synchronization_job because it's s. Terraform will remove this resource from the state file, however resources may remain.")
+			return nil
+		}
+	}
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteSynchronizationJob"
+	var response map[string]interface{}
+	var err error
+	request := map[string]interface{}{
+		"SynchronizationJobId": d.Id(),
+	}
+
+	request["RegionId"] = client.RegionId
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"InvalidJobId"}) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+func convertDtsSyncPaymentTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "PostPaid":
+		return "PayAsYouGo"
+	case "PrePaid":
+		return "Subscription"
+	}
+	return source
+}
+func convertDtsSyncPaymentTypeRequest(source interface{}) interface{} {
+	switch source {
+	case "PayAsYouGo":
+		return "PostPaid"
+	case "Subscription":
+		return "PrePaid"
+	}
+	return source
+}
+
+func convertDtsSynchronizationInstanceAutoPayResponse(source interface{}) string {
+	if fmt.Sprint(source) == "AutoRenewal" {
+		return "true"
+	}
+	return "false"
+}

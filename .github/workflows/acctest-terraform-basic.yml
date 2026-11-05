@@ -22,8 +22,9 @@ jobs:
     permissions:
       checks: read
       pull-requests: read
-    runs-on: terraform-ci-policy
-    timeout-minutes: 3
+    # API-only discovery has its own restricted pool, separate from Gate workers.
+    runs-on: terraform-ci-route
+    timeout-minutes: 5
     outputs:
       classification: ${{ steps.select.outputs.classification }}
       relevant: ${{ steps.select.outputs.relevant }}
@@ -124,9 +125,32 @@ jobs:
 
             const delay = (milliseconds) =>
               new Promise((resolve) => setTimeout(resolve, milliseconds));
-            const deadline = Date.now() + 90000;
+            // The Basic Policy Gate runs on pull_request_target in a separate
+            // workflow that queues on the shared terraform-ci-policy runner
+            // pool independently of this route job. Under runner contention the
+            // Gate's Check Run can appear after this job has started. The
+            // discovery budget tolerates that queue delay; the completion
+            // budget only starts once a unique Check Run is observable, so a
+            // slow-to-appear but already-completed policy is not penalised by
+            // this job's own start. Worst case 150s + 30s = 180s, within the
+            // 300s (timeout-minutes: 5) route job budget.
+            const discoveryTimeoutMs = 150000;
+            const completionTimeoutMs = 30000;
+            const pollIntervalMs = 3000;
+            const discoveryDeadline = Date.now() + discoveryTimeoutMs;
+            let completionDeadline = null;
+            let observed = false;
 
-            while (Date.now() < deadline) {
+            while (true) {
+              const deadline = observed ? completionDeadline : discoveryDeadline;
+              if (Date.now() >= deadline) {
+                throw new Error(
+                  observed
+                    ? "Timed out waiting for a unique Basic Policy result."
+                    : "Timed out waiting for a Basic Policy Check Run to appear."
+                );
+              }
+
               const checkRuns = await github.paginate(
                 github.rest.checks.listForRef,
                 {
@@ -144,7 +168,7 @@ jobs:
               );
 
               if (candidates.length === 0) {
-                await delay(3000);
+                await delay(Math.min(pollIntervalMs, Math.max(0, deadline - Date.now())));
                 continue;
               }
               if (candidates.length !== 1) {
@@ -154,12 +178,16 @@ jobs:
               const check = candidates[0];
               validateSource(check);
               const binding = parseBinding(check.external_id);
+              if (!observed) {
+                observed = true;
+                completionDeadline = Date.now() + completionTimeoutMs;
+              }
 
               if (check.status !== "completed") {
                 if (!["queued", "in_progress"].includes(check.status)) {
                   throw new Error("Basic Policy Check Run status is invalid.");
                 }
-                await delay(3000);
+                await delay(Math.min(pollIntervalMs, Math.max(0, completionDeadline - Date.now())));
                 continue;
               }
               if (check.conclusion !== "success") {
@@ -179,8 +207,6 @@ jobs:
               return;
             }
 
-            throw new Error("Timed out waiting for a unique Basic Policy result.");
-
   TestFrameworkGuard:
     needs: route
     # The test line runs terraform-plugin-testing since the flip: no file,
@@ -189,7 +215,7 @@ jobs:
     if: ${{ needs.route.outputs.relevant == 'true' }}
     permissions:
       contents: read
-    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    runs-on: ${{ needs.route.outputs.classification == 'trusted' && 'terraform-ci-lite' || fromJSON(needs.route.outputs.runner) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -197,6 +223,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -215,7 +242,7 @@ jobs:
     if: ${{ needs.route.outputs.relevant == 'true' }}
     permissions:
       contents: read
-    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    runs-on: ${{ needs.route.outputs.classification == 'trusted' && 'terraform-ci-lite' || fromJSON(needs.route.outputs.runner) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -224,6 +251,7 @@ jobs:
           persist-credentials: false
           # Checkout as many commits as needed for the diff
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -231,6 +259,40 @@ jobs:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Prepare writable Go/tool cache
+        # Route A: keep node-local Go/tool caches when the default HOME-owned
+        # directories are writable; redirect only the unwritable ones to a
+        # per-job $RUNNER_TEMP subdir so a polluted /home/runner on the trusted
+        # fleet no longer causes EACCES in setup-go/goimports/golangci-lint/
+        # tfproviderlint. Runs before setup-go so the env it exports is in effect
+        # for setup-go, the node-local seed restore and every later Go step.
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          # Older PR checkouts may predate this helper. Keep legacy tool paths
+          # defined, then prefer the PR helper or its exact, validated base SHA.
+          echo "TF_CI_TOOLS_DIR=${TF_CI_TOOLS_DIR:-$HOME/.cache/terraform-ci-tools}" >> "$GITHUB_ENV"
+          echo "TF_DOC_TOOLS_DIR=${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}" >> "$GITHUB_ENV"
+          helper=scripts/ci/ensure-writable-go-cache.sh
+          if [[ ! -s "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/ensure-writable-go-cache.sh"
+            if ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper" 2>/dev/null; then
+              git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+              git config --local remote.ci-base.promisor true
+              git config --local remote.ci-base.partialclonefilter blob:none
+              if ! git fetch --no-tags --no-recurse-submodules --filter=blob:none ci-base "$PR_BASE_SHA" ||
+                 ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper"; then
+                rm -f "$helper"
+              fi
+            fi
+          fi
+          if [[ -s "$helper" ]]; then
+            bash "$helper"
+          else
+            echo '::notice::Writable-cache helper unavailable; using runner defaults.'
+          fi
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -253,7 +315,7 @@ jobs:
     if: ${{ needs.route.outputs.relevant == 'true' }}
     permissions:
       contents: read
-    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    runs-on: ${{ needs.route.outputs.classification == 'trusted' && 'terraform-ci-lite' || fromJSON(needs.route.outputs.runner) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -262,6 +324,7 @@ jobs:
           persist-credentials: false
           # Checkout as many commits as needed for the diff
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -269,12 +332,45 @@ jobs:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Prepare writable Go/tool cache
+        # Route A: keep node-local Go/tool caches when the default HOME-owned
+        # directories are writable; redirect only the unwritable ones to a
+        # per-job $RUNNER_TEMP subdir so a polluted /home/runner on the trusted
+        # fleet no longer causes EACCES in setup-go/goimports/golangci-lint/
+        # tfproviderlint. Runs before setup-go so the env it exports is in effect
+        # for setup-go, the node-local seed restore and every later Go step.
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          # Older PR checkouts may predate this helper. Keep legacy tool paths
+          # defined, then prefer the PR helper or its exact, validated base SHA.
+          echo "TF_CI_TOOLS_DIR=${TF_CI_TOOLS_DIR:-$HOME/.cache/terraform-ci-tools}" >> "$GITHUB_ENV"
+          echo "TF_DOC_TOOLS_DIR=${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}" >> "$GITHUB_ENV"
+          helper=scripts/ci/ensure-writable-go-cache.sh
+          if [[ ! -s "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/ensure-writable-go-cache.sh"
+            if ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper" 2>/dev/null; then
+              git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+              git config --local remote.ci-base.promisor true
+              git config --local remote.ci-base.partialclonefilter blob:none
+              if ! git fetch --no-tags --no-recurse-submodules --filter=blob:none ci-base "$PR_BASE_SHA" ||
+                 ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper"; then
+                rm -f "$helper"
+              fi
+            fi
+          fi
+          if [[ -s "$helper" ]]; then
+            bash "$helper"
+          else
+            echo '::notice::Writable-cache helper unavailable; using runner defaults.'
+          fi
       - name: Set up Go Version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: .go-version
           cache: false
-
       - name: Install formatter
         run: go install golang.org/x/tools/cmd/goimports@v0.24.0
       - name: Golang Formatter Check
@@ -315,6 +411,7 @@ jobs:
           persist-credentials: false
           # Checkout as many commits as needed for the diff
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -322,11 +419,69 @@ jobs:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Prepare writable Go/tool cache
+        # Route A: keep node-local Go/tool caches when the default HOME-owned
+        # directories are writable; redirect only the unwritable ones to a
+        # per-job $RUNNER_TEMP subdir so a polluted /home/runner on the trusted
+        # fleet no longer causes EACCES in setup-go/goimports/golangci-lint/
+        # tfproviderlint. Runs before setup-go so the env it exports is in effect
+        # for setup-go, the node-local seed restore and every later Go step.
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          # Older PR checkouts may predate this helper. Keep legacy tool paths
+          # defined, then prefer the PR helper or its exact, validated base SHA.
+          echo "TF_CI_TOOLS_DIR=${TF_CI_TOOLS_DIR:-$HOME/.cache/terraform-ci-tools}" >> "$GITHUB_ENV"
+          echo "TF_DOC_TOOLS_DIR=${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}" >> "$GITHUB_ENV"
+          helper=scripts/ci/ensure-writable-go-cache.sh
+          if [[ ! -s "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/ensure-writable-go-cache.sh"
+            if ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper" 2>/dev/null; then
+              git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+              git config --local remote.ci-base.promisor true
+              git config --local remote.ci-base.partialclonefilter blob:none
+              if ! git fetch --no-tags --no-recurse-submodules --filter=blob:none ci-base "$PR_BASE_SHA" ||
+                 ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper"; then
+                rm -f "$helper"
+              fi
+            fi
+          fi
+          if [[ -s "$helper" ]]; then
+            bash "$helper"
+          else
+            echo '::notice::Writable-cache helper unavailable; using runner defaults.'
+          fi
       - name: Set up Go Version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: .go-version
           cache: false
+      - name: Restore node-local Go cache
+        id: local-go-cache
+        if: ${{ needs.route.outputs.classification == 'trusted' }}
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # Older PR heads may lack the helper. Use their exact base fixture.
+          helper=scripts/ci/restore-local-go-cache.py
+          if [[ ! -f "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/restore-local-go-cache.py"
+            if ! git show "$PR_BASE_SHA:scripts/ci/restore-local-go-cache.py" > "$helper"; then
+              rm -f "$helper"
+            fi
+          fi
+          # The administrator helper is read-only and still validates checkout hashes.
+          if [[ ! -s "$helper" && -f /opt/terraform-ci-cache/restore.py ]]; then
+            helper=/opt/terraform-ci-cache/restore.py
+          fi
+          if [[ -s "$helper" ]]; then
+            python3 "$helper"
+          else
+            echo 'hit=false' >> "$GITHUB_OUTPUT"
+          fi
       - name: vet
         env:
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
@@ -337,3 +492,152 @@ jobs:
           else
             CI_CHECK_BASE="$DIFF_BASE" ./scripts/vetcheck.sh
           fi
+
+  BuildInputs:
+    needs: route
+    # Detect whether the change range touches build-input files (CI workflows,
+    # GNUmakefile, CI/check scripts). Product-Go PRs reach ProductionBuild via
+    # route.outputs.relevant; this detector adds the CI/Make/script path so a
+    # base CI/Make/script PR itself is covered instead of being skipped as not
+    # relevant. Fixture-tested by scripts/ci/detect-build-input-changes_test.sh.
+    if: ${{ always() && needs.route.result == 'success' }}
+    permissions:
+      contents: read
+    runs-on: ${{ needs.route.outputs.classification == 'trusted' && 'terraform-ci-lite' || fromJSON(needs.route.outputs.runner) }}
+    outputs:
+      changed: ${{ steps.detect.outputs.changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+          filter: blob:none
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Detect build-input changes
+        id: detect
+        env:
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          value="$(scripts/ci/detect-build-input-changes.sh)"
+          echo "changed=$value" >> "$GITHUB_OUTPUT"
+      - name: Test Route A writable-cache fallback
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          # Resolve change range first: its exact base and merge base are validated.
+          helper=scripts/ci/run-ci-fixtures.py
+          if [[ ! -s "$helper" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == pull_request && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+            helper="$RUNNER_TEMP/run-ci-fixtures.py"
+            git show "$PR_BASE_SHA:scripts/ci/run-ci-fixtures.py" > "$helper"
+          fi
+          python3 "$helper" writable-cache
+
+
+  ProductionBuild:
+    needs: [route, BuildInputs]
+    # Real production build of the root provider main + complete production
+    # dependency graph assertion. Complements the Compile job (which runs only
+    # `vet`) with a genuine `go build`/link (root main + transitive production
+    # deps, including the alicloud/service/* subpackages) and a `go list -deps`
+    # graph query that blocks terraform-plugin-sdk/v2/helper/resource from the
+    # production link graph. Runs for product-Go PRs (route relevant) and for
+    # build-input PRs (CI/Make/scripts); reusable by every product migration PR.
+    if: ${{ needs.route.outputs.relevant == 'true' || needs.BuildInputs.outputs.changed == 'true' }}
+    permissions:
+      contents: read
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+          filter: blob:none
+      - name: Prepare writable Go/tool cache
+        # Route A: keep node-local Go/tool caches when the default HOME-owned
+        # directories are writable; redirect only the unwritable ones to a
+        # per-job $RUNNER_TEMP subdir so a polluted /home/runner on the trusted
+        # fleet no longer causes EACCES in setup-go/goimports/golangci-lint/
+        # tfproviderlint. Runs before setup-go so the env it exports is in effect
+        # for setup-go, the node-local seed restore and every later Go step.
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          # Older PR checkouts may predate this helper. Keep legacy tool paths
+          # defined, then prefer the PR helper or its exact, validated base SHA.
+          echo "TF_CI_TOOLS_DIR=${TF_CI_TOOLS_DIR:-$HOME/.cache/terraform-ci-tools}" >> "$GITHUB_ENV"
+          echo "TF_DOC_TOOLS_DIR=${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}" >> "$GITHUB_ENV"
+          helper=scripts/ci/ensure-writable-go-cache.sh
+          if [[ ! -s "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/ensure-writable-go-cache.sh"
+            if ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper" 2>/dev/null; then
+              git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+              git config --local remote.ci-base.promisor true
+              git config --local remote.ci-base.partialclonefilter blob:none
+              if ! git fetch --no-tags --no-recurse-submodules --filter=blob:none ci-base "$PR_BASE_SHA" ||
+                 ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper"; then
+                rm -f "$helper"
+              fi
+            fi
+          fi
+          if [[ -s "$helper" ]]; then
+            bash "$helper"
+          else
+            echo '::notice::Writable-cache helper unavailable; using runner defaults.'
+          fi
+      - name: Set up Go Version
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Restore node-local Go cache
+        id: local-go-cache
+        if: ${{ needs.route.outputs.classification == 'trusted' }}
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # Older PR heads may lack the helper. Use their exact base fixture.
+          helper=scripts/ci/restore-local-go-cache.py
+          if [[ ! -f "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/restore-local-go-cache.py"
+            if ! git show "$PR_BASE_SHA:scripts/ci/restore-local-go-cache.py" > "$helper"; then
+              rm -f "$helper"
+            fi
+          fi
+          # The administrator helper is read-only and still validates checkout hashes.
+          if [[ ! -s "$helper" && -f /opt/terraform-ci-cache/restore.py ]]; then
+            helper=/opt/terraform-ci-cache/restore.py
+          fi
+          if [[ -s "$helper" ]]; then
+            python3 "$helper"
+          else
+            echo 'hit=false' >> "$GITHUB_OUTPUT"
+          fi
+      # Call the underlying commands directly instead of `make provider-build` /
+      # `make check-production-deps`: the route runner for a fork PR can be
+      # `ubuntu-latest`, where `make` is not guaranteed to be on PATH. The make
+      # targets remain the canonical local/FC entry; CI mirrors the existing
+      # `Compile`/`Formatter` jobs, which call scripts/go tools directly.
+      - name: Build root provider main (production)
+        run: go build -o /dev/null .
+      - name: Production dependency graph check (no SDK v2 helper/resource)
+        run: scripts/ci/check-production-deps.sh
+

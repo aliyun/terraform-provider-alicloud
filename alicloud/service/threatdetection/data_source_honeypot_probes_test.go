@@ -1,0 +1,149 @@
+package threatdetection_test
+
+import (
+	"fmt"
+	"strings"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tFacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+)
+
+// NOTE: Test depends on data source or hardcoded are not stable and may fail at any time
+
+func TestAccAliCloudThreatDetectionHoneypotProbesDataSource(t *testing.T) {
+	rand := tFacctest.RandIntRange(1000000, 9999999)
+
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudThreatDetectionHoneypotProbeSourceConfig(rand, map[string]string{
+			"enable_details": `"true"`,
+			"ids":            `["${alicloud_threat_detection_honeypot_probe.default.id}"]`,
+		}),
+		FakeConfig: testAccCheckAlicloudThreatDetectionHoneypotProbeSourceConfig(rand, map[string]string{
+			"enable_details": `"true"`,
+			"ids":            `["${alicloud_threat_detection_honeypot_probe.default.id}_fake"]`,
+		}),
+	}
+
+	ProbeTypeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudThreatDetectionHoneypotProbeSourceConfig(rand, map[string]string{
+			"enable_details": `"true"`,
+			"ids":            `["${alicloud_threat_detection_honeypot_probe.default.id}"]`,
+			"probe_type":     `"host_probe"`,
+		}),
+		FakeConfig: testAccCheckAlicloudThreatDetectionHoneypotProbeSourceConfig(rand, map[string]string{
+			"enable_details": `"true"`,
+			"ids":            `["${alicloud_threat_detection_honeypot_probe.default.id}_fake"]`,
+			"probe_type":     `"host_probe_fake"`,
+		}),
+	}
+	DisplayNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudThreatDetectionHoneypotProbeSourceConfig(rand, map[string]string{
+			"enable_details": `"true"`,
+			"ids":            `["${alicloud_threat_detection_honeypot_probe.default.id}"]`,
+			"display_name":   `"${var.name}"`,
+		}),
+		FakeConfig: testAccCheckAlicloudThreatDetectionHoneypotProbeSourceConfig(rand, map[string]string{
+			"enable_details": `"true"`,
+			"ids":            `["${alicloud_threat_detection_honeypot_probe.default.id}_fake"]`,
+			"display_name":   `"${var.name}_fake"`,
+		}),
+	}
+
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudThreatDetectionHoneypotProbeSourceConfig(rand, map[string]string{
+			"enable_details": `"true"`,
+			"ids":            `["${alicloud_threat_detection_honeypot_probe.default.id}"]`,
+			"probe_type":     `"host_probe"`,
+			"display_name":   `"${var.name}"`,
+		}),
+		FakeConfig: testAccCheckAlicloudThreatDetectionHoneypotProbeSourceConfig(rand, map[string]string{
+			"enable_details": `"true"`,
+			"ids":            `["${alicloud_threat_detection_honeypot_probe.default.id}_fake"]`,
+			"probe_type":     `"host_probe_fake"`,
+			"display_name":   `"${var.name}_fake"`,
+		}),
+	}
+
+	ThreatDetectionHoneypotProbeCheckInfo.DataSourceTestCheck(t, rand, idsConf, ProbeTypeConf, DisplayNameConf, allConf)
+}
+
+var existThreatDetectionHoneypotProbeMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"probes.#":                   "1",
+		"probes.0.id":                acctest.CHECKSET,
+		"probes.0.arp":               acctest.CHECKSET,
+		"probes.0.control_node_id":   acctest.CHECKSET,
+		"probes.0.display_name":      acctest.CHECKSET,
+		"probes.0.honeypot_probe_id": acctest.CHECKSET,
+		"probes.0.ping":              acctest.CHECKSET,
+		"probes.0.probe_type":        acctest.CHECKSET,
+		"probes.0.status":            acctest.CHECKSET,
+		"probes.0.uuid":              acctest.CHECKSET,
+	}
+}
+
+var fakeThreatDetectionHoneypotProbeMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"probes.#": "0",
+	}
+}
+
+var ThreatDetectionHoneypotProbeCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_threat_detection_honeypot_probes.default",
+	ExistMapFunc: existThreatDetectionHoneypotProbeMapFunc,
+	FakeMapFunc:  fakeThreatDetectionHoneypotProbeMapFunc,
+}
+
+func testAccCheckAlicloudThreatDetectionHoneypotProbeSourceConfig(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
+	config := fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccThreatDetectionHoneypotProbe%d"
+}
+
+data "alicloud_threat_detection_assets" "default" {
+  machine_types = "ecs"
+  //ids = ["e52c7872-29d1-4aa1-9908-0299abd53606"]
+}
+
+resource "alicloud_threat_detection_honeypot_node" "default" {
+  node_name                    = var.name
+  available_probe_num          = 20
+  security_group_probe_ip_list = ["0.0.0.0/0"]
+}
+
+data "alicloud_threat_detection_honeypot_images" "default" {}
+
+resource "alicloud_threat_detection_honey_pot" "default" {
+  honeypot_image_name = "ruoyi"
+  honeypot_image_id   = data.alicloud_threat_detection_honeypot_images.default.images.0.honeypot_image_id
+  honeypot_name       = var.name
+  node_id             = alicloud_threat_detection_honeypot_node.default.id
+}
+
+resource "alicloud_threat_detection_honeypot_probe" "default" {
+  uuid            = data.alicloud_threat_detection_assets.default.assets.0.uuid
+  probe_type      = "host_probe"
+  control_node_id = alicloud_threat_detection_honeypot_node.default.id
+  ping            = true
+  honeypot_bind_list {
+    bind_port_list {
+      start_port = 80
+      end_port   = 80
+    }
+    honeypot_id = alicloud_threat_detection_honey_pot.default.id
+  }
+  display_name = var.name
+  arp          = true
+}
+
+data "alicloud_threat_detection_honeypot_probes" "default" {
+%s
+}
+`, rand, strings.Join(pairs, "\n   "))
+	return config
+}

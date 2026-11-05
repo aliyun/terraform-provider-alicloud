@@ -1,0 +1,235 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+package cloudcontrol
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func DataSourceCloudControlPrices() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceCloudControlPriceRead,
+		Schema: map[string]*schema.Schema{
+			"desire_attributes": {
+				Type:          schema.TypeMap,
+				Optional:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				ConflictsWith: []string{"desire_attributes_json"},
+			},
+			"desire_attributes_json": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"desire_attributes"},
+				ValidateFunc:  validation.StringIsJSON,
+			},
+			"product": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"resource_code": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"prices": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"currency": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"discount_price": {
+							Type:     schema.TypeFloat,
+							Computed: true,
+						},
+						"module_details": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"module_code": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"module_name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"cost_after_discount": {
+										Type:     schema.TypeFloat,
+										Computed: true,
+									},
+									"original_cost": {
+										Type:     schema.TypeFloat,
+										Computed: true,
+									},
+									"price_type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"invoice_discount": {
+										Type:     schema.TypeFloat,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"original_price": {
+							Type:     schema.TypeFloat,
+							Computed: true,
+						},
+						"promotion_details": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"promotion_name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"promotion_desc": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"promotion_id": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"trade_price": {
+							Type:     schema.TypeFloat,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+		},
+	}
+}
+
+func dataSourceCloudControlPriceRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	var objects []map[string]interface{}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+
+	var request map[string]interface{}
+	var response map[string]interface{}
+	action := fmt.Sprintf("/api/v1/providers/%s/products/%s/price/%s", "aliyun", d.Get("product").(string), d.Get("resource_code").(string))
+	var err error
+	request = make(map[string]interface{})
+	query := make(map[string]*string)
+	body := make(map[string]interface{})
+	query["regionId"] = helper.StringPointer(client.RegionId)
+	if v, ok := d.GetOk("desire_attributes"); ok {
+		query["resourceAttributes"] = helper.StringPointer(convert.ConvertObjectToJsonString(v))
+	} else if v, ok := d.GetOk("desire_attributes_json"); ok {
+		query["resourceAttributes"] = helper.StringPointer(v.(string))
+	}
+
+	body = request
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, body)
+
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		logs.AddDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	resp, _ := jsonpath.Get("$.price", response)
+	objects = append(objects, resp.(map[string]interface{}))
+
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, objectRaw := range objects {
+		mapping := map[string]interface{}{}
+		mapping["currency"] = objectRaw["currency"]
+		mapping["discount_price"] = objectRaw["discountPrice"]
+		mapping["original_price"] = objectRaw["originalPrice"]
+		mapping["trade_price"] = objectRaw["tradePrice"]
+
+		moduleDetails1Raw := objectRaw["moduleDetails"]
+		moduleDetailsMaps := make([]map[string]interface{}, 0)
+		if moduleDetails1Raw != nil {
+			for _, moduleDetailsChild1Raw := range moduleDetails1Raw.([]interface{}) {
+				moduleDetailsMap := make(map[string]interface{})
+				moduleDetailsChild1Raw := moduleDetailsChild1Raw.(map[string]interface{})
+				moduleDetailsMap["cost_after_discount"] = moduleDetailsChild1Raw["costAfterDiscount"]
+				moduleDetailsMap["invoice_discount"] = moduleDetailsChild1Raw["invoiceDiscount"]
+				moduleDetailsMap["module_code"] = moduleDetailsChild1Raw["moduleCode"]
+				moduleDetailsMap["module_name"] = moduleDetailsChild1Raw["moduleName"]
+				moduleDetailsMap["original_cost"] = moduleDetailsChild1Raw["originalCost"]
+				moduleDetailsMap["price_type"] = moduleDetailsChild1Raw["priceType"]
+
+				moduleDetailsMaps = append(moduleDetailsMaps, moduleDetailsMap)
+			}
+		}
+		mapping["module_details"] = moduleDetailsMaps
+		promotionDetails1Raw := objectRaw["promotionDetails"]
+		promotionDetailsMaps := make([]map[string]interface{}, 0)
+		if promotionDetails1Raw != nil {
+			for _, promotionDetailsChild1Raw := range promotionDetails1Raw.([]interface{}) {
+				promotionDetailsMap := make(map[string]interface{})
+				promotionDetailsChild1Raw := promotionDetailsChild1Raw.(map[string]interface{})
+				promotionDetailsMap["promotion_desc"] = promotionDetailsChild1Raw["promotionDesc"]
+				promotionDetailsMap["promotion_id"] = promotionDetailsChild1Raw["promotionId"]
+				promotionDetailsMap["promotion_name"] = promotionDetailsChild1Raw["promotionName"]
+
+				promotionDetailsMaps = append(promotionDetailsMaps, promotionDetailsMap)
+			}
+		}
+		mapping["promotion_details"] = promotionDetailsMaps
+
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, objectRaw[""])
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+
+	if err := d.Set("prices", s); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+	return nil
+}

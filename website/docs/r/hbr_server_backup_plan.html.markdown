@@ -15,8 +15,6 @@ For information about Hybrid Backup Recovery (HBR) Server Backup Plan and how to
 
 -> **NOTE:** Available since v1.142.0.
 
--> **NOTE:** Deprecated since v1.249.0.
-
 -> **DEPRECATED:** This resource has been deprecated from version `1.249.0`. Please use new resource [alicloud_hbr_policy](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/hbr_policy) and [alicloud_hbr_policy_binding](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/hbr_policy_binding).
 
 ## Example Usage
@@ -91,13 +89,13 @@ The following arguments are supported:
 * `schedule` - (Required) Backup strategy. Optional format: `I|{startTime}|{interval}`
   * `startTime` Backup start time, UNIX time, in seconds. 
   * `interval` **ISO8601 time interval**. E.g: `PT1H` means one hour apart. `P1D` means one day apart. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task is not completed, the next backup task will not be triggered.
-* `detail` - (Required) ECS server backup plan details.
+* `detail` - (Required) ECS server backup plan details. See [`detail`](#detail) below.
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
 * `cross_account_type` - (Optional, ForceNew, Computed, Available since v1.199.0) The type of the cross account backup. Valid values: `SELF_ACCOUNT`, `CROSS_ACCOUNT`.
 * `cross_account_user_id` - (Optional, ForceNew, Available since v1.199.0) The original account ID of the cross account backup managed by the current account.
 * `cross_account_role_name` - (Optional, ForceNew, Available since v1.199.0) The role name created in the original account RAM backup by the cross account managed by the current account.
 
-#### Block detail
+### `detail`
 
 The `detail` supports the following:
 

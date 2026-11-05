@@ -118,16 +118,16 @@ The following arguments are supported:
 * `target_instance_id` - (Optional, ForceNew)  The target ID of ECS instance. **NOTE:** Required while source_type equals `ECS_FILE`
 * `target_client_id` - (Optional, ForceNew) The target client ID.
 * `target_data_source_id` - (Optional, ForceNew) The target data source ID.
-* `target_time` - (Optional, Available since v1.164.0) The time when data is restored to the Table store instance. This value is a UNIX timestamp. Unit: seconds. **WARNING:** Required while source_type equals `OTS_TABLE`. **Note:** The time when data is restored to the Tablestore instance. It should be 0 if restores data at the End time of the snapshot.
-* `udm_detail` - (Optional, Available since v1.164.0) The full machine backup details.
-* `target_instance_name` - (Optional, Available since v1.164.0) The name of the Table store instance to which you want to restore data.**WARNING:** Required while source_type equals `OTS_TABLE`.
-* `target_table_name` - (Optional, Available since v1.164.0) The name of the table that stores the restored data. **WARNING:** Required while source_type equals `OTS_TABLE`.
-* `ots_detail` - (Optional, Computed, Available since v1.186.0) The details about the Tablestore instance. See the following `Block ots_detail`.
+* `target_time` - (Optional, ForceNew, Available since v1.164.0) The time when data is restored to the Table store instance. This value is a UNIX timestamp. Unit: seconds. **WARNING:** Required while source_type equals `OTS_TABLE`. **Note:** The time when data is restored to the Tablestore instance. It should be 0 if restores data at the End time of the snapshot.
+* `udm_detail` - (Optional, ForceNew, Available since v1.164.0) The full machine backup details.
+* `target_instance_name` - (Optional, ForceNew, Available since v1.164.0) The name of the Table store instance to which you want to restore data.**WARNING:** Required while source_type equals `OTS_TABLE`.
+* `target_table_name` - (Optional, ForceNew, Available since v1.164.0) The name of the table that stores the restored data. **WARNING:** Required while source_type equals `OTS_TABLE`.
+* `ots_detail` - (Optional, Computed, Available since v1.186.0) The details about the Tablestore instance. See [`ots_detail`](#ots_detail) below.
 * `cross_account_type` - (Optional, ForceNew, Computed, Available since v1.189.0) The type of the cross account backup. Valid values: `SELF_ACCOUNT`, `CROSS_ACCOUNT`.
 * `cross_account_user_id` - (Optional, ForceNew, Available since v1.189.0) The original account ID of the cross account backup managed by the current account.
 * `cross_account_role_name` - (Optional, ForceNew, Available since v1.189.0) The role name created in the original account RAM backup by the cross account managed by the current account.
 
-#### Block ots_detail
+### `ots_detail`
 
 The ots_detail supports the following:
 * `overwrite_existing` - (Optional, ForceNew, Computed) Whether to overwrite the existing table storage recovery task. Valid values: `true`, `false`.

@@ -114,11 +114,12 @@ jobs:
                 filename === "action.yml" ||
                 filename === "action.yaml"
               );
-              relevant =
-                protectedPathChanged ||
-                changedFiles.some(({ filename }) =>
-                  /^alicloud\/.+\.go$/.test(filename)
-                );
+              // Protected CI paths still gate external authors below, but they
+              // carry no provider code, so they must not mark the PR relevant
+              // for the Go business checks.
+              relevant = changedFiles.some(({ filename }) =>
+                /^alicloud\/.+\.go$/.test(filename)
+              );
 
               const allowlistedAutomation =
                 author === "api-tool-agent" &&

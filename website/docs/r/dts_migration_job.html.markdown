@@ -151,6 +151,7 @@ The following arguments supported:
 * `structure_initialization` - (Required, ForceNew) Whether to perform a database table structure to migrate.
 * `data_synchronization` - (Required, ForceNew) Whether to perform incremental data migration.
 * `db_list` - (Required, ForceNew) Migration object, in the format of JSON strings. For detailed definition instructions, please refer to [the description of migration, migration or subscription objects](https://help.aliyun.com/document_detail/209545.html).
+* `data_check_configure` - (Optional, String, ForceNew, Available since v2.1.1) The data verification configuration of the migration job, in the format of a JSON string, such as parameter limits or alarm configurations. The `dataCheckDbList` field is required when this argument is set. For more information, see the DataCheckConfigure parameter description [datacheckconfigure-parameter](https://help.aliyun.com/zh/dts/developer-reference/datacheckconfigure-parameter).
 * `source_endpoint_ssl` - (Optional, Computed, Available since v1.287.0) The connection method of the source instance. Valid values: `0` (an unencrypted connection), `1` (an SSL-secured connection). Only supported when the source endpoint is accessed as a cloud instance or as a self-managed database hosted on ECS.
 * `destination_endpoint_ssl` - (Optional, Computed, Available since v1.287.0) The connection method of the destination instance. Valid values: `0` (an unencrypted connection), `1` (an SSL-secured connection), `3` (a connection using SCRAM-SHA-256, for a Kafka destination only). `1` is only supported when the destination endpoint is accessed as a cloud instance or as a self-managed database hosted on ECS.
 * `source_endpoint_instance_type` - (Required, ForceNew) The type of source instance. Valid values: `CEN`, `DG`, `DISTRIBUTED_DMSLOGICDB`, `ECS`, `EXPRESS`, `MONGODB`, `OTHER`, `PolarDB`, `POLARDBX20`, `RDS`.
@@ -182,7 +183,7 @@ The following arguments supported:
 
   -> **NOTE:** `src_primary_vswitch_id`, `src_secondary_vswitch_id`, `dest_primary_vswitch_id` and `dest_secondary_vswitch_id` are only used when the job is created. They are not refreshed from the server, and are not populated by `terraform import`.
 
-* `status` - (Optional) The status of the resource. Valid values: `Migrating`, `Suspending`. You can suspend the task by specifying `Suspending` and start the task by specifying `Migrating`.
+* `status` - (Optional, String, Computed) The status of the resource. Valid values: `Migrating`, `Suspending`. You can suspend the task by specifying `Suspending` and start the task by specifying `Migrating`. While the job is being prepared or is running, the computed value is `Migrating`.
 
 ## Notice
 

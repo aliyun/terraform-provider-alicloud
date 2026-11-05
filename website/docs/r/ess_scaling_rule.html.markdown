@@ -150,7 +150,7 @@ The following arguments are supported:
 * `hybrid_monitor_namespace` - (Optional, Available since v1.245.0) The ID of the Hybrid Cloud Monitoring metric repository.
 * `metric_type` - (Optional, Available since v1.245.0) The type of the metric. Valid values: system, custom, hybrid.
 * `hybrid_metrics` - (Optional, Available since v1.245.0) The Hybrid Cloud Monitoring metrics. See [`hybrid_metrics`](#hybrid_metrics) below.
-* `alarm_options` - (Optional, Available since v1.295.0) The alarm options of the target tracking scaling rule. This block is write-only: the value is sent on create and update but not read back from the server. See [`alarm_options`](#alarm_options) below.
+* `alarm_options` - (Optional, Available since v2.2.0) The alarm options of the target tracking scaling rule. This block is write-only: the value is sent on create and update but not read back from the server. See [`alarm_options`](#alarm_options) below.
 
 
 ### `step_adjustment`
@@ -169,7 +169,6 @@ The HybridMetrics mapping supports the following:
 * `metric_name` - (Optional) The name of the Hybrid Cloud Monitoring metric.
 * `statistic` - (Optional) The statistical method of the metric value. Valid values: Average, Minimum, Maximum.
 * `expression` - (Optional) The metric expression that consists of multiple Hybrid Cloud Monitoring metrics. It calculates a result used to trigger scaling events. The expression must comply with the Reverse Polish Notation (RPN) specification, and the operators can only be + - × /.
-* `metric_name` - (Optional) The name of the Hybrid Cloud Monitoring metric.
 * `dimensions` - (Optional) The structure of volumeMounts.
   See [`dimensions`](#hybrid_metrics-dimensions) below for details.
 

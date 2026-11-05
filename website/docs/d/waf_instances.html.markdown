@@ -54,4 +54,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `remain_day` - The number of days before the trial period of the WAF instance expires.
   * `trial` - Indicates whether this is a trial instance.
   * `status` - Indicates whether the WAF instance has expired.
-  * `subscription_typed` - The billing method of the WAF instance. 
+  * `subscription_type` - The billing method of the WAF instance.

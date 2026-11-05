@@ -67,35 +67,35 @@ The following attributes are exported in addition to the arguments listed above:
   * `reference_count` - (Available since v1.286.0) The number of times that the Address Book is referenced.
   * `asset_member_uids` - (Available since v1.286.0) The list of member account UIDs of the asset Address Book.
   * `asset_region_resource_types` - (Available since v1.286.0) The list of regions and asset types of the asset Address Book.
-      * `asset_region_id` - The region ID of the assets.
-      * `resource_type` - The types of the assets.
-          * `ipv4` - The IPv4 asset types.
-              * `eip` - Whether the assets of the type EIP are included.
-              * `ecs_eip` - Whether the assets of the type EcsEIP are included.
-              * `ecs_public_ip` - Whether the assets of the type EcsPublicIP are included.
-              * `slb_eip` - Whether the assets of the type SlbEIP are included.
-              * `slb_public_ip` - Whether the assets of the type SlbPublicIP are included.
-              * `nlb_eip` - Whether the assets of the type NlbEIP are included.
-              * `alb_eip` - Whether the assets of the type AlbEIP are included.
-              * `nat_eip` - Whether the assets of the type NatEIP are included.
-              * `nat_public_ip` - Whether the assets of the type NatPublicIP are included.
-              * `eni_eip` - Whether the assets of the type EniEIP are included.
-              * `ga_eip` - Whether the assets of the type GaEIP are included.
-              * `api_gateway_eip` - Whether the assets of the type ApiGatewayEIP are included.
-              * `ai_gateway_eip` - Whether the assets of the type AiGatewayEIP are included.
-              * `bastion_host_ip` - Whether the assets of the type BastionHostIP are included.
-              * `bastion_host_ingress_ip` - Whether the assets of the type BastionHostIngressIP are included.
-              * `bastion_host_egress_ip` - Whether the assets of the type BastionHostEgressIP are included.
-              * `havip` - Whether the assets of the type HAVIP are included.
-          * `ipv6` - The IPv6 asset types.
-              * `ecs_ipv6` - Whether the assets of the type EcsIPv6 are included.
-              * `slb_ipv6` - Whether the assets of the type SlbIPv6 are included.
-              * `nlb_ipv6` - Whether the assets of the type NlbIPv6 are included.
-              * `alb_ipv6` - Whether the assets of the type AlbIPv6 are included.
-              * `eni_eipv6` - Whether the assets of the type EniEIPv6 are included.
-              * `ga_eipv6` - Whether the assets of the type GaEIPv6 are included.
-              * `api_gateway_eipv6` - Whether the assets of the type ApiGatewayEIPv6 are included.
-              * `ai_gateway_eipv6` - Whether the assets of the type AiGatewayEIPv6 are included.
+    * `asset_region_id` - The region ID of the assets.
+    * `resource_type` - The types of the assets.
+      * `ipv4` - The IPv4 asset types.
+        * `eip` - Whether the assets of the type EIP are included.
+        * `ecs_eip` - Whether the assets of the type EcsEIP are included.
+        * `ecs_public_ip` - Whether the assets of the type EcsPublicIP are included.
+        * `slb_eip` - Whether the assets of the type SlbEIP are included.
+        * `slb_public_ip` - Whether the assets of the type SlbPublicIP are included.
+        * `nlb_eip` - Whether the assets of the type NlbEIP are included.
+        * `alb_eip` - Whether the assets of the type AlbEIP are included.
+        * `nat_eip` - Whether the assets of the type NatEIP are included.
+        * `nat_public_ip` - Whether the assets of the type NatPublicIP are included.
+        * `eni_eip` - Whether the assets of the type EniEIP are included.
+        * `ga_eip` - Whether the assets of the type GaEIP are included.
+        * `api_gateway_eip` - Whether the assets of the type ApiGatewayEIP are included.
+        * `ai_gateway_eip` - Whether the assets of the type AiGatewayEIP are included.
+        * `bastion_host_ip` - Whether the assets of the type BastionHostIP are included.
+        * `bastion_host_ingress_ip` - Whether the assets of the type BastionHostIngressIP are included.
+        * `bastion_host_egress_ip` - Whether the assets of the type BastionHostEgressIP are included.
+        * `havip` - Whether the assets of the type HAVIP are included.
+      * `ipv6` - The IPv6 asset types.
+        * `ecs_ipv6` - Whether the assets of the type EcsIPv6 are included.
+        * `slb_ipv6` - Whether the assets of the type SlbIPv6 are included.
+        * `nlb_ipv6` - Whether the assets of the type NlbIPv6 are included.
+        * `alb_ipv6` - Whether the assets of the type AlbIPv6 are included.
+        * `eni_eipv6` - Whether the assets of the type EniEIPv6 are included.
+        * `ga_eipv6` - Whether the assets of the type GaEIPv6 are included.
+        * `api_gateway_eipv6` - Whether the assets of the type ApiGatewayEIPv6 are included.
+        * `ai_gateway_eipv6` - Whether the assets of the type AiGatewayEIPv6 are included.
   * `ecs_tags` - The logical relation among the ECS tags that to be matched.
     * `tag_key` - The key of ECS tag that to be matched.
     * `tag_value` - The value of ECS tag that to be matched.

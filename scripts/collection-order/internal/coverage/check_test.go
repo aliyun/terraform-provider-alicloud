@@ -75,7 +75,7 @@ func TestListReorderCoverage(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			issues := Check("test.go", []byte(tc.src), "alicloud_example", r)
+			issues := Check("test.go", []byte(tc.src), nil, "alicloud_example", r)
 			if (len(issues) == 0) != tc.pass {
 				t.Fatalf("issues=%v want pass=%v", issues, tc.pass)
 			}
@@ -97,19 +97,19 @@ func TestCandidatesAndNestedList(t *testing.T) {
 	apply := `{Config:testAccConfig(map[string]interface{}{"outer":[]map[string]interface{}{{"ids":[]int{1,2},"name":"same"}}})},`
 	plan := `{Config:testAccConfig(map[string]interface{}{"outer":[]map[string]interface{}{{"ids":[]int{2,1},"name":"same"}}}),PlanOnly:true,ExpectNonEmptyPlan:true},`
 	final := `{Config:testAccConfig(map[string]interface{}{"outer":[]map[string]interface{}{{"ids":[]int{2,1},"name":"same"}}})},`
-	if issues := Check("test.go", []byte(fixture(apply)), "alicloud_example", r); len(issues) != 1 || !strings.Contains(issues[0], "outer.ids") {
+	if issues := Check("test.go", []byte(fixture(apply)), nil, "alicloud_example", r); len(issues) != 1 || !strings.Contains(issues[0], "outer.ids") {
 		t.Fatalf("nested List not required: %v", issues)
 	}
-	if issues := Check("test.go", []byte(fixture(apply+plan+final)), "alicloud_example", r); len(issues) > 0 {
+	if issues := Check("test.go", []byte(fixture(apply+plan+final)), nil, "alicloud_example", r); len(issues) > 0 {
 		t.Fatal(issues)
 	}
 	r.Schema["outer"].Type = schema.TypeList
 	r.Schema["outer"].MaxItems = 1
-	if issues := Check("test.go", []byte(fixture(apply+plan+final)), "alicloud_example", r); len(issues) > 0 {
+	if issues := Check("test.go", []byte(fixture(apply+plan+final)), nil, "alicloud_example", r); len(issues) > 0 {
 		t.Fatal(issues)
 	}
 	delete(r.Schema, "outer")
-	if issues := Check("test.go", []byte(fixture("")), "alicloud_example", r); len(issues) > 0 {
+	if issues := Check("test.go", []byte(fixture("")), nil, "alicloud_example", r); len(issues) > 0 {
 		t.Fatalf("Set itself must not require reorder coverage: %v", issues)
 	}
 }
@@ -133,7 +133,7 @@ func TestNoHiddenBuilderMutation(t *testing.T) {
 		strings.Replace(valid, "resource.Test(t,", `return; resource.Test(t,`, 1),
 	}
 	for i, src := range cases {
-		if issues := Check("test.go", []byte(src), "alicloud_example", r); len(issues) == 0 {
+		if issues := Check("test.go", []byte(src), nil, "alicloud_example", r); len(issues) == 0 {
 			t.Errorf("case %d incorrectly passed", i)
 		}
 	}
@@ -144,7 +144,7 @@ func TestConstructorAliasesShareCoverage(t *testing.T) {
 	src := fixture(`{Config:testAccConfig(map[string]interface{}{"ids":[]string{"a","b"}})},
  {Config:testAccConfig(map[string]interface{}{"ids":[]string{"b","a"}}),PlanOnly:true,ExpectNonEmptyPlan:true},
  {Config:testAccConfig(map[string]interface{}{"ids":[]string{"b","a"}})},`)
-	if issues := Check("test.go", []byte(src), "alicloud_old_example", r, "alicloud_example"); len(issues) > 0 {
+	if issues := Check("test.go", []byte(src), nil, "alicloud_old_example", r, "alicloud_example"); len(issues) > 0 {
 		t.Fatal(issues)
 	}
 }
@@ -214,7 +214,7 @@ func TestSuppressedListCoverage(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			issues := Check("test.go", []byte(tc.src), "alicloud_example", r)
+			issues := Check("test.go", []byte(tc.src), nil, "alicloud_example", r)
 			if (len(issues) == 0) != tc.pass {
 				t.Fatalf("issues=%v want pass=%v", issues, tc.pass)
 			}
@@ -236,7 +236,7 @@ func TestSuppressedCandidateNames(t *testing.T) {
 
 func TestAnonymousSuppressorRejected(t *testing.T) {
 	r := &schema.Resource{Schema: map[string]*schema.Schema{"ids": {Type: schema.TypeList, Optional: true, DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool { return true }}}}
-	issues := Check("test.go", []byte(fixture(`{Config:testAccConfig(map[string]interface{}{"ids":[]string{"a","b"}})},`)), "alicloud_example", r)
+	issues := Check("test.go", []byte(fixture(`{Config:testAccConfig(map[string]interface{}{"ids":[]string{"a","b"}})},`)), nil, "alicloud_example", r)
 	if len(issues) != 1 || !strings.Contains(issues[0], "anonymous DiffSuppressFunc") {
 		t.Fatalf("issues=%v", issues)
 	}
@@ -252,11 +252,80 @@ func TestMixedSuppressedAndPlainCoverage(t *testing.T) {
 	step3 := `{Config:testAccConfig(map[string]interface{}{"plain":[]string{"y","x"}}),PlanOnly:true,ExpectNonEmptyPlan:true},`
 	step4 := `{Config:testAccConfig(map[string]interface{}{"plain":[]string{"y","x"}})},`
 	unit := exampleOrderUnitNet()
-	if issues := Check("test.go", []byte(suppressedFixture(step1+step2+step3+step4, unit)), "alicloud_example", r); len(issues) > 0 {
+	if issues := Check("test.go", []byte(suppressedFixture(step1+step2+step3+step4, unit)), nil, "alicloud_example", r); len(issues) > 0 {
 		t.Fatal(issues)
 	}
-	issues := Check("test.go", []byte(suppressedFixture(step1+step2, unit)), "alicloud_example", r)
+	issues := Check("test.go", []byte(suppressedFixture(step1+step2, unit)), nil, "alicloud_example", r)
 	if len(issues) != 1 || !strings.Contains(issues[0], "plain") {
 		t.Fatalf("issues=%v", issues)
+	}
+}
+
+// qualifiedFixture mirrors fixture() but uses the split-package qualified
+// constructor acctest.ResourceTestAccConfig, the form the alicloud/service/*
+// packages use after the relocation. The checker must recognize it as readily
+// as the bare legacy resourceTestAccConfigFunc; the package alias is a per-file
+// choice and is not constrained.
+func qualifiedFixture(steps string) string {
+	return `package alicloud_test
+import (
+ "testing"
+ acctest "github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+ "github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+func TestAccExample(t *testing.T) {
+ resourceId := "alicloud_example.default"
+ testAccConfig := acctest.ResourceTestAccConfig(resourceId, "test", dependence)
+ resource.Test(t, resource.TestCase{Steps: []resource.TestStep{` + steps + `}})
+}`
+}
+
+// unitNetFile wraps a unit-net function as a complete sibling *_unit_test.go
+// source in the same package, the split-package layout that separates the
+// suppressor's table test from the TestAcc steps.
+func unitNetFile(unit string) string {
+	return `package alicloud_test
+import (
+ "testing"
+)
+` + unit
+}
+
+func TestQualifiedConstructorReorderCoverage(t *testing.T) {
+	r := &schema.Resource{Schema: map[string]*schema.Schema{"ids": {Type: schema.TypeList, Optional: true}}}
+	apply := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"a","b"},"name":"same"})},`
+	plan := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"b","a"}}),PlanOnly:true,ExpectNonEmptyPlan:true},`
+	reorderedApply := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"b","a"}})},`
+	src := qualifiedFixture(apply + plan + reorderedApply)
+	if issues := Check("test.go", []byte(src), nil, "alicloud_example", r); len(issues) != 0 {
+		t.Fatalf("qualified constructor not recognized as a config builder: %v", issues)
+	}
+	// A bare legacy constructor in the same shape still passes (regression guard).
+	if issues := Check("test.go", []byte(fixture(apply+plan+reorderedApply)), nil, "alicloud_example", r); len(issues) != 0 {
+		t.Fatalf("bare constructor regressed: %v", issues)
+	}
+}
+
+func TestSuppressedUnitNetInSiblingFile(t *testing.T) {
+	r := &schema.Resource{Schema: map[string]*schema.Schema{"ids": {Type: schema.TypeList, Optional: true, DiffSuppressFunc: exampleOrderSuppressFunc}}}
+	apply := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"a","b"},"name":"same"})},`
+	reorderedApply := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"b","a"},"name":"same"})},`
+	// Main *_test.go file: TestAcc steps with the qualified constructor, no inline unit net.
+	mainSrc := qualifiedFixture(apply + reorderedApply)
+	// Sibling *_unit_test.go file: carries the suppressor unit net.
+	siblingSrc := unitNetFile(exampleOrderUnitNet())
+	testSources := map[string][]byte{"example_unit_test.go": []byte(siblingSrc)}
+	if issues := Check("test.go", []byte(mainSrc), testSources, "alicloud_example", r); len(issues) != 0 {
+		t.Fatalf("expected pass with unit net in sibling file, got %v", issues)
+	}
+	// Without the sibling file the net is missing and coverage fails.
+	if issues := Check("test.go", []byte(mainSrc), nil, "alicloud_example", r); len(issues) == 0 {
+		t.Fatal("expected failure when unit net sibling file is absent")
+	}
+	// A net lacking the reorder case still fails even with the sibling file.
+	badNet := strings.Replace(exampleOrderUnitNet(), `{"ReorderOnly", "a,b", "b,a", true},`, `{"SameOrder", "a,b", "a,b", true},`, 1)
+	badSources := map[string][]byte{"example_unit_test.go": []byte(unitNetFile(badNet))}
+	if issues := Check("test.go", []byte(mainSrc), badSources, "alicloud_example", r); len(issues) == 0 {
+		t.Fatal("expected failure when sibling net lacks the reorder case")
 	}
 }

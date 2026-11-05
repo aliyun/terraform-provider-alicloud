@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Rds Backups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.149.0+.
+-> **NOTE:** Available since v1.149.0+.
 
 ## Example Usage
 
@@ -39,7 +39,7 @@ The following arguments are supported:
 * `start_time` - (Optional, ForceNew) The start time.
 * `backup_status` - (Optional, ForceNew) Backup task status. Valid values: `Automated` and `Manual`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

@@ -85,6 +85,8 @@ resource "alicloud_nas_file_system" "cpfs" {
 ## Argument Reference
 
 The following arguments are supported:
+* `auto_upgrade_config` - (Optional, Computed, List, Available since v2.1.0) The automatic capacity expansion configuration. Only cpfsse file systems support this feature. See [`auto_upgrade_config`](#auto_upgrade_config) below.
+
 * `capacity` - (Optional, Computed, Int, Available since v1.140.0) File system capacity.
 
   Unit: GiB, required and valid when FileSystemType = extreme or cpfs.
@@ -101,6 +103,8 @@ The following arguments are supported:
   - 2~128 English or Chinese characters in length.
   - Must start with upper and lower case letters or Chinese, and cannot start with 'http://' and 'https'.
   - Can contain numbers, colons (:), underscores (_), or dashes (-).
+
+  -> **NOTE:** For `standard` file system types, the NAS server writes `description` asynchronously after the file system is created. The Provider waits for this field to be persisted before the first read so that the value is correctly populated in state.
 
 * `encrypt_type` - (Optional, ForceNew, Computed, Int, Available since v1.121.2) Whether the file system is encrypted.
 
@@ -153,6 +157,8 @@ The following arguments are supported:
 
 * `resource_group_id` - (Optional, Computed, Available since v1.236.0) The ID of the resource group.
 
+  -> **NOTE:** For `standard` file system types, the NAS server writes `resource_group_id` asynchronously after the file system is created. The Provider waits for this field to be persisted before the first read so that the value is correctly populated in state.
+
 * `smb_acl` - (Optional, Computed, List, Available since v1.248.0) SMB ACL See [`smb_acl`](#smb_acl) below.
 
 * `snapshot_id` - (Optional, Available since v1.236.0) Only extreme NAS is supported.
@@ -173,7 +179,7 @@ The following arguments are supported:
 
   This parameter must be configured when FileSystemType = cpfs. When the FileSystemType is standard or extreme, this parameter is reserved for the interface and has not taken effect yet. You do not need to configure it.
 
-  -> **NOTE:** This `vswitch_id` configures the network of the CPFS file system itself and is different from `vswitch_id` in [`alicloud_nas_mount_target`](nas_mount_target.html), which specifies the vSwitch of the mount target used by clients to access a NAS file system. A mount target still requires its own `vswitch_id` regardless of `file_system_type`.
+  -> **NOTE:** This `vswitch_id` configures the network of the CPFS file system itself and is different from `vswitch_id` in [`alicloud_nas_mount_target`](nas_mount_target.html.markdown), which specifies the vSwitch of the mount target used by clients to access a NAS file system. A mount target still requires its own `vswitch_id` regardless of `file_system_type`.
 
   -> **NOTE:** For `standard` or `extreme` file systems, `vswitch_id` is reserved by the interface and has no effect; the NAS API does not return it for these file system types, so any configured value is suppressed from the plan diff and will not force a replacement. It is still recommended to leave it unset for `standard` or `extreme` file systems.
 
@@ -192,6 +198,21 @@ The following arguments are supported:
   -> **NOTE:** file systems in different zones in the same region communicate with ECS cloud servers.
 
   -> **NOTE:** We recommend that the file system and the ECS instance belong to the same zone to avoid cross-zone latency.
+
+### `auto_upgrade_config`
+
+The auto_upgrade_config supports the following:
+* `capacity_used_ratio` - (Optional, Computed, Int, Available since v2.1.0) The capacity usage threshold. Valid values: 1 to 99. Unit: percent.
+
+* `enabled` - (Optional, Computed, Bool, Available since v2.1.0) Whether to enable automatic capacity expansion.
+
+* `step` - (Optional, Computed, Int, Available since v2.1.0) The capacity expansion step. Unit: GiB.
+
+* `time` - (Optional, Computed, Int, Available since v2.1.0) The duration threshold. Unit: minutes.
+
+  -> **NOTE:** Automatic capacity expansion is a modify-time feature: it is applied through the NAS ModifyFileSystem API after the file system has been created.
+
+  -> **NOTE:** This block is Optional and Computed. Removing the entire block from the configuration does **not** disable automatic capacity expansion or send a disable request to the server; the previous server value is retained as a computed value and the plan stays stable. To disable automatic capacity expansion, set `enabled = false` explicitly. When only `enabled` is configured, the other attributes (`capacity_used_ratio`, `step`, `time`) become computed and are read back from the server.
 
 ### `nfs_acl`
 

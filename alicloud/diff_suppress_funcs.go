@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"encoding/json"
 	"sort"
 	"strconv"
 	"strings"
@@ -84,18 +83,6 @@ func healthCheckTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 		return false
 	}
 	return true
-}
-
-// ensLoadBalancerHttpListenerHealthCheckOffDiffSuppressFunc suppresses the
-// ENS HTTP listener health check parameter fields when health_check is "off".
-// The ENS Describe API omits HealthCheckDomain/URI/HealthyThreshold/
-// UnhealthyThreshold/HealthCheckTimeout/HealthCheckInterval/HealthCheckHttpCode/
-// HealthCheckMethod while health check is off (HealthCheckConnectPort is still
-// returned), so these parameters must neither be planned into the diff nor set
-// into state; otherwise they persist as empty/zero values and surface as
-// unexpected attributes after refresh.
-func ensLoadBalancerHttpListenerHealthCheckOffDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return d.Get("health_check").(string) == "off"
 }
 
 func establishedTimeoutDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -681,13 +668,7 @@ func sagClientUserPasswordSuppressFunc(k, old, new string, d *schema.ResourceDat
 	return false
 }
 
-func selectdbPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if d.Get("payment_type").(string) == "Subscription" {
-		return false
-	}
-	return true
-}
-
+// Migrated to alicloud/service/selectdb.postPaidDiffSuppressFunc.
 func cmsClientInfoSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	for _, v := range d.Get("escalations_info").([]interface{}) {
 		mapping := v.(map[string]interface{})
@@ -716,61 +697,6 @@ func cmsClientCriticalSuppressFunc(k, old, new string, d *schema.ResourceData) b
 		}
 	}
 	return false
-}
-
-func alikafkaInstanceConfigDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if new == "" {
-		return true
-	}
-	if old == "" {
-		return false
-	}
-
-	oldMap := make(map[string]string)
-	err := json.Unmarshal([]byte(old), &oldMap)
-	if err != nil {
-		return false
-	}
-
-	newMap := make(map[string]string)
-	err = json.Unmarshal([]byte(new), &newMap)
-	if err != nil {
-		return false
-	}
-
-	// key exist in oldMap && found new value item different with old item
-	for k, newValueItem := range newMap {
-		oldValueItem, ok := oldMap[k]
-		if ok && newValueItem != oldValueItem {
-			return false
-		}
-	}
-
-	return true
-}
-
-func payTypePostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return strings.ToLower(d.Get("pay_type").(string)) == "postpaid"
-}
-
-func engineDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return strings.ToLower(d.Get("engine").(string)) == "bds"
-}
-
-func whiteIpListDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	oldArray := strings.Split(old, ",")
-	newArray := strings.Split(new, ",")
-	if len(oldArray) != len(newArray) {
-		return false
-	}
-	sort.Strings(oldArray)
-	sort.Strings(newArray)
-	for i := range newArray {
-		if newArray[i] != oldArray[i] {
-			return false
-		}
-	}
-	return true
 }
 
 func sslEnabledDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {

@@ -1,18 +1,13 @@
 package ecs
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -43,7 +38,7 @@ func ResourceDisk() *schema.Resource {
 			"category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validators.StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_essd", "cloud_ssd", "cloud_auto", "cloud_essd_entry", "elastic_ephemeral_disk_standard", "elastic_ephemeral_disk_premium"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_essd", "cloud_ssd", "cloud_auto", "cloud_essd_entry", "elastic_ephemeral_disk_standard", "elastic_ephemeral_disk_premium"}, false),
 				Default:      "cloud_efficiency",
 			},
 			"create_time": {
@@ -90,6 +85,11 @@ func ResourceDisk() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"force_delete": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 			"instance_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -111,13 +111,13 @@ func ResourceDisk() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"performance_level": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validators.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+				ValidateFunc: StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("category").(string) != "cloud_essd"
 				},
@@ -160,11 +160,11 @@ func ResourceDisk() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"tags": tags.TagsSchema(),
+			"tags": tagsSchema(),
 			"type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validators.StringInSlice([]string{"offline", "online"}, false),
+				ValidateFunc: StringInSlice([]string{"offline", "online"}, false),
 			},
 			"zone_id": {
 				Type:          schema.TypeString,
@@ -203,14 +203,14 @@ func resourceDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = helper.BuildClientToken(action)
+	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
-		request = tags.ExpandTagsToMap(request, tagsMap)
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
 	}
 
 	if v, ok := d.GetOk("description"); ok {
@@ -269,11 +269,11 @@ func resourceDiskCreate(d *schema.ResourceData, meta interface{}) error {
 		request["AdvancedFeatures"] = v
 	}
 
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 		if err != nil {
-			if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "UnknownError", "LastTokenProcessing"}) || helper.NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ServiceUnavailable", "UnknownError", "LastTokenProcessing"}) || NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -281,10 +281,10 @@ func resourceDiskCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		return nil
 	})
-	logs.AddDebug(action, response, request)
+	addDebug(action, response, request)
 
 	if err != nil {
-		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ecs_disk", action, errs.AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ecs_disk", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["DiskId"]))
@@ -292,9 +292,9 @@ func resourceDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	// Setting instanceId aims to creating the PrePaid disk and the job is async
 	if fmt.Sprint(request["InstanceId"]) != "" {
 		service := NewService(client)
-		stateConf := helper.BuildStateConf([]string{}, []string{"Available", "In_use"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, service.DiskStateRefreshFunc(d.Id(), "Status", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Available", "In_use"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, service.DiskStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
@@ -307,12 +307,12 @@ func resourceDiskRead(d *schema.ResourceData, meta interface{}) error {
 
 	objectRaw, err := service.DescribeDisk(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && errs.NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ecs_disk DescribeDisk Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return errs.WrapError(err)
+		return WrapError(err)
 	}
 
 	if objectRaw["BurstingEnabled"] != nil {
@@ -388,7 +388,7 @@ func resourceDiskRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
-	d.Set("tags", tags.TagsToMap(tagsMaps))
+	d.Set("tags", tagsToMap(tagsMaps))
 
 	return nil
 }
@@ -420,7 +420,7 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	objectRaw, err := service.DescribeDisk(d.Id())
 	if err != nil {
-		return errs.WrapError(err)
+		return WrapError(err)
 	}
 	if fmt.Sprint(objectRaw["DeleteWithInstance"]) != fmt.Sprint(d.Get("delete_with_instance")) {
 		update = true
@@ -464,11 +464,11 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if update {
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -476,9 +476,9 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 			}
 			return nil
 		})
-		logs.AddDebug(action, response, request)
+		addDebug(action, response, request)
 		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -488,7 +488,7 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 	query = make(map[string]interface{})
 	request["DiskId"] = d.Id()
 
-	request["ClientToken"] = helper.BuildClientToken(action)
+	request["ClientToken"] = buildClientToken(action)
 	if !d.IsNewResource() && d.HasChange("size") {
 		update = true
 	}
@@ -497,11 +497,11 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		request["Type"] = v
 	}
 	if update {
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 			if err != nil {
-				if errs.IsExpectedErrors(err, []string{"LastTokenProcessing", "InternalError"}) || helper.NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"LastTokenProcessing", "InternalError"}) || NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -509,9 +509,9 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 			}
 			return nil
 		})
-		logs.AddDebug(action, response, request)
+		addDebug(action, response, request)
 		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -529,11 +529,11 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	request["ResourceType"] = "disk"
 	if update {
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 			if err != nil {
-				if errs.IsExpectedErrors(err, []string{"InternalError"}) || helper.NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -541,9 +541,9 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 			}
 			return nil
 		})
-		logs.AddDebug(action, response, request)
+		addDebug(action, response, request)
 		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -581,11 +581,11 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		if _, ok := d.GetOkExists("dry_run"); ok {
 			request["DryRun"] = d.Get("dry_run")
 		}
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 			if err != nil {
-				if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "Throttling.ConcurrentLimitExceeded", "DiskInCoolingPeriod"}) || helper.NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"ServiceUnavailable", "Throttling.ConcurrentLimitExceeded", "DiskInCoolingPeriod"}) || NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -593,9 +593,9 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 			}
 			return nil
 		})
-		logs.AddDebug(action, response, request)
+		addDebug(action, response, request)
 		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
 		// Category conversion (e.g. cloud_essd -> cloud_auto) is applied asynchronously
@@ -616,20 +616,20 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		// disks whose conversion may take longer.
 		if d.HasChange("category") {
 			targetCategory := d.Get("category").(string)
-			categoryConf := helper.BuildStateConf([]string{"Modifying", "CategoryConverting"}, []string{"Available", "In_use"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, func() (interface{}, string, error) {
+			categoryConf := BuildStateConf([]string{"Modifying", "CategoryConverting"}, []string{"Available", "In_use"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, func() (interface{}, string, error) {
 				objectRaw, err := service.DescribeDisk(d.Id())
 				return diskCategoryTransitionRefresh(objectRaw, err, targetCategory)
 			})
 			if _, err := categoryConf.WaitForState(); err != nil {
-				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+				return WrapErrorf(err, IdMsg, d.Id())
 			}
 		} else {
 			// With an empty Pending list the state machine keeps polling through any
 			// unknown state (including "Modifying" on non-category updates) until the
 			// target or the timeout.
-			stateConf := helper.BuildStateConf([]string{}, []string{"Available", "In_use"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, service.DiskStateRefreshFunc(d.Id(), "Status", []string{}))
+			stateConf := BuildStateConf([]string{}, []string{"Available", "In_use"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, service.DiskStateRefreshFunc(d.Id(), "Status", []string{}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+				return WrapErrorf(err, IdMsg, d.Id())
 			}
 		}
 	}
@@ -644,11 +644,11 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		request["DiskId"] = d.Id()
 		request["RegionId"] = client.RegionId
 		request["BurstingEnabled"] = d.Get("bursting_enabled")
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -656,18 +656,18 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 			}
 			return nil
 		})
-		logs.AddDebug(action, response, request)
+		addDebug(action, response, request)
 		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
 	action = "ModifyDiskChargeType"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["DiskIds"] = convert.ConvertListToJsonString([]interface{}{d.Id()})
+	request["DiskIds"] = convertListToJsonString([]interface{}{d.Id()})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = helper.BuildClientToken(action)
+	request["ClientToken"] = buildClientToken(action)
 	request["AutoPay"] = true
 	request["InstanceId"] = d.Get("instance_id")
 	if !d.IsNewResource() && d.HasChange("payment_type") {
@@ -675,11 +675,11 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		request["DiskChargeType"] = convertDiskPaymentTypeRequest(d.Get("payment_type").(string))
 	}
 	if update {
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -687,20 +687,20 @@ func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 			}
 			return nil
 		})
-		logs.AddDebug(action, response, request)
+		addDebug(action, response, request)
 		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(request["DiskChargeType"])}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, service.DiskStateRefreshFunc(d.Id(), "DiskChargeType", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(request["DiskChargeType"])}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, service.DiskStateRefreshFunc(d.Id(), "DiskChargeType", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("tags") {
 		if err := service.SetResourceTags(d, "disk"); err != nil {
-			return errs.WrapError(err)
+			return WrapError(err)
 		}
 	}
 	d.Partial(false)
@@ -713,31 +713,197 @@ func resourceDiskDelete(d *schema.ResourceData, meta interface{}) error {
 
 	objectRaw, err := service.DescribeDisk(d.Id())
 	if err != nil {
-		if errs.NotFoundError(err) {
+		if NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ecs_disk DescribeDisk Failed!!! %s", err)
 			return nil
 		}
-		return errs.WrapError(err)
+		return WrapError(err)
 	}
 
-	if fmt.Sprint(objectRaw["DiskChargeType"]) == "PrePaid" && fmt.Sprint(objectRaw["DeleteWithInstance"]) == "true" {
+	switch diskDeleteDecisionFor(d.Get("force_delete").(bool), objectRaw) {
+	case diskDeleteForce:
+		return resourceDiskForceDelete(d, client, service, objectRaw)
+	case diskDeleteDropState:
 		log.Printf("[DEBUG] Resource alicloud_ecs_disk %s charge type is PrePaid and its attribute DeleteWithInstance is true, so it will remove from state.", d.Id())
 		return nil
+	default:
+		return resourceDiskRelease(d, client)
+	}
+}
+
+type diskDeleteDecision int
+
+const (
+	diskDeleteRelease diskDeleteDecision = iota
+	diskDeleteDropState
+	diskDeleteForce
+)
+
+// diskDeleteDecisionFor picks the delete behavior: an explicit force_delete
+// takes priority over the legacy PrePaid + DeleteWithInstance=true branch,
+// which only removes the disk from state without destroying it.
+func diskDeleteDecisionFor(forceDelete bool, objectRaw map[string]interface{}) diskDeleteDecision {
+	if forceDelete {
+		return diskDeleteForce
+	}
+	if fmt.Sprint(objectRaw["DiskChargeType"]) == "PrePaid" && fmt.Sprint(objectRaw["DeleteWithInstance"]) == "true" {
+		return diskDeleteDropState
+	}
+	return diskDeleteRelease
+}
+
+// diskForceDeletePlan lists the steps still required to force delete a disk
+// according to the latest DescribeDisks response, so a destroy that is retried
+// after a partial failure skips the steps a previous attempt already completed
+// (for example the PrePaid to PostPaid conversion, which is rate limited to one
+// successful call per disk every five minutes).
+type diskForceDeletePlan struct {
+	convertChargeType bool
+	detach            bool
+	instanceId        string
+}
+
+func newDiskForceDeletePlan(id string, objectRaw map[string]interface{}, stateInstanceId string) (*diskForceDeletePlan, error) {
+	if fmt.Sprint(objectRaw["MultiAttach"]) == "Enabled" {
+		return nil, fmt.Errorf("cannot force delete the multi-attach disk %s: multi-attach disks do not support charge type conversion or detaching with DeleteWithInstance=false, so release the disk manually or disable multi-attach first", id)
 	}
 
-	action := "DeleteDisk"
+	describeInstanceId := ""
+	if v, ok := objectRaw["InstanceId"]; ok && v != nil {
+		describeInstanceId = fmt.Sprint(v)
+	}
+	plan := &diskForceDeletePlan{
+		convertChargeType: fmt.Sprint(objectRaw["DiskChargeType"]) == "PrePaid",
+		detach:            fmt.Sprint(objectRaw["Status"]) == "In_use" || describeInstanceId != "",
+		instanceId:        describeInstanceId,
+	}
+	if plan.instanceId == "" {
+		plan.instanceId = stateInstanceId
+	}
+	if plan.instanceId == "" {
+		if plan.convertChargeType {
+			return nil, fmt.Errorf("cannot force delete the PrePaid disk %s: converting it to PayAsYouGo requires the ID of the instance it is attached to, but DescribeDisks neither reports one nor is instance_id set in the resource state; attach the disk to an instance or release it manually", id)
+		}
+		if plan.detach {
+			return nil, fmt.Errorf("cannot force delete the disk %s: it is in use but DescribeDisks neither reports an instance ID nor is instance_id set in the resource state, so it cannot be detached", id)
+		}
+	}
+	return plan, nil
+}
+
+// resourceDiskForceDelete releases a disk even when it is a PrePaid data disk:
+// it converts the disk to PostPaid, detaches it with DeleteWithInstance=false
+// and releases it once it is Available.
+func resourceDiskForceDelete(d *schema.ResourceData, client *connectivity.AliyunClient, service *Service, objectRaw map[string]interface{}) error {
+	stateInstanceId, _ := d.Get("instance_id").(string)
+	return forceDeleteDisk(d.Id(), d.Timeout(schema.TimeoutDelete), client, service, objectRaw, stateInstanceId)
+}
+
+// forceDeleteDisk implements the forced release sequence. A disk that is
+// already gone when the conversion runs (ModifyDiskChargeType returns
+// InvalidDiskIds.NotFound) ends the sequence successfully: the target is
+// released and there is nothing left to detach or delete.
+func forceDeleteDisk(id string, timeout time.Duration, client *connectivity.AliyunClient, service *Service, objectRaw map[string]interface{}, stateInstanceId string) error {
+	plan, err := newDiskForceDeletePlan(id, objectRaw, stateInstanceId)
+	if err != nil {
+		return err
+	}
+
+	if plan.convertChargeType {
+		vanished, err := convertDiskToPostPaid(id, timeout, client, plan.instanceId)
+		if err != nil {
+			return err
+		}
+		if vanished {
+			return nil
+		}
+		stateConf := BuildStateConf([]string{}, []string{"PostPaid"}, timeout, 1*time.Second, func() (interface{}, string, error) {
+			object, err := service.DescribeDisk(id)
+			if err != nil {
+				if NotFoundError(err) {
+					// An untyped nil result reports the disk as not found; see
+					// the same idiom in the Available wait below.
+					return nil, "", nil
+				}
+				return nil, "", WrapError(err)
+			}
+			return object, fmt.Sprint(object["DiskChargeType"]), nil
+		})
+		if _, err := stateConf.WaitForState(); err != nil {
+			// The disk can be released out of band between the conversion and
+			// this wait; a confirmed absence ends the flow successfully.
+			var notFound *retry.NotFoundError
+			if errors.As(err, &notFound) {
+				return nil
+			}
+			return WrapErrorf(err, IdMsg, id)
+		}
+	}
+
+	if plan.detach {
+		if err := detachDiskForDelete(id, timeout, client, service); err != nil {
+			return err
+		}
+	}
+
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, timeout, 1*time.Second, func() (interface{}, string, error) {
+		object, err := service.DescribeDisk(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Return an untyped nil result so the state machine reports the
+				// disk as not found; a nil map stored in the interface would be
+				// polled as an unknown state instead.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	})
+	if _, err := stateConf.WaitForState(); err != nil {
+		// The disk can disappear while it is waited for, for example when it is
+		// released together with its instance; an already absent disk is deleted.
+		var notFound *retry.NotFoundError
+		if errors.As(err, &notFound) {
+			return nil
+		}
+		return WrapErrorf(err, IdMsg, id)
+	}
+
+	return releaseDisk(id, timeout, client)
+}
+
+// convertDiskToPostPaid requests the PrePaid to PostPaid conversion. It reports
+// vanished=true only when ECS confirms that the requested disk no longer
+// exists; errors that concern the attached instance or the region are returned
+// so a destroy does not hide a broken dependency.
+func convertDiskToPostPaid(id string, timeout time.Duration, client *connectivity.AliyunClient, instanceId string) (bool, error) {
+	action := "ModifyDiskChargeType"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
 	request = make(map[string]interface{})
-	request["DiskId"] = d.Id()
+	request["DiskIds"] = convertListToJsonString([]interface{}{id})
+	request["RegionId"] = client.RegionId
+	// Built once, so every retry of this request reuses the same token.
+	request["ClientToken"] = buildClientToken(action)
+	request["AutoPay"] = true
+	request["InstanceId"] = instanceId
+	request["DiskChargeType"] = "PostPaid"
 
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+	var err error
+	var vanished bool
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(timeout, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
-
 		if err != nil {
-			if errs.IsExpectedErrors(err, []string{"IncorrectDiskStatus.Initializing"}) || helper.NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"InvalidDiskIds.NotFound"}) {
+				vanished = true
+				return retry.NonRetryableError(err)
+			}
+			// OrderCreationFailed is documented as "try again later"; the other
+			// codes are the documented internal, in-process-order and throttling
+			// cases. Status codes such as IncorrectDiskStatus are terminal here.
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError", "LastOrderProcessing", "OrderCreationFailed", "Throttling"}) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -745,13 +911,102 @@ func resourceDiskDelete(d *schema.ResourceData, meta interface{}) error {
 		}
 		return nil
 	})
-	logs.AddDebug(action, response, request)
-
+	addDebug(action, response, request)
 	if err != nil {
-		if errs.IsExpectedErrors(err, []string{"InvalidDiskId.NotFound"}) || errs.NotFoundError(err) {
+		if vanished {
+			return true, nil
+		}
+		return false, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	return false, nil
+}
+
+func resourceDiskDetachForDelete(d *schema.ResourceData, client *connectivity.AliyunClient, service *Service) error {
+	return detachDiskForDelete(d.Id(), d.Timeout(schema.TimeoutDelete), client, service)
+}
+
+func detachDiskForDelete(id string, timeout time.Duration, client *connectivity.AliyunClient, service *Service) error {
+	action := "DetachDisk"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+
+	var err error
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(timeout, func() *retry.RetryError {
+		object, describeErr := service.DescribeDisk(id)
+		if describeErr != nil {
+			if NotFoundError(describeErr) {
+				return nil
+			}
+			return retry.NonRetryableError(WrapError(describeErr))
+		}
+		attachedInstanceId := ""
+		if v, ok := object["InstanceId"]; ok && v != nil {
+			attachedInstanceId = fmt.Sprint(v)
+		}
+		if attachedInstanceId == "" {
+			// An earlier attempt may already have detached the disk, for example
+			// when only the following wait failed.
 			return nil
 		}
-		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		request = make(map[string]interface{})
+		request["DiskId"] = id
+		request["InstanceId"] = attachedInstanceId
+		request["DeleteWithInstance"] = false
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, false)
+		if err != nil {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"DependencyViolation", "DisksDetachingOnEcsExceeded", "IncorrectDiskStatus", "IncorrectInstanceStatus", "InvalidOperation.DiskDetachingFromThisEcs", "InternalError"}) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDisk.AlreadyDetached", "InvalidDiskId.NotFound", "InvalidInstanceId.NotFound"}) || NotFoundError(err) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+func resourceDiskRelease(d *schema.ResourceData, client *connectivity.AliyunClient) error {
+	return releaseDisk(d.Id(), d.Timeout(schema.TimeoutDelete), client)
+}
+
+func releaseDisk(id string, timeout time.Duration, client *connectivity.AliyunClient) error {
+	action := "DeleteDisk"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	request = make(map[string]interface{})
+	request["DiskId"] = id
+
+	var err error
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(timeout, func() *retry.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"IncorrectDiskStatus.Initializing", "DiskCreatingSnapshot"}) || NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDiskId.NotFound"}) || NotFoundError(err) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
@@ -805,10 +1060,10 @@ func diskCategoryTransitionState(status, category, targetCategory string) string
 // the wait with an unexpected state.
 func diskCategoryTransitionRefresh(objectRaw map[string]interface{}, err error, targetCategory string) (interface{}, string, error) {
 	if err != nil {
-		if errs.NotFoundError(err) {
+		if NotFoundError(err) {
 			return nil, "", nil
 		}
-		return nil, "", errs.WrapError(err)
+		return nil, "", WrapError(err)
 	}
 	return objectRaw, diskCategoryTransitionState(fmt.Sprint(objectRaw["Status"]), fmt.Sprint(objectRaw["Category"]), targetCategory), nil
 }

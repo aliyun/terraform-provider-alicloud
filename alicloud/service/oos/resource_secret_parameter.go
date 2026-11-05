@@ -1,0 +1,321 @@
+package oos
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func ResourceSecretParameter() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAliCloudOosSecretParameterCreate,
+		Read:   resourceAliCloudOosSecretParameterRead,
+		Update: resourceAliCloudOosSecretParameterUpdate,
+		Delete: resourceAliCloudOosSecretParameterDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"constraints": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"dkms_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"secret_parameter_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"tags": tags.TagsSchemaComputed(),
+			"type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validators.StringInSlice([]string{"Secret"}, false),
+			},
+			"value": {
+				Type:      schema.TypeString,
+				Required:  true,
+				Sensitive: true,
+			},
+		},
+	}
+}
+
+func resourceAliCloudOosSecretParameterCreate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "CreateSecretParameter"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("secret_parameter_name"); ok {
+		request["Name"] = v
+	}
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = helper.BuildClientToken(action)
+
+	if v, ok := d.GetOk("constraints"); ok {
+		request["Constraints"] = v
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+	if v, ok := d.GetOk("type"); ok {
+		request["Type"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		respJson, err := convert.ConvertMaptoJsonString(v.(map[string]interface{}))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		request["Tags"] = respJson
+	}
+	request["Value"] = d.Get("value")
+	if v, ok := d.GetOk("key_id"); ok {
+		request["KeyId"] = v
+	}
+	if v, ok := d.GetOk("dkms_instance_id"); ok {
+		request["DKMSInstanceId"] = v
+	}
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_oos_secret_parameter", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(request["Name"]))
+
+	return resourceAliCloudOosSecretParameterRead(d, meta)
+}
+
+func resourceAliCloudOosSecretParameterRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	oosServiceV2 := OosServiceV2{client}
+
+	objectRaw, err := oosServiceV2.DescribeOosSecretParameter(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_oos_secret_parameter DescribeOosSecretParameter Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	if objectRaw["Constraints"] != nil {
+		d.Set("constraints", objectRaw["Constraints"])
+	}
+	if objectRaw["CreatedDate"] != nil {
+		d.Set("create_time", objectRaw["CreatedDate"])
+	}
+	if objectRaw["Description"] != nil {
+		d.Set("description", objectRaw["Description"])
+	}
+	if objectRaw["DKMSInstanceId"] != nil {
+		d.Set("dkms_instance_id", objectRaw["DKMSInstanceId"])
+	}
+	if objectRaw["KeyId"] != nil {
+		d.Set("key_id", objectRaw["KeyId"])
+	}
+	if objectRaw["ResourceGroupId"] != nil {
+		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	}
+	if objectRaw["Type"] != nil {
+		d.Set("type", objectRaw["Type"])
+	}
+	if objectRaw["Value"] != nil {
+		d.Set("value", objectRaw["Value"])
+	}
+	if objectRaw["Name"] != nil {
+		d.Set("secret_parameter_name", objectRaw["Name"])
+	}
+
+	objectRaw, err = oosServiceV2.DescribeSecretParameterListTagResources(d.Id())
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
+	}
+
+	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
+	tagResources := make([]interface{}, 0)
+	for _, tagResource := range convert.ConvertToInterfaceArray(tagsMaps) {
+		if tagResourceMap, ok := tagResource.(map[string]interface{}); ok && fmt.Sprint(tagResourceMap["ResourceId"]) == d.Id() {
+			tagResources = append(tagResources, tagResource)
+		}
+	}
+	d.Set("tags", tags.TagsToMap(tagResources))
+
+	d.Set("secret_parameter_name", d.Id())
+
+	return nil
+}
+
+func resourceAliCloudOosSecretParameterUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
+	action := "UpdateSecretParameter"
+	var err error
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Name"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if _, ok := d.GetOk("resource_group_id"); ok && d.HasChange("resource_group_id") {
+		update = true
+		request["ResourceGroupId"] = d.Get("resource_group_id")
+	}
+
+	if d.HasChange("description") {
+		update = true
+		request["Description"] = d.Get("description")
+	}
+
+	if d.HasChange("tags") {
+		update = true
+		if v, ok := d.GetOk("tags"); ok {
+			if v, err := convert.ConvertMaptoJsonString(v.(map[string]interface{})); err == nil {
+				request["Tags"] = v
+			} else {
+				return errs.WrapError(err)
+			}
+		}
+	}
+
+	if d.HasChange("value") {
+		update = true
+	}
+	request["Value"] = d.Get("value")
+	if update {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if _, ok := request["Tags"]; ok {
+		oosServiceV2 := OosServiceV2{client}
+		expectedTags := make(map[string]interface{})
+		if v, ok := d.Get("tags").(map[string]interface{}); ok {
+			expectedTags = v
+		}
+		if err := oosServiceV2.WaitForOosSecretParameterTagsConverged(d.Id(), expectedTags, d.Timeout(schema.TimeoutUpdate)); err != nil {
+			return errs.WrapError(err)
+		}
+	}
+
+	return resourceAliCloudOosSecretParameterRead(d, meta)
+}
+
+func resourceAliCloudOosSecretParameterDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteSecretParameter"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["Name"] = d.Id()
+	request["RegionId"] = client.RegionId
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
+
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}

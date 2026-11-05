@@ -17,13 +17,13 @@ For information about elastic network interface and how to use it, see [Elastic 
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "networkInterfacesName"
 }
 
 resource "alicloud_vpc" "vpc" {
-  vpc_name = "${var.name}"
+  vpc_name   = "${var.name}"
   cidr_block = "192.168.0.0/24"
 }
 
@@ -32,24 +32,24 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  vswitch_name = "${var.name}"
-  cidr_block = "192.168.0.0/24"
+  vswitch_name      = "${var.name}"
+  cidr_block        = "192.168.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  vpc_id = "${alicloud_vpc.vpc.id}"
+  vpc_id            = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_security_group" "group" {
-  name = "${var.name}"
+  name   = "${var.name}"
   vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_network_interface" "interface" {
-  name = "${var.name}%d"
+  name       = "${var.name}%d"
   vswitch_id = "${alicloud_vswitch.vswitch.id}"
   security_groups = [
-    "${alicloud_security_group.group.id}"]
+  "${alicloud_security_group.group.id}"]
   description = "Basic test"
-  private_ip = "192.168.0.2"
+  private_ip  = "192.168.0.2"
   tags = {
     TF-VER = "0.11.3"
   }
@@ -58,41 +58,41 @@ resource "alicloud_network_interface" "interface" {
 resource "alicloud_instance" "instance" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   security_groups = [
-    "${alicloud_security_group.group.id}"]
-  instance_type = "ecs.e3.xlarge"
-  system_disk_category = "cloud_efficiency"
-  image_id = "centos_7_04_64_20G_alibase_201701015.vhd"
-  instance_name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.vswitch.id}"
+  "${alicloud_security_group.group.id}"]
+  instance_type              = "ecs.e3.xlarge"
+  system_disk_category       = "cloud_efficiency"
+  image_id                   = "centos_7_04_64_20G_alibase_201701015.vhd"
+  instance_name              = "${var.name}"
+  vswitch_id                 = "${alicloud_vswitch.vswitch.id}"
   internet_max_bandwidth_out = 10
 }
 
 resource "alicloud_network_interface_attachment" "attachment" {
-  instance_id = "${alicloud_instance.instance.id}"
+  instance_id          = "${alicloud_instance.instance.id}"
   network_interface_id = "${alicloud_network_interface.interface.id}"
 }
 
 data "alicloud_network_interfaces" "default" {
   ids = [
-    "${alicloud_network_interface_attachment.attachment.network_interface_id}"]
+  "${alicloud_network_interface_attachment.attachment.network_interface_id}"]
   name_regex = "${var.name}"
   tags = {
     TF-VER = "0.11.3"
   }
-  vpc_id = "${alicloud_vpc.vpc.id}"
-  vswitch_id = "${alicloud_vswitch.vswitch.id}"
-  private_ip = "192.168.0.2"
+  vpc_id            = "${alicloud_vpc.vpc.id}"
+  vswitch_id        = "${alicloud_vswitch.vswitch.id}"
+  private_ip        = "192.168.0.2"
   security_group_id = "${alicloud_security_group.group.id}"
-  type = "Secondary"
-  instance_id = "${alicloud_instance.instance.id}"
+  type              = "Secondary"
+  instance_id       = "${alicloud_instance.instance.id}"
 }
 
 output "eni0_name" {
-    value = "${data.alicloud_network_interfaces.default.interfaces.0.name}"
+  value = "${data.alicloud_network_interfaces.default.interfaces.0.name}"
 }
 ```
 
-##  Argument Reference
+## Argument Reference
 
 The following arguments are supported:
 
@@ -100,33 +100,51 @@ The following arguments are supported:
 * `name_regex` - (Optional) A regex string to filter results by ENI name.
 * `vpc_id` - (Optional) The VPC ID linked to ENIs.
 * `vswitch_id` - (Optional) The vSwitch ID linked to ENIs.
-* `private_ip` - (Optional) The primary private IP address of the ENI.
+* `private_ip` - (Optional, Deprecated) The primary private IP address of the ENI. Deprecated; use `primary_ip_address` instead.
 * `security_group_id` - (Optional) The security group ID linked to ENIs.
-* `name` - (Optional) The name of the ENIs.
+* `name` - (Optional, Deprecated) The name of the ENIs. Deprecated; use `network_interface_name` instead.
 * `type` - (Optional) The type of ENIs, Only support for "Primary" or "Secondary".
 * `instance_id` - (Optional) The ECS instance ID that the ENI is attached to.
 * `tags` - (Optional) A map of tags assigned to ENIs.
 * `output_file` - (Optional) The name of output file that saves the filter results.
-* `resource_group_id` - (Optional, ForceNew, Available in 1.57.0+) The Id of resource group which the network interface belongs.
+* `resource_group_id` - (Optional, Available since v1.57.0) The Id of resource group which the network interface belongs.
+* `network_interface_name` - (Optional) The name of the ENI.
+* `primary_ip_address` - (Optional) The primary private IP address of the ENI.
+* `service_managed` - (Optional) Whether the ENI is service managed.
+* `status` - (Optional) The status of the ENI.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `names` - A list of ENI names.
 * `interfaces` - A list of ENIs. Each element contains the following attributes:
-    * `id` - ID of the ENI.
-    * `status` - Current status of the ENI.
-    * `vpc_id` - ID of the VPC that the ENI belongs to.
-    * `vswitch_id` - ID of the vSwitch that the ENI is linked to.
-    * `zone_id` - ID of the availability zone that the ENI belongs to.
-    * `public_ip` - Public IP of the ENI.
-    * `private_ip` - Primary private IP of the ENI.
-    * `private_ips` - A list of secondary private IP address that is assigned to the ENI.
-    * `mac` - MAC address of the ENI.
-    * `security_groups` - A list of security group that the ENI belongs to.
-    * `name` - Name of the ENI.
-    * `description` - Description of the ENI.
-    * `instance_id` - ID of the instance that the ENI is attached to.
-    * `creation_time` - Creation time of the ENI.
-    * `tags` - A map of tags assigned to the ENI.
-    * `resource_group_id` - The Id of resource group.
+  * `id` - ID of the ENI.
+  * `status` - Current status of the ENI.
+  * `vpc_id` - ID of the VPC that the ENI belongs to.
+  * `vswitch_id` - ID of the vSwitch that the ENI is linked to.
+  * `zone_id` - ID of the availability zone that the ENI belongs to.
+  * `private_ip` - Primary private IP of the ENI.
+  * `private_ips` - A list of secondary private IP address that is assigned to the ENI.
+  * `mac` - MAC address of the ENI.
+  * `security_groups` - A list of security group that the ENI belongs to.
+  * `name` - Name of the ENI.
+  * `description` - Description of the ENI.
+  * `instance_id` - ID of the instance that the ENI is attached to.
+  * `creation_time` - Creation time of the ENI.
+  * `tags` - A map of tags assigned to the ENI.
+  * `resource_group_id` - The Id of resource group.
+  * `network_interface_id` - The ID of the ENI.
+  * `network_interface_name` - The name of the ENI.
+  * `primary_ip_address` - The primary private IP address.
+  * `private_ip_addresses` - A list of private IP addresses.
+  * `queue_number` - The queue number.
+  * `security_group_ids` - A list of security group IDs.
+  * `service_id` - The service ID.
+  * `service_managed` - Whether the ENI is service managed.
+  * `type` - The type of the ENI.
+  * `network_interface_traffic_mode` - The traffic mode.
+  * `owner_id` - The owner ID.
+  * `associated_public_ip` - The associated public IP.
+    * `public_ip_address` - The public IP address.
+  * `ipv6_sets` - A list of IPv6 addresses.

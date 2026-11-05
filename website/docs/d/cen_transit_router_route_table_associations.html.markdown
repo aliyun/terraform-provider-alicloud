@@ -7,17 +7,17 @@ description: |-
   Provides a list of CEN Transit Router Route Table Association owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_cen\_transit\_router\_route\_table\_associations
+# alicloud_cen_transit_router_route_table_associations
 
-This data source provides CEN Transit Router Route Table Associations available to the user.[What is Cen Transit Router Route Table Associations](https://help.aliyun.com/document_detail/261243.html)
+This data source provides CEN Transit Router Route Table Associations available to the user.[What is Cen Transit Router Route Table Associations](https://www.alibabacloud.com/help/doc-detail/261243.html)
 
--> **NOTE:** Available in 1.126.0+
+-> **NOTE:** Available since v1.126.0+
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cen_transit_router_route_table_associations" "default" {
-  transit_router_route_table_id    = "rtb-id1"
+  transit_router_route_table_id = "rtb-id1"
 }
 
 output "first_transit_router_peer_attachments_transit_router_attachment_resource_type" {
@@ -39,6 +39,7 @@ The following arguments are supported:
   * `VPN`: VPN attachment
   
 * `status` - (Optional) The status of the route table, including `Active`, `Associating`, `Dissociating`.
+* `ids` - (Optional) A list of CEN Transit Router Route Table Association IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -46,11 +47,11 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of CEN Transit Router Route Table Association IDs.
-* `names` - A list of CEN Transit Router Route Table Association Names.
 * `associations` - A list of CEN Transit Router Route Table Associations. Each element contains the following attributes:
-    * `resource_id` - ID of the transit router route table association.
-    * `resource_type` - Type of the resource.
-    * `status` - The status of the route table.
-    * `transit_router_attachment_id` - ID of the transit router attachment.
-    * `transit_router_route_table_id` - ID of the transit router route table.
+  * `id` - The ID of the CEN Transit Router Route Table Association.
+  * `resource_id` - ID of the transit router route table association.
+  * `resource_type` - Type of the resource.
+  * `status` - The status of the route table.
+  * `transit_router_attachment_id` - ID of the transit router attachment.
+  * `transit_router_route_table_id` - ID of the transit router route table.
 
