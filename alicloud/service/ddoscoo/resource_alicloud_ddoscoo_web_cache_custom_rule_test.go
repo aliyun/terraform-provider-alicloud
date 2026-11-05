@@ -6,6 +6,7 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -100,7 +101,7 @@ resource "alicloud_ddoscoo_web_cache_custom_rule" "default" {
 // testAccCheckDdosCooWebCacheCustomRuleDestroy verifies that every rule left in state has been
 // removed by re-reading DescribeWebCacheConfigs for its domain and asserting the named rule is
 // gone from CustomRules.
-func testAccCheckDdosCooWebCacheCustomRuleDestroy(s *resource.State) error {
+func testAccCheckDdosCooWebCacheCustomRuleDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_ddoscoo_web_cache_custom_rule" {
 			continue
