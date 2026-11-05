@@ -29,9 +29,16 @@ func validateSecurityGroupRuleCidrIp(v interface{}, k string) ([]string, []error
 	if value == "" {
 		return nil, nil
 	}
-	// IPv6 (including IPv4-mapped forms) belongs to ipv6_cidr_ip.
+	// IPv6 (including IPv4-mapped forms) belongs to ipv6_cidr_ip; values that
+	// merely contain a colon but are not an IP address fall through to the
+	// generic message below.
 	if strings.Contains(value, ":") {
-		return nil, []error{fmt.Errorf("%q must be a single IPv4 address or CIDR block, for example \"10.0.0.0/8\"; IPv6 addresses are not supported, use ipv6_cidr_ip instead, got %q", k, value)}
+		if ip, _, err := net.ParseCIDR(value); err == nil && ip.To4() == nil {
+			return nil, []error{fmt.Errorf("%q must be a single IPv4 address or CIDR block; IPv6 addresses are not supported, use ipv6_cidr_ip instead, got %q", k, value)}
+		}
+		if ip := net.ParseIP(value); ip != nil {
+			return nil, []error{fmt.Errorf("%q must be a single IPv4 address or CIDR block; IPv6 addresses are not supported, use ipv6_cidr_ip instead, got %q", k, value)}
+		}
 	}
 	if ip, _, err := net.ParseCIDR(value); err == nil && ip.To4() != nil {
 		return nil, nil
