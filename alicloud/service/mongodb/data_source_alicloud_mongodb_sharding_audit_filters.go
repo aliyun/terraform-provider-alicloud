@@ -105,7 +105,7 @@ func dataSourceAlicloudMongodbShardingAuditFiltersRead(d *schema.ResourceData, m
 	// data source selects the pair that belongs to the reported edition. The data source has no
 	// declared edition of its own, so an unrecognised reported edition (the Trial value seen while the
 	// audit log is disabled) falls back to the Standard fields.
-	storagePeriod, hotStoragePeriod := mongodbShardingAuditFilterStorageValues(logConfig, fmt.Sprint(logConfig["ServiceType"]), "")
+	storagePeriod, hotStoragePeriod := shardingAuditFilterStorageValues(logConfig, fmt.Sprint(logConfig["ServiceType"]), "")
 
 	mapping := map[string]interface{}{
 		"id":             dbInstanceId,

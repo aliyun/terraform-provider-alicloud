@@ -118,10 +118,10 @@ data "alicloud_mongodb_sharding_audit_filters" "default" {
 	return config
 }
 
-// TestUnitAliCloudMongodbShardingAuditFiltersDataSourceRetention pins the edition-specific retention
+// TestUnitShardingAuditFiltersDataSourceRetention pins the edition-specific retention
 // fields the data source exports. Each fixture keeps the two editions on different values, so reading
 // TtlForStandard for a V2_Standard audit log fails the assertion instead of coincidentally passing.
-func TestUnitAliCloudMongodbShardingAuditFiltersDataSourceRetention(t *testing.T) {
+func TestUnitShardingAuditFiltersDataSourceRetention(t *testing.T) {
 	cases := []struct {
 		name          string
 		logConfig     string

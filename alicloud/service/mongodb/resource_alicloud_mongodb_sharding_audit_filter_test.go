@@ -177,6 +177,15 @@ func TestAccAliCloudMongodbShardingAuditFilter_basic0(t *testing.T) {
 					},
 				},
 			},
+			{
+				// The final successful configuration must also survive an import: the imported state is
+				// compared with the state above, ignoring only the write-only source and the
+				// Optional+Computed service_type/role_type that the read APIs cannot restore as declared.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"service_type", "role_type", "audit_log_switch_source"},
+			},
 		},
 	})
 }
@@ -511,12 +520,12 @@ func TestUnitAliCloudMongodbShardingAuditFilter(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-// TestUnitAliCloudMongodbShardingAuditFilterAuditLogSwitchSource captures the serialized
+// TestUnitShardingAuditFilterAuditLogSwitchSource captures the serialized
 // ModifyAuditPolicy request at the HTTP boundary, so the write-only AuditLogSwitchSource is checked
 // without a credential-bound mock that skips inside CI containers. The attribute is optional request
 // attribution: it must be sent when configured and left out of the request when it is not, on both
 // Create and a policy-changing Update.
-func TestUnitAliCloudMongodbShardingAuditFilterAuditLogSwitchSource(t *testing.T) {
+func TestUnitShardingAuditFilterAuditLogSwitchSource(t *testing.T) {
 	var mu sync.Mutex
 	var policyForms []url.Values
 
@@ -638,10 +647,10 @@ func TestUnitAliCloudMongodbShardingAuditFilterAuditLogSwitchSource(t *testing.T
 	}
 }
 
-// TestUnitAliCloudMongodbShardingAuditFilterReadKeepsConfiguredSource pins that Read leaves an
+// TestUnitShardingAuditFilterReadKeepsConfiguredSource pins that Read leaves an
 // explicitly configured audit_log_switch_source untouched: none of the describe APIs return the
 // write-only request parameter, so Read must neither clear nor overwrite it.
-func TestUnitAliCloudMongodbShardingAuditFilterReadKeepsConfiguredSource(t *testing.T) {
+func TestUnitShardingAuditFilterReadKeepsConfiguredSource(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			t.Errorf("parse request form: %v", err)
@@ -694,14 +703,14 @@ func TestUnitAliCloudMongodbShardingAuditFilterReadKeepsConfiguredSource(t *test
 
 // Test Mongodb ShardingAuditFilter. >>> Resource test cases, hand-written.
 
-// TestUnitAliCloudMongodbShardingAuditFilterDisabledImportPlan pins the imported-state transition of
+// TestUnitShardingAuditFilterDisabledImportPlan pins the imported-state transition of
 // the optional write-only audit_log_switch_source. After importing an instance whose audit log is
 // disabled the state has no service_type (Read keeps the declared value only while enabled) and the
 // disabled edition suppression hides the declared V2_Standard. Because the attribute has no schema
 // default, importing must not plan any change for it, and the plan must therefore carry no audit
 // policy write that would fall back to ServiceType=Standard. The plan is built through the real SDK
 // diff here, Update runs against it, and the follow-up plan must be empty.
-func TestUnitAliCloudMongodbShardingAuditFilterDisabledImportPlan(t *testing.T) {
+func TestUnitShardingAuditFilterDisabledImportPlan(t *testing.T) {
 	var mu sync.Mutex
 	var policyCalls, filterCalls int
 
@@ -801,5 +810,136 @@ func TestUnitAliCloudMongodbShardingAuditFilterDisabledImportPlan(t *testing.T) 
 	assert.NoError(t, err)
 	if followUp != nil {
 		assert.Empty(t, followUp.Attributes, "the follow-up plan must converge")
+	}
+}
+
+// TestUnitShardingAuditFilterStorageRetention drives Read through the public resource factory and
+// isolated HTTP responses, pinning that the retention pair follows the audit log edition. Per the Dds
+// 2015-12-01 definition the Standard edition reports its retention in TtlForStandard, while V2_Standard
+// reports the cold storage duration in TtlForV2Standard and the hot storage duration in
+// HotTtlForV2Standard. The reported edition wins; an unrecognised reported edition (Trial while the
+// audit log is disabled) falls back to the declared one; an omitted field keeps the state value.
+func TestUnitShardingAuditFilterStorageRetention(t *testing.T) {
+	cases := []struct {
+		name          string
+		logConfig     string
+		auditStatus   string
+		declared      string
+		priorStorage  int
+		priorHot      int
+		storagePeriod int
+		hotPeriod     int
+	}{
+		{
+			name:          "v2 standard reads cold and hot storage",
+			logConfig:     `{"RequestId":"mock","ServiceType":"V2_Standard","TtlForStandard":30,"TtlForV2Standard":180,"HotTtlForV2Standard":5}`,
+			auditStatus:   "Enable",
+			declared:      "V2_Standard",
+			storagePeriod: 180,
+			hotPeriod:     5,
+		},
+		{
+			name:          "standard reads retention only",
+			logConfig:     `{"RequestId":"mock","ServiceType":"Standard","TtlForStandard":180,"TtlForV2Standard":30}`,
+			auditStatus:   "Enable",
+			declared:      "Standard",
+			storagePeriod: 180,
+			hotPeriod:     0,
+		},
+		{
+			name:          "reported edition wins over the declared one",
+			logConfig:     `{"RequestId":"mock","ServiceType":"Standard","TtlForStandard":30,"TtlForV2Standard":180,"HotTtlForV2Standard":5}`,
+			auditStatus:   "Enable",
+			declared:      "V2_Standard",
+			storagePeriod: 30,
+			hotPeriod:     0,
+		},
+		{
+			name:          "disabled audit log reports trial so the declared edition decides",
+			logConfig:     `{"RequestId":"mock","ServiceType":"Trial","TtlForStandard":30,"TtlForV2Standard":180,"HotTtlForV2Standard":5}`,
+			auditStatus:   "Disabled",
+			declared:      "V2_Standard",
+			storagePeriod: 180,
+			hotPeriod:     5,
+		},
+		{
+			name:          "unknown edition without declaration falls back to standard",
+			logConfig:     `{"RequestId":"mock","ServiceType":"Trial","TtlForStandard":30}`,
+			auditStatus:   "Disabled",
+			storagePeriod: 30,
+			hotPeriod:     0,
+		},
+		{
+			name:          "omitted fields keep the state value",
+			logConfig:     `{"RequestId":"mock","ServiceType":"Trial"}`,
+			auditStatus:   "Disabled",
+			declared:      "V2_Standard",
+			priorStorage:  180,
+			priorHot:      5,
+			storagePeriod: 180,
+			hotPeriod:     5,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			logConfig, auditStatus := c.logConfig, c.auditStatus
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if err := r.ParseForm(); err != nil {
+					t.Errorf("parse request form: %v", err)
+				}
+				switch r.Form.Get("Action") {
+				case "DescribeMongoDBLogConfig":
+					fmt.Fprint(w, logConfig)
+				case "DescribeAuditPolicy":
+					fmt.Fprintf(w, `{"RequestId":"mock","LogAuditStatus":%q}`, auditStatus)
+				case "DescribeAuditLogFilter":
+					fmt.Fprint(w, `{"RequestId":"mock","Filter":"admin,slow","RoleType":"logic"}`)
+				default:
+					fmt.Fprint(w, `{"RequestId":"mock"}`)
+				}
+			}))
+			t.Cleanup(server.Close)
+
+			endpoint := strings.TrimPrefix(server.URL, "http://")
+			t.Setenv("NO_PROXY", endpoint)
+			credential, err := credentials.NewCredential(new(credentials.Config).
+				SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			endpoints := new(sync.Map)
+			config := &connectivity.Config{
+				AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+				RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+				Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+			}
+			client, err := config.Client()
+			if err != nil {
+				t.Fatal(err)
+			}
+			endpoints.Store("dds", endpoint)
+
+			res := acctest.Provider.ResourcesMap["alicloud_mongodb_sharding_audit_filter"]
+			attributes := map[string]interface{}{
+				"db_instance_id": "dds-mock",
+				"audit_status":   "enable",
+				"filter":         "admin,slow",
+			}
+			if c.declared != "" {
+				attributes["service_type"] = c.declared
+			}
+			if c.priorStorage != 0 {
+				attributes["storage_period"] = c.priorStorage
+			}
+			if c.priorHot != 0 {
+				attributes["hot_storage_period"] = c.priorHot
+			}
+			data := schema.TestResourceDataRaw(t, res.Schema, attributes)
+			data.SetId("dds-mock")
+
+			assert.NoError(t, res.Read(data, client))
+			assert.Equal(t, c.storagePeriod, data.Get("storage_period"))
+			assert.Equal(t, c.hotPeriod, data.Get("hot_storage_period"))
+		})
 	}
 }

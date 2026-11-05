@@ -200,7 +200,7 @@ func resourceAliCloudMongodbShardingAuditFilterRead(d *schema.ResourceData, meta
 	// storage duration in HotTtlForV2Standard. Reading TtlForStandard for a V2_Standard audit log
 	// returns the untouched Standard-edition default instead of the configured value.
 	serviceType := objectRaw["ServiceType"]
-	storagePeriod, hotStoragePeriod := mongodbShardingAuditFilterStorageValues(objectRaw, fmt.Sprint(serviceType), d.Get("service_type").(string))
+	storagePeriod, hotStoragePeriod := shardingAuditFilterStorageValues(objectRaw, fmt.Sprint(serviceType), d.Get("service_type").(string))
 	// While the audit log is disabled the server reports the Trial edition and may omit the retention
 	// fields; unconditionally Set-ing them would write 0 over the configured value and produce a
 	// perpetual diff on every Refresh. Keep the state value when the field is absent so re-enabling
@@ -297,7 +297,7 @@ func parseMongodbShardingAuditFilter(filter, roleType string) string {
 	return filter
 }
 
-// mongodbShardingAuditFilterStorageValues selects the retention pair that DescribeMongoDBLogConfig
+// shardingAuditFilterStorageValues selects the retention pair that DescribeMongoDBLogConfig
 // reports for the audit log edition in use. Per the Dds 2015-12-01 API definition, the Standard edition
 // keeps its retention in TtlForStandard — what ModifyAuditPolicy's StoragePeriod writes for that
 // edition — while V2_Standard reports the cold storage duration (StoragePeriod) in TtlForV2Standard and
@@ -305,7 +305,7 @@ func parseMongodbShardingAuditFilter(filter, roleType string) string {
 // edition therefore decides; when it is neither supported edition (the API reports Trial while the
 // audit log is disabled), the declared edition decides. A missing field yields nil so the caller keeps
 // the state value.
-func mongodbShardingAuditFilterStorageValues(objectRaw map[string]interface{}, reportedServiceType, declaredServiceType string) (storagePeriod, hotStoragePeriod interface{}) {
+func shardingAuditFilterStorageValues(objectRaw map[string]interface{}, reportedServiceType, declaredServiceType string) (storagePeriod, hotStoragePeriod interface{}) {
 	edition := reportedServiceType
 	if edition != "Standard" && edition != "V2_Standard" {
 		edition = declaredServiceType
