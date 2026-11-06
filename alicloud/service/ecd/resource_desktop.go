@@ -318,7 +318,7 @@ func resourceDesktopCreate(d *schema.ResourceData, meta interface{}) error {
 		request["UserAssignMode"] = v
 	}
 	if v, ok := d.GetOk("host_name"); ok {
-		request["HostName"] = v
+		request["Hostname"] = v
 	}
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
