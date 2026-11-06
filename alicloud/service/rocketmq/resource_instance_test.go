@@ -101,6 +101,84 @@ func TestAccAliCloudRocketmqInstance_SendReceiveRatioValidation(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudRocketmqInstance_CommodityCodeIntlEnum verifies the
+// commodity_code schema enum accepts the international-site values
+// (ons_rmqpost_public_intl, ons_rmqsub_public_intl,
+// ons_rmqsrvlesspost_public_intl) required by international accounts such as
+// cn-hongkong PayAsYouGo, and that unknown values are still rejected.
+//
+// The plan-only steps do not create cloud resources and do not require an
+// international test account: they assert schema-level acceptance only. Full
+// international-site ACC (real CreateInstance against cn-hongkong with an intl
+// account) is gated on an intl test account and is intentionally not claimed
+// here; this matches the task's unresolved intl-account dependency.
+func TestAccAliCloudRocketmqInstance_CommodityCodeIntlEnum(t *testing.T) {
+	resourceId := "alicloud_rocketmq_instance.commodity_code_enum"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%srocketmqinstancecommodity%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudRocketmqInstanceBasicDependence4101)
+	base := func(commodityCode string) map[string]interface{} {
+		return map[string]interface{}{
+			"instance_name": name,
+			"product_info": []map[string]interface{}{
+				{
+					"msg_process_spec":       "rmq.s1.micro",
+					"send_receive_ratio":     "0.3",
+					"message_retention_time": "70",
+				},
+			},
+			"service_code": "rmq",
+			"series_code":  "standard",
+			"network_info": []map[string]interface{}{
+				{
+					"vpc_info": []map[string]interface{}{
+						{
+							"vpc_id":     "${alicloud_vpc.createVPC.id}",
+							"vswitch_id": "${alicloud_vswitch.createVSwitch.id}",
+						},
+					},
+					"internet_info": []map[string]interface{}{
+						{
+							"internet_spec": "disable",
+							"flow_out_type": "uninvolved",
+						},
+					},
+				},
+			},
+			"payment_type":    "PayAsYouGo",
+			"sub_series_code": "cluster_ha",
+			"commodity_code":  commodityCode,
+		}
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
+			acctest.PreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:   testAccConfig(base("ons_rmqpost_public_intl")),
+				PlanOnly: true,
+			},
+			{
+				Config:   testAccConfig(base("ons_rmqsub_public_intl")),
+				PlanOnly: true,
+			},
+			{
+				Config:   testAccConfig(base("ons_rmqsrvlesspost_public_intl")),
+				PlanOnly: true,
+			},
+			{
+				Config:      testAccConfig(base("ons_rmqpost_public_invalid")),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`expected commodity_code to be one of \[.*ons_rmqpost_public_intl.*\], got ons_rmqpost_public_invalid`),
+			},
+		},
+	})
+}
+
 func init() {
 	resource.AddTestSweepers("alicloud_rocketmq_instance", &resource.Sweeper{
 		Name: "alicloud_rocketmq_instance",

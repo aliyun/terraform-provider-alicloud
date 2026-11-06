@@ -74,7 +74,7 @@ func ResourceInstance() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validators.StringInSlice([]string{"ons_rmqsub_public_cn", "ons_rmqpost_public_cn", "ons_rmqsrvlesspost_public_cn"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"ons_rmqsub_public_cn", "ons_rmqpost_public_cn", "ons_rmqsrvlesspost_public_cn", "ons_rmqsub_public_intl", "ons_rmqpost_public_intl", "ons_rmqsrvlesspost_public_intl"}, false),
 			},
 			"create_time": {
 				Type:     schema.TypeString,

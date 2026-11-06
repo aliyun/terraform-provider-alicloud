@@ -111,11 +111,21 @@ The following arguments are supported:
 * `auto_renew_period_unit` - (Optional) The minimum periodic unit for the duration of auto-renewal. This parameter is only valid when auto-renewal is enabled. Valid values: `Month`, `Year`.
 * `commodity_code` - (Optional, ForceNew, Available since v1.231.0) Commodity code
 
+  Domestic station (China) values:
+
   ons_rmqsub_public_cn: Package year and month instance
 
   ons_rmqpost_public_cn: Pay-As-You-Go instance
 
-  Next: Serverless instances
+  ons_rmqsrvlesspost_public_cn: Serverless instance
+
+  International station values:
+
+  ons_rmqsub_public_intl: Package year and month instance
+
+  ons_rmqpost_public_intl: Pay-As-You-Go instance
+
+  ons_rmqsrvlesspost_public_intl: Serverless instance
 * `instance_name` - (Optional) The name of instance
 * `ip_whitelists` - (Optional, List, Available since v1.245.0) The ip whitelist.
 * `network_info` - (Required, Set) Instance network configuration information See [`network_info`](#network_info) below.
