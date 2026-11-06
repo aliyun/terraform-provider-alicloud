@@ -1,6 +1,6 @@
 ## 2.3.0 (Unreleased)
 
-## 2.2.0 (November 5, 2026)
+## 2.2.0 (November 6, 2026)
 
 NOTES:
 
@@ -29,6 +29,8 @@ FEATURES:
 
 ENHANCEMENTS:
 
+- resource/alicloud_vod_domain: support `env` for SSL certificate deployment. ([#10196](https://github.com/aliyun/terraform-provider-alicloud/issues/10196))
+- resource/alicloud_redis_tair_instance: support `replica_count` and `slave_replica_count`. ([#10799](https://github.com/aliyun/terraform-provider-alicloud/issues/10799))
 - resource/alicloud_dts_migration_job: support `data_check_configure`. ([#10244](https://github.com/aliyun/terraform-provider-alicloud/issues/10244))
 - resource/alicloud_polardb_cluster: support TDE automatic key rotation for PostgreSQL-compatible and Oracle syntax-compatible clusters. ([#10385](https://github.com/aliyun/terraform-provider-alicloud/issues/10385))
 - resource/alicloud_kvstore_instance and resource/alicloud_redis_tair_instance: support Elastic Burst and per-shard additional bandwidth. ([#10584](https://github.com/aliyun/terraform-provider-alicloud/issues/10584), [#11372](https://github.com/aliyun/terraform-provider-alicloud/issues/11372))
@@ -74,7 +76,7 @@ BUG FIXES:
 - provider: restore SLS endpoint cache reuse across API calls. ([#11208](https://github.com/aliyun/terraform-provider-alicloud/issues/11208))
 - resource/alicloud_oos_service_setting: correctly detect OSS delivery changes, send the complete delivery configuration on update, and avoid a read panic. ([#11210](https://github.com/aliyun/terraform-provider-alicloud/issues/11210))
 - resource/alicloud_esa_certificate: fix invalid certificate type errors during creation. ([#11215](https://github.com/aliyun/terraform-provider-alicloud/issues/11215))
-- resource/alicloud_nlb_server_group: replace the invalid `TCPSSL` protocol value with `TCP_UDP`. ([#11222](https://github.com/aliyun/terraform-provider-alicloud/issues/11222))
+- resource/alicloud_nlb_server_group: accept `TCP_UDP` while preserving `TCPSSL` in schema validation for compatibility. ([#11222](https://github.com/aliyun/terraform-provider-alicloud/issues/11222), [#11502](https://github.com/aliyun/terraform-provider-alicloud/issues/11502))
 - resource/alicloud_ecd_policy_group: prevent read drift for policy attributes and configured `client_types`. ([#11345](https://github.com/aliyun/terraform-provider-alicloud/issues/11345))
 - resource/alicloud_polardb_cluster: make `encrypt_new_tables` Optional and Computed to prevent plan drift. ([#11426](https://github.com/aliyun/terraform-provider-alicloud/issues/11426))
 - provider: honor `NO_PROXY` for tea-roa clients and preserve endpoint ports when bypassing a proxy. ([#11437](https://github.com/aliyun/terraform-provider-alicloud/issues/11437))
@@ -87,6 +89,12 @@ BUG FIXES:
 - provider: derive legacy SDK timeouts from provider settings and preserve defaults when timeout settings are omitted. ([#11477](https://github.com/aliyun/terraform-provider-alicloud/issues/11477))
 - provider: refresh `credentials_uri` credentials before expiration. ([#11479](https://github.com/aliyun/terraform-provider-alicloud/issues/11479))
 - data-source/alicloud_cs_kubernetes_addons: preserve error context; resource/alicloud_polardb_endpoint: prevent endpoint-specific retry rules from affecting other operations. ([#11483](https://github.com/aliyun/terraform-provider-alicloud/issues/11483))
+- resource/alicloud_amqp_instance: release PayAsYouGo and Serverless instances on destroy. ([#11095](https://github.com/aliyun/terraform-provider-alicloud/issues/11095))
+- resource/alicloud_amqp_instance: serialize CreateInstance tags as a JSON string. ([#11500](https://github.com/aliyun/terraform-provider-alicloud/issues/11500))
+- resource/alicloud_cs_kubernetes, resource/alicloud_cs_managed_kubernetes, resource/alicloud_cs_edge_kubernetes and resource/alicloud_cs_serverless_kubernetes: tolerate denied optional kubeconfig reads during cluster refresh and clear stale credential state when access is denied. ([#11498](https://github.com/aliyun/terraform-provider-alicloud/issues/11498), [#11503](https://github.com/aliyun/terraform-provider-alicloud/issues/11503))
+- resource/alicloud_esa_waf_rule: preserve sibling rules when updating phases that require batch updates. ([#11579](https://github.com/aliyun/terraform-provider-alicloud/issues/11579))
+- provider: refresh file-based OIDC role credentials before expiration and honor `session_expiration`. ([#11580](https://github.com/aliyun/terraform-provider-alicloud/issues/11580))
+- resource/alicloud_ecd_desktop: send `host_name` correctly on creation, read the actual host name, and suppress changes to this create-only attribute. ([#11581](https://github.com/aliyun/terraform-provider-alicloud/issues/11581))
 
 ## 2.1.0 (October 22, 2026)
 
