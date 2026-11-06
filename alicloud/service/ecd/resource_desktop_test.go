@@ -246,7 +246,7 @@ func TestAccAliCloudECDDesktop_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_timers"},
+				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_timers"},
 			},
 		},
 	})
@@ -309,7 +309,7 @@ func TestAccAliCloudECDDesktop_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_timers"},
+				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_timers"},
 			},
 		},
 	})
@@ -368,7 +368,7 @@ func TestAccAliCloudECDDesktop_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_timers"},
+				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_timers"},
 			},
 		},
 	})
@@ -379,6 +379,7 @@ var AlicloudECDDesktopMap0 = map[string]string{
 	"period_unit":        acctest.NOSET,
 	"desktop_id":         acctest.NOSET,
 	"desktop_name":       acctest.CHECKSET,
+	"host_name":          acctest.CHECKSET,
 	"stopped_mode":       acctest.NOSET,
 	"office_site_id":     acctest.CHECKSET,
 	"policy_group_id":    acctest.CHECKSET,

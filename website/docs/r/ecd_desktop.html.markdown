@@ -91,7 +91,9 @@ The following arguments are supported:
 * `desktop_type` - (Optional) The desktop type of the Desktop.
 * `office_site_id` - (Required, ForceNew) The ID of the Simple Office Site.
 * `end_user_ids` - (Optional, ForceNew) The desktop end user id of the Desktop.
-* `host_name` - (Optional, Computed) The hostname of the Desktop. It takes effect only for Windows desktops in an AD office site. The value must be 2 to 15 characters and can contain letters, digits and hyphens (-); it cannot start or end with a hyphen, cannot contain consecutive hyphens, and cannot consist of digits only. For multiple desktops, the `name_prefix[begin_number,bits]name_suffix` format can be used to assign sequential hostnames. If it is not specified, the hostname assigned by the system is used.
+* `host_name` - (Optional, Computed) The hostname of the Desktop. The value must be 2 to 15 characters and can contain letters, digits and hyphens (-); it cannot start or end with a hyphen, cannot contain consecutive hyphens, and cannot consist of digits only. For multiple desktops, the `name_prefix[begin_number,bits]name_suffix` format can be used to assign sequential hostnames. If it is not specified, the hostname assigned by the system is used.
+
+  -> **NOTE:** The host name is only set when the desktop is created. Changing `host_name` afterwards neither recreates nor modifies the desktop, so the difference between the configuration and the actual host name is not reported.
 * `desktop_timers` - (Optional, Available in 2.2.0+) The list of scheduled timer tasks for the Desktop. Up to 20 timers can be configured. See [`desktop_timers`](#desktop_timers) below.
 * `payment_type` - (Optional, Computed) The payment type of the Desktop. Valid values: `PayAsYouGo`, `Subscription`. Default to `PayAsYouGo`.
 * `period` - (Optional) The period of the Desktop.
