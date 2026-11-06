@@ -415,11 +415,15 @@ The `assume_role_with_oidc` configuration block supports the following arguments
 * `role_arn` - (Required) ARN of the RAM Role to assume. Can also be set with the `ALIBABA_CLOUD_ROLE_ARN` environment variable.
 * `oidc_token` - (Optional) Value of a RRSA security token from an OIDC Idp. One of `oidc_token` or `oidc_token_file` is required.
   Can also be set with the `ALIBABA_CLOUD_OIDC_TOKEN` environment variable.
+  The token is exchanged for an STS token only once during provider configuration and is not refreshed afterwards;
+  an apply that runs longer than the resulting STS session fails with `InvalidSecurityToken.Expired`. Prefer `oidc_token_file` for long applies.
 * `oidc_token_file` - (Optional) File containing a RRSA security token from an OIDC. One of `oidc_token_file` or `oidc_token` is required.
   Can also be set with the `ALIBABA_CLOUD_OIDC_TOKEN_FILE` environment variable.
+  The file is re-read and the role is re-assumed whenever the STS session is about to expire, so applies longer than one session are supported
+  as long as the file keeps containing a valid OIDC token.
 * `role_session_name` - (Optional) The session name to use when assuming the role. If omitted, 'terraform' is passed to the AssumeRoleWithOIDC call as session name.
   Can also be set with the `ALIBABA_CLOUD_ROLE_SESSION_NAME` environment variable.
-* `session_expiration` - (Optional) The validity period of the STS token. Unit: seconds. Default value: 3600. Minimum value: 900. Maximum value: the value of the MaxSessionDuration parameter when creating a ram role.
+* `session_expiration` - (Optional) The validity period of the STS token. Unit: seconds. Valid value range: 900 to 3600. Default value: 3600.
 * `policy` - (Optional) The policy that specifies the permissions of the returned STS token. You can use this parameter to grant the STS token fewer permissions than the permissions granted to the RAM role.
 
 ### `sign_version`
