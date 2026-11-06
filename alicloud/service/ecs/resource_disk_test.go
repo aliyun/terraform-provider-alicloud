@@ -1849,6 +1849,33 @@ func TestUnitEcsDiskForceDeleteSchema(t *testing.T) {
 	}
 }
 
+func TestUnitEcsDiskRegionalESSDCategory(t *testing.T) {
+	for _, sdkResource := range ecs.ServicePackage().SDKResources {
+		if sdkResource.TypeName != "alicloud_ecs_disk" && sdkResource.TypeName != "alicloud_disk" {
+			continue
+		}
+		disk := sdkResource.Factory()
+		_, errs := disk.Schema["category"].ValidateFunc("cloud_regional_disk_auto", "category")
+		if len(errs) != 0 {
+			t.Errorf("%s rejects Regional ESSD: %v", sdkResource.TypeName, errs)
+		}
+		for _, field := range []string{"zone_id", "performance_level"} {
+			if !disk.Schema[field].Optional {
+				t.Errorf("%s requires %s for a Regional ESSD", sdkResource.TypeName, field)
+			}
+		}
+	}
+	for _, sdkDataSource := range ecs.ServicePackage().SDKDataSources {
+		if sdkDataSource.TypeName != "alicloud_ecs_disks" && sdkDataSource.TypeName != "alicloud_disks" {
+			continue
+		}
+		_, errs := sdkDataSource.Factory().Schema["category"].ValidateFunc("cloud_regional_disk_auto", "category")
+		if len(errs) != 0 {
+			t.Errorf("%s rejects Regional ESSD: %v", sdkDataSource.TypeName, errs)
+		}
+	}
+}
+
 func TestUnitEcsDiskForceDeletePlan(t *testing.T) {
 	cases := []struct {
 		name string
