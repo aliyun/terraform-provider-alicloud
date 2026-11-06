@@ -78,7 +78,7 @@ resource "alicloud_cen_instance" "cen" {
 resource "alicloud_cen_transit_router" "tr" {
   transit_router_name        = var.name
   transit_router_description = "tr-created-by-terraform"
-  cen_id               = alicloud_cen_instance.cen.id
+  cen_id                     = alicloud_cen_instance.cen.id
 }
 
 resource "alicloud_vpc" "vpc1" {
@@ -117,8 +117,8 @@ resource "alicloud_cen_transit_router_vpc_attachment" "tr-vpc1" {
     vswitch_id = alicloud_vswitch.vpc1vsw2.id
   }
   vpc_id            = alicloud_vpc.vpc1.id
-  cen_id               = alicloud_cen_instance.cen.id
-  transit_router_id    = alicloud_cen_transit_router.tr.transit_router_id
+  cen_id            = alicloud_cen_instance.cen.id
+  transit_router_id = alicloud_cen_transit_router.tr.transit_router_id
   depends_on        = [alicloud_route_table.foo]
 }
 
