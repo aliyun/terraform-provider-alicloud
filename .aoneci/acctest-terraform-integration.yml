@@ -33,7 +33,6 @@ jobs:
   IntegrationTest:
     timeout: 6h
     steps:
-      - uses: checkout
       - name: Setup Go
         uses: setup-env
         inputs:
@@ -161,7 +160,6 @@ jobs:
   DocsExampleTest:
     needs: IntegrationTest
     steps:
-      - uses: checkout
       - name: Setup Go
         uses: setup-env
         inputs:
