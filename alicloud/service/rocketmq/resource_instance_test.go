@@ -108,10 +108,13 @@ func TestAccAliCloudRocketmqInstance_SendReceiveRatioValidation(t *testing.T) {
 // cn-hongkong PayAsYouGo, and that unknown values are still rejected.
 //
 // The plan-only steps do not create cloud resources and do not require an
-// international test account: they assert schema-level acceptance only. Full
-// international-site ACC (real CreateInstance against cn-hongkong with an intl
-// account) is gated on an intl test account and is intentionally not claimed
-// here; this matches the task's unresolved intl-account dependency.
+// international test account: they assert schema-level acceptance only. For
+// valid intl values the plan is expected to be non-empty (the config validates
+// and would create), proving schema acceptance; the invalid value step expects
+// the ValidateFunc rejection. Full international-site ACC (real CreateInstance
+// against cn-hongkong with an intl account) is gated on an intl test account
+// and is intentionally not claimed here; this matches the task's unresolved
+// intl-account dependency.
 func TestAccAliCloudRocketmqInstance_CommodityCodeIntlEnum(t *testing.T) {
 	resourceId := "alicloud_rocketmq_instance.commodity_code_enum"
 	rand := tfacctest.RandIntRange(10000, 99999)
@@ -159,16 +162,19 @@ func TestAccAliCloudRocketmqInstance_CommodityCodeIntlEnum(t *testing.T) {
 		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config:   testAccConfig(base("ons_rmqpost_public_intl")),
-				PlanOnly: true,
+				Config:             testAccConfig(base("ons_rmqpost_public_intl")),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 			{
-				Config:   testAccConfig(base("ons_rmqsub_public_intl")),
-				PlanOnly: true,
+				Config:             testAccConfig(base("ons_rmqsub_public_intl")),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 			{
-				Config:   testAccConfig(base("ons_rmqsrvlesspost_public_intl")),
-				PlanOnly: true,
+				Config:             testAccConfig(base("ons_rmqsrvlesspost_public_intl")),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 			{
 				Config:      testAccConfig(base("ons_rmqpost_public_invalid")),
