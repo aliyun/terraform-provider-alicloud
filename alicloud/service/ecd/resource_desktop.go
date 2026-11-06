@@ -164,7 +164,7 @@ func ResourceDesktop() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				// The host name is only set when the desktop is created, a later mismatch can never be converged by Update.
+				// The host name is not managed after creation, a later change is never sent to the API.
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return old != "" && new != ""
 				},
