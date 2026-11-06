@@ -88,6 +88,48 @@ func TestAccAliCloudOssBucketReplicationBasic(t *testing.T) {
 	})
 }
 
+// Test case for replicating the incremental delete markers.
+// OSS only accepts IncrementalDeleteMarker on versioning enabled buckets, and the source and
+// the destination must carry the same versioning state, so this case brings its own
+// alicloud_oss_bucket_versioning resources. It is deliberately kept apart from
+// TestAccAliCloudOssBucketReplicationBasic: a cluster without oss_SupportSyncInVersioningState
+// rejects versioning buckets altogether and would take the basic case down with it.
+func TestAccAliCloudOssBucketReplicationIncrementalDeleteMarker(t *testing.T) {
+	resourceId := "alicloud_oss_bucket_replication.test"
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-bucket-replication-%d", rand)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      ossBucketReplicationCheckDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: hclOssBucketReplicationIncrementalDeleteMarker(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "bucket", name+"-1"),
+					resource.TestCheckResourceAttr(resourceId, "action", "PUT,DELETE"),
+					resource.TestCheckResourceAttr(resourceId, "destination.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "destination.0.bucket", name+"-2"),
+					resource.TestCheckResourceAttrSet(resourceId, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceId, "status"),
+					resource.TestCheckResourceAttr(resourceId, "source_selection_criteria.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "source_selection_criteria.0.sse_kms_encrypted_objects.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "source_selection_criteria.0.sse_kms_encrypted_objects.0.status", "Enabled"),
+					resource.TestCheckResourceAttr(resourceId, "source_selection_criteria.0.incremental_delete_marker.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "source_selection_criteria.0.incremental_delete_marker.0.status", "Enabled"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 // Test case for Cross Region Replication
 // test region: cn-hangzhou <--> cn-shanghai (Hard-coded in the HCL)
 func TestAccAliCloudOssBucketReplicationCrossRegionReplication(t *testing.T) {
@@ -361,6 +403,60 @@ resource "alicloud_oss_bucket_replication" "test" {
   action                        = "PUT,DELETE"
   historical_object_replication = "enabled"
   progress {}
+}`, hclOssBucketReplicationTemplate(name))
+}
+
+func hclOssBucketReplicationIncrementalDeleteMarker(name string) string {
+	return fmt.Sprintf(`
+%s
+
+# IncrementalDeleteMarker is rejected unless the source bucket has versioning enabled, and the
+# source and the destination must carry the same versioning state.
+resource "alicloud_oss_bucket_versioning" "bucket_src" {
+  bucket = local.bucket_src
+  status = "Enabled"
+}
+
+resource "alicloud_oss_bucket_versioning" "bucket_dest" {
+  bucket = local.bucket_dest
+  status = "Enabled"
+}
+
+resource "alicloud_oss_bucket_replication" "test" {
+  prefix_set {
+    prefixes = ["1230", "456", "789"]
+  }
+
+  destination {
+    bucket        = local.bucket_dest
+    location      = local.location
+    transfer_type = ""
+  }
+
+  sync_role = local.role_name
+  encryption_configuration {
+    replica_kms_key_id = local.kms_key_id
+  }
+
+  source_selection_criteria {
+    sse_kms_encrypted_objects {
+      status = "Enabled"
+    }
+
+    incremental_delete_marker {
+      status = "Enabled"
+    }
+  }
+
+  bucket                        = local.bucket_src
+  action                        = "PUT,DELETE"
+  historical_object_replication = "enabled"
+
+  # the rule is rejected while the buckets are still unversioned
+  depends_on = [
+    alicloud_oss_bucket_versioning.bucket_src,
+    alicloud_oss_bucket_versioning.bucket_dest,
+  ]
 }`, hclOssBucketReplicationTemplate(name))
 }
 
