@@ -129,13 +129,13 @@ resource "time_sleep" "wait_10_minutes" {
 }
 
 resource "alicloud_cloud_firewall_vpc_cen_tr_firewall" "default" {
-  cen_id               = alicloud_cen_transit_router_vpc_attachment.tr-vpc1.cen_id
-  firewall_name        = var.name
-  firewall_description = "VpcCenTrFirewall created by terraform"
-  region_no            = var.region
-  firewall_vpc_cidr    = var.firewall_vpc_cidr
-  transit_router_id    = alicloud_cen_transit_router.tr.transit_router_id
-  route_mode           = "managed"
+  cen_id                    = alicloud_cen_transit_router_vpc_attachment.tr-vpc1.cen_id
+  firewall_name             = var.name
+  firewall_description      = "VpcCenTrFirewall created by terraform"
+  region_no                 = var.region
+  firewall_vpc_cidr         = var.firewall_vpc_cidr
+  transit_router_id         = alicloud_cen_transit_router.tr.transit_router_id
+  route_mode                = "managed"
 
   depends_on = [time_sleep.wait_10_minutes]
 }
