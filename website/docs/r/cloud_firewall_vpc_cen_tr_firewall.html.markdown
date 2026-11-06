@@ -116,28 +116,28 @@ resource "alicloud_cen_transit_router_vpc_attachment" "tr-vpc1" {
     zone_id    = data.alicloud_cen_transit_router_available_resources.default.resources[0].master_zones[2]
     vswitch_id = alicloud_vswitch.vpc1vsw2.id
   }
-  vpc_id            = alicloud_vpc.vpc1.id
+  vpc_id            = alicloud_route_table.foo.vpc_id
   cen_id            = alicloud_cen_instance.cen.id
   transit_router_id = alicloud_cen_transit_router.tr.transit_router_id
-  depends_on        = [alicloud_route_table.foo]
 }
 
 resource "time_sleep" "wait_10_minutes" {
-  depends_on = [alicloud_cen_transit_router_vpc_attachment.tr-vpc1]
-
   create_duration = "10m"
+
+  triggers = {
+    attachment_id = alicloud_cen_transit_router_vpc_attachment.tr-vpc1.id
+    cen_id        = alicloud_cen_transit_router_vpc_attachment.tr-vpc1.cen_id
+  }
 }
 
 resource "alicloud_cloud_firewall_vpc_cen_tr_firewall" "default" {
-  cen_id                    = alicloud_cen_transit_router_vpc_attachment.tr-vpc1.cen_id
-  firewall_name             = var.name
-  firewall_description      = "VpcCenTrFirewall created by terraform"
-  region_no                 = var.region
-  firewall_vpc_cidr         = var.firewall_vpc_cidr
-  transit_router_id         = alicloud_cen_transit_router.tr.transit_router_id
-  route_mode                = "managed"
-
-  depends_on = [time_sleep.wait_10_minutes]
+  cen_id               = time_sleep.wait_10_minutes.triggers["cen_id"]
+  firewall_name        = var.name
+  firewall_description = "VpcCenTrFirewall created by terraform"
+  region_no            = var.region
+  firewall_vpc_cidr    = var.firewall_vpc_cidr
+  transit_router_id    = alicloud_cen_transit_router.tr.transit_router_id
+  route_mode           = "managed"
 }
 ```
 
