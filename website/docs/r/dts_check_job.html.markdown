@@ -27,6 +27,12 @@ For information about DTS Check Job and how to use it, see [What is DTS Job](htt
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_dts_check_job&exampleId=aa4ec246-8673-5f9b-7fb6-d6dc4d08b36759fa799c&activeTab=example&spm=docs.r.dts_check_job.0.aa4ec24686&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -134,6 +140,10 @@ resource "alicloud_dts_check_job" "example" {
   )
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dts_check_job&spm=docs.r.dts_check_job.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

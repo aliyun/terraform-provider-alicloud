@@ -19,6 +19,12 @@ This is an alias of [`alicloud_quotas_quota_application`](./quotas_quota_applica
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_quotas_application_info&exampleId=e970dbf9-9979-6b47-49fb-abdb85222c3e5ef54db6&activeTab=example&spm=docs.r.quotas_application_info.0.e970dbf999&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -43,6 +49,10 @@ resource "alicloud_quotas_application_info" "default" {
 ### Deleting `alicloud_quotas_application_info` or removing it from your configuration
 
 Terraform cannot destroy resource `alicloud_quotas_application_info`. Terraform will remove this resource from the state file, however resources may remain.
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_quotas_application_info&spm=docs.r.quotas_application_info.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

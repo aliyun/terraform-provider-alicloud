@@ -23,9 +23,19 @@ For information about TAG Created By and how to use it, see [What is Created By]
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_tag_created_by&exampleId=17ab6f6a-5f9a-9961-12a9-66f788a774ab83708579&activeTab=example&spm=docs.r.tag_created_by.0.17ab6f6a5f&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_tag_created_by" "example" {}
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_tag_created_by&spm=docs.r.tag_created_by.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 
