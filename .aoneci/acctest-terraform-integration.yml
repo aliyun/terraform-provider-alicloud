@@ -3,12 +3,31 @@ triggers:
   merge_request:
     types: [accepted]
     paths:
+      - 'scripts/ci/**'
+      - 'scripts/internal/**'
+      - '.aoneci/**'
+      - 'go.mod'
+      - 'go.sum'
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
   push:
     paths:
+      - 'scripts/ci/**'
+      - 'scripts/internal/**'
+      - '.aoneci/**'
+      - 'go.mod'
+      - 'go.sum'
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
+
+envs:
+  CODE_HEAD: '${{git.commitId}}'
+  CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
+  CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
+  CODE_PUSH_BEFORE: '${{git.push.beforeSha256 ?: ""}}'
+  CODE_TARGET: '${{git.merge_request.targetBranch ?: ""}}'
+  CODE_DEFAULT_BRANCH: '${{git.defaultBranch}}'
+  CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
 
 jobs:
   IntegrationTest:
@@ -21,11 +40,13 @@ jobs:
           go-version: '1.24.0'
       - uses: checkout
         inputs:
-          fetch-depth: '2'
+          fetch-depth: '0'
       - name: Integration Test Check
         run: |
-          # diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
-          diffFiles=$(git diff --name-only HEAD^ HEAD)
+          range=$(python3 scripts/ci/aone-range.py) || exit $?
+          eval "$range"
+          # diffFiles=$(git diff --name-only "$DIFF_BASE" "$DIFF_HEAD" | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
+          diffFiles=$(git diff --name-only "$DIFF_BASE" "$DIFF_HEAD")
           noNeedRun=true
           # The acceptance tests run per package: flat sources test in
           # ./alicloud, split-layout sources in their product package, where
@@ -148,18 +169,20 @@ jobs:
       - uses: checkout
         inputs:
           # Checkout as many commits as needed for the diff
-          fetch-depth: '2'
+          fetch-depth: '0'
       - name: Docs Example Test Check
         run: |
+          range=$(python3 scripts/ci/aone-range.py) || exit $?
+          eval "$range"
           # A split-layout filename cannot yield the entity name: resolve
           # the docs of the changed service sources through the register.go
           # join first. The checker is restored from the merge request base
           # so master's code judges the merge request data; only the merge
           # request that introduces the checker runs the copy it adds.
-          if git cat-file -e "HEAD^:scripts/title/title_check.go" 2>/dev/null; then
-            git checkout HEAD^ -- scripts/title scripts/internal/splitlayout
+          if git cat-file -e "${DIFF_BASE}:scripts/title/title_check.go" 2>/dev/null; then
+            git checkout "$DIFF_BASE" -- scripts/title scripts/internal/splitlayout
           fi
-          diffFiles=$(git diff --name-only HEAD^ HEAD)
+          diffFiles=$(git diff --name-only "$DIFF_BASE" "$DIFF_HEAD")
           noNeedRun=true
           exampleCount=0
           if [[ ${#diffFiles[@]} -eq 0 ]]; then
