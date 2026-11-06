@@ -17,7 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func init() {
@@ -131,25 +130,12 @@ func TestAccAliCloudECDDesktop_basic0(t *testing.T) {
 					"amount":          "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					func(s *terraform.State) error {
-						rs, ok := s.RootModule().Resources[resourceId]
-						if !ok {
-							return fmt.Errorf("can't find resource by id: %s", resourceId)
-						}
-						object, err := ecd.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient)).DescribeEcdDesktop(rs.Primary.ID)
-						if err != nil {
-							return err
-						}
-						if got, _ := object["HostName"].(string); got != fmt.Sprintf("tf-host%d", rand) {
-							return fmt.Errorf("host_name not applied, want tf-host%d, got %v", rand, object["HostName"])
-						}
-						return nil
-					},
 					testAccCheck(map[string]string{
 						"office_site_id":  acctest.CHECKSET,
 						"policy_group_id": acctest.CHECKSET,
 						"bundle_id":       acctest.CHECKSET,
 						"desktop_name":    name,
+						"host_name":       fmt.Sprintf("tf-host%d", rand),
 						"amount":          "1",
 					}),
 				),

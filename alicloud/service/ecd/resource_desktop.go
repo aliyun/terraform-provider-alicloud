@@ -163,6 +163,7 @@ func ResourceDesktop() *schema.Resource {
 			"host_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"desktop_timers": {
 				Type:     schema.TypeList,
@@ -359,6 +360,7 @@ func resourceDesktopRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	d.Set("desktop_name", object["DesktopName"])
 	d.Set("desktop_type", object["DesktopType"])
+	d.Set("host_name", object["HostName"])
 	d.Set("office_site_id", object["OfficeSiteId"])
 	d.Set("end_user_ids", object["EndUserIds"])
 	d.Set("payment_type", convertEcdDesktopPaymentTypeResponse(object["ChargeType"]))
