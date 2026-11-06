@@ -1,0 +1,57 @@
+name: Errcheck report
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - .github/workflows/errcheck-report.yml
+      - scripts/ci/report-errcheck.js
+      - scripts/ci/report-errcheck.test.js
+  workflow_run:
+    workflows: [Golangci-Lint]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: errcheck-report-${{ github.event.workflow_run.id || github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test errcheck reporting
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            require('node:child_process').execFileSync(process.execPath,
+              ['--test', 'scripts/ci/report-errcheck.test.js'], {stdio: 'inherit'});
+
+  report:
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request'
+    runs-on: terraform-ci-policy
+    timeout-minutes: 3
+    permissions:
+      actions: read
+      checks: write
+      contents: read
+    steps:
+      # The write token only runs reporter code from the default branch.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/ci/report-errcheck.js
+          sparse-checkout-cone-mode: false
+      - name: Publish non-blocking errcheck findings
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const { reportErrcheck } = require('./scripts/ci/report-errcheck.js');
+            await reportErrcheck({ github, context, core });
