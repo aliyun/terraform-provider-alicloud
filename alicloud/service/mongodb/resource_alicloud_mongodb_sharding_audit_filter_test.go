@@ -1,16 +1,23 @@
 package mongodb_test
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"reflect"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
@@ -18,8 +25,10 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mongodb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -45,26 +54,31 @@ func TestAccAliCloudMongodbShardingAuditFilter_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_id":     "${alicloud_mongodb_sharding_instance.default.id}",
-					"audit_status":       "enable",
-					"filter":             "admin,slow",
-					"role_type":          "mongos",
-					"service_type":       "V2_Standard",
-					"storage_period":     "30",
-					"hot_storage_period": "7",
+					"db_instance_id":          "${alicloud_mongodb_sharding_instance.default.id}",
+					"audit_status":            "enable",
+					"filter":                  "admin,slow",
+					"role_type":               "mongos",
+					"service_type":            "V2_Standard",
+					"storage_period":          "30",
+					"hot_storage_period":      "7",
+					"audit_log_switch_source": "Console",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_instance_id":     acctest.CHECKSET,
-						"audit_status":       "enable",
-						"filter":             "admin,slow",
-						"service_type":       "V2_Standard",
-						"storage_period":     "30",
-						"hot_storage_period": "7",
+						"db_instance_id":          acctest.CHECKSET,
+						"audit_status":            "enable",
+						"filter":                  "admin,slow",
+						"role_type":               "mongos",
+						"service_type":            "V2_Standard",
+						"storage_period":          "30",
+						"hot_storage_period":      "7",
+						"audit_log_switch_source": "Console",
 					}),
 				),
 			},
 			{
+				// A real policy change while audit_log_switch_source stays explicitly configured: the
+				// request carries the configured source together with the policy change.
 				Config: testAccConfig(map[string]interface{}{
 					"audit_status":       "disabled",
 					"filter":             "update,insert,delete",
@@ -75,14 +89,51 @@ func TestAccAliCloudMongodbShardingAuditFilter_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"audit_status":       "disabled",
-						"filter":             "update,insert,delete",
-						"storage_period":     "180",
-						"hot_storage_period": "5",
+						"audit_status":            "disabled",
+						"filter":                  "update,insert,delete",
+						"role_type":               "db",
+						"storage_period":          "180",
+						"hot_storage_period":      "5",
+						"audit_log_switch_source": "Console",
 					}),
 				),
 			},
 			{
+				// Turning the audit log back on is a real policy change that omits the optional
+				// audit_log_switch_source: the request must be built without the parameter and the
+				// attribute must leave the state instead of being held at the earlier explicit value.
+				Config: testAccConfig(map[string]interface{}{
+					"audit_status":            "enable",
+					"filter":                  "admin,slow",
+					"role_type":               "mongos",
+					"service_type":            "V2_Standard",
+					"audit_log_switch_source": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"audit_status":            "enable",
+						"filter":                  "admin,slow",
+						"role_type":               "mongos",
+						"audit_log_switch_source": acctest.REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// The write-only audit_log_switch_source is never returned by the query APIs, and
+				// service_type/role_type are Optional+Computed values the read APIs cannot restore as
+				// declared.
+				ImportStateVerifyIgnore: []string{"service_type", "role_type", "audit_log_switch_source"},
+			},
+			{
+				// Import verification lives in the step above: ImportStateVerify compares the imported
+				// state with the pre-import state, ignoring only the write-only
+				// audit_log_switch_source and the Optional+Computed service_type/role_type, which the
+				// read APIs cannot restore as declared. That import state is discarded after the step,
+				// so this replay runs against the state of the re-enable step and pins that turning the
+				// audit log back on converges without drift.
 				Config: testAccConfig(map[string]interface{}{
 					"audit_status": "enable",
 					"filter":       "admin,slow",
@@ -93,14 +144,49 @@ func TestAccAliCloudMongodbShardingAuditFilter_basic0(t *testing.T) {
 					testAccCheck(map[string]string{
 						"audit_status": "enable",
 						"filter":       "admin,slow",
+						"role_type":    "mongos",
 					}),
 				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionNoop),
+					},
+				},
 			},
 			{
+				// Changing a real attribute stays an in-place update (the only ForceNew field,
+				// db_instance_id, is unchanged), and the framework then requires the follow-up plan to
+				// be empty. This update changes role_type only: import has no role_type and can restore
+				// the merged filter view, which equals the per-role value only while every role keeps
+				// the same filter. The API accepts one role per ModifyAuditLogFilter call, so any filter
+				// change here would make the following import unverifiable.
+				Config: testAccConfig(map[string]interface{}{
+					"audit_status": "enable",
+					"filter":       "admin,slow",
+					"role_type":    "db",
+					"service_type": "V2_Standard",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"audit_status": "enable",
+						"filter":       "admin,slow",
+						"role_type":    "db",
+					}),
+				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionUpdate),
+					},
+				},
+			},
+			{
+				// The final successful configuration must also survive an import: the imported state is
+				// compared with the state above, ignoring only the write-only source and the
+				// Optional+Computed service_type/role_type that the read APIs cannot restore as declared.
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"service_type", "role_type"},
+				ImportStateVerifyIgnore: []string{"service_type", "role_type", "audit_log_switch_source"},
 			},
 		},
 	})
@@ -127,6 +213,8 @@ func TestAccAliCloudMongodbShardingAuditFilter_basic0_twin(t *testing.T) {
 		Providers: acctest.SDKProviders,
 		Steps: []resource.TestStep{
 			{
+				// Create without audit_log_switch_source: the optional request source has no schema
+				// default, so the audit policy request leaves the parameter out.
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_id":     "${alicloud_mongodb_sharding_instance.default.id}",
 					"audit_status":       "enable",
@@ -141,6 +229,7 @@ func TestAccAliCloudMongodbShardingAuditFilter_basic0_twin(t *testing.T) {
 						"db_instance_id":     acctest.CHECKSET,
 						"audit_status":       "enable",
 						"filter":             "admin,slow",
+						"role_type":          "mongos",
 						"storage_period":     "30",
 						"service_type":       "V2_Standard",
 						"hot_storage_period": "7",
@@ -151,7 +240,7 @@ func TestAccAliCloudMongodbShardingAuditFilter_basic0_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"service_type", "role_type"},
+				ImportStateVerifyIgnore: []string{"service_type", "role_type", "audit_log_switch_source"},
 			},
 		},
 	})
@@ -211,9 +300,10 @@ func TestUnitAliCloudMongodbShardingAuditFilter(t *testing.T) {
 	dExisted, _ := schema.InternalMap(p["alicloud_mongodb_sharding_audit_filter"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
-		"db_instance_id": "CreateValue",
-		"audit_status":   "enable",
-		"filter":         "admin,slow",
+		"db_instance_id":          "CreateValue",
+		"audit_status":            "enable",
+		"filter":                  "admin,slow",
+		"audit_log_switch_source": "Console",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -294,7 +384,10 @@ func TestUnitAliCloudMongodbShardingAuditFilter(t *testing.T) {
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, body map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "ModifyAuditPolicy" {
+				assert.Equal(t, "Console", body["AuditLogSwitchSource"])
+			}
 			if *action == "ModifyAuditPolicy" || *action == "ModifyAuditLogFilter" {
 				switch errorCode {
 				case "NonRetryableError":
@@ -357,7 +450,10 @@ func TestUnitAliCloudMongodbShardingAuditFilter(t *testing.T) {
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, body map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "ModifyAuditPolicy" {
+				assert.Equal(t, "Console", body["AuditLogSwitchSource"])
+			}
 			if *action == "ModifyAuditPolicy" || *action == "ModifyAuditLogFilter" {
 				switch errorCode {
 				case "NonRetryableError":
@@ -426,4 +522,428 @@ func TestUnitAliCloudMongodbShardingAuditFilter(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+// TestUnitShardingAuditFilterAuditLogSwitchSource captures the serialized
+// ModifyAuditPolicy request at the HTTP boundary, so the write-only AuditLogSwitchSource is checked
+// without a credential-bound mock that skips inside CI containers. The attribute is optional request
+// attribution: it must be sent when configured and left out of the request when it is not, on both
+// Create and a policy-changing Update.
+func TestUnitShardingAuditFilterAuditLogSwitchSource(t *testing.T) {
+	var mu sync.Mutex
+	var policyForms []url.Values
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request form: %v", err)
+		}
+		if r.Form.Get("Action") == "ModifyAuditPolicy" {
+			mu.Lock()
+			policyForms = append(policyForms, r.PostForm)
+			mu.Unlock()
+			// Non-retryable error: the request is already serialized on the wire, and the error
+			// returns before the hard-coded five-minute state-change delay.
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `{"RequestId":"mock","Code":"InvalidParameter","Message":"mock request boundary"}`)
+			return
+		}
+		fmt.Fprint(w, `{"RequestId":"mock"}`)
+	}))
+	t.Cleanup(server.Close)
+
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("dds", endpoint)
+
+	res := acctest.Provider.ResourcesMap["alicloud_mongodb_sharding_audit_filter"]
+
+	// Create with an explicit source.
+	createExplicit := schema.TestResourceDataRaw(t, res.Schema, map[string]interface{}{
+		"db_instance_id":          "dds-mock",
+		"audit_status":            "enable",
+		"filter":                  "admin,slow",
+		"audit_log_switch_source": "Console",
+	})
+	assert.Error(t, res.Create(createExplicit, client))
+
+	// Create without the attribute: there is no schema default, so the request must leave the
+	// parameter out instead of sending an empty or provider-chosen value.
+	createOmitted := schema.TestResourceDataRaw(t, res.Schema, map[string]interface{}{
+		"db_instance_id": "dds-mock",
+		"audit_status":   "enable",
+		"filter":         "admin,slow",
+	})
+	assert.Equal(t, "", createOmitted.Get("audit_log_switch_source"))
+	assert.Error(t, res.Create(createOmitted, client))
+
+	// Policy-changing Update with the attribute configured.
+	stateData, _ := schema.InternalMap(res.Schema).Data(nil, nil)
+	assert.NoError(t, stateData.Set("db_instance_id", "dds-mock"))
+	assert.NoError(t, stateData.Set("audit_status", "enable"))
+	assert.NoError(t, stateData.Set("filter", "admin,slow"))
+	assert.NoError(t, stateData.Set("audit_log_switch_source", "Console"))
+	stateData.SetId("dds-mock")
+	baseState := stateData.State()
+	attributes := map[string]interface{}{
+		"db_instance_id":          "dds-mock",
+		"audit_status":            "enable",
+		"filter":                  "admin,slow",
+		"audit_log_switch_source": "Console",
+	}
+	diff, err := acctest.NewInstanceDiff("alicloud_mongodb_sharding_audit_filter", attributes, map[string]interface{}{"audit_status": "disabled"}, baseState)
+	assert.NoError(t, err)
+	updateData, _ := schema.InternalMap(res.Schema).Data(baseState, diff)
+	assert.Error(t, res.Update(updateData, client))
+
+	// Policy-changing Update without the attribute: the state carries no source, so the request must
+	// leave the parameter out even though the audit policy really changes.
+	omittedStateData, _ := schema.InternalMap(res.Schema).Data(nil, nil)
+	assert.NoError(t, omittedStateData.Set("db_instance_id", "dds-mock"))
+	assert.NoError(t, omittedStateData.Set("audit_status", "enable"))
+	assert.NoError(t, omittedStateData.Set("filter", "admin,slow"))
+	omittedStateData.SetId("dds-mock")
+	omittedState := omittedStateData.State()
+	omittedAttributes := map[string]interface{}{
+		"db_instance_id": "dds-mock",
+		"audit_status":   "enable",
+		"filter":         "admin,slow",
+	}
+	diff, err = acctest.NewInstanceDiff("alicloud_mongodb_sharding_audit_filter", omittedAttributes, map[string]interface{}{"audit_status": "disabled"}, omittedState)
+	assert.NoError(t, err)
+	omittedUpdateData, _ := schema.InternalMap(res.Schema).Data(omittedState, diff)
+	assert.Error(t, res.Update(omittedUpdateData, client))
+
+	mu.Lock()
+	defer mu.Unlock()
+	if !assert.Len(t, policyForms, 4) {
+		return
+	}
+	assertSource := func(form url.Values, want, msg string) {
+		values, ok := form["AuditLogSwitchSource"]
+		if want == "" {
+			assert.False(t, ok, "%s: the unconfigured parameter must be absent from the request", msg)
+			return
+		}
+		assert.True(t, ok, "%s: the configured parameter must be sent", msg)
+		assert.Equal(t, []string{want}, values, msg)
+	}
+	assertSource(policyForms[0], "Console", "create with the attribute configured")
+	assertSource(policyForms[1], "", "create without the attribute")
+	assertSource(policyForms[2], "Console", "policy-changing update with the attribute configured")
+	assertSource(policyForms[3], "", "policy-changing update without the attribute")
+	for i, form := range policyForms {
+		assert.Equal(t, "dds-mock", form.Get("DBInstanceId"), "ModifyAuditPolicy request %d", i)
+	}
+}
+
+// TestUnitShardingAuditFilterReadKeepsConfiguredSource pins that Read leaves an
+// explicitly configured audit_log_switch_source untouched: none of the describe APIs return the
+// write-only request parameter, so Read must neither clear nor overwrite it.
+func TestUnitShardingAuditFilterReadKeepsConfiguredSource(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request form: %v", err)
+		}
+		switch r.Form.Get("Action") {
+		case "DescribeMongoDBLogConfig":
+			fmt.Fprint(w, `{"RequestId":"mock","ServiceType":"V2_Standard","TtlForStandard":30,"TtlForV2Standard":180,"HotTtlForV2Standard":5}`)
+		case "DescribeAuditPolicy":
+			fmt.Fprint(w, `{"RequestId":"mock","LogAuditStatus":"Enable"}`)
+		case "DescribeAuditLogFilter":
+			fmt.Fprint(w, `{"RequestId":"mock","Filter":"admin,slow","RoleType":"logic"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("dds", endpoint)
+
+	res := acctest.Provider.ResourcesMap["alicloud_mongodb_sharding_audit_filter"]
+	data := schema.TestResourceDataRaw(t, res.Schema, map[string]interface{}{
+		"db_instance_id":          "dds-mock",
+		"audit_status":            "enable",
+		"filter":                  "admin,slow",
+		"audit_log_switch_source": "Console",
+	})
+	data.SetId("dds-mock")
+
+	assert.NoError(t, res.Read(data, client))
+	assert.Equal(t, "Console", data.Get("audit_log_switch_source"))
+	assert.Equal(t, "enable", data.Get("audit_status"))
+}
+
 // Test Mongodb ShardingAuditFilter. >>> Resource test cases, hand-written.
+
+// TestUnitShardingAuditFilterDisabledImportPlan pins the imported-state transition of
+// the optional write-only audit_log_switch_source. After importing an instance whose audit log is
+// disabled the state has no service_type (Read keeps the declared value only while enabled) and the
+// disabled edition suppression hides the declared V2_Standard. Because the attribute has no schema
+// default, importing must not plan any change for it, and the plan must therefore carry no audit
+// policy write that would fall back to ServiceType=Standard. The plan is built through the real SDK
+// diff here, Update runs against it, and the follow-up plan must be empty.
+func TestUnitShardingAuditFilterDisabledImportPlan(t *testing.T) {
+	var mu sync.Mutex
+	var policyCalls, filterCalls int
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request form: %v", err)
+		}
+		switch r.Form.Get("Action") {
+		case "ModifyAuditPolicy":
+			mu.Lock()
+			policyCalls++
+			mu.Unlock()
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `{"RequestId":"mock","Code":"InvalidParameter","Message":"unexpected policy write"}`)
+		case "ModifyAuditLogFilter":
+			mu.Lock()
+			filterCalls++
+			mu.Unlock()
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `{"RequestId":"mock","Code":"InvalidParameter","Message":"unexpected filter write"}`)
+		case "DescribeMongoDBLogConfig":
+			// Disabled audit logs report the Trial edition and no V2 retention fields.
+			fmt.Fprint(w, `{"RequestId":"mock","ServiceType":"Trial","TtlForStandard":30}`)
+		case "DescribeAuditPolicy":
+			fmt.Fprint(w, `{"RequestId":"mock","LogAuditStatus":"Disabled"}`)
+		case "DescribeAuditLogFilter":
+			fmt.Fprint(w, `{"RequestId":"mock","Filter":"admin,slow","RoleType":"logic"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("dds", endpoint)
+
+	res := acctest.Provider.ResourcesMap["alicloud_mongodb_sharding_audit_filter"]
+	// State produced by terraform import: no service_type while the audit log is disabled and no
+	// write-only audit_log_switch_source.
+	prior := &terraform.InstanceState{ID: "dds-mock", Attributes: map[string]string{
+		"id":             "dds-mock",
+		"db_instance_id": "dds-mock",
+		"audit_status":   "disabled",
+		"filter":         "admin,slow",
+	}}
+	declared := map[string]interface{}{
+		"db_instance_id": "dds-mock",
+		"audit_status":   "disabled",
+		"filter":         "admin,slow",
+		"service_type":   "V2_Standard",
+	}
+
+	diff, err := res.Diff(context.Background(), prior, terraform.NewResourceConfigRaw(declared), nil)
+	if !assert.NoError(t, err) {
+		return
+	}
+	// Without a schema default for the write-only source the only difference against the declared
+	// configuration is the suppressed disabled edition, so the plan must be empty: no attribute may
+	// change and no audit policy write may be planned for the imported state.
+	if diff != nil {
+		for name, attribute := range diff.Attributes {
+			if attribute.NewComputed {
+				continue
+			}
+			assert.Failf(t, "unexpected planned change", "attribute %q would change", name)
+		}
+	}
+
+	data, err := schema.InternalMap(res.Schema).Data(prior, diff)
+	if !assert.NoError(t, err) {
+		return
+	}
+	assert.NoError(t, res.Update(data, client))
+
+	mu.Lock()
+	assert.Zero(t, policyCalls, "the source default alone must not rewrite the audit policy")
+	assert.Zero(t, filterCalls, "no filter write is expected when only the source default is planned")
+	mu.Unlock()
+
+	followUp, err := res.Diff(context.Background(), data.State(), terraform.NewResourceConfigRaw(declared), nil)
+	assert.NoError(t, err)
+	if followUp != nil {
+		assert.Empty(t, followUp.Attributes, "the follow-up plan must converge")
+	}
+}
+
+// TestUnitShardingAuditFilterStorageRetention drives Read through the public resource factory and
+// isolated HTTP responses, pinning that the retention pair follows the audit log edition. Per the Dds
+// 2015-12-01 definition the Standard edition reports its retention in TtlForStandard, while V2_Standard
+// reports the cold storage duration in TtlForV2Standard and the hot storage duration in
+// HotTtlForV2Standard. The reported edition wins; an unrecognised reported edition (Trial while the
+// audit log is disabled) falls back to the declared one; an omitted field keeps the state value.
+func TestUnitShardingAuditFilterStorageRetention(t *testing.T) {
+	cases := []struct {
+		name          string
+		logConfig     string
+		auditStatus   string
+		declared      string
+		priorStorage  int
+		priorHot      int
+		storagePeriod int
+		hotPeriod     int
+	}{
+		{
+			name:          "v2 standard reads cold and hot storage",
+			logConfig:     `{"RequestId":"mock","ServiceType":"V2_Standard","TtlForStandard":30,"TtlForV2Standard":180,"HotTtlForV2Standard":5}`,
+			auditStatus:   "Enable",
+			declared:      "V2_Standard",
+			storagePeriod: 180,
+			hotPeriod:     5,
+		},
+		{
+			name:          "standard reads retention only",
+			logConfig:     `{"RequestId":"mock","ServiceType":"Standard","TtlForStandard":180,"TtlForV2Standard":30}`,
+			auditStatus:   "Enable",
+			declared:      "Standard",
+			priorHot:      5,
+			storagePeriod: 180,
+			hotPeriod:     5,
+		},
+		{
+			name:          "reported edition wins over the declared one",
+			logConfig:     `{"RequestId":"mock","ServiceType":"Standard","TtlForStandard":30,"TtlForV2Standard":180,"HotTtlForV2Standard":5}`,
+			auditStatus:   "Enable",
+			declared:      "V2_Standard",
+			priorHot:      7,
+			storagePeriod: 30,
+			hotPeriod:     7,
+		},
+		{
+			name:          "disabled audit log reports trial so the declared edition decides",
+			logConfig:     `{"RequestId":"mock","ServiceType":"Trial","TtlForStandard":30,"TtlForV2Standard":180,"HotTtlForV2Standard":5}`,
+			auditStatus:   "Disabled",
+			declared:      "V2_Standard",
+			storagePeriod: 180,
+			hotPeriod:     5,
+		},
+		{
+			name:          "unknown edition without declaration falls back to standard",
+			logConfig:     `{"RequestId":"mock","ServiceType":"Trial","TtlForStandard":30}`,
+			auditStatus:   "Disabled",
+			storagePeriod: 30,
+			hotPeriod:     0,
+		},
+		{
+			name:          "omitted fields keep the state value",
+			logConfig:     `{"RequestId":"mock","ServiceType":"Trial"}`,
+			auditStatus:   "Disabled",
+			declared:      "V2_Standard",
+			priorStorage:  180,
+			priorHot:      5,
+			storagePeriod: 180,
+			hotPeriod:     5,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			logConfig, auditStatus := c.logConfig, c.auditStatus
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if err := r.ParseForm(); err != nil {
+					t.Errorf("parse request form: %v", err)
+				}
+				switch r.Form.Get("Action") {
+				case "DescribeMongoDBLogConfig":
+					fmt.Fprint(w, logConfig)
+				case "DescribeAuditPolicy":
+					fmt.Fprintf(w, `{"RequestId":"mock","LogAuditStatus":%q}`, auditStatus)
+				case "DescribeAuditLogFilter":
+					fmt.Fprint(w, `{"RequestId":"mock","Filter":"admin,slow","RoleType":"logic"}`)
+				default:
+					fmt.Fprint(w, `{"RequestId":"mock"}`)
+				}
+			}))
+			t.Cleanup(server.Close)
+
+			endpoint := strings.TrimPrefix(server.URL, "http://")
+			t.Setenv("NO_PROXY", endpoint)
+			credential, err := credentials.NewCredential(new(credentials.Config).
+				SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			endpoints := new(sync.Map)
+			config := &connectivity.Config{
+				AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+				RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+				Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+			}
+			client, err := config.Client()
+			if err != nil {
+				t.Fatal(err)
+			}
+			endpoints.Store("dds", endpoint)
+
+			res := acctest.Provider.ResourcesMap["alicloud_mongodb_sharding_audit_filter"]
+			attributes := map[string]interface{}{
+				"db_instance_id": "dds-mock",
+				"audit_status":   "enable",
+				"filter":         "admin,slow",
+			}
+			if c.declared != "" {
+				attributes["service_type"] = c.declared
+			}
+			if c.priorStorage != 0 {
+				attributes["storage_period"] = c.priorStorage
+			}
+			if c.priorHot != 0 {
+				attributes["hot_storage_period"] = c.priorHot
+			}
+			data := schema.TestResourceDataRaw(t, res.Schema, attributes)
+			data.SetId("dds-mock")
+
+			assert.NoError(t, res.Read(data, client))
+			assert.Equal(t, c.storagePeriod, data.Get("storage_period"))
+			assert.Equal(t, c.hotPeriod, data.Get("hot_storage_period"))
+		})
+	}
+}
