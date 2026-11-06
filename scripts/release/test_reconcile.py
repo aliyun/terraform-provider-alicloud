@@ -86,6 +86,16 @@ class ReconcileTest(unittest.TestCase):
                 r.publish(head, 'v1.2.3', self.base, self.internal, self.external)
         self.assertEqual(ext, r.refs(self.external, r.MASTER)[r.MASTER])
         self.assertIsNone(r.tag_head(self.external, 'refs/tags/v1.2.3'))
+        self.assertIsNone(r.tag_head(self.internal, 'refs/tags/v1.2.3'))
+
+    def test_partial_publication_can_finish_after_new_external_merge(self):
+        head = self.advance_internal()
+        self.git('push', self.external, head + ':master', head + ':refs/tags/v1.2.3')
+        next_head = self.commit('after-release')
+        self.git('push', self.external, next_head + ':master')
+        receipt = r.publish(head, 'v1.2.3', self.base, self.internal, self.external)
+        self.assertEqual('CONFIRMED', receipt['state'])
+        self.assertEqual(next_head, r.refs(self.external, r.MASTER)[r.MASTER])
         self.assertEqual(head, r.tag_head(self.internal, 'refs/tags/v1.2.3'))
 
     def test_tag_conflict_changes_nothing(self):

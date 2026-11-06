@@ -1,22 +1,26 @@
 name: Terraform Integration Checks
 triggers:
   merge_request:
-    types: [accepted]
+    types: [opened, reopened, accepted]
     paths:
       - 'scripts/ci/**'
+      - 'scripts/release/**'
       - 'scripts/internal/**'
       - '.aoneci/**'
       - 'go.mod'
       - 'go.sum'
+      - 'website/docs/**'
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
   push:
     paths:
       - 'scripts/ci/**'
+      - 'scripts/release/**'
       - 'scripts/internal/**'
       - '.aoneci/**'
       - 'go.mod'
       - 'go.sum'
+      - 'website/docs/**'
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
 

@@ -88,32 +88,37 @@ def publish(candidate, version, observed_github, internal=INTERNAL, external=EXT
     remote_tags = [tag_head(remote, tag) for remote in (internal, external)]
     if any(value is not None and value != candidate for value in remote_tags):
         raise ReconcileError('RELEASE_TAG_CONFLICT')
-    if remote_tags == [candidate, candidate]:
+    if remote_tags[1] == candidate:
+        # The public publication already landed (possibly without its ACK).
+        # Verify ancestry and finish only the missing internal tag; never push
+        # an old candidate over subsequently merged external contributions.
         for remote in (internal, external):
             git('fetch', '--no-tags', '--no-write-fetch-head', remote, MASTER)
             tip = refs(remote, MASTER).get(MASTER)
             if not tip or not ancestor(candidate, tip):
                 raise ReconcileError('release tag exists outside current master history')
-        return {'candidate': candidate, 'version': version, 'state': 'CONFIRMED'}
-    receipt = check(candidate, internal, external)
-    if receipt['githubMaster'] not in (observed_github, candidate):
-        raise ReconcileError('GITHUB_MOVED: repeat reconciliation and validation')
-    # Record the internal version first. Never move an existing tag. A partial
-    # result is resumed with the same version/candidate, not a new release.
-    for remote, refspecs in (
-        (internal, [candidate + ':' + tag]),
-        (external, [candidate + ':' + MASTER, candidate + ':' + tag]),
-    ):
-        if remote == internal and tag_head(remote, tag) == candidate:
-            continue
-        # Atomic branch+tag update protects against a GitHub advance after check.
-        # Ordinary push enforces fast-forward; unsupported atomic push fails closed.
-        attempt = git('push', '--atomic', '--porcelain', remote, *refspecs, check=False)
-        landed = tag_head(remote, tag) == candidate
-        if remote == external:
-            landed = landed and refs(remote, MASTER).get(MASTER) == candidate
-        if not landed:
-            raise ReconcileError('PUBLISH_UNCONFIRMED: retain version and candidate; read back before retry')
+        receipt = {'candidate': candidate, 'acknowledgementRecovered': True}
+    else:
+        receipt = check(candidate, internal, external)
+        if receipt['githubMaster'] not in (observed_github, candidate):
+            raise ReconcileError('GITHUB_MOVED: repeat reconciliation and validation')
+        # Publish external branch+tag atomically BEFORE creating the internal
+        # final tag. A concurrent external merge can then reject the push without
+        # consuming the version internally; import/revalidate a new candidate.
+        attempt = git('push', '--atomic', '--porcelain', external,
+                      candidate + ':' + MASTER, candidate + ':' + tag, check=False)
+        if tag_head(external, tag) != candidate:
+            raise ReconcileError('PUBLISH_UNCONFIRMED: read back before retry; never rewrite a tag')
+        git('fetch', '--no-tags', '--no-write-fetch-head', external, MASTER)
+        tip = refs(external, MASTER).get(MASTER)
+        if not tip or not ancestor(candidate, tip):
+            raise ReconcileError('PUBLISH_UNCONFIRMED: external master ancestry changed')
+        if attempt.returncode:
+            receipt['acknowledgementRecovered'] = True
+    if tag_head(internal, tag) != candidate:
+        attempt = git('push', '--porcelain', internal, candidate + ':' + tag, check=False)
+        if tag_head(internal, tag) != candidate:
+            raise ReconcileError('PUBLISH_UNCONFIRMED: public release landed; resume same internal tag')
         if attempt.returncode:
             receipt['acknowledgementRecovered'] = True
     return {**receipt, 'version': version, 'state': 'CONFIRMED'}

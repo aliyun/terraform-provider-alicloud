@@ -37,3 +37,5 @@ Offline regression tests:
 python3 -m unittest discover -s scripts/ci -p test_aone_range.py
 python3 -m unittest discover -s scripts/release -p 'test_*.py'
 ```
+
+公开 master/tag 原子确认后才补内部正式 tag；外部并发合并拒绝本次推送时，不提前占用内部正式版本。公开 tag 已确认而内部 tag 未确认时，沿相同 SHA/版本补齐；后续 GitHub 提交不被覆盖。
