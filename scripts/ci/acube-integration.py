@@ -190,11 +190,24 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         request['idempotencyKey'] = 'ci-v1-' + digest({'run':run_id, 'plan':digest(frozen),'kind':kind,'name':name})
         item_file = output / (digest(name) + '.json')
         try:
+            reused_cases = {}
+            if kind == 'acctest' and capabilities.get('accTestCaseReuse') == 'exact-source-v1':
+                reused_cases = client.call('POST', '/acctest/reusable-cases', request)
+                if any(case not in value or not str(task).isdigit() or int(task) <= 0
+                       for case, task in reused_cases.items()):
+                    raise ValueError('Invalid ACube case reuse receipt')
+                request['testCases'] = [case for case in value if case not in reused_cases]
+                if reused_cases:
+                    print(json.dumps({'name': name, 'reusedCases': reused_cases}), flush=True)
+                if not request['testCases']:
+                    item_file.write_text(json.dumps({'name': name, 'request': request,
+                                                     'reusedCases': reused_cases}, indent=2))
+                    continue
             receipt = client.call('POST', '', request)
             task_id = str(receipt.get('taskId', ''))
             if not task_id.isdigit():
                 raise ValueError('Missing submission receipt; recover using the same run ID')
-            record = {'name': name, 'request': request, 'receipt': receipt}
+            record = {'name': name, 'request': request, 'receipt': receipt, 'reusedCases': reused_cases}
             item_file.write_text(json.dumps(record, indent=2))
             pending.append((item_file, task_id, record, time.monotonic() + 8 * 3600))
             print(json.dumps({'name': name, 'taskId': task_id, 'sourceId': request['sourceId'],

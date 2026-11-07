@@ -76,6 +76,37 @@ class IntegrationTest(unittest.TestCase):
         self.assertCountEqual([n for x in submitted for n in x['testCases']],cases)
         self.assertEqual([x['variables']['TEST'] for x in submitted], ['alicloud/service/rocketmq', 'alicloud/service/ecs'])
 
+    def test_reuses_only_proven_cases_and_submits_the_rest(self):
+        request = self.request()
+        request['testCases'] = ['TestAccTwo']
+        final = self.result()
+        final['result']['tests']['cases'] = [{'name': 'TestAccTwo', 'result': 'PASS'}]
+        submitted = []
+        class Client:
+            def call(_, method, path, body=None):
+                if path == '/capabilities':
+                    return {'submissionIdempotency': 'oss-admission-v1', 'hclActions': ['example'],
+                            'accTestCaseReuse': 'exact-source-v1'}
+                if path == '/sources/import':
+                    return {'sourceId': request['sourceId'] if body['commitSha'] == request['commitSha']
+                            else request['checkBaseSourceId']}
+                if path == '/acctest/reusable-cases':
+                    self.assertEqual(body['testCases'], ['TestAccOne', 'TestAccTwo'])
+                    return {'TestAccOne': 42}
+                if path == '':
+                    submitted.extend(body['testCases'])
+                    return {'taskId': 43}
+                if path == '/43/logs':
+                    return {}
+                if path == '/43':
+                    return final
+                raise AssertionError(path)
+        plan = {'head': request['commitSha'], 'base': request['baseCommitSha'],
+                'packages': {'alicloud/service/rocketmq': ['TestAccOne', 'TestAccTwo']}, 'examples': []}
+        with tempfile.TemporaryDirectory() as root:
+            m.execute(Client(), plan, 'acctest', 'run-123', Path(root))
+        self.assertEqual(submitted, ['TestAccTwo'])
+
     def test_failed_task_does_not_resubmit(self):
         calls=[]
         class Client:
