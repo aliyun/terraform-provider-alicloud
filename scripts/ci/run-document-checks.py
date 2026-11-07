@@ -12,6 +12,7 @@ import time
 
 GROUPS = {
     "node": ("markdown-link", "markdown-lint"),
+    "spelling": ("misspell",),
     "go": ("basic-check", "Content", "misspell", "terrafmt"),
 }
 
