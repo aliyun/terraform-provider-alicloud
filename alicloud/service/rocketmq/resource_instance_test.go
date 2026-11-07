@@ -2744,6 +2744,19 @@ type rocketmqTraceOnFixture struct {
 	paymentType        string
 	software           map[string]interface{}
 	renewalFailures    int
+	// refunded marks the instance as released after a successful RefundInstance
+	// call so DescribeInstance observes status=RELEASED and returns NotFound;
+	// the Subscription delete stateConf then terminates without timing out.
+	// refundErrorCode simulates a BssOpenApi RefundInstance business error: an
+	// empty code succeeds and sets refunded; "ResourceNotExists"/
+	// "ExistRefundingOrderError" exercise the idempotent delete path;
+	// "InternalError" simulates a transient 500 on the first attempt that the
+	// production delete retries, so the second attempt succeeds; any other
+	// code (e.g. CommodityNotSupported) leaves refunded false so the Provider
+	// retains the Terraform state.
+	refunded        bool
+	refundErrorCode string
+	refundRequests  []rocketmqTraceOnCapturedRequest
 }
 
 func (f *rocketmqTraceOnFixture) serveHTTP(w http.ResponseWriter, r *http.Request) {
@@ -2767,12 +2780,26 @@ func (f *rocketmqTraceOnFixture) serveHTTP(w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, `{"code":"InvalidParameter","message":"fixture captured the update request","requestId":"fixture"}`)
 	case r.Method == http.MethodGet && r.URL.Path == instancePath:
+		if f.refunded {
+			// A refunded Subscription instance is released: DescribeInstance
+			// treats status=RELEASED as NotFound, which lets the delete
+			// stateConf terminate instead of polling RUNNING forever.
+			fmt.Fprintf(w, `{"data":{"instanceId":%q,"status":"RELEASED"}}`, rocketmqTraceOnFixtureInstanceId)
+			return
+		}
 		paymentType := f.paymentType
 		if paymentType == "" {
 			paymentType = "PayAsYouGo"
 		}
 		software, _ := json.Marshal(f.software)
 		fmt.Fprintf(w, `{"data":{"instanceId":%q,"instanceName":"rmq-trace-on-instance","status":"RUNNING","seriesCode":"standard","serviceCode":"rmq","subSeriesCode":"serverless","commodityCode":%q,"paymentType":%q,"software":%s,"productInfo":{"msgProcessSpec":"rmq.s3.nxlarge","autoScaling":true,"messageRetentionTime":72,"sendReceiveRatio":0.2,"traceOn":false},"networkInfo":{"vpcInfo":{"vpcId":"vpc-rmqtraceon"},"internetInfo":{"internetSpec":"disable","flowOutType":"uninvolved"}}}}`, rocketmqTraceOnFixtureInstanceId, f.commodityCode, paymentType, software)
+	case r.Method == http.MethodDelete && r.URL.Path == instancePath:
+		// A PayAsYouGo delete releases the instance synchronously; mark it
+		// released so the delete stateConf observes RELEASED and terminates.
+		f.mu.Lock()
+		f.refunded = true
+		f.mu.Unlock()
+		fmt.Fprint(w, `{}`)
 	case r.Method == http.MethodGet && r.URL.Path == instancePath+"/account":
 		fmt.Fprint(w, `{"data":{}}`)
 	case r.Method == http.MethodGet && r.URL.Path == instancePath+"/ip/whitelists":
@@ -2788,6 +2815,37 @@ func (f *rocketmqTraceOnFixture) serveHTTP(w http.ResponseWriter, r *http.Reques
 		json.NewEncoder(w).Encode(map[string]interface{}{"data": map[string]interface{}{"ipWhitelists": values}})
 	case r.URL.Path == "/":
 		params, _ := url.ParseQuery(r.URL.RawQuery + "&" + string(body))
+		if params.Get("Action") == "RefundInstance" {
+			f.mu.Lock()
+			f.refundRequests = append(f.refundRequests, rocketmqTraceOnCapturedRequest{method: r.Method, path: r.URL.Path, body: body, query: r.URL.RawQuery})
+			count := len(f.refundRequests)
+			code := f.refundErrorCode
+			// InternalError simulates a transient BssOpenApi server fault on the
+			// first attempt; the production delete retries within the delete
+			// budget, so the second attempt succeeds and releases the instance.
+			if code == "InternalError" && count == 1 {
+				f.mu.Unlock()
+				fmt.Fprintf(w, `{"Code":%q,"Message":"An error occurred in the internal server.","Success":false,"RequestId":"fixture"}`, code)
+				return
+			}
+			// A successful refund, or an already-absent/already-refunding
+			// order, means the instance is released; mark it so the delete
+			// stateConf observes RELEASED instead of polling RUNNING forever.
+			if code == "" || code == "InternalError" || code == "ResourceNotExists" || code == "ExistRefundingOrderError" {
+				f.refunded = true
+			}
+			f.mu.Unlock()
+			if code == "ResourceNotExists" || code == "ExistRefundingOrderError" {
+				fmt.Fprintf(w, `{"Code":%q,"Message":"fixture refund already in progress","Success":false,"RequestId":"fixture"}`, code)
+				return
+			}
+			if code != "" && code != "InternalError" {
+				fmt.Fprintf(w, `{"Code":%q,"Message":"fixture refund rejected","Success":false,"RequestId":"fixture"}`, code)
+				return
+			}
+			fmt.Fprint(w, `{"Code":"Success","Success":true,"RequestId":"fixture","Data":{"HostId":"cn-hangzhou","OrderId":2100000000001}}`)
+			return
+		}
 		if params.Get("Action") == "SetRenewal" && f.renewalFailures > 0 {
 			f.renewalFailures--
 			fmt.Fprint(w, `{"Code":"InvalidParameter","Message":"without unreleased resources.","Success":false,"RequestId":"fixture"}`)
@@ -2809,6 +2867,26 @@ func (f *rocketmqTraceOnFixture) captured(method, path string) []rocketmqTraceOn
 		}
 	}
 	return captured
+}
+
+// capturedRefund returns the BssOpenApi RefundInstance requests captured by
+// the fixture, with the merged query+body form values so tests can assert the
+// ProductCode, ProductType and ImmediatelyRelease parameters.
+func (f *rocketmqTraceOnFixture) capturedRefund() []rocketmqTraceOnCapturedRequest {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := make([]rocketmqTraceOnCapturedRequest, len(f.refundRequests))
+	copy(out, f.refundRequests)
+	return out
+}
+
+func (f *rocketmqTraceOnFixture) refundQuery() url.Values {
+	reqs := f.capturedRefund()
+	if len(reqs) == 0 {
+		return url.Values{}
+	}
+	values, _ := url.ParseQuery(reqs[0].query + "&" + string(reqs[0].body))
+	return values
 }
 
 func newRocketmqTraceOnFixture(t *testing.T) (*rocketmqTraceOnFixture, *connectivity.AliyunClient) {

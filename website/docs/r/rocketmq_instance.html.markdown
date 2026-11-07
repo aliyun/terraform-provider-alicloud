@@ -15,7 +15,7 @@ For information about RocketMQ Instance and how to use it, see [What is Instance
 
 -> **NOTE:** Available since v1.212.0.
 
--> **NOTE:** Destroying a `Subscription` instance fails with an error since v1.294.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
+-> **NOTE:** Destroying a `Subscription` (prepaid) instance unsubscribes it through the BssOpenApi `RefundInstance` API with `ImmediatelyRelease` enabled and waits for the instance to be released before clearing the Terraform state. A `PayAsYouGo` (postpaid) instance keeps using the RocketMQ `DeleteInstance` API. If the refund cannot be confirmed (for example the commodity is not supported for self-service refund), the Terraform state is retained so the destroy can be retried.
 
 ## Example Usage
 
