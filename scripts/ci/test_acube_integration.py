@@ -57,6 +57,34 @@ class IntegrationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             for _ in range(2): m.execute(Client(),frozen,'acctest','ci-123',Path(root))
         self.assertEqual(keys[0],keys[1])
+    def test_subscription_pass_requires_independent_release_receipts(self):
+        request=self.request();request['testCases']=sorted(m.SUBSCRIPTION_CASES)
+        status=dict(status='success',result=dict(request,exitCode=0,testDirectory=request['variables']['TEST'],tests={
+            'cases':[{'name':n,'result':'PASS'} for n in request['testCases']]}))
+        with self.assertRaises(ValueError):m.validate_result(status,request)
+        status['result']['subscriptionCleanup']={'policy':'rocketmq-refund-v1','status':'confirmed','cases':[
+            {'name':n,'status':'released'} for n in request['testCases']]}
+        m.validate_result(status,request)
+        status['result']['subscriptionCleanup']['cases'][0]['status']='refunding'
+        with self.assertRaises(ValueError):m.validate_result(status,request)
+
+    def test_subscription_batches_retain_all_cases_and_are_serial(self):
+        submitted=[]
+        class Client:
+            def call(_,method,path,body=None):
+                if path=='/capabilities':return {'submissionIdempotency':'oss-admission-v1','hclActions':['example']}
+                if path=='/sources/import':return {'sourceId':'a'*64}
+                if path=='':submitted.append(body);return {'taskId':len(submitted)}
+                if path.endswith('/logs'):return {}
+                if method=='GET':return {'status':'failed'}
+                raise AssertionError(path)
+        cases=['TestAccOrdinary']+sorted(m.SUBSCRIPTION_CASES)
+        with tempfile.TemporaryDirectory() as root,self.assertRaises(ValueError):
+            m.execute(Client(),{'head':'a'*40,'base':'b'*40,'packages':{'alicloud/service/rocketmq':cases},'examples':[]},'acctest','run-123',Path(root))
+        self.assertEqual([x['testConcurrency'] for x in submitted],[2,1])
+        self.assertEqual([n for x in submitted for n in x['testCases']],cases)
+        self.assertTrue(all(x['variables']['TEST']=='alicloud/service/rocketmq' for x in submitted))
+
     def test_failed_task_does_not_resubmit(self):
         calls=[]
         class Client:

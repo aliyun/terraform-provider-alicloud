@@ -17,6 +17,7 @@ import urllib.request
 REPOSITORY = 'code.alibaba-inc.com/opensource-tools/terraform-provider-alicloud'
 BASE_URL = 'https://pre-acube.aliyun-inc.com'
 TERMINAL = {'success', 'failed', 'cancelled'}
+SUBSCRIPTION_CASES = {'TestAccAliCloudRocketmqInstance_basic4128', 'TestAccAliCloudRocketmqInstance_basic4128_twin'}
 
 
 def digest(value):
@@ -147,6 +148,14 @@ def validate_result(status, request):
             raise ValueError('Missing or duplicate AccTest results')
         if result.get('testDirectory') != request['variables']['TEST'] or any(c.get('result') != 'PASS' for c in cases):
             raise ValueError('AccTest FAIL/SKIP is not PASS; inspect case-level evidence')
+        prepaid = set(request['testCases']) & SUBSCRIPTION_CASES if request['variables']['TEST'] == 'alicloud/service/rocketmq' else set()
+        if prepaid:
+            cleanup = result.get('subscriptionCleanup') or {}
+            receipts = cleanup.get('cases') or []
+            if cleanup.get('policy') != 'rocketmq-refund-v1' or cleanup.get('status') != 'confirmed' or \
+                    {c.get('name') for c in receipts} != prepaid or len(receipts) != len(prepaid) or \
+                    any(c.get('status') != 'released' for c in receipts):
+                raise ValueError('Subscription release evidence is missing or unconfirmed')
     else:
         hcl = result.get('hcl') or {}
         if hcl.get('action') != 'example' or hcl.get('mainTfSha256') != hashlib.sha256(request['mainTf'].encode()).hexdigest():
@@ -164,7 +173,15 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         raise ValueError('Stable CI run ID required; CI identity value=' + repr(run_id[:128]))
     output.mkdir(parents=True, exist_ok=True, mode=0o700)
     output.chmod(0o700)
-    items = list(frozen['packages'].items()) if kind == 'acctest' else [(e['name'], e) for e in frozen['examples']]
+    items = []
+    if kind == 'acctest':
+        for package, cases in frozen['packages'].items():
+            prepaid = [n for n in cases if package == 'alicloud/service/rocketmq' and n in SUBSCRIPTION_CASES]
+            ordinary = [n for n in cases if n not in prepaid]
+            if ordinary: items.append((package, ordinary))
+            if prepaid: items.append((package + '#subscription', prepaid))
+    else:
+        items = [(e['name'], e) for e in frozen['examples']]
     (output / 'plan.json').write_text(json.dumps(frozen, indent=2))
     if not items:
         print('Not applicable: no ' + kind + ' changes in the complete range'); return
@@ -179,7 +196,8 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                    'commitSha': frozen['head'], 'baseCommitSha': frozen['base'], 'headRepo': REPOSITORY, 'baseRepo': REPOSITORY,
                    'mode': 'acctest' if kind == 'acctest' else 'hcl', 'timeoutSeconds': 21600,
                    'authorizationRef': 'code-ci:' + run_id + '/mr/' + str(frozen.get('mergeRequestId') or 'none')}
-        if kind == 'acctest': request.update(testCases=value, variables={'TEST':name}, testConcurrency=2)
+        if kind == 'acctest': request.update(testCases=value, variables={'TEST':name.removesuffix('#subscription')},
+                                           testConcurrency=1 if name.endswith('#subscription') else 2)
         else: request.update(mainTf=value['mainTf'], hclAction='example')
         request['idempotencyKey'] = 'ci-v1-' + digest({'run':run_id, 'plan':digest(frozen),'kind':kind,'name':name})
         item_file = output / (digest(name) + '.json')

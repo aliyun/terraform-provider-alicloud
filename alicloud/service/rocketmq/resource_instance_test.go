@@ -1257,26 +1257,27 @@ data "alicloud_resource_manager_resource_groups" "default" {
 
 // Case 4128
 func TestAccAliCloudRocketmqInstance_basic4128(t *testing.T) {
+	testProvider := rocketmqSubscriptionProvider()
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
 	ra := acctest.ResourceAttrInit(resourceId, AliCloudRocketmqInstanceMap4128)
 	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return rocketmq.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+		return rocketmq.NewService(testProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeInstance")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", acctest.DefaultRegionToTest, rand)
+	name := rocketmqSubscriptionName(fmt.Sprintf("tf-testacc%srocketmqinstance%d", acctest.DefaultRegionToTest, rand))
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudRocketmqInstanceBasicDependence4128)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
-			acctest.PreCheckPrePaidResources(t)
+			preCheckRocketmqSubscription(t)
 			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
 			acctest.PreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
-		ProviderFactories: acctest.SDKProviderFactories,
-		CheckDestroy:      nil, // bypass linter, prepaid (Subscription) resource cannot destroy
+		ProviderFactories: map[string]func() (*schema.Provider, error){"alicloud": func() (*schema.Provider, error) { return testProvider, nil }},
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2086,26 +2087,27 @@ func SkipTestAccAliCloudRocketmqInstance_basic4652_twin(t *testing.T) {
 
 // Case 4128  twin
 func TestAccAliCloudRocketmqInstance_basic4128_twin(t *testing.T) {
+	testProvider := rocketmqSubscriptionProvider()
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
 	ra := acctest.ResourceAttrInit(resourceId, AliCloudRocketmqInstanceMap4128)
 	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return rocketmq.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+		return rocketmq.NewService(testProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeInstance")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", acctest.DefaultRegionToTest, rand)
+	name := rocketmqSubscriptionName(fmt.Sprintf("tf-testacc%srocketmqinstance%d", acctest.DefaultRegionToTest, rand))
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudRocketmqInstanceBasicDependence4128)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
-			acctest.PreCheckPrePaidResources(t)
+			preCheckRocketmqSubscription(t)
 			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
 			acctest.PreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
-		ProviderFactories: acctest.SDKProviderFactories,
-		CheckDestroy:      nil, // bypass linter, postpay resource cannot destroy
+		ProviderFactories: map[string]func() (*schema.Provider, error){"alicloud": func() (*schema.Provider, error) { return testProvider, nil }},
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2810,7 +2812,8 @@ func newRocketmqTraceOnFixture(t *testing.T) (*rocketmqTraceOnFixture, *connecti
 	t.Setenv("NO_PROXY", endpoint)
 	config := &connectivity.Config{
 		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
-		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		AccountId: "1234567890123456",
+		RegionId:  "cn-hangzhou", AccountType: "test", Protocol: "http",
 		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
 	}
 	client, err := config.Client()

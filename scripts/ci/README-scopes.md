@@ -70,3 +70,14 @@ SKIP, missing/duplicate cases, mismatched sources and unconfirmed cleanup fail
 closed and remain visible. Neither a PlanOnly case nor top-level ACube success
 proves complete acceptance. Required external prerequisites must be resolved or
 explicitly accepted; this adapter does not silently waive them.
+
+#### RocketMQ subscription acceptance
+
+The two `basic4128` subscription cases stay in the complete plan. The adapter
+submits ordinary cases with concurrency 2, then submits these two as a separate
+serial batch. It requires `rocketmq-refund-v1` release receipts for both cases in
+addition to native case-level PASS; SKIP and a merely accepted refund cannot pass.
+The preproduction runner must enable the verified test account and the matching
+Provider test-only cleanup hook. Production subscription deletion and existing
+GitHub workflows are unchanged. Recovery uses the private task-specific cleanup
+intent after the original FC invocation has stopped, without replaying the test.
