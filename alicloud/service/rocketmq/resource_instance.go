@@ -3,6 +3,7 @@ package rocketmq
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -74,7 +75,7 @@ func ResourceInstance() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validators.StringInSlice([]string{"ons_rmqsub_public_cn", "ons_rmqpost_public_cn", "ons_rmqsrvlesspost_public_cn"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"ons_rmqsub_public_cn", "ons_rmqpost_public_cn", "ons_rmqsrvlesspost_public_cn", "ons_rmqsub_public_intl", "ons_rmqpost_public_intl", "ons_rmqsrvlesspost_public_intl"}, false),
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -299,9 +300,10 @@ func ResourceInstance() *schema.Resource {
 							Computed: true,
 						},
 						"maintain_time": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
+							Type:       schema.TypeString,
+							Optional:   true,
+							Computed:   true,
+							Deprecated: "The RocketMQ API has deprecated maintainTime. Remove maintain_time from configuration; existing state remains readable.",
 						},
 					},
 				},
@@ -899,13 +901,30 @@ func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	request["ProductCode"] = "ons"
 	if update {
+		// BSS identifies a subscription by its product type as well as its ID.
+		// Read the actual commodity, including international products and defaults
+		// resolved by CreateInstance, rather than guessing from configuration.
+		billingInstance, err := NewService(client).DescribeInstance(d.Id())
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		productType, _ := billingInstance["commodityCode"].(string)
+		subscriptionType, _ := billingInstance["paymentType"].(string)
+		if productType == "" || (subscriptionType != "Subscription" && subscriptionType != "PayAsYouGo") {
+			return fmt.Errorf("cannot confirm RocketMQ billing identity before setting renewal for %s", d.Id())
+		}
+		request["ProductType"] = productType
+		request["SubscriptionType"] = subscriptionType
 		action := "SetRenewal"
 		var endpoint string
 		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, false, endpoint)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				// BSS may not expose a newly RUNNING instance immediately.
+				// Keep the same billing identity and retry only this known delay.
+				billingNotVisible := errs.IsExpectedErrors(err, []string{"InvalidParameter"}) && strings.Contains(err.Error(), "without unreleased resources.")
+				if helper.NeedRetry(err) || billingNotVisible {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -928,6 +947,24 @@ func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 		oldEntry, newEntry := d.GetChange("ip_whitelists")
 		oldEntrySet := oldEntry.(*schema.Set)
 		newEntrySet := newEntry.(*schema.Set)
+		if d.IsNewResource() {
+			// A new instance can already have a service-default whitelist. Diff
+			// against the actual entries, not Terraform's empty pre-create state.
+			whitelist, err := NewService(client).DescribeInstanceGetInstanceIpWhitelist(d.Id())
+			if err != nil {
+				return errs.WrapError(err)
+			}
+			entries, ok := whitelist["ipWhitelists"].([]interface{})
+			if !ok {
+				return fmt.Errorf("cannot reconcile IP whitelist for instance %s: ipWhitelists is not a list", d.Id())
+			}
+			for _, entry := range entries {
+				if _, ok := entry.(string); !ok {
+					return fmt.Errorf("cannot reconcile IP whitelist for instance %s: invalid entry", d.Id())
+				}
+			}
+			oldEntrySet = schema.NewSet(newEntrySet.F, entries)
+		}
 		removed := oldEntrySet.Difference(newEntrySet)
 		added := newEntrySet.Difference(oldEntrySet)
 

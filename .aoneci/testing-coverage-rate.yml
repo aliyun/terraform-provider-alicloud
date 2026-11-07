@@ -2,17 +2,34 @@ name: Testing Coverage Rate Checks
 triggers:
   push:
     paths:
+      - 'scripts/ci/**'
+      - 'scripts/internal/**'
+      - '.aoneci/**'
+      - 'go.mod'
+      - 'go.sum'
       - '.aoneci/testing-coverage-rate.yml'
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
   merge_request:
-    types:
-      - opened
     paths:
+      - 'scripts/ci/**'
+      - 'scripts/internal/**'
+      - '.aoneci/**'
+      - 'go.mod'
+      - 'go.sum'
       - '.aoneci/testing-coverage-rate.yml'
       - '.go-version'
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
+
+envs:
+  CODE_HEAD: '${{git.commitId}}'
+  CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
+  CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
+  CODE_PUSH_BEFORE: '${{git.push.beforeSha256 ?: ""}}'
+  CODE_TARGET: '${{git.merge_request.targetBranch ?: ""}}'
+  CODE_DEFAULT_BRANCH: '${{git.defaultBranch}}'
+  CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
 
 jobs:
   TestingCoverageRate:
@@ -23,8 +40,11 @@ jobs:
           go-version: '1.24.0'
       - uses: checkout
         inputs:
-          fetch-depth: '2'
+          fetch-depth: '0'
       - name: Checking testing coverage rate
         run: |
-          git diff HEAD^ HEAD > diff.out
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
           go run scripts/testing/testing_coverage_rate_check.go -fileNames="diff.out"

@@ -71,9 +71,6 @@ resource "alicloud_rocketmq_instance" "default" {
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   remark            = "example"
   ip_whitelists     = ["192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"]
-  software {
-    maintain_time = "02:00-06:00"
-  }
   tags = {
     Created = "TF"
     For     = "example"
@@ -111,11 +108,21 @@ The following arguments are supported:
 * `auto_renew_period_unit` - (Optional) The minimum periodic unit for the duration of auto-renewal. This parameter is only valid when auto-renewal is enabled. Valid values: `Month`, `Year`.
 * `commodity_code` - (Optional, ForceNew, Available since v1.231.0) Commodity code
 
+  Domestic station (China) values:
+
   ons_rmqsub_public_cn: Package year and month instance
 
   ons_rmqpost_public_cn: Pay-As-You-Go instance
 
-  Next: Serverless instances
+  ons_rmqsrvlesspost_public_cn: Serverless instance
+
+  International station values:
+
+  ons_rmqsub_public_intl: Package year and month instance
+
+  ons_rmqpost_public_intl: Pay-As-You-Go instance
+
+  ons_rmqsrvlesspost_public_intl: Serverless instance
 * `instance_name` - (Optional) The name of instance
 * `ip_whitelists` - (Optional, List, Available since v1.245.0) The ip whitelist.
 * `network_info` - (Required, Set) Instance network configuration information See [`network_info`](#network_info) below.
@@ -212,7 +219,7 @@ The product_info supports the following:
 ### `software`
 
 The software supports the following:
-* `maintain_time` - (Optional) Upgrade time period.
+* `maintain_time` - (Optional, Deprecated) The RocketMQ API has deprecated this maintenance-window setting. Omit it from new configurations; existing state remains readable. See [GetInstance](https://help.aliyun.com/en/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/developer-reference/api-rocketmq-2022-08-01-getinstance).
 
 ## Attributes Reference
 
