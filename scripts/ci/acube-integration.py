@@ -146,7 +146,8 @@ def validate_result(status, request):
 
 
 def execute(client, frozen, kind, run_id, output, poll=time.sleep):
-    if not re.fullmatch(r'[a-zA-Z0-9._:-]{1,128}', run_id): raise ValueError('Stable CI run ID required')
+    if not re.fullmatch(r'[a-zA-Z0-9._:-]{1,128}', run_id):
+        raise ValueError('Stable CI run ID required; CI identity value=' + repr(run_id[:128]))
     output.mkdir(parents=True, exist_ok=True, mode=0o700)
     output.chmod(0o700)
     items = list(frozen['packages'].items()) if kind == 'acctest' else [(e['name'], e) for e in frozen['examples']]

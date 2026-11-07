@@ -40,7 +40,6 @@ envs:
   CODE_DEFAULT_BRANCH: '${{git.defaultBranch}}'
   CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
 
-  ACUBE_CI_RUN_ID: '${{pipeline.inst.id}}'
   ACUBE_PROVIDER_RUN_TOKEN: '${{secrets.ACUBE_PROVIDER_RUN_TOKEN}}'
 
 jobs:
@@ -57,6 +56,8 @@ jobs:
       - name: CI Adapter Regression
         run: python3 -m unittest discover -s scripts/ci -p test_acube_integration.py
       - name: Integration Test Check
+        envs:
+          ACUBE_CI_RUN_ID: '${{pipeline.inst.id}}'
         run: python3 scripts/ci/acube-integration.py --kind acctest
   DocsExampleTest:
     timeout: 9h
@@ -69,4 +70,6 @@ jobs:
         inputs:
           fetch-depth: '0'
       - name: Docs Example Test Check
+        envs:
+          ACUBE_CI_RUN_ID: '${{pipeline.inst.id}}'
         run: python3 scripts/ci/acube-integration.py --kind examples
