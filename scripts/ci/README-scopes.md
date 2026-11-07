@@ -46,3 +46,27 @@ those tools and runs this smoke test without upstream self-hosted runners.
 These changes do not remove Go dependency loading, and changes in the large
 root provider package can still be expensive. They do not replace cloud
 acceptance tests or expand the runtime schema checkers' existing capabilities.
+
+## Code Integration Checks on ACube preproduction
+
+`.aoneci/acctest-terraform-integration.yml` retains both job names and runs
+`scripts/ci/acube-integration.py`. It freezes the complete Code change range,
+imports head/base via full SHA, groups unique AccTests by package (concurrency 2),
+and runs each affected documentation example with `hclAction=example` including
+Import/generated config, deprecated attributes and cleanup. The two jobs report independently,
+so an AccTest failure cannot hide the Example result. MR creation and updates run
+the check; push triggers are limited to master to avoid executing each feature
+commit twice (push plus MR). GitHub workflows are unchanged.
+
+Configure the protected repository secret `ACUBE_PROVIDER_RUN_TOKEN` for
+`https://pre-acube.aliyun-inc.com`; cloud account keys stay in FC. The authenticated
+capabilities check must pass before submissions. Deploy the compatible server and
+isolated preproduction FC before enabling the YAML. Keep the ACube receipt IDs
+and private `.acube-ci/` evidence; the same CI Run/plan/item key returns the original
+receipt after lost responses or process restarts. A new CI Run is an explicit new
+attempt. Do not rerun until the original cloud execution/cleanup is reconciled.
+
+SKIP, missing/duplicate cases, mismatched sources and unconfirmed cleanup fail
+closed and remain visible. Neither a PlanOnly case nor top-level ACube success
+proves complete acceptance. Required external prerequisites must be resolved or
+explicitly accepted; this adapter does not silently waive them.
