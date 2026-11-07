@@ -68,7 +68,7 @@ class IntegrationTest(unittest.TestCase):
         status['result']['subscriptionCleanup']['cases'][0]['status']='refunding'
         with self.assertRaises(ValueError):m.validate_result(status,request)
 
-    def test_subscription_batches_retain_all_cases_and_are_serial(self):
+    def test_ordinary_batch_is_submitted_before_polling_paid_batch(self):
         submitted=[]
         class Client:
             def call(_,method,path,body=None):
@@ -76,7 +76,9 @@ class IntegrationTest(unittest.TestCase):
                 if path=='/sources/import':return {'sourceId':'a'*64}
                 if path=='':submitted.append(body);return {'taskId':len(submitted)}
                 if path.endswith('/logs'):return {}
-                if method=='GET':return {'status':'failed'}
+                if method=='GET':
+                    self.assertEqual(len(submitted), 2)
+                    return {'status':'failed'}
                 raise AssertionError(path)
         cases=['TestAccOrdinary']+sorted(m.SUBSCRIPTION_CASES)
         with tempfile.TemporaryDirectory() as root,self.assertRaises(ValueError):

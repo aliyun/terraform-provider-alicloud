@@ -8,6 +8,8 @@ triggers:
       - 'scripts/release/**'
       - 'scripts/internal/**'
       - '.aoneci/**'
+      - 'GNUmakefile'
+      - 'scripts/collection-order/**'
       - 'go.mod'
       - 'go.sum'
       - '.aoneci/acctest-terraform-basic.yml'
@@ -19,6 +21,8 @@ triggers:
       - 'scripts/release/**'
       - 'scripts/internal/**'
       - '.aoneci/**'
+      - 'GNUmakefile'
+      - 'scripts/collection-order/**'
       - 'go.mod'
       - 'go.sum'
       - '.aoneci/acctest-terraform-basic.yml'
@@ -107,3 +111,29 @@ jobs:
       - name: vet
         run: |
           make vet
+
+  ProductionBuild:
+    steps:
+      - uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - uses: checkout
+        inputs:
+          fetch-depth: '0'
+      - run: |
+          make provider-build check-production-deps
+
+  TypeListOrderCoverage:
+    steps:
+      - uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - uses: checkout
+        inputs:
+          fetch-depth: '0'
+      - run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          go test ./scripts/collection-order/internal/coverage
+          python3 scripts/ci/run-provider-check.py collection

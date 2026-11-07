@@ -5,6 +5,7 @@ triggers:
       - 'scripts/ci/**'
       - 'scripts/internal/**'
       - '.aoneci/**'
+      - 'scripts/run-tflint.sh'
       - 'go.mod'
       - 'go.sum'
       - '.aoneci/acctest-terraform-lint.yml'
@@ -15,6 +16,7 @@ triggers:
       - 'scripts/ci/**'
       - 'scripts/internal/**'
       - '.aoneci/**'
+      - 'scripts/run-tflint.sh'
       - 'go.mod'
       - 'go.sum'
       - '.aoneci/acctest-terraform-lint.yml'
@@ -48,3 +50,19 @@ jobs:
         inputs:
           language: GO
           compare-to: '${{git.merge_request.targetBranch ?: "master"}}'
+
+  ProviderLint:
+    steps:
+      - uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - uses: checkout
+        inputs:
+          fetch-depth: '0'
+      - run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          GOTOOLCHAIN=go1.26.10 go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@v0.31.0
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          ./scripts/run-tflint.sh
