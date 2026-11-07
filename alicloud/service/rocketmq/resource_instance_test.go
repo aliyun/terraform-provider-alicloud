@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -2723,6 +2724,7 @@ type rocketmqTraceOnCapturedRequest struct {
 	method string
 	path   string
 	body   []byte
+	query  string
 }
 
 // rocketmqTraceOnFixture serves the RocketMQ and BSS endpoints used by the
@@ -2732,8 +2734,10 @@ type rocketmqTraceOnCapturedRequest struct {
 // non-retryable, so the read/update portions of the chain still run and the
 // test stays fast.
 type rocketmqTraceOnFixture struct {
-	mu       sync.Mutex
-	requests []rocketmqTraceOnCapturedRequest
+	mu                 sync.Mutex
+	requests           []rocketmqTraceOnCapturedRequest
+	ipWhitelists       []string
+	whitelistReadFails bool
 }
 
 func (f *rocketmqTraceOnFixture) serveHTTP(w http.ResponseWriter, r *http.Request) {
@@ -2743,6 +2747,7 @@ func (f *rocketmqTraceOnFixture) serveHTTP(w http.ResponseWriter, r *http.Reques
 		method: r.Method,
 		path:   r.URL.Path,
 		body:   body,
+		query:  r.URL.RawQuery,
 	})
 	f.mu.Unlock()
 
@@ -2760,7 +2765,16 @@ func (f *rocketmqTraceOnFixture) serveHTTP(w http.ResponseWriter, r *http.Reques
 	case r.Method == http.MethodGet && r.URL.Path == instancePath+"/account":
 		fmt.Fprint(w, `{"data":{}}`)
 	case r.Method == http.MethodGet && r.URL.Path == instancePath+"/ip/whitelists":
-		fmt.Fprint(w, `{"data":{"ipWhitelists":[]}}`)
+		if f.whitelistReadFails {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `{"code":"InvalidParameter","message":"fixture cannot confirm whitelist"}`)
+			return
+		}
+		values := f.ipWhitelists
+		if values == nil {
+			values = []string{}
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{"data": map[string]interface{}{"ipWhitelists": values}})
 	case r.URL.Path == "/":
 		fmt.Fprintf(w, `{"Success":true,"RequestId":"fixture","Data":{"InstanceList":[{"InstanceID":%q,"RenewStatus":"ManualRenewal","RenewalDuration":0,"RenewalDurationUnit":"M"}]}}`, rocketmqTraceOnFixtureInstanceId)
 	default:
@@ -3043,5 +3057,99 @@ func TestUnitAliCloudRocketmqInstanceTraceOnRequestSerialization(t *testing.T) {
 			t.Fatalf("expected exactly 1 update request for trace_on=false, got %d", len(updates))
 		}
 		rocketmqTraceOnFixtureAssertSent(t, rocketmqTraceOnFixtureProductInfo(t, updates[0]), "an explicit trace_on=false", false)
+	})
+}
+
+// Exercise the real create-tail update against a private HTTP fixture. The
+// service's initial whitelist is not Terraform's empty pre-create state.
+func TestUnitAliCloudRocketmqInstanceCreateTailConfiguration(t *testing.T) {
+	r := rocketmq.ResourceInstance()
+	instancePath := "/instances/" + rocketmqTraceOnFixtureInstanceId
+	t.Run("unconfigured fields preserve service defaults", func(t *testing.T) {
+		fixture, client := newRocketmqTraceOnFixture(t)
+		fixture.ipWhitelists = []string{"0.0.0.0/0"}
+		d := rocketmqTraceOnFixtureNewResourceData(t, r, rocketmqTraceOnFixtureRawConfig("rmq-create-config", nil), cty.NullVal(cty.Bool))
+		if err := r.Update(d, client); err != nil {
+			t.Fatal(err)
+		}
+		if len(fixture.captured(http.MethodPatch, instancePath+"/software/config")) != 0 {
+			t.Fatal("an unset maintenance window must not be written")
+		}
+		for _, method := range []string{http.MethodPost, http.MethodDelete} {
+			if len(fixture.captured(method, instancePath+"/ip/whitelist")) != 0 {
+				t.Fatal("an unset whitelist must preserve the service default")
+			}
+		}
+	})
+	t.Run("configured maintenance window is applied on create", func(t *testing.T) {
+		fixture, client := newRocketmqTraceOnFixture(t)
+		raw := rocketmqTraceOnFixtureRawConfig("rmq-create-config", nil)
+		raw["software"] = []interface{}{map[string]interface{}{"maintain_time": "02:00-06:00"}}
+		d := rocketmqTraceOnFixtureNewResourceData(t, r, raw, cty.NullVal(cty.Bool))
+		if err := r.Update(d, client); err != nil {
+			t.Fatal(err)
+		}
+		requests := fixture.captured(http.MethodPatch, instancePath+"/software/config")
+		if len(requests) != 1 {
+			t.Fatalf("expected one maintenance update, got %d", len(requests))
+		}
+		var body map[string]interface{}
+		if err := json.Unmarshal(requests[0].body, &body); err != nil {
+			t.Fatal(err)
+		}
+		if body["maintainTime"] != "02:00-06:00" {
+			t.Fatalf("incorrect maintenance request: %v", body)
+		}
+	})
+	t.Run("explicit whitelist replaces the server default", func(t *testing.T) {
+		fixture, client := newRocketmqTraceOnFixture(t)
+		fixture.ipWhitelists = []string{"0.0.0.0/0", "10.0.0.0/8"}
+		raw := rocketmqTraceOnFixtureRawConfig("rmq-create-config", nil)
+		raw["ip_whitelists"] = []interface{}{"10.0.0.0/8", "192.168.0.0/16"}
+		d := rocketmqTraceOnFixtureNewResourceData(t, r, raw, cty.NullVal(cty.Bool))
+		if err := r.Update(d, client); err != nil {
+			t.Fatal(err)
+		}
+		deletes := fixture.captured(http.MethodDelete, instancePath+"/ip/whitelist")
+		if len(deletes) != 1 {
+			t.Fatalf("expected removal of server default, got %d deletes", len(deletes))
+		}
+		query, err := url.ParseQuery(deletes[0].query)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if query.Get("ipWhitelists") != "0.0.0.0/0" {
+			t.Fatalf("removed the wrong entries: %v", query)
+		}
+		adds := fixture.captured(http.MethodPost, instancePath+"/ip/whitelist")
+		if len(adds) != 1 {
+			t.Fatalf("expected one missing-entry request, got %d", len(adds))
+		}
+		var body map[string]interface{}
+		if err := json.Unmarshal(adds[0].body, &body); err != nil {
+			t.Fatal(err)
+		}
+		values, _ := body["ipWhitelists"].([]interface{})
+		if len(values) != 1 || values[0] != "192.168.0.0/16" {
+			t.Fatalf("unexpected additions: %v", values)
+		}
+	})
+	t.Run("unconfirmed server whitelist prevents writes", func(t *testing.T) {
+		fixture, client := newRocketmqTraceOnFixture(t)
+		fixture.whitelistReadFails = true
+		raw := rocketmqTraceOnFixtureRawConfig("rmq-create-config", nil)
+		raw["ip_whitelists"] = []interface{}{"10.0.0.0/8"}
+		d := rocketmqTraceOnFixtureNewResourceData(t, r, raw, cty.NullVal(cty.Bool))
+		if err := r.Update(d, client); err == nil {
+			t.Fatal("expected the authoritative read failure")
+		}
+		for _, method := range []string{http.MethodPost, http.MethodDelete} {
+			if len(fixture.captured(method, instancePath+"/ip/whitelist")) != 0 {
+				t.Fatal("unconfirmed whitelist must not be changed")
+			}
+		}
+		if d.Id() != rocketmqTraceOnFixtureInstanceId {
+			t.Fatal("failed reconciliation must retain the resource ID")
+		}
 	})
 }

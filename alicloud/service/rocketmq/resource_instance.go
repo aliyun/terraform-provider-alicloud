@@ -845,6 +845,11 @@ func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	if !d.IsNewResource() && d.HasChange("software.0.maintain_time") {
 		update = true
 	}
+	// CreateInstance does not accept maintainTime. Apply an explicitly configured
+	// window after the new instance becomes RUNNING, without writing an unset value.
+	if _, ok := d.GetOk("software.0.maintain_time"); d.IsNewResource() && ok {
+		update = true
+	}
 	if v, ok := d.GetOk("software"); ok || d.HasChange("software") {
 		jsonPathResult, err := jsonpath.Get("$[0].maintain_time", v)
 		if err == nil && jsonPathResult != "" {
@@ -928,6 +933,24 @@ func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 		oldEntry, newEntry := d.GetChange("ip_whitelists")
 		oldEntrySet := oldEntry.(*schema.Set)
 		newEntrySet := newEntry.(*schema.Set)
+		if d.IsNewResource() {
+			// A new instance can already have a service-default whitelist. Diff
+			// against the actual entries, not Terraform's empty pre-create state.
+			whitelist, err := NewService(client).DescribeInstanceGetInstanceIpWhitelist(d.Id())
+			if err != nil {
+				return errs.WrapError(err)
+			}
+			entries, ok := whitelist["ipWhitelists"].([]interface{})
+			if !ok {
+				return fmt.Errorf("cannot reconcile IP whitelist for instance %s: ipWhitelists is not a list", d.Id())
+			}
+			for _, entry := range entries {
+				if _, ok := entry.(string); !ok {
+					return fmt.Errorf("cannot reconcile IP whitelist for instance %s: invalid entry", d.Id())
+				}
+			}
+			oldEntrySet = schema.NewSet(newEntrySet.F, entries)
+		}
 		removed := oldEntrySet.Difference(newEntrySet)
 		added := newEntrySet.Difference(oldEntrySet)
 
