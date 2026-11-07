@@ -1,13 +1,9 @@
 name: Terraform Integration Checks
 strategy:
   fast-fail: false
-  concurrency:
-    group: '${{git.merge_request?.id ?: git.branch}}'
-    parallelism: 1
-    cancel-in-progress: false
 triggers:
   merge_request:
-    types: [opened, reopened]
+    types: [accepted]
     paths:
       - 'scripts/ci/**'
       - 'scripts/release/**'
