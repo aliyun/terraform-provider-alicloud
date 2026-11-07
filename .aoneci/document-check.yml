@@ -3,6 +3,9 @@ triggers:
   push:
     paths:
       - 'scripts/ci/**'
+      - 'scripts/release/**'
+      - 'scripts/collection-order/**'
+      - 'GNUmakefile'
       - 'scripts/internal/**'
       - '.aoneci/**'
       - 'go.mod'
@@ -13,6 +16,9 @@ triggers:
   merge_request:
     paths:
       - 'scripts/ci/**'
+      - 'scripts/release/**'
+      - 'scripts/collection-order/**'
+      - 'GNUmakefile'
       - 'scripts/internal/**'
       - '.aoneci/**'
       - 'go.mod'
@@ -106,6 +112,7 @@ jobs:
             fi
           done < <(git diff --name-only -z --diff-filter=ACMR "$DIFF_BASE" "$DIFF_HEAD" -- website/docs)
 
+  # Single owner of the attribute consistency gate, including Basic-only paths.
   Consistency:
     steps:
       - name: Setup Go
@@ -115,7 +122,7 @@ jobs:
       - uses: checkout
         inputs:
           fetch-depth: '32'
-      - name: Integration Test Check
+      - name: Attribute Consistency Check
         run: |
           set -euo pipefail
           range=$(python3 scripts/ci/aone-range.py)

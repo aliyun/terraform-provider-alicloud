@@ -63,22 +63,6 @@ jobs:
           eval "$range"
           git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
           go run scripts/compatibility/breaking_change_check.go -fileNames="diff.out"
-  Consistency:
-    steps:
-      - name: Setup Go
-        uses: setup-env
-        inputs:
-          go-version: '1.25.8'
-      - uses: checkout
-        inputs:
-          fetch-depth: '32'
-      - name: Attribute Consistency Check
-        run: |
-          set -euo pipefail
-          range=$(python3 scripts/ci/aone-range.py)
-          eval "$range"
-          git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
-          go run scripts/consistency/consistency_check.go -fileNames="diff.out"
   Formatter:
     steps:
       - name: Setup Go
