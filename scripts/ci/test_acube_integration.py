@@ -42,6 +42,18 @@ class IntegrationTest(unittest.TestCase):
         self.assertEqual(len(p['examples']),1)
         self.assertIn('source = "aliyun/alicloud"',p['examples'][0]['mainTf'])
         self.assertEqual(len(p['examples'][0]['originalSha256']),64)
+    def test_acc_only_plan_does_not_load_docs_or_invoke_go(self):
+        def git(*args):
+            if args[0] == 'diff':
+                return 'alicloud/service/vpc/resource_vpc.go\nwebsite/docs/r/vpc.html.markdown'
+            self.assertEqual(args, ('show', 'head:alicloud/service/vpc/resource_vpc_test.go'))
+            return 'func TestAccVpc(t *testing.T) {'
+        with patch.object(m, 'git', side_effect=git), patch.object(m.subprocess, 'check_output') as run:
+            result = m.plan('base', 'head', include_examples=False)
+        self.assertEqual(result['packages'], {'alicloud/service/vpc': ['TestAccVpc']})
+        self.assertEqual(result['examples'], [])
+        run.assert_not_called()
+
     def test_same_run_and_plan_recover_same_key_across_processes(self):
         request=self.request()
         frozen={'head':request['commitSha'],'base':request['baseCommitSha'],'packages':{'alicloud/service/rocketmq':['TestAccOne','TestAccTwo']},'examples':[]}
