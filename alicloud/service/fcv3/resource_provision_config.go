@@ -2,6 +2,7 @@
 package fcv3
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -33,10 +34,12 @@ func ResourceProvisionConfig() *schema.Resource {
 			"always_allocate_cpu": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 			"always_allocate_gpu": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 			"current": {
 				Type:     schema.TypeInt,
@@ -94,6 +97,7 @@ func ResourceProvisionConfig() *schema.Resource {
 			"target": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validators.IntBetween(0, 10000),
 			},
 			"target_tracking_policies": {
@@ -163,7 +167,10 @@ func resourceProvisionConfigCreate(d *schema.ResourceData, meta interface{}) err
 	if v, ok := d.GetOk("target_tracking_policies"); ok {
 		targetTrackingPoliciesMapsArray := make([]interface{}, 0)
 		for _, dataLoop := range v.([]interface{}) {
-			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopTmp, ok := dataLoop.(map[string]interface{})
+			if !ok {
+				continue
+			}
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["endTime"] = dataLoopTmp["end_time"]
 			dataLoopMap["name"] = dataLoopTmp["name"]
@@ -181,7 +188,10 @@ func resourceProvisionConfigCreate(d *schema.ResourceData, meta interface{}) err
 	if v, ok := d.GetOk("scheduled_actions"); ok {
 		scheduledActionsMapsArray := make([]interface{}, 0)
 		for _, dataLoop1 := range v.([]interface{}) {
-			dataLoop1Tmp := dataLoop1.(map[string]interface{})
+			dataLoop1Tmp, ok := dataLoop1.(map[string]interface{})
+			if !ok {
+				continue
+			}
 			dataLoop1Map := make(map[string]interface{})
 			dataLoop1Map["scheduleExpression"] = dataLoop1Tmp["schedule_expression"]
 			dataLoop1Map["target"] = dataLoop1Tmp["target"]
@@ -196,6 +206,9 @@ func resourceProvisionConfigCreate(d *schema.ResourceData, meta interface{}) err
 
 	if v, ok := d.GetOkExists("target"); ok {
 		request["target"] = v
+		// PutProvisionConfig deprecates target in favour of defaultTarget, so
+		// send the same value through both fields.
+		request["defaultTarget"] = v
 	}
 	if v, ok := d.GetOkExists("always_allocate_cpu"); ok {
 		request["alwaysAllocateCPU"] = v
@@ -256,7 +269,18 @@ func resourceProvisionConfigRead(d *schema.ResourceData, meta interface{}) error
 	if objectRaw["functionArn"] != nil {
 		d.Set("function_arn", objectRaw["functionArn"])
 	}
-	if objectRaw["target"] != nil {
+	// The service reports target as the effective target, which a scheduled
+	// action or a target tracking policy can override while it is active, and
+	// defaultTarget as the configured default of the provision configuration.
+	// Map target from defaultTarget: the policy-computed runtime value must
+	// never become the stored desired configuration, because the replacement
+	// PUT performed by Update sends the value from state and would turn a
+	// temporary policy target into the persistent default. A response that
+	// omits defaultTarget is only trusted when no scaling policy is present,
+	// where the effective target equals the configured default.
+	if objectRaw["defaultTarget"] != nil {
+		d.Set("target", objectRaw["defaultTarget"])
+	} else if objectRaw["target"] != nil && !provisionConfigHasScalingPolicy(objectRaw) {
 		d.Set("target", objectRaw["target"])
 	}
 
@@ -310,6 +334,83 @@ func resourceProvisionConfigRead(d *schema.ResourceData, meta interface{}) error
 	return nil
 }
 
+// provisionConfigHasScalingPolicy reports whether the response carries any
+// scheduled action or target tracking policy. Without one the effective target
+// equals defaultTarget, so target is a safe fallback when defaultTarget is not
+// returned.
+func provisionConfigHasScalingPolicy(objectRaw map[string]interface{}) bool {
+	for _, key := range []string{"scheduledActions", "targetTrackingPolicies"} {
+		if list, ok := objectRaw[key].([]interface{}); ok && len(list) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// provisionConfigUpdateTarget returns the value the replacement PUT sends as
+// the configured default. An explicitly configured or changed target,
+// including zero, is honored from the configuration/plan. Otherwise state
+// normally holds the configured default mapped by Read, so it is reused. A
+// zero without a configured value means no default was ever established in
+// state, for example an import whose response omitted defaultTarget while a
+// scaling policy was active; in that case the service is queried for its
+// configured default instead of persisting zero.
+func provisionConfigUpdateTarget(d *schema.ResourceData, client *connectivity.AliyunClient) (interface{}, error) {
+	target := d.Get("target")
+	if d.HasChange("target") || provisionConfigTargetConfigured(d) {
+		return target, nil
+	}
+	if targetValue, ok := target.(int); !ok || targetValue != 0 {
+		return target, nil
+	}
+
+	service := NewService(client)
+	// The replacement PUT below addresses the configured qualifier. Read the
+	// same object here: reading LATEST instead could return another alias's
+	// default target and make the update persist it on the configured alias.
+	qualifier := ""
+	if v, ok := d.GetOk("qualifier"); ok {
+		qualifier = v.(string)
+	}
+	object, err := service.DescribeProvisionConfigWithQualifier(d.Id(), qualifier)
+	if err != nil {
+		return nil, errs.WrapError(err)
+	}
+	switch v := object["defaultTarget"].(type) {
+	case json.Number:
+		parsed, parseErr := v.Int64()
+		if parseErr != nil {
+			return nil, fmt.Errorf("invalid defaultTarget %q for provision config %q: %v", v.String(), d.Id(), parseErr)
+		}
+		return int(parsed), nil
+	case float64:
+		return int(v), nil
+	case int:
+		return v, nil
+	case nil:
+	default:
+		return nil, fmt.Errorf("unexpected defaultTarget type %T for provision config %q", v, d.Id())
+	}
+	if !provisionConfigHasScalingPolicy(object) {
+		return target, nil
+	}
+	return nil, fmt.Errorf("cannot determine the configured default target of provision config %q: the service response omits defaultTarget while a scaling policy is active", d.Id())
+}
+
+// provisionConfigTargetConfigured reports whether the configuration sets
+// target explicitly, so an explicitly configured zero is never replaced by the
+// value reported by the service. The raw configuration is unavailable during
+// import and in some test fixtures; in that case the caller falls back to the
+// state value.
+func provisionConfigTargetConfigured(d *schema.ResourceData) bool {
+	raw := d.GetRawConfig()
+	if raw.IsNull() || !raw.Type().IsObjectType() || !raw.Type().HasAttribute("target") {
+		return false
+	}
+	value := raw.GetAttr("target")
+	return value.IsKnown() && !value.IsNull()
+}
+
 func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
@@ -331,56 +432,84 @@ func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) err
 
 	if d.HasChange("target_tracking_policies") {
 		update = true
-		if v, ok := d.GetOk("target_tracking_policies"); ok || d.HasChange("target_tracking_policies") {
-			targetTrackingPoliciesMapsArray := make([]interface{}, 0)
-			for _, dataLoop := range v.([]interface{}) {
-				dataLoopTmp := dataLoop.(map[string]interface{})
-				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["endTime"] = dataLoopTmp["end_time"]
-				dataLoopMap["name"] = dataLoopTmp["name"]
-				dataLoopMap["startTime"] = dataLoopTmp["start_time"]
-				dataLoopMap["maxCapacity"] = dataLoopTmp["max_capacity"]
-				dataLoopMap["metricTarget"] = dataLoopTmp["metric_target"]
-				dataLoopMap["metricType"] = dataLoopTmp["metric_type"]
-				dataLoopMap["minCapacity"] = dataLoopTmp["min_capacity"]
-				dataLoopMap["timeZone"] = dataLoopTmp["time_zone"]
-				targetTrackingPoliciesMapsArray = append(targetTrackingPoliciesMapsArray, dataLoopMap)
+	}
+	if v, ok := d.GetOk("target_tracking_policies"); ok {
+		targetTrackingPoliciesMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range v.([]interface{}) {
+			dataLoopTmp, ok := dataLoop.(map[string]interface{})
+			if !ok {
+				continue
 			}
-			request["targetTrackingPolicies"] = targetTrackingPoliciesMapsArray
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["endTime"] = dataLoopTmp["end_time"]
+			dataLoopMap["name"] = dataLoopTmp["name"]
+			dataLoopMap["startTime"] = dataLoopTmp["start_time"]
+			dataLoopMap["maxCapacity"] = dataLoopTmp["max_capacity"]
+			dataLoopMap["metricTarget"] = dataLoopTmp["metric_target"]
+			dataLoopMap["metricType"] = dataLoopTmp["metric_type"]
+			dataLoopMap["minCapacity"] = dataLoopTmp["min_capacity"]
+			dataLoopMap["timeZone"] = dataLoopTmp["time_zone"]
+			targetTrackingPoliciesMapsArray = append(targetTrackingPoliciesMapsArray, dataLoopMap)
 		}
+		request["targetTrackingPolicies"] = targetTrackingPoliciesMapsArray
+	} else if d.HasChange("target_tracking_policies") {
+		request["targetTrackingPolicies"] = []interface{}{}
 	}
 
 	if d.HasChange("scheduled_actions") {
 		update = true
-		if v, ok := d.GetOk("scheduled_actions"); ok || d.HasChange("scheduled_actions") {
-			scheduledActionsMapsArray := make([]interface{}, 0)
-			for _, dataLoop1 := range v.([]interface{}) {
-				dataLoop1Tmp := dataLoop1.(map[string]interface{})
-				dataLoop1Map := make(map[string]interface{})
-				dataLoop1Map["scheduleExpression"] = dataLoop1Tmp["schedule_expression"]
-				dataLoop1Map["target"] = dataLoop1Tmp["target"]
-				dataLoop1Map["endTime"] = dataLoop1Tmp["end_time"]
-				dataLoop1Map["name"] = dataLoop1Tmp["name"]
-				dataLoop1Map["startTime"] = dataLoop1Tmp["start_time"]
-				dataLoop1Map["timeZone"] = dataLoop1Tmp["time_zone"]
-				scheduledActionsMapsArray = append(scheduledActionsMapsArray, dataLoop1Map)
+	}
+	if v, ok := d.GetOk("scheduled_actions"); ok {
+		scheduledActionsMapsArray := make([]interface{}, 0)
+		for _, dataLoop1 := range v.([]interface{}) {
+			dataLoop1Tmp, ok := dataLoop1.(map[string]interface{})
+			if !ok {
+				continue
 			}
-			request["scheduledActions"] = scheduledActionsMapsArray
+			dataLoop1Map := make(map[string]interface{})
+			dataLoop1Map["scheduleExpression"] = dataLoop1Tmp["schedule_expression"]
+			dataLoop1Map["target"] = dataLoop1Tmp["target"]
+			dataLoop1Map["endTime"] = dataLoop1Tmp["end_time"]
+			dataLoop1Map["name"] = dataLoop1Tmp["name"]
+			dataLoop1Map["startTime"] = dataLoop1Tmp["start_time"]
+			dataLoop1Map["timeZone"] = dataLoop1Tmp["time_zone"]
+			scheduledActionsMapsArray = append(scheduledActionsMapsArray, dataLoop1Map)
 		}
+		request["scheduledActions"] = scheduledActionsMapsArray
+	} else if d.HasChange("scheduled_actions") {
+		request["scheduledActions"] = []interface{}{}
 	}
 
 	if d.HasChange("target") {
 		update = true
-		request["target"] = d.Get("target")
 	}
 
 	if d.HasChange("always_allocate_cpu") {
 		update = true
-		request["alwaysAllocateCPU"] = d.Get("always_allocate_cpu")
 	}
 
 	if d.HasChange("always_allocate_gpu") {
 		update = true
+	}
+
+	// PutProvisionConfig replaces the stored provision configuration and
+	// requires target, so every update carries target plus the current
+	// always-allocate values; otherwise a single-field update could drop
+	// them or fall back to the service defaults. target is Optional+Computed:
+	// when it is omitted or comes from an import, state holds the configured
+	// default mapped from defaultTarget by Read, so the replacement PUT keeps
+	// that default instead of writing zero or the policy-computed runtime
+	// target. An explicitly configured value, including zero, is still sent.
+	if update {
+		targetValue, targetErr := provisionConfigUpdateTarget(d, client)
+		if targetErr != nil {
+			return targetErr
+		}
+		request["target"] = targetValue
+		// target is deprecated but still required by PutProvisionConfig; send
+		// the same configured default through defaultTarget as well.
+		request["defaultTarget"] = targetValue
+		request["alwaysAllocateCPU"] = d.Get("always_allocate_cpu")
 		request["alwaysAllocateGPU"] = d.Get("always_allocate_gpu")
 	}
 
