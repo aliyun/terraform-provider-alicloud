@@ -299,9 +299,10 @@ func ResourceInstance() *schema.Resource {
 							Computed: true,
 						},
 						"maintain_time": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
+							Type:       schema.TypeString,
+							Optional:   true,
+							Computed:   true,
+							Deprecated: "The RocketMQ API has deprecated maintainTime. Remove maintain_time from configuration; existing state remains readable.",
 						},
 					},
 				},
@@ -845,11 +846,6 @@ func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	if !d.IsNewResource() && d.HasChange("software.0.maintain_time") {
 		update = true
 	}
-	// CreateInstance does not accept maintainTime. Apply an explicitly configured
-	// window after the new instance becomes RUNNING, without writing an unset value.
-	if _, ok := d.GetOk("software.0.maintain_time"); d.IsNewResource() && ok {
-		update = true
-	}
 	if v, ok := d.GetOk("software"); ok || d.HasChange("software") {
 		jsonPathResult, err := jsonpath.Get("$[0].maintain_time", v)
 		if err == nil && jsonPathResult != "" {
@@ -904,6 +900,20 @@ func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	request["ProductCode"] = "ons"
 	if update {
+		// BSS identifies a subscription by its product type as well as its ID.
+		// Read the actual commodity, including international products and defaults
+		// resolved by CreateInstance, rather than guessing from configuration.
+		billingInstance, err := NewService(client).DescribeInstance(d.Id())
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		productType, _ := billingInstance["commodityCode"].(string)
+		subscriptionType, _ := billingInstance["paymentType"].(string)
+		if productType == "" || (subscriptionType != "Subscription" && subscriptionType != "PayAsYouGo") {
+			return fmt.Errorf("cannot confirm RocketMQ billing identity before setting renewal for %s", d.Id())
+		}
+		request["ProductType"] = productType
+		request["SubscriptionType"] = subscriptionType
 		action := "SetRenewal"
 		var endpoint string
 		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)

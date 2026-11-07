@@ -71,9 +71,6 @@ resource "alicloud_rocketmq_instance" "default" {
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   remark            = "example"
   ip_whitelists     = ["192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"]
-  software {
-    maintain_time = "02:00-06:00"
-  }
   tags = {
     Created = "TF"
     For     = "example"
@@ -222,7 +219,7 @@ The product_info supports the following:
 ### `software`
 
 The software supports the following:
-* `maintain_time` - (Optional) Upgrade time period.
+* `maintain_time` - (Optional, Deprecated) The RocketMQ API has deprecated this maintenance-window setting. Omit it from new configurations; existing state remains readable. See [GetInstance](https://help.aliyun.com/en/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/developer-reference/api-rocketmq-2022-08-01-getinstance).
 
 ## Attributes Reference
 

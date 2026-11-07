@@ -2740,6 +2740,9 @@ type rocketmqTraceOnFixture struct {
 	requests           []rocketmqTraceOnCapturedRequest
 	ipWhitelists       []string
 	whitelistReadFails bool
+	commodityCode      string
+	paymentType        string
+	software           map[string]interface{}
 }
 
 func (f *rocketmqTraceOnFixture) serveHTTP(w http.ResponseWriter, r *http.Request) {
@@ -2763,7 +2766,12 @@ func (f *rocketmqTraceOnFixture) serveHTTP(w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, `{"code":"InvalidParameter","message":"fixture captured the update request","requestId":"fixture"}`)
 	case r.Method == http.MethodGet && r.URL.Path == instancePath:
-		fmt.Fprintf(w, `{"data":{"instanceId":%q,"instanceName":"rmq-trace-on-instance","status":"RUNNING","seriesCode":"standard","serviceCode":"rmq","subSeriesCode":"serverless","paymentType":"PayAsYouGo","productInfo":{"msgProcessSpec":"rmq.s3.nxlarge","autoScaling":true,"messageRetentionTime":72,"sendReceiveRatio":0.2,"traceOn":false},"networkInfo":{"vpcInfo":{"vpcId":"vpc-rmqtraceon"},"internetInfo":{"internetSpec":"disable","flowOutType":"uninvolved"}}}}`, rocketmqTraceOnFixtureInstanceId)
+		paymentType := f.paymentType
+		if paymentType == "" {
+			paymentType = "PayAsYouGo"
+		}
+		software, _ := json.Marshal(f.software)
+		fmt.Fprintf(w, `{"data":{"instanceId":%q,"instanceName":"rmq-trace-on-instance","status":"RUNNING","seriesCode":"standard","serviceCode":"rmq","subSeriesCode":"serverless","commodityCode":%q,"paymentType":%q,"software":%s,"productInfo":{"msgProcessSpec":"rmq.s3.nxlarge","autoScaling":true,"messageRetentionTime":72,"sendReceiveRatio":0.2,"traceOn":false},"networkInfo":{"vpcInfo":{"vpcId":"vpc-rmqtraceon"},"internetInfo":{"internetSpec":"disable","flowOutType":"uninvolved"}}}}`, rocketmqTraceOnFixtureInstanceId, f.commodityCode, paymentType, software)
 	case r.Method == http.MethodGet && r.URL.Path == instancePath+"/account":
 		fmt.Fprint(w, `{"data":{}}`)
 	case r.Method == http.MethodGet && r.URL.Path == instancePath+"/ip/whitelists":
@@ -3084,24 +3092,15 @@ func TestUnitAliCloudRocketmqInstanceCreateTailConfiguration(t *testing.T) {
 			}
 		}
 	})
-	t.Run("configured maintenance window is applied on create", func(t *testing.T) {
+	t.Run("legacy maintenance state remains readable", func(t *testing.T) {
 		fixture, client := newRocketmqTraceOnFixture(t)
-		raw := rocketmqTraceOnFixtureRawConfig("rmq-create-config", nil)
-		raw["software"] = []interface{}{map[string]interface{}{"maintain_time": "02:00-06:00"}}
-		d := rocketmqTraceOnFixtureNewResourceData(t, r, raw, cty.NullVal(cty.Bool))
-		if err := r.Update(d, client); err != nil {
+		fixture.software = map[string]interface{}{"maintainTime": "02:00-06:00", "softwareVersion": "5.0", "upgradeMethod": "auto"}
+		d := rocketmqTraceOnFixtureNewResourceData(t, r, rocketmqTraceOnFixtureRawConfig("rmq-legacy", nil), cty.NullVal(cty.Bool))
+		if err := r.Read(d, client); err != nil {
 			t.Fatal(err)
 		}
-		requests := fixture.captured(http.MethodPatch, instancePath+"/software/config")
-		if len(requests) != 1 {
-			t.Fatalf("expected one maintenance update, got %d", len(requests))
-		}
-		var body map[string]interface{}
-		if err := json.Unmarshal(requests[0].body, &body); err != nil {
-			t.Fatal(err)
-		}
-		if body["maintainTime"] != "02:00-06:00" {
-			t.Fatalf("incorrect maintenance request: %v", body)
+		if d.Get("software.0.maintain_time") != "02:00-06:00" {
+			t.Fatal("legacy maintenance state was lost")
 		}
 	})
 	t.Run("explicit whitelist replaces the server default", func(t *testing.T) {
@@ -3155,4 +3154,48 @@ func TestUnitAliCloudRocketmqInstanceCreateTailConfiguration(t *testing.T) {
 			t.Fatal("failed reconciliation must retain the resource ID")
 		}
 	})
+}
+
+func TestUnitAliCloudRocketmqInstanceRenewalBillingIdentity(t *testing.T) {
+	for _, product := range []string{"ons_rmqsub_public_cn", "ons_rmqsub_public_intl", ""} {
+		t.Run(product, func(t *testing.T) {
+			fixture, client := newRocketmqTraceOnFixture(t)
+			fixture.commodityCode, fixture.paymentType = product, "Subscription"
+			r := rocketmq.ResourceInstance()
+			raw := rocketmqTraceOnFixtureRawConfig("rmq-renewal", nil)
+			raw["payment_type"] = "Subscription"
+			raw["auto_renew"] = true
+			raw["auto_renew_period"] = 1
+			raw["auto_renew_period_unit"] = "Month"
+			d := rocketmqTraceOnFixtureNewResourceData(t, r, raw, cty.NullVal(cty.Bool))
+			err := r.Update(d, client)
+			if product == "" && err == nil {
+				t.Fatal("missing billing identity must fail before renewal")
+			}
+			if product != "" && err != nil {
+				t.Fatal(err)
+			}
+			count := 0
+			for _, request := range fixture.captured(http.MethodPost, "/") {
+				values, err := url.ParseQuery(request.query + "&" + string(request.body))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if values.Get("Action") != "SetRenewal" {
+					continue
+				}
+				count++
+				if values.Get("ProductCode") != "ons" || values.Get("ProductType") != product || values.Get("SubscriptionType") != "Subscription" || values.Get("InstanceIDs") != rocketmqTraceOnFixtureInstanceId {
+					t.Fatalf("incorrect renewal identity: %v", values)
+				}
+			}
+			expected := 1
+			if product == "" {
+				expected = 0
+			}
+			if count != expected {
+				t.Fatalf("renewal requests=%d, expected=%d", count, expected)
+			}
+		})
+	}
 }
