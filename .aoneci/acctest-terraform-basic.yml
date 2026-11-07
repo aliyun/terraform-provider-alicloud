@@ -5,6 +5,8 @@ triggers:
       - master
     paths:
       - 'scripts/ci/**'
+      - 'scripts/compatibility/**'
+      - 'scripts/title/**'
       - 'scripts/release/**'
       - 'scripts/internal/**'
       - '.aoneci/**'
@@ -18,6 +20,8 @@ triggers:
   push:
     paths:
       - 'scripts/ci/**'
+      - 'scripts/compatibility/**'
+      - 'scripts/title/**'
       - 'scripts/release/**'
       - 'scripts/internal/**'
       - '.aoneci/**'
@@ -41,11 +45,19 @@ jobs:
   PipelineSafety:
     steps:
       - uses: checkout
+      - uses: setup-env
+        inputs:
+          go-version: '1.25.8'
       - name: Range and release reconciliation regression
         run: |
           set -euo pipefail
           python3 -m unittest discover -s scripts/ci -p test_aone_range.py
           python3 -m unittest discover -s scripts/release -p 'test_*.py'
+          bash scripts/ci/resolve-change-range_test.sh
+          python3 -m unittest discover -s scripts/ci -p test_multi_commit_pr.py
+          python3 -m unittest discover -s scripts/ci -p test_check_scope.py
+          python3 -m unittest discover -s scripts/ci -p test_document_checks.py
+          go test ./scripts/compatibility ./scripts/title
   BreakingChange:
     steps:
       - name: Setup Go

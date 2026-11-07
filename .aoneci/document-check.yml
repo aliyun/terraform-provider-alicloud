@@ -8,6 +8,10 @@ triggers:
       - 'go.mod'
       - 'go.sum'
       - 'website/docs/**'
+      - 'scripts/document/**'
+      - 'scripts/basic-check.sh'
+      - '.markdown-link-check.json'
+      - '.github/markdownlint/**'
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
   merge_request:
@@ -19,6 +23,10 @@ triggers:
       - 'go.sum'
       - '.aoneci/document-check.yml'
       - 'website/docs/**'
+      - 'scripts/document/**'
+      - 'scripts/basic-check.sh'
+      - '.markdown-link-check.json'
+      - '.github/markdownlint/**'
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
 
@@ -32,6 +40,23 @@ envs:
   CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
 
 jobs:
+  MarkdownQuality:
+    steps:
+      - uses: checkout
+        inputs:
+          fetch-depth: '32'
+      - uses: setup-env
+        inputs:
+          node-version: '20'
+      - name: Check Markdown links and lint
+        envs:
+          CODE_CI_SHALLOW_RANGE: '1'
+        run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          python3 scripts/ci/run-document-checks.py --group node
+
   terrafmt:
     steps:
       - uses: checkout
@@ -107,6 +132,18 @@ jobs:
               "$checker_dir/document-check" "$doc"
             fi
           done < <(git diff --name-only -z --diff-filter=ACMR "$DIFF_BASE" "$DIFF_HEAD" -- website/docs)
+
+      - name: Test document checker and check spelling
+        run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          go test ./scripts/document/
+          export TF_DOC_TOOLS_DIR
+          TF_DOC_TOOLS_DIR=$(mktemp -d)
+          trap 'rm -rf "$TF_DOC_TOOLS_DIR"' EXIT
+          GOBIN="$TF_DOC_TOOLS_DIR" go install github.com/client9/misspell/cmd/misspell@v0.3.4
+          python3 scripts/ci/run-document-checks.py --group spelling
 
   Consistency:
     steps:

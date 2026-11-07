@@ -17,7 +17,7 @@ def changed_paths():
     for name, value in [('DIFF_BASE', base), ('DIFF_HEAD', head)]:
         if not re.fullmatch('[0-9a-f]{40}', value):
             raise ValueError(f'{name} must be a full commit SHA')
-    if git('rev-parse', '--is-shallow-repository').strip() != b'false':
+    if os.environ.get('CODE_CI_SHALLOW_RANGE') != '1' and git('rev-parse', '--is-shallow-repository').strip() != b'false':
         raise ValueError('checkout is shallow; use fetch-depth: 0')
     for value in (base, head):
         git('cat-file', '-e', value + '^{commit}')
