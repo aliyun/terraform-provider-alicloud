@@ -44,7 +44,7 @@ def content(head, file):
     return git('show', head + ':' + file) + '\n'
 
 
-def plan(base, head):
+def plan(base, head, include_examples=True):
     """Keep the existing resource/test and split-layout documentation scope; deduplicate."""
     files = git('diff', '--name-only', '--diff-filter=ACMRT', base, head).splitlines()
     packages, docs = {}, set()
@@ -58,6 +58,8 @@ def plan(base, head):
             if not names:
                 raise ValueError('No AccTest cases in ' + test)
             packages.setdefault(str(Path(test).parent), set()).update(names)
+            if not include_examples:
+                continue
             if file.startswith('alicloud/service/') and name.startswith(('resource_', 'data_source_')):
                 resolved = subprocess.check_output(['go', 'run', 'scripts/title/title_check.go', '-resolve', file], text=True)
                 for line in resolved.splitlines():
@@ -68,7 +70,7 @@ def plan(base, head):
                 kind = 'r/' if name.startswith('resource_') else 'd/'
                 stem = re.sub(r'^(resource|data_source)_alicloud_', '', name).removesuffix('.go').removesuffix('_test')
                 docs.add('website/docs/' + kind + stem + '.html.markdown')
-        elif file.startswith(('website/docs/r/', 'website/docs/d/')) and file.endswith('.html.markdown'):
+        elif include_examples and file.startswith(('website/docs/r/', 'website/docs/d/')) and file.endswith('.html.markdown'):
             docs.add(file)
     examples = []
     for doc in sorted(docs):
@@ -248,7 +250,7 @@ def main():
     spec = importlib.util.spec_from_file_location('change_range', Path(__file__).with_name('aone-range.py'))
     ranges = importlib.util.module_from_spec(spec); spec.loader.exec_module(ranges)
     base, head = ranges.resolve(os.environ)
-    frozen = plan(base,head)
+    frozen = plan(base, head, include_examples=args.kind == 'examples' or args.plan_only)
     mr_id = os.environ.get('CODE_MR_ID','')
     frozen['mergeRequestId'] = None if mr_id in ('','null') else numeric_id(mr_id)
     if args.plan_only:

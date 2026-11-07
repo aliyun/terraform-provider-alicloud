@@ -55,6 +55,35 @@ class RangeTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             scope.resolve({'CODE_HEAD': self.head})
 
+    def shallow_checkout(self, depth):
+        source = Path.cwd()
+        branch = self.git('branch', '--show-current')
+        self.git('branch', 'target', self.base)
+        checkout = source / 'checkout'
+        self.git('clone', '--quiet', '--no-tags', '--depth', str(depth), '--branch', branch,
+                 source.as_uri(), str(checkout))
+        os.chdir(checkout)
+
+    def test_shallow_range_with_proven_base_needs_no_fetch(self):
+        self.shallow_checkout(2)
+        self.assertEqual((self.first, self.head), scope.resolve({
+            'CODE_CI_SHALLOW_RANGE': '1', 'CODE_HEAD': self.head, 'CODE_PUSH_BEFORE': self.first}))
+        self.assertEqual(self.git('rev-parse', '--is-shallow-repository'), 'true')
+
+    def test_shallow_range_deepens_to_include_all_commits(self):
+        self.shallow_checkout(1)
+        self.assertEqual((self.base, self.head), scope.resolve({
+            'CODE_CI_SHALLOW_RANGE': '1', 'CODE_HEAD': self.head, 'CODE_MR_ID': '123',
+            'CODE_MR_BASE': self.base}))
+        self.assertEqual(self.git('diff', '--name-only', self.base, self.head).splitlines(), ['first', 'second'])
+
+    def test_missing_base_unshallows_and_fetches_target(self):
+        self.shallow_checkout(1)
+        self.assertEqual((self.base, self.head), scope.resolve({
+            'CODE_CI_SHALLOW_RANGE': '1', 'CODE_HEAD': self.head, 'CODE_MR_ID': '123',
+            'CODE_TARGET': 'target'}))
+        self.assertEqual(self.git('rev-parse', '--is-shallow-repository'), 'false')
+
     def test_no_fake_success_for_missing_push_base(self):
         self.git('update-ref', 'refs/remotes/origin/master', self.head)
         with self.assertRaises(ValueError):

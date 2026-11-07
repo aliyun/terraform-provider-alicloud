@@ -28,6 +28,7 @@ triggers:
       - 'alicloud/service/**/*.go'
 
 envs:
+  CODE_CI_SHALLOW_RANGE: '1'
   CODE_HEAD: '${{git.commitId}}'
   CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
   CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
@@ -42,13 +43,9 @@ jobs:
   IntegrationTest:
     timeout: 9h
     steps:
-      - name: Setup Go
-        uses: setup-env
-        inputs:
-          go-version: '1.25.8'
       - uses: checkout
         inputs:
-          fetch-depth: '0'
+          fetch-depth: '32'
       - name: CI Adapter Regression
         run: python3 -m unittest discover -s scripts/ci -p test_acube_integration.py
       - name: Integration Test Check
@@ -64,7 +61,7 @@ jobs:
           go-version: '1.25.8'
       - uses: checkout
         inputs:
-          fetch-depth: '0'
+          fetch-depth: '32'
       - name: Docs Example Test Check
         envs:
           ACUBE_CI_RUN_ID: '${{pipeline.inst.id}}'

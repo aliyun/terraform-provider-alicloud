@@ -119,7 +119,7 @@ jobs:
           go-version: '1.25.8'
       - uses: checkout
         inputs:
-          fetch-depth: '0'
+          fetch-depth: '1'
       - run: |
           make provider-build check-production-deps
 

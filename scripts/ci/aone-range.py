@@ -20,8 +20,24 @@ def sha(value):
     return value
 
 
+def is_shallow():
+    return git('rev-parse', '--is-shallow-repository') == 'true'
+
+
+def is_ancestor(base, head):
+    return subprocess.run(['git', 'merge-base', '--is-ancestor', base, head],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+
+
+def fetch_history(option, *refs):
+    # stdout is reserved for shell assignments.
+    subprocess.run(['git', 'fetch', '--no-tags', option, 'origin', *refs],
+                   check=True, stdout=subprocess.DEVNULL)
+
+
 def resolve(env):
-    if git('rev-parse', '--is-shallow-repository') != 'false':
+    shallow = is_shallow()
+    if shallow and env.get('CODE_CI_SHALLOW_RANGE') != '1':
         raise ValueError('use checkout fetch-depth: 0')
     head = sha(env.get('CODE_HEAD', ''))
     if git('rev-parse', 'HEAD') != head:
@@ -29,19 +45,30 @@ def resolve(env):
     mr = env.get('CODE_MR_ID', '') not in ('', 'null')
     candidate = env.get('CODE_MR_BASE' if mr else 'CODE_PUSH_BEFORE', '')
     if candidate and candidate not in ('null', '0' * 40):
+        if not re.fullmatch('[0-9a-f]{40}', candidate):
+            raise ValueError('invalid pipeline base')
+        for option in ('--deepen=64', '--deepen=256', '--unshallow'):
+            if not is_shallow() or is_ancestor(candidate, head):
+                break
+            fetch_history(option, head)
         base = sha(candidate)
     else:
-        # New branch pushes and legacy MR webhooks lack a base. Compare the
-        # complete branch with its target, never just HEAD^ (which loses commits).
+        # A merge base inferred from incomplete history may be wrong.
         branch = env.get('CODE_TARGET' if mr else 'CODE_DEFAULT_BRANCH', '')
         if not branch or branch == 'null':
             raise ValueError('pipeline target branch is required')
         subprocess.run(['git', 'check-ref-format', 'refs/heads/' + branch], check=True,
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        base = sha(git('merge-base', 'refs/remotes/origin/' + branch, head))
+        target = 'refs/remotes/origin/' + branch
+        if shallow:
+            fetch_history('--unshallow', head, '+refs/heads/' + branch + ':' + target)
+            if is_shallow():
+                raise ValueError('complete history is required to infer the comparison base')
+        base = sha(git('merge-base', target, head))
         if not mr and base == head:
             raise ValueError('push base missing; refusing an empty validation range')
-    subprocess.run(['git', 'merge-base', '--is-ancestor', base, head], check=True)
+    if not is_ancestor(base, head):
+        raise ValueError('pipeline base must be an ancestor of checkout')
     return base, head
 
 
