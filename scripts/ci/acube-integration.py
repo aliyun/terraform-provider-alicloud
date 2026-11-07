@@ -178,8 +178,9 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         for package, cases in frozen['packages'].items():
             prepaid = [n for n in cases if package == 'alicloud/service/rocketmq' and n in SUBSCRIPTION_CASES]
             ordinary = [n for n in cases if n not in prepaid]
-            if ordinary: items.append((package, ordinary))
+            # Verify the purchase/refund boundary first; keep every ordinary case.
             if prepaid: items.append((package + '#subscription', prepaid))
+            if ordinary: items.append((package, ordinary))
     else:
         items = [(e['name'], e) for e in frozen['examples']]
     (output / 'plan.json').write_text(json.dumps(frozen, indent=2))

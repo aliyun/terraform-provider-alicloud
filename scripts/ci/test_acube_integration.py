@@ -81,8 +81,9 @@ class IntegrationTest(unittest.TestCase):
         cases=['TestAccOrdinary']+sorted(m.SUBSCRIPTION_CASES)
         with tempfile.TemporaryDirectory() as root,self.assertRaises(ValueError):
             m.execute(Client(),{'head':'a'*40,'base':'b'*40,'packages':{'alicloud/service/rocketmq':cases},'examples':[]},'acctest','run-123',Path(root))
-        self.assertEqual([x['testConcurrency'] for x in submitted],[2,1])
-        self.assertEqual([n for x in submitted for n in x['testCases']],cases)
+        self.assertEqual([x['testConcurrency'] for x in submitted],[1,2])
+        self.assertEqual(submitted[0]['testCases'],sorted(m.SUBSCRIPTION_CASES))
+        self.assertCountEqual([n for x in submitted for n in x['testCases']],cases)
         self.assertTrue(all(x['variables']['TEST']=='alicloud/service/rocketmq' for x in submitted))
 
     def test_failed_task_does_not_resubmit(self):
