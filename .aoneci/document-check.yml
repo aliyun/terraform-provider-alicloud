@@ -3,6 +3,9 @@ triggers:
   push:
     paths:
       - 'scripts/ci/**'
+      - 'scripts/release/**'
+      - 'scripts/collection-order/**'
+      - 'GNUmakefile'
       - 'scripts/internal/**'
       - '.aoneci/**'
       - 'go.mod'
@@ -13,6 +16,9 @@ triggers:
   merge_request:
     paths:
       - 'scripts/ci/**'
+      - 'scripts/release/**'
+      - 'scripts/collection-order/**'
+      - 'GNUmakefile'
       - 'scripts/internal/**'
       - '.aoneci/**'
       - 'go.mod'
@@ -23,6 +29,7 @@ triggers:
       - 'alicloud/service/**/*.go'
 
 envs:
+  CODE_CI_SHALLOW_RANGE: '1'
   CODE_HEAD: '${{git.commitId}}'
   CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
   CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
@@ -36,10 +43,10 @@ jobs:
     steps:
       - uses: checkout
         inputs:
-          fetch-depth: '0'
+          fetch-depth: '32'
       - uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - name: terrafmt
         run: |
           set -euo pipefail
@@ -61,10 +68,7 @@ jobs:
     steps:
       - uses: checkout
         inputs:
-          fetch-depth: '0'
-      - uses: setup-env
-        inputs:
-          go-version: '1.24.0'
+          fetch-depth: '32'
       - run: |
           set -euo pipefail
           range=$(python3 scripts/ci/aone-range.py)
@@ -75,7 +79,7 @@ jobs:
     steps:
       - uses: checkout
         inputs:
-          fetch-depth: '0'
+          fetch-depth: '32'
       - name: Reject new SDK v2 helper/resource imports
         run: |
           set -euo pipefail
@@ -87,11 +91,11 @@ jobs:
     steps:
       - uses: checkout
         inputs:
-          fetch-depth: '0'
+          fetch-depth: '32'
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - name: Checking the docs content
         run: |
           set -euo pipefail
@@ -108,16 +112,17 @@ jobs:
             fi
           done < <(git diff --name-only -z --diff-filter=ACMR "$DIFF_BASE" "$DIFF_HEAD" -- website/docs)
 
+  # Single owner of the attribute consistency gate, including Basic-only paths.
   Consistency:
     steps:
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - uses: checkout
         inputs:
-          fetch-depth: '0'
-      - name: Integration Test Check
+          fetch-depth: '32'
+      - name: Attribute Consistency Check
         run: |
           set -euo pipefail
           range=$(python3 scripts/ci/aone-range.py)

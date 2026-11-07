@@ -29,6 +29,7 @@ triggers:
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
 envs:
+  CODE_CI_SHALLOW_RANGE: '1'
   CODE_HEAD: '${{git.commitId}}'
   CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
   CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
@@ -51,11 +52,10 @@ jobs:
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - uses: checkout
         inputs:
-          # Checkout as many commits as needed for the diff
-          fetch-depth: '0'
+          fetch-depth: '32'
       - name: Attribute Breaking Change Check
         run: |
           set -euo pipefail
@@ -63,29 +63,12 @@ jobs:
           eval "$range"
           git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
           go run scripts/compatibility/breaking_change_check.go -fileNames="diff.out"
-  Consistency:
-    steps:
-      - name: Setup Go
-        uses: setup-env
-        inputs:
-          go-version: '1.24.0'
-      - uses: checkout
-        inputs:
-          # Checkout as many commits as needed for the diff
-          fetch-depth: '0'
-      - name: Attribute Consistency Check
-        run: |
-          set -euo pipefail
-          range=$(python3 scripts/ci/aone-range.py)
-          eval "$range"
-          git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
-          go run scripts/consistency/consistency_check.go -fileNames="diff.out"
   Formatter:
     steps:
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - uses: checkout
         inputs:
           # Checkout as many commits as needed for the diff
@@ -103,7 +86,7 @@ jobs:
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - uses: checkout
         inputs:
           # Checkout as many commits as needed for the diff
