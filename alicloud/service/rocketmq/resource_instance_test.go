@@ -2743,6 +2743,7 @@ type rocketmqTraceOnFixture struct {
 	commodityCode      string
 	paymentType        string
 	software           map[string]interface{}
+	renewalFailures    int
 }
 
 func (f *rocketmqTraceOnFixture) serveHTTP(w http.ResponseWriter, r *http.Request) {
@@ -2786,6 +2787,12 @@ func (f *rocketmqTraceOnFixture) serveHTTP(w http.ResponseWriter, r *http.Reques
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"data": map[string]interface{}{"ipWhitelists": values}})
 	case r.URL.Path == "/":
+		params, _ := url.ParseQuery(r.URL.RawQuery + "&" + string(body))
+		if params.Get("Action") == "SetRenewal" && f.renewalFailures > 0 {
+			f.renewalFailures--
+			fmt.Fprint(w, `{"Code":"InvalidParameter","Message":"without unreleased resources.","Success":false,"RequestId":"fixture"}`)
+			return
+		}
 		fmt.Fprintf(w, `{"Success":true,"RequestId":"fixture","Data":{"InstanceList":[{"InstanceID":%q,"RenewStatus":"ManualRenewal","RenewalDuration":0,"RenewalDurationUnit":"M"}]}}`, rocketmqTraceOnFixtureInstanceId)
 	default:
 		fmt.Fprint(w, `{}`)
@@ -3161,6 +3168,9 @@ func TestUnitAliCloudRocketmqInstanceRenewalBillingIdentity(t *testing.T) {
 		t.Run(product, func(t *testing.T) {
 			fixture, client := newRocketmqTraceOnFixture(t)
 			fixture.commodityCode, fixture.paymentType = product, "Subscription"
+			if product == "ons_rmqsub_public_cn" {
+				fixture.renewalFailures = 1
+			}
 			r := rocketmq.ResourceInstance()
 			raw := rocketmqTraceOnFixtureRawConfig("rmq-renewal", nil)
 			raw["payment_type"] = "Subscription"
@@ -3190,6 +3200,9 @@ func TestUnitAliCloudRocketmqInstanceRenewalBillingIdentity(t *testing.T) {
 				}
 			}
 			expected := 1
+			if product == "ons_rmqsub_public_cn" {
+				expected = 2
+			}
 			if product == "" {
 				expected = 0
 			}

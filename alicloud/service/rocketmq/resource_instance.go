@@ -3,6 +3,7 @@ package rocketmq
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -920,7 +921,10 @@ func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, false, endpoint)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				// BSS may not expose a newly RUNNING instance immediately.
+				// Keep the same billing identity and retry only this known delay.
+				billingNotVisible := errs.IsExpectedErrors(err, []string{"InvalidParameter"}) && strings.Contains(err.Error(), "without unreleased resources.")
+				if helper.NeedRetry(err) || billingNotVisible {
 					wait()
 					return retry.RetryableError(err)
 				}
