@@ -8,6 +8,11 @@ spec = importlib.util.spec_from_file_location('integration', Path(__file__).with
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 
 class IntegrationTest(unittest.TestCase):
+    def test_numeric_context_identity_is_exact_and_canonical(self):
+        self.assertEqual(m.numeric_id('3.1030653e+07'),'31030653')
+        self.assertEqual(m.numeric_id('87263872'),'87263872')
+        for value in ['', 'null', '-1', '0', '31030653.5', '1e999999']:
+            with self.subTest(value=value),self.assertRaises(ValueError):m.numeric_id(value)
     def request(self):
         return dict(mode='acctest',sourceId='a'*64,checkBaseSourceId='b'*64,commitSha='c'*40,
                     baseCommitSha='d'*40,variables={'TEST':'alicloud/service/rocketmq'},testCases=['TestAccOne','TestAccTwo'])

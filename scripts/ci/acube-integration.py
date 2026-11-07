@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exact-SHA Code integration checks. CI orchestrates; preproduction FC executes."""
 import argparse
+from decimal import Decimal, InvalidOperation
 import hashlib
 import importlib.util
 import json
@@ -20,6 +21,19 @@ TERMINAL = {'success', 'failed', 'cancelled'}
 
 def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+
+def numeric_id(value):
+    # Aone numeric expressions may arrive as scientific notation (3.1030653e+07).
+    if not re.fullmatch(r'[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?',value or ''):
+        raise ValueError('Missing numeric CI/MR identity')
+    try:
+        number = Decimal(value)
+        if not 0 < number < 10**18 or number != number.to_integral_value():
+            raise ValueError('Invalid CI/MR identity')
+        return str(int(number))
+    except InvalidOperation:
+        raise ValueError('Invalid CI/MR identity') from None
 
 
 def git(*args):
@@ -199,11 +213,12 @@ def main():
     ranges = importlib.util.module_from_spec(spec); spec.loader.exec_module(ranges)
     base, head = ranges.resolve(os.environ)
     frozen = plan(base,head)
-    frozen['mergeRequestId'] = os.environ.get('CODE_MR_ID') or None
+    mr_id = os.environ.get('CODE_MR_ID','')
+    frozen['mergeRequestId'] = None if mr_id in ('','null') else numeric_id(mr_id)
     if args.plan_only:
         print(json.dumps(frozen, indent=2)); return
     execute(Client(os.environ.get('ACUBE_PROVIDER_RUN_TOKEN')), frozen, args.kind,
-            os.environ.get('ACUBE_CI_RUN_ID',''), Path(args.output))
+            numeric_id(os.environ.get('ACUBE_CI_RUN_ID','')), Path(args.output))
 
 if __name__ == '__main__':
     try: main()
