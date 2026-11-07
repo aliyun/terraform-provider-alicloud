@@ -2,6 +2,7 @@ package cs_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
@@ -105,4 +106,33 @@ data "alicloud_cs_kubernetes_version" "default" {
   profile = "Edge"
 }
 `)
+}
+
+func TestAccAliCloudCSKubernetesVersionDataSource_supportPolicy(t *testing.T) {
+	resourceID := "data.alicloud_cs_kubernetes_version.default"
+	config := func(policy string) string {
+		return fmt.Sprintf(`
+data "alicloud_cs_kubernetes_version" "default" {
+ cluster_type = "ManagedKubernetes"
+ profile = "Default"
+ support_policy = "%s"
+}
+`, policy)
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{Config: config("Standard"), Check: resource.ComposeTestCheckFunc(
+				resource.TestCheckResourceAttr(resourceID, "support_policy", "Standard"),
+				resource.TestCheckResourceAttrSet(resourceID, "metadata.0.version"),
+				resource.TestMatchResourceAttr(resourceID, "metadata.0.support_policy", regexp.MustCompile("^(Standard|Extended)$")),
+			)},
+			{Config: config("Extended"), Check: resource.ComposeTestCheckFunc(
+				resource.TestCheckResourceAttr(resourceID, "support_policy", "Extended"),
+				resource.TestCheckResourceAttrSet(resourceID, "metadata.0.version"),
+				resource.TestMatchResourceAttr(resourceID, "metadata.0.support_policy", regexp.MustCompile("^(Standard|Extended)$")),
+			)},
+		},
+	})
 }

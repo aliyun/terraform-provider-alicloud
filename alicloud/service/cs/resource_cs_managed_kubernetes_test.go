@@ -13,6 +13,7 @@ import (
 	aliyungocs "github.com/denverdino/aliyungo/cs"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
@@ -1898,4 +1899,103 @@ func TestAccAliCloudCSManagedKubernetes_collectionOrder_zoneIds(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccAliCloudCSManagedKubernetes_supportPolicyStandard_basic(t *testing.T) {
+	testAccCSManagedKubernetesSupportPolicy(t, "Standard", "Extended")
+}
+
+func TestAccAliCloudCSManagedKubernetes_supportPolicyExtended_basic(t *testing.T) {
+	testAccCSManagedKubernetesSupportPolicy(t, "Extended", "Standard")
+}
+
+func testAccCSManagedKubernetesSupportPolicy(t *testing.T, initialPolicy, updatedPolicy string) {
+	t.Helper()
+	resourceID := "alicloud_cs_managed_kubernetes.default"
+	name := fmt.Sprintf("tf-testacc-support-policy-%d", tfacctest.RandIntRange(1000000, 9999999))
+	t.Logf("SupportPolicy acceptance resource name: %s", name)
+	config := acctest.ResourceTestAccConfig(resourceID, name, resourceCSManagedKubernetesSupportPolicyDependence)
+	var cluster *aliyungocs.KubernetesClusterDetail
+	rc := acctest.ResourceCheckInit(resourceID, &cluster, func() interface{} {
+		return cs.NewCsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	})
+	var clusterID string
+	check := func(policy string) resource.TestCheckFunc {
+		return resource.ComposeTestCheckFunc(
+			resource.TestCheckResourceAttr(resourceID, "support_policy", policy),
+			resource.TestCheckResourceAttr(resourceID, "cluster_spec", "ack.pro.small"),
+			func(state *terraform.State) error {
+				r, ok := state.RootModule().Resources[resourceID]
+				if !ok || r.Primary == nil || r.Primary.ID == "" {
+					return fmt.Errorf("managed cluster is missing from state")
+				}
+				if clusterID == "" {
+					clusterID = r.Primary.ID
+				} else if clusterID != r.Primary.ID {
+					return fmt.Errorf("support policy update replaced the cluster")
+				}
+				return nil
+			},
+		)
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rc.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: config(map[string]interface{}{
+					"name": "${var.name}", "cluster_spec": "ack.pro.small", "profile": "Default",
+					"version":        "${data.alicloud_cs_kubernetes_version.standard.metadata.0.version}",
+					"support_policy": initialPolicy, "vswitch_ids": []string{"${alicloud_vswitch.default.id}"},
+					"new_nat_gateway": "false", "slb_internet_enabled": "false",
+					"pod_cidr": "172.20.0.0/16", "service_cidr": "172.21.0.0/20",
+					"addons": []map[string]interface{}{{"name": "flannel"}},
+				}),
+				Check: check(initialPolicy),
+			},
+			{
+				ResourceName: resourceID, ImportState: true, ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"addons", "name_prefix", "new_nat_gateway", "slb_internet_enabled", "skip_set_certificate_authority"},
+			},
+			{Config: config(map[string]interface{}{"support_policy": updatedPolicy}), Check: check(updatedPolicy)},
+			{
+				ResourceName: resourceID, ImportState: true, ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"addons", "name_prefix", "new_nat_gateway", "slb_internet_enabled", "skip_set_certificate_authority"},
+			},
+			{Config: config(map[string]interface{}{"name": "${var.name}-updated", "support_policy": acctest.REMOVEKEY}), Check: check(updatedPolicy)},
+			{Config: config(map[string]interface{}{"support_policy": initialPolicy}), Check: check(initialPolicy)},
+		},
+	})
+}
+
+func resourceCSManagedKubernetesSupportPolicyDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" { default = "%s" }
+
+data "alicloud_zones" "default" {
+ available_resource_creation = "VSwitch"
+}
+
+data "alicloud_cs_kubernetes_version" "standard" {
+ cluster_type = "ManagedKubernetes"
+ profile = "Default"
+ support_policy = "Standard"
+}
+
+resource "alicloud_vpc" "default" {
+ vpc_name = var.name
+ cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+ vswitch_name = var.name
+ vpc_id = alicloud_vpc.default.id
+ zone_id = data.alicloud_zones.default.zones.0.id
+ cidr_block = "192.168.1.0/24"
+}
+`, name)
 }
