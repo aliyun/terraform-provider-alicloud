@@ -2,6 +2,7 @@ package arms
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -226,45 +227,54 @@ func (s *Service) DescribeArmsPrometheusAlertRule(id string) (object map[string]
 	return object, nil
 }
 
-func (s *Service) ListArmsNotificationPolicies(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
+func (s *Service) ListArmsNotificationPolicies() (objects []map[string]interface{}, err error) {
 	client := s.client
 	action := "ListNotificationPolicies"
-	request := map[string]interface{}{
-		"Page":     1,
-		"Size":     helper.PageSizeXLarge,
-		"IsDetail": true,
-		"RegionId": s.client.RegionId,
-	}
-	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
-	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
-		if err != nil {
-			if helper.NeedRetry(err) {
-				wait()
-				return retry.RetryableError(err)
+	for page := 1; page <= 10000; page++ {
+		request := map[string]interface{}{"Page": page, "Size": helper.PageSizeXLarge, "IsDetail": true, "RegionId": s.client.RegionId}
+		var response map[string]interface{}
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
 			}
-			return retry.NonRetryableError(err)
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, action, action, errs.AlibabaCloudSdkGoERROR)
 		}
-		return nil
-	})
-	logs.AddDebug(action, response, request)
-	if err != nil {
-		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
-	}
-	v, err := jsonpath.Get("$.PageBean.NotificationPolicies", response)
-	if err != nil {
-		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.PageBean.NotificationPolicies", response)
-	}
-	if len(v.([]interface{})) < 1 {
-		return object, errs.WrapErrorf(errs.NotFoundErr("ARMS", id), errs.NotFoundWithResponse, response)
-	}
-	for _, v := range v.([]interface{}) {
-		if fmt.Sprint(v.(map[string]interface{})["Id"]) == id {
-			return v.(map[string]interface{}), nil
+		v, err := jsonpath.Get("$.PageBean.NotificationPolicies", response)
+		if err != nil {
+			return nil, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.PageBean.NotificationPolicies", response)
+		}
+		items, ok := v.([]interface{})
+		if !ok {
+			return nil, errs.Error("invalid notification policies response")
+		}
+		for _, item := range items {
+			object, ok := item.(map[string]interface{})
+			if !ok {
+				return nil, errs.Error("invalid notification policy item")
+			}
+			objects = append(objects, object)
+		}
+		if len(items) < helper.PageSizeXLarge {
+			return objects, nil
+		}
+		if total, err := jsonpath.Get("$.PageBean.Total", response); err == nil {
+			totalCount, parseErr := strconv.Atoi(fmt.Sprint(total))
+			if parseErr == nil && page*helper.PageSizeXLarge >= totalCount {
+				return objects, nil
+			}
 		}
 	}
-	return object, errs.WrapErrorf(errs.NotFoundErr("ARMS", id), errs.NotFoundWithResponse, response)
+	return nil, errs.Error("ARMS notification policy pagination exceeded maximum pages")
 }
 
 func (s *Service) ArmsDispatchRuleStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
