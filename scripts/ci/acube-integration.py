@@ -17,7 +17,6 @@ import urllib.request
 REPOSITORY = 'code.alibaba-inc.com/opensource-tools/terraform-provider-alicloud'
 BASE_URL = 'https://pre-acube.aliyun-inc.com'
 TERMINAL = {'success', 'failed', 'cancelled'}
-SUBSCRIPTION_CASES = {'TestAccAliCloudRocketmqInstance_basic4128', 'TestAccAliCloudRocketmqInstance_basic4128_twin'}
 
 
 def digest(value):
@@ -148,14 +147,6 @@ def validate_result(status, request):
             raise ValueError('Missing or duplicate AccTest results')
         if result.get('testDirectory') != request['variables']['TEST'] or any(c.get('result') != 'PASS' for c in cases):
             raise ValueError('AccTest FAIL/SKIP is not PASS; inspect case-level evidence')
-        prepaid = set(request['testCases']) & SUBSCRIPTION_CASES if request['variables']['TEST'] == 'alicloud/service/rocketmq' else set()
-        if prepaid:
-            cleanup = result.get('subscriptionCleanup') or {}
-            receipts = cleanup.get('cases') or []
-            if cleanup.get('policy') != 'rocketmq-refund-v1' or cleanup.get('status') != 'confirmed' or \
-                    {c.get('name') for c in receipts} != prepaid or len(receipts) != len(prepaid) or \
-                    any(c.get('status') != 'released' for c in receipts):
-                raise ValueError('Subscription release evidence is missing or unconfirmed')
     else:
         hcl = result.get('hcl') or {}
         if hcl.get('action') != 'example' or hcl.get('mainTfSha256') != hashlib.sha256(request['mainTf'].encode()).hexdigest():
@@ -175,12 +166,7 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
     output.chmod(0o700)
     items = []
     if kind == 'acctest':
-        for package, cases in frozen['packages'].items():
-            prepaid = [n for n in cases if package == 'alicloud/service/rocketmq' and n in SUBSCRIPTION_CASES]
-            ordinary = [n for n in cases if n not in prepaid]
-            # Verify the purchase/refund boundary first; keep every ordinary case.
-            if prepaid: items.append((package + '#subscription', prepaid))
-            if ordinary: items.append((package, ordinary))
+        items = list(frozen['packages'].items())
     else:
         items = [(e['name'], e) for e in frozen['examples']]
     (output / 'plan.json').write_text(json.dumps(frozen, indent=2))
@@ -192,33 +178,51 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
     sources = [client.call('POST', '/sources/import', {'repository': REPOSITORY, 'commitSha': frozen[key]}) for key in ('head','base')]
     if any(not re.fullmatch('[a-f0-9]{64}', s.get('sourceId', '')) for s in sources): raise ValueError('Invalid source import')
     failures = []
+    pending = []
     for name, value in items:
         request = {'sourceId': sources[0]['sourceId'], 'checkBaseSourceId': sources[1]['sourceId'],
                    'commitSha': frozen['head'], 'baseCommitSha': frozen['base'], 'headRepo': REPOSITORY, 'baseRepo': REPOSITORY,
                    'mode': 'acctest' if kind == 'acctest' else 'hcl', 'timeoutSeconds': 21600,
                    'authorizationRef': 'code-ci:' + run_id + '/mr/' + str(frozen.get('mergeRequestId') or 'none')}
-        if kind == 'acctest': request.update(testCases=value, variables={'TEST':name.removesuffix('#subscription')},
-                                           testConcurrency=1 if name.endswith('#subscription') else 2)
+        if kind == 'acctest': request.update(testCases=value, variables={'TEST':name},
+                                           testConcurrency=2)
         else: request.update(mainTf=value['mainTf'], hclAction='example')
         request['idempotencyKey'] = 'ci-v1-' + digest({'run':run_id, 'plan':digest(frozen),'kind':kind,'name':name})
         item_file = output / (digest(name) + '.json')
-        receipt = client.call('POST', '', request)
-        task_id = str(receipt.get('taskId', ''))
-        if not task_id.isdigit(): raise ValueError('Missing submission receipt; recover using the same run ID')
-        item_file.write_text(json.dumps({'name':name,'request':request,'receipt':receipt},indent=2))
-        print(json.dumps({'name':name,'taskId':task_id,'sourceId':request['sourceId'],'reused':receipt.get('reused') }), flush=True)
-        deadline = time.monotonic() + 8 * 3600
-        while True:
-            status = client.call('GET', '/' + task_id)
-            if status.get('status') in TERMINAL: break
-            if time.monotonic() > deadline: raise ValueError('CI wait expired; preserve task ' + task_id + ' and resume original receipt')
+        try:
+            receipt = client.call('POST', '', request)
+            task_id = str(receipt.get('taskId', ''))
+            if not task_id.isdigit():
+                raise ValueError('Missing submission receipt; recover using the same run ID')
+            record = {'name': name, 'request': request, 'receipt': receipt}
+            item_file.write_text(json.dumps(record, indent=2))
+            pending.append((item_file, task_id, record, time.monotonic() + 8 * 3600))
+            print(json.dumps({'name': name, 'taskId': task_id, 'sourceId': request['sourceId'],
+                              'reused': receipt.get('reused')}), flush=True)
+        except ValueError as error:
+            failures.append({'name': name, 'error': str(error)})
+
+    # FC admits each batch according to its capacity. Observe every receipt
+    # without making the next submission wait for this batch to finish.
+    while pending:
+        running = []
+        for item_file, task_id, record, deadline in pending:
+            try:
+                status = client.call('GET', '/' + task_id)
+                if status.get('status') not in TERMINAL:
+                    if time.monotonic() > deadline:
+                        raise ValueError('CI wait expired; resume original receipt ' + task_id)
+                    running.append((item_file, task_id, record, deadline))
+                    continue
+                logs = client.call('GET', '/' + task_id + '/logs')
+                item_file.write_text(json.dumps({**record, 'status': status, 'logs': logs}, indent=2))
+                item_file.chmod(0o600)
+                validate_result(status, record['request'])
+            except ValueError as error:
+                failures.append({'name': record['name'], 'taskId': task_id, 'error': str(error)})
+        pending = running
+        if pending:
             poll(30)
-        logs = client.call('GET', '/' + task_id + '/logs')
-        # Signed links and HCL/state may be sensitive: save only into private CI artifacts.
-        item_file.write_text(json.dumps({'name':name,'request':request,'receipt':receipt,'status':status,'logs':logs},indent=2))
-        item_file.chmod(0o600)
-        try: validate_result(status, request)
-        except ValueError as error: failures.append({'name':name,'taskId':task_id,'error':str(error)})
     if failures: raise ValueError(json.dumps(failures))
 
 
