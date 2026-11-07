@@ -13,6 +13,7 @@ triggers:
       - 'alicloud/service/**/*.go'
 
 envs:
+  CODE_CI_SHALLOW_RANGE: '1'
   CODE_HEAD: '${{git.commitId}}'
   CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
   CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
@@ -27,10 +28,10 @@ jobs:
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - uses: checkout
         inputs:
-          fetch-depth: '0'
+          fetch-depth: '32'
       - name: Checking the title info
         # The title entries are derived from the register.go registration
         # join (scripts/title/title_check.go), not from filenames: a service
