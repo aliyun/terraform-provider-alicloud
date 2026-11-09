@@ -53,6 +53,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m unittest discover -s scripts/ci -p test_aone_range.py
+          python3 -m unittest discover -s scripts/ci -p test_acube_integration.py
           python3 -m unittest discover -s scripts/release -p 'test_*.py'
           bash scripts/ci/resolve-change-range_test.sh
           python3 -m unittest discover -s scripts/ci -p test_multi_commit_pr.py
