@@ -1,8 +1,14 @@
 import importlib.util
+import contextlib
+import io
+import json
+import os
 import tempfile
 from pathlib import Path
 import unittest
 from unittest.mock import patch
+
+import acube_diagnostics as diagnostics
 
 spec = importlib.util.spec_from_file_location('integration', Path(__file__).with_name('acube-integration.py'))
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
@@ -132,5 +138,104 @@ class IntegrationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root,self.assertRaises(ValueError):
             m.execute(Client(),{'head':'a'*40,'base':'b'*40,'packages':{'alicloud':['TestAccOne']},'examples':[]},'acctest','run-123',Path(root))
         self.assertEqual(calls.count(('POST','')),1)
+
+    def test_remote_failure_is_visible_in_console_summary_and_only_public_artifacts(self):
+        token = 'private-ci-token-' + 'x' * 32
+        url = ('https://test-bucket.oss-cn-beijing.aliyuncs.com/provider-runs/v2/123/stdout.log'
+               '?OSSAccessKeyId=private-id&Signature=private-signature')
+        status = {'status': 'failed', 'result': {
+            'exitCode': 1, 'error': 'HCL destroy failed (exit 1); inspect stdout.log',
+            'hcl': {'phases': [{'name': 'apply', 'status': 'passed', 'exitCode': 0},
+                               {'name': 'destroy', 'status': 'failed', 'exitCode': 1}],
+                    'cleanup': {'status': 'failed', 'stateEmpty': None}},
+            'privatePayload': token}}
+        class Client:
+            def call(_, method, path, body=None):
+                if path == '/capabilities': return {'submissionIdempotency': 'oss-admission-v1', 'hclActions': ['example']}
+                if path == '/sources/import': return {'sourceId': 'a' * 64}
+                if path == '': return {'taskId': 123}
+                if path == '/123': return status
+                if path == '/123/logs': return {'stdout.log': url}
+                raise AssertionError(path)
+        stdout = ('=== destroy (exit 1) ===\nError: QueryAvailableInstances failed\n'
+                  'Code: InternalError\nMessage: account not exists.pk:1234567890123456\n'
+                  'Authorization: Bearer ' + token + '\n'
+                  'Data: {"RequestId":"01A1BE4B-B86C-33C7-B545-56DAD40E98C6","password":"private-password"}\n')
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()) as console:
+            summary = Path(root) / 'summary.md'
+            with patch.dict(os.environ, {'ACUBE_PROVIDER_RUN_TOKEN': token, 'AONE_CI_SUMMARY_MD': str(summary)}), \
+                    patch.object(diagnostics, 'read_stdout', return_value=stdout), self.assertRaisesRegex(ValueError, 'HCL destroy failed'):
+                m.execute(Client(), {'head': 'a' * 40, 'base': 'b' * 40, 'packages': {},
+                                     'examples': [{'name': 'website/docs/r/demo.html.markdown#0', 'mainTf': 'private HCL'}]},
+                          'examples', 'run-123', Path(root))
+            reports = list((Path(root) / 'diagnostics').glob('*.json'))
+            self.assertEqual(len(reports), 1)
+            report = json.loads(reports[0].read_text())
+            self.assertEqual(report['phases'][-1]['name'], 'destroy')
+            self.assertEqual(report['cleanup']['status'], 'failed')
+            public = console.getvalue() + summary.read_text() + reports[0].read_text()
+            for expected in ['InternalError', 'QueryAvailableInstances', '01A1BE4B-B86C-33C7-B545-56DAD40E98C6']:
+                self.assertIn(expected, public)
+            for secret in [token, url, 'private-signature', 'private-password', 'private HCL', '1234567890123456']:
+                self.assertNotIn(secret, public)
+
+    def test_log_index_failure_does_not_replace_remote_failure(self):
+        class Client:
+            def call(_, method, path, body=None):
+                if path == '/capabilities': return {'submissionIdempotency': 'oss-admission-v1', 'hclActions': ['example']}
+                if path == '/sources/import': return {'sourceId': 'a' * 64}
+                if path == '': return {'taskId': 123}
+                if path == '/123': return {'status': 'failed', 'result': {'error': 'Original remote failure', 'exitCode': 1}}
+                if path == '/123/logs': raise ValueError('ACube HTTP 503')
+                raise AssertionError(path)
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()) as console:
+            with self.assertRaisesRegex(ValueError, 'Original remote failure'):
+                m.execute(Client(), {'head': 'a' * 40, 'base': 'b' * 40,
+                                     'packages': {'alicloud': ['TestAccOne']}, 'examples': []},
+                          'acctest', 'run-123', Path(root))
+            self.assertIn('Remote log index unavailable', console.getvalue())
+
+    def test_success_has_case_counts_and_does_not_download_logs(self):
+        result = self.result()
+        result['result']['tests'].update(passed=2, failed=0, skipped=0, missing=0)
+        with patch.object(diagnostics, 'read_stdout') as download:
+            report = diagnostics.terminal_report('alicloud/service/rocketmq', '123', result, self.request(),
+                                                 logs={'stdout.log': 'must-not-be-downloaded'})
+        self.assertEqual(report['tests'], {'passed': 2, 'failed': 0, 'skipped': 0, 'missing': 0})
+        self.assertEqual(report['unsuccessfulCases'], [])
+        download.assert_not_called()
+
+    def test_failed_cases_and_log_download_failures_remain_visible(self):
+        status = {'status': 'failed', 'result': {'error': 'Acceptance checks failed', 'exitCode': 1,
+                  'tests': {'passed': 0, 'failed': 1, 'skipped': 1,
+                            'cases': [{'name': 'TestAccOne', 'result': 'FAIL'},
+                                      {'name': 'TestAccTwo', 'result': 'SKIP'}]}}}
+        with patch.object(diagnostics, 'read_stdout', side_effect=OSError('private URL must not be printed')):
+            report = diagnostics.terminal_report('alicloud', '123', status, self.request(),
+                                                 'ACube task did not succeed', {'stdout.log': 'private URL'})
+        self.assertEqual([c['result'] for c in report['unsuccessfulCases']], ['FAIL', 'SKIP'])
+        self.assertEqual(report['error'], 'Acceptance checks failed')
+        self.assertIn('unavailable', report['diagnosticWarning'])
+        self.assertNotIn('private URL', json.dumps(report))
+
+    def test_presigned_log_reader_is_bounded_and_never_sends_acube_credentials(self):
+        from unittest.mock import MagicMock
+        opener = MagicMock()
+        response = opener.open.return_value.__enter__.return_value
+        response.read.return_value = b'Error: fixture failure'
+        url = 'https://test-bucket.oss-cn-beijing.aliyuncs.com/provider-runs/v2/123/stdout.log?Signature=private'
+        with patch.object(diagnostics.urllib.request, 'build_opener', return_value=opener):
+            self.assertEqual(diagnostics.read_stdout(url, '123'), 'Error: fixture failure')
+        request = opener.open.call_args.args[0]
+        self.assertEqual(request.header_items(), [('Range', 'bytes=-' + str(diagnostics.MAX_LOG_BYTES))])
+        response.read.assert_called_once_with(diagnostics.MAX_LOG_BYTES + 1)
+        for invalid in ['http://test-bucket.oss-cn-beijing.aliyuncs.com/provider-runs/v2/123/stdout.log',
+                        'https://attacker.example/provider-runs/v2/123/stdout.log',
+                        url.replace('/123/', '/456/'), url.replace('stdout.log', 'run.log')]:
+            with self.subTest(url=invalid), self.assertRaises(ValueError):
+                diagnostics.read_stdout(invalid, '123')
+        response.read.return_value = b'x' * (diagnostics.MAX_LOG_BYTES + 1)
+        with patch.object(diagnostics.urllib.request, 'build_opener', return_value=opener), self.assertRaises(ValueError):
+            diagnostics.read_stdout(url, '123')
 
 if __name__=='__main__': unittest.main()

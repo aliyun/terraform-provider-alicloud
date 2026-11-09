@@ -52,6 +52,12 @@ jobs:
         envs:
           ACUBE_CI_RUN_ID: '${{pipeline.inst.id}}'
         run: python3 scripts/ci/acube-integration.py --kind acctest
+      - name: Publish AccTest Diagnostics
+        when: ${{always()}}
+        uses: upload-artifact
+        inputs:
+          name: acube-acctest-diagnostics
+          path: .acube-ci/diagnostics
   DocsExampleTest:
     timeout: 9h
     steps:
@@ -66,3 +72,9 @@ jobs:
         envs:
           ACUBE_CI_RUN_ID: '${{pipeline.inst.id}}'
         run: python3 scripts/ci/acube-integration.py --kind examples
+      - name: Publish Example Diagnostics
+        when: ${{always()}}
+        uses: upload-artifact
+        inputs:
+          name: acube-example-diagnostics
+          path: .acube-ci/diagnostics
