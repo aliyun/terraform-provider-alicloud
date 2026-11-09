@@ -15,11 +15,13 @@ class RangeTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.old = os.getcwd()
         os.chdir(self.tmp.name)
-        self.git('init', '-q')
+        self.git('init', '-q', '-b', 'source')
         self.git('config', 'core.hooksPath', '/dev/null')
         self.git('config', 'user.name', 'Test')
         self.git('config', 'user.email', 'test@example.invalid')
         self.base = self.commit('base')
+        self.git('branch', 'master', self.base)
+        self.git('remote', 'add', 'origin', self.tmp.name)
         self.git('update-ref', 'refs/remotes/origin/master', self.base)
         self.first = self.commit('first')
         self.head = self.commit('second')
@@ -48,6 +50,18 @@ class RangeTest(unittest.TestCase):
     def test_new_branch_uses_target_history(self):
         self.assertEqual((self.base, self.head), scope.resolve({
             'CODE_HEAD': self.head, 'CODE_PUSH_BEFORE': '0' * 40, 'CODE_DEFAULT_BRANCH': 'master'}))
+
+    def test_full_source_checkout_fetches_missing_target_without_unshallow(self):
+        self.git('update-ref', '-d', 'refs/remotes/origin/master')
+        self.assertEqual((self.base, self.head), scope.resolve({
+            'CODE_HEAD': self.head, 'CODE_MR_ID': '123', 'CODE_TARGET': 'master'}))
+        self.assertEqual(self.git('rev-parse', 'refs/remotes/origin/master'), self.base)
+
+    def test_unavailable_target_and_self_comparison_fail(self):
+        with self.assertRaises(subprocess.CalledProcessError):
+            scope.resolve({'CODE_HEAD': self.head, 'CODE_MR_ID': '123', 'CODE_TARGET': 'missing'})
+        with self.assertRaisesRegex(ValueError, 'must not be empty'):
+            scope.resolve({'CODE_HEAD': self.head, 'CODE_MR_ID': '123', 'CODE_MR_BASE': self.head})
 
     def test_stale_checkout_and_unknown_base_fail(self):
         with self.assertRaises(ValueError):
@@ -85,6 +99,7 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(self.git('rev-parse', '--is-shallow-repository'), 'false')
 
     def test_no_fake_success_for_missing_push_base(self):
+        self.git('branch', '-f', 'master', self.head)
         self.git('update-ref', 'refs/remotes/origin/master', self.head)
         with self.assertRaises(ValueError):
             scope.resolve({'CODE_HEAD': self.head, 'CODE_DEFAULT_BRANCH': 'master'})

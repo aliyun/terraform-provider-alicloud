@@ -8,9 +8,11 @@ triggers:
       - 'scripts/run-tflint.sh'
       - 'go.mod'
       - 'go.sum'
+      - '.go-version'
+      - '.golangci.yml'
+      - '.golangci.yaml'
       - '.aoneci/acctest-terraform-lint.yml'
-      - 'alicloud/*.go'
-      - 'alicloud/service/**/*.go'
+      - '**/*.go'
   push:
     paths:
       - 'scripts/ci/**'
@@ -19,10 +21,13 @@ triggers:
       - 'scripts/run-tflint.sh'
       - 'go.mod'
       - 'go.sum'
+      - '.go-version'
+      - '.golangci.yml'
+      - '.golangci.yaml'
       - '.aoneci/acctest-terraform-lint.yml'
-      - 'alicloud/*.go'
-      - 'alicloud/service/**/*.go'
+      - '**/*.go'
 envs:
+  CODE_CI_SHALLOW_RANGE: '1'
   CODE_HEAD: '${{git.commitId}}'
   CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
   CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
@@ -32,24 +37,30 @@ envs:
   CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
 
 jobs:
-  megalinter:
-    name: MegaLinter
+  errcheck:
     steps:
-      - name: Check out code into the Go module directory
-        uses: checkout
+      - uses: setup-env
         inputs:
-          fetch-depth: '0'
-      - name: errcheck
-        uses: megalinter
-        envs:
-          ADDITIONAL_EXCLUDED_DIRECTORIES: ['scripts']
-          DISABLE_LINTERS: 'GO_REVIVE'
-          VALIDATE_ALL_CODEBASE: 'false'
-          GO_GOLANGCI_LINT_CLI_LINT_MODE: 'project'
-          GO_FILTER_REGEX_EXCLUDE: '.scripts/*'
+          go-version: '1.25.8'
+      - uses: checkout
         inputs:
-          language: GO
-          compare-to: '${{git.merge_request.targetBranch ?: "master"}}'
+          fetch-depth: '32'
+      - name: Install the GitHub errcheck version
+        run: |
+          set -euo pipefail
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.7.2
+      - name: Verify Go check failure handling
+        run: |
+          set -euo pipefail
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          python3 -m unittest discover -s scripts/ci -p test_aone_go_checks.py
+      - name: Check changed Go packages
+        run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          python3 scripts/ci/run-errcheck.py
 
   ProviderLint:
     steps:
