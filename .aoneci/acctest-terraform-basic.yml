@@ -5,6 +5,11 @@ triggers:
       - master
     paths:
       - 'scripts/ci/**'
+      - 'scripts/local-ci-check.sh'
+      - 'scripts/vetcheck.sh'
+      - 'scripts/gofmtcheck.sh'
+      - 'scripts/goimportscheck.sh'
+      - 'scripts/errcheck.sh'
       - 'scripts/compatibility/**'
       - 'scripts/title/**'
       - 'scripts/release/**'
@@ -20,6 +25,11 @@ triggers:
   push:
     paths:
       - 'scripts/ci/**'
+      - 'scripts/local-ci-check.sh'
+      - 'scripts/vetcheck.sh'
+      - 'scripts/gofmtcheck.sh'
+      - 'scripts/goimportscheck.sh'
+      - 'scripts/errcheck.sh'
       - 'scripts/compatibility/**'
       - 'scripts/title/**'
       - 'scripts/release/**'

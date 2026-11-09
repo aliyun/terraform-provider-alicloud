@@ -6,6 +6,7 @@ triggers:
       - 'scripts/internal/**'
       - '.aoneci/**'
       - 'scripts/run-tflint.sh'
+      - 'scripts/local-ci-check.sh'
       - 'go.mod'
       - 'go.sum'
       - '.go-version'
@@ -19,6 +20,7 @@ triggers:
       - 'scripts/internal/**'
       - '.aoneci/**'
       - 'scripts/run-tflint.sh'
+      - 'scripts/local-ci-check.sh'
       - 'go.mod'
       - 'go.sum'
       - '.go-version'
@@ -73,6 +75,12 @@ jobs:
       - uses: checkout
         inputs:
           fetch-depth: '0'
+      - name: Test change range and lint scoping
+        run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          python3 scripts/ci/run-ci-fixtures.py lint
       - run: |
           set -euo pipefail
           range=$(python3 scripts/ci/aone-range.py)

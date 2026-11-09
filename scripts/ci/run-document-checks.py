@@ -14,6 +14,7 @@ import time
 GROUPS = {
     "node": ("markdown-link", "markdown-lint"),
     "spelling": ("misspell",),
+    "format": ("terrafmt",),
     "go": ("basic-check", "Content", "misspell", "terrafmt"),
 }
 
@@ -73,7 +74,8 @@ def scoped_commands(paths, full=False):
     full = full or any(p in {'.go-version', 'go.mod', 'go.sum', '.markdown-link-check.json'}
                        or p.startswith(('.github/markdownlint/', 'scripts/ci/',
                                         'scripts/document/', 'scripts/basic-check.sh',
-                                        '.github/workflows/document-check.yml')) for p in paths)
+                                        '.github/workflows/document-check.yml',
+                                        '.aoneci/document-check.yml')) for p in paths)
     # Content and Markdown lint were already diff-based; do not newly enforce
     # historical findings in unchanged pages when global checks fall back.
     docs = [p for p in paths if p.startswith('website/docs/') and Path(p).is_file()]

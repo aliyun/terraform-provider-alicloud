@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -169,6 +170,59 @@ class DocumentToolDirectoryTest(unittest.TestCase):
                                          [str(expected / tool) for tool in ('misspell', 'terrafmt')])
             finally:
                 os.chdir(previous)
+
+
+class DocumentFullScopeTest(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.original = Path.cwd()
+        os.chdir(self.directory.name)
+        self.addCleanup(os.chdir, self.original)
+        Path('website/docs/r').mkdir(parents=True)
+        Path('website/docs/r/changed.html.markdown').write_text('# Valid example\n')
+        Path('website/docs/r/unchanged.html.markdown').write_text('INVALID')
+        self.tools = Path(self.directory.name) / 'tools'
+        self.tools.mkdir()
+        # Stand in for the tools: reject a finding in any file actually selected.
+        for name in ('terrafmt', 'misspell'):
+            binary = self.tools / name
+            binary.write_text('#!' + sys.executable + '\n'
+                              'from pathlib import Path\nimport sys\n'
+                              'for arg in sys.argv[1:]:\n'
+                              '    path = Path(arg)\n'
+                              '    files = path.rglob("*.markdown") if path.is_dir() else [path]\n'
+                              '    for file in files:\n'
+                              '        if file.is_file() and "INVALID" in file.read_text():\n'
+                              '            print("Finding in", file)\n'
+                              '            sys.exit(1)\n')
+            binary.chmod(0o755)
+
+    def run_group(self, paths, group, full=False):
+        with mock.patch.object(checks, 'changed_paths', return_value=paths), \
+                mock.patch.object(sys, 'argv', ['run-document-checks.py', '--group', group]), \
+                mock.patch.dict(os.environ, TF_DOC_TOOLS_DIR=str(self.tools),
+                                DOCUMENT_CHECK_FULL=str(full).lower()), \
+                contextlib.redirect_stdout(io.StringIO()):
+            return checks.main()
+
+    def test_ordinary_pr_checks_changed_documents_only(self):
+        for group in ('format', 'spelling'):
+            with self.subTest(group=group):
+                self.assertEqual(self.run_group(['website/docs/r/changed.html.markdown'], group), 0)
+                self.assertEqual(self.run_group(['website/docs/r/unchanged.html.markdown'], group), 1)
+
+    def test_shared_inputs_find_errors_in_unchanged_documents(self):
+        for path in ('.aoneci/document-check.yml', '.go-version', '.markdown-link-check.json',
+                     'scripts/document/document_check.go', 'scripts/ci/run-document-checks.py'):
+            for group in ('format', 'spelling'):
+                with self.subTest(path=path, group=group):
+                    self.assertEqual(self.run_group([path], group), 1)
+
+    def test_master_full_mode_finds_errors_after_unrelated_changes(self):
+        for group in ('format', 'spelling'):
+            with self.subTest(group=group):
+                self.assertEqual(self.run_group(['README.md'], group, full=True), 1)
 
 
 if __name__ == '__main__':
