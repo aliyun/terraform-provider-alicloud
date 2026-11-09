@@ -12,6 +12,9 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/timeout"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -47,9 +50,9 @@ type createdByResource struct {
 }
 
 type createdByResourceModel struct {
-	Id         types.String `tfsdk:"id"`
-	FwTimeouts types.Object `tfsdk:"timeouts"`
-	OpenStatus types.Bool   `tfsdk:"open_status"`
+	Id         types.String   `tfsdk:"id"`
+	Timeouts   timeouts.Value `tfsdk:"timeouts"`
+	OpenStatus types.Bool     `tfsdk:"open_status"`
 }
 
 func (r *createdByResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -57,8 +60,20 @@ func (r *createdByResource) Metadata(ctx context.Context, req resource.MetadataR
 }
 
 func (r *createdByResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	timeoutsBlock := timeouts.Block(ctx, timeouts.Opts{
+		Create: true,
+		Update: true,
+		Delete: true,
+	}).(schema.SingleNestedBlock)
+	for operation, attribute := range timeoutsBlock.Attributes {
+		stringAttribute := attribute.(schema.StringAttribute)
+		stringAttribute.Validators = append(stringAttribute.Validators, timeout.PositiveTimeoutValidator{})
+		timeoutsBlock.Attributes[operation] = stringAttribute
+	}
 	resp.Schema = schema.Schema{
-		Blocks: map[string]schema.Block{"timeouts": fwTimeoutBlock()},
+		Blocks: map[string]schema.Block{
+			"timeouts": timeoutsBlock,
+		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
@@ -81,7 +96,7 @@ func (r *createdByResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(plan.FwTimeouts, "create", 5*time.Minute)
+	operationTimeout, timeoutDiagnostics := plan.Timeouts.Create(ctx, 5*time.Minute)
 	resp.Diagnostics.Append(timeoutDiagnostics...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -210,7 +225,7 @@ func (r *createdByResource) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(state.FwTimeouts, "delete", 5*time.Minute)
+	operationTimeout, timeoutDiagnostics := state.Timeouts.Delete(ctx, 5*time.Minute)
 	resp.Diagnostics.Append(timeoutDiagnostics...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -286,12 +301,16 @@ func createdByState(object map[string]interface{}, prior *createdByResourceModel
 		id = prior.Id
 	}
 	m := createdByResourceModel{
-		FwTimeouts: types.ObjectNull(fwTimeoutTypes()),
+		Timeouts: timeouts.Value{Object: types.ObjectNull(map[string]attr.Type{
+			"create": types.StringType,
+			"update": types.StringType,
+			"delete": types.StringType,
+		})},
 		Id:         id,
 		OpenStatus: boolVal("OpenStatus"),
 	}
 	if prior != nil {
-		m.FwTimeouts = prior.FwTimeouts
+		m.Timeouts = prior.Timeouts
 	}
 	return m
 }

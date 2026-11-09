@@ -51,7 +51,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions. Each timeout is a positive [Go duration](https://pkg.go.dev/time#ParseDuration) string, such as `30m` or `1h`:
 * `create` - (Defaults to 5 mins) Used when create the Created By.
 * `delete` - (Defaults to 5 mins) Used when delete the Created By.
 * `update` - (Defaults to 5 mins) Used when update the Created By.
