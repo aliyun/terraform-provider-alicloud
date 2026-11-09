@@ -218,6 +218,32 @@ class IntegrationTest(unittest.TestCase):
         self.assertIn('unavailable', report['diagnosticWarning'])
         self.assertNotIn('private URL', json.dumps(report))
 
+    def test_integration_summary_includes_each_failed_case_and_concrete_api_error(self):
+        cases = [{'name': 'TestAccRocketmq' + str(i), 'result': 'FAIL'} for i in range(5)]
+        status = {'status': 'failed', 'result': {'error': 'Command or acceptance checks failed', 'exitCode': 1,
+                  'tests': {'passed': 6, 'failed': 5, 'skipped': 0, 'missing': 0, 'cases': cases}}}
+        stdout = '\n'.join('''=== RUN   {name}
+resource_instance_test.go:2231: Step 2/2 error running import: exit status 1
+Error: QueryAvailableInstances Failed
+Code: InternalError
+Message: account not exists
+RequestId: 01A1BE4B-B86C-33C7-B545-56DAD40E98C6
+--- FAIL: {name} (1.00s)
+'''.format(**case) for case in cases)
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()) as console:
+            summary = Path(root) / 'summary.md'
+            with patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': str(summary)}), \
+                    patch.object(diagnostics, 'read_stdout', return_value=stdout):
+                report = diagnostics.terminal_report('alicloud/service/rocketmq', '123', status, self.request(),
+                                                     'ACube task did not succeed', {'stdout.log': 'private URL'})
+                diagnostics.publish_report(Path(root), report)
+            for output in [console.getvalue(), summary.read_text(), next((Path(root) / 'diagnostics').glob('*.json')).read_text()]:
+                for case in cases:
+                    self.assertIn(case['name'], output)
+                for detail in ['Step 2/2 error running import', 'QueryAvailableInstances', 'InternalError',
+                               'account not exists', '01A1BE4B-B86C-33C7-B545-56DAD40E98C6']:
+                    self.assertIn(detail, output)
+
     def test_presigned_log_reader_is_bounded_and_never_sends_acube_credentials(self):
         from unittest.mock import MagicMock
         opener = MagicMock()

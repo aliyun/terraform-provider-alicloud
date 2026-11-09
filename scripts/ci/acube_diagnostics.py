@@ -17,7 +17,7 @@ SENSITIVE = re.compile(
     r'ossaccesskeyid|signature|bearer\s|\btoken\b|\bapi[_-]?key\b')
 
 
-def redact(value):
+def redact(value, limit=8000):
     text = ANSI.sub('', str(value))
     token = os.environ.get('ACUBE_PROVIDER_RUN_TOKEN')
     if token:
@@ -31,7 +31,7 @@ def redact(value):
             lines.append('[credential-bearing line omitted]')
         elif not re.match(r'^\s*(?:Data:|(?:GET|POST|PUT|PATCH|DELETE) /|X-Acs-)', line, re.I):
             lines.append(re.sub(r'[\x00-\x08\x0b-\x1f\x7f]', '', line).replace('```', "'''")[:1000])
-    return '\n'.join(lines)[:8000]
+    return '\n'.join(lines)[:limit]
 
 
 class NoLogRedirect(urllib.request.HTTPRedirectHandler):
@@ -64,11 +64,17 @@ def error_excerpt(stdout):
             selected.update(range(max(0, index - 1), min(len(lines), index + 9)))
     if not selected:
         return ''
-    excerpt = '\n'.join(lines[index] for index in sorted(selected)[-60:])
+    indexes = sorted(selected)
+    truncated = len(indexes) > 200
+    if truncated:
+        indexes = indexes[:100] + indexes[-100:]
+    excerpt = '\n'.join(lines[index] for index in indexes)
     # RequestIds can otherwise be lost when a full API Data payload is omitted.
     request_ids = sorted(set(re.findall(
         r'(?i)(?:RequestId|x-acs-request-id)["\s:=]+([a-f0-9-]{32,36})', excerpt)))
-    text = redact(excerpt)
+    text = redact(excerpt, limit=32000)
+    if truncated:
+        text += '\n[Diagnostic excerpt truncated; the complete unsuccessful case list is reported separately]'
     if request_ids:
         text += '\nRequestIds: ' + ', '.join(request_ids[-10:])
     return text
