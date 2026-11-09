@@ -39,10 +39,11 @@ terraform {
 }
 
 data "alicloud_polardb_node_classes" "default" {
-  db_type    = "MySQL"
-  db_version = "8.0"
-  pay_type   = "PostPaid"
-  category   = "Normal"
+  db_type       = "MySQL"
+  db_version    = "8.0"
+  pay_type      = "PostPaid"
+  category      = "Normal"
+  db_node_class = "polar.mysql.x4.medium"
 }
 
 resource "alicloud_vpc" "default" {
@@ -84,7 +85,7 @@ The following arguments are supported:
 * `nodes` - (Optional) Node id list for endpoint configuration. At least 2 nodes if specified, or if the cluster has more than 3 nodes, read-only endpoint is allowed to mount only one node. Default is all nodes.
 * `auto_add_new_nodes` - (Optional) Whether the new node automatically joins the default cluster address. Valid values are `Enable`, `Disable`. When creating a new custom endpoint, default to `Disable`.
 * `endpoint_config` - (Optional) The advanced settings of the endpoint of Apsara PolarDB clusters are in JSON format. Including the settings of consistency level, transaction splitting, connection pool, and offload reads from primary node. For more details, see the [description of EndpointConfig in the Request parameters table for details](https://www.alibabacloud.com/help/doc-detail/116593.htm).
-* `scc_mode` - (Optional, Computed, Available since v2.3.0) Specifies whether to enable global consistency (high-performance mode). Valid values are `on` and `off`. Before setting this argument to `on`, set `ConsistLevel` in `endpoint_config` to `0` (eventual consistency).
+* `scc_mode` - (Optional, Computed, String, Available since v2.3.0) Specifies whether to enable global consistency (high-performance mode) for the endpoint. Valid values: `on`, `off`. Before setting this argument to `on`, set `ConsistLevel` in `endpoint_config` to `0` (eventual consistency). If this argument is omitted, the provider does not send `SccMode` when the endpoint is created, the service applies its own default, and the actual value is read back into the state. Removing this argument from the configuration after it has been set does not send an update request; the value last read from the service is kept in the state.
 * `ssl_enabled` - (Optional, Available since v1.121.0) Specifies how to modify the SSL encryption status. Valid values: `Disable`, `Enable`, `Update`.
 * `net_type` - (Optional, Available since v1.121.0) The network type of the endpoint address.
 * `ssl_auto_rotate` - (Optional, Available since v1.132.0) Specifies whether automatic rotation of SSL certificates is enabled. Valid values: `Enable`,`Disable`.  

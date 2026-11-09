@@ -150,6 +150,9 @@ func resourceEndpointCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		request.EndpointConfig = string(endpointConfig)
 	}
+	if sccMode, ok := d.GetOk("scc_mode"); ok {
+		request.SccMode = strings.ToLower(sccMode.(string))
+	}
 
 	enpoints, err := polarDBService.DescribePolarDBInstanceNetInfo(clusterId)
 	if err != nil {

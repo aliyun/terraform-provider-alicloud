@@ -295,6 +295,28 @@ func TestAccAliCloudPolarDBEndpointSccModeCreate(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"net_type", "endpoint_config"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scc_mode": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scc_mode": "on",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"net_type", "endpoint_config"},
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"scc_mode": "off",
 				}),
