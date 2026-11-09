@@ -51,8 +51,8 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  vpc_id                = alicloud_vpc.default.id
-  security_group_name   = var.name
+  vpc_id              = alicloud_vpc.default.id
+  security_group_name = var.name
 }
 
 resource "alicloud_pvtz_inbound_endpoint" "default" {
