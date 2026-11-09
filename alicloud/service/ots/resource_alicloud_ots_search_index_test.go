@@ -51,7 +51,7 @@ func TestAccAliCloudOtsSearchIndex_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"schema", "time_to_live", "index_name", "table_name", "instance_name"},
+				ImportStateVerifyIgnore: []string{"schema", "sync_phase"},
 			},
 		},
 	})
@@ -193,7 +193,7 @@ func TestAccAliCloudOtsSearchIndex_ttl(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"schema", "time_to_live", "index_name", "table_name", "instance_name"},
+				ImportStateVerifyIgnore: []string{"schema", "sync_phase"},
 			},
 		},
 	})
@@ -291,6 +291,10 @@ func getSearchIndexCheckMap() map[string]string {
 	accMap["create_time"] = acctest.CHECKSET
 	accMap["sync_phase"] = acctest.CHECKSET
 	accMap["current_sync_timestamp"] = acctest.CHECKSET
+	accMap["instance_name"] = acctest.CHECKSET
+	accMap["table_name"] = acctest.CHECKSET
+	accMap["index_name"] = acctest.CHECKSET
+	accMap["time_to_live"] = acctest.CHECKSET
 
 	return accMap
 }
