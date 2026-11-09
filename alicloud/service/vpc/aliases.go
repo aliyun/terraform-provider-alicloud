@@ -224,6 +224,7 @@ var (
 	StringInSlice                             = validators.StringInSlice
 	StringLenAtLeast                          = validators.StringLenAtLeast
 	StringLenBetween                          = validators.StringLenBetween
+	StringLenBetweenRune                      = validators.StringLenBetweenRune
 	StringMatch                               = validators.StringMatch
 	StringPointer                             = helper.StringPointer
 	SweepDefaultErrorMsg                      = errs.SweepDefaultErrorMsg
