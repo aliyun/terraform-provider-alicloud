@@ -547,6 +547,11 @@ func TestAccAliCloudECSSecurityGroupRuleCidrIp(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceId, "cidr_ip", "192.168.0.0/16"),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }

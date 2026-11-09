@@ -600,8 +600,9 @@ func parseSecurityRuleId(d *schema.ResourceData, meta interface{}, index int) (r
 	return parts[index]
 }
 
-// validateSecurityGroupRuleCidrIp rejects values the CreateSecurityGroupRule API
-// would accept but later fail to read back, such as comma separated CIDR lists.
+// validateSecurityGroupRuleCidrIp rejects values AuthorizeSecurityGroup and
+// AuthorizeSecurityGroupEgress would accept but later fail to read back, such
+// as comma separated CIDR lists.
 func validateSecurityGroupRuleCidrIp(v interface{}, k string) (ws []string, errors []error) {
 	value, _ := v.(string)
 	if len(strings.Fields(strings.ReplaceAll(value, ",", " "))) > 1 {
