@@ -365,8 +365,7 @@ func TestAccAliCloudPolarDbParameterGroup_resourceGroupId(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": acctest.REMOVEKEY,
-						"parameters.#":      "2",
+						"parameters.#": "2",
 					}),
 					resource.TestCheckNoResourceAttr(resourceId, "resource_group_id"),
 					func(s *terraform.State) error {
