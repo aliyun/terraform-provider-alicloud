@@ -676,12 +676,14 @@ func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 		}
 		renewalUnit, _ = convertAmqpInstanceRenewalDurationUnitResponse(billing["RenewalDurationUnit"]).(string)
 	}
-	for key, value := range map[string]interface{}{
-		"auto_renew": autoRenew, "auto_renew_period": renewalPeriod, "auto_renew_period_unit": renewalUnit,
-	} {
-		if err := d.Set(key, value); err != nil {
-			return errs.WrapError(err)
-		}
+	if err := d.Set("auto_renew", autoRenew); err != nil {
+		return errs.WrapError(err)
+	}
+	if err := d.Set("auto_renew_period", renewalPeriod); err != nil {
+		return errs.WrapError(err)
+	}
+	if err := d.Set("auto_renew_period_unit", renewalUnit); err != nil {
+		return errs.WrapError(err)
 	}
 
 	objectRaw, err = rocketmqService.DescribeInstanceGetInstanceIpWhitelist(d.Id())
