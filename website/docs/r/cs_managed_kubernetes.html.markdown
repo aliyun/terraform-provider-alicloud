@@ -410,6 +410,26 @@ resource "alicloud_cs_managed_kubernetes" "default" {
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_managed_kubernetes&spm=docs.r.cs_managed_kubernetes.example&intl_lang=EN_US)
 
+### Extended version support
+
+Set `support_policy = "Extended"` on an ACK Pro cluster to enable extended version support. The same argument can be added to an existing cluster to update its policy without recreating it.
+
+```terraform
+data "alicloud_cs_kubernetes_version" "extended" {
+  cluster_type       = "ManagedKubernetes"
+  profile            = "Default"
+  support_policy     = "Extended"
+  kubernetes_version = var.kubernetes_version
+}
+
+# Add these arguments to your alicloud_cs_managed_kubernetes resource:
+# cluster_spec   = "ack.pro.small"
+# support_policy = "Extended"
+# version        = var.kubernetes_version
+```
+
+Query results depend on ACK's current version lifecycle and regional availability. Use the exact version you intend to deploy rather than a fixed index into the metadata list.
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -457,6 +477,7 @@ Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes com
 * `service_account_issuer` - (Optional, ForceNew, Available since v1.92.0) The issuer of the Service Account token for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm), corresponds to the `iss` field in the token payload. Set this to `"https://kubernetes.default.svc"` to enable the Token Volume Projection feature (requires specifying `api_audiences` as well). From cluster version 1.22, Service Account Token Volume Projection will be enabled by default.
 * `api_audiences` - (Optional, ForceNew, Available since v1.92.0) A list of API audiences for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm). Set this to `["https://kubernetes.default.svc"]` if you want to enable the Token Volume Projection feature (requires specifying `service_account_issuer` as well. From cluster version 1.22, Service Account Token Volume Projection will be enabled by default.
 * `tags` - (Optional, Available since v1.97.0) Default nil, A map of tags assigned to the kubernetes cluster and work nodes. See [`tags`](#tags) below.
+* `support_policy` - (Optional, Computed, Available since v2.3.0) Kubernetes version support policy. Valid values: `Standard` and `Extended`. `Extended` is available only for ACK Pro clusters using the Default profile. When omitted during creation, ACK chooses its configured default; Terraform reads the effective value from the cluster. Existing clusters can change the policy without recreation. ACK validates whether disabling extended support is allowed for the current version. Enabling this policy may incur extended support charges when the version enters its extended support period.
 * `cluster_spec` - (Optional, Available since v1.101.0) The cluster specifications of kubernetes cluster, which can be empty. Valid values:
   * ack.standard : Basic managed clusters.
   * ack.pro.small : Professional managed clusters.
