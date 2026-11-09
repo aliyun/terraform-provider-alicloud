@@ -66,6 +66,13 @@ and private `.acube-ci/` evidence; the same CI Run/plan/item key returns the ori
 receipt after lost responses or process restarts. A new CI Run is an explicit new
 attempt. Do not rerun until the original cloud execution/cleanup is reconciled.
 
+Every terminal task prints a redacted result to the job log and appends the same
+evidence to the Aone Markdown summary. Failures include the remote error, HCL
+phases, cleanup status, unsuccessful AccTests and a bounded diagnostic excerpt
+from remote stdout. Log download failures preserve the original task failure.
+Both jobs publish only `.acube-ci/diagnostics/` as downloadable artifacts, even
+when the check fails; original requests and signed download URLs remain private.
+
 SKIP, missing/duplicate cases, mismatched sources and unconfirmed cleanup fail
 closed and remain visible. Neither a PlanOnly case nor top-level ACube success
 proves complete acceptance. Required external prerequisites must be resolved or
