@@ -223,12 +223,18 @@ func (f *fakeInboundEndpointSweepAPI) RpcPost(apiProductCode string, apiVersion 
 }
 
 func inboundEndpointSweepListResponse(items ...map[string]interface{}) map[string]interface{} {
+	return inboundEndpointSweepListResponseWithTotal(len(items), items...)
+}
+
+// inboundEndpointSweepListResponseWithTotal models a page whose TotalItems is the total across all
+// pages, which is what DescribeInboundEndpoints returns.
+func inboundEndpointSweepListResponseWithTotal(total int, items ...map[string]interface{}) map[string]interface{} {
 	values := make([]interface{}, 0, len(items))
 	for _, item := range items {
 		values = append(values, item)
 	}
 	return map[string]interface{}{
-		"TotalItems": len(items),
+		"TotalItems": total,
 		"InboundEndpoints": map[string]interface{}{
 			"InboundEndpoint": values,
 		},
@@ -245,8 +251,8 @@ func TestUnitSweepInboundEndpointsReadsAllPagesBeforeDeleting(t *testing.T) {
 	}
 	secondPage := []map[string]interface{}{{"Id": "ep-page2", "Name": "tf-testAcc-p2"}}
 	api := &fakeInboundEndpointSweepAPI{listResponses: []map[string]interface{}{
-		inboundEndpointSweepListResponse(firstPage...),
-		inboundEndpointSweepListResponse(secondPage...),
+		inboundEndpointSweepListResponseWithTotal(helper.PageSizeLarge+1, firstPage...),
+		inboundEndpointSweepListResponseWithTotal(helper.PageSizeLarge+1, secondPage...),
 	}}
 
 	if err := sweepInboundEndpoints(context.Background(), api, []string{"tf-testAcc"}); err != nil {
