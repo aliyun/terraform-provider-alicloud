@@ -93,7 +93,9 @@ def terminal_report(name, task_id, status, request, validation_error=None, logs=
     hcl = result.get('hcl') or {}
     tests = result.get('tests') or {}
     report = {
-        'name': redact(name), 'taskId': str(task_id), 'status': redact(status.get('status', 'unknown')),
+        'name': redact(name), 'taskId': str(task_id),
+        'status': 'failed' if validation_error else redact(status.get('status', 'unknown')),
+        'taskStatus': redact(status.get('status', 'unknown')),
         'commitSha': request.get('commitSha'), 'sourceId': request.get('sourceId'),
         'exitCode': result.get('exitCode'),
     }

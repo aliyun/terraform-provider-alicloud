@@ -14,6 +14,12 @@ spec = importlib.util.spec_from_file_location('integration', Path(__file__).with
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 
 class IntegrationTest(unittest.TestCase):
+    def setUp(self):
+        # Synthetic regression receipts must never appear in the real CI Summary.
+        summary = patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': ''})
+        summary.start()
+        self.addCleanup(summary.stop)
+
     def test_numeric_context_identity_is_exact_and_canonical(self):
         self.assertEqual(m.numeric_id('3.1030653e+07'),'31030653')
         self.assertEqual(m.numeric_id('87263872'),'87263872')
@@ -217,6 +223,16 @@ class IntegrationTest(unittest.TestCase):
         self.assertEqual(report['error'], 'Acceptance checks failed')
         self.assertIn('unavailable', report['diagnosticWarning'])
         self.assertNotIn('private URL', json.dumps(report))
+
+    def test_remote_success_with_skipped_case_is_reported_as_failed_validation(self):
+        status = self.result()
+        status['result']['tests']['cases'][0]['result'] = 'SKIP'
+        with self.assertRaises(ValueError) as error:
+            m.validate_result(status, self.request())
+        report = diagnostics.terminal_report('alicloud', '123', status, self.request(), str(error.exception))
+        self.assertEqual(report['status'], 'failed')
+        self.assertEqual(report['taskStatus'], 'success')
+        self.assertEqual(report['unsuccessfulCases'], [{'name': 'TestAccOne', 'result': 'SKIP'}])
 
     def test_integration_summary_includes_each_failed_case_and_concrete_api_error(self):
         cases = [{'name': 'TestAccRocketmq' + str(i), 'result': 'FAIL'} for i in range(5)]
