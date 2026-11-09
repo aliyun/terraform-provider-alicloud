@@ -609,10 +609,10 @@ func (s *Service) QueryAvailableInstancesWithoutProductType(id, instanceRegion, 
 		request["ProductCode"] = productCodeIntl
 	}
 	// Region is intentionally not set: QueryAvailableInstances is a global billing
-	// API keyed by InstanceIDs. Passing an international region (e.g. na-south-1) for
-	// a domestic-station account makes the domestic BSS return an empty list, which
-	// triggers a blind fallback to the international endpoint and fails with
-	// "account not exists". Omitting Region lets the domestic BSS resolve the instance.
+	// API keyed by InstanceIDs. An empty list does not prove that the account
+	// belongs to another station. Only an explicit NotApplicable response may
+	// select the international endpoint; empty results remain a billing lookup
+	// failure without obscuring the original result with "account not exists".
 
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
@@ -628,22 +628,6 @@ func (s *Service) QueryAvailableInstancesWithoutProductType(id, instanceRegion, 
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
-		}
-		resp, err := jsonpath.Get("$.Data.InstanceList", response)
-		if err != nil {
-			return retry.NonRetryableError(err)
-		}
-		if !client.IsInternationalAccount() && len(resp.([]interface{})) < 1 {
-			request["ProductCode"] = productCodeIntl
-			endpoint = connectivity.BssOpenAPIEndpointInternational
-			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
-			if err != nil {
-				if helper.NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
 		}
 		return nil
 	})
