@@ -5,6 +5,11 @@ triggers:
       - master
     paths:
       - 'scripts/ci/**'
+      - 'scripts/local-ci-check.sh'
+      - 'scripts/vetcheck.sh'
+      - 'scripts/gofmtcheck.sh'
+      - 'scripts/goimportscheck.sh'
+      - 'scripts/errcheck.sh'
       - 'scripts/compatibility/**'
       - 'scripts/title/**'
       - 'scripts/release/**'
@@ -14,24 +19,9 @@ triggers:
       - 'scripts/collection-order/**'
       - 'go.mod'
       - 'go.sum'
+      - '.go-version'
       - '.aoneci/acctest-terraform-basic.yml'
-      - 'alicloud/*.go'
-      - 'alicloud/service/**/*.go'
-  push:
-    paths:
-      - 'scripts/ci/**'
-      - 'scripts/compatibility/**'
-      - 'scripts/title/**'
-      - 'scripts/release/**'
-      - 'scripts/internal/**'
-      - '.aoneci/**'
-      - 'GNUmakefile'
-      - 'scripts/collection-order/**'
-      - 'go.mod'
-      - 'go.sum'
-      - '.aoneci/acctest-terraform-basic.yml'
-      - 'alicloud/*.go'
-      - 'alicloud/service/**/*.go'
+      - '**/*.go'
 envs:
   CODE_CI_SHALLOW_RANGE: '1'
   CODE_HEAD: '${{git.commitId}}'
@@ -54,6 +44,7 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s scripts/ci -p test_aone_range.py
           python3 -m unittest discover -s scripts/ci -p test_acube_integration.py
+          python3 -m unittest discover -s scripts/ci -p test_aone_go_checks.py
           python3 -m unittest discover -s scripts/release -p 'test_*.py'
           bash scripts/ci/resolve-change-range_test.sh
           python3 -m unittest discover -s scripts/ci -p test_multi_commit_pr.py
@@ -102,11 +93,13 @@ jobs:
           go-version: '1.25.8'
       - uses: checkout
         inputs:
-          # Checkout as many commits as needed for the diff
-          fetch-depth: '0'
-      - name: vet
+          fetch-depth: '32'
+      - name: Vet changed Go packages
         run: |
-          make vet
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          python3 scripts/ci/run-vet-check.py
 
   ProductionBuild:
     steps:
@@ -116,8 +109,14 @@ jobs:
       - uses: checkout
         inputs:
           fetch-depth: '1'
-      - run: |
-          make provider-build check-production-deps
+      - name: Build root provider main
+        run: |
+          set -euo pipefail
+          make provider-build
+      - name: Check production dependency graph
+        run: |
+          set -euo pipefail
+          make check-production-deps
 
   TypeListOrderCoverage:
     steps:

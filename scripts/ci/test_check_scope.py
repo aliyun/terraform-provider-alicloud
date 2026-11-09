@@ -105,7 +105,8 @@ class ScopeTest(unittest.TestCase):
 
     def test_shared_inputs_fall_back_to_full_go_analysis(self):
         for path in ['go.mod', 'go.sum', '.golangci.yml', '.go-version',
-                     'scripts/ci/check_scope.py', '.github/workflows/acctest-terraform-lint.yml']:
+                     'scripts/ci/check_scope.py', '.github/workflows/acctest-terraform-lint.yml',
+                     '.aoneci/acctest-terraform-basic.yml', '.aoneci/acctest-terraform-lint.yml']:
             self.assertEqual(check_scope.go_packages([path]), ['./...'])
 
     def test_unusual_go_package_path_falls_back_to_full(self):
