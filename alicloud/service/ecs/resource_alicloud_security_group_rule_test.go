@@ -539,6 +539,14 @@ func TestAccAliCloudECSSecurityGroupRuleCidrIp(t *testing.T) {
 				Config:      hclSecurityGroupRuleCidrIpMultiple(name),
 				ExpectError: regexp.MustCompile("multiple CIDRs are not supported in one security group rule"),
 			},
+			{
+				// Restore the valid configuration after the rejected plan so the
+				// post-test destroy does not reuse the invalid CIDR list.
+				Config: hclSecurityGroupRuleCidrIpSingle(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "cidr_ip", "192.168.0.0/16"),
+				),
+			},
 		},
 	})
 }
