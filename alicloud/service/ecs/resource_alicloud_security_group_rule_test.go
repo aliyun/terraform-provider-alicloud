@@ -502,7 +502,7 @@ func TestAccAliCloudECSSecurityGroupRuleSourceGroupOwnerIDCrossAccount(t *testin
 }
 
 // TestAccAliCloudECSSecurityGroupRuleCidrIp covers the accepted single IPv4 CIDR
-// form and the plan-time rejection of a comma separated CIDR list (#4888, ACFHPK2).
+// form and the plan-time rejection of a comma separated CIDR list (#4888).
 func TestAccAliCloudECSSecurityGroupRuleCidrIp(t *testing.T) {
 	resourceId := "alicloud_security_group_rule.test"
 	name := tfacctest.RandString(4)
