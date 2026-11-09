@@ -32,6 +32,10 @@ package validation.
   to avoid newly enforcing historical findings in unchanged pages.
   The original global `.md` link check remains global to avoid losing checks
   on unchanged sources, and changed `.markdown` sources are also checked.
+  Link checks make at most three attempts when all reported failures have no
+  HTTP response and include a transient timeout, connection reset or DNS retry
+  error. Every attempt remains in the log. HTTP failures, tool failures and
+  failures after the last attempt still fail the check.
 
 Older PR heads missing these wrappers use workflow fallbacks that execute the
 previous checker instead of skipping it. Direct invocations of the existing Go
@@ -65,6 +69,13 @@ isolated preproduction FC before enabling the YAML. Keep the ACube receipt IDs
 and private `.acube-ci/` evidence; the same CI Run/plan/item key returns the original
 receipt after lost responses or process restarts. A new CI Run is an explicit new
 attempt. Do not rerun until the original cloud execution/cleanup is reconciled.
+
+Every terminal task prints a redacted result to the job log and appends the same
+evidence to the Aone Markdown summary. Failures include the remote error, HCL
+phases, cleanup status, unsuccessful AccTests and a bounded diagnostic excerpt
+from remote stdout. Log download failures preserve the original task failure.
+Both jobs publish only `.acube-ci/diagnostics/` as downloadable artifacts, even
+when the check fails; original requests and signed download URLs remain private.
 
 SKIP, missing/duplicate cases, mismatched sources and unconfirmed cleanup fail
 closed and remain visible. Neither a PlanOnly case nor top-level ACube success

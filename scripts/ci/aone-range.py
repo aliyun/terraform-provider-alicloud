@@ -64,11 +64,18 @@ def resolve(env):
             fetch_history('--unshallow', head, '+refs/heads/' + branch + ':' + target)
             if is_shallow():
                 raise ValueError('complete history is required to infer the comparison base')
+        else:
+            # A full source-branch checkout need not contain the target ref.
+            subprocess.run(['git', 'fetch', '--no-tags', 'origin',
+                            '+refs/heads/' + branch + ':' + target],
+                           check=True, stdout=subprocess.DEVNULL)
         base = sha(git('merge-base', target, head))
         if not mr and base == head:
             raise ValueError('push base missing; refusing an empty validation range')
     if not is_ancestor(base, head):
         raise ValueError('pipeline base must be an ancestor of checkout')
+    if mr and base == head:
+        raise ValueError('merge request comparison range must not be empty')
     return base, head
 
 
