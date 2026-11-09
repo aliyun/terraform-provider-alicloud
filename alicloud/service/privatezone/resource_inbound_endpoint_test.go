@@ -121,7 +121,16 @@ func collectInboundEndpointSweepIDs(ctx context.Context, client inboundEndpointS
 		if totalCount != 0 && pathErr != nil {
 			return nil, nil, fmt.Errorf("parsing PrivateZone Inbound Endpoint list: %w", pathErr)
 		}
-		result, _ := raw.([]interface{})
+		result, ok := raw.([]interface{})
+		if !ok {
+			// A response that reports items must carry the array: an object, scalar or null at the
+			// path is a contract violation, and treating it as an empty page would report cleanup
+			// success while leaving endpoints behind.
+			if totalCount != 0 {
+				return nil, nil, fmt.Errorf("parsing PrivateZone Inbound Endpoint list: unexpected %T at $.InboundEndpoints.InboundEndpoint", raw)
+			}
+			result = nil
+		}
 		itemsSeen += len(result)
 		for _, v := range result {
 			item, ok := v.(map[string]interface{})
@@ -317,6 +326,32 @@ func TestUnitSweepInboundEndpointsReturnsParseError(t *testing.T) {
 	err := sweepInboundEndpoints(context.Background(), api, []string{"tf-testAcc"})
 	if err == nil || !strings.Contains(err.Error(), "parsing PrivateZone Inbound Endpoint list") {
 		t.Fatalf("expected the list parse error to be returned, got %v", err)
+	}
+}
+
+func TestUnitSweepInboundEndpointsRejectsNonArrayList(t *testing.T) {
+	cases := map[string]interface{}{
+		"object": map[string]interface{}{"Id": "ep-object", "Name": "tf-testAcc-object"},
+		"string": "tf-testAcc-string",
+		"null":   nil,
+	}
+	for name, value := range cases {
+		t.Run(name, func(t *testing.T) {
+			api := &fakeInboundEndpointSweepAPI{listResponses: []map[string]interface{}{{
+				"TotalItems": 1,
+				"InboundEndpoints": map[string]interface{}{
+					"InboundEndpoint": value,
+				},
+			}}}
+			err := sweepInboundEndpoints(context.Background(), api, []string{"tf-testAcc"})
+			if err == nil || !strings.Contains(err.Error(), "parsing PrivateZone Inbound Endpoint list") {
+				t.Fatalf("a non-array path value must be reported as a parse error, got %v", err)
+			}
+			// A false success would skip the delete phase and leave endpoints behind.
+			if api.listCalls != 1 || len(api.deleted) != 0 {
+				t.Fatalf("a non-array path value must abort before any delete, list calls=%d deleted=%v", api.listCalls, api.deleted)
+			}
+		})
 	}
 }
 
