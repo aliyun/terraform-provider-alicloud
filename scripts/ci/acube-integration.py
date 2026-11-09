@@ -14,6 +14,8 @@ import time
 import urllib.error
 import urllib.request
 
+from acube_diagnostics import publish_report, redact, report_directory, terminal_report
+
 REPOSITORY = 'code.alibaba-inc.com/opensource-tools/terraform-provider-alicloud'
 BASE_URL = 'https://pre-acube.aliyun-inc.com'
 TERMINAL = {'success', 'failed', 'cancelled'}
@@ -166,6 +168,7 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         raise ValueError('Stable CI run ID required; CI identity value=' + repr(run_id[:128]))
     output.mkdir(parents=True, exist_ok=True, mode=0o700)
     output.chmod(0o700)
+    report_directory(output)
     items = []
     if kind == 'acctest':
         items = list(frozen['packages'].items())
@@ -229,12 +232,28 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                         raise ValueError('CI wait expired; resume original receipt ' + task_id)
                     running.append((item_file, task_id, record, deadline))
                     continue
-                logs = client.call('GET', '/' + task_id + '/logs')
+                logs = {}
+                log_warning = None
+                try:
+                    logs = client.call('GET', '/' + task_id + '/logs')
+                except ValueError:
+                    log_warning = 'Remote log index unavailable; original task result retained'
                 item_file.write_text(json.dumps({**record, 'status': status, 'logs': logs}, indent=2))
                 item_file.chmod(0o600)
-                validate_result(status, record['request'])
+                validation_error = None
+                try:
+                    validate_result(status, record['request'])
+                except ValueError as error:
+                    validation_error = str(error)
+                report = terminal_report(record['name'], task_id, status, record['request'], validation_error, logs)
+                if log_warning:
+                    report['diagnosticWarning'] = log_warning
+                publish_report(output, report)
+                if validation_error:
+                    failures.append({'name': record['name'], 'taskId': task_id,
+                                     'error': report.get('error') or validation_error})
             except ValueError as error:
-                failures.append({'name': record['name'], 'taskId': task_id, 'error': str(error)})
+                failures.append({'name': record['name'], 'taskId': task_id, 'error': redact(error)})
         pending = running
         if pending:
             poll(30)

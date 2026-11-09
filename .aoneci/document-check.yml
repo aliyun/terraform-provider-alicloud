@@ -1,22 +1,8 @@
 name: Documentation Checks
 triggers:
   push:
-    paths:
-      - 'scripts/ci/**'
-      - 'scripts/release/**'
-      - 'scripts/collection-order/**'
-      - 'GNUmakefile'
-      - 'scripts/internal/**'
-      - '.aoneci/**'
-      - 'go.mod'
-      - 'go.sum'
-      - 'website/docs/**'
-      - 'scripts/document/**'
-      - 'scripts/basic-check.sh'
-      - '.markdown-link-check.json'
-      - '.github/markdownlint/**'
-      - 'alicloud/*.go'
-      - 'alicloud/service/**/*.go'
+    branches:
+      - master
   merge_request:
     paths:
       - 'scripts/ci/**'
@@ -27,6 +13,7 @@ triggers:
       - '.aoneci/**'
       - 'go.mod'
       - 'go.sum'
+      - '.go-version'
       - '.aoneci/document-check.yml'
       - 'website/docs/**'
       - 'scripts/document/**'
@@ -37,6 +24,8 @@ triggers:
       - 'alicloud/service/**/*.go'
 
 envs:
+  # Pushes run on master; manual runs also retain the full documentation checks.
+  DOCUMENT_CHECK_FULL: '${{git.merge_request.id ? "false" : "true"}}'
   CODE_CI_SHALLOW_RANGE: '1'
   CODE_HEAD: '${{git.commitId}}'
   CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
@@ -77,17 +66,11 @@ jobs:
           set -euo pipefail
           range=$(python3 scripts/ci/aone-range.py)
           eval "$range"
-          export PATH="$PATH:$(go env GOPATH)/bin"
-          tool_ready=false
-          while IFS= read -r -d '' doc; do
-            if [[ -f "$doc" && "$doc" == *.markdown ]]; then
-              if [[ "$tool_ready" == false ]]; then
-                go install github.com/katbyte/terrafmt@v0.5.7
-                tool_ready=true
-              fi
-              terrafmt diff "$doc" --check --pattern '*.markdown'
-            fi
-          done < <(git diff --name-only -z --diff-filter=ACMR "$DIFF_BASE" "$DIFF_HEAD" -- website/docs)
+          export TF_DOC_TOOLS_DIR
+          TF_DOC_TOOLS_DIR=$(mktemp -d)
+          trap 'rm -rf "$TF_DOC_TOOLS_DIR"' EXIT
+          GOBIN="$TF_DOC_TOOLS_DIR" go install github.com/katbyte/terrafmt@v0.5.7
+          python3 scripts/ci/run-document-checks.py --group format
 
   basic-check:
     steps:

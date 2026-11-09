@@ -6,8 +6,10 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
+import sys
 import tempfile
 import unittest
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location(
     'document_checks', Path(__file__).with_name('run-document-checks.py')
@@ -17,6 +19,48 @@ spec.loader.exec_module(checks)
 
 
 class DocumentChecksTest(unittest.TestCase):
+    def run_link_failure(self, directory, message, recover=False, name='markdown-link'):
+        attempts = Path(directory) / 'attempts'
+        command = ('echo attempt >> ' + shlex.quote(str(attempts)) + '\n' +
+                   ('if [[ $(wc -l < ' + shlex.quote(str(attempts)) + ') -ge 3 ]]; then echo recovered; exit 0; fi\n'
+                    if recover else '') +
+                   'echo ' + shlex.quote(message) + '; exit 1')
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), mock.patch.object(checks.time, 'sleep') as sleep:
+            status = checks.run_checks({name: command})
+        return status, len(attempts.read_text().splitlines()), output.getvalue(), sleep.call_args_list
+
+    def test_transient_link_failure_recovers_and_keeps_failed_attempt_logs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            status, attempts, output, delays = self.run_link_failure(
+                directory, '[✖] https://example.invalid/ -> Status: 0 ETIMEDOUT', recover=True)
+        self.assertEqual((status, attempts), (0, 3))
+        self.assertEqual(output.count('Status: 0 ETIMEDOUT'), 2)
+        self.assertIn('recovered', output)
+        self.assertEqual(delays, [mock.call(2), mock.call(5)])
+
+    def test_persistent_network_failure_still_fails_after_three_attempts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            status, attempts, _, _ = self.run_link_failure(
+                directory, '[✖] https://example.invalid/ -> Status: 0 ECONNRESET')
+        self.assertEqual((status, attempts), (1, 3))
+
+    def test_http_failure_is_not_retried_even_with_a_second_network_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            status, attempts, _, delays = self.run_link_failure(
+                directory, '[✖] https://example.invalid/missing -> Status: 404\n'
+                           '[✖] https://example.invalid/slow -> Status: 0 ETIMEDOUT')
+        self.assertEqual((status, attempts), (1, 1))
+        self.assertEqual(delays, [])
+
+    def test_tool_failure_and_other_checks_are_not_retried(self):
+        for name, message in [('markdown-link', 'npm error ETIMEDOUT'),
+                              ('markdown-lint', '[✖] https://example.invalid/ -> Status: 0 ETIMEDOUT')]:
+            with self.subTest(name=name, message=message), tempfile.TemporaryDirectory() as directory:
+                status, attempts, _, delays = self.run_link_failure(directory, message, name=name)
+            self.assertEqual((status, attempts), (1, 1))
+            self.assertEqual(delays, [])
+
     def test_failure_does_not_skip_sibling_and_is_reported(self):
         with tempfile.TemporaryDirectory() as directory:
             sibling = Path(directory) / 'sibling-finished'
@@ -126,6 +170,59 @@ class DocumentToolDirectoryTest(unittest.TestCase):
                                          [str(expected / tool) for tool in ('misspell', 'terrafmt')])
             finally:
                 os.chdir(previous)
+
+
+class DocumentFullScopeTest(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.original = Path.cwd()
+        os.chdir(self.directory.name)
+        self.addCleanup(os.chdir, self.original)
+        Path('website/docs/r').mkdir(parents=True)
+        Path('website/docs/r/changed.html.markdown').write_text('# Valid example\n')
+        Path('website/docs/r/unchanged.html.markdown').write_text('INVALID')
+        self.tools = Path(self.directory.name) / 'tools'
+        self.tools.mkdir()
+        # Stand in for the tools: reject a finding in any file actually selected.
+        for name in ('terrafmt', 'misspell'):
+            binary = self.tools / name
+            binary.write_text('#!' + sys.executable + '\n'
+                              'from pathlib import Path\nimport sys\n'
+                              'for arg in sys.argv[1:]:\n'
+                              '    path = Path(arg)\n'
+                              '    files = path.rglob("*.markdown") if path.is_dir() else [path]\n'
+                              '    for file in files:\n'
+                              '        if file.is_file() and "INVALID" in file.read_text():\n'
+                              '            print("Finding in", file)\n'
+                              '            sys.exit(1)\n')
+            binary.chmod(0o755)
+
+    def run_group(self, paths, group, full=False):
+        with mock.patch.object(checks, 'changed_paths', return_value=paths), \
+                mock.patch.object(sys, 'argv', ['run-document-checks.py', '--group', group]), \
+                mock.patch.dict(os.environ, TF_DOC_TOOLS_DIR=str(self.tools),
+                                DOCUMENT_CHECK_FULL=str(full).lower()), \
+                contextlib.redirect_stdout(io.StringIO()):
+            return checks.main()
+
+    def test_ordinary_pr_checks_changed_documents_only(self):
+        for group in ('format', 'spelling'):
+            with self.subTest(group=group):
+                self.assertEqual(self.run_group(['website/docs/r/changed.html.markdown'], group), 0)
+                self.assertEqual(self.run_group(['website/docs/r/unchanged.html.markdown'], group), 1)
+
+    def test_shared_inputs_find_errors_in_unchanged_documents(self):
+        for path in ('.aoneci/document-check.yml', '.go-version', '.markdown-link-check.json',
+                     'scripts/document/document_check.go', 'scripts/ci/run-document-checks.py'):
+            for group in ('format', 'spelling'):
+                with self.subTest(path=path, group=group):
+                    self.assertEqual(self.run_group([path], group), 1)
+
+    def test_master_full_mode_finds_errors_after_unrelated_changes(self):
+        for group in ('format', 'spelling'):
+            with self.subTest(group=group):
+                self.assertEqual(self.run_group(['README.md'], group, full=True), 1)
 
 
 if __name__ == '__main__':

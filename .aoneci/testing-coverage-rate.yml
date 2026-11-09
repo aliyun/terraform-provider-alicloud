@@ -1,18 +1,25 @@
 name: Testing Coverage Rate Checks
 triggers:
   push:
+    branches:
+      - master
     paths:
       - 'scripts/ci/**'
+      - 'scripts/testing/**'
       - 'scripts/internal/**'
       - '.aoneci/**'
       - 'go.mod'
       - 'go.sum'
+      - '.go-version'
       - '.aoneci/testing-coverage-rate.yml'
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
   merge_request:
+    target-branches:
+      - master
     paths:
       - 'scripts/ci/**'
+      - 'scripts/testing/**'
       - 'scripts/internal/**'
       - '.aoneci/**'
       - 'go.mod'

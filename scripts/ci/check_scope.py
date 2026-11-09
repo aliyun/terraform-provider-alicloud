@@ -37,7 +37,9 @@ def go_packages(paths, tests=False):
                                for f in Path(p).parent.glob('*.go'))})
     full = any(p in {'go.mod', 'go.sum', '.go-version', '.golangci.yml', '.golangci.yaml'}
                or p.startswith('scripts/ci/')
-               or p == '.github/workflows/acctest-terraform-lint.yml' for p in paths)
+               or p in {'.github/workflows/acctest-terraform-lint.yml',
+                        '.aoneci/acctest-terraform-basic.yml',
+                        '.aoneci/acctest-terraform-lint.yml'} for p in paths)
     # The reviewdog action accepts a shell flag string. Unusual directory names
     # use the original full scope rather than entering shell syntax in outputs.
     full = full or any(not re.fullmatch(r'\./[A-Za-z0-9_./-]+', p) for p in packages)
