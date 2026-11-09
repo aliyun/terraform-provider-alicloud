@@ -55,6 +55,41 @@ jobs:
       - uses: setup-env
         inputs:
           node-version: '20'
+      - name: Diagnose Registry connectivity
+        run: |
+          python3 - <<'PY'
+          from concurrent.futures import ThreadPoolExecutor
+          import json
+          import os
+          import socket
+          import subprocess
+
+          url = 'https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/db_connection'
+          proxy_names = ('http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'NO_PROXY', 'no_proxy')
+          print(json.dumps({'proxy_present': {name: bool(os.environ.get(name)) for name in proxy_names}}), flush=True)
+          try:
+              print(json.dumps({'addresses': sorted({row[4][0] for row in socket.getaddrinfo('registry.terraform.io', 443)})}), flush=True)
+          except OSError as error:
+              print(json.dumps({'dns_error': type(error).__name__}), flush=True)
+          curl = ['curl', '--silent', '--show-error', '--location', '--output', '/dev/null', '--write-out', 'HTTP=%{http_code}', '--connect-timeout', '5', '--max-time', '15']
+          checker = ['npx', '--yes', 'markdown-link-check@3.14.2', '--verbose', '--config', '.markdown-link-check.json']
+          probes = [
+              ('curl-default', curl + [url], None, dict(os.environ)),
+              ('curl-ipv4', curl + ['--ipv4', url], None, dict(os.environ)),
+              ('link-check-default', checker, '[registry](' + url + '#port)\n', dict(os.environ)),
+              ('link-check-ipv4first', checker, '[registry](' + url + '#port)\n', dict(os.environ, NODE_OPTIONS=(os.environ.get('NODE_OPTIONS', '') + ' --dns-result-order=ipv4first').strip())),
+          ]
+          def run(probe):
+              name, command, stdin, env = probe
+              try:
+                  result = subprocess.run(command, input=stdin, env=env, text=True, capture_output=True, timeout=75)
+                  return {'probe': name, 'exit': result.returncode, 'stdout': result.stdout, 'stderr': result.stderr}
+              except subprocess.TimeoutExpired:
+                  return {'probe': name, 'timeout': True}
+          with ThreadPoolExecutor(max_workers=4) as pool:
+              for result in pool.map(run, probes):
+                  print(json.dumps(result), flush=True)
+          PY
       - name: Check Markdown links and lint
         envs:
           CODE_CI_SHALLOW_RANGE: '1'
