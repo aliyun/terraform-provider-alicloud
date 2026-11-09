@@ -1,6 +1,7 @@
 package amqpopen
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/alibabacloud-go/tea/tea"
@@ -216,4 +217,81 @@ func TestUnitAliCloudAmqpVirtualHostIsInstanceNotReadyError(t *testing.T) {
 			assert.Equal(t, testCase.expected, isAmqpInstanceNotReadyError(testCase.err))
 		})
 	}
+}
+
+// TestUnitAliCloudAmqpInstanceTagsSerialization/CreateNormalWithTags verifies
+// that the CreateInstance request serializes Tags as a single JSON string
+// parameter (matching the amqp-open 2019-12-12 CreateInstance API style:json
+// contract) instead of the expanded Tags.N.Key/Tags.N.Value form that the
+// server accepts but silently drops. It covers the normal case, the no-tags
+// case and values containing spaces. The name avoids colliding with the
+// cloud-dependent TestUnitAliCloudAmqpInstance in the external test package.
+func TestUnitAliCloudAmqpInstanceTagsSerialization(t *testing.T) {
+	resourceSchema := ResourceAmqpInstance()
+	newData := func(values map[string]interface{}) *schema.ResourceData {
+		return schema.TestResourceDataRaw(t, resourceSchema.Schema, values)
+	}
+
+	t.Run("CreateNormalWithTags", func(t *testing.T) {
+		for name, testCase := range map[string]struct {
+			configuredTags map[string]interface{}
+			expectTagsKey  bool
+			expected       []map[string]string
+		}{
+			"normal tags": {
+				configuredTags: map[string]interface{}{"Key1": "Value1", "Key2": "Value2"},
+				expectTagsKey:  true,
+				expected: []map[string]string{
+					{"Key": "Key1", "Value": "Value1"},
+					{"Key": "Key2", "Value": "Value2"},
+				},
+			},
+			"empty tags not configured": {
+				configuredTags: nil,
+				expectTagsKey:  false,
+			},
+			"tags with spaces in values": {
+				configuredTags: map[string]interface{}{"Env": "production env", "Team": "my team"},
+				expectTagsKey:  true,
+				expected: []map[string]string{
+					{"Key": "Env", "Value": "production env"},
+					{"Key": "Team", "Value": "my team"},
+				},
+			},
+		} {
+			t.Run(name, func(t *testing.T) {
+				values := map[string]interface{}{"payment_type": "PayAsYouGo"}
+				if testCase.configuredTags != nil {
+					values["tags"] = testCase.configuredTags
+				}
+				request := make(map[string]interface{})
+				assert.NoError(t, addAmqpInstanceTagsCreateRequest(newData(values), request))
+
+				if !testCase.expectTagsKey {
+					assert.NotContains(t, request, "Tags")
+					return
+				}
+
+				// Tags must be a single JSON string, not an expanded []map[string]interface{}.
+				tagsVal, ok := request["Tags"].(string)
+				assert.True(t, ok, "Tags must be a single JSON string, not an expanded array")
+
+				var parsed []map[string]interface{}
+				assert.NoError(t, json.Unmarshal([]byte(tagsVal), &parsed))
+				assert.Len(t, parsed, len(testCase.expected))
+				for _, expected := range testCase.expected {
+					found := false
+					for _, actual := range parsed {
+						if key, _ := actual["Key"].(string); key == expected["Key"] {
+							if val, _ := actual["Value"].(string); val == expected["Value"] {
+								found = true
+								break
+							}
+						}
+					}
+					assert.True(t, found, "expected tag %v not found in Tags JSON %s", expected, tagsVal)
+				}
+			})
+		}
+	})
 }

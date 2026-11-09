@@ -335,3 +335,100 @@ func TestUnitAlicloudPrivatelinkVpcEndpointService(t *testing.T) {
 	}
 
 }
+
+func TestUnitVpcEndpointServiceResourceZoneIdentity(t *testing.T) {
+	p := unitTestProviderResources()
+	setSchema := p["alicloud_privatelink_vpc_endpoint_service"].Schema["resource"]
+	hashFn := setSchema.Set
+
+	// zone_id participates in the TypeSet element hash for every resource
+	// type (the fix from #11104), so two inline resource blocks with the same
+	// resource_id + resource_type but a different zone_id are preserved as
+	// distinct attachments instead of collapsing into a single block.
+	for _, rt := range []string{"alb", "nlb", "gwlb", "slb"} {
+		assert.NotEqual(t, hashFn(map[string]interface{}{
+			"resource_id":   "lb-bp1xxx",
+			"resource_type": rt,
+			"zone_id":       "cn-hangzhou-h",
+		}), hashFn(map[string]interface{}{
+			"resource_id":   "lb-bp1xxx",
+			"resource_type": rt,
+			"zone_id":       "cn-hangzhou-i",
+		}), "%s resource must preserve zone identity in hash", rt)
+	}
+
+	// A non-empty zone_id is returned unchanged; a genuinely absent/nil value
+	// normalizes to "" so it is never sent as a literal ZoneId upstream. The
+	// service-returned value is always preserved, never discarded.
+	assert.Equal(t, "cn-hangzhou-h", vpcEndpointServiceResourceZoneId("cn-hangzhou-h"), "non-empty zone must be preserved")
+	assert.Equal(t, "", vpcEndpointServiceResourceZoneId(nil), "nil zone must normalize to empty")
+	assert.Equal(t, "", vpcEndpointServiceResourceZoneId(""), "empty zone must stay empty")
+}
+
+func TestUnitVpcEndpointServiceResourceReadZoneNormalization(t *testing.T) {
+	p := unitTestProviderResources()
+	d, _ := schema.InternalMap(p["alicloud_privatelink_vpc_endpoint_service"].Schema).Data(nil, nil)
+	d.SetId("eps-test-zone-norm")
+
+	// The Read path derives a Privatelink client from a *connectivity.AliyunClient,
+	// but no real cloud credentials are exercised here: DoRequest is patched below
+	// so every RpcPost returns the mock and no live API call is made. Inject dummy
+	// credentials via t.Setenv (restored automatically when the test ends) so the
+	// shared helper builds the client instead of skipping, keeping this assertion
+	// running in CI without secrets.
+	t.Setenv("ALICLOUD_ACCESS_KEY", "unit-test-access-key")
+	t.Setenv("ALICLOUD_SECRET_KEY", "unit-test-secret-key")
+	rawClient, err := unitTestSharedClientForRegion("cn-hangzhou")
+	assert.Nil(t, err)
+	if err != nil {
+		t.Fatalf("failed to build unit test client: %s", err)
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+
+	ReadMockResponse := map[string]interface{}{
+		// GetVpcEndpointServiceAttribute
+		"ServiceId":           "eps-test-zone-norm",
+		"ServiceDescription":  "zone-norm-test",
+		"ServiceResourceType": "slb",
+		"ServiceStatus":       "Active",
+		"AutoAcceptEnabled":   true,
+		// ListVpcEndpointServiceResources — the upstream can return a non-empty
+		// ZoneId for an attached backend (e.g. the zone the SLB or NLB was
+		// created in). Read must preserve the service-returned value rather
+		// than discarding it; zone_id is Optional+Computed, so the observable
+		// value must stay available to consuming expressions.
+		"Resources": []interface{}{
+			map[string]interface{}{
+				"ResourceId":   "lb-bp1xxx",
+				"ResourceType": "slb",
+				"ZoneId":       "cn-hangzhou-h",
+			},
+			map[string]interface{}{
+				"ResourceId":   "lb-bp2xxx",
+				"ResourceType": "nlb",
+				"ZoneId":       "cn-hangzhou-g",
+			},
+		},
+		// ListTagResources — no tags.
+		"TagResources": []interface{}{},
+	}
+
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		return ReadMockResponse, nil
+	})
+	defer patches.Reset()
+
+	err = resourceAliCloudPrivateLinkVpcEndpointServiceRead(d, rawClient)
+	assert.Nil(t, err)
+
+	resources := d.Get("resource").(*schema.Set).List()
+	assert.Equal(t, 2, len(resources), "expected exactly two resource items after Read")
+
+	byType := map[string]string{}
+	for _, r := range resources {
+		item := r.(map[string]interface{})
+		byType[item["resource_type"].(string)] = item["zone_id"].(string)
+	}
+	assert.Equal(t, "cn-hangzhou-h", byType["slb"], "slb zone_id must preserve the service-returned value, not be normalized to empty")
+	assert.Equal(t, "cn-hangzhou-g", byType["nlb"], "nlb zone_id must preserve the service-returned read-back zone")
+}

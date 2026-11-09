@@ -4,97 +4,131 @@ triggers:
     target-branches:
       - master
     paths:
+      - 'scripts/ci/**'
+      - 'scripts/compatibility/**'
+      - 'scripts/title/**'
+      - 'scripts/release/**'
+      - 'scripts/internal/**'
+      - '.aoneci/**'
+      - 'GNUmakefile'
+      - 'scripts/collection-order/**'
+      - 'go.mod'
+      - 'go.sum'
       - '.aoneci/acctest-terraform-basic.yml'
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
   push:
     paths:
+      - 'scripts/ci/**'
+      - 'scripts/compatibility/**'
+      - 'scripts/title/**'
+      - 'scripts/release/**'
+      - 'scripts/internal/**'
+      - '.aoneci/**'
+      - 'GNUmakefile'
+      - 'scripts/collection-order/**'
+      - 'go.mod'
+      - 'go.sum'
       - '.aoneci/acctest-terraform-basic.yml'
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
+envs:
+  CODE_CI_SHALLOW_RANGE: '1'
+  CODE_HEAD: '${{git.commitId}}'
+  CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
+  CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
+  CODE_PUSH_BEFORE: '${{git.push.beforeSha256 ?: ""}}'
+  CODE_TARGET: '${{git.merge_request.targetBranch ?: ""}}'
+  CODE_DEFAULT_BRANCH: '${{git.defaultBranch}}'
+  CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
+
 jobs:
+  PipelineSafety:
+    steps:
+      - uses: checkout
+      - uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - name: Range and release reconciliation regression
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts/ci -p test_aone_range.py
+          python3 -m unittest discover -s scripts/release -p 'test_*.py'
+          bash scripts/ci/resolve-change-range_test.sh
+          python3 -m unittest discover -s scripts/ci -p test_multi_commit_pr.py
+          python3 -m unittest discover -s scripts/ci -p test_check_scope.py
+          python3 -m unittest discover -s scripts/ci -p test_document_checks.py
+          go test ./scripts/compatibility ./scripts/title
   BreakingChange:
     steps:
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - uses: checkout
         inputs:
-          # Checkout as many commits as needed for the diff
-          fetch-depth: '2'
+          fetch-depth: '32'
       - name: Attribute Breaking Change Check
         run: |
-          git diff HEAD^ HEAD > diff.out
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
           go run scripts/compatibility/breaking_change_check.go -fileNames="diff.out"
-  Consistency:
-    steps:
-      - name: Setup Go
-        uses: setup-env
-        inputs:
-          go-version: '1.24.0'
-      - uses: checkout
-        inputs:
-          # Checkout as many commits as needed for the diff
-          fetch-depth: '2'
-      - name: Attribute Consistency Check
-        run: |
-          git diff HEAD^ HEAD > diff.out
-          go run scripts/consistency/consistency_check.go -fileNames="diff.out"
   Formatter:
     steps:
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - uses: checkout
         inputs:
           # Checkout as many commits as needed for the diff
-          fetch-depth: '2'
-      - name: Get dependencies
+          fetch-depth: '0'
+      - name: Format changed Go files
         run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
           go install golang.org/x/tools/cmd/goimports@v0.24.0
-          go mod tidy
-      - name: Golang Formatter Check
-        run: |
-          if [[ $(git diff --name-only HEAD^ HEAD | grep -c "^alicloud/") -lt 1 ]]; then
-            echo -e "\033[33m[WARNING]\033[0m there are no go files were changed, skipped."
-            exit 0
-          fi
-          exitCode=0
-          echo "==> Checking that code complies with gofmt and goimports requirements..."
-          diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/")
-          for fileName in ${diffFiles[@]};
-          do
-              if [[ ! -f ${filename} ]]; then
-                  continue
-              fi
-              goimpFile=$(goimports -l ${fileName})
-              if [[ -n ${goimpFile} ]]; then
-                goimports -d ${fileName}
-                exitCode=1
-              fi
-              gofmtFile=$(gofmt -l ${fileName})
-              if [[ -n ${gofmtFile} ]]; then
-                gofmt -d ${fileName}
-                exitCode=1
-              fi
-          done
-          if [[ ${exitCode} -gt 0 ]]; then
-              echo -e "\n\033[31m[Error]\033[0m==> gofmt or goimports needs running on the above files. You can use the command: \`make fmt\` to reformat code. \033[0m"
-              exit 1
-          fi
-          echo -e "==> PASS"
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          python3 scripts/ci/run-format-check.py
   Compile:
     steps:
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - uses: checkout
         inputs:
           # Checkout as many commits as needed for the diff
-          fetch-depth: '2'
+          fetch-depth: '0'
       - name: vet
         run: |
           make vet
+
+  ProductionBuild:
+    steps:
+      - uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - uses: checkout
+        inputs:
+          fetch-depth: '1'
+      - run: |
+          make provider-build check-production-deps
+
+  TypeListOrderCoverage:
+    steps:
+      - uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - uses: checkout
+        inputs:
+          fetch-depth: '0'
+      - run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          go test ./scripts/collection-order/internal/coverage
+          python3 scripts/ci/run-provider-check.py collection

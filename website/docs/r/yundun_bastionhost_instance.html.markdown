@@ -24,6 +24,12 @@ For information about Resource Manager Resource Directory and how to use it, see
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_yundun_bastionhost_instance&exampleId=f446ccd2-7d46-67d8-2d22-8ef4e40a1aecafa276fd&activeTab=example&spm=docs.r.yundun_bastionhost_instance.0.f446ccd27d&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "tf_example"
@@ -58,6 +64,12 @@ resource "alicloud_yundun_bastionhost_instance" "default" {
   security_group_ids = [alicloud_security_group.default.id]
 }
 ```
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_yundun_bastionhost_instance&exampleId=b22fe9a0-1bf0-ec3f-09fc-d3f879ad5a7133e02cee&activeTab=example&spm=docs.r.yundun_bastionhost_instance.1.b22fe9a01b&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 variable "name" {
@@ -129,6 +141,10 @@ Deleting the subscription resource or removing it from your configuration
 will remove it from your state file and management, but will not destroy the bastionhost instance.
 You can resume managing the subscription bastionhost instance via the AlibabaCloud Console.
 
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_yundun_bastionhost_instance&spm=docs.r.yundun_bastionhost_instance.example&intl_lang=EN_US)
+
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -170,6 +186,12 @@ The following arguments are supported:
 * `public_white_list` - (Optional, Available since 1.199.0) The public IP address that you want to add to the whitelist.
 
   -> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) with `ad_auth_server` or `ldap_auth_server` to configure auth server, then ignore any changes to that `password` caused externally (e.g. Application Autoscaling).
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_yundun_bastionhost_instance&exampleId=86cda854-5ee4-acaa-76e5-0bf27f6b865564dc251f&activeTab=example&spm=docs.r.yundun_bastionhost_instance.2.86cda8545e&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 # ... ignore the change about ad_auth_server.0.password and ldap_auth_server.0.password in alicloud_yundun_bastionhost_instance

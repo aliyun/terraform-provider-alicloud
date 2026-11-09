@@ -2,6 +2,8 @@ package alicloud
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -2784,4 +2786,193 @@ func TestUnitProviderConfigure_ProfileExpiredSecondsNotNumber(t *testing.T) {
 	if !strings.Contains(errMsg, "must be a number") {
 		t.Errorf("Expected error to contain the type expectation, got: %s", errMsg)
 	}
+}
+
+// TestProviderConfigure_AssumeRoleWithOIDCConfigParse 验证 getAssumeRoleWithOIDCConfig 的解析规则：
+// 文件形态校验文件可读且非空但不再把内容拷进 OIDCToken（保留给 setAuthCredentialByOidc
+// 走可刷新的 oidc_role_arn 分支）；inline token 优先于文件；两种 token 都缺失时报错。
+func TestProviderConfigure_AssumeRoleWithOIDCConfigParse(t *testing.T) {
+	tokenFile := filepath.Join(t.TempDir(), "oidc-token")
+	if err := os.WriteFile(tokenFile, []byte("jwt-token-file"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	emptyFile := filepath.Join(t.TempDir(), "empty-token")
+	if err := os.WriteFile(emptyFile, []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	missingFile := filepath.Join(t.TempDir(), "missing-token")
+
+	base := map[string]interface{}{
+		"oidc_provider_arn": "acs:ram::123456789012:oidc-provider/test-idp",
+		"role_arn":          "acs:ram::123456789012:role/test-role",
+	}
+
+	// 文件形态：OIDCToken 必须保持为空，这是可刷新凭证分支的入口条件。
+	cfg, err := getAssumeRoleWithOIDCConfig(appendMap(base, map[string]interface{}{"oidc_token_file": tokenFile}))
+	if err != nil {
+		t.Fatalf("file form should parse: %v", err)
+	}
+	if cfg.OIDCToken != "" || cfg.OIDCTokenFile != tokenFile {
+		t.Fatalf("file form must keep OIDCToken empty and OIDCTokenFile set, got token %q / file %q", cfg.OIDCToken, cfg.OIDCTokenFile)
+	}
+
+	// inline 形态：token 直接透传。
+	cfg, err = getAssumeRoleWithOIDCConfig(appendMap(base, map[string]interface{}{"oidc_token": "jwt-token-inline"}))
+	if err != nil {
+		t.Fatalf("inline form should parse: %v", err)
+	}
+	if cfg.OIDCToken != "jwt-token-inline" {
+		t.Fatalf("inline form must carry the token, got %q", cfg.OIDCToken)
+	}
+
+	// 两者都给出：inline 优先，且不再读文件（文件路径甚至可以不存在）。
+	cfg, err = getAssumeRoleWithOIDCConfig(appendMap(base, map[string]interface{}{
+		"oidc_token":      "jwt-token-inline",
+		"oidc_token_file": missingFile,
+	}))
+	if err != nil {
+		t.Fatalf("both forms should keep inline precedence without reading the file: %v", err)
+	}
+	if cfg.OIDCToken != "jwt-token-inline" || cfg.OIDCTokenFile != missingFile {
+		t.Fatalf("expected inline precedence, got token %q / file %q", cfg.OIDCToken, cfg.OIDCTokenFile)
+	}
+
+	// 都缺失：报错。
+	if _, err := getAssumeRoleWithOIDCConfig(base); err == nil || !strings.Contains(err.Error(), "must be specified") {
+		t.Fatalf("expected a missing-token error, got %v", err)
+	}
+
+	// 文件不可读：报错。
+	if _, err := getAssumeRoleWithOIDCConfig(appendMap(base, map[string]interface{}{"oidc_token_file": missingFile})); err == nil || !strings.Contains(err.Error(), "reading oidc_token_file failed") {
+		t.Fatalf("expected an unreadable-file error, got %v", err)
+	}
+
+	// 空文件：报错。
+	if _, err := getAssumeRoleWithOIDCConfig(appendMap(base, map[string]interface{}{"oidc_token_file": emptyFile})); err == nil || !strings.Contains(err.Error(), "content can not be empty") {
+		t.Fatalf("expected an empty-file error, got %v", err)
+	}
+}
+
+func appendMap(base, extra map[string]interface{}) map[string]interface{} {
+	merged := make(map[string]interface{}, len(base)+len(extra))
+	for k, v := range base {
+		merged[k] = v
+	}
+	for k, v := range extra {
+		merged[k] = v
+	}
+	return merged
+}
+
+// TestProviderConfigure_AssumeRoleWithOIDCTokenFileConsumed 验证 providerConfigure 会用
+// oidc_token_file 形态的配置向 STS 换取凭证并装配到客户端上，且 session_expiration 真正
+// 传到了 AssumeRoleWithOIDC 请求。刷新语义（重新读文件、重新换取会话）由 connectivity 包的
+// TestConfigSetAuthCredentialByOidcTokenFileRefresh 覆盖。
+func TestProviderConfigure_AssumeRoleWithOIDCTokenFileConsumed(t *testing.T) {
+	envVars := []string{
+		"ALICLOUD_ACCESS_KEY", "ALICLOUD_SECRET_KEY", "ALICLOUD_SECURITY_TOKEN",
+		"ALIBABA_CLOUD_ACCESS_KEY_ID", "ALIBABA_CLOUD_ACCESS_KEY_SECRET", "ALIBABA_CLOUD_SECURITY_TOKEN",
+		"ALICLOUD_PROFILE", "ALIBABA_CLOUD_PROFILE",
+		"ALICLOUD_ECS_ROLE_NAME",
+		"ALIBABA_CLOUD_OIDC_TOKEN", "ALIBABA_CLOUD_OIDC_TOKEN_FILE",
+		"ALIBABA_CLOUD_OIDC_PROVIDER_ARN", "ALIBABA_CLOUD_ROLE_ARN", "ALIBABA_CLOUD_ROLE_SESSION_NAME",
+	}
+	savedEnvs := make(map[string]string)
+	for _, env := range envVars {
+		savedEnvs[env] = os.Getenv(env)
+		os.Unsetenv(env)
+	}
+	defer func() {
+		for env, val := range savedEnvs {
+			if val != "" {
+				os.Setenv(env, val)
+			}
+		}
+	}()
+
+	tokenFile := filepath.Join(t.TempDir(), "oidc-token")
+	if err := os.WriteFile(tokenFile, []byte("jwt-token-1"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var hits int32
+	var mu sync.Mutex
+	var durations []string
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		n := atomic.AddInt32(&hits, 1)
+		mu.Lock()
+		durations = append(durations, r.FormValue("DurationSeconds"))
+		mu.Unlock()
+		// 会话有效期给足一小时：本用例只验证 configure 装配与 session_expiration 传参，
+		// providerConfigure 后续流程（账号类型探测等）还会多次 GetCredential，短会话会额外触发刷新。
+		response := fmt.Sprintf(`{
+			"Credentials": {
+				"AccessKeyId": "STS.OIDCAccessKey%d",
+				"AccessKeySecret": "oidcAccessKeySecret%d",
+				"SecurityToken": "oidcSecurityToken%d",
+				"Expiration": %q
+			}
+		}`, n, n, n, time.Now().Add(time.Hour).UTC().Format("2006-01-02T15:04:05Z"))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(response))
+	}))
+	defer server.Close()
+
+	// credentials-go 的 HTTP 客户端构建在 http.DefaultTransport 上，注入对测试证书的信任。
+	transport, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		t.Fatalf("unexpected default transport %T", http.DefaultTransport)
+	}
+	trusted := transport.Clone()
+	pool := x509.NewCertPool()
+	pool.AddCert(server.Certificate())
+	trusted.TLSClientConfig = &tls.Config{RootCAs: pool}
+	saved := http.DefaultTransport
+	http.DefaultTransport = trusted
+	defer func() { http.DefaultTransport = saved }()
+
+	provider := Provider()
+	resourceData := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
+		"region": "cn-hangzhou",
+		// credentials-go 强制 https 且 Host 为裸主机名，这里只覆写 sts。
+		"endpoints": []interface{}{
+			map[string]interface{}{
+				"sts": strings.TrimPrefix(server.URL, "https://"),
+			},
+		},
+		"assume_role_with_oidc": []interface{}{
+			map[string]interface{}{
+				"role_arn":           "acs:ram::123456789012:role/test-role",
+				"oidc_provider_arn":  "acs:ram::123456789012:oidc-provider/test-idp",
+				"role_session_name":  "test-session",
+				"oidc_token_file":    tokenFile,
+				"session_expiration": 1800,
+			},
+		},
+	})
+
+	configured, diags := providerConfigure(context.Background(), resourceData, provider)
+	if diags.HasError() {
+		t.Fatalf("providerConfigure failed with assume_role_with_oidc: %v", diags)
+	}
+	client, ok := configured.(*connectivity.AliyunClient)
+	if !ok || client == nil {
+		t.Fatalf("Expected an AliyunClient, got %#v", configured)
+	}
+	if client.AccessKey != "STS.OIDCAccessKey1" || client.SecurityToken != "oidcSecurityToken1" {
+		t.Fatalf("Expected the assumed credentials to be used, got access key %q / token %q", client.AccessKey, client.SecurityToken)
+	}
+	if got := atomic.LoadInt32(&hits); got != 1 {
+		t.Fatalf("Expected the STS endpoint to be hit once, got %d", got)
+	}
+	mu.Lock()
+	if len(durations) != 1 || durations[0] != "1800" {
+		t.Fatalf("Expected session_expiration 1800 to reach the STS request, got %v", durations)
+	}
+	mu.Unlock()
 }

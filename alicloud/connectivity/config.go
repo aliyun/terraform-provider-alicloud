@@ -336,7 +336,7 @@ func (c *Config) setAuthCredentialByOidc() (err error) {
 			SetRoleSessionName(c.AssumeRoleWithOidc.RoleSessionName).
 			SetPolicy(c.AssumeRoleWithOidc.Policy).
 			SetRoleArn(c.AssumeRoleWithOidc.RoleARN).
-			SetSessionExpiration(c.AssumeRoleWithOidc.DurationSeconds)
+			SetRoleSessionExpiration(c.AssumeRoleWithOidc.DurationSeconds)
 		if c.StsEndpoint != "" {
 			credConfig.SetSTSEndpoint(c.StsEndpoint)
 		}

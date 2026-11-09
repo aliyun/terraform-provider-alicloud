@@ -20,7 +20,7 @@ Provides a Private Zone Record resource.
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_pvtz_zone_record&exampleId=fc2efd0a-3bf4-6e20-1008-129e2b25871d0e6af25f&activeTab=example&spm=docs.r.pvtz_zone_record.0.fc2efd0a3b&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_pvtz_zone_record&exampleId=1fbd4f2b-0596-6f50-2480-be3283dbcbd9321e666e&activeTab=example&spm=docs.r.pvtz_zone_record.0.1fbd4f2b05&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -41,6 +41,12 @@ resource "alicloud_pvtz_zone_record" "foo" {
 ```
 
 AAAA (IPv6) Record
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_pvtz_zone_record&exampleId=7115d7c8-ae5e-a2df-d6c4-ddcf9ab999ba75a7ef03&activeTab=example&spm=docs.r.pvtz_zone_record.1.7115d7c8ae&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 resource "alicloud_pvtz_zone" "zone" {

@@ -54,6 +54,10 @@ resource "alicloud_copy_image" "default" {
 }
 ```
 
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_copy_image&spm=docs.r.copy_image.example&intl_lang=EN_US)
+
+
 ## Argument Reference
 
 The following arguments are supported:

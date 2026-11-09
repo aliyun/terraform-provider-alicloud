@@ -1071,7 +1071,7 @@ func assumeRoleWithOidcSchema() *schema.Schema {
 				"session_expiration": {
 					Type:        schema.TypeInt,
 					Optional:    true,
-					Description: "The validity period of the STS token. Unit: seconds. Default value: 3600. Minimum value: 900. Maximum value: the value of the MaxSessionDuration parameter when creating a ram role.",
+					Description: "The validity period of the STS token. Unit: seconds. Valid value range: 900 to 3600. Default value: 3600.",
 				},
 			},
 		},
@@ -2518,20 +2518,21 @@ func getAssumeRoleWithOIDCConfig(tfMap map[string]interface{}) (*connectivity.As
 	if v, ok := mapString(tfMap, "oidc_token_file"); ok {
 		assumeRole.OIDCTokenFile = v
 		if assumeRole.OIDCToken == "" {
+			// Validate the file up front, but keep OIDCToken empty so the
+			// refreshable oidc_role_arn credential in setAuthCredentialByOidc
+			// re-reads the file before the assumed session expires.
 			token, err := os.ReadFile(v)
 			if err != nil {
 				return nil, fmt.Errorf("reading oidc_token_file failed. Error: %s", err)
 			}
-			assumeRole.OIDCToken = string(token)
+			if len(token) == 0 {
+				return nil, fmt.Errorf("\"assume_role_with_oidc.0.oidc_token\" or \"assume_role_with_oidc.0.oidc_token_file\" content can not be empty")
+			}
 		}
 		missingOidcToken = false
 	}
 	if missingOidcToken {
 		return nil, fmt.Errorf("\"assume_role_with_oidc.0.oidc_token\": one of `assume_role_with_oidc.0.oidc_token,assume_role_with_oidc.0.oidc_token_file` must be specified")
-	}
-
-	if assumeRole.OIDCToken == "" {
-		return nil, fmt.Errorf("\"assume_role_with_oidc.0.oidc_token\" or \"assume_role_with_oidc.0.oidc_token_file\" content can not be empty")
 	}
 
 	return &assumeRole, nil

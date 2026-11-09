@@ -1,23 +1,33 @@
 package rkvstore_test
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	tea "github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/rkvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -3848,4 +3858,820 @@ func TestAccAliCloudRedisTairInstance_elastic_burst(t *testing.T) {
 			},
 		},
 	})
+}
+
+var AlicloudRedisTairInstanceReplicaCountMap = map[string]string{
+	"tair_instance_id":  acctest.CHECKSET,
+	"status":            acctest.CHECKSET,
+	"connection_domain": acctest.CHECKSET,
+}
+
+func AlicloudRedisTairInstanceBasicDependenceReplicaCount(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_kvstore_zones" "default" {
+  product_type = "Tair_rdb"
+}
+
+data "alicloud_kvstore_instance_classes" "default" {
+  zone_id              = data.alicloud_kvstore_zones.default.zones.0.id
+  product_type         = "Tair_rdb"
+  instance_charge_type = "PostPaid"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.0.0.0/8"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_kvstore_zones.default.zones.0.id
+  cidr_block   = "10.0.0.0/24"
+  vswitch_name = var.name
+}
+
+locals {
+  standard_rdb_classes = [for item in data.alicloud_kvstore_instance_classes.default.instance_classes : item if length(split(".", item)) == 3 && element(split(".", item), 0) == "tair" && element(split(".", item), 1) == "rdb"]
+  instance_class       = local.standard_rdb_classes[0]
+  primary_zone_id      = data.alicloud_kvstore_zones.default.zones.0.id
+  secondary_zone_id    = data.alicloud_kvstore_zones.default.zones.1.id
+}
+
+`, name)
+}
+
+func testAccCheckRedisTairInstanceClassFromDataSource(resourceId, dataSourceId, listAttr string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceId)
+		}
+		ds, ok := s.RootModule().Resources[dataSourceId]
+		if !ok {
+			return fmt.Errorf("data source not found: %s", dataSourceId)
+		}
+		value := rs.Primary.Attributes["instance_class"]
+		if value == "" {
+			return fmt.Errorf("instance_class of %s is empty", resourceId)
+		}
+		var count int
+		if _, err := fmt.Sscanf(ds.Primary.Attributes[listAttr+".#"], "%d", &count); err != nil {
+			return fmt.Errorf("%s.# of %s is not a number", listAttr, dataSourceId)
+		}
+		for i := 0; i < count; i++ {
+			if ds.Primary.Attributes[fmt.Sprintf("%s.%d", listAttr, i)] == value {
+				return nil
+			}
+		}
+		return fmt.Errorf("instance_class %q not found in %s.%s", value, dataSourceId, listAttr)
+	}
+}
+
+// TestAccAliCloudRedisTairInstance_replicaCount covers replica count updates,
+// unrelated tag updates, and import read-back.
+func TestAccAliCloudRedisTairInstance_replicaCount(t *testing.T) {
+	resourceId := "alicloud_redis_tair_instance.default"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sredistairreplica%d", acctest.DefaultRegionToTest, rand)
+
+	var v map[string]interface{}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRedisTairInstanceReplicaCountMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return rkvstore.NewRedisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeRedisTairInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependenceReplicaCount)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { acctest.PreCheck(t) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":        "PayAsYouGo",
+					"zone_id":             "${local.primary_zone_id}",
+					"vswitch_id":          "${alicloud_vswitch.default.id}",
+					"instance_class":      "${local.instance_class}",
+					"vpc_id":              "${alicloud_vpc.default.id}",
+					"engine_version":      "7.0",
+					"tair_instance_name":  name,
+					"instance_type":       "tair_rdb",
+					"password":            "Pass!123456",
+					"node_type":           "MASTER_SLAVE",
+					"shard_count":         "1",
+					"replica_count":       "1",
+					"slave_replica_count": "1",
+					"secondary_zone_id":   "${local.secondary_zone_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":        "PayAsYouGo",
+						"instance_type":       "tair_rdb",
+						"tair_instance_name":  name,
+						"shard_count":         "1",
+						"replica_count":       "1",
+						"slave_replica_count": "1",
+					}),
+					testAccCheckRedisTairInstanceClassFromDataSource(resourceId, "data.alicloud_kvstore_instance_classes.default", "instance_classes"),
+					resource.TestCheckResourceAttrPair(resourceId, "zone_id", "data.alicloud_kvstore_zones.default", "zones.0.id"),
+					resource.TestCheckResourceAttrPair(resourceId, "secondary_zone_id", "data.alicloud_kvstore_zones.default", "zones.1.id"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"replica_count":       "2",
+					"slave_replica_count": "2",
+					"effective_time":      "Immediately",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"replica_count":       "2",
+						"slave_replica_count": "2",
+						"effective_time":      "Immediately",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"slave_replica_count": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"slave_replica_count": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"replica_count": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"replica_count": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "password_wo", "password_wo_version"},
+			},
+			{
+				// password and effective_time are request-only values that
+				// DescribeInstanceAttribute never returns, so the post-import plan
+				// drops them from the config. An import block plans against the
+				// imported state and must be a no-op.
+				Config: testAccConfig(map[string]interface{}{
+					"password":       acctest.REMOVEKEY,
+					"effective_time": acctest.REMOVEKEY,
+				}),
+				ResourceName:       resourceId,
+				ImportState:        true,
+				ImportStateKind:    resource.ImportBlockWithID,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRedisTairInstance_replicaCountUpdateZero covers the real// non-zero -> 0 transition: ModifyInstanceSpec receives SlaveReplicaCount=0 and
+// the product error is surfaced by the provider.
+func TestAccAliCloudRedisTairInstance_replicaCountUpdateZero(t *testing.T) {
+	resourceId := "alicloud_redis_tair_instance.default"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sredistairreplica%d", acctest.DefaultRegionToTest, rand)
+
+	var v map[string]interface{}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRedisTairInstanceReplicaCountMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return rkvstore.NewRedisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeRedisTairInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependenceReplicaCount)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { acctest.PreCheck(t) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":        "PayAsYouGo",
+					"zone_id":             "${local.primary_zone_id}",
+					"vswitch_id":          "${alicloud_vswitch.default.id}",
+					"instance_class":      "${local.instance_class}",
+					"vpc_id":              "${alicloud_vpc.default.id}",
+					"engine_version":      "7.0",
+					"tair_instance_name":  name,
+					"instance_type":       "tair_rdb",
+					"password":            "Pass!123456",
+					"node_type":           "MASTER_SLAVE",
+					"shard_count":         "1",
+					"replica_count":       "1",
+					"slave_replica_count": "1",
+					"secondary_zone_id":   "${local.secondary_zone_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"replica_count":       "1",
+						"slave_replica_count": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"slave_replica_count": "0",
+					"effective_time":      "Immediately",
+				}),
+				ExpectError: regexp.MustCompile(`SlaveReplicaCountCanNotBeZero`),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "password_wo", "password_wo_version"},
+			},
+		},
+	})
+}
+
+// redisTairInstanceTestClient returns a client whose R-kvstore RPC calls go to a
+// local httptest server, so request parameters are observable without cloud credentials.
+func redisTairInstanceTestClient(t *testing.T, handler http.HandlerFunc) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		handler(w, r)
+	}))
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var endpoints, signVersion sync.Map
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: &endpoints, SignVersion: &signVersion, SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("r_kvstore", endpoint)
+	return client
+}
+
+func writeRedisTairInstanceJSON(t *testing.T, w http.ResponseWriter, body map[string]interface{}) {
+	t.Helper()
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(body); err != nil {
+		t.Error(err)
+	}
+}
+
+func replicaPublicError(w http.ResponseWriter, status int, code, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"Code": code, "Message": message,
+	})
+}
+
+func replicaDiagsText(diags diag.Diagnostics) string {
+	var builder strings.Builder
+	for _, item := range diags {
+		builder.WriteString(item.Summary)
+		builder.WriteString(item.Detail)
+	}
+	return builder.String()
+}
+
+// replicaPublicConfig builds a nullable raw configuration for every schema
+// attribute so the public Diff/Apply entry sees the same keys Terraform would.
+func replicaPublicConfig(t *testing.T, values map[string]cty.Value) (cty.Value, *sdktf.ResourceConfig) {
+	t.Helper()
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	block := schemaResource.CoreConfigSchema()
+	attrs := map[string]cty.Value{}
+	for name, attrType := range block.ImpliedType().AttributeTypes() {
+		attrs[name] = cty.NullVal(attrType)
+	}
+	attrs["instance_class"] = cty.StringVal("tair.rdb.1g")
+	attrs["instance_type"] = cty.StringVal("tair_rdb")
+	attrs["vswitch_id"] = cty.StringVal("vsw-test")
+	attrs["vpc_id"] = cty.StringVal("vpc-test")
+	attrs["zone_id"] = cty.StringVal("cn-hangzhou-h")
+	for key, value := range values {
+		attrs[key] = value
+	}
+	raw := cty.ObjectVal(attrs)
+	return raw, sdktf.NewResourceConfigShimmed(raw, block)
+}
+
+func replicaPublicState(slaveReplicaCount, replicaCount int) *sdktf.InstanceState {
+	return &sdktf.InstanceState{
+		ID: "r-test",
+		Attributes: map[string]string{
+			"instance_class":      "tair.rdb.1g",
+			"instance_type":       "tair_rdb",
+			"vswitch_id":          "vsw-test",
+			"vpc_id":              "vpc-test",
+			"zone_id":             "cn-hangzhou-h",
+			"replica_count":       fmt.Sprint(replicaCount),
+			"slave_replica_count": fmt.Sprint(slaveReplicaCount),
+		},
+	}
+}
+
+type replicaPublicCapture struct {
+	create            url.Values
+	modify            url.Values
+	modifyCalls       int
+	failCreate        bool
+	replicaCount      int
+	slaveReplicaCount int
+}
+
+func (c *replicaPublicCapture) describeCounts() (int, int) {
+	if c.replicaCount == 0 && c.slaveReplicaCount == 0 {
+		return 1, 1
+	}
+	return c.replicaCount, c.slaveReplicaCount
+}
+
+func (c *replicaPublicCapture) client(t *testing.T) *connectivity.AliyunClient {
+	return redisTairInstanceTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.Form.Get("Action") {
+		case "CreateTairInstance":
+			c.create = r.Form
+			if c.failCreate {
+				replicaPublicError(w, http.StatusBadRequest, "InvalidParameter", "synthetic create rejection")
+				return
+			}
+			if c.create.Get("SlaveReplicaCount") == "0" {
+				replicaPublicError(w, http.StatusBadRequest, "InvalidParameter", "The specified parameter SlaveReplicaCount is not valid")
+				return
+			}
+			writeRedisTairInstanceJSON(t, w, map[string]interface{}{"InstanceId": "r-test"})
+		case "ModifyInstanceSpec":
+			c.modifyCalls++
+			c.modify = r.Form
+			if c.modify.Get("SlaveReplicaCount") == "0" {
+				replicaPublicError(w, http.StatusBadRequest, "SlaveReplicaCountCanNotBeZero", "SlaveReplicaCount can not be zero, please try MigrateToOtherZone")
+				return
+			}
+			writeRedisTairInstanceJSON(t, w, map[string]interface{}{"IsOrderCompleted": true})
+		case "DescribeInstanceAttribute":
+			replicaCount, slaveReplicaCount := c.describeCounts()
+			writeRedisTairInstanceJSON(t, w, map[string]interface{}{
+				"Instances": map[string]interface{}{
+					"DBInstanceAttribute": []interface{}{
+						map[string]interface{}{
+							"InstanceId":        "r-test",
+							"InstanceStatus":    "Normal",
+							"IsOrderCompleted":  true,
+							"ReplicaCount":      replicaCount,
+							"SlaveReplicaCount": slaveReplicaCount,
+						},
+					},
+				},
+			})
+		default:
+			writeRedisTairInstanceJSON(t, w, map[string]interface{}{"InstanceStatus": "Normal", "IsOrderCompleted": true})
+		}
+	})
+}
+
+// assertReplicaCountsWire compares the serialized request key by key: a count the
+// configuration does not set must be absent from the request, not merely empty,
+// while a configured count must be sent exactly once with the expected value.
+func assertReplicaCountsWire(t *testing.T, form url.Values, want map[string]string) {
+	t.Helper()
+	if form == nil {
+		t.Fatal("the request was not captured")
+	}
+	for _, key := range []string{"ReplicaCount", "SlaveReplicaCount"} {
+		values, sent := form[key]
+		expected, configured := want[key]
+		if !configured {
+			if sent {
+				t.Fatalf("%s must not be sent, got %v", key, values)
+			}
+			continue
+		}
+		if !sent || len(values) != 1 || values[0] != expected {
+			t.Fatalf("%s must be sent once as %q, got %v", key, expected, values)
+		}
+	}
+}
+
+// assertReplicaCountsNoPlanChange requires the plan to leave both counts alone;
+// other attributes may carry their own legitimate changes.
+func assertReplicaCountsNoPlanChange(t *testing.T, diff *sdktf.InstanceDiff) {
+	t.Helper()
+	if diff == nil {
+		return
+	}
+	for _, key := range []string{"replica_count", "slave_replica_count"} {
+		if attr, ok := diff.Attributes[key]; ok {
+			t.Fatalf("plan must not change %s, got %#v", key, attr)
+		}
+	}
+}
+
+// assertReplicaCountsOnlyComputedPlaceholders requires a removal-only plan: no
+// change for either count and nothing else beyond unresolved computed values.
+func assertReplicaCountsOnlyComputedPlaceholders(t *testing.T, diff *sdktf.InstanceDiff) {
+	t.Helper()
+	assertReplicaCountsNoPlanChange(t, diff)
+	if diff == nil {
+		return
+	}
+	for key, attr := range diff.Attributes {
+		if attr.NewComputed && attr.Old == "" && attr.New == "" {
+			continue
+		}
+		t.Fatalf("a removal-only plan must only leave computed placeholders, got %s: %#v", key, attr)
+	}
+}
+
+func assertReplicaCountsRetained(t *testing.T, state *sdktf.InstanceState) {
+	t.Helper()
+	if state == nil {
+		t.Fatal("removal must keep the resource state")
+	}
+	for _, key := range []string{"replica_count", "slave_replica_count"} {
+		if got := state.Attributes[key]; got != "1" {
+			t.Fatalf("removal must retain %s=1, got %q", key, got)
+		}
+	}
+}
+
+// TestUnitRedisTairInstanceCreateReplicaCountWire drives the public create entry
+// and asserts the serialized request: both counts when both are configured,
+// neither when the configuration omits them, and only the configured count in a
+// partial configuration. Each absent key is checked for absence, so an empty
+// value would fail the assertion. The create is rejected synthetically after the
+// request is captured so the assertions do not wait on the create state
+// refresher; the successful create with a trailing update is covered by
+// CreateEntryOmitsUnconfiguredCounts.
+func TestUnitRedisTairInstanceCreateReplicaCountWire(t *testing.T) {
+	cases := []struct {
+		name   string
+		values map[string]cty.Value
+		want   map[string]string
+	}{
+		{
+			name: "both_configured",
+			values: map[string]cty.Value{
+				"replica_count":       cty.NumberIntVal(1),
+				"slave_replica_count": cty.NumberIntVal(2),
+			},
+			want: map[string]string{"ReplicaCount": "1", "SlaveReplicaCount": "2"},
+		},
+		{
+			name:   "omitted",
+			values: nil,
+			want:   map[string]string{},
+		},
+		{
+			name:   "only_replica_count",
+			values: map[string]cty.Value{"replica_count": cty.NumberIntVal(1)},
+			want:   map[string]string{"ReplicaCount": "1"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			capture := &replicaPublicCapture{failCreate: true}
+			client := capture.client(t)
+			raw, config := replicaPublicConfig(t, tc.values)
+			schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+			diff, err := schemaResource.Diff(context.Background(), nil, config, nil)
+			if err != nil || diff == nil {
+				t.Fatalf("diff through the public entry failed: %v", err)
+			}
+			diff.RawConfig = raw
+			if _, diags := schemaResource.Apply(context.Background(), nil, diff, client); !diags.HasError() {
+				t.Fatal("synthetic create rejection must be surfaced")
+			}
+			assertReplicaCountsWire(t, capture.create, tc.want)
+			if capture.modifyCalls != 0 {
+				t.Fatalf("failed create must not reach the trailing update, got %d calls", capture.modifyCalls)
+			}
+		})
+	}
+}
+
+// TestUnitRedisTairInstanceModifyReplicaCountWire drives the public update entry
+// from 1/1 to 2/2 and asserts ModifyInstanceSpec carries both counts and the
+// follow-up read keeps the updated values.
+func TestUnitRedisTairInstanceModifyReplicaCountWire(t *testing.T) {
+	capture := &replicaPublicCapture{replicaCount: 2, slaveReplicaCount: 2}
+	client := capture.client(t)
+	state := replicaPublicState(1, 1)
+	raw, config := replicaPublicConfig(t, map[string]cty.Value{
+		"replica_count":       cty.NumberIntVal(2),
+		"slave_replica_count": cty.NumberIntVal(2),
+	})
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	diff, err := schemaResource.Diff(context.Background(), state, config, nil)
+	if err != nil || diff == nil {
+		t.Fatalf("diff through the public entry failed: %v", err)
+	}
+	diff.RawConfig = raw
+	updated, diags := schemaResource.Apply(context.Background(), state, diff, client)
+	if diags.HasError() {
+		t.Fatalf("update through the public entry failed: %s", replicaDiagsText(diags))
+	}
+	if capture.modifyCalls != 1 {
+		t.Fatalf("update must call ModifyInstanceSpec once, got %d", capture.modifyCalls)
+	}
+	assertReplicaCountsWire(t, capture.modify, map[string]string{"ReplicaCount": "2", "SlaveReplicaCount": "2"})
+	if updated.Attributes["replica_count"] != "2" || updated.Attributes["slave_replica_count"] != "2" {
+		t.Fatalf("readback must keep both updated counts, got %#v", updated.Attributes)
+	}
+}
+
+// TestUnitRedisTairInstanceDescribeReplicaCounts drives the public resource Read
+// (RefreshWithoutUpgrade) so the 1/0 readback is verified through the resource
+// lifecycle rather than the service helper alone.
+func TestUnitRedisTairInstanceDescribeReplicaCounts(t *testing.T) {
+	client := redisTairInstanceTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Form.Get("Action") == "DescribeInstanceAttribute" {
+			writeRedisTairInstanceJSON(t, w, map[string]interface{}{
+				"Instances": map[string]interface{}{
+					"DBInstanceAttribute": []interface{}{
+						map[string]interface{}{
+							"InstanceId":        "r-test",
+							"InstanceStatus":    "Normal",
+							"ReplicaCount":      1,
+							"SlaveReplicaCount": 0,
+						},
+					},
+				},
+			})
+			return
+		}
+		writeRedisTairInstanceJSON(t, w, map[string]interface{}{"InstanceStatus": "Normal", "IsOrderCompleted": true})
+	})
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	state, diags := schemaResource.RefreshWithoutUpgrade(context.Background(), &sdktf.InstanceState{ID: "r-test"}, client)
+	if diags.HasError() {
+		t.Fatalf("read through the public entry failed: %s", replicaDiagsText(diags))
+	}
+	if state.Attributes["replica_count"] != "1" {
+		t.Fatalf("public Read must backfill replica_count=1, got %#v", state.Attributes["replica_count"])
+	}
+	if state.Attributes["slave_replica_count"] != "0" {
+		t.Fatalf("public Read must backfill slave_replica_count=0, got %#v", state.Attributes["slave_replica_count"])
+	}
+}
+
+// TestUnitRedisTairInstanceCreateEntryOmitsUnconfiguredCounts drives the public
+// create entry with no replica count configuration: the create request must omit
+// both counts entirely and the trailing update must not resend them.
+func TestUnitRedisTairInstanceCreateEntryOmitsUnconfiguredCounts(t *testing.T) {
+	capture := &replicaPublicCapture{}
+	client := capture.client(t)
+	raw, config := replicaPublicConfig(t, nil)
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	diff, err := schemaResource.Diff(context.Background(), nil, config, nil)
+	if err != nil || diff == nil {
+		t.Fatalf("diff through the public entry failed: %v", err)
+	}
+	diff.RawConfig = raw
+	if _, diags := schemaResource.Apply(context.Background(), nil, diff, client); diags.HasError() {
+		t.Fatalf("create through the public entry failed: %s", replicaDiagsText(diags))
+	}
+	assertReplicaCountsWire(t, capture.create, map[string]string{})
+	if capture.modifyCalls != 0 {
+		t.Fatalf("create must not resend replica counts through the trailing update, got %d calls", capture.modifyCalls)
+	}
+}
+
+func TestUnitRedisTairInstancePublicCreateExplicitZeroWire(t *testing.T) {
+	capture := &replicaPublicCapture{}
+	client := capture.client(t)
+	raw, config := replicaPublicConfig(t, map[string]cty.Value{
+		"replica_count":       cty.NumberIntVal(1),
+		"slave_replica_count": cty.NumberIntVal(0),
+	})
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	diff, err := schemaResource.Diff(context.Background(), nil, config, nil)
+	if err != nil || diff == nil {
+		t.Fatalf("diff through the public entry failed: %v", err)
+	}
+	diff.RawConfig = raw
+	_, diags := schemaResource.Apply(context.Background(), nil, diff, client)
+	if !diags.HasError() {
+		t.Fatal("explicit zero create must surface the product error")
+	}
+	assertReplicaCountsWire(t, capture.create, map[string]string{"ReplicaCount": "1", "SlaveReplicaCount": "0"})
+	if text := replicaDiagsText(diags); !strings.Contains(text, "InvalidParameter") {
+		t.Fatalf("create error must surface InvalidParameter, got %q", text)
+	}
+}
+
+// TestUnitRedisTairInstancePublicCreateOmittedWire drives the public create
+// entry with an omitted configuration and asserts both count keys are absent
+// from the serialized request. A synthetic rejection keeps the test fast; the
+// successful create/trailing-update path is covered by
+// CreateEntryOmitsUnconfiguredCounts.
+func TestUnitRedisTairInstancePublicCreateOmittedWire(t *testing.T) {
+	capture := &replicaPublicCapture{failCreate: true}
+	client := capture.client(t)
+	raw, config := replicaPublicConfig(t, nil)
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	diff, err := schemaResource.Diff(context.Background(), nil, config, nil)
+	if err != nil || diff == nil {
+		t.Fatalf("diff through the public entry failed: %v", err)
+	}
+	diff.RawConfig = raw
+	_, diags := schemaResource.Apply(context.Background(), nil, diff, client)
+	if !diags.HasError() {
+		t.Fatal("synthetic create rejection must be surfaced")
+	}
+	assertReplicaCountsWire(t, capture.create, map[string]string{})
+	if capture.modifyCalls != 0 {
+		t.Fatalf("failed create must not reach the trailing update, got %d calls", capture.modifyCalls)
+	}
+}
+
+func TestUnitRedisTairInstancePublicUpdateZeroWire(t *testing.T) {
+	capture := &replicaPublicCapture{}
+	client := capture.client(t)
+	state := replicaPublicState(1, 1)
+	raw, config := replicaPublicConfig(t, map[string]cty.Value{
+		"replica_count":       cty.NumberIntVal(1),
+		"slave_replica_count": cty.NumberIntVal(0),
+	})
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	diff, err := schemaResource.Diff(context.Background(), state, config, nil)
+	if err != nil || diff == nil {
+		t.Fatalf("diff through the public entry failed: %v", err)
+	}
+	diff.RawConfig = raw
+	_, diags := schemaResource.Apply(context.Background(), state, diff, client)
+	if !diags.HasError() {
+		t.Fatal("non-zero to zero update must surface the product error")
+	}
+	assertReplicaCountsWire(t, capture.modify, map[string]string{"SlaveReplicaCount": "0"})
+	if text := replicaDiagsText(diags); !strings.Contains(text, "SlaveReplicaCountCanNotBeZero") {
+		t.Fatalf("update error must surface SlaveReplicaCountCanNotBeZero, got %q", text)
+	}
+}
+
+// TestUnitRedisTairInstancePublicRemovalKeepsCurrentValues drives a real Apply for
+// removal of either count. A tag update provides an independent, controlled
+// non-count change so the update path actually runs: removing a count must not
+// call ModifyInstanceSpec, other legitimate updates must complete, the readback
+// must keep the current cloud values, and a plan on the applied state must not
+// change either count.
+func TestUnitRedisTairInstancePublicRemovalKeepsCurrentValues(t *testing.T) {
+	cases := []struct {
+		name   string
+		remove string
+		values map[string]cty.Value
+	}{
+		{
+			name:   "remove_replica_count",
+			remove: "replica_count",
+			values: map[string]cty.Value{
+				"slave_replica_count": cty.NumberIntVal(1),
+			},
+		},
+		{
+			name:   "remove_slave_replica_count",
+			remove: "slave_replica_count",
+			values: map[string]cty.Value{
+				"replica_count": cty.NumberIntVal(1),
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			capture := &replicaPublicCapture{}
+			client := capture.client(t)
+			state := replicaPublicState(1, 1)
+			values := map[string]cty.Value{
+				"tags": cty.MapVal(map[string]cty.Value{"env": cty.StringVal("test")}),
+			}
+			for key, value := range tc.values {
+				values[key] = value
+			}
+			raw, config := replicaPublicConfig(t, values)
+			schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+			diff, err := schemaResource.Diff(context.Background(), state, config, nil)
+			if err != nil {
+				t.Fatalf("diff through the public entry failed: %v", err)
+			}
+			if diff == nil {
+				t.Fatal("the independent tag update must produce a plan so Apply and the follow-up plan actually run")
+			}
+			assertReplicaCountsNoPlanChange(t, diff)
+			diff.RawConfig = raw
+			updated, diags := schemaResource.Apply(context.Background(), state, diff, client)
+			if diags.HasError() {
+				t.Fatalf("applying the removal plan failed: %s", replicaDiagsText(diags))
+			}
+			if capture.modifyCalls != 0 {
+				t.Fatalf("removing %s must not call ModifyInstanceSpec, got %d calls", tc.remove, capture.modifyCalls)
+			}
+			assertReplicaCountsRetained(t, updated)
+			followUp, err := schemaResource.Diff(context.Background(), updated, config, nil)
+			if err != nil {
+				t.Fatalf("diff after applying the removal failed: %v", err)
+			}
+			assertReplicaCountsNoPlanChange(t, followUp)
+		})
+	}
+}
+
+// TestUnitRedisTairInstanceRemovalOnlyPlansNoCountChange covers the removal-only
+// plan without any other change: removing one count must not plan a change for
+// either count. It proves only the first plan; the Apply and follow-up plan are
+// covered by PublicRemovalKeepsCurrentValues.
+func TestUnitRedisTairInstanceRemovalOnlyPlansNoCountChange(t *testing.T) {
+	cases := []struct {
+		name   string
+		values map[string]cty.Value
+	}{
+		{
+			name: "remove_replica_count",
+			values: map[string]cty.Value{
+				"slave_replica_count": cty.NumberIntVal(1),
+			},
+		},
+		{
+			name: "remove_slave_replica_count",
+			values: map[string]cty.Value{
+				"replica_count": cty.NumberIntVal(1),
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			state := replicaPublicState(1, 1)
+			_, config := replicaPublicConfig(t, tc.values)
+			schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+			diff, err := schemaResource.Diff(context.Background(), state, config, nil)
+			if err != nil {
+				t.Fatalf("diff through the public entry failed: %v", err)
+			}
+			assertReplicaCountsOnlyComputedPlaceholders(t, diff)
+		})
+	}
+}
+
+// TestUnitRedisTairInstanceImportReadback imports through the public importer and
+// asserts the follow-up read fills both counts from the API.
+func TestUnitRedisTairInstanceImportReadback(t *testing.T) {
+	capture := &replicaPublicCapture{replicaCount: 2, slaveReplicaCount: 2}
+	client := capture.client(t)
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	d := schemaResource.Data(nil)
+	d.SetId("r-test")
+	imported, err := schemaResource.Importer.State(d, client)
+	if err != nil || len(imported) != 1 {
+		t.Fatalf("unexpected import result: %#v, %v", imported, err)
+	}
+	if imported[0].Id() != "r-test" {
+		t.Fatalf("import must keep the passthrough ID, got %q", imported[0].Id())
+	}
+	state, diags := schemaResource.RefreshWithoutUpgrade(context.Background(), imported[0].State(), client)
+	if diags.HasError() {
+		t.Fatalf("import read failed: %s", replicaDiagsText(diags))
+	}
+	if state.Attributes["replica_count"] != "2" || state.Attributes["slave_replica_count"] != "2" {
+		t.Fatalf("import must read back both counts, got %#v", state.Attributes)
+	}
 }

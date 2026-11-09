@@ -101,6 +101,7 @@ func TestAccAliCloudVodDomain_basic0(t *testing.T) {
 					"cert_type":    "upload",
 					"ssl_pub":      "${var.cert}",
 					"ssl_pri":      "${var.key}",
+					"env":          "production",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -109,6 +110,7 @@ func TestAccAliCloudVodDomain_basic0(t *testing.T) {
 						"cert_type":    "upload",
 						"ssl_pub":      acctest.CHECKSET,
 						"ssl_pri":      acctest.CHECKSET,
+						"env":          "production",
 					}),
 				),
 			},
@@ -117,12 +119,14 @@ func TestAccAliCloudVodDomain_basic0(t *testing.T) {
 					"cert_name": name + "update",
 					"ssl_pub":   "${var.cert_update}",
 					"ssl_pri":   "${var.key_update}",
+					"env":       acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cert_name": name + "update",
 						"ssl_pub":   acctest.CHECKSET,
 						"ssl_pri":   acctest.CHECKSET,
+						"env":       acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -189,7 +193,7 @@ func TestAccAliCloudVodDomain_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_pri", "check_url", "top_level_domain", "tags"},
+				ImportStateVerifyIgnore: []string{"ssl_pri", "env", "check_url", "top_level_domain", "tags"},
 			},
 		},
 	})

@@ -22,7 +22,7 @@ Provides  Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance re
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_kvstore_instance&exampleId=34a3c4a6-2047-e76c-8908-f436040a49e1fd671eac&activeTab=example&spm=docs.r.kvstore_instance.0.34a3c4a620&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_kvstore_instance&exampleId=765ae533-2cd4-47cb-b275-d8db151846deddb2166c&activeTab=example&spm=docs.r.kvstore_instance.0.765ae5332c&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -82,7 +82,7 @@ resource "alicloud_kvstore_instance" "default" {
 Launching a PrePaid instance
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_kvstore_instance&exampleId=e922fa80-fae0-feb0-67b9-cebfa4431999756f5560&activeTab=example&spm=docs.r.kvstore_instance.1.e922fa80fa&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_kvstore_instance&exampleId=5c8c38c4-6969-d1bf-7783-83e8239a33ab34c1afad&activeTab=example&spm=docs.r.kvstore_instance.1.5c8c38c469&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -145,7 +145,7 @@ resource "alicloud_kvstore_instance" "default" {
 Setting Private Connection String
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_kvstore_instance&exampleId=e71b3868-131e-85db-2ff0-dea29fe822e37d35849d&activeTab=example&spm=docs.r.kvstore_instance.2.e71b386813&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_kvstore_instance&exampleId=35747e6b-e95a-079d-243a-dc3bb24daf465fc6aa39&activeTab=example&spm=docs.r.kvstore_instance.2.35747e6be9&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

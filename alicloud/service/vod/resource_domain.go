@@ -80,6 +80,11 @@ func ResourceDomain() *schema.Resource {
 				Optional:  true,
 				Sensitive: true,
 			},
+			"env": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validators.StringInSlice([]string{"staging", "production"}, false),
+			},
 			"check_url": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -409,6 +414,13 @@ func resourceDomainUpdate(d *schema.ResourceData, meta interface{}) error {
 		if v, ok := d.GetOk("ssl_pri"); ok {
 			setVodDomainSSLCertificateReq["SSLPri"] = v
 		}
+	}
+
+	if d.HasChange("env") {
+		update = true
+	}
+	if v, ok := d.GetOk("env"); ok {
+		setVodDomainSSLCertificateReq["Env"] = v
 	}
 
 	if update {

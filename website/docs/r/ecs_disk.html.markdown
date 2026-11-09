@@ -53,6 +53,12 @@ resource "alicloud_ecs_disk" "example" {
 
 The following example creates a pay-as-you-go disk with `force_delete = true`; destroying the resource releases the disk:
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ecs_disk&exampleId=763527be-4d94-0bba-1bb8-e691a717deaba9654d27&activeTab=example&spm=docs.r.ecs_disk.1.763527be4d&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 data "alicloud_zones" "force_delete" {
   available_resource_creation = "VSwitch"

@@ -20,7 +20,7 @@ For information about DTS Synchronization Job and how to use it, see [What is Sy
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_dts_synchronization_job&exampleId=289e819e-e83c-9235-c74e-f694a8de7a4a2ca60940&activeTab=example&spm=docs.r.dts_synchronization_job.0.289e819ee8&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_dts_synchronization_job&exampleId=c32fdfc7-b8fe-c223-329c-3390d62d138fb93ea1cb&activeTab=example&spm=docs.r.dts_synchronization_job.0.c32fdfc7b8&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

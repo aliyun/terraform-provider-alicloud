@@ -144,7 +144,12 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					// Restore the valid configuration after the negative selector
+					// check; this builder retains changes across test steps.
+					"worker_vswitch_ids": []string{"${local.vswitch_id}"},
+					"addons":             acctest.REMOVEKEY,
+					"retain_resources":   acctest.REMOVEKEY,
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

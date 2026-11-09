@@ -38,6 +38,12 @@ resource "alicloud_slb_server_certificate" "foo" {
 
 * using server_certificate/private file example
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_slb_server_certificate&exampleId=00bca350-6c1d-994c-d7dc-283d2fa72440fec2b44c&activeTab=example&spm=docs.r.slb_server_certificate.1.00bca3506c&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 # create a server certificate
 resource "alicloud_slb_server_certificate" "foo" {

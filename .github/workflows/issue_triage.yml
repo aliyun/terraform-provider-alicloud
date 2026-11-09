@@ -1,10 +1,10 @@
 name: Issue Triage
 
-# Automatic labeling plus exactly one acknowledgment, posted when the
-# issue is opened and never rewritten. Labels are additive and idempotent
-# (nothing is ever removed). The closing ask is derived from what the title
-# and body already contain, so an issue whose report is complete is not
-# asked for what it already provided.
+# Automatic labeling plus exactly one fixed acknowledgment, posted when
+# the issue is opened and never rewritten. Labels are additive and idempotent
+# (nothing is ever removed). The reply is deliberately constant: naming the
+# resources scraped out of the report is misleading (an issue usually cites
+# unrelated resources), and asking for details duplicates the issue template.
 
 on:
   issues:
@@ -96,12 +96,32 @@ jobs:
             }
 
             // ---- Service labels ------------------------------------------
+            // Only template-shaped mentions attribute a product to the
+            // report; a name that appears in prose (a cited issue, a quoted
+            // log) is not evidence. Issue #11530 declares alicloud_eip_address
+            // but its References section also names alicloud_cen_bandwidth_package.
+            // The Affected Resource(s) section is authoritative when present;
+            // otherwise only bulleted names and HCL resource/data declarations
+            // count, never the surrounding prose. The title always counts,
+            // because a title names the subject rather than a citation.
+            const affectedHeading = /^#{1,6}\s+.*affected resources?.*$/im.exec(body);
+            let affectedSection = null;
+            if (affectedHeading) {
+              const rest = body.slice(affectedHeading.index + affectedHeading[0].length);
+              const nextHeading = /^#{1,6}\s+/m.exec(rest);
+              affectedSection = nextHeading ? rest.slice(0, nextHeading.index) : rest;
+            }
+            const declaredLines = body
+              .split("\n")
+              .filter((line) => /^\s*[-*+]\s/.test(line) || /\b(?:resource|data)\s+"alicloud_/i.test(line))
+              .join("\n");
+            const resourceText = `${title}\n${affectedSection !== null ? affectedSection : declaredLines}`;
             // Terraform names carry the service as the first segment after
             // alicloud_ (alicloud_oss_bucket -> oss). Names without a
             // service segment (alicloud_instance) are skipped: the mapping
             // to a product label would be a guess.
             const resourceNames =
-              text.match(/\balicloud_[a-z0-9]+(?:_[a-z0-9]+)*\b/gi) || [];
+              resourceText.match(/\balicloud_[a-z0-9]+(?:_[a-z0-9]+)*\b/gi) || [];
             const services = new Set();
             for (const name of resourceNames) {
               const segments = name.toLowerCase().split("_").slice(1);
@@ -180,51 +200,40 @@ jobs:
             }
 
             // ---- Reply ---------------------------------------------------
-            // One short acknowledgment, mentioning the resource names the
-            // reporter used. The closing ask is derived from what the title
-            // and body already contain: an issue that ships versions and a
-            // configuration is acknowledged and nothing more. The marker
-            // keeps a re-run from posting a second copy; the comment is
-            // written once and never edited afterwards.
-            const hasVersion =
-              /\bterraform\b[^\n]{0,12}\bv?\d+\.\d+\.\d+/i.test(text) ||
-              /\b(provider|aliyun\/alicloud)\b[^\n]{0,24}\bv?\d+\.\d+\.\d+/i.test(text);
-            const hasConfiguration = /```[\s\S]{0,2000}?(resource\s+"alicloud_|terraform\s*\{|provider\s+"alicloud")/i.test(body);
-            const hasRepro =
-              hasConfiguration ||
-              /\b(reproduc(e|tion|ible)|steps to reproduce|to reproduce)\b/i.test(body);
-
-            // "A minimal reproducible configuration" only makes sense for a
-            // failure report; a missing capability is asking us for the API,
-            // not handing us one.
-            const asks = [];
-            if (kind === "bug" || kind === "crash") {
-              if (!hasVersion) {
-                asks.push("the provider and Terraform versions");
-              }
-              if (!hasRepro) {
-                asks.push("a minimal reproducible configuration");
-              }
-            } else if (kind === "enhancement" && body.trim().length < 200) {
-              asks.push("the expected behavior and the API it maps to");
-            }
-
-            let hint = "";
-            if (kind === "question") {
-              hint = "For general usage questions, the [community channels](https://www.terraform.io/community.html) also answer quickly.";
-            } else if (asks.length > 0) {
-              hint = `Adding ${asks.join(" and ")} helps us move faster.`;
-            }
-
-            const mentioned = [...new Set(resourceNames.map((name) => name.toLowerCase()))]
-              .slice(0, 3)
-              .map((name) => `\`${name}\``);
-            const resourceMention =
-              mentioned.length > 0 ? ` on ${mentioned.join(", ")}` : "";
+            // One short acknowledgment, identical for every issue: labels
+            // carry the classification, and the only extra context is where
+            // usage questions get answered faster. The marker keeps a re-run
+            // from posting a second copy; the comment is written once and
+            // never edited afterwards.
             const marker = "<!-- issue-triage:welcome -->";
+
+            // A first-time author gets one extra welcome line. Any earlier
+            // issue or pull request by the same author suppresses it, and the
+            // issue just opened is excluded from that history.
+            const author = issue.user && issue.user.login;
+            const welcome = [];
+            if (author) {
+              const history = await github.rest.issues.listForRepo({
+                owner,
+                repo,
+                creator: author,
+                state: "all",
+                per_page: 2,
+              });
+              if (history.data.every((item) => item.number === issueNumber)) {
+                welcome.push(
+                  `Welcome @${author} — this is your first issue here, welcome to the community!`,
+                  ""
+                );
+              }
+            }
+
             const reply = [
               marker,
-              `Thanks for reaching out${resourceMention} — we'll follow up here.${hint ? ` ${hint}` : ""}`,
+              ...welcome,
+              "Thanks for taking the time to file this — we'll review it and follow up.",
+              "",
+              "For usage questions, see the [provider docs](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs) and [community channels](https://www.terraform.io/community.html).",
             ].join("\n");
 
             const comments = await github.paginate(github.rest.issues.listComments, {

@@ -15,7 +15,6 @@ import (
 	logs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/tidwall/sjson"
 )
 
 func resourceAliCloudEsaWafRule() *schema.Resource {
@@ -2357,14 +2356,6 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	ConfigsMap := make([]interface{}, 0)
-	ConfigsMap = append(ConfigsMap, configsDataList)
-	configsDataListJson, err := json.Marshal(ConfigsMap)
-	if err != nil {
-		return errs.WrapError(err)
-	}
-	request["Configs"] = string(configsDataListJson)
-
 	if v, ok := d.GetOkExists("site_version"); ok {
 		request["SiteVersion"] = v
 	}
@@ -2483,10 +2474,30 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	request["Phase"] = d.Get("phase")
 	jsonString := convert.ConvertObjectToJsonString(request)
-	jsonString, _ = sjson.Set(jsonString, "Configs.0.Id", parts[1])
 	_ = json.Unmarshal([]byte(jsonString), &request)
 
 	if update && enableBatchUpdateWafRules1 {
+		// BatchUpdateWafRules replaces the rule list of the ruleset with Configs, so the rules that are
+		// not part of this update have to be sent back unchanged. Sending the updated rule alone deletes
+		// every sibling rule of the ruleset, after which any operation on them fails with Rule.NotExist.
+		rulesetId := convert.Interface2String(objectRaw["RulesetId"])
+		if rulesetId == "" || rulesetId == "0" {
+			rulesetId = convert.Interface2String(d.Get("ruleset_id"))
+		}
+		if rulesetId == "" || rulesetId == "0" {
+			return errs.WrapErrorf(fmt.Errorf("cannot resolve the ruleset of rule %s, refusing to update it without the complete rule list of its ruleset", d.Id()), errs.DefaultErrorMsg, d.Id(), "GetWafRuleset", errs.AlibabaCloudSdkGoERROR)
+		}
+		rulesetRaw, describeErr := esaServiceV2.DescribeEsaWafRuleset(rulesetId + ":" + parts[0])
+		if describeErr != nil {
+			return errs.WrapErrorf(describeErr, errs.DefaultErrorMsg, d.Id(), "GetWafRuleset", errs.AlibabaCloudSdkGoERROR)
+		}
+		siblingRules, _ := jsonpath.Get("$.Rules", rulesetRaw)
+		mergedJson, mergeErr := json.Marshal(mergeEsaWafRuleBatchUpdateConfigs(convert.ConvertToInterfaceArray(siblingRules), parts[1], configsDataList))
+		if mergeErr != nil {
+			return errs.WrapError(mergeErr)
+		}
+		request["Configs"] = string(mergedJson)
+
 		wait := helper.IncrementalWait(5*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
@@ -2934,4 +2945,27 @@ func resourceAliCloudEsaWafRuleDelete(d *schema.ResourceData, meta interface{}) 
 	}
 
 	return nil
+}
+
+// mergeEsaWafRuleBatchUpdateConfigs keeps the sibling rules of the ruleset in the Configs list of
+// BatchUpdateWafRules, replacing the rule under update in place instead of sending it alone.
+func mergeEsaWafRuleBatchUpdateConfigs(existingRules []interface{}, ruleId string, rule map[string]interface{}) []interface{} {
+	merged := make([]interface{}, 0, len(existingRules)+1)
+	replaced := false
+	for _, item := range existingRules {
+		existing, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if !replaced && convert.Interface2String(existing["Id"]) == ruleId {
+			merged = append(merged, rule)
+			replaced = true
+			continue
+		}
+		merged = append(merged, existing)
+	}
+	if !replaced {
+		merged = append(merged, rule)
+	}
+	return merged
 }

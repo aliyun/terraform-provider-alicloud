@@ -20,6 +20,12 @@ For information about AgentLoop Context Store and how to use it, see [What is Co
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_agentloop_context_store&exampleId=b038860f-e712-6a06-07d5-1f57bb5031a675fb98ec&activeTab=example&spm=docs.r.agentloop_context_store.0.b038860fe7&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -51,6 +57,10 @@ resource "alicloud_agentloop_context_store" "default" {
   }
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_agentloop_context_store&spm=docs.r.agentloop_context_store.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

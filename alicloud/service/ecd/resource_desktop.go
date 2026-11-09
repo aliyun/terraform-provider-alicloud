@@ -163,6 +163,11 @@ func ResourceDesktop() *schema.Resource {
 			"host_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
+				// The host name is not managed after creation, a later change is never sent to the API.
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return old != "" && new != ""
+				},
 			},
 			"desktop_timers": {
 				Type:     schema.TypeList,
@@ -318,7 +323,7 @@ func resourceDesktopCreate(d *schema.ResourceData, meta interface{}) error {
 		request["UserAssignMode"] = v
 	}
 	if v, ok := d.GetOk("host_name"); ok {
-		request["HostName"] = v
+		request["Hostname"] = v
 	}
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -359,6 +364,7 @@ func resourceDesktopRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	d.Set("desktop_name", object["DesktopName"])
 	d.Set("desktop_type", object["DesktopType"])
+	d.Set("host_name", object["HostName"])
 	d.Set("office_site_id", object["OfficeSiteId"])
 	d.Set("end_user_ids", object["EndUserIds"])
 	d.Set("payment_type", convertEcdDesktopPaymentTypeResponse(object["ChargeType"]))

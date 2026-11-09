@@ -18,7 +18,7 @@ Provides a ECS instance resource.
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_instance&exampleId=f98d5a2b-3f0d-19d9-4708-bce020dfaf3bc8d21801&activeTab=example&spm=docs.r.instance.0.f98d5a2b3f&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_instance&exampleId=5763739c-b96f-8875-300a-2f67c1609b2ac8b7c32f&activeTab=example&spm=docs.r.instance.0.5763739cb9&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

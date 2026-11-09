@@ -2,20 +2,43 @@ name: Golangci-Lint
 triggers:
   merge_request:
     paths:
+      - 'scripts/ci/**'
+      - 'scripts/internal/**'
+      - '.aoneci/**'
+      - 'scripts/run-tflint.sh'
+      - 'go.mod'
+      - 'go.sum'
       - '.aoneci/acctest-terraform-lint.yml'
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
   push:
     paths:
+      - 'scripts/ci/**'
+      - 'scripts/internal/**'
+      - '.aoneci/**'
+      - 'scripts/run-tflint.sh'
+      - 'go.mod'
+      - 'go.sum'
       - '.aoneci/acctest-terraform-lint.yml'
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
+envs:
+  CODE_HEAD: '${{git.commitId}}'
+  CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
+  CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
+  CODE_PUSH_BEFORE: '${{git.push.beforeSha256 ?: ""}}'
+  CODE_TARGET: '${{git.merge_request.targetBranch ?: ""}}'
+  CODE_DEFAULT_BRANCH: '${{git.defaultBranch}}'
+  CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
+
 jobs:
   megalinter:
     name: MegaLinter
     steps:
       - name: Check out code into the Go module directory
         uses: checkout
+        inputs:
+          fetch-depth: '0'
       - name: errcheck
         uses: megalinter
         envs:
@@ -26,4 +49,20 @@ jobs:
           GO_FILTER_REGEX_EXCLUDE: '.scripts/*'
         inputs:
           language: GO
-          compare-to: '${{git.merge_request.targetBranch ?: master}}'
+          compare-to: '${{git.merge_request.targetBranch ?: "master"}}'
+
+  ProviderLint:
+    steps:
+      - uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - uses: checkout
+        inputs:
+          fetch-depth: '0'
+      - run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          GOTOOLCHAIN=go1.26.10 go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@v0.31.0
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          ./scripts/run-tflint.sh

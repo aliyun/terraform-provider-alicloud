@@ -9,6 +9,7 @@ import (
 	esa "github.com/aliyun/terraform-provider-alicloud/alicloud/service/esa"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // Test ESA WafRule. >>> Resource test cases, automatically generated.
@@ -3018,6 +3019,154 @@ resource "alicloud_esa_waf_ruleset" "default" {
 }
 
 `, name)
+}
+
+// Case resource_wafrule_batch_update_preserves_sibling_rules_test
+// Regression test: BatchUpdateWafRules replaces the whole rule list of the ruleset with Configs, so
+// updating one rule of a multi-rule ruleset must keep every other rule of that ruleset alive.
+func TestAccAliCloudESAWafRule_batchUpdatePreservesSiblingRules(t *testing.T) {
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sESAWafRuleBatchUpdate%d", acctest.DefaultRegionToTest, rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckESAWafRuleBatchUpdateDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccESAWafRuleBatchUpdateConfig(name, "on", "on"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckESAWafRuleExists("alicloud_esa_waf_rule.rule_a"),
+					testAccCheckESAWafRuleExists("alicloud_esa_waf_rule.rule_b"),
+					testAccCheckESAWafRulesetRuleCount("alicloud_esa_waf_rule.rule_a", 2),
+					resource.TestCheckResourceAttr("alicloud_esa_waf_rule.rule_b", "config.0.status", "on"),
+				),
+			},
+			{
+				// Updating the first rule used to delete the second rule of the ruleset.
+				Config: testAccESAWafRuleBatchUpdateConfig(name, "off", "on"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckESAWafRuleExists("alicloud_esa_waf_rule.rule_a"),
+					testAccCheckESAWafRuleExists("alicloud_esa_waf_rule.rule_b"),
+					testAccCheckESAWafRulesetRuleCount("alicloud_esa_waf_rule.rule_a", 2),
+					resource.TestCheckResourceAttr("alicloud_esa_waf_rule.rule_a", "config.0.status", "off"),
+					resource.TestCheckResourceAttr("alicloud_esa_waf_rule.rule_b", "config.0.status", "on"),
+				),
+			},
+			{
+				Config: testAccESAWafRuleBatchUpdateConfig(name, "off", "off"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckESAWafRuleExists("alicloud_esa_waf_rule.rule_a"),
+					testAccCheckESAWafRuleExists("alicloud_esa_waf_rule.rule_b"),
+					testAccCheckESAWafRulesetRuleCount("alicloud_esa_waf_rule.rule_a", 2),
+					resource.TestCheckResourceAttr("alicloud_esa_waf_rule.rule_b", "config.0.status", "off"),
+				),
+			},
+		},
+	})
+}
+
+func testAccESAWafRuleBatchUpdateConfig(name, ruleAStatus, ruleBStatus string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_esa_sites" "default" {
+  plan_subscribe_type = "enterpriseplan"
+}
+
+resource "alicloud_esa_waf_ruleset" "default" {
+  site_id      = data.alicloud_esa_sites.default.sites.0.site_id
+  phase        = "http_anti_scan"
+  site_version = "0"
+}
+
+resource "alicloud_esa_waf_rule" "rule_a" {
+  site_id    = data.alicloud_esa_sites.default.sites.0.site_id
+  ruleset_id = alicloud_esa_waf_ruleset.default.ruleset_id
+  phase      = "http_anti_scan"
+
+  config {
+    status       = "%s"
+    type         = "http_scan_tools"
+    managed_list = "intelligence_scan_tools"
+  }
+
+  shared {
+    action     = "deny"
+    expression = "(ip.src eq 1.1.1.1)"
+    name       = "%s"
+  }
+}
+
+resource "alicloud_esa_waf_rule" "rule_b" {
+  site_id    = data.alicloud_esa_sites.default.sites.0.site_id
+  ruleset_id = alicloud_esa_waf_ruleset.default.ruleset_id
+  phase      = "http_anti_scan"
+
+  config {
+    status       = "%s"
+    type         = "http_scan_tools"
+    managed_list = "intelligence_scan_tools"
+  }
+
+  shared {
+    action     = "deny"
+    expression = "(ip.src eq 1.1.1.1)"
+    name       = "%s"
+  }
+}
+`, name, ruleAStatus, name, ruleBStatus, name)
+}
+
+func testAccCheckESAWafRuleExists(ruleResourceId string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[ruleResourceId]
+		if !ok {
+			return fmt.Errorf("Not found: %s", ruleResourceId)
+		}
+		service := esa.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+		if _, err := service.DescribeEsaWafRule(rs.Primary.ID); err != nil {
+			return fmt.Errorf("rule %s is no longer readable: %s", ruleResourceId, err)
+		}
+		return nil
+	}
+}
+
+func testAccCheckESAWafRulesetRuleCount(ruleResourceId string, expected int) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[ruleResourceId]
+		if !ok {
+			return fmt.Errorf("Not found: %s", ruleResourceId)
+		}
+		service := esa.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+		objectRaw, err := service.DescribeEsaWafRuleset(rs.Primary.Attributes["ruleset_id"] + ":" + rs.Primary.Attributes["site_id"])
+		if err != nil {
+			return err
+		}
+		rules, _ := objectRaw["Rules"].([]interface{})
+		if len(rules) != expected {
+			return fmt.Errorf("expected %d rules in ruleset %s, got %d", expected, rs.Primary.Attributes["ruleset_id"], len(rules))
+		}
+		return nil
+	}
+}
+
+func testAccCheckESAWafRuleBatchUpdateDestroy(s *terraform.State) error {
+	service := esa.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_esa_waf_rule" {
+			continue
+		}
+		if _, err := service.DescribeEsaWafRule(rs.Primary.ID); err == nil {
+			return fmt.Errorf("esa waf rule %s still exists", rs.Primary.ID)
+		}
+	}
+	return nil
 }
 
 // Test ESA WafRule. <<< Resource test cases, automatically generated.

@@ -1,6 +1,7 @@
 package amqpopen
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -302,8 +303,8 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOkExists("serverless_switch"); ok {
 		request["ServerlessSwitch"] = v
 	}
-	if v, ok := d.GetOk("tags"); ok {
-		request["Tags"] = tags.ConvertTags(v.(map[string]interface{}))
+	if err := addAmqpInstanceTagsCreateRequest(d, request); err != nil {
+		return err
 	}
 	if v, ok := d.GetOk("vswitch_ids"); ok {
 		vswitchIdsMapsArray := convert.ConvertListToJsonString(convert.ConvertToInterfaceArray(v))
@@ -687,15 +688,67 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAliCloudAmqpInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
 
-	if v, ok := d.GetOk("payment_type"); ok {
-		if v == "PayAsYouGo" {
-			log.Printf("[WARN] Cannot destroy resource alicloud_amqp_instance which payment_type valued PayAsYouGo. Terraform will remove this resource from the state file, however resources may remain.")
-			return nil
-		}
+	// Subscription (prepaid) instances are refunded through the BssOpenApi
+	// RefundInstance API; PayAsYouGo and Serverless (postpaid) instances are
+	// released through the amqp-open DeleteInstance API. Read normalizes
+	// Serverless to PayAsYouGo, so both postpaid forms share the
+	// DeleteInstance path. Branching by payment_type keeps terraform destroy
+	// from silently returning nil and leaving a billable instance behind.
+	if d.Get("payment_type").(string) == "Subscription" {
+		return refundAmqpInstance(d, client)
 	}
 
-	client := meta.(*connectivity.AliyunClient)
+	// PayAsYouGo / Serverless: release via amqp-open DeleteInstance.
+	action := "DeleteInstance"
+	var response map[string]interface{}
+	var err error
+	query := make(map[string]interface{})
+	request := make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = helper.BuildClientToken(action)
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			// An already-absent instance is treated as a successful delete so
+			// that terraform destroy is idempotent. DeleteInstance returns
+			// InstanceNotExist (verified via OpenAPI metadata) when the
+			// instance is gone; the adjacent codes cover related not-found
+			// variants returned by the gateway.
+			if errs.IsExpectedErrors(err, []string{"InstanceNotExist", "InstanceIdNotExist", "ResourceNotFound"}) {
+				return nil
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	amqpServiceV2 := NewAmqpServiceV2(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 3*time.Minute, amqpServiceV2.AmqpInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+	return nil
+}
+
+// refundAmqpInstance refunds a Subscription (prepaid) instance through the
+// BssOpenApi RefundInstance API and waits for it to disappear. It is
+// idempotent: an already-absent or already-refunded instance succeeds, so a
+// repeated terraform destroy does not error out.
+func refundAmqpInstance(d *schema.ResourceData, client *connectivity.AliyunClient) error {
 	action := "RefundInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -706,7 +759,6 @@ func resourceAliCloudAmqpInstanceDelete(d *schema.ResourceData, meta interface{}
 	query["InstanceId"] = d.Id()
 
 	request["ClientToken"] = helper.BuildClientToken(action)
-
 	request["ImmediatelyRelease"] = "1"
 	request["ProductCode"] = "ons"
 	request["ProductType"] = "ons_onsproxy_pre"
@@ -720,6 +772,11 @@ func resourceAliCloudAmqpInstanceDelete(d *schema.ResourceData, meta interface{}
 			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
+			}
+			// An already-absent or already-refunded instance is treated as a
+			// successful delete so terraform destroy is idempotent.
+			if errs.IsExpectedErrors(err, []string{"ResourceNotExists", "ExistRefundingOrderError"}) {
+				return nil
 			}
 			if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "ons_onsproxy_public_intl"
@@ -827,6 +884,24 @@ func addAmqpInstanceEncryptionCreateRequest(d *schema.ResourceData, request map[
 	}
 	if kmsKeyConfigured {
 		request["KmsKeyId"] = kmsKeyId
+	}
+	return nil
+}
+
+// addAmqpInstanceTagsCreateRequest serializes the resource tags into a single
+// JSON string parameter expected by the amqp-open CreateInstance API
+// (style:json). The expanded Tags.N.Key/Tags.N.Value encoding produced by
+// tags.ConvertTags is correct for style:repeatList APIs, but the amqp-open
+// CreateInstance API declares Tags with style:json; sending the expanded form
+// makes the API accept the request while silently dropping every tag.
+func addAmqpInstanceTagsCreateRequest(d *schema.ResourceData, request map[string]interface{}) error {
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMapsArray := tags.ConvertTags(v.(map[string]interface{}))
+		tagsMapsJson, err := json.Marshal(tagsMapsArray)
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		request["Tags"] = string(tagsMapsJson)
 	}
 	return nil
 }
