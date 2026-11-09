@@ -571,7 +571,6 @@ func newDeclarations(prTitle string) (map[string]bool, bool) {
 // truncate with an ellipsis.
 func checkTitle(prTitle string, files []titleFile) bool {
 	failed := false
-	missingNewEntity := false
 	reportError := func(format string, args ...interface{}) {
 		fmt.Fprintf(os.Stderr, "ERROR: "+format+"\n", args...)
 		failed = true
@@ -604,12 +603,10 @@ func checkTitle(prTitle string, files []titleFile) bool {
 			if !e.existing {
 				if e.dataSource {
 					if !declared["New Data Source: "+e.typeName] {
-						missingNewEntity = true
-						reportError("The PR title should contains new datasource info New Data Source: %s", e.typeName)
+						reportError("The PR title should contains new datasource info New Data Source: %s; compact example: alicloud_name{,_cache} (scripts/title/README.md).", e.typeName)
 					}
 				} else if !declared["New Resource: "+e.typeName] {
-					missingNewEntity = true
-					reportError("The PR title should contains new resource info New Resource: %s", e.typeName)
+					reportError("The PR title should contains new resource info New Resource: %s; compact example: alicloud_name{,_cache} (scripts/title/README.md).", e.typeName)
 				}
 				continue
 			}
@@ -627,9 +624,6 @@ func checkTitle(prTitle string, files []titleFile) bool {
 		}
 	}
 
-	if missingNewEntity {
-		fmt.Fprintln(os.Stderr, "HINT: To fit Code's 128-character limit, shared new-entity prefixes may use one explicit suffix group, e.g. New Resource: alicloud_name{,_cache}. See scripts/title/README.md.")
-	}
 	if docsChanged && docsOnly {
 		if !strings.HasPrefix(prTitle, "docs: ") {
 			reportError("The PR title should contains docs modified info like docs: xxx")
