@@ -1,6 +1,8 @@
 name: Testing Coverage Rate Checks
 triggers:
   push:
+    branches:
+      - master
     paths:
       - 'scripts/ci/**'
       - 'scripts/testing/**'
@@ -13,6 +15,8 @@ triggers:
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
   merge_request:
+    target-branches:
+      - master
     paths:
       - 'scripts/ci/**'
       - 'scripts/testing/**'

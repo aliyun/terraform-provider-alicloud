@@ -1,20 +1,8 @@
 name: Golangci-Lint
 triggers:
   merge_request:
-    paths:
-      - 'scripts/ci/**'
-      - 'scripts/internal/**'
-      - '.aoneci/**'
-      - 'scripts/run-tflint.sh'
-      - 'scripts/local-ci-check.sh'
-      - 'go.mod'
-      - 'go.sum'
-      - '.go-version'
-      - '.golangci.yml'
-      - '.golangci.yaml'
-      - '.aoneci/acctest-terraform-lint.yml'
-      - '**/*.go'
-  push:
+    target-branches:
+      - master
     paths:
       - 'scripts/ci/**'
       - 'scripts/internal/**'
