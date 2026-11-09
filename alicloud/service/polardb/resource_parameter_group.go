@@ -74,6 +74,11 @@ func ResourceParameterGroup() *schema.Resource {
 					},
 				},
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"name": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -114,6 +119,10 @@ func resourceParameterGroupCreate(d *schema.ResourceData, meta interface{}) erro
 			return errs.WrapError(err)
 		}
 		request["Parameters"] = parametersJson
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
 
 	if v, ok := d.GetOk("name"); ok || d.HasChange("name") {
