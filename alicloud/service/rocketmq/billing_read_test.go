@@ -20,18 +20,31 @@ func billingQueryCount(cloud *rocketmqTraceOnFixture) int {
 	return count
 }
 
+func assertNullRenewalState(t *testing.T, r *schema.Resource, d *schema.ResourceData, attributes ...string) {
+	t.Helper()
+	state, err := d.State().AttrsAsObjectValue(r.CoreConfigSchema().ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, attribute := range attributes {
+		if value := state.GetAttr(attribute); !value.IsNull() {
+			t.Fatalf("%s must serialize as null for generated import configuration, got %#v", attribute, value)
+		}
+	}
+}
+
 func TestUnitRocketmqInstanceReadPaygDoesNotQueryRenewal(t *testing.T) {
 	cloud, client := newRocketmqTraceOnFixture(t)
 	cloud.paymentType = "PayAsYouGo"
 	cloud.billingErrorCode = "InternalError"
 	r := rocketmq.ResourceInstance()
-	// Existing/imported state can carry old renewal values. The cloud's actual
-	// billing type decides whether renewal information is applicable.
+	// Import has no configured renewal fields. The cloud's actual billing type
+	// decides whether renewal information is applicable.
 	d := schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{
-		"payment_type": "Subscription", "auto_renew": true,
-		"auto_renew_period": 6, "auto_renew_period_unit": "Year",
+		"payment_type": "Subscription",
 	})
 	d.SetId(rocketmqTraceOnFixtureInstanceId)
+	assertNullRenewalState(t, r, d, "auto_renew_period", "auto_renew_period_unit")
 	if err := r.Read(d, client); err != nil {
 		t.Fatalf("PayAsYouGo refresh must not depend on the subscription billing API: %v", err)
 	}
@@ -40,11 +53,12 @@ func TestUnitRocketmqInstanceReadPaygDoesNotQueryRenewal(t *testing.T) {
 	}
 	if d.Get("payment_type") != "PayAsYouGo" || d.Get("auto_renew") != false ||
 		d.Get("auto_renew_period") != 0 || d.Get("auto_renew_period_unit") != "" {
-		t.Fatalf("PayAsYouGo state retains inapplicable renewal attributes: %#v", d.State().Attributes)
+		t.Fatalf("PayAsYouGo state contains inapplicable renewal attributes: %#v", d.State().Attributes)
 	}
 	if d.Id() != rocketmqTraceOnFixtureInstanceId {
 		t.Fatal("an existing PayAsYouGo instance must retain its identity")
 	}
+	assertNullRenewalState(t, r, d, "auto_renew_period", "auto_renew_period_unit")
 }
 
 func TestUnitRocketmqInstanceReadSubscriptionRenewal(t *testing.T) {
@@ -63,6 +77,19 @@ func TestUnitRocketmqInstanceReadSubscriptionRenewal(t *testing.T) {
 		d.Get("auto_renew_period") != 6 || d.Get("auto_renew_period_unit") != "Year" {
 		t.Fatalf("Subscription Read must preserve verified renewal settings: %#v", d.State().Attributes)
 	}
+}
+
+func TestUnitRocketmqInstanceReadUnsetSubscriptionPeriodIsNull(t *testing.T) {
+	cloud, client := newRocketmqTraceOnFixture(t)
+	cloud.paymentType = "Subscription"
+	r := rocketmq.ResourceInstance()
+	d := schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{})
+	d.SetId(rocketmqTraceOnFixtureInstanceId)
+	assertNullRenewalState(t, r, d, "auto_renew_period")
+	if err := r.Read(d, client); err != nil {
+		t.Fatal(err)
+	}
+	assertNullRenewalState(t, r, d, "auto_renew_period")
 }
 
 func TestUnitRocketmqInstanceReadSubscriptionBillingFailureRetainsState(t *testing.T) {
