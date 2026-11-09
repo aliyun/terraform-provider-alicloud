@@ -21,11 +21,9 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwutil"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
@@ -180,18 +178,6 @@ func fwJSONDocumentsEqual(left, right string) (bool, error) {
 		return false, err
 	}
 	return a == b, nil
-}
-
-func fwTimeoutTypes() map[string]attr.Type {
-	return fwutil.TimeoutTypes("create", "update", "delete")
-}
-
-func fwTimeoutBlock() schema.SingleNestedBlock {
-	return fwutil.TimeoutBlock("create", "update", "delete")
-}
-
-func fwTimeoutDuration(value types.Object, operation string, fallback time.Duration) (time.Duration, diag.Diagnostics) {
-	return fwutil.TimeoutDuration(value, operation, fallback)
 }
 
 // retryRpcPost mirrors alicloud's retry.RetryContext+NeedRetry wrapper around RpcPost.

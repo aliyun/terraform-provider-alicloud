@@ -1,7 +1,7 @@
 // Package governance. This file was generated for the framework-native
 // alicloud_governance_service_activation resource and then reduced by hand to the declarations that
 // resource executes, so regenerating it has to re-apply the same reduction. The timeout block comes
-// from alicloud/provider/fwutil, the retrying write wrapper from alicloud/helper; the state waits
+// from the official framework-timeouts module, the retrying write wrapper from alicloud/helper; the state waits
 // and the response normalisation stay here. The SDKv2 Service struct and its Describe/state-refresh
 // methods for the account and baseline resources were folded in from alicloud/service_alicloud_governance_v2.go
 // when those resources migrated into this package; the shared client field and constructor follow the
@@ -20,25 +20,8 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwutil"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
-
-func fwTimeoutTypes() map[string]attr.Type {
-	return fwutil.TimeoutTypes("create", "delete")
-}
-
-func fwTimeoutBlock() schema.SingleNestedBlock {
-	return fwutil.TimeoutBlock("create", "delete")
-}
-
-func fwTimeoutDuration(value types.Object, operation string, fallback time.Duration) (time.Duration, diag.Diagnostics) {
-	return fwutil.TimeoutDuration(value, operation, fallback)
-}
 
 // retryRpcPost wraps RpcPost in the helper retry loop with the governance retry classifier.
 // RpcPost returns *tea.SDKError for RPC failures. ctx carries the lifecycle deadline, so a

@@ -11,6 +11,9 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/timeout"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -36,10 +39,10 @@ type serviceActivationResource struct {
 }
 
 type serviceActivationResourceModel struct {
-	Id         types.String `tfsdk:"id"`
-	FwTimeouts types.Object `tfsdk:"timeouts"`
-	Region     types.String `tfsdk:"region"`
-	Status     types.String `tfsdk:"status"`
+	Id       types.String   `tfsdk:"id"`
+	Timeouts timeouts.Value `tfsdk:"timeouts"`
+	Region   types.String   `tfsdk:"region"`
+	Status   types.String   `tfsdk:"status"`
 }
 
 func (r *serviceActivationResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -47,8 +50,19 @@ func (r *serviceActivationResource) Metadata(ctx context.Context, req resource.M
 }
 
 func (r *serviceActivationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	timeoutsBlock := timeouts.Block(ctx, timeouts.Opts{
+		Create: true,
+		Delete: true,
+	}).(schema.SingleNestedBlock)
+	for operation, attribute := range timeoutsBlock.Attributes {
+		stringAttribute := attribute.(schema.StringAttribute)
+		stringAttribute.Validators = append(stringAttribute.Validators, timeout.PositiveTimeoutValidator{})
+		timeoutsBlock.Attributes[operation] = stringAttribute
+	}
 	resp.Schema = schema.Schema{
-		Blocks: map[string]schema.Block{"timeouts": fwTimeoutBlock()},
+		Blocks: map[string]schema.Block{
+			"timeouts": timeoutsBlock,
+		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
@@ -99,7 +113,7 @@ func (r *serviceActivationResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(plan.FwTimeouts, "create", 20*time.Minute)
+	operationTimeout, timeoutDiagnostics := plan.Timeouts.Create(ctx, 20*time.Minute)
 	resp.Diagnostics.Append(timeoutDiagnostics...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -319,7 +333,7 @@ func (r *serviceActivationResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(state.FwTimeouts, "delete", 30*time.Minute)
+	operationTimeout, timeoutDiagnostics := state.Timeouts.Delete(ctx, 30*time.Minute)
 	resp.Diagnostics.Append(timeoutDiagnostics...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -465,13 +479,16 @@ func serviceActivationState(object map[string]interface{}, prior *serviceActivat
 		return types.StringNull()
 	}
 	m := serviceActivationResourceModel{
-		FwTimeouts: types.ObjectNull(fwTimeoutTypes()),
-		Id:         str("Region"),
-		Region:     str("Region"),
-		Status:     str("Status"),
+		Timeouts: timeouts.Value{Object: types.ObjectNull(map[string]attr.Type{
+			"create": types.StringType,
+			"delete": types.StringType,
+		})},
+		Id:     str("Region"),
+		Region: str("Region"),
+		Status: str("Status"),
 	}
 	if prior != nil {
-		m.FwTimeouts = prior.FwTimeouts
+		m.Timeouts = prior.Timeouts
 	}
 	return m
 }

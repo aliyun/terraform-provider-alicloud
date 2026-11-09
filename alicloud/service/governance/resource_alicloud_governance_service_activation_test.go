@@ -16,9 +16,12 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/governance"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
@@ -295,6 +298,22 @@ func TestUnitAliCloudGovernanceServiceActivationSchema(t *testing.T) {
 		t.Fatalf("building schema: %v", schemaResp.Diagnostics)
 	}
 
+	timeoutsBlock, ok := schemaResp.Schema.Blocks["timeouts"].(schema.SingleNestedBlock)
+	if !ok {
+		t.Fatalf("timeouts block has type %T", schemaResp.Schema.Blocks["timeouts"])
+	}
+	if _, ok := timeoutsBlock.CustomType.(timeouts.Type); !ok {
+		t.Fatalf("timeouts CustomType = %T, want timeouts.Type", timeoutsBlock.CustomType)
+	}
+	if len(timeoutsBlock.Attributes) != 2 {
+		t.Fatalf("timeouts has %d attributes, want 2", len(timeoutsBlock.Attributes))
+	}
+	for _, operation := range []string{"create", "delete"} {
+		if _, ok := timeoutsBlock.Attributes[operation]; !ok {
+			t.Errorf("timeouts is missing %q", operation)
+		}
+	}
+
 	region, ok := schemaResp.Schema.Attributes["region"].(schema.StringAttribute)
 	if !ok {
 		t.Fatal("region attribute is missing or is not a string attribute")
@@ -336,6 +355,96 @@ func TestUnitAliCloudGovernanceServiceActivationSchema(t *testing.T) {
 	if !status.Computed || status.Required || status.Optional {
 		t.Fatalf("status must stay Computed-only, got Computed=%v Required=%v Optional=%v", status.Computed, status.Required, status.Optional)
 	}
+}
+
+func TestUnitAliCloudGovernanceServiceActivationTimeoutsValidation(t *testing.T) {
+	r := governance.NewServiceActivationResource()
+	resp := fwresource.SchemaResponse{}
+	r.Schema(context.Background(), fwresource.SchemaRequest{}, &resp)
+	block := resp.Schema.Blocks["timeouts"].(schema.SingleNestedBlock)
+
+	tests := []struct {
+		name      string
+		value     string
+		wantError bool
+	}{
+		{name: "positive", value: "10m"},
+		{name: "malformed", value: "soon", wantError: true},
+		{name: "zero", value: "0s", wantError: true},
+		{name: "negative", value: "-1m", wantError: true},
+	}
+	for _, operation := range []string{"create", "delete"} {
+		attribute := block.Attributes[operation].(schema.StringAttribute)
+		for _, tt := range tests {
+			t.Run(operation+"/"+tt.name, func(t *testing.T) {
+				hasError := false
+				for _, attributeValidator := range attribute.Validators {
+					validatorResp := validator.StringResponse{}
+					attributeValidator.ValidateString(context.Background(), validator.StringRequest{
+						Path:        path.Root("timeouts").AtName(operation),
+						ConfigValue: types.StringValue(tt.value),
+					}, &validatorResp)
+					hasError = hasError || validatorResp.Diagnostics.HasError()
+				}
+				if hasError != tt.wantError {
+					t.Fatalf("validation error = %v, want %v", hasError, tt.wantError)
+				}
+			})
+		}
+	}
+}
+
+func TestUnitAliCloudGovernanceServiceActivationTimeoutsStateCompatibility(t *testing.T) {
+	ctx := context.Background()
+	r := governance.NewServiceActivationResource()
+	schemaResp := fwresource.SchemaResponse{}
+	r.Schema(ctx, fwresource.SchemaRequest{}, &schemaResp)
+
+	timeoutsType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+		"create": tftypes.String,
+		"delete": tftypes.String,
+	}}
+	stateType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+		"id":       tftypes.String,
+		"region":   tftypes.String,
+		"status":   tftypes.String,
+		"timeouts": timeoutsType,
+	}}
+	decode := func(t *testing.T, rawTimeouts tftypes.Value) serviceActivationAppliedState {
+		t.Helper()
+		state := tfsdk.State{Schema: schemaResp.Schema, Raw: tftypes.NewValue(stateType, map[string]tftypes.Value{
+			"id":       tftypes.NewValue(tftypes.String, "cn-hangzhou"),
+			"region":   tftypes.NewValue(tftypes.String, "cn-hangzhou"),
+			"status":   tftypes.NewValue(tftypes.String, "Enabled"),
+			"timeouts": rawTimeouts,
+		})}
+		var model serviceActivationAppliedState
+		if diagnostics := state.Get(ctx, &model); diagnostics.HasError() {
+			t.Fatalf("decoding legacy-shape state: %v", diagnostics)
+		}
+		return model
+	}
+
+	t.Run("null", func(t *testing.T) {
+		model := decode(t, tftypes.NewValue(timeoutsType, nil))
+		if !model.Timeouts.IsNull() {
+			t.Fatal("null timeouts did not remain null")
+		}
+	})
+	t.Run("configured", func(t *testing.T) {
+		model := decode(t, tftypes.NewValue(timeoutsType, map[string]tftypes.Value{
+			"create": tftypes.NewValue(tftypes.String, "25m"),
+			"delete": tftypes.NewValue(tftypes.String, nil),
+		}))
+		createTimeout, diagnostics := model.Timeouts.Create(ctx, 20*time.Minute)
+		if diagnostics.HasError() || createTimeout != 25*time.Minute {
+			t.Fatalf("create timeout = %s, diagnostics = %v", createTimeout, diagnostics)
+		}
+		deleteTimeout, diagnostics := model.Timeouts.Delete(ctx, 30*time.Minute)
+		if diagnostics.HasError() || deleteTimeout != 30*time.Minute {
+			t.Fatalf("delete timeout = %s, diagnostics = %v", deleteTimeout, diagnostics)
+		}
+	})
 }
 
 func TestUnitAliCloudGovernanceServiceActivationModifyPlanRegion(t *testing.T) {
@@ -714,10 +823,10 @@ func TestUnitGovernanceServiceActivationDeleteEnableFailedThenReapply(t *testing
 
 // serviceActivationAppliedState is the resource model as the tests read it back from state.
 type serviceActivationAppliedState struct {
-	Id         types.String `tfsdk:"id"`
-	FwTimeouts types.Object `tfsdk:"timeouts"`
-	Region     types.String `tfsdk:"region"`
-	Status     types.String `tfsdk:"status"`
+	Id       types.String   `tfsdk:"id"`
+	Timeouts timeouts.Value `tfsdk:"timeouts"`
+	Region   types.String   `tfsdk:"region"`
+	Status   types.String   `tfsdk:"status"`
 }
 
 // One delete budget covers the write and every wait: a delayed first write must not leave a second

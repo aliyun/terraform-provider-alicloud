@@ -39,6 +39,7 @@ The following arguments are supported:
   - It must be the activation region: `OpenGovernanceService`, `DecommissionGovernance` and `GetGovernanceServiceStatus` all require `RegionId` to name the region where the service is activated, and requests naming another region fail.
   - It must be the same as the `region` of the provider configuration, because the activation is requested through that region.
   - It is used as the resource ID, so changing it forces a new resource.
+* `timeouts` - (Optional, Object) See [Timeouts](#timeouts) below.
 
 ## Attributes Reference
 
@@ -48,7 +49,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions. Each timeout is a positive [Go duration](https://pkg.go.dev/time#ParseDuration) string, such as `30m` or `1h`:
 * `create` - (Defaults to 20 mins) Used when create the Service Activation.
 * `delete` - (Defaults to 30 mins) Used when delete the Service Activation.
 
