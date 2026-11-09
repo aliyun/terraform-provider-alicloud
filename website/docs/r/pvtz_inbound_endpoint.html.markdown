@@ -62,12 +62,12 @@ resource "alicloud_pvtz_inbound_endpoint" "default" {
   vpc_region_id     = data.alicloud_regions.default.regions.0.id
   spec_version      = "standard"
   ip_configs {
-    zone_id    = alicloud_vswitch.default[0].zone_id
+    az_id      = alicloud_vswitch.default[0].zone_id
     cidr_block = alicloud_vswitch.default[0].cidr_block
     vswitch_id = alicloud_vswitch.default[0].id
   }
   ip_configs {
-    zone_id    = alicloud_vswitch.default[1].zone_id
+    az_id      = alicloud_vswitch.default[1].zone_id
     cidr_block = alicloud_vswitch.default[1].cidr_block
     vswitch_id = alicloud_vswitch.default[1].id
   }
@@ -83,16 +83,16 @@ The following arguments are supported:
 * `security_group_id` - (Required, ForceNew, String) The ID of the Security Group.
 * `vpc_id` - (Required, ForceNew, String) The VPC ID.
 * `vpc_region_id` - (Required, ForceNew, String) The Region of the VPC.
-* `spec_version` - (Required, ForceNew, String) The specification version. Valid value: `standard`.
+* `spec_version` - (Required, ForceNew, String) The specification version. Valid values: `standard`.
 
 ### `ip_configs`
 
 The ip_configs supports the following:
 
+* `az_id` - (Required, String) The availability zone ID of the VSwitch.
 * `cidr_block` - (Required, String) The subnet mask, in the CIDR format of the VSwitch.
 * `ip` - (Optional, String) The IP address within the subnet mask range. If you omit it, the system assigns an IP address from the VSwitch. If you set it, the value is kept in the configuration and sent on update instead of being replaced by an automatically assigned address.
 * `vswitch_id` - (Required, String) The VSwitch ID.
-* `zone_id` - (Required, String) The zone ID of the VSwitch.
 
 ## Attributes Reference
 

@@ -106,6 +106,60 @@ func (s *Service) DescribeInboundEndpointContext(ctx context.Context, id string)
 	return object, nil
 }
 
+// CreateInboundEndpoint calls AddInboundEndpoint. The request map, including its single
+// ClientToken, is built by the caller before this call, so every retry of the same logical create
+// reuses the same token instead of creating a second endpoint.
+func (s *Service) CreateInboundEndpoint(ctx context.Context, request map[string]interface{}) (map[string]interface{}, error) {
+	return s.writeInboundEndpoint(ctx, "AddInboundEndpoint", request)
+}
+
+// UpdateInboundEndpoint calls UpdateInboundEndpoint. Only the fields present in request are
+// changed; the caller decides which values differ from state.
+func (s *Service) UpdateInboundEndpoint(ctx context.Context, request map[string]interface{}) (map[string]interface{}, error) {
+	return s.writeInboundEndpoint(ctx, "UpdateInboundEndpoint", request)
+}
+
+// DeleteInboundEndpoint calls DeleteInboundEndpoint. A successful call only means the service
+// accepted the delete; call inboundEndpointWaitForDeleted when the endpoint must be observably
+// gone before dependents are released.
+func (s *Service) DeleteInboundEndpoint(ctx context.Context, request map[string]interface{}) (map[string]interface{}, error) {
+	return s.writeInboundEndpoint(ctx, "DeleteInboundEndpoint", request)
+}
+
+func (s *Service) writeInboundEndpoint(ctx context.Context, action string, request map[string]interface{}) (map[string]interface{}, error) {
+	response, err := helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
+		return s.client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
+	}, inboundEndpointTimeout, helper.NeedRetry)
+	logs.AddDebug(action, response, request)
+	return response, err
+}
+
+// inboundEndpointWaitForDeleted polls DescribeInboundEndpoint until it reports NotFound. Delete
+// is asynchronous, so returning right after DeleteInboundEndpoint lets Terraform release
+// dependents while the endpoint still exists. The same provider NotFound chain used by Read and
+// CheckDestroy decides when the object is gone; any other read error aborts the wait.
+func (s *Service) inboundEndpointWaitForDeleted(ctx context.Context, id string, timeout time.Duration) error {
+	stateConf := &retry.StateChangeConf{
+		Pending: []string{"Deleting"},
+		Target:  []string{"Deleted"},
+		Refresh: func() (interface{}, string, error) {
+			object, err := s.DescribeInboundEndpointContext(ctx, id)
+			if err != nil {
+				if errs.IsProviderNotFound(err) {
+					return object, "Deleted", nil
+				}
+				return nil, "", errs.WrapError(err)
+			}
+			return object, "Deleting", nil
+		},
+		Timeout:    timeout,
+		Delay:      2 * time.Second,
+		MinTimeout: 2 * time.Second,
+	}
+	_, err := stateConf.WaitForStateContext(ctx)
+	return err
+}
+
 // inboundEndpointStateRefreshFunc polls the inbound endpoint status for retry.StateChangeConf. A
 // not-found object reports state "" so the caller's wait keeps polling while the resource is still
 // being created; a fail-state status aborts the wait with an error.

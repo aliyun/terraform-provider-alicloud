@@ -18,7 +18,9 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	logs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/privatezone"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpc"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
@@ -60,12 +62,37 @@ func testSweepPrivateZoneInboundEndpoint(region string) error {
 	return sweepInboundEndpoints(ctx, client, inboundEndpointSweepPrefixes)
 }
 
-// sweepInboundEndpoints lists every inbound endpoint via DescribeInboundEndpoints and deletes
-// those whose Name matches a test prefix. The list response nests the array under
-// $.InboundEndpoints.InboundEndpoint (unlike the outbound $.Endpoints flat array) and reports the
-// total via TotalItems. List/parse failures abort with an error and delete failures are aggregated,
+// sweepInboundEndpoints deletes every inbound endpoint whose Name matches a test prefix. IDs are
+// collected from all pages first and deleted afterwards: DescribeInboundEndpoints pages by
+// PageNumber/PageSize, so deleting while paging shifts later objects into an already-read page and
+// silently skips them. List/parse failures abort with an error and delete failures are aggregated,
 // so the sweeper never reports success for a partially failed cleanup.
 func sweepInboundEndpoints(ctx context.Context, client inboundEndpointSweepAPI, prefixes []string) error {
+	ids, contractErrs, err := collectInboundEndpointSweepIDs(ctx, client, prefixes)
+	if err != nil {
+		return err
+	}
+	deleteErrs := append([]error{}, contractErrs...)
+	for _, id := range ids {
+		deleteErr := sweepInboundEndpointDelete(ctx, client, id)
+		if deleteErr != nil {
+			if privatezone.IsInboundEndpointNotFound(deleteErr) {
+				log.Printf("[INFO] PrivateZone Inbound Endpoint already removed: %s", id)
+				continue
+			}
+			deleteErrs = append(deleteErrs, fmt.Errorf("deleting PrivateZone Inbound Endpoint %s: %w", id, deleteErr))
+			continue
+		}
+		log.Printf("[INFO] Delete PrivateZone Inbound Endpoint success: %s", id)
+	}
+	return errors.Join(deleteErrs...)
+}
+
+// collectInboundEndpointSweepIDs pages through DescribeInboundEndpoints and returns the IDs of
+// every endpoint whose Name matches a test prefix. The list response nests the array under
+// $.InboundEndpoints.InboundEndpoint (unlike the outbound $.Endpoints flat array) and reports the
+// total via TotalItems.
+func collectInboundEndpointSweepIDs(ctx context.Context, client inboundEndpointSweepAPI, prefixes []string) ([]string, []error, error) {
 	action := "DescribeInboundEndpoints"
 	request := map[string]interface{}{
 		"Lang":       "en",
@@ -73,29 +100,31 @@ func sweepInboundEndpoints(ctx context.Context, client inboundEndpointSweepAPI, 
 		"PageNumber": 1,
 	}
 
-	var deleteErrs []error
+	var ids []string
+	var contractErrs []error
+	seen := make(map[string]struct{})
 	for {
 		response, err := helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
 			return client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
 		}, 5*time.Minute, helper.NeedRetry)
 		logs.AddDebug(action, response, request)
 		if err != nil {
-			return fmt.Errorf("listing PrivateZone Inbound Endpoints: %w", err)
+			return nil, nil, fmt.Errorf("listing PrivateZone Inbound Endpoints: %w", err)
 		}
 
 		totalCount, err := convert.FormatInt(response["TotalItems"])
 		if err != nil {
-			return fmt.Errorf("parsing PrivateZone Inbound Endpoint TotalItems: %w", err)
+			return nil, nil, fmt.Errorf("parsing PrivateZone Inbound Endpoint TotalItems: %w", err)
 		}
 		raw, pathErr := jsonpath.Get("$.InboundEndpoints.InboundEndpoint", response)
 		if totalCount != 0 && pathErr != nil {
-			return fmt.Errorf("parsing PrivateZone Inbound Endpoint list: %w", pathErr)
+			return nil, nil, fmt.Errorf("parsing PrivateZone Inbound Endpoint list: %w", pathErr)
 		}
 		result, _ := raw.([]interface{})
 		for _, v := range result {
 			item, ok := v.(map[string]interface{})
 			if !ok {
-				return fmt.Errorf("listing PrivateZone Inbound Endpoints: unexpected item type %T", v)
+				return nil, nil, fmt.Errorf("listing PrivateZone Inbound Endpoints: unexpected item type %T", v)
 			}
 			name, ok := item["Name"].(string)
 			if !ok {
@@ -110,28 +139,22 @@ func sweepInboundEndpoints(ctx context.Context, client inboundEndpointSweepAPI, 
 				// DescribeInboundEndpoints declares Id as a string (unlike
 				// DescribeInboundEndpoint, whose Id can arrive as a JSON number), so a
 				// non-string or empty Id is a contract violation rather than a numeric ID.
-				deleteErrs = append(deleteErrs, fmt.Errorf("inbound endpoint %q has no string Id", name))
+				contractErrs = append(contractErrs, fmt.Errorf("inbound endpoint %q has no string Id", name))
 				continue
 			}
-			deleteErr := sweepInboundEndpointDelete(ctx, client, id)
-			if deleteErr != nil {
-				if privatezone.IsInboundEndpointNotFound(deleteErr) {
-					log.Printf("[INFO] PrivateZone Inbound Endpoint already removed: %s", id)
-					continue
-				}
-				deleteErrs = append(deleteErrs, fmt.Errorf("deleting PrivateZone Inbound Endpoint %s: %w", id, deleteErr))
+			if _, duplicate := seen[id]; duplicate {
 				continue
 			}
-			log.Printf("[INFO] Delete PrivateZone Inbound Endpoint success: %s", id)
+			seen[id] = struct{}{}
+			ids = append(ids, id)
 		}
 
 		if len(result) < helper.PageSizeLarge {
 			break
 		}
-		page, _ := request["PageNumber"].(int)
-		request["PageNumber"] = page + 1
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	return errors.Join(deleteErrs...)
+	return ids, contractErrs, nil
 }
 
 func sweepInboundEndpointDelete(ctx context.Context, client inboundEndpointSweepAPI, id string) error {
@@ -162,11 +185,19 @@ type fakeInboundEndpointSweepAPI struct {
 	deleteErrors  map[string]error
 	deleted       []string
 	listCalls     int
+	// calls records the API order so a test can prove every list page is read before the
+	// first delete; deleting while paging would shift the page window.
+	calls       []string
+	pageNumbers []int
 }
 
 func (f *fakeInboundEndpointSweepAPI) RpcPost(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
 	switch apiName {
 	case "DescribeInboundEndpoints":
+		f.calls = append(f.calls, "list")
+		if page, ok := body["PageNumber"].(int); ok {
+			f.pageNumbers = append(f.pageNumbers, page)
+		}
 		f.listCalls++
 		if len(f.listErrors) >= f.listCalls {
 			return nil, f.listErrors[f.listCalls-1]
@@ -177,6 +208,7 @@ func (f *fakeInboundEndpointSweepAPI) RpcPost(apiProductCode string, apiVersion 
 		return map[string]interface{}{"TotalItems": 0}, nil
 	case "DeleteInboundEndpoint":
 		id, _ := body["EndpointId"].(string)
+		f.calls = append(f.calls, "delete:"+id)
 		if err, ok := f.deleteErrors[id]; ok {
 			return nil, err
 		}
@@ -196,6 +228,44 @@ func inboundEndpointSweepListResponse(items ...map[string]interface{}) map[strin
 		"InboundEndpoints": map[string]interface{}{
 			"InboundEndpoint": values,
 		},
+	}
+}
+
+func TestUnitSweepInboundEndpointsReadsAllPagesBeforeDeleting(t *testing.T) {
+	firstPage := make([]map[string]interface{}, 0, helper.PageSizeLarge)
+	for i := 0; i < helper.PageSizeLarge; i++ {
+		firstPage = append(firstPage, map[string]interface{}{
+			"Id":   fmt.Sprintf("ep-page1-%d", i),
+			"Name": fmt.Sprintf("tf-testAcc-p1-%d", i),
+		})
+	}
+	secondPage := []map[string]interface{}{{"Id": "ep-page2", "Name": "tf-testAcc-p2"}}
+	api := &fakeInboundEndpointSweepAPI{listResponses: []map[string]interface{}{
+		inboundEndpointSweepListResponse(firstPage...),
+		inboundEndpointSweepListResponse(secondPage...),
+	}}
+
+	if err := sweepInboundEndpoints(context.Background(), api, []string{"tf-testAcc"}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if api.listCalls != 2 {
+		t.Fatalf("expected two list pages, got %d", api.listCalls)
+	}
+	if len(api.deleted) != helper.PageSizeLarge+1 {
+		t.Fatalf("expected every matching endpoint to be deleted, got %d", len(api.deleted))
+	}
+	if len(api.pageNumbers) != 2 || api.pageNumbers[0] != 1 || api.pageNumbers[1] != 2 {
+		t.Fatalf("expected PageNumber 1 then 2, got %v", api.pageNumbers)
+	}
+	// Deleting while paging shifts later objects into an already-read page. Every list call must
+	// finish before the first delete so the collected set cannot miss a shifted object.
+	for i, call := range api.calls {
+		if strings.HasPrefix(call, "delete:") {
+			if i < 2 {
+				t.Fatalf("delete %q happened before all list pages were read: %v", call, api.calls)
+			}
+			break
+		}
 	}
 }
 
@@ -305,18 +375,20 @@ func TestAccAliCloudPvtzInboundEndpoint_basic0(t *testing.T) {
 	resourceId := "alicloud_pvtz_inbound_endpoint.default"
 	rand := tfacctest.RandIntRange(1000, 9999999)
 	name := fmt.Sprintf("tf-testAcc%d", rand)
+	deps := &inboundEndpointTestDependencies{}
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckPrivateZoneInboundEndpointDestroy,
+		CheckDestroy:             testAccCheckPrivateZoneInboundEndpointDestroyWithDependencies(deps),
 		Steps: []resource.TestStep{
 			{
 				// Create with 3 ip_configs (vswitches 0,1,2). ip is Optional+Computed
 				// and service-assigned, omitted as in the outbound endpoint test.
 				Config: testAccPvtzInboundEndpointConfig(name, []int{0, 1, 2}),
 				Check: resource.ComposeTestCheckFunc(
+					deps.capture,
 					resource.TestCheckResourceAttr(resourceId, "endpoint_name", name),
 					resource.TestCheckResourceAttr(resourceId, "spec_version", "standard"),
 					resource.TestCheckResourceAttrSet(resourceId, "vpc_id"),
@@ -391,6 +463,13 @@ func TestAccAliCloudPvtzInboundEndpoint_basic0(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceId, "endpoint_name", name),
 				),
 			},
+			{
+				// Every successful step in this new test file re-imports the resource, including
+				// the recovery step that follows the two ExpectError steps.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -406,17 +485,19 @@ func TestAccAliCloudPvtzInboundEndpoint_complete(t *testing.T) {
 	firstIp := "172.16.0.10"
 	secondIp := "172.16.16.10"
 	updatedFirstIp := "172.16.0.11"
+	deps := &inboundEndpointTestDependencies{}
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckPrivateZoneInboundEndpointDestroy,
+		CheckDestroy:             testAccCheckPrivateZoneInboundEndpointDestroyWithDependencies(deps),
 		Steps: []resource.TestStep{
 			{
 				// Create with two explicitly configured ips; Create must send them.
 				Config: testAccPvtzInboundEndpointConfigWithIPs(name, []int{0, 1}, map[int]string{0: firstIp, 1: secondIp}),
 				Check: resource.ComposeTestCheckFunc(
+					deps.capture,
 					resource.TestCheckResourceAttr(resourceId, "ip_configs.#", "2"),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "ip_configs.*", map[string]string{"ip": firstIp}),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "ip_configs.*", map[string]string{"ip": secondIp}),
@@ -481,6 +562,7 @@ func TestAccAliCloudPvtzInboundEndpoint_complete(t *testing.T) {
 					},
 				},
 				Check: resource.ComposeTestCheckFunc(
+					deps.capture,
 					resource.TestCheckResourceAttrSet(resourceId, "security_group_id"),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "ip_configs.*", map[string]string{"ip": updatedFirstIp}),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "ip_configs.*", map[string]string{"ip": secondIp}),
@@ -493,6 +575,74 @@ func TestAccAliCloudPvtzInboundEndpoint_complete(t *testing.T) {
 			},
 		},
 	})
+}
+
+// inboundEndpointTestDependencies holds the VPC, VSwitch and security group IDs created by the
+// test configuration. CheckDestroy only receives the post-destroy state, which no longer contains
+// them, so they are captured while the state still has them.
+type inboundEndpointTestDependencies struct {
+	vpcIds           []string
+	vswitchIds       []string
+	securityGroupIds []string
+}
+
+func (d *inboundEndpointTestDependencies) capture(s *terraform.State) error {
+	for _, rs := range s.RootModule().Resources {
+		switch rs.Type {
+		case "alicloud_vpc":
+			d.vpcIds = appendUniqueID(d.vpcIds, rs.Primary.ID)
+		case "alicloud_vswitch":
+			d.vswitchIds = appendUniqueID(d.vswitchIds, rs.Primary.ID)
+		case "alicloud_security_group":
+			d.securityGroupIds = appendUniqueID(d.securityGroupIds, rs.Primary.ID)
+		}
+	}
+	return nil
+}
+
+func appendUniqueID(ids []string, id string) []string {
+	if id == "" {
+		return ids
+	}
+	for _, existing := range ids {
+		if existing == id {
+			return ids
+		}
+	}
+	return append(ids, id)
+}
+
+// verifyDestroyed confirms every dependency created by the test is gone. A failed terraform
+// destroy already fails the test, but the cleanup evidence needs an authoritative per-object
+// readback instead of inferring deletion from an empty workspace state.
+func (d *inboundEndpointTestDependencies) verifyDestroyed(client *connectivity.AliyunClient) error {
+	vpcConn := vpc.NewVpcService(client)
+	for _, id := range d.vpcIds {
+		if _, err := vpcConn.DescribeVpc(id); err == nil {
+			return fmt.Errorf("test dependency VPC %s still exists", id)
+		} else if !errs.IsProviderNotFound(err) {
+			return fmt.Errorf("describing test dependency VPC %s failed: %s", id, err)
+		}
+		log.Printf("[INFO] Test dependency VPC deleted: %s", id)
+	}
+	for _, id := range d.vswitchIds {
+		if _, err := vpcConn.DescribeVswitch(id); err == nil {
+			return fmt.Errorf("test dependency VSwitch %s still exists", id)
+		} else if !errs.IsProviderNotFound(err) {
+			return fmt.Errorf("describing test dependency VSwitch %s failed: %s", id, err)
+		}
+		log.Printf("[INFO] Test dependency VSwitch deleted: %s", id)
+	}
+	ecsConn := ecs.NewService(client)
+	for _, id := range d.securityGroupIds {
+		if _, err := ecsConn.DescribeSecurityGroupAttribute(id); err == nil {
+			return fmt.Errorf("test dependency security group %s still exists", id)
+		} else if !errs.IsProviderNotFound(err) {
+			return fmt.Errorf("describing test dependency security group %s failed: %s", id, err)
+		}
+		log.Printf("[INFO] Test dependency security group deleted: %s", id)
+	}
+	return nil
 }
 
 // testAccCheckPrivateZoneInboundEndpointDestroy accepts only the provider
@@ -518,6 +668,16 @@ func testAccCheckPrivateZoneInboundEndpointDestroy(s *terraform.State) error {
 	return nil
 }
 
+func testAccCheckPrivateZoneInboundEndpointDestroyWithDependencies(deps *inboundEndpointTestDependencies) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if err := testAccCheckPrivateZoneInboundEndpointDestroy(s); err != nil {
+			return err
+		}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		return deps.verifyDestroyed(client)
+	}
+}
+
 // testAccPvtzInboundEndpointIpConfigsHCL renders ip_configs in block syntax
 // (SetNestedBlock): ip_configs { ... }. The inbound endpoint uses a Framework
 // SetNestedBlock (served at protocol v5 via fwadapt), which accepts block syntax,
@@ -526,7 +686,7 @@ func testAccPvtzInboundEndpointIpConfigsHCL(indices []int) string {
 	configs := make([]string, len(indices))
 	for i, idx := range indices {
 		configs[i] = fmt.Sprintf(`  ip_configs {
-    zone_id    = alicloud_vswitch.default[%[1]d].zone_id
+    az_id      = alicloud_vswitch.default[%[1]d].zone_id
     cidr_block = alicloud_vswitch.default[%[1]d].cidr_block
     vswitch_id = alicloud_vswitch.default[%[1]d].id
   }`, idx)
@@ -539,7 +699,7 @@ func testAccPvtzInboundEndpointIpConfigsHCLWithIPs(indices []int, ips map[int]st
 	for i, idx := range indices {
 		lines := []string{
 			"  ip_configs {",
-			fmt.Sprintf("    zone_id    = alicloud_vswitch.default[%d].zone_id", idx),
+			fmt.Sprintf("    az_id      = alicloud_vswitch.default[%d].zone_id", idx),
 			fmt.Sprintf("    cidr_block = alicloud_vswitch.default[%d].cidr_block", idx),
 			fmt.Sprintf("    vswitch_id = alicloud_vswitch.default[%d].id", idx),
 		}
