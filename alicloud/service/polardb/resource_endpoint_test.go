@@ -687,8 +687,11 @@ func TestUnitPolarDBEndpointSccModeUpdateRequest(t *testing.T) {
 				"scc_mode":        tc.priorSccMode,
 				"endpoint_config": map[string]interface{}{"ConsistLevel": "0"},
 			})
+			prior.SetId("pc-unit-test:pe-existing")
 			state := prior.State()
-			state.ID = "pc-unit-test:pe-existing"
+			if state == nil {
+				t.Fatal("expected an initial state for the update scenario")
+			}
 			config := terraform.NewResourceConfigRaw(map[string]interface{}{
 				"db_cluster_id":   "pc-unit-test",
 				"endpoint_type":   "Custom",
