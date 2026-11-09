@@ -19,7 +19,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 const (
@@ -63,6 +62,25 @@ type inboundEndpointIpConfigModel struct {
 	VSwitchId types.String `tfsdk:"vswitch_id"`
 }
 
+// inboundEndpointIpConfigsRequiredValidator rejects a missing ip_configs block. SetNestedBlock
+// cannot declare Required and the size validators skip a null value, so without this a config
+// that omits the block reaches Create without the contract-required IpConfig.
+type inboundEndpointIpConfigsRequiredValidator struct{}
+
+func (v inboundEndpointIpConfigsRequiredValidator) Description(context.Context) string {
+	return "block must be configured with at least 2 elements"
+}
+
+func (v inboundEndpointIpConfigsRequiredValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v inboundEndpointIpConfigsRequiredValidator) ValidateSet(ctx context.Context, req validator.SetRequest, resp *validator.SetResponse) {
+	if req.ConfigValue.IsNull() {
+		resp.Diagnostics.AddAttributeError(req.Path, "Missing required block", "ip_configs must be configured with at least 2 elements")
+	}
+}
+
 func (r *inboundEndpointResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = inboundEndpointTypeName
 }
@@ -98,8 +116,16 @@ func (r *inboundEndpointResource) Schema(ctx context.Context, req resource.Schem
 					},
 				},
 				Validators: []validator.Set{
+					// SetNestedBlock has no Required field and the size validators skip a null
+					// value, so enforce the contract-required block explicitly.
+					inboundEndpointIpConfigsRequiredValidator{},
+					// The PD openapi-pvtz-inbound-endpoint.json evidence records
+					// ipConfig.maxItems=10 and notes that the field description's
+					// "at least 2, at most 6" wording is copied from the outbound endpoint, so
+					// the upper bound follows the structure. The minimum stays at 2 per the
+					// high-availability requirement documented for both endpoint types.
 					setvalidator.SizeAtLeast(2),
-					setvalidator.SizeAtMost(6),
+					setvalidator.SizeAtMost(10),
 				},
 			},
 		},
@@ -139,9 +165,6 @@ func (r *inboundEndpointResource) Schema(ctx context.Context, req resource.Schem
 			},
 			"status": schema.StringAttribute{
 				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"endpoint_type": schema.StringAttribute{
 				Computed: true,
@@ -153,16 +176,17 @@ func (r *inboundEndpointResource) Schema(ctx context.Context, req resource.Schem
 	}
 }
 
-// ModifyPlan clears the service-assigned ip in ip_config elements when ip_configs is changing.
-// UpdateInboundEndpoint re-assigns every IP from VSwitchId/CidrBlock (it rejects stale IPs with
-// InboundEndpoint.Ipconfig.InvalidIp), so any ip value carried into plan from state by
-// UseStateForUnknown would no longer match the actual IP after the API re-assigns it. The
-// Framework's set correlation would then fail with "Provider produced inconsistent result after
-// apply". Setting ip to unknown for all elements lets the Framework correlate them by
-// vswitch_id/zone_id/cidr_block and accept whatever IP the API assigns. When ip_configs is
-// unchanged, the prior IPs are preserved and no modification is needed.
+// ModifyPlan keeps an explicitly configured ip and clears only the service-assigned value in
+// ip_config elements when ip_configs is changing. UpdateInboundEndpoint accepts IpConfig.Ip and
+// documents that an omitted Ip is assigned by the system, so a user-configured ip must reach the
+// update request and must not be replaced by an unknown planned value. Elements whose ip is not
+// configured are set to unknown so the Framework correlates them by vswitch_id/zone_id/cidr_block
+// and accepts whatever IP the API assigns; without this the prior IP carried by
+// UseStateForUnknown would no longer match the API result and produce an inconsistent result
+// after apply. When ip_configs is unchanged, the prior IPs are preserved and nothing is modified.
 func (r *inboundEndpointResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	// On create there is no prior state; the ip is unknown in plan and assigned by the API.
+	// On create there is no prior state; a configured ip is planned as-is and an omitted ip is
+	// unknown, and Create sends only the configured value.
 	if req.State.Raw.IsNull() {
 		return
 	}
@@ -172,9 +196,10 @@ func (r *inboundEndpointResource) ModifyPlan(ctx context.Context, req resource.M
 		return
 	}
 
-	var plan, state inboundEndpointResourceModel
+	var plan, state, config inboundEndpointResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -185,15 +210,27 @@ func (r *inboundEndpointResource) ModifyPlan(ctx context.Context, req resource.M
 		return
 	}
 
-	// ip_configs is changing: clear all ip values to unknown so the Framework does not expect
-	// specific IP values that the API will re-assign from the new VSwitchId/CidrBlock.
+	configured, diags := inboundEndpointIpConfigsFromSet(ctx, config.IpConfigs)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	explicitIps := make(map[string]struct{}, len(configured))
+	for _, ic := range configured {
+		if !ic.Ip.IsNull() && !ic.Ip.IsUnknown() && ic.Ip.ValueString() != "" {
+			explicitIps[inboundEndpointIpConfigKey(ic)] = struct{}{}
+		}
+	}
+
 	ipConfigs, diags := inboundEndpointIpConfigsFromSet(ctx, plan.IpConfigs)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	for i := range ipConfigs {
-		ipConfigs[i].Ip = types.StringUnknown()
+		if _, ok := explicitIps[inboundEndpointIpConfigKey(ipConfigs[i])]; !ok {
+			ipConfigs[i].Ip = types.StringUnknown()
+		}
 	}
 	newSet, diags := inboundEndpointIpConfigsToSet(ctx, ipConfigs)
 	resp.Diagnostics.Append(diags...)
@@ -219,6 +256,7 @@ func (r *inboundEndpointResource) Create(ctx context.Context, req resource.Creat
 
 	// AddInboundEndpoint encodes IpConfig as repeatList with the same AzId/CidrBlock/Ip/VSwitchId
 	// sub-fields as AddResolverEndpoint, so the encoding mirrors the SDKv2 outbound endpoint.
+	action := "AddInboundEndpoint"
 	request := map[string]interface{}{
 		"Name":            plan.EndpointName.ValueString(),
 		"VpcId":           plan.VpcId.ValueString(),
@@ -226,33 +264,19 @@ func (r *inboundEndpointResource) Create(ctx context.Context, req resource.Creat
 		"SecurityGroupId": plan.SecurityGroupId.ValueString(),
 		"SpecVersion":     plan.SpecVersion.ValueString(),
 		"Lang":            "en",
+		// One token for every attempt: if the first AddInboundEndpoint call succeeds but its
+		// response is lost, the replay is an idempotent no-op instead of a second endpoint.
+		"ClientToken": helper.BuildClientToken(action),
 	}
-	for k, ic := range ipConfigs {
-		request[fmt.Sprintf("IpConfig.%d.VSwitchId", k+1)] = ic.VSwitchId.ValueString()
-		request[fmt.Sprintf("IpConfig.%d.AzId", k+1)] = ic.ZoneId.ValueString()
-		request[fmt.Sprintf("IpConfig.%d.CidrBlock", k+1)] = ic.CidrBlock.ValueString()
-		if !ic.Ip.IsNull() && !ic.Ip.IsUnknown() && ic.Ip.ValueString() != "" {
-			request[fmt.Sprintf("IpConfig.%d.Ip", k+1)] = ic.Ip.ValueString()
-		}
+	for k, v := range inboundEndpointIpConfigRequest(ipConfigs) {
+		request[k] = v
 	}
 
-	action := "AddInboundEndpoint"
-	var response map[string]interface{}
-	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
-	err := retry.RetryContext(ctx, inboundEndpointTimeout, func() *retry.RetryError {
-		var callErr error
-		response, callErr = r.Meta().RpcPost("pvtz", "2018-01-01", action, nil, request, false)
-		if callErr != nil {
-			// ResolverEndpoint.Operation.ExceedsFrequency is the documented throttle for the
-			// outbound endpoint; InboundEndpoint may reuse the same pattern, so both are retried.
-			if errs.IsExpectedErrors(callErr, []string{"InboundEndpoint.Operation.ExceedsFrequency", "ResolverEndpoint.Operation.ExceedsFrequency"}) || helper.NeedRetry(callErr) {
-				wait()
-				return retry.RetryableError(callErr)
-			}
-			return retry.NonRetryableError(callErr)
-		}
-		return nil
-	})
+	// No published InboundEndpoint errorCodes table exists (PD E5), so the gate relies on
+	// helper.NeedRetry (5xx/throttling/timeouts); per-code gates are added when reports identify them.
+	response, err := helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
+		return r.Meta().RpcPost("pvtz", "2018-01-01", action, nil, request, false)
+	}, inboundEndpointTimeout, helper.NeedRetry)
 	logs.AddDebug(action, response, request)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -262,7 +286,15 @@ func (r *inboundEndpointResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	id := fmt.Sprint(response["EndpointId"])
+	endpointId, ok := response["EndpointId"].(string)
+	if !ok || endpointId == "" {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: AddInboundEndpoint returned no EndpointId", inboundEndpointTypeName),
+			"The response did not contain a non-empty string EndpointId, so the created endpoint cannot be tracked.",
+		)
+		return
+	}
+	id := endpointId
 	pvtzService := Service{r.Meta()}
 	if _, waitErr := pvtzService.inboundEndpointWaitForState(ctx, id, []string{"SUCCESS"}, inboundEndpointFailStates, inboundEndpointTimeout); waitErr != nil {
 		// Keep the created ID in state so the endpoint stays trackable even when the status wait
@@ -370,34 +402,19 @@ func (r *inboundEndpointResource) Update(ctx context.Context, req resource.Updat
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		// The service-assigned ip is Optional+Computed. UseStateForUnknown carries the
-		// prior ip value from state into plan for elements that persist across the change.
-		// Unlike UpdateResolverEndpoint (outbound), UpdateInboundEndpoint rejects that stale
-		// ip with InboundEndpoint.Ipconfig.InvalidIp, so ip is never sent on update; the API
-		// re-assigns IPs from VSwitchId/CidrBlock exactly as in Create (where ip is omitted).
-		for k, ic := range ipConfigs {
-			request[fmt.Sprintf("IpConfig.%d.VSwitchId", k+1)] = ic.VSwitchId.ValueString()
-			request[fmt.Sprintf("IpConfig.%d.AzId", k+1)] = ic.ZoneId.ValueString()
-			request[fmt.Sprintf("IpConfig.%d.CidrBlock", k+1)] = ic.CidrBlock.ValueString()
+		// ModifyPlan keeps a user-configured ip in the plan and marks an omitted
+		// (service-assigned) ip unknown, so this sends explicit values and omits the rest;
+		// UpdateInboundEndpoint assigns an IP when Ip is absent.
+		for k, v := range inboundEndpointIpConfigRequest(ipConfigs) {
+			request[k] = v
 		}
 	}
 
 	if update {
 		action := "UpdateInboundEndpoint"
-		var response map[string]interface{}
-		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
-		err := retry.RetryContext(ctx, inboundEndpointTimeout, func() *retry.RetryError {
-			var callErr error
-			response, callErr = r.Meta().RpcPost("pvtz", "2018-01-01", action, nil, request, false)
-			if callErr != nil {
-				if helper.NeedRetry(callErr) {
-					wait()
-					return retry.RetryableError(callErr)
-				}
-				return retry.NonRetryableError(callErr)
-			}
-			return nil
-		})
+		response, err := helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
+			return r.Meta().RpcPost("pvtz", "2018-01-01", action, nil, request, false)
+		}, inboundEndpointTimeout, helper.NeedRetry)
 		logs.AddDebug(action, response, request)
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -449,27 +466,13 @@ func (r *inboundEndpointResource) Delete(ctx context.Context, req resource.Delet
 		"EndpointId": id,
 		"Lang":       "en",
 	}
-	var response map[string]interface{}
-	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
-	err := retry.RetryContext(ctx, inboundEndpointTimeout, func() *retry.RetryError {
-		var callErr error
-		response, callErr = r.Meta().RpcPost("pvtz", "2018-01-01", action, nil, request, false)
-		if callErr != nil {
-			if helper.NeedRetry(callErr) {
-				wait()
-				return retry.RetryableError(callErr)
-			}
-			return retry.NonRetryableError(callErr)
-		}
-		return nil
-	})
+	response, err := helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
+		return r.Meta().RpcPost("pvtz", "2018-01-01", action, nil, request, false)
+	}, inboundEndpointTimeout, helper.NeedRetry)
 	logs.AddDebug(action, response, request)
 	if err != nil {
-		// The not-exists code is not declared in the published DeleteInboundEndpoint contract,
-		// and the live API returns it with a spelling error ("InboundEndpoint.NotExsits" rather
-		// than "InboundEndpoint.NotExists"); a typed 404 or either spelling means the endpoint
-		// is already gone.
-		if errs.IsTypedNotFound(err) || errs.IsExpectedErrors(err, []string{"InboundEndpoint.NotExists", "InboundEndpoint.NotExsits"}) {
+		// A typed 404 or either NotExists spelling means the endpoint is already gone.
+		if IsInboundEndpointNotFound(err) {
 			return
 		}
 		resp.Diagnostics.AddError(
@@ -482,6 +485,27 @@ func (r *inboundEndpointResource) Delete(ctx context.Context, req resource.Delet
 
 func (r *inboundEndpointResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// inboundEndpointIpConfigKey identifies an ip_config element by its required fields.
+func inboundEndpointIpConfigKey(ic inboundEndpointIpConfigModel) string {
+	return fmt.Sprintf("%s|%s|%s", ic.ZoneId.ValueString(), ic.CidrBlock.ValueString(), ic.VSwitchId.ValueString())
+}
+
+// inboundEndpointIpConfigRequest encodes ip_config as IpConfig.N.* repeatList entries. A known,
+// configured ip is sent; a null or unknown ip is omitted so the service assigns it (Create) or
+// re-assigns it from VSwitchId/CidrBlock (Update).
+func inboundEndpointIpConfigRequest(ipConfigs []inboundEndpointIpConfigModel) map[string]interface{} {
+	request := make(map[string]interface{}, len(ipConfigs)*4)
+	for k, ic := range ipConfigs {
+		request[fmt.Sprintf("IpConfig.%d.VSwitchId", k+1)] = ic.VSwitchId.ValueString()
+		request[fmt.Sprintf("IpConfig.%d.AzId", k+1)] = ic.ZoneId.ValueString()
+		request[fmt.Sprintf("IpConfig.%d.CidrBlock", k+1)] = ic.CidrBlock.ValueString()
+		if !ic.Ip.IsNull() && !ic.Ip.IsUnknown() && ic.Ip.ValueString() != "" {
+			request[fmt.Sprintf("IpConfig.%d.Ip", k+1)] = ic.Ip.ValueString()
+		}
+	}
+	return request
 }
 
 // inboundEndpointIpConfigsFromSet unwraps a types.Set of ip_config objects into a slice of

@@ -3,9 +3,11 @@ package privatezone
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	logs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
@@ -21,12 +23,62 @@ const inboundEndpointReadTimeout = 1 * time.Minute
 // waiting until the operation timeout.
 var inboundEndpointFailStates = []string{"FAILED", "CHANGE_FAILED", "EXCEPTION"}
 
+// inboundEndpointNotExistsCodes are the not-exists responses for the inbound endpoint. The code
+// is not declared in the published contracts, and the live API returns it with a spelling error
+// ("InboundEndpoint.NotExsits" rather than "InboundEndpoint.NotExists"), so both are matched.
+var inboundEndpointNotExistsCodes = []string{"InboundEndpoint.NotExists", "InboundEndpoint.NotExsits"}
+
+// IsInboundEndpointNotFound reports whether err proves the endpoint no longer exists.
+// helper.RetryRpcPost wraps the API error in errs.ComplexError, which has no Unwrap method, so
+// errs.IsTypedNotFound (errors.As based) cannot see the tea SDK error through the wrap; walk the
+// wrap cause explicitly. The sweeper uses the same decision.
+func IsInboundEndpointNotFound(err error) bool {
+	for err != nil {
+		if errs.IsTypedNotFound(err) {
+			return true
+		}
+		switch e := err.(type) {
+		case *errs.ComplexError:
+			err = e.Cause
+			continue
+		case *tea.SDKError:
+			return inboundEndpointTeaCodeMatches(e, inboundEndpointNotExistsCodes)
+		}
+		// Other error types are safe with the shared matcher; tea errors are handled above
+		// because errs.IsExpectedErrors dereferences SDKError.Data, which may be nil.
+		if errs.IsExpectedErrors(err, inboundEndpointNotExistsCodes) {
+			return true
+		}
+		if wrapped, ok := err.(interface{ Unwrap() error }); ok {
+			err = wrapped.Unwrap()
+			continue
+		}
+		return false
+	}
+	return false
+}
+
+func inboundEndpointTeaCodeMatches(e *tea.SDKError, codes []string) bool {
+	if e == nil {
+		return false
+	}
+	code := tea.StringValue(e.Code)
+	data := tea.StringValue(e.Data)
+	for _, expected := range codes {
+		if code != "" && (code == expected || strings.HasPrefix(expected, code)) {
+			return true
+		}
+		if data != "" && strings.Contains(data, expected) {
+			return true
+		}
+	}
+	return false
+}
+
 // DescribeInboundEndpointContext describes a single inbound endpoint by EndpointId. It returns a
 // provider not-found error when the API answers with a typed 404 or a not-exists error code, so
-// the Framework Read path can remove the resource from state. The not-exists code is not declared
-// in the published DescribeInboundEndpoint contract, and the live API returns it with a spelling
-// error ("InboundEndpoint.NotExsits" rather than "InboundEndpoint.NotExists"), so both spellings
-// are matched; a malformed body is never turned into NotFound.
+// the Framework Read path can remove the resource from state; a malformed body is never turned
+// into NotFound. The retry backoff is bound to ctx so a cancelled operation stops retrying.
 func (s *Service) DescribeInboundEndpointContext(ctx context.Context, id string) (object map[string]interface{}, err error) {
 	client := s.client
 	action := "DescribeInboundEndpoint"
@@ -35,23 +87,12 @@ func (s *Service) DescribeInboundEndpointContext(ctx context.Context, id string)
 		"Lang":       "en",
 	}
 
-	var response map[string]interface{}
-	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
-	err = retry.RetryContext(ctx, inboundEndpointReadTimeout, func() *retry.RetryError {
-		var callErr error
-		response, callErr = client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
-		if callErr != nil {
-			if helper.NeedRetry(callErr) {
-				wait()
-				return retry.RetryableError(callErr)
-			}
-			return retry.NonRetryableError(callErr)
-		}
-		return nil
-	})
+	response, err := helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
+		return client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
+	}, inboundEndpointReadTimeout, helper.NeedRetry)
 	logs.AddDebug(action, response, request)
 	if err != nil {
-		if errs.IsTypedNotFound(err) || errs.IsExpectedErrors(err, []string{"InboundEndpoint.NotExists", "InboundEndpoint.NotExsits"}) {
+		if IsInboundEndpointNotFound(err) {
 			return object, errs.WrapErrorf(errs.NotFoundErr("PrivateZone:InboundEndpoint", id), errs.NotFoundMsg, response)
 		}
 		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
