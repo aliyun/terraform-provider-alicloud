@@ -35,17 +35,33 @@ func TestUnitPolarDBEndpointSccModeRequest(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				switch action := r.Form.Get("Action"); action {
 				case "DescribeDBClusterEndpoints":
-					items := []map[string]string{{"DBEndpointId": "pe-primary", "EndpointType": "Primary"}}
-					if created.Load() {
-						items = append(items, map[string]string{
-							"DBEndpointId":   "pe-new",
-							"EndpointType":   "Custom",
-							"ReadWriteMode":  "ReadWrite",
-							"SccMode":        tc.sccMode,
-							"EndpointConfig": `{"ConsistLevel":"0"}`,
-						})
+					primary := map[string]interface{}{"DBEndpointId": "pe-primary", "EndpointType": "Primary"}
+					createdEndpoint := map[string]interface{}{
+						"DBEndpointId":   "pe-new",
+						"EndpointType":   "Custom",
+						"ReadWriteMode":  "ReadWrite",
+						"SccMode":        tc.sccMode,
+						"EndpointConfig": `{"ConsistLevel":"0"}`,
+						"AddressItems": []map[string]string{
+							{"NetType": "Private", "ConnectionString": "pe-new.rwlb.rds.aliyuncs.com", "Port": "3306"},
+						},
+					}
+					var items []map[string]interface{}
+					switch requested := r.Form.Get("DBEndpointId"); requested {
+					case "pe-new":
+						items = []map[string]interface{}{createdEndpoint}
+					case "pe-primary":
+						items = []map[string]interface{}{primary}
+					default:
+						if created.Load() {
+							items = []map[string]interface{}{createdEndpoint, primary}
+						} else {
+							items = []map[string]interface{}{primary}
+						}
 					}
 					_ = json.NewEncoder(w).Encode(map[string]interface{}{"Items": items})
+				case "DescribeDBClusterSSL":
+					_, _ = w.Write([]byte(`{"Items":[]}`))
 				case "CreateDBClusterEndpoint":
 					mu.Lock()
 					createForm = copyForm(r.Form)
