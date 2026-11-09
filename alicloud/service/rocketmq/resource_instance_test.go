@@ -2734,14 +2734,19 @@ type rocketmqTraceOnCapturedRequest struct {
 // non-retryable, so the read/update portions of the chain still run and the
 // test stays fast.
 type rocketmqTraceOnFixture struct {
-	mu                 sync.Mutex
-	requests           []rocketmqTraceOnCapturedRequest
-	ipWhitelists       []string
-	whitelistReadFails bool
-	commodityCode      string
-	paymentType        string
-	software           map[string]interface{}
-	renewalFailures    int
+	mu                  sync.Mutex
+	requests            []rocketmqTraceOnCapturedRequest
+	ipWhitelists        []string
+	whitelistReadFails  bool
+	commodityCode       string
+	paymentType         string
+	software            map[string]interface{}
+	renewalFailures     int
+	billingErrorCode    string
+	billingEmpty        bool
+	renewStatus         string
+	renewalDuration     int
+	renewalDurationUnit string
 	// refunded marks the instance as released after a successful RefundInstance
 	// call so DescribeInstance observes status=RELEASED and returns NotFound;
 	// the Subscription delete stateConf then terminates without timing out.
@@ -2813,6 +2818,25 @@ func (f *rocketmqTraceOnFixture) serveHTTP(w http.ResponseWriter, r *http.Reques
 		json.NewEncoder(w).Encode(map[string]interface{}{"data": map[string]interface{}{"ipWhitelists": values}})
 	case r.URL.Path == "/":
 		params, _ := url.ParseQuery(r.URL.RawQuery + "&" + string(body))
+		if params.Get("Action") == "QueryAvailableInstances" {
+			if f.billingErrorCode != "" {
+				fmt.Fprintf(w, `{"Code":%q,"Message":"account not exists","Success":false,"RequestId":"fixture"}`, f.billingErrorCode)
+				return
+			}
+			if f.billingEmpty {
+				fmt.Fprint(w, `{"Success":true,"RequestId":"fixture","Data":{"InstanceList":[]}}`)
+				return
+			}
+			status, unit := f.renewStatus, f.renewalDurationUnit
+			if status == "" {
+				status = "ManualRenewal"
+			}
+			if unit == "" {
+				unit = "M"
+			}
+			fmt.Fprintf(w, `{"Success":true,"RequestId":"fixture","Data":{"InstanceList":[{"InstanceID":%q,"RenewStatus":%q,"RenewalDuration":%d,"RenewalDurationUnit":%q}]}}`, rocketmqTraceOnFixtureInstanceId, status, f.renewalDuration, unit)
+			return
+		}
 		if params.Get("Action") == "RefundInstance" {
 			f.mu.Lock()
 			f.refundRequests = append(f.refundRequests, rocketmqTraceOnCapturedRequest{method: r.Method, path: r.URL.Path, body: body, query: r.URL.RawQuery})

@@ -658,19 +658,31 @@ func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 		return errs.WrapError(err)
 	}
 
-	queryAvailableInstancesObject, err := rocketmqService.QueryAvailableInstancesWithoutProductType(d.Id(), client.RegionId, "ons", "ons")
-	if err != nil {
-		return errs.WrapError(err)
-	}
-	d.Set("auto_renew", queryAvailableInstancesObject["RenewStatus"] == "AutoRenewal")
-	if v, ok := queryAvailableInstancesObject["RenewalDuration"]; ok && fmt.Sprint(v) != "0" {
-		auto_renew_periodVal, err := convert.FormatInt(v)
+	// Renewal settings only apply to prepaid instances. A postpaid instance
+	// confirmed by RocketMQ must remain readable even when BSS has no billing
+	// entry for it, including the refresh performed before destroy or import.
+	autoRenew, renewalPeriod, renewalUnit := false, 0, ""
+	if d.Get("payment_type").(string) == "Subscription" {
+		billing, err := rocketmqService.QueryAvailableInstancesWithoutProductType(d.Id(), client.RegionId, "ons", "ons")
 		if err != nil {
-			return err
+			return errs.WrapError(err)
 		}
-		d.Set("auto_renew_period", auto_renew_periodVal)
+		autoRenew = billing["RenewStatus"] == "AutoRenewal"
+		if v, ok := billing["RenewalDuration"]; ok && fmt.Sprint(v) != "0" {
+			renewalPeriod, err = convert.FormatInt(v)
+			if err != nil {
+				return err
+			}
+		}
+		renewalUnit, _ = convertAmqpInstanceRenewalDurationUnitResponse(billing["RenewalDurationUnit"]).(string)
 	}
-	d.Set("auto_renew_period_unit", convertAmqpInstanceRenewalDurationUnitResponse(queryAvailableInstancesObject["RenewalDurationUnit"]))
+	for key, value := range map[string]interface{}{
+		"auto_renew": autoRenew, "auto_renew_period": renewalPeriod, "auto_renew_period_unit": renewalUnit,
+	} {
+		if err := d.Set(key, value); err != nil {
+			return errs.WrapError(err)
+		}
+	}
 
 	objectRaw, err = rocketmqService.DescribeInstanceGetInstanceIpWhitelist(d.Id())
 	if err != nil && !errs.NotFoundError(err) {
