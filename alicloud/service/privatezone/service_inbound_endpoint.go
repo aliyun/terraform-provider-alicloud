@@ -65,7 +65,11 @@ func inboundEndpointTeaCodeMatches(e *tea.SDKError, codes []string) bool {
 	code := tea.StringValue(e.Code)
 	data := tea.StringValue(e.Data)
 	for _, expected := range codes {
-		if code != "" && (code == expected || strings.HasPrefix(expected, code)) {
+		// Exact match only: the service also answers endpoint-scoped failures with a short code
+		// such as "InboundEndpoint", which is a prefix of the not-exists code but says nothing
+		// about the endpoint being gone. A prefix match would erase live state and make a failed
+		// delete look successful.
+		if code != "" && code == expected {
 			return true
 		}
 		if data != "" && strings.Contains(data, expected) {

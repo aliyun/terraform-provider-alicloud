@@ -12,6 +12,7 @@ import (
 
 	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -299,6 +300,61 @@ func TestUnitInboundEndpointDeleteWaiterDistinguishesGoneFromAccepted(t *testing
 	defer mu.Unlock()
 	if describes < 2 {
 		t.Fatalf("the waiter must keep polling until DescribeInboundEndpoint reports not found, got %d describe calls", describes)
+	}
+}
+
+// TestUnitInboundEndpointDescribeClassifiesNotFoundOnlyForExactCodes proves the Read path does not
+// turn an endpoint-scoped failure into a missing resource: only a typed 404 or the two not-exists
+// spellings remove state, while the short code the service also returns does not.
+func TestUnitInboundEndpointDescribeClassifiesNotFoundOnlyForExactCodes(t *testing.T) {
+	cases := []struct {
+		name     string
+		status   int
+		code     string
+		wantGone bool
+	}{
+		{name: "typed 404", status: http.StatusNotFound, code: "InboundEndpoint.NotExsits", wantGone: true},
+		{name: "not-exists spelling", status: http.StatusBadRequest, code: "InboundEndpoint.NotExists", wantGone: true},
+		{name: "misspelled not-exists", status: http.StatusBadRequest, code: "InboundEndpoint.NotExsits", wantGone: true},
+		{name: "short endpoint code", status: http.StatusBadRequest, code: "InboundEndpoint", wantGone: false},
+		{name: "near-miss prefix", status: http.StatusBadRequest, code: "InboundEndpoint.Not", wantGone: false},
+		{name: "permission denied", status: http.StatusForbidden, code: "Forbidden.RAM", wantGone: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			client := inboundEndpointTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tc.status)
+				fmt.Fprintf(w, `{"Code":%q,"Message":"request failed","RequestId":"req-describe"}`, tc.code)
+			})
+			service := NewService(client)
+			_, err := service.DescribeInboundEndpointContext(context.Background(), "ep-1")
+			if err == nil {
+				t.Fatal("expected the failed describe to return an error")
+			}
+			if got := errs.IsProviderNotFound(err); got != tc.wantGone {
+				t.Fatalf("IsProviderNotFound() = %v, want %v (code %q status %d)", got, tc.wantGone, tc.code, tc.status)
+			}
+		})
+	}
+}
+
+// TestUnitInboundEndpointDeleteWaiterFailsOnNonNotFoundReadError keeps a failed describe from
+// ending the delete waiter successfully: a live endpoint answering with a short endpoint code is
+// not proof that it is gone.
+func TestUnitInboundEndpointDeleteWaiterFailsOnNonNotFoundReadError(t *testing.T) {
+	client := inboundEndpointTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, `{"Code":"InboundEndpoint","Message":"endpoint busy","RequestId":"req-describe"}`)
+	})
+	service := NewService(client)
+	err := service.inboundEndpointWaitForDeleted(context.Background(), "ep-1", 20*time.Second)
+	if err == nil {
+		t.Fatal("a non-NotFound describe error must fail the delete waiter")
+	}
+	if !strings.Contains(err.Error(), "endpoint busy") {
+		t.Fatalf("expected the original API error to surface, got %v", err)
 	}
 }
 

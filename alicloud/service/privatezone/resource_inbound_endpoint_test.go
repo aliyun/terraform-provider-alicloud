@@ -139,6 +139,10 @@ func collectInboundEndpointSweepIDs(ctx context.Context, client inboundEndpointS
 			}
 			name, ok := item["Name"].(string)
 			if !ok {
+				// Name is required by the list contract. Skipping a malformed item would treat a
+				// partially parsed response as a non-target object and report cleanup success
+				// while the endpoint is still there.
+				contractErrs = append(contractErrs, fmt.Errorf("inbound endpoint %v has no string Name", item["Id"]))
 				continue
 			}
 			if !inboundEndpointSweepMatch(name, prefixes) {
@@ -162,8 +166,13 @@ func collectInboundEndpointSweepIDs(ctx context.Context, client inboundEndpointS
 
 		// TotalItems is authoritative: when the total is an exact multiple of the page size a
 		// further request would ask for an empty page that can look like a parse failure.
-		if itemsSeen >= totalCount || len(result) < helper.PageSizeLarge {
+		if itemsSeen >= totalCount {
 			break
+		}
+		if len(result) < helper.PageSizeLarge {
+			// A short page before the declared total means the response lost objects. Stopping
+			// here would delete only part of the set and still report cleanup success.
+			return nil, nil, fmt.Errorf("parsing PrivateZone Inbound Endpoint list: page %v returned %d items, but only %d of %d endpoints were listed", request["PageNumber"], len(result), itemsSeen, totalCount)
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
@@ -386,6 +395,80 @@ func TestUnitSweepInboundEndpointsIgnoresNotFoundDelete(t *testing.T) {
 	}
 }
 
+func TestUnitSweepInboundEndpointsRejectsShortPageBeforeTotal(t *testing.T) {
+	api := &fakeInboundEndpointSweepAPI{listResponses: []map[string]interface{}{
+		inboundEndpointSweepListResponseWithTotal(3,
+			map[string]interface{}{"Id": "ep-short-1", "Name": "tf-testAcc-short-1"},
+			map[string]interface{}{"Id": "ep-short-2", "Name": "tf-testAcc-short-2"},
+		),
+	}}
+	err := sweepInboundEndpoints(context.Background(), api, []string{"tf-testAcc"})
+	if err == nil || !strings.Contains(err.Error(), "only 2 of 3 endpoints were listed") {
+		t.Fatalf("a short page before TotalItems must be a contract error, got %v", err)
+	}
+	if len(api.deleted) != 0 {
+		t.Fatalf("a truncated page must abort before any delete, deleted=%v", api.deleted)
+	}
+}
+
+func TestUnitSweepInboundEndpointsRejectsEmptyPageBeforeTotal(t *testing.T) {
+	api := &fakeInboundEndpointSweepAPI{listResponses: []map[string]interface{}{
+		{
+			"TotalItems": 1,
+			"InboundEndpoints": map[string]interface{}{
+				"InboundEndpoint": []interface{}{},
+			},
+		},
+	}}
+	err := sweepInboundEndpoints(context.Background(), api, []string{"tf-testAcc"})
+	if err == nil || !strings.Contains(err.Error(), "only 0 of 1 endpoints were listed") {
+		t.Fatalf("an empty page before TotalItems must be a contract error, got %v", err)
+	}
+	if len(api.deleted) != 0 {
+		t.Fatalf("an empty page must abort before any delete, deleted=%v", api.deleted)
+	}
+}
+
+func TestUnitSweepInboundEndpointsRejectsMalformedName(t *testing.T) {
+	cases := map[string]map[string]interface{}{
+		"missing":    {"Id": "ep-missing-name"},
+		"null":       {"Id": "ep-null-name", "Name": nil},
+		"non string": {"Id": "ep-number-name", "Name": 123},
+	}
+	for name, item := range cases {
+		t.Run(name, func(t *testing.T) {
+			api := &fakeInboundEndpointSweepAPI{listResponses: []map[string]interface{}{
+				inboundEndpointSweepListResponse(item),
+			}}
+			err := sweepInboundEndpoints(context.Background(), api, []string{"tf-testAcc"})
+			if err == nil || !strings.Contains(err.Error(), "has no string Name") {
+				t.Fatalf("a %s Name must be a contract error, got %v", name, err)
+			}
+			if len(api.deleted) != 0 {
+				t.Fatalf("a malformed Name must not lead to a delete, deleted=%v", api.deleted)
+			}
+		})
+	}
+}
+
+func TestUnitSweepInboundEndpointsReportsShortCodeDeleteFailure(t *testing.T) {
+	api := &fakeInboundEndpointSweepAPI{
+		listResponses: []map[string]interface{}{inboundEndpointSweepListResponse(
+			map[string]interface{}{"Id": "ep-live", "Name": "tf-testAcc-live"},
+		)},
+		deleteErrors: map[string]error{
+			"ep-live": errs.WrapErrorf(&tea.SDKError{StatusCode: tea.Int(400), Code: tea.String("InboundEndpoint")}, "delete failed"),
+		},
+	}
+	err := sweepInboundEndpoints(context.Background(), api, []string{"tf-testAcc"})
+	if err == nil || !strings.Contains(err.Error(), "delete failed") {
+		t.Fatalf("a short endpoint code must not mark the endpoint as already removed, got %v", err)
+	}
+	if len(api.deleted) != 0 {
+		t.Fatalf("a failed delete must not be recorded as deleted, deleted=%v", api.deleted)
+	}
+}
+
 func TestUnitIsInboundEndpointNotFound(t *testing.T) {
 	cases := []struct {
 		name string
@@ -401,6 +484,21 @@ func TestUnitIsInboundEndpointNotFound(t *testing.T) {
 			name: "misspelled not-exists code without data",
 			err:  errs.WrapErrorf(&tea.SDKError{StatusCode: tea.Int(400), Code: tea.String("InboundEndpoint.NotExsits")}, "describe failed"),
 			want: true,
+		},
+		{
+			name: "correct not-exists code without data",
+			err:  errs.WrapErrorf(&tea.SDKError{StatusCode: tea.Int(400), Code: tea.String("InboundEndpoint.NotExists")}, "describe failed"),
+			want: true,
+		},
+		{
+			name: "http 400 short endpoint code is not not-found",
+			err:  errs.WrapErrorf(&tea.SDKError{StatusCode: tea.Int(400), Code: tea.String("InboundEndpoint")}, "describe failed"),
+			want: false,
+		},
+		{
+			name: "http 400 near-miss prefix is not not-found",
+			err:  errs.WrapErrorf(&tea.SDKError{StatusCode: tea.Int(400), Code: tea.String("InboundEndpoint.Not")}, "describe failed"),
+			want: false,
 		},
 		{
 			name: "tea error without code or data",
