@@ -658,19 +658,37 @@ func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 		return errs.WrapError(err)
 	}
 
-	queryAvailableInstancesObject, err := rocketmqService.QueryAvailableInstancesWithoutProductType(d.Id(), client.RegionId, "ons", "ons")
-	if err != nil {
-		return errs.WrapError(err)
-	}
-	d.Set("auto_renew", queryAvailableInstancesObject["RenewStatus"] == "AutoRenewal")
-	if v, ok := queryAvailableInstancesObject["RenewalDuration"]; ok && fmt.Sprint(v) != "0" {
-		auto_renew_periodVal, err := convert.FormatInt(v)
+	// Renewal settings only apply to prepaid instances. A postpaid instance
+	// confirmed by RocketMQ must remain readable even when BSS has no billing
+	// entry for it, including the refresh performed before destroy or import.
+	if d.Get("payment_type").(string) == "Subscription" {
+		billing, err := rocketmqService.QueryAvailableInstancesWithoutProductType(d.Id(), client.RegionId, "ons", "ons")
 		if err != nil {
-			return err
+			return errs.WrapError(err)
 		}
-		d.Set("auto_renew_period", auto_renew_periodVal)
+		if err := d.Set("auto_renew", billing["RenewStatus"] == "AutoRenewal"); err != nil {
+			return errs.WrapError(err)
+		}
+		if v, ok := billing["RenewalDuration"]; ok && fmt.Sprint(v) != "0" {
+			renewalPeriod, err := convert.FormatInt(v)
+			if err != nil {
+				return err
+			}
+			if err := d.Set("auto_renew_period", renewalPeriod); err != nil {
+				return errs.WrapError(err)
+			}
+		}
+		if err := d.Set("auto_renew_period_unit", convertAmqpInstanceRenewalDurationUnitResponse(billing["RenewalDurationUnit"])); err != nil {
+			return errs.WrapError(err)
+		}
+	} else {
+		// Postpaid instances cannot auto-renew. Persist the valid false value so
+		// fresh imports match an existing state that explicitly disabled renewal.
+		// Leave the optional renewal period unset: zero is not a valid duration.
+		if err := d.Set("auto_renew", false); err != nil {
+			return errs.WrapError(err)
+		}
 	}
-	d.Set("auto_renew_period_unit", convertAmqpInstanceRenewalDurationUnitResponse(queryAvailableInstancesObject["RenewalDurationUnit"]))
 
 	objectRaw, err = rocketmqService.DescribeInstanceGetInstanceIpWhitelist(d.Id())
 	if err != nil && !errs.NotFoundError(err) {
@@ -1044,20 +1062,138 @@ func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-
-	if d.Get("payment_type").(string) == "Subscription" {
-		return errs.WrapError(errs.Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
-	}
-
 	client := meta.(*connectivity.AliyunClient)
 	instanceId := d.Id()
-	action := fmt.Sprintf("/instances/%s", instanceId)
-	var request map[string]interface{}
-	var response map[string]interface{}
-	query := make(map[string]*string)
-	var err error
+
+	// Read the actual billing identity from the cloud rather than the Terraform
+	// config: a Subscription (prepaid) instance must be refunded through the
+	// BssOpenApi RefundInstance API because RocketMQ DeleteInstance only
+	// supports PayAsYouGo instances, while a PayAsYouGo instance keeps using the
+	// normal RoaDelete. Reading paymentType and commodityCode from
+	// DescribeInstance keeps destroy correct for international commodities
+	// whose ProductType is resolved by CreateInstance, not guessed from config.
+	billingInstance, err := NewService(client).DescribeInstance(instanceId)
+	if err != nil {
+		// An already-released instance has nothing to destroy.
+		if errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	paymentType, _ := billingInstance["paymentType"].(string)
+	commodityCode, _ := billingInstance["commodityCode"].(string)
+
+	switch paymentType {
+	case "Subscription":
+		if commodityCode == "" {
+			return fmt.Errorf("cannot confirm RocketMQ billing identity before refunding %s: empty commodityCode", instanceId)
+		}
+		if err := refundRocketMQSubscriptionInstance(d, client, instanceId, commodityCode); err != nil {
+			// Retain the Terraform state on refund failure: do not clear the ID,
+			// so a subsequent destroy can retry the refund.
+			return err
+		}
+	case "PayAsYouGo":
+		if err := deleteRocketMQPaygInstance(d, client, instanceId); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("cannot destroy RocketMQ instance %s: unsupported paymentType %q", instanceId, paymentType)
+	}
+
+	// Confirm the instance is actually released before clearing state, so a
+	// refund/delete that did not release the instance retains the Terraform state.
+	// RefundInstance uses ImmediatelyRelease=1 and RoaDelete releases synchronously,
+	// so a short initial delay followed by the refresh polling is enough; the
+	// delete timeout bounds the overall wait.
+	rocketmqService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, rocketmqService.InstanceStateRefreshFunc(instanceId, "status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, instanceId)
+	}
+
+	return nil
+}
+
+// refundRocketMQSubscriptionInstance refunds a Subscription (prepaid) RocketMQ
+// instance through the BssOpenApi RefundInstance API. RocketMQ DeleteInstance
+// only supports PayAsYouGo instances, so refund is the only release path for
+// prepaid ones. The commodityCode read from DescribeInstance is used as the
+// RefundInstance ProductType so that international commodities (e.g.
+// ons_rmqpost_public_intl) are refunded with their actual product type,
+// mirroring the SetRenewal fallback pattern. It is idempotent: an
+// already-absent or already-refunded instance succeeds, so a repeated
+// terraform destroy does not error out.
+func refundRocketMQSubscriptionInstance(d *schema.ResourceData, client *connectivity.AliyunClient, instanceId, commodityCode string) error {
+	action := "RefundInstance"
+	var (
+		request  map[string]interface{}
+		response map[string]interface{}
+		endpoint string
+		err      error
+	)
+	query := make(map[string]interface{})
 	request = make(map[string]interface{})
-	request["instanceId"] = d.Id()
+	query["InstanceId"] = instanceId
+	request["ClientToken"] = helper.BuildClientToken(action)
+	request["ImmediatelyRelease"] = "1"
+	request["ProductCode"] = "ons"
+	request["ProductType"] = commodityCode
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			// An already-absent or already-refunded instance is treated as a
+			// successful delete so terraform destroy is idempotent.
+			if errs.IsExpectedErrors(err, []string{"ResourceNotExists", "ExistRefundingOrderError"}) {
+				return nil
+			}
+			// International prepaid commodities may live on the international
+			// BSS endpoint; mirror the SetRenewal fallback pattern. The
+			// ProductType is the real commodityCode, so it needs no override.
+			if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return retry.RetryableError(err)
+			}
+			// BssOpenApi RefundInstance reports "InternalError" (HTTP 500,
+			// 系统异常请重试) for transient server faults; helper.NeedRetry
+			// matches neither its Code nor its Message, so retry it explicitly
+			// within the delete budget instead of failing the refund on the
+			// first transient 500.
+			if errs.IsExpectedErrors(err, []string{"InternalError"}) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, instanceId, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+// deleteRocketMQPaygInstance releases a PayAsYouGo (postpaid) RocketMQ
+// instance through the RocketMQ RoaDelete API. This path is unchanged from
+// the previous behavior; only Subscription destroy was extended to refund.
+func deleteRocketMQPaygInstance(d *schema.ResourceData, client *connectivity.AliyunClient, instanceId string) error {
+	action := fmt.Sprintf("/instances/%s", instanceId)
+	var (
+		request  map[string]interface{}
+		response map[string]interface{}
+		query    = make(map[string]*string)
+		err      error
+	)
+	request = make(map[string]interface{})
+	request["instanceId"] = instanceId
 
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
@@ -1078,15 +1214,8 @@ func resourceInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 		if errs.NotFoundError(err) {
 			return nil
 		}
-		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, instanceId, action, errs.AlibabaCloudSdkGoERROR)
 	}
-
-	rocketmqService := NewService(client)
-	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Minute, rocketmqService.InstanceStateRefreshFunc(d.Id(), "$.instanceId", []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
-	}
-
 	return nil
 }
 
