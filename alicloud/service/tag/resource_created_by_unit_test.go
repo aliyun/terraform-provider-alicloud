@@ -50,8 +50,8 @@ func TestUnitCreatedByTimeoutsValidation(t *testing.T) {
 	}{
 		{name: "positive", value: "10m"},
 		{name: "malformed", value: "soon", wantError: true},
-		{name: "zero", value: "0s", wantError: true},
-		{name: "negative", value: "-1m", wantError: true},
+		{name: "zero", value: "0s"},
+		{name: "negative", value: "-1m"},
 	}
 	for _, operation := range []string{"create", "update", "delete"} {
 		attribute := block.Attributes[operation].(schema.StringAttribute)

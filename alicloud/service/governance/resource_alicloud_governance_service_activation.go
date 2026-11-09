@@ -11,7 +11,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/timeout"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -50,18 +49,12 @@ func (r *serviceActivationResource) Metadata(ctx context.Context, req resource.M
 }
 
 func (r *serviceActivationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	timeoutsBlock := timeouts.Block(ctx, timeouts.Opts{
-		Create: true,
-		Delete: true,
-	}).(schema.SingleNestedBlock)
-	for operation, attribute := range timeoutsBlock.Attributes {
-		stringAttribute := attribute.(schema.StringAttribute)
-		stringAttribute.Validators = append(stringAttribute.Validators, timeout.PositiveTimeoutValidator{})
-		timeoutsBlock.Attributes[operation] = stringAttribute
-	}
 	resp.Schema = schema.Schema{
 		Blocks: map[string]schema.Block{
-			"timeouts": timeoutsBlock,
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{
+				Create: true,
+				Delete: true,
+			}),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
