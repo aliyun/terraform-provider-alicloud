@@ -32,6 +32,10 @@ package validation.
   to avoid newly enforcing historical findings in unchanged pages.
   The original global `.md` link check remains global to avoid losing checks
   on unchanged sources, and changed `.markdown` sources are also checked.
+  Link checks make at most three attempts when all reported failures have no
+  HTTP response and include a transient timeout, connection reset or DNS retry
+  error. Every attempt remains in the log. HTTP failures, tool failures and
+  failures after the last attempt still fail the check.
 
 Older PR heads missing these wrappers use workflow fallbacks that execute the
 previous checker instead of skipping it. Direct invocations of the existing Go

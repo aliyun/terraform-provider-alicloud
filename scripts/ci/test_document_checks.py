@@ -8,6 +8,7 @@ import shlex
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location(
     'document_checks', Path(__file__).with_name('run-document-checks.py')
@@ -17,6 +18,48 @@ spec.loader.exec_module(checks)
 
 
 class DocumentChecksTest(unittest.TestCase):
+    def run_link_failure(self, directory, message, recover=False, name='markdown-link'):
+        attempts = Path(directory) / 'attempts'
+        command = ('echo attempt >> ' + shlex.quote(str(attempts)) + '\n' +
+                   ('if [[ $(wc -l < ' + shlex.quote(str(attempts)) + ') -ge 3 ]]; then echo recovered; exit 0; fi\n'
+                    if recover else '') +
+                   'echo ' + shlex.quote(message) + '; exit 1')
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), mock.patch.object(checks.time, 'sleep') as sleep:
+            status = checks.run_checks({name: command})
+        return status, len(attempts.read_text().splitlines()), output.getvalue(), sleep.call_args_list
+
+    def test_transient_link_failure_recovers_and_keeps_failed_attempt_logs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            status, attempts, output, delays = self.run_link_failure(
+                directory, '[✖] https://example.invalid/ -> Status: 0 ETIMEDOUT', recover=True)
+        self.assertEqual((status, attempts), (0, 3))
+        self.assertEqual(output.count('Status: 0 ETIMEDOUT'), 2)
+        self.assertIn('recovered', output)
+        self.assertEqual(delays, [mock.call(2), mock.call(5)])
+
+    def test_persistent_network_failure_still_fails_after_three_attempts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            status, attempts, _, _ = self.run_link_failure(
+                directory, '[✖] https://example.invalid/ -> Status: 0 ECONNRESET')
+        self.assertEqual((status, attempts), (1, 3))
+
+    def test_http_failure_is_not_retried_even_with_a_second_network_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            status, attempts, _, delays = self.run_link_failure(
+                directory, '[✖] https://example.invalid/missing -> Status: 404\n'
+                           '[✖] https://example.invalid/slow -> Status: 0 ETIMEDOUT')
+        self.assertEqual((status, attempts), (1, 1))
+        self.assertEqual(delays, [])
+
+    def test_tool_failure_and_other_checks_are_not_retried(self):
+        for name, message in [('markdown-link', 'npm error ETIMEDOUT'),
+                              ('markdown-lint', '[✖] https://example.invalid/ -> Status: 0 ETIMEDOUT')]:
+            with self.subTest(name=name, message=message), tempfile.TemporaryDirectory() as directory:
+                status, attempts, _, delays = self.run_link_failure(directory, message, name=name)
+            self.assertEqual((status, attempts), (1, 1))
+            self.assertEqual(delays, [])
+
     def test_failure_does_not_skip_sibling_and_is_reported(self):
         with tempfile.TemporaryDirectory() as directory:
             sibling = Path(directory) / 'sibling-finished'
