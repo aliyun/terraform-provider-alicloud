@@ -58,6 +58,13 @@ func TestUnitRocketmqInstanceReadPaygDoesNotQueryRenewal(t *testing.T) {
 	if d.Id() != rocketmqTraceOnFixtureInstanceId {
 		t.Fatal("an existing PayAsYouGo instance must retain its identity")
 	}
+	state, err := d.State().AttrsAsObjectValue(r.CoreConfigSchema().ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if renewal := state.GetAttr("auto_renew"); renewal.IsNull() || renewal.True() {
+		t.Fatalf("PayAsYouGo import must preserve auto_renew=false, got %#v", renewal)
+	}
 	assertNullRenewalState(t, r, d, "auto_renew_period", "auto_renew_period_unit")
 }
 

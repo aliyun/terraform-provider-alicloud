@@ -681,6 +681,13 @@ func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 		if err := d.Set("auto_renew_period_unit", convertAmqpInstanceRenewalDurationUnitResponse(billing["RenewalDurationUnit"])); err != nil {
 			return errs.WrapError(err)
 		}
+	} else {
+		// Postpaid instances cannot auto-renew. Persist the valid false value so
+		// fresh imports match an existing state that explicitly disabled renewal.
+		// Leave the optional renewal period unset: zero is not a valid duration.
+		if err := d.Set("auto_renew", false); err != nil {
+			return errs.WrapError(err)
+		}
 	}
 
 	objectRaw, err = rocketmqService.DescribeInstanceGetInstanceIpWhitelist(d.Id())
