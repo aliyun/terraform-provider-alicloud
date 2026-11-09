@@ -252,6 +252,82 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate_SslConnectionStringAndConnection
 	})
 }
 
+func TestAccAliCloudPolarDBEndpointSccModeCreate(t *testing.T) {
+	var v *sdkpolardb.DBEndpoint
+	rand := tfacctest.RandStringFromCharSet(10, tfacctest.CharSetAlphaNum)
+	name := fmt.Sprintf("tf-testAccPolarDBendpoint-scc-%s", rand)
+	var basicMap = map[string]string{
+		"db_cluster_id": CHECKSET,
+	}
+	resourceId := "alicloud_polardb_endpoint.default"
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return polardb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterEndpoint")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourcePolarDBEndpointConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id":   "${alicloud_polardb_cluster.cluster.id}",
+					"endpoint_type":   "Custom",
+					"read_write_mode": "ReadWrite",
+					"endpoint_config": map[string]string{
+						"ConsistLevel": "0",
+					},
+					"scc_mode": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_type":                "Custom",
+						"read_write_mode":              "ReadWrite",
+						"endpoint_config.ConsistLevel": "0",
+						"scc_mode":                     "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scc_mode": "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scc_mode": "off",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"net_type", "endpoint_config"},
+			},
+		},
+	})
+}
+
+func TestUnitPolarDBEndpointSccMode(t *testing.T) {
+	sccModeSchema := polardb.ResourceEndpoint().Schema["scc_mode"]
+	for _, input := range []string{"on", "off"} {
+		if _, errors := sccModeSchema.ValidateFunc(input, "scc_mode"); len(errors) > 0 {
+			t.Fatalf("expected %q to be valid, got: %v", input, errors)
+		}
+	}
+	for _, input := range []string{"ON", "OFF", "INVALID"} {
+		if _, errors := sccModeSchema.ValidateFunc(input, "scc_mode"); len(errors) == 0 {
+			t.Fatalf("expected %q to be rejected", input)
+		}
+	}
+}
+
 func resourcePolarDBEndpointConfigDependence(name string) string {
 	return fmt.Sprintf(`
         variable "name" {

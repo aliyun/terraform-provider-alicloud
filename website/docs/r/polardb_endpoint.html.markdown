@@ -19,6 +19,8 @@ Provides a PolarDB endpoint resource to manage custom endpoint of PolarDB cluste
 
 -> **NOTE:** The DynamoDB type endpoint does not support deletion. When destroying the Terraform resource, the DynamoDB endpoint will be removed from state but not deleted from the cloud.
 
+-> **NOTE:** Before setting `scc_mode` to `on`, set `ConsistLevel` in `endpoint_config` to `0` (eventual consistency).
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -74,6 +76,7 @@ The following arguments are supported:
 * `nodes` - (Optional) Node id list for endpoint configuration. At least 2 nodes if specified, or if the cluster has more than 3 nodes, read-only endpoint is allowed to mount only one node. Default is all nodes.
 * `auto_add_new_nodes` - (Optional) Whether the new node automatically joins the default cluster address. Valid values are `Enable`, `Disable`. When creating a new custom endpoint, default to `Disable`.
 * `endpoint_config` - (Optional) The advanced settings of the endpoint of Apsara PolarDB clusters are in JSON format. Including the settings of consistency level, transaction splitting, connection pool, and offload reads from primary node. For more details, see the [description of EndpointConfig in the Request parameters table for details](https://www.alibabacloud.com/help/doc-detail/116593.htm).
+* `scc_mode` - (Optional, Computed, Available since v2.3.0) Specifies whether to enable global consistency (high-performance mode). Valid values are `on` and `off`. Before setting this argument to `on`, set `ConsistLevel` in `endpoint_config` to `0` (eventual consistency).
 * `ssl_enabled` - (Optional, Available since v1.121.0) Specifies how to modify the SSL encryption status. Valid values: `Disable`, `Enable`, `Update`.
 * `net_type` - (Optional, Available since v1.121.0) The network type of the endpoint address.
 * `ssl_auto_rotate` - (Optional, Available since v1.132.0) Specifies whether automatic rotation of SSL certificates is enabled. Valid values: `Enable`,`Disable`.  
