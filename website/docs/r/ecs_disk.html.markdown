@@ -49,6 +49,18 @@ resource "alicloud_ecs_disk" "example" {
 }
 ```
 
+### Regional ESSD data disk
+
+Regional ESSD (`cloud_regional_disk_auto`) is region-scoped. Omit `zone_id` and `performance_level` when creating it:
+
+```terraform
+resource "alicloud_ecs_disk" "regional" {
+  category  = "cloud_regional_disk_auto"
+  size      = 20
+  disk_name = "regional-essd-example"
+}
+```
+
 ### Destroying a disk with `force_delete`
 
 The following example creates a pay-as-you-go disk with `force_delete = true`; destroying the resource releases the disk:
@@ -91,7 +103,7 @@ If you want to delete a disk without `force_delete`, convert it to `PayAsYouGo` 
 The following arguments are supported:
 * `advanced_features` - (Optional) The advanced features configured for the disk.
 * `bursting_enabled` - (Optional, Bool, Available since v1.237.0) Specifies whether to enable the performance burst feature. Valid values: `true`, `false`. **NOTE:** `bursting_enabled` is only valid when `category` is `cloud_auto`; specifying it for other categories is rejected by the API. When `category` is changed to `cloud_auto` in the same apply (for example from `cloud_essd`), the provider defers the `BurstingEnabled` update until the disk category has been confirmed as `cloud_auto` by `ModifyDiskSpec` and `WaitForState`, because the API rejects `BurstingEnabled` on a non-`cloud_auto` disk.
-* `category` - (Optional) The category of the data disk. Default value: `cloud_efficiency`. Valid Values: `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_essd_entry`, `elastic_ephemeral_disk_standard`, `elastic_ephemeral_disk_premium`. **NOTE:** When `category` is `cloud_auto`, the `bursting_enabled` and `provisioned_iops` parameters become applicable; they are rejected by the API for other categories. **NOTE:** Category conversion (for example from `cloud_essd` to `cloud_auto`) is applied asynchronously by the API: the disk may report the transitional status `Modifying` while the conversion runs, and even after the status returns to `Available` the category may still report the previous value for some time. The provider therefore waits within a single `DescribeDisks` response until the status is `Available`/`In_use` and the category already equals the requested value before completing the update, and this wait is bounded by the `update` timeout (default 30 mins). Conversion duration depends on the disk (throughput, capacity and the previous category) and has no completion guarantee; set `timeouts.update` explicitly for large disks whose conversion may take longer.
+* `category` - (Optional) The category of the data disk. Default value: `cloud_efficiency`. Valid Values: `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_essd_entry`, `cloud_regional_disk_auto`, `elastic_ephemeral_disk_standard`, `elastic_ephemeral_disk_premium`. **NOTE:** When `category` is `cloud_auto`, the `bursting_enabled` and `provisioned_iops` parameters become applicable; they are rejected by the API for other categories. **NOTE:** Category conversion (for example from `cloud_essd` to `cloud_auto`) is applied asynchronously by the API: the disk may report the transitional status `Modifying` while the conversion runs, and even after the status returns to `Available` the category may still report the previous value for some time. The provider therefore waits within a single `DescribeDisks` response until the status is `Available`/`In_use` and the category already equals the requested value before completing the update, and this wait is bounded by the `update` timeout (default 30 mins). Conversion duration depends on the disk (throughput, capacity and the previous category) and has no completion guarantee; set `timeouts.update` explicitly for large disks whose conversion may take longer.
 * `delete_auto_snapshot` - (Optional, Bool) Specifies whether to delete the automatic snapshots of the disk when the disk is released. Default value: `false`.
 * `delete_with_instance` - (Optional, Bool) Specifies whether to release the disk along with its associated instance. Default value: `false`.
 * `description` - (Optional) The description of the disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
@@ -107,7 +119,7 @@ The following arguments are supported:
 * `force_delete` - (Optional, Bool, Available since v2.1.1) Specifies whether to release the disk during destroy even when the default behavior cannot release it, for example a `payment_type = "Subscription"` disk. Defaults to `false`. When set to `true`, the provider converts the disk to `PayAsYouGo` (`ModifyDiskChargeType`), detaches it with `DeleteWithInstance=false`, waits until the disk is `Available` and then releases it (`DeleteDisk`). **NOTE:** `force_delete` deletes the disk and all data on it, and the release cannot be undone. It takes priority over the legacy behavior that only removes a PrePaid disk with `delete_with_instance = true` from the state. `force_delete` does not support multi-attach disks (`multi_attach = "Enabled"`); the destroy fails with an actionable error and the disk is kept. The billing method conversion requires the disk to be attached to a Subscription instance and is limited to one successful call per disk every five minutes.
 * `instance_id` - (Optional, ForceNew) The ID of the instance to which the created subscription disk is automatically attached.
   * After you specify the instance ID, the specified `resource_group_id`, `tags`, and `kms_key_id` parameters are ignored.
-  * One of the `zone_id` and `instance_id` must be set but can not be set at the same time.
+  * For `cloud_regional_disk_auto`, `zone_id` is not required. For other disk categories, specify exactly one of `zone_id` or `instance_id`.
 * `kms_key_id` - (Optional, ForceNew) The ID of the Key Management Service (KMS) key that is used for the disk. **NOTE:** `kms_key_id` is only valid when `encrypted` is `true`.
 * `multi_attach` - (Optional, ForceNew, Available since v1.237.0) Specifies whether to enable the multi-attach feature for the disk. Default value: `Disabled`. Valid values: `Enabled`, `Disabled`. **NOTE:** Currently, `multi_attach` can only be set to `Enabled` when `category` is set to `cloud_essd`.
 * `payment_type` - (Optional) The payment type of the disk. Default to `PayAsYouGo`. Valid values: `PayAsYouGo`, `Subscription`. If you want to change the disk payment type, the `instance_id` is required.
@@ -124,6 +136,7 @@ The following arguments are supported:
   - If `category` is set to `cloud_ssd`. Valid values: `20` to `32768`.
   - If `category` is set to `cloud_auto`. Valid values: `1` to `65536`.
   - If `category` is set to `cloud_essd_entry`. Valid values: `10` to `32768`.
+  - If `category` is set to `cloud_regional_disk_auto`. Valid values: `10` to `65536`.
   - If `category` is set to `elastic_ephemeral_disk_standard`. Valid values: `64` to `8192`.
   - If `category` is set to `elastic_ephemeral_disk_premium`. Valid values: `64` to `8192`.
   - If `category` is set to `cloud_essd`, the valid values are related to `performance_level`. Valid values:
@@ -138,7 +151,7 @@ The following arguments are supported:
 * `type` - (Optional, Available since v1.122.0) The type to expand cloud disks. Valid Values: `online`, `offline`. Default to `offline`.
   - `offline`: After you resize a disk offline, you must restart the instance by using the console or by calling the RebootInstance operation for the resizing operation to take effect. For more information, see Restart the instance and RebootInstance.
   - `online`: After you resize a disk online, the resizing operation takes effect immediately and you do not need to restart the instance. You can resize ultra disks, standard SSDs, and ESSDs online.
-* `zone_id` - (Optional, ForceNew) ID of the free zone to which the disk belongs. One of the `zone_id` and `instance_id` must be set but can not be set at the same time.
+* `zone_id` - (Optional, ForceNew) ID of the free zone to which the disk belongs. For `cloud_regional_disk_auto`, `zone_id` is not required. For other disk categories, specify exactly one of `zone_id` or `instance_id`.
 * `availability_zone` - (Deprecated since v1.122.0) Field `availability_zone` has been deprecated from provider version 1.122.0. New field `zone_id` instead.
 * `name` - (Optional, Deprecated since v1.122.0) Field `name` has been deprecated from provider version 1.122.0. New field `disk_name` instead.
 
