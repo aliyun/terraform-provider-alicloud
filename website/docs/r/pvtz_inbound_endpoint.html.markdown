@@ -51,8 +51,8 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  vpc_id = alicloud_vpc.default.id
-  name   = var.name
+  vpc_id                = alicloud_vpc.default.id
+  security_group_name   = var.name
 }
 
 resource "alicloud_pvtz_inbound_endpoint" "default" {
@@ -100,7 +100,7 @@ The following attributes are exported:
 
 * `id` - (String) The resource ID in terraform of Inbound Endpoint.
 * `status` - (String) The status of the resource. Valid values: `CHANGE_FAILED`, `CHANGE_INIT`, `EXCEPTION`, `FAILED`, `INIT`, `SUCCESS`.
-* `endpoint_type` - (String) The type of the inbound endpoint. Currently only `public` is supported.
+* `endpoint_type` - (String) The type of the inbound endpoint reported by the service.
 
 ## Import
 
