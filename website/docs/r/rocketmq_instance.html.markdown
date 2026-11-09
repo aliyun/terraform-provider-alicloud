@@ -15,7 +15,7 @@ For information about RocketMQ Instance and how to use it, see [What is Instance
 
 -> **NOTE:** Available since v1.212.0.
 
--> **NOTE:** Destroying a `Subscription` (prepaid) instance unsubscribes it through the BssOpenApi `RefundInstance` API with `ImmediatelyRelease` enabled and waits for the instance to be released before clearing the Terraform state. A `PayAsYouGo` (postpaid) instance keeps using the RocketMQ `DeleteInstance` API. If the refund cannot be confirmed (for example the commodity is not supported for self-service refund), the Terraform state is retained so the destroy can be retried.
+-> **NOTE:** From `v2.3.0`, destroying a `Subscription` (prepaid) instance automatically unsubscribes it through the BssOpenApi `RefundInstance` API with `ImmediatelyRelease` enabled and waits for the instance to be released before clearing the Terraform state. If the refund cannot be confirmed (for example the commodity is not supported for self-service refund), the Terraform state is retained so the destroy can be retried. In versions prior to `v2.3.0` (including v1.294.0), prepaid instances are not unsubscribed on destroy; you must manually unsubscribe them in the console. A `PayAsYouGo` (postpaid) instance keeps using the RocketMQ `DeleteInstance` API.
 
 ## Example Usage
 
