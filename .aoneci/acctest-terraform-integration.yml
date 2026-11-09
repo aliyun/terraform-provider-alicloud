@@ -57,7 +57,8 @@ jobs:
         uses: upload-artifact
         inputs:
           name: acube-acctest-diagnostics
-          path: .acube-ci/diagnostics
+          path: .acube-ci/diagnostics/*
+          if-no-files-found: error
   DocsExampleTest:
     timeout: 9h
     steps:
@@ -77,4 +78,5 @@ jobs:
         uses: upload-artifact
         inputs:
           name: acube-example-diagnostics
-          path: .acube-ci/diagnostics
+          path: .acube-ci/diagnostics/*
+          if-no-files-found: error
