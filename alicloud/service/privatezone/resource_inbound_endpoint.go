@@ -182,7 +182,10 @@ func (r *inboundEndpointResource) Schema(ctx context.Context, req resource.Schem
 // configured are set to unknown so the Framework correlates them by vswitch_id/az_id/cidr_block
 // and accepts whatever IP the API assigns; without this the prior IP carried by
 // UseStateForUnknown would no longer match the API result and produce an inconsistent result
-// after apply. When ip_configs is unchanged, the prior IPs are preserved and nothing is modified.
+// after apply. When ip_configs is unchanged and the resource is updated in place, the prior IPs
+// are preserved and nothing is modified. A planned replacement counts as a create: the plan then
+// carries the prior state for Optional+Computed values, so an omitted ip would otherwise be
+// replayed onto the new endpoint instead of being assigned by the service.
 func (r *inboundEndpointResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	// On create there is no prior state; a configured ip is planned as-is and an omitted ip is
 	// unknown, and Create sends only the configured value.
@@ -203,9 +206,14 @@ func (r *inboundEndpointResource) ModifyPlan(ctx context.Context, req resource.M
 		return
 	}
 
-	// If ip_configs hasn't changed, UseStateForUnknown correctly preserves the service-assigned
-	// ip values from state so they don't appear as planned changes.
-	if plan.IpConfigs.Equal(state.IpConfigs) {
+	// If ip_configs hasn't changed and the resource is not being replaced, UseStateForUnknown
+	// correctly preserves the service-assigned ip values from state so they don't appear as
+	// planned changes.
+	replacement := plan.SecurityGroupId != state.SecurityGroupId ||
+		plan.VpcId != state.VpcId ||
+		plan.VpcRegionId != state.VpcRegionId ||
+		plan.SpecVersion != state.SpecVersion
+	if plan.IpConfigs.Equal(state.IpConfigs) && !replacement {
 		return
 	}
 
@@ -268,8 +276,16 @@ func (r *inboundEndpointResource) Create(ctx context.Context, req resource.Creat
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	// Build the ip_config request from the configuration, not the plan: the plan carries prior
+	// state for Optional+Computed values during a replacement, so an ip the user omitted would
+	// otherwise be replayed onto the new endpoint instead of being assigned by the service.
+	var config inboundEndpointResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	ipConfigs, diags := inboundEndpointIpConfigsFromSet(ctx, plan.IpConfigs)
+	ipConfigs, diags := inboundEndpointIpConfigsFromSet(ctx, config.IpConfigs)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

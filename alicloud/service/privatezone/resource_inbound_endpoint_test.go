@@ -103,6 +103,7 @@ func collectInboundEndpointSweepIDs(ctx context.Context, client inboundEndpointS
 	var ids []string
 	var contractErrs []error
 	seen := make(map[string]struct{})
+	itemsSeen := 0
 	for {
 		response, err := helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
 			return client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
@@ -121,6 +122,7 @@ func collectInboundEndpointSweepIDs(ctx context.Context, client inboundEndpointS
 			return nil, nil, fmt.Errorf("parsing PrivateZone Inbound Endpoint list: %w", pathErr)
 		}
 		result, _ := raw.([]interface{})
+		itemsSeen += len(result)
 		for _, v := range result {
 			item, ok := v.(map[string]interface{})
 			if !ok {
@@ -149,7 +151,9 @@ func collectInboundEndpointSweepIDs(ctx context.Context, client inboundEndpointS
 			ids = append(ids, id)
 		}
 
-		if len(result) < helper.PageSizeLarge {
+		// TotalItems is authoritative: when the total is an exact multiple of the page size a
+		// further request would ask for an empty page that can look like a parse failure.
+		if itemsSeen >= totalCount || len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -266,6 +270,29 @@ func TestUnitSweepInboundEndpointsReadsAllPagesBeforeDeleting(t *testing.T) {
 			}
 			break
 		}
+	}
+}
+
+func TestUnitSweepInboundEndpointsStopsAtTotalItems(t *testing.T) {
+	page := make([]map[string]interface{}, 0, helper.PageSizeLarge)
+	for i := 0; i < helper.PageSizeLarge; i++ {
+		page = append(page, map[string]interface{}{
+			"Id":   fmt.Sprintf("ep-full-%d", i),
+			"Name": fmt.Sprintf("tf-testAcc-full-%d", i),
+		})
+	}
+	api := &fakeInboundEndpointSweepAPI{listResponses: []map[string]interface{}{
+		inboundEndpointSweepListResponse(page...),
+	}}
+
+	if err := sweepInboundEndpoints(context.Background(), api, []string{"tf-testAcc"}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if api.listCalls != 1 {
+		t.Fatalf("a full page that already reaches TotalItems must not trigger another request, got %d list calls", api.listCalls)
+	}
+	if len(api.deleted) != helper.PageSizeLarge {
+		t.Fatalf("expected every matching endpoint to be deleted, got %d", len(api.deleted))
 	}
 }
 
@@ -566,6 +593,28 @@ func TestAccAliCloudPvtzInboundEndpoint_complete(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceId, "security_group_id"),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "ip_configs.*", map[string]string{"ip": updatedFirstIp}),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "ip_configs.*", map[string]string{"ip": secondIp}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Replacing a ForceNew field with ip omitted must let the service assign the new
+				// addresses. Replaying the prior assigned ip would pin addresses the configuration
+				// never asked for, and collide when create_before_destroy keeps the old endpoint.
+				Config: testAccPvtzInboundEndpointConfig(name+"1", []int{0, 1}),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					deps.capture,
+					resource.TestCheckResourceAttr(resourceId, "ip_configs.#", "2"),
+					resource.TestCheckResourceAttr(resourceId, "endpoint_name", name+"1"),
+					resource.TestCheckResourceAttrSet(resourceId, "status"),
 				),
 			},
 			{
