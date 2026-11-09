@@ -1423,6 +1423,9 @@ func TestUnitECSSecurityGroupRuleCidrIpValidation(t *testing.T) {
 		}
 	}
 
+	// An explicitly empty value is rejected when it reaches the validator; an
+	// omitted cidr_ip never reaches it, so configurations without the attribute
+	// are unaffected.
 	for _, value := range []string{"", "not-a-cidr", "192.168.0.0/33", "192.168.0.0/16/8"} {
 		_, errs := validateFunc(value, "cidr_ip")
 		if len(errs) != 1 {
