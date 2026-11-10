@@ -30,11 +30,22 @@ func ResourceDomainExtension() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"listener_port": {
+				Type:          schema.TypeInt,
+				ValidateFunc:  validation.IntBetween(1, 65535),
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"frontend_port"},
+			},
 			"frontend_port": {
-				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntBetween(1, 65535),
-				Required:     true,
-				ForceNew:     true,
+				Type:          schema.TypeInt,
+				ValidateFunc:  validation.IntBetween(1, 65535),
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				Deprecated:    "Field 'frontend_port' has been deprecated from provider version 2.3.0. New field 'listener_port' instead.",
+				ConflictsWith: []string{"listener_port"},
 			},
 			"domain": {
 				Type:     schema.TypeString,
@@ -59,7 +70,14 @@ func resourceDomainExtensionCreate(d *schema.ResourceData, meta interface{}) err
 
 	request := slb.CreateCreateDomainExtensionRequest()
 	request.LoadBalancerId = d.Get("load_balancer_id").(string)
-	request.ListenerPort = requests.NewInteger(d.Get("frontend_port").(int))
+	listenerPort := d.Get("listener_port").(int)
+	if listenerPort == 0 {
+		listenerPort = d.Get("frontend_port").(int)
+	}
+	if listenerPort == 0 {
+		return errs.WrapError(fmt.Errorf("At least one of 'listener_port' or 'frontend_port' must be specified."))
+	}
+	request.ListenerPort = requests.NewInteger(listenerPort)
 	request.Domain = d.Get("domain").(string)
 	request.ServerCertificateId = d.Get("server_certificate_id").(string)
 
@@ -102,6 +120,7 @@ func resourceDomainExtensionRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("load_balancer_id", domainExtension.LoadBalancerId)
 	d.Set("domain", domainExtension.Domain)
 	d.Set("server_certificate_id", domainExtension.ServerCertificateId)
+	d.Set("listener_port", domainExtension.ListenerPort)
 	d.Set("frontend_port", domainExtension.ListenerPort)
 
 	return nil

@@ -76,6 +76,56 @@ func TestAccAliCloudSLBDomainExtensionBasic(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudSLBDomainExtensionListenerPort(t *testing.T) {
+	var v *slbsdk.DescribeDomainExtensionAttributeResponse
+	resourceId := "alicloud_slb_domain_extension.default"
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return slb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDomainExtensionAttribute")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccDomainExtensionListenerPort%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceSlbDomainExtensionConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		// module name
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		// module name
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id":             "${alicloud_slb_load_balancer.instance.id}",
+					"listener_port":                "${alicloud_slb_listener.https.frontend_port}",
+					"domain":                       "www.test.com",
+					"server_certificate_id":        "${alicloud_slb_server_certificate.foo.id}",
+					"delete_protection_validation": false,
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_id":      CHECKSET,
+						"listener_port":         CHECKSET,
+						"frontend_port":         CHECKSET,
+						"domain":                "www.test.com",
+						"server_certificate_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
+		},
+	})
+}
+
 func resourceSlbDomainExtensionConfigDependence(name string) string {
 	return fmt.Sprintf(`
    variable "name" {
