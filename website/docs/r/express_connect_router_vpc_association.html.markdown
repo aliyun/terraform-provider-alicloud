@@ -52,9 +52,11 @@ resource "alicloud_express_connect_router_vpc_association" "default" {
     "172.16.2.0/24",
     "172.16.1.0/24"
   ]
+  allowed_prefixes_mode = "MatchMode"
   vpc_owner_id          = data.alicloud_account.current.id
   association_region_id = "cn-hangzhou"
   vpc_id                = alicloud_vpc.default8qAtD6.id
+  description           = "test"
 }
 ```
 
@@ -64,7 +66,9 @@ resource "alicloud_express_connect_router_vpc_association" "default" {
 
 The following arguments are supported:
 * `allowed_prefixes` - (Optional) The list of allowed route prefixes.
+* `allowed_prefixes_mode` - (Optional) The prefix route mode. Valid values: `MatchMode`, `IncrementalMode`.
 * `association_region_id` - (Required, ForceNew) The region ID of the resource to be associated.
+* `description` - (Optional) The description of the association. The length is 0 to 128 characters.
 * `ecr_id` - (Required, ForceNew) The ECR ID.
 * `vpc_id` - (Required, ForceNew) The VPC ID.
 * `vpc_owner_id` - (Optional, ForceNew) The ID of the Alibaba Cloud account that owns the VPC.
@@ -75,8 +79,10 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<ecr_id>:<association_id>:<vpc_id>`.
+* `allowed_prefixes_mode` - The prefix route mode.
 * `association_id` - The ID of the association between the ECR and the VPC.
 * `create_time` - The time when the association was created.
+* `description` - The description of the association.
 * `status` - The deployment state of the associated resource.
 
 ## Timeouts

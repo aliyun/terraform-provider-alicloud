@@ -36,6 +36,11 @@ func ResourceVpcAssociation() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"allowed_prefixes_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"association_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -47,6 +52,11 @@ func ResourceVpcAssociation() *schema.Resource {
 			},
 			"create_time": {
 				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 			"ecr_id": {
@@ -96,6 +106,12 @@ func resourceVpcAssociationCreate(d *schema.ResourceData, meta interface{}) erro
 		allowedPrefixesMaps := v.([]interface{})
 		request["AllowedPrefixes"] = allowedPrefixesMaps
 	}
+	if v, ok := d.GetOk("allowed_prefixes_mode"); ok {
+		request["AllowedPrefixesMode"] = v
+	}
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -144,11 +160,13 @@ func resourceVpcAssociationRead(d *schema.ResourceData, meta interface{}) error 
 
 	d.Set("association_region_id", objectRaw["RegionId"])
 	d.Set("create_time", objectRaw["GmtCreate"])
+	d.Set("description", objectRaw["Description"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("vpc_owner_id", objectRaw["VpcOwnerId"])
 	d.Set("association_id", objectRaw["AssociationId"])
 	d.Set("ecr_id", objectRaw["EcrId"])
 	d.Set("vpc_id", objectRaw["VpcId"])
+	d.Set("allowed_prefixes_mode", objectRaw["AllowedPrefixesMode"])
 
 	allowedPrefixes1Raw := make([]interface{}, 0)
 	if objectRaw["AllowedPrefixes"] != nil {
@@ -167,30 +185,25 @@ func resourceVpcAssociationRead(d *schema.ResourceData, meta interface{}) error 
 
 func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	expressConnectRouterServiceV2 := NewService(client)
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	update := false
-	parts := strings.Split(d.Id(), ":")
-	action := "ModifyExpressConnectRouterAssociationAllowedPrefix"
 	var err error
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["EcrId"] = parts[0]
-	request["AssociationId"] = parts[1]
-	request["ClientToken"] = helper.BuildClientToken(action)
-	if d.HasChange("allowed_prefixes") {
-		update = true
-		if v, ok := d.GetOk("allowed_prefixes"); ok {
-			allowedPrefixesMaps := v.([]interface{})
-			request["AllowedPrefixes"] = allowedPrefixesMaps
-		}
-	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 
-	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	// Update description via ModifyExpressConnectRouterAssociation.
+	if d.HasChange("description") {
+		action := "ModifyExpressConnectRouterAssociation"
+		request = make(map[string]interface{})
+		query = make(map[string]interface{})
+		request["EcrId"] = parts[0]
+		request["AssociationId"] = parts[1]
+		request["Description"] = d.Get("description")
+		request["ClientToken"] = helper.BuildClientToken(action)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 			if err != nil {
@@ -206,7 +219,44 @@ func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		expressConnectRouterServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
+	}
+
+	// Update allowed_prefixes / allowed_prefixes_mode via ModifyExpressConnectRouterAssociationAllowedPrefix.
+	if d.HasChange("allowed_prefixes") || d.HasChange("allowed_prefixes_mode") {
+		action := "ModifyExpressConnectRouterAssociationAllowedPrefix"
+		request = make(map[string]interface{})
+		query = make(map[string]interface{})
+		request["EcrId"] = parts[0]
+		request["AssociationId"] = parts[1]
+		request["ClientToken"] = helper.BuildClientToken(action)
+		if v, ok := d.GetOk("allowed_prefixes"); ok {
+			request["AllowedPrefixes"] = v.([]interface{})
+		}
+		// Only send AllowedPrefixesMode when the user changed it; for pure
+		// allowed_prefixes updates, keep the original behavior of omitting it
+		// so the API does not reject a stale default value.
+		if d.HasChange("allowed_prefixes_mode") {
+			request["AllowedPrefixesMode"] = d.Get("allowed_prefixes_mode")
+		}
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"Conflict.Lock"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			logs.AddDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
 		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())

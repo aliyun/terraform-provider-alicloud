@@ -324,4 +324,85 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_allow
 	})
 }
 
+// Case VpcAssociation description and allowed_prefixes_mode 6348
+func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_description6348(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_express_connect_router_vpc_association.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudExpressConnectRouterExpressConnectRouterVpcAssociationMap6348)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return expressconnectrouter.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeExpressConnectRouterExpressConnectRouterVpcAssociation")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutervpcassociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudExpressConnectRouterExpressConnectRouterVpcAssociationBasicDependence6348)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"association_region_id": acctest.DefaultRegionToTest,
+					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
+					"ecr_id":                "${alicloud_express_connect_router_express_connect_router.defaultM9YxGW.id}",
+					"allowed_prefixes": []string{
+						"172.16.4.0/24", "172.16.3.0/24", "172.16.2.0/24", "172.16.1.0/24"},
+					"allowed_prefixes_mode": "MatchMode",
+					"description":           "tf-testacc-description",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"association_region_id": acctest.CHECKSET,
+						"vpc_id":                acctest.CHECKSET,
+						"ecr_id":                acctest.CHECKSET,
+						"allowed_prefixes.#":    "4",
+						"allowed_prefixes_mode": "MatchMode",
+						"description":           "tf-testacc-description",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"association_region_id": acctest.DefaultRegionToTest,
+					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
+					"ecr_id":                "${alicloud_express_connect_router_express_connect_router.defaultM9YxGW.id}",
+					"allowed_prefixes": []string{
+						"172.16.4.0/24", "172.16.3.0/24", "172.16.2.0/24", "172.16.1.0/24"},
+					"allowed_prefixes_mode": "IncrementalMode",
+					"description":           "tf-testacc-description-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_prefixes_mode": "IncrementalMode",
+						"description":           "tf-testacc-description-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"association_region_id": acctest.DefaultRegionToTest,
+					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
+					"ecr_id":                "${alicloud_express_connect_router_express_connect_router.defaultM9YxGW.id}",
+					"allowed_prefixes": []string{
+						"172.16.4.0/24", "172.16.3.0/24", "172.16.2.0/24", "172.16.1.0/24"},
+					"allowed_prefixes_mode": "IncrementalMode",
+					"description":           "tf-testacc-description-update",
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
 // Test ExpressConnectRouter ExpressConnectRouterVpcAssociation. <<< Resource test cases, automatically generated.
