@@ -54,6 +54,41 @@ class IntegrationTest(unittest.TestCase):
         self.assertEqual(len(p['examples']),1)
         self.assertIn('source = "aliyun/alicloud"',p['examples'][0]['mainTf'])
         self.assertEqual(len(p['examples'][0]['originalSha256']),64)
+    def test_plan_excludes_unit_tests_and_keeps_resource_coverage(self):
+        resource = 'alicloud/service/rds/resource_alicloud_db_instance'
+        doc = 'website/docs/r/db_instance.html.markdown'
+
+        def git(*args):
+            if args[0] == 'diff':
+                return '\n'.join([resource + '.go', resource + '_unit_test.go'])
+            if args[0] == 'ls-tree':
+                return ''
+            if args == ('show', 'head:' + resource + '_test.go'):
+                return 'func TestAccDBInstance(t *testing.T) {'
+            if args == ('show', 'head:' + doc):
+                return '```terraform\nresource "alicloud_db_instance" "test" {}\n```'
+            raise AssertionError(args)
+
+        resolved = 'db_instance.go\talicloud_db_instance\tresource\n'
+        with patch.object(m, 'git', side_effect=git), patch.object(m.subprocess, 'check_output', return_value=resolved) as run:
+            result = m.plan('base', 'head')
+        self.assertEqual(result['packages'], {'alicloud/service/rds': ['TestAccDBInstance']})
+        self.assertEqual([example['name'] for example in result['examples']], [doc + '#0'])
+        run.assert_called_once_with(['go', 'run', 'scripts/title/title_check.go', '-resolve', resource + '.go'], text=True)
+
+    def test_plan_has_no_integration_scope_for_unit_test_only_change(self):
+        with patch.object(m, 'git', return_value='alicloud/resource_alicloud_demo_unit_test.go') as git:
+            result = m.plan('base', 'head')
+        self.assertEqual(result['packages'], {})
+        self.assertEqual(result['examples'], [])
+        git.assert_called_once_with('diff', '--name-only', '--diff-filter=ACMRT', 'base', 'head')
+
+    def test_plan_rejects_resource_without_acceptance_cases(self):
+        resource = 'alicloud/resource_alicloud_demo'
+        with patch.object(m, 'git', side_effect=[resource + '.go', 'func TestHelper(t *testing.T) {']):
+            with self.assertRaisesRegex(ValueError, 'No AccTest cases in ' + resource + '_test.go'):
+                m.plan('base', 'head')
+
     def test_acc_only_plan_does_not_load_docs_or_invoke_go(self):
         def git(*args):
             if args[0] == 'diff':
