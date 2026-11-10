@@ -2,13 +2,17 @@
 """Release-only GitHub reconciliation. Normal development never runs this tool.
 
 Run check on the frozen, internally approved/tested SHA. If GitHub has missing
-history, merge it through an internal MR and validate the NEW candidate first.
+history, use backflow to prepare a branch for an internal MR, then validate the
+new candidate.
 publish is an explicit release action; it never force-pushes or rewrites tags.
 """
 import argparse
 import json
 import re
 import subprocess
+import sys
+import tempfile
+from pathlib import Path
 
 INTERNAL = 'git@gitlab.alibaba-inc.com:opensource-tools/terraform-provider-alicloud.git'
 EXTERNAL = 'https://github.com/aliyun/terraform-provider-alicloud.git'
@@ -19,9 +23,9 @@ class ReconcileError(RuntimeError):
     pass
 
 
-def git(*args, check=True):
+def git(*args, check=True, cwd=None):
     p = subprocess.run(['git', '-c', 'core.hooksPath=/dev/null', *args],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, cwd=cwd)
     if check and p.returncode:
         # Diagnostics can contain credentials or remote response bodies.
         raise ReconcileError('git operation failed: ' + args[0])
@@ -71,6 +75,56 @@ def check(candidate, internal=INTERNAL, external=EXTERNAL):
                              ' commit(s); import via internal MR and revalidate')
     return {'candidate': candidate, 'internalMaster': internal_head,
             'githubMaster': external_head, 'historyComplete': True}
+
+
+def backflow(internal=INTERNAL, external=EXTERNAL):
+    if git('rev-parse', '--is-shallow-repository').stdout.strip() != 'false':
+        raise ReconcileError('a complete checkout is required')
+    # Pin each observed tip before fetching; a concurrent push cannot silently
+    # substitute a different candidate or make this run push either master.
+    internal_head = refs(internal, MASTER).get(MASTER)
+    external_head = refs(external, MASTER).get(MASTER)
+    if not internal_head or not external_head:
+        raise ReconcileError('both master refs must exist')
+    for remote, head in ((internal, internal_head), (external, external_head)):
+        git('fetch', '--no-tags', '--no-write-fetch-head', remote, head)
+    receipt = {'internalMaster': internal_head, 'githubMaster': external_head}
+    if ancestor(external_head, internal_head):
+        return {**receipt, 'state': 'UP_TO_DATE'}
+
+    branch = 'sync/github-master-' + external_head
+    target = 'refs/heads/' + branch
+    existing = refs(internal, target).get(target)
+    if existing:
+        git('fetch', '--no-tags', '--no-write-fetch-head', internal, existing)
+        if not ancestor(external_head, existing):
+            raise ReconcileError('BACKFLOW_BRANCH_MISMATCH: ' + branch)
+        return {**receipt, 'state': 'EXISTS', 'branch': branch, 'head': existing}
+
+    worktree = Path(tempfile.mkdtemp(prefix='provider-github-backflow-'))
+    try:
+        git('worktree', 'add', '--detach', str(worktree), internal_head)
+    except ReconcileError:
+        if not any(worktree.iterdir()):
+            worktree.rmdir()
+        raise
+
+    merge = git('merge', '--no-ff', '-m', 'Merge GitHub master into internal master',
+                external_head, cwd=worktree, check=False)
+    if merge.returncode:
+        raise ReconcileError(f'BACKFLOW_MERGE_FAILED: worktree retained at {worktree}; '
+                             f'after resolving, push HEAD to {branch} on internal Code')
+    head = valid_sha(git('rev-parse', 'HEAD', cwd=worktree).stdout.strip())
+    if not ancestor(internal_head, head) or not ancestor(external_head, head):
+        raise ReconcileError(f'BACKFLOW_HISTORY_MISMATCH: worktree retained at {worktree}')
+
+    git('push', '--porcelain', '--no-follow-tags', internal, head + ':' + target,
+        cwd=worktree, check=False)
+    if refs(internal, target).get(target) != head:
+        raise ReconcileError(f'BACKFLOW_PUSH_UNCONFIRMED: worktree retained at {worktree}; '
+                             f'check internal branch {branch} before retrying')
+    git('worktree', 'remove', str(worktree))
+    return {**receipt, 'state': 'PUSHED', 'branch': branch, 'head': head}
 
 
 def tag_head(remote, tag):
@@ -126,19 +180,30 @@ def publish(candidate, version, observed_github, internal=INTERNAL, external=EXT
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('check', 'publish'))
-    parser.add_argument('--candidate', required=True)
+    parser.add_argument('action', choices=('check', 'backflow', 'publish'))
+    parser.add_argument('--candidate')
     parser.add_argument('--version')
     parser.add_argument('--observed-github')
     args = parser.parse_args()
+    if args.action != 'backflow' and not args.candidate:
+        parser.error(args.action + ' requires --candidate')
+    if args.action == 'backflow' and (args.candidate or args.version or args.observed_github):
+        parser.error('backflow takes no candidate or release arguments')
     if args.action == 'publish' and (not args.version or not args.observed_github):
         parser.error('publish requires --version and --observed-github from check')
     try:
-        result = check(args.candidate) if args.action == 'check' else publish(
-            args.candidate, args.version, args.observed_github)
+        if args.action == 'backflow':
+            result = backflow()
+        elif args.action == 'check':
+            result = check(args.candidate)
+        else:
+            result = publish(args.candidate, args.version, args.observed_github)
     except ReconcileError as error:
         parser.exit(1, str(error) + '\n')
     print(json.dumps(result, sort_keys=True))
+    if args.action == 'backflow' and 'branch' in result:
+        print(f"Open or reuse a Code MR from {result['branch']} to master. "
+              "Preserve merge history and disable squash.", file=sys.stderr)
 
 
 if __name__ == '__main__':
