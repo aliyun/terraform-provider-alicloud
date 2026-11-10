@@ -73,7 +73,7 @@ func (s *Service) DescribeExpressConnectRouterExpressConnectRouter(id string) (o
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *Service) DescribeDescribeInstanceGrantedToExpressConnectRouter(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDescribeInstanceGrantedToExpressConnectRouter(id string, nextToken string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -82,6 +82,9 @@ func (s *Service) DescribeDescribeInstanceGrantedToExpressConnectRouter(id strin
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EcrId"] = id
+	if nextToken != "" {
+		request["NextToken"] = nextToken
+	}
 
 	request["ClientToken"] = helper.BuildClientToken(action)
 
@@ -141,7 +144,7 @@ func (s *Service) DescribeDescribeExpressConnectRouterRouteEntries(id string) (o
 
 	return response, nil
 }
-func (s *Service) DescribeDescribeDisabledExpressConnectRouterRouteEntries(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDescribeDisabledExpressConnectRouterRouteEntries(id string, nextToken string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -150,6 +153,9 @@ func (s *Service) DescribeDescribeDisabledExpressConnectRouterRouteEntries(id st
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EcrId"] = id
+	if nextToken != "" {
+		request["NextToken"] = nextToken
+	}
 
 	request["ClientToken"] = helper.BuildClientToken(action)
 

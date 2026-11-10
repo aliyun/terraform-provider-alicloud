@@ -69,6 +69,22 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - Represents the creation time of the resource.
 * `status` - The status of the resource.
+* `disabled_route_entries` - The disabled route entries of the ECR. See [`disabled_route_entries`](#disabled_route_entries) below.
+* `granted_instances` - The instances granted to the ECR. See [`granted_instances`](#granted_instances) below.
+
+### `disabled_route_entries`
+
+The disabled_route_entries supports the following:
+* `destination_cidr_block` - The destination CIDR block of the disabled route entry.
+* `nexthop_instance_id` - The next hop instance ID of the disabled route entry.
+
+### `granted_instances`
+
+The granted_instances supports the following:
+* `node_id` - The ID of the granted node.
+* `node_type` - The type of the granted node.
+* `node_region_id` - The region ID of the granted node.
+* `node_owner_uid` - The owner UID of the granted node.
 
 ## Timeouts
 

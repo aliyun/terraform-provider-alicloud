@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
@@ -47,10 +46,50 @@ func ResourceExpressConnectRouter() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validators.StringMatch(regexp.MustCompile("^.{0,256}$"), "Represents the description of the leased line gateway."),
 			},
+			"disabled_route_entries": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"destination_cidr_block": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"nexthop_instance_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 			"ecr_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validators.StringMatch(regexp.MustCompile("^.{0,128}$"), "Name of the Gateway representing the leased line"),
+			},
+			"granted_instances": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"node_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"node_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"node_region_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"node_owner_uid": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
 			},
 			"regions": {
 				Type:     schema.TypeList,
@@ -184,6 +223,66 @@ func resourceExpressConnectRouterRead(d *schema.ResourceData, meta interface{}) 
 		return errs.WrapError(err)
 	}
 
+	// disabled_route_entries is a read-only view of the route entries that are
+	// currently disabled on the ECR, listed via DescribeDisabledExpressConnectRouterRouteEntries.
+	disabledRouteEntriesMaps := make([]map[string]interface{}, 0)
+	nextToken := ""
+	for {
+		routeResp, err := expressConnectRouterServiceV2.DescribeDescribeDisabledExpressConnectRouterRouteEntries(d.Id(), nextToken)
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		if list, ok := routeResp["DisabledRouteEntryList"].([]interface{}); ok {
+			for _, raw := range list {
+				item, ok := raw.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				disabledRouteEntriesMaps = append(disabledRouteEntriesMaps, map[string]interface{}{
+					"destination_cidr_block": item["DestinationCidrBlock"],
+					"nexthop_instance_id":    item["NexthopInstanceId"],
+				})
+			}
+		}
+		if nt, ok := routeResp["NextToken"].(string); ok && nt != "" {
+			nextToken = nt
+		} else {
+			break
+		}
+	}
+	d.Set("disabled_route_entries", disabledRouteEntriesMaps)
+
+	// granted_instances is a read-only view of the network instances granted to
+	// the ECR, listed via DescribeInstanceGrantedToExpressConnectRouter.
+	grantedInstancesMaps := make([]map[string]interface{}, 0)
+	nextToken = ""
+	for {
+		grantResp, err := expressConnectRouterServiceV2.DescribeDescribeInstanceGrantedToExpressConnectRouter(d.Id(), nextToken)
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		if list, ok := grantResp["EcrGrantedInstanceList"].([]interface{}); ok {
+			for _, raw := range list {
+				item, ok := raw.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				grantedInstancesMaps = append(grantedInstancesMaps, map[string]interface{}{
+					"node_id":        item["NodeId"],
+					"node_type":      item["NodeType"],
+					"node_region_id": item["NodeRegionId"],
+					"node_owner_uid": fmt.Sprint(item["NodeOwnerUid"]),
+				})
+			}
+		}
+		if nt, ok := grantResp["NextToken"].(string); ok && nt != "" {
+			nextToken = nt
+		} else {
+			break
+		}
+	}
+	d.Set("granted_instances", grantedInstancesMaps)
+
 	return nil
 }
 
@@ -208,86 +307,6 @@ func resourceExpressConnectRouterUpdate(d *schema.ResourceData, meta interface{}
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
-	}
-
-	if update {
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
-			if err != nil {
-				if helper.NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			logs.AddDebug(action, response, request)
-			return nil
-		})
-		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
-		}
-	}
-	update = false
-	action = "EnableExpressConnectRouterRouteEntries"
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["EcrId"] = d.Id()
-	request["ClientToken"] = helper.BuildClientToken(action)
-	if d.HasChange("disabled_route_entries") {
-		update = true
-		jsonPathResult, err := jsonpath.Get("$.destination_cidr_block", d.Get("disabled_route_entries"))
-		if err == nil {
-			request["DestinationCidrBlock"] = jsonPathResult
-		}
-	}
-
-	if d.HasChange("disabled_route_entries") {
-		update = true
-		jsonPathResult1, err := jsonpath.Get("$.nexthop_instance_id", d.Get("disabled_route_entries"))
-		if err == nil {
-			request["NexthopInstanceId"] = jsonPathResult1
-		}
-	}
-
-	if update {
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
-			if err != nil {
-				if helper.NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			logs.AddDebug(action, response, request)
-			return nil
-		})
-		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
-		}
-	}
-	update = false
-	action = "DisableExpressConnectRouterRouteEntries"
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["EcrId"] = d.Id()
-	request["ClientToken"] = helper.BuildClientToken(action)
-	if d.HasChange("disabled_route_entries") {
-		update = true
-		jsonPathResult, err := jsonpath.Get("$.destination_cidr_block", d.Get("disabled_route_entries"))
-		if err == nil {
-			request["DestinationCidrBlock"] = jsonPathResult
-		}
-	}
-
-	if d.HasChange("disabled_route_entries") {
-		update = true
-		jsonPathResult1, err := jsonpath.Get("$.nexthop_instance_id", d.Get("disabled_route_entries"))
-		if err == nil {
-			request["NexthopInstanceId"] = jsonPathResult1
-		}
 	}
 
 	if update {
@@ -350,112 +369,6 @@ func resourceExpressConnectRouterUpdate(d *schema.ResourceData, meta interface{}
 		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
-		}
-	}
-	update = false
-	action = "GrantInstanceToExpressConnectRouter"
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["EcrId"] = d.Id()
-	request["ClientToken"] = helper.BuildClientToken(action)
-	if d.HasChange("granted_instances") {
-		update = true
-		jsonPathResult, err := jsonpath.Get("$.node_id", d.Get("granted_instances"))
-		if err == nil {
-			request["InstanceId"] = jsonPathResult
-		}
-	}
-
-	if d.HasChange("granted_instances") {
-		update = true
-		jsonPathResult1, err := jsonpath.Get("$.node_type", d.Get("granted_instances"))
-		if err == nil {
-			request["InstanceType"] = jsonPathResult1
-		}
-	}
-
-	if d.HasChange("granted_instances") {
-		update = true
-		jsonPathResult2, err := jsonpath.Get("$.node_region_id", d.Get("granted_instances"))
-		if err == nil {
-			request["InstanceRegionId"] = jsonPathResult2
-		}
-	}
-
-	if update {
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
-			if err != nil {
-				if errs.IsExpectedErrors(err, []string{"Conflict.Lock"}) || helper.NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			logs.AddDebug(action, response, request)
-			return nil
-		})
-		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
-		}
-		expressConnectRouterServiceV2 := NewService(client)
-		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, expressConnectRouterServiceV2.DescribeAsyncExpressConnectRouterExpressConnectRouterStateRefreshFunc(d, response, "$.EcrGrantedInstanceList[*].Status", []string{}))
-		if jobDetail, err := stateConf.WaitForState(); err != nil {
-			return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
-		}
-	}
-	update = false
-	action = "RevokeInstanceFromExpressConnectRouter"
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["EcrId"] = d.Id()
-	request["ClientToken"] = helper.BuildClientToken(action)
-	if d.HasChange("granted_instances") {
-		update = true
-		jsonPathResult, err := jsonpath.Get("$.node_id", d.Get("granted_instances"))
-		if err == nil {
-			request["InstanceId"] = jsonPathResult
-		}
-	}
-
-	if d.HasChange("granted_instances") {
-		update = true
-		jsonPathResult1, err := jsonpath.Get("$.node_type", d.Get("granted_instances"))
-		if err == nil {
-			request["InstanceType"] = jsonPathResult1
-		}
-	}
-
-	if d.HasChange("granted_instances") {
-		update = true
-		jsonPathResult2, err := jsonpath.Get("$.node_region_id", d.Get("granted_instances"))
-		if err == nil {
-			request["InstanceRegionId"] = jsonPathResult2
-		}
-	}
-
-	if update {
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
-			if err != nil {
-				if errs.IsExpectedErrors(err, []string{"Conflict.Lock"}) || helper.NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			logs.AddDebug(action, response, request)
-			return nil
-		})
-		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
-		}
-		expressConnectRouterServiceV2 := NewService(client)
-		stateConf := helper.BuildStateConf([]string{}, []string{"0"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, expressConnectRouterServiceV2.DescribeAsyncExpressConnectRouterExpressConnectRouterStateRefreshFunc(d, response, "$.TotalCount", []string{}))
-		if jobDetail, err := stateConf.WaitForState(); err != nil {
-			return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 		}
 	}
 	update = false

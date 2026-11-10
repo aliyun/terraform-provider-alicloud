@@ -232,8 +232,10 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouter_basic5682(t *testin
 }
 
 var AlicloudExpressConnectRouterExpressConnectRouterMap5682 = map[string]string{
-	"status":      acctest.CHECKSET,
-	"create_time": acctest.CHECKSET,
+	"status":                   acctest.CHECKSET,
+	"create_time":              acctest.CHECKSET,
+	"disabled_route_entries.#": "0",
+	"granted_instances.#":      "0",
 }
 
 func AlicloudExpressConnectRouterExpressConnectRouterBasicDependence5682(name string) string {
