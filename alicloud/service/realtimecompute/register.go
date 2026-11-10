@@ -26,6 +26,10 @@ func ServicePackage() conns.ServicePackage {
 		},
 		SDKResources: []conns.SDKResource{
 			{
+				TypeName: "alicloud_realtime_compute_namespace",
+				Factory:  ResourceRealtimeComputeNamespace,
+			},
+			{
 				TypeName: "alicloud_realtime_compute_variable",
 				Factory:  ResourceRealtimeComputeVariable,
 			},
