@@ -68,7 +68,7 @@ def content_command(files):
 
 
 def scoped_commands(paths, full=False):
-    full = full or any(p in {'.go-version', 'go.mod', 'go.sum', '.markdown-link-check.json'}
+    full = full or any(p in {'.go-version', '.markdown-link-check.json'}
                        or p.startswith(('.github/markdownlint/', 'scripts/ci/',
                                         'scripts/document/', 'scripts/basic-check.sh',
                                         '.github/workflows/document-check.yml')) for p in paths)
