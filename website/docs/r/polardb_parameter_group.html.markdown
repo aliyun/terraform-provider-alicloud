@@ -27,6 +27,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "alicloud_polardb_parameter_group" "example" {
   parameter_group_name = "example_value"
   db_type              = "MySQL"
@@ -58,6 +66,8 @@ The following arguments are supported:
 * `parameters` - (Required, ForceNew, Set) Details about the parameters. See [`parameters`](#parameters) below.
 
   -> **NOTE:**  You can view all parameter details for the target database engine version database cluster through the [DescribeParameterTemplates](https://next.api.alibabacloud.com/document/polardb/2017-08-01/DescribeParameterTemplates), including parameter name, value.
+
+* `resource_group_id` - (Optional, ForceNew, String, Available since v2.3.0) The ID of the resource group in which to create the parameter template. You can use the ID of an `alicloud_resource_manager_resource_group` resource, for example, `alicloud_resource_manager_resource_group.example.id`. This argument is only used when creating the parameter template. The PolarDB API does not return it, so it cannot be read back or used to detect drift, and importing an existing parameter template does not restore it. Configuring it for an imported parameter template forces a replacement.
 
 
 The following arguments will be discarded. Please use new fields as soon as possible:
