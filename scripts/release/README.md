@@ -10,10 +10,14 @@ Only when preparing a release, on a complete checkout with authorized Git access
 1. Freeze the full internal candidate SHA after internal CI, acceptance tests and
    review. Run `python3 scripts/release/reconcile.py check --candidate <SHA>`.
 2. `GITHUB_HISTORY_MISSING` means GitHub has commits absent from this candidate.
-   Fetch GitHub master, merge it on a new internal integration branch, resolve
-   conflicts and submit an internal MR. Preserve ancestry (no squash, cherry-pick,
-   `ours` merge or force push to pretend the external changes were included).
-   After review and CI, freeze and validate the new SHA, then repeat step 1.
+   Run `make sync-github`. It reads both remote masters and, when needed, merges
+   their pinned commits in a temporary worktree and pushes an internal
+   `sync/github-master-<GitHub SHA>` branch. A rerun reuses the branch for the
+   same GitHub SHA. `UP_TO_DATE` means no branch is needed. If a merge fails, the
+   command prints the retained worktree path and branch so you can resolve it.
+   Use the printed link to open or reuse a Code MR to `master`. Disable squash to
+   retain the original GitHub commit IDs. After review and CI, freeze and validate
+   the new SHA, then repeat step 1.
 3. Review the exact version, candidate and `githubMaster` returned by the check.
    Publishing is a separate authorized release action:
    `python3 scripts/release/reconcile.py publish --candidate <same-SHA> --version vX.Y.Z --observed-github <githubMaster>`.
