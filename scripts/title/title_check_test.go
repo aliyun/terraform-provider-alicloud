@@ -210,6 +210,19 @@ func TestCheckTitleWithSharedProviderSource(t *testing.T) {
 	}
 }
 
+func TestSharedProviderSourceKeepsEntityTitleRequirement(t *testing.T) {
+	files := parseNameStatus("M\talicloud/connectivity/client.go\nM\talicloud/resource_alicloud_ots_instance.go\n")
+	if err := resolveEntities(files, ""); err != nil {
+		t.Fatal(err)
+	}
+	if checkTitle("ots endpoints: use configured overrides", files) {
+		t.Error("shared source change hid a modified resource")
+	}
+	if !checkTitle("resource/alicloud_ots_instance: use configured overrides", files) {
+		t.Error("title announcing the modified resource failed")
+	}
+}
+
 func TestCheckTitleRequiresServiceEntityInTitle(t *testing.T) {
 	files := []titleFile{serviceFile("alicloud/service/ims/resource_user.go",
 		entity{typeName: "alicloud_ims_user"})}
