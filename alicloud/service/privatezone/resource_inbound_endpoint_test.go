@@ -1519,9 +1519,9 @@ func TestUnitInboundEndpointDescribeClassifiesNotFoundOnlyForExactCodes(t *testi
 			if err == nil {
 				t.Fatal("expected the failed describe to return an error")
 			}
-			if got := privatezone.IsInboundEndpointNotFound(err); got != tc.wantGone {
-				t.Fatalf("IsInboundEndpointNotFound() = %v, want %v (code %q status %d)", got, tc.wantGone, tc.code, tc.status)
-			}
+			// DescribeInboundEndpointContext replaces a matched not-exists response with the
+			// provider NotFound error, so the caller-visible classification is the provider one;
+			// the raw matcher itself is covered by TestUnitIsInboundEndpointNotFound.
 			if got := errs.IsProviderNotFound(err); got != tc.wantGone {
 				t.Fatalf("IsProviderNotFound() = %v, want %v (code %q status %d)", got, tc.wantGone, tc.code, tc.status)
 			}
