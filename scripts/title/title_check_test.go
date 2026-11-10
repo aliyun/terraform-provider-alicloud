@@ -186,6 +186,30 @@ func TestCheckTitleServiceSourcesWithoutEntitiesImposeNoRequirement(t *testing.T
 	}
 }
 
+func TestCheckTitleWithSharedProviderSource(t *testing.T) {
+	const docs = "M\twebsite/docs/index.html.markdown\n"
+	const tests = "M\talicloud/connectivity/client_test.go\n"
+
+	for _, tc := range []struct {
+		name, diff, title string
+		want              bool
+	}{
+		{"connectivity and docs", "M\talicloud/connectivity/client.go\n" + docs + tests, "ots endpoints: use configured overrides", true},
+		{"provider and docs", "M\talicloud/provider.go\n" + docs, "provider: update endpoint configuration", true},
+		{"connectivity and tests", "M\talicloud/connectivity/client.go\n" + tests, "ots endpoints: use configured overrides", true},
+		{"docs and tests", docs + tests, "update endpoint documentation", false},
+		{"docs prefix", docs + tests, "docs: update endpoint documentation", true},
+		{"tests only", tests, "update endpoint tests", false},
+		{"testcase prefix", tests, "testcase: update endpoint tests", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := checkTitle(tc.title, parseNameStatus(tc.diff)); got != tc.want {
+				t.Errorf("checkTitle(%q) = %t, want %t", tc.title, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestCheckTitleRequiresServiceEntityInTitle(t *testing.T) {
 	files := []titleFile{serviceFile("alicloud/service/ims/resource_user.go",
 		entity{typeName: "alicloud_ims_user"})}
