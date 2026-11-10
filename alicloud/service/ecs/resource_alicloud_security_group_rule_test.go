@@ -1436,10 +1436,14 @@ func TestUnitECSSecurityGroupRuleCidrIpValidation(t *testing.T) {
 		}
 	}
 
-	// An explicitly empty value is rejected when it reaches the validator; an
-	// omitted cidr_ip never reaches it, so configurations without the attribute
-	// are unaffected.
-	for _, value := range []string{"", "not-a-cidr", "192.168.0.0/33", "192.168.0.0/16/8"} {
+	// An explicitly empty value keeps the pre-existing "empty means unset"
+	// behaviour: d.GetOk already skips it, so rejecting it here would break
+	// configurations that pass an empty module or variable default.
+	if _, errs := validateFunc("", "cidr_ip"); len(errs) != 0 {
+		t.Fatalf("expected the empty string to be treated as unset, got %v", errs)
+	}
+
+	for _, value := range []string{"not-a-cidr", "192.168.0.0/33", "192.168.0.0/16/8"} {
 		_, errs := validateFunc(value, "cidr_ip")
 		if len(errs) != 1 {
 			t.Fatalf("expected %q to be rejected, got %v", value, errs)

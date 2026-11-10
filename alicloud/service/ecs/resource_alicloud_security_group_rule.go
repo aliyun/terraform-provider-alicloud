@@ -603,8 +603,16 @@ func parseSecurityRuleId(d *schema.ResourceData, meta interface{}, index int) (r
 // validateSecurityGroupRuleCidrIp rejects values AuthorizeSecurityGroup and
 // AuthorizeSecurityGroupEgress would accept but later fail to read back, such
 // as comma separated CIDR lists.
+//
+// An empty string is accepted so that a configuration which sets the optional
+// attribute to "" keeps working: d.GetOk already treats "" as unset, so such a
+// rule takes another source attribute or fails at apply time exactly as it did
+// before this validation existed.
 func validateSecurityGroupRuleCidrIp(v interface{}, k string) (ws []string, errors []error) {
 	value, _ := v.(string)
+	if value == "" {
+		return nil, nil
+	}
 	if len(strings.Fields(strings.ReplaceAll(value, ",", " "))) > 1 {
 		return nil, []error{fmt.Errorf("%q must be a single IPv4 address or CIDR block, but got %q; multiple CIDRs are not supported in one security group rule, define one alicloud_security_group_rule resource per CIDR", k, value)}
 	}
