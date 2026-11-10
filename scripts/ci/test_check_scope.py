@@ -267,12 +267,32 @@ class ScopeTest(unittest.TestCase):
             self.assertIn(file, commands['markdown-link'])
         self.assertIn('find website/docs', commands['markdown-link'])
 
+    def test_dependency_files_do_not_broaden_document_checks(self):
+        docs = load('run-document-checks')
+        for paths in [['go.mod'], ['go.sum'], ['go.mod', 'go.sum']]:
+            with self.subTest(paths=paths):
+                commands = docs.scoped_commands(paths)
+                self.assertNotEqual(commands['misspell'], docs.COMMANDS['misspell'])
+                self.assertNotEqual(commands['terrafmt'], docs.COMMANDS['terrafmt'])
+                self.assertIn('No matching documentation files changed.', commands['misspell'])
+                self.assertIn('No matching documentation files changed.', commands['terrafmt'])
+
+    def test_dependency_files_preserve_changed_document_scope(self):
+        docs = load('run-document-checks')
+        path = 'website/docs/r/old.html.markdown'
+        commands = docs.scoped_commands(['go.mod', 'go.sum', path])
+        for name in ['Content', 'misspell', 'terrafmt']:
+            self.assertIn('./' + path, commands[name])
+        self.assertNotEqual(commands['misspell'], docs.COMMANDS['misspell'])
+        self.assertNotEqual(commands['terrafmt'], docs.COMMANDS['terrafmt'])
+
     def test_document_config_and_master_fall_back_to_full_checks(self):
         docs = load('run-document-checks')
         for paths, full in [(['.markdown-link-check.json'], False),
                             (['.github/markdownlint/rules/note-attachment.js'], False),
                             (['scripts/ci/run-document-checks.py'], False),
-                            (['website/docs/r/new.md'], True)]:
+                            (['website/docs/r/new.md'], True),
+                            (['go.mod', 'go.sum'], True)]:
             commands = docs.scoped_commands(paths, full=full)
             self.assertEqual(commands['misspell'], docs.COMMANDS['misspell'])
             self.assertEqual(commands['terrafmt'], docs.COMMANDS['terrafmt'])
