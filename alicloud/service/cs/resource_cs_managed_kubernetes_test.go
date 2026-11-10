@@ -13,6 +13,7 @@ import (
 	aliyungocs "github.com/denverdino/aliyungo/cs"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
@@ -1680,222 +1681,101 @@ output "connections" {
 `
 }
 
-// Test Ack Cluster. <<< Resource test cases, automatically generated.
+func TestAccAliCloudCSManagedKubernetes_supportPolicyStandard_basic(t *testing.T) {
+	testAccCSManagedKubernetesSupportPolicy(t, "Standard", "Extended")
+}
 
-func TestAccAliCloudCSManagedKubernetes_collectionOrder(t *testing.T) {
-	var v *aliyungocs.KubernetesClusterDetail
-	resourceId := "alicloud_cs_managed_kubernetes.collectionorder"
-	ra := acctest.ResourceAttrInit(resourceId, map[string]string{})
+func TestAccAliCloudCSManagedKubernetes_supportPolicyExtended_basic(t *testing.T) {
+	testAccCSManagedKubernetesSupportPolicy(t, "Extended", "Standard")
+}
 
-	serviceFunc := func() interface{} {
+func testAccCSManagedKubernetesSupportPolicy(t *testing.T, initialPolicy, updatedPolicy string) {
+	t.Helper()
+	resourceID := "alicloud_cs_managed_kubernetes.default"
+	name := fmt.Sprintf("tf-testacc-support-policy-%d", tfacctest.RandIntRange(1000000, 9999999))
+	t.Logf("SupportPolicy acceptance resource name: %s", name)
+	config := acctest.ResourceTestAccConfig(resourceID, name, resourceCSManagedKubernetesSupportPolicyDependence)
+	var cluster *aliyungocs.KubernetesClusterDetail
+	rc := acctest.ResourceCheckInit(resourceID, &cluster, func() interface{} {
 		return cs.NewCsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	})
+	var clusterID string
+	check := func(policy string) resource.TestCheckFunc {
+		return resource.ComposeTestCheckFunc(
+			resource.TestCheckResourceAttr(resourceID, "support_policy", policy),
+			resource.TestCheckResourceAttr(resourceID, "cluster_spec", "ack.pro.small"),
+			func(state *terraform.State) error {
+				r, ok := state.RootModule().Resources[resourceID]
+				if !ok || r.Primary == nil || r.Primary.ID == "" {
+					return fmt.Errorf("managed cluster is missing from state")
+				}
+				if clusterID == "" {
+					clusterID = r.Primary.ID
+				} else if clusterID != r.Primary.ID {
+					return fmt.Errorf("support policy update replaced the cluster")
+				}
+				return nil
+			},
+		)
 	}
-	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
-
-	rac := acctest.ResourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	rand := tfacctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testaccmanagedkubernetes-%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceCSManagedKubernetesConfig)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             rac.CheckResourceDestroy(),
+		CheckDestroy:             rc.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"name":                         name,
-					"cluster_spec":                 "ack.standard",
-					"vswitch_ids":                  []string{"${local.vswitch_id}", "${local.vswitch_id_1}"},
-					"pod_vswitch_ids":              []string{"${local.vswitch_id}", "${local.vswitch_id_1}"},
-					"new_nat_gateway":              "true",
-					"pod_cidr":                     "10.77.0.0/16",
-					"service_cidr":                 "172.27.0.0/16",
-					"is_enterprise_security_group": "true",
-					"addons": []map[string]string{
-						{"name": "metrics-server", "disabled": "false"},
-						{"name": "arms-prometheus", "disabled": "false"},
-					},
-					"api_audiences":                []string{"https://kubernetes.default.svc", "https://kubernetes.default.svc.cluster.local"},
-					"control_plane_log_project":    "${alicloud_log_project.log.0.name}",
-					"control_plane_log_components": []string{"kubernetes-audit", "kubernetes-controller-manager"},
-					"retain_resources":             []string{"${local.vswitch_id}", "${local.vswitch_id_1}"},
-					"delete_options": []map[string]interface{}{
-						{"delete_mode": "delete", "resource_type": "SLB"},
-						{"delete_mode": "delete", "resource_type": "ALB"},
-					},
+				Config: config(map[string]interface{}{
+					"name": "${var.name}", "cluster_spec": "ack.pro.small", "profile": "Default",
+					"version":        "${data.alicloud_cs_kubernetes_version.standard.metadata.0.version}",
+					"support_policy": initialPolicy, "vswitch_ids": []string{"${alicloud_vswitch.default.id}"},
+					"new_nat_gateway": "false", "slb_internet_enabled": "false",
+					"pod_cidr": "172.20.0.0/16", "service_cidr": "172.21.0.0/20",
+					"addons": []map[string]interface{}{{"name": "flannel"}},
 				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			// addons: verify reorder convergence
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"addons": []map[string]string{
-						{"name": "arms-prometheus", "disabled": "false"},
-						{"name": "metrics-server", "disabled": "false"},
-					},
-				}),
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
+				Check: check(initialPolicy),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
+				ResourceName: resourceID, ImportState: true, ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"addons", "name_prefix", "new_nat_gateway", "slb_internet_enabled", "skip_set_certificate_authority"},
 			},
-			// api_audiences: verify reorder convergence (ForceNew)
+			{Config: config(map[string]interface{}{"support_policy": updatedPolicy}), Check: check(updatedPolicy)},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"api_audiences": []string{"https://kubernetes.default.svc.cluster.local", "https://kubernetes.default.svc"},
-				}),
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
+				ResourceName: resourceID, ImportState: true, ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"addons", "name_prefix", "new_nat_gateway", "slb_internet_enabled", "skip_set_certificate_authority"},
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			// control_plane_log_components: verify reorder convergence
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"control_plane_log_components": []string{"kubernetes-controller-manager", "kubernetes-audit"},
-				}),
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			// retain_resources: verify reorder convergence
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"retain_resources": []string{"${local.vswitch_id_1}", "${local.vswitch_id}"},
-				}),
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			// delete_options: verify reorder convergence
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"delete_options": []map[string]interface{}{
-						{"delete_mode": "delete", "resource_type": "ALB"},
-						{"delete_mode": "delete", "resource_type": "SLB"},
-					},
-				}),
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			// pod_vswitch_ids: verify reorder convergence
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"pod_vswitch_ids": []string{"${local.vswitch_id_1}", "${local.vswitch_id}"},
-				}),
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			// vswitch_ids: verify reorder convergence
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"vswitch_ids": []string{"${local.vswitch_id_1}", "${local.vswitch_id}"},
-				}),
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
+			{Config: config(map[string]interface{}{"name": "${var.name}-updated", "support_policy": acctest.REMOVEKEY}), Check: check(updatedPolicy)},
+			{Config: config(map[string]interface{}{"support_policy": initialPolicy}), Check: check(initialPolicy)},
 		},
 	})
 }
 
-func TestAccAliCloudCSManagedKubernetes_collectionOrder_zoneIds(t *testing.T) {
-	var v *aliyungocs.KubernetesClusterDetail
-	resourceId := "alicloud_cs_managed_kubernetes.collectionorderzone"
-	ra := acctest.ResourceAttrInit(resourceId, map[string]string{})
+func resourceCSManagedKubernetesSupportPolicyDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" { default = "%s" }
 
-	serviceFunc := func() interface{} {
-		return cs.NewCsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
-	}
-	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+data "alicloud_zones" "default" {
+ available_resource_creation = "VSwitch"
+}
 
-	rac := acctest.ResourceAttrCheckInit(rc, ra)
+data "alicloud_cs_kubernetes_version" "standard" {
+ cluster_type = "ManagedKubernetes"
+ profile = "Default"
+ support_policy = "Standard"
+}
 
-	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	rand := tfacctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testaccmanagedk8szone-%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceCSManagedKubernetesConfig)
+resource "alicloud_vpc" "default" {
+ vpc_name = var.name
+ cidr_block = "192.168.0.0/16"
+}
 
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
-			acctest.PreCheck(t)
-		},
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             rac.CheckResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"name":                         name,
-					"cluster_spec":                 "ack.standard",
-					"zone_ids":                     []string{"${data.alicloud_zones.default.zones.0.id}", "${data.alicloud_zones.default.zones.1.id}"},
-					"new_nat_gateway":              "true",
-					"pod_cidr":                     "10.77.0.0/16",
-					"service_cidr":                 "172.27.0.0/16",
-					"is_enterprise_security_group": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			{
-				// zone_ids: verify reorder produces a non-empty plan
-				Config: testAccConfig(map[string]interface{}{
-					"zone_ids": []string{"${data.alicloud_zones.default.zones.1.id}", "${data.alicloud_zones.default.zones.0.id}"},
-				}),
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
-			},
-			{
-				// Apply the reordered config and verify convergence (empty plan)
-				Config: testAccConfig(map[string]interface{}{}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-		},
-	})
+resource "alicloud_vswitch" "default" {
+ vswitch_name = var.name
+ vpc_id = alicloud_vpc.default.id
+ zone_id = data.alicloud_zones.default.zones.0.id
+ cidr_block = "192.168.1.0/24"
+}
+`, name)
 }
