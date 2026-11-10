@@ -103,8 +103,16 @@ func (s *Service) DescribeDescribeInstanceGrantedToExpressConnectRouter(id strin
 		logs.AddDebug(action, response, request)
 		return nil
 	})
-	code, _ := jsonpath.Get("$.Code", response)
-	if helper.InArray(fmt.Sprint(code), []string{"ResourceNotFound.EcrId"}) {
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"ResourceNotFound.EcrId"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("ExpressConnectRouter", id), errs.NotFoundMsg, response)
+		}
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	code, codeErr := jsonpath.Get("$.Code", response)
+	if codeErr == nil && helper.InArray(fmt.Sprint(code), []string{"ResourceNotFound.EcrId"}) {
 		return object, errs.WrapErrorf(errs.NotFoundErr("ExpressConnectRouter", id), errs.NotFoundMsg, response)
 	}
 
@@ -174,8 +182,16 @@ func (s *Service) DescribeDescribeDisabledExpressConnectRouterRouteEntries(id st
 		logs.AddDebug(action, response, request)
 		return nil
 	})
-	code, _ := jsonpath.Get("$.Code", response)
-	if helper.InArray(fmt.Sprint(code), []string{"ResourceNotFound.EcrId"}) {
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"ResourceNotFound.EcrId"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("ExpressConnectRouter", id), errs.NotFoundMsg, response)
+		}
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	code, codeErr := jsonpath.Get("$.Code", response)
+	if codeErr == nil && helper.InArray(fmt.Sprint(code), []string{"ResourceNotFound.EcrId"}) {
 		return object, errs.WrapErrorf(errs.NotFoundErr("ExpressConnectRouter", id), errs.NotFoundMsg, response)
 	}
 
