@@ -304,7 +304,7 @@ sweep:
 # Prepare a Code review branch containing the public GitHub master history.
 .PHONY: sync-github
 sync-github:
-	python3 scripts/release/reconcile.py backflow
+	@python3 scripts/release/reconcile.py backflow
 
 .PHONY: build test testacc test-resource-debug vet fmt fmtcheck importscheck goimports errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep tools native provider-build check-production-deps
 

@@ -83,6 +83,13 @@ class ReconcileTest(unittest.TestCase):
         internal = self.advance_internal()
         self.git('tag', '-a', '-m', 'local only', 'v9.9.9', external)
         self.git('config', 'push.followTags', 'true')
+        hooks = Path(self.tmp.name) / 'hooks'
+        hooks.mkdir()
+        marker = hooks / 'pushed'
+        hook = hooks / 'pre-push'
+        hook.write_text('#!/bin/sh\ntouch "$(dirname "$0")/pushed"\n')
+        hook.chmod(0o755)
+        self.git('config', 'core.hooksPath', str(hooks))
         Path('uncommitted').write_text('leave my workspace alone')
         before = self.git('status', '--porcelain')
         receipt = r.backflow(self.internal, self.external)
@@ -94,6 +101,7 @@ class ReconcileTest(unittest.TestCase):
         self.assertEqual([internal, external],
                          self.git('show', '-s', '--format=%P', receipt['head']).split())
         self.assertEqual({}, r.refs(self.internal, 'refs/tags/*'))
+        self.assertTrue(marker.exists())
         self.assertEqual(before, self.git('status', '--porcelain'))
         self.assertEqual(internal, self.git('rev-parse', 'HEAD'))
         self.assertEqual(1, self.git('worktree', 'list', '--porcelain').count('worktree '))

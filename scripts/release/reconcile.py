@@ -16,6 +16,7 @@ from pathlib import Path
 
 INTERNAL = 'git@gitlab.alibaba-inc.com:opensource-tools/terraform-provider-alicloud.git'
 EXTERNAL = 'https://github.com/aliyun/terraform-provider-alicloud.git'
+CODE_REVIEW = 'https://code.alibaba-inc.com/opensource-tools/terraform-provider-alicloud/codereview/new'
 MASTER = 'refs/heads/master'
 
 
@@ -23,8 +24,9 @@ class ReconcileError(RuntimeError):
     pass
 
 
-def git(*args, check=True, cwd=None):
-    p = subprocess.run(['git', '-c', 'core.hooksPath=/dev/null', *args],
+def git(*args, check=True, cwd=None, run_hooks=False):
+    config = [] if run_hooks else ['-c', 'core.hooksPath=/dev/null']
+    p = subprocess.run(['git', *config, *args],
                        capture_output=True, text=True, cwd=cwd)
     if check and p.returncode:
         # Diagnostics can contain credentials or remote response bodies.
@@ -110,7 +112,7 @@ def backflow(internal=INTERNAL, external=EXTERNAL):
         raise
 
     merge = git('merge', '--no-ff', '-m', 'Merge GitHub master into internal master',
-                external_head, cwd=worktree, check=False)
+                external_head, cwd=worktree, check=False, run_hooks=True)
     if merge.returncode:
         raise ReconcileError(f'BACKFLOW_MERGE_FAILED: worktree retained at {worktree}; '
                              f'after resolving, push HEAD to {branch} on internal Code')
@@ -119,7 +121,7 @@ def backflow(internal=INTERNAL, external=EXTERNAL):
         raise ReconcileError(f'BACKFLOW_HISTORY_MISMATCH: worktree retained at {worktree}')
 
     git('push', '--porcelain', '--no-follow-tags', internal, head + ':' + target,
-        cwd=worktree, check=False)
+        cwd=worktree, check=False, run_hooks=True)
     if refs(internal, target).get(target) != head:
         raise ReconcileError(f'BACKFLOW_PUSH_UNCONFIRMED: worktree retained at {worktree}; '
                              f'check internal branch {branch} before retrying')
@@ -204,6 +206,7 @@ def main():
     if args.action == 'backflow' and 'branch' in result:
         print(f"Open or reuse a Code MR from {result['branch']} to master. "
               "Preserve merge history and disable squash.", file=sys.stderr)
+        print(f"{CODE_REVIEW}?from=master&to={result['branch']}", file=sys.stderr)
 
 
 if __name__ == '__main__':

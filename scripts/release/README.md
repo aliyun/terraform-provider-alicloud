@@ -15,7 +15,7 @@ Only when preparing a release, on a complete checkout with authorized Git access
    `sync/github-master-<GitHub SHA>` branch. A rerun reuses the branch for the
    same GitHub SHA. `UP_TO_DATE` means no branch is needed. If a merge fails, the
    command prints the retained worktree path and branch so you can resolve it.
-   Open or reuse a Code MR from that branch to `master` and disable squash to
+   Use the printed link to open or reuse a Code MR to `master`. Disable squash to
    retain the original GitHub commit IDs. After review and CI, freeze and validate
    the new SHA, then repeat step 1.
 3. Review the exact version, candidate and `githubMaster` returned by the check.
