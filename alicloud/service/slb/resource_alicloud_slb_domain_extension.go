@@ -31,21 +31,21 @@ func ResourceDomainExtension() *schema.Resource {
 				ForceNew: true,
 			},
 			"listener_port": {
-				Type:          schema.TypeInt,
-				ValidateFunc:  validation.IntBetween(1, 65535),
-				Optional:      true,
-				Computed:      true,
-				ForceNew:      true,
-				ConflictsWith: []string{"frontend_port"},
+				Type:         schema.TypeInt,
+				ValidateFunc: validation.IntBetween(1, 65535),
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ExactlyOneOf: []string{"listener_port", "frontend_port"},
 			},
 			"frontend_port": {
-				Type:          schema.TypeInt,
-				ValidateFunc:  validation.IntBetween(1, 65535),
-				Optional:      true,
-				Computed:      true,
-				ForceNew:      true,
-				Deprecated:    "Field 'frontend_port' has been deprecated from provider version 2.3.0. New field 'listener_port' instead.",
-				ConflictsWith: []string{"listener_port"},
+				Type:         schema.TypeInt,
+				ValidateFunc: validation.IntBetween(1, 65535),
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				Deprecated:   "Field 'frontend_port' has been deprecated from provider version 2.3.0. New field 'listener_port' instead.",
+				ExactlyOneOf: []string{"listener_port", "frontend_port"},
 			},
 			"domain": {
 				Type:     schema.TypeString,
@@ -73,9 +73,6 @@ func resourceDomainExtensionCreate(d *schema.ResourceData, meta interface{}) err
 	listenerPort := d.Get("listener_port").(int)
 	if listenerPort == 0 {
 		listenerPort = d.Get("frontend_port").(int)
-	}
-	if listenerPort == 0 {
-		return errs.WrapError(fmt.Errorf("At least one of 'listener_port' or 'frontend_port' must be specified."))
 	}
 	request.ListenerPort = requests.NewInteger(listenerPort)
 	request.Domain = d.Get("domain").(string)

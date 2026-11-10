@@ -26,6 +26,14 @@ Please refer to the [documentation](https://www.alibabacloud.com/help/doc-detail
 
 ```terraform
 # Create a new load balancer and domain extension
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "slb_domain_extension_name" {
   default = "forDomainExtension"
 }
@@ -95,8 +103,8 @@ resource "alicloud_slb_domain_extension" "example1" {
 The following arguments are supported:
 
 * `load_balancer_id` - (Required, ForceNew) The ID of the SLB instance.
-* `listener_port` - (Optional, ForceNew, Available since v2.3.0) The listener port used by the HTTPS listener of the SLB instance, which is the standard field mapped to the `ListenerPort` API parameter. Valid values: 1–65535. It conflicts with `frontend_port`; only one of them can be specified. The API only accepts one listener port, so when both are absent an error is returned.
-* `frontend_port` - (Optional, ForceNew, Deprecated since v2.3.0) The frontend port used by the HTTPS listener of the SLB instance. Valid values: 1–65535. It has been deprecated from provider version 2.3.0, use `listener_port` instead. It conflicts with `listener_port`.
+* `listener_port` - (Optional, Int, ForceNew, Available since v2.3.0) The listener port used by the HTTPS listener of the SLB instance, which is the standard field mapped to the `ListenerPort` API parameter. Valid values: `1` to `65535`. Exactly one of `listener_port` or `frontend_port` must be specified; the constraint is enforced at plan time.
+* `frontend_port` - (Optional, Int, ForceNew, Deprecated since v2.3.0) The frontend port used by the HTTPS listener of the SLB instance. Valid values: `1` to `65535`. It has been deprecated from provider version 2.3.0, use `listener_port` instead. Exactly one of `listener_port` or `frontend_port` must be specified.
 * `domain` - (Required, ForceNew) The domain name.
 * `server_certificate_id` - (Required) The ID of the certificate used by the domain name.
 * `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
