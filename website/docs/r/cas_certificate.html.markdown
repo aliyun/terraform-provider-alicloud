@@ -117,3 +117,4 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Certificate.
+* `cert_identifier` - The global certificate identifier in the format of "id+region", e.g. "13781326-cn-hangzhou".
