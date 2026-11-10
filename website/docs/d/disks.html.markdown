@@ -32,7 +32,7 @@ The following arguments are supported:
 * `ids` - (Optional) A list of disks IDs.
 * `name_regex` - (Optional) A regex string to filter results by disk name.
 * `type` - (Optional, Deprecated) Disk type. Possible values: `system` and `data`.
-* `category` - (Optional) Disk category. Possible values: `cloud` (basic cloud disk), `cloud_efficiency` (ultra cloud disk), `ephemeral_ssd` (local SSD cloud disk), `cloud_ssd` (SSD cloud disk), and `cloud_essd` (ESSD cloud disk), `cloud_essd_entry`.
+* `category` - (Optional) Disk category. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd`, `ephemeral_ssd`, `cloud_essd`, `cloud_auto`, `cloud_essd_entry`, and `cloud_regional_disk_auto` (Regional ESSD).
 * `encrypted` - (Optional) Indicate whether the disk is encrypted or not. Possible values: `on` and `off`.
 * `instance_id` - (Optional) Filter the results by the specified ECS instance ID.
 * `resource_group_id` - (Optional, Available since v1.57.0) The Id of resource group which the disk belongs.

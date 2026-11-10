@@ -322,6 +322,7 @@ func TestAccAliCloudSslCertificatesServiceCertificate_basic1_twin(t *testing.T) 
 }
 
 var AliCloudSslCertificatesServiceCertificateMap0 = map[string]string{
+	"cert_identifier":   acctest.CHECKSET,
 	"certificate_name":  acctest.CHECKSET,
 	"resource_group_id": acctest.CHECKSET,
 	"name":              acctest.CHECKSET,

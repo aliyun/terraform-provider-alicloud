@@ -10,7 +10,7 @@ triggers:
       - 'go.sum'
       - 'website/docs/**'
       - 'alicloud/*.go'
-      - 'alicloud/service/**/*.go'
+      - 'alicloud/**/*.go'
 
 envs:
   CODE_CI_SHALLOW_RANGE: '1'

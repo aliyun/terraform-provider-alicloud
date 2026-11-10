@@ -903,3 +903,77 @@ func TestUnitCommonStringLenAtLeast(t *testing.T) {
 		assert.Contains(t, ws[0], "expected length of")
 	})
 }
+
+func TestUnitCommonStringLenBetweenRune(t *testing.T) {
+	t.Run("Error_Mode", func(t *testing.T) {
+		resourceSchemaValidationSkipped = false
+		validate := StringLenBetweenRune(0, 4)
+
+		testCases := []struct {
+			name        string
+			value       interface{}
+			expectError bool
+			description string
+		}{
+			{
+				name:        "Valid_Empty",
+				value:       "",
+				expectError: false,
+				description: "empty string is within the 0-4 rune range",
+			},
+			{
+				name:        "Valid_ASCII_Max",
+				value:       "abcd",
+				expectError: false,
+				description: "4 ASCII runes equal the max",
+			},
+			{
+				name:        "Valid_CJK_Max",
+				value:       "中文名称",
+				expectError: false,
+				description: "4 CJK runes equal the max although they occupy 12 bytes",
+			},
+			{
+				name:        "Invalid_ASCII_Too_Long",
+				value:       "abcde",
+				expectError: true,
+				description: "5 ASCII runes exceed the max",
+			},
+			{
+				name:        "Invalid_CJK_Too_Long",
+				value:       "中文名称超",
+				expectError: true,
+				description: "5 CJK runes exceed the max",
+			},
+			{
+				name:        "Invalid_Wrong_Type",
+				value:       12345,
+				expectError: true,
+				description: "non-string type should produce an error",
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				ws, es := validate(tc.value, "field")
+				if tc.expectError {
+					assert.NotEmpty(t, es, tc.description)
+				} else {
+					assert.Empty(t, es, tc.description)
+					assert.Empty(t, ws)
+				}
+			})
+		}
+	})
+
+	t.Run("Warn_Mode", func(t *testing.T) {
+		resourceSchemaValidationSkipped = true
+		defer func() { resourceSchemaValidationSkipped = false }()
+		validate := StringLenBetweenRune(0, 4)
+
+		ws, es := validate("中文名称超", "field")
+		assert.Empty(t, es, "In skip mode, errors should be downgraded to warnings")
+		assert.NotEmpty(t, ws, "In skip mode, violation should produce a warning")
+		assert.Contains(t, ws[0], "expected length of")
+	})
+}
