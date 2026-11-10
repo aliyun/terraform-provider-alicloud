@@ -91,7 +91,7 @@ The ip_configs supports the following:
 
 * `az_id` - (Required, String) The availability zone ID of the VSwitch.
 * `cidr_block` - (Required, String) The subnet mask, in the CIDR format of the VSwitch.
-* `ip` - (Optional, String) The IP address within the subnet mask range. If you omit it when the endpoint is created, the system assigns an IP address from the VSwitch. If you set it, the value is kept in the configuration and sent on update instead of being replaced by an automatically assigned address. If you remove an explicitly configured `ip` from the configuration of an existing endpoint, the address that is currently in use is kept: the endpoint is not reassigned a new address.
+* `ip` - (Optional, String) The IP address within the subnet mask range. If you omit it when the endpoint is created, the system assigns an IP address from the VSwitch. If you set it, the value is kept in the configuration and sent on update instead of being replaced by an automatically assigned address. If you only remove an explicitly configured `ip` from the configuration, the address that is currently in use is kept and no IP change is sent for that entry. If `ip_configs` changes while an entry has no explicit `ip`, that entry is sent without an address and the system assigns one.
 * `vswitch_id` - (Required, String) The VSwitch ID.
 
 ## Attributes Reference
