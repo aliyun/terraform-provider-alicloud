@@ -69,6 +69,65 @@ class ReconcileTest(unittest.TestCase):
         self.git('push', self.internal, 'HEAD:master')
         self.assertTrue(r.check(merged, self.internal, self.external)['historyComplete'])
 
+    def test_backflow_is_noop_when_github_history_is_already_internal(self):
+        internal = self.advance_internal()
+        receipt = r.backflow(self.internal, self.external)
+        self.assertEqual('UP_TO_DATE', receipt['state'])
+        self.assertEqual({r.MASTER: internal}, r.refs(self.internal, 'refs/heads/*'))
+        self.assertEqual({r.MASTER: self.base}, r.refs(self.external, 'refs/heads/*'))
+
+    def test_backflow_preserves_both_parents_and_reuses_review_branch(self):
+        external = self.commit('external')
+        self.git('push', self.external, 'HEAD:master')
+        self.git('checkout', '-q', '-B', 'master', self.base)
+        internal = self.advance_internal()
+        self.git('tag', '-a', '-m', 'local only', 'v9.9.9', external)
+        self.git('config', 'push.followTags', 'true')
+        hooks = Path(self.tmp.name) / 'hooks'
+        hooks.mkdir()
+        marker = hooks / 'pushed'
+        hook = hooks / 'pre-push'
+        hook.write_text('#!/bin/sh\ntouch "$(dirname "$0")/pushed"\n')
+        hook.chmod(0o755)
+        self.git('config', 'core.hooksPath', str(hooks))
+        Path('uncommitted').write_text('leave my workspace alone')
+        before = self.git('status', '--porcelain')
+        receipt = r.backflow(self.internal, self.external)
+        self.assertEqual('PUSHED', receipt['state'])
+        branch = 'refs/heads/' + receipt['branch']
+        self.assertEqual({r.MASTER: internal, branch: receipt['head']},
+                         r.refs(self.internal, 'refs/heads/*'))
+        self.assertEqual({r.MASTER: external}, r.refs(self.external, 'refs/heads/*'))
+        self.assertEqual([internal, external],
+                         self.git('show', '-s', '--format=%P', receipt['head']).split())
+        self.assertEqual({}, r.refs(self.internal, 'refs/tags/*'))
+        self.assertTrue(marker.exists())
+        self.assertEqual(before, self.git('status', '--porcelain'))
+        self.assertEqual(internal, self.git('rev-parse', 'HEAD'))
+        self.assertEqual(1, self.git('worktree', 'list', '--porcelain').count('worktree '))
+        self.assertEqual({**receipt, 'state': 'EXISTS'}, r.backflow(self.internal, self.external))
+
+    def test_backflow_conflict_keeps_worktree_and_leaves_remotes_untouched(self):
+        Path('base').write_text('external')
+        self.git('commit', '-qam', 'external')
+        external = self.git('rev-parse', 'HEAD')
+        self.git('push', self.external, 'HEAD:master')
+        self.git('checkout', '-q', '-B', 'master', self.base)
+        Path('base').write_text('internal')
+        self.git('commit', '-qam', 'internal')
+        internal = self.git('rev-parse', 'HEAD')
+        self.git('push', self.internal, 'HEAD:master')
+        worktree = Path(self.tmp.name) / 'conflict'
+        worktree.mkdir()
+        with patch.object(r.tempfile, 'mkdtemp', return_value=str(worktree)):
+            with self.assertRaisesRegex(r.ReconcileError, 'BACKFLOW_MERGE_FAILED'):
+                r.backflow(self.internal, self.external)
+        self.assertEqual('UU base', self.git('-C', str(worktree), 'status', '--porcelain'))
+        self.assertEqual(external, self.git('-C', str(worktree), 'rev-parse', 'MERGE_HEAD'))
+        self.assertEqual({r.MASTER: internal}, r.refs(self.internal, 'refs/heads/*'))
+        self.assertEqual({r.MASTER: external}, r.refs(self.external, 'refs/heads/*'))
+        self.assertEqual('', self.git('status', '--porcelain'))
+
     def test_atomic_push_cannot_overwrite_concurrent_external_merge(self):
         head = self.advance_internal()
         self.git('checkout', '-q', '-b', 'external', self.base)

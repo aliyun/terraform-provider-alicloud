@@ -22,7 +22,7 @@
 // move with the `resource/<name>:` form, the way PR #10817 and #10831
 // did. Ephemeral, action and list registrations have no house title form
 // yet; they only clear the docs-only and testcase-only states, and so do
-// register.go and shared helper files that implement no registration.
+// register.go and shared provider Go files that implement no registration.
 //
 // A whole-product migration can name too many entities for one title —
 // the per-entity fragments ran the largest packages (RAM, ResourceManager,
@@ -595,7 +595,7 @@ func checkTitle(prTitle string, files []titleFile) bool {
 		case file.docs:
 			docsChanged = true
 			testcaseOnly = false
-		case file.service, file.flat:
+		case strings.HasPrefix(file.name, "alicloud/") && strings.HasSuffix(file.name, ".go"), file.service, file.flat:
 			docsOnly = false
 			testcaseOnly = false
 		}
