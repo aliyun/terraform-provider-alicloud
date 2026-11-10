@@ -23,8 +23,10 @@ import (
 const (
 	inboundEndpointTypeName = "alicloud_pvtz_inbound_endpoint"
 	// inboundEndpointTimeout mirrors the SDKv2 alicloud_pvtz_endpoint create/update default
-	// timeouts (10 minutes each). terraform-plugin-framework does not support user-configurable
-	// resource timeouts, so the default is applied as a fixed budget.
+	// timeouts (10 minutes each). This resource does not expose user-configurable operation
+	// timeouts, so the default is applied as a fixed internal retry/wait budget. A user-facing
+	// timeouts block would be added through terraform-plugin-framework-timeouts and kept in
+	// state; the fixed budget below is not a substitute for that capability.
 	inboundEndpointTimeout = 10 * time.Minute
 )
 
