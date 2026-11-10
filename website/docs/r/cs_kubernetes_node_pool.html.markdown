@@ -146,6 +146,10 @@ resource "alicloud_cs_kubernetes_node_pool" "desired_size" {
 }
 
 # Create a managed node pool. If you need to enable maintenance window, you need to set the maintenance window in `alicloud_cs_managed_kubernetes`.
+# The management features below require the node-lifecycle-controller add-on at version
+# v2.3.13-b581b592 or later and the ack-node-problem-detector add-on at version 1.2.41 or later.
+# The service validates the installed versions and rejects the request when an add-on is
+# missing or too old, so install or upgrade them with alicloud_cs_kubernetes_addon first.
 resource "alicloud_cs_kubernetes_node_pool" "maintenance" {
   node_pool_name       = "maintenance"
   cluster_id           = alicloud_cs_managed_kubernetes.default.id
@@ -162,10 +166,19 @@ resource "alicloud_cs_kubernetes_node_pool" "maintenance" {
 
   # management node pool configuration.
   management {
-    enable      = true
+    enable = true
+    # Setting auto_repair to false suspends automatic repair without clearing
+    # auto_repair_policy: the policy id is retained and only stops taking effect,
+    # so claiming or listing the policy no longer reports this node pool.
+    # Turning auto_repair back on makes the retained policy take effect again.
     auto_repair = true
     auto_repair_policy {
-      restart_node = true
+      # The builtin policies are r-repair-sys-comp-failure (restart the node when
+      # needed) and r-repair-sys-comp-failure-without-reboots. They replace the
+      # deprecated restart_node switch: auto_repair_policy_id =
+      # "r-repair-sys-comp-failure" is equivalent to restart_node = true, and
+      # "r-repair-sys-comp-failure-without-reboots" to restart_node = false.
+      auto_repair_policy_id = "r-repair-sys-comp-failure"
     }
     auto_upgrade = true
     auto_upgrade_policy {
@@ -1113,7 +1126,7 @@ The labels supports the following:
 ### `management`
 
 The management supports the following:
-* `auto_repair` - (Optional, Computed) Whether to enable automatic repair. Valid values: `true`: Automatic repair. `false`: not automatically repaired. When `auto_repair` is `true`, this feature requires the `node-lifecycle-controller` and `ack-node-problem-detector` addons to be installed; see [cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) for installation.
+* `auto_repair` - (Optional, Computed) Whether to enable automatic repair. Valid values: `true`: Automatic repair. `false`: not automatically repaired. Setting it to `false` suspends automatic repair without clearing the bound policy: `auto_repair_policy.auto_repair_policy_id` is retained, the policy just stops taking effect, and the policy no longer reports this node pool in `resource_ids` when it is queried. Turning `auto_repair` back on makes the retained policy take effect again. When `auto_repair` is `true`, this feature requires the `node-lifecycle-controller` add-on at version `v2.3.13-b581b592` or later and the `ack-node-problem-detector` add-on at version `1.2.41` or later; the service validates the installed versions and the error message contains the required minimum when an add-on is missing or too old. See [cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) for installation.
 * `auto_repair_policy` - (Optional, Computed, Set) Automatic repair node policy. See [`auto_repair_policy`](#management-auto_repair_policy) below.
 * `auto_upgrade` - (Optional, Computed) Specifies whether to enable auto update. Valid values: `true`: enables auto update. `false`: disables auto update.
 * `auto_upgrade_policy` - (Optional, Computed, Set) The auto update policy. See [`auto_upgrade_policy`](#management-auto_upgrade_policy) below.
@@ -1127,7 +1140,12 @@ The management supports the following:
 ### `management-auto_repair_policy`
 
 The management-auto_repair_policy supports the following:
-* `restart_node` - (Optional, Computed) Whether to allow node restart.
+* `auto_repair_policy_id` - (Optional, Computed, Available since v2.3.0) The ID of the auto repair policy bound to the node pool. It takes precedence over `restart_node`. The value is only sent when it is non-empty: Terraform treats an empty attribute value as unset, so to suspend automatic repair set `auto_repair` to `false` instead of clearing this field. The binding is retained while auto repair is off and takes effect again when `auto_repair` is turned back on. Once a policy ID has been bound explicitly, removing the argument from the configuration does not unbind the policy. You can use `alicloud_cs_auto_repair_policy` to create a custom policy, or reference a builtin policy returned by the `alicloud_cs_auto_repair_policies` data source. The builtin policies are `r-repair-sys-comp-failure` (repair, restarting the node when needed) and `r-repair-sys-comp-failure-without-reboots` (repair without restarting the node). They replace the deprecated `restart_node` switch: `r-repair-sys-comp-failure` is equivalent to `restart_node = true` and `r-repair-sys-comp-failure-without-reboots` to `restart_node = false`. The policy subtype must match the node pool type (`ess` or `lingjun`).
+* `restart_node` - (Optional, Computed, Deprecated since v2.3.0) The legacy switch that selects a builtin policy when `auto_repair_policy_id` is not set. It takes effect only when the managed node pool is enabled and auto repair is on: `true` binds `r-repair-sys-comp-failure`, `false` binds `r-repair-sys-comp-failure-without-reboots`. Use `auto_repair_policy_id = "r-repair-sys-comp-failure"` instead of `restart_node = true`, and `auto_repair_policy_id = "r-repair-sys-comp-failure-without-reboots"` instead of `restart_node = false`. When both are configured, `auto_repair_policy_id` wins and `restart_node` is ignored; the provider reports a warning in that case.
+* `max_parallel_repairing_nodes` - (Optional, Computed, Available since v2.3.0) The maximum number of nodes that can be repaired simultaneously. Valid values: an integer in the range of `1` to `100000`, or a percentage in the range of `(0%, 100%]` (decimals such as `2.5%` are accepted). Backend default: `1`. An empty value is treated as unset by Terraform and is not sent.
+* `max_unhealthy_nodes_threshold` - (Optional, Computed, Available since v2.3.0) The circuit breaker threshold for auto repair. When the number of unhealthy nodes in the node pool reaches this threshold, the node pool stops starting new repair actions. Valid values: an integer in the range of `1` to `100000`, or a percentage in the range of `(0%, 100%]`. It must be greater than or equal to `max_parallel_repairing_nodes` when both are given in the same form (both a count or both a percentage). Backend default: `100%`. An empty value is treated as unset by Terraform and is not sent.
+
+  -> **NOTE:** An auto repair policy can only be bound to a managed node pool of an ACK Pro cluster, and Auto mode node pools do not support auto repair policies. Binding a policy requires the `node-lifecycle-controller` add-on at version `v2.3.13-b581b592` or later; automatic fault diagnosis additionally requires `ack-node-problem-detector` at version `1.2.41` or later. The service validates the installed versions on every request and rejects requests whose add-on version is below the minimum, so install or upgrade the add-ons with [cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) before enabling these features.
 
 ### `management-auto_upgrade_policy`
 

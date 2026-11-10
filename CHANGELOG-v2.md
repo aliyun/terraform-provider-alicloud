@@ -1,5 +1,14 @@
 ## 2.3.0 (Unreleased)
 
+FEATURES:
+
+- **New Resource:** `alicloud_cs_auto_repair_policy` ([#11593](https://github.com/aliyun/terraform-provider-alicloud/issues/11593))
+- **New Data Source:** `alicloud_cs_auto_repair_policies` ([#11593](https://github.com/aliyun/terraform-provider-alicloud/issues/11593))
+
+ENHANCEMENTS:
+
+- resource/alicloud_cs_kubernetes_node_pool: support `auto_repair_policy_id`, `max_parallel_repairing_nodes` and `max_unhealthy_nodes_threshold` in `management.auto_repair_policy`; deprecate `management.auto_repair_policy.restart_node` in favor of `auto_repair_policy_id` and warn when both are configured. ([#11593](https://github.com/aliyun/terraform-provider-alicloud/issues/11593))
+
 ## 2.2.0 (November 6, 2026)
 
 NOTES:

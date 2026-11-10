@@ -49,6 +49,10 @@ func ServicePackage() conns.ServicePackage {
 				TypeName: "alicloud_cs_autoscaling_config",
 				Factory:  ResourceCSAutoscalingConfig,
 			},
+			{
+				TypeName: "alicloud_cs_auto_repair_policy",
+				Factory:  ResourceCSAutoRepairPolicy,
+			},
 		},
 		SDKDataSources: []conns.SDKDataSource{
 			{
@@ -98,6 +102,10 @@ func ServicePackage() conns.ServicePackage {
 			{
 				TypeName: "alicloud_cs_cluster_credential",
 				Factory:  DataSourceCSClusterCredential,
+			},
+			{
+				TypeName: "alicloud_cs_auto_repair_policies",
+				Factory:  DataSourceCSAutoRepairPolicies,
 			},
 		},
 		EphemeralResources: []conns.EphemeralResource{
