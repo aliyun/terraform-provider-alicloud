@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
@@ -369,6 +370,112 @@ func resourceExpressConnectRouterUpdate(d *schema.ResourceData, meta interface{}
 		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
+	}
+	update = false
+	action = "GrantInstanceToExpressConnectRouter"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["EcrId"] = d.Id()
+	request["ClientToken"] = helper.BuildClientToken(action)
+	if d.HasChange("granted_instances") {
+		update = true
+		jsonPathResult, err := jsonpath.Get("$.node_id", d.Get("granted_instances"))
+		if err == nil {
+			request["InstanceId"] = jsonPathResult
+		}
+	}
+
+	if d.HasChange("granted_instances") {
+		update = true
+		jsonPathResult1, err := jsonpath.Get("$.node_type", d.Get("granted_instances"))
+		if err == nil {
+			request["InstanceType"] = jsonPathResult1
+		}
+	}
+
+	if d.HasChange("granted_instances") {
+		update = true
+		jsonPathResult2, err := jsonpath.Get("$.node_region_id", d.Get("granted_instances"))
+		if err == nil {
+			request["InstanceRegionId"] = jsonPathResult2
+		}
+	}
+
+	if update {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"Conflict.Lock"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			logs.AddDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		expressConnectRouterServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, expressConnectRouterServiceV2.DescribeAsyncExpressConnectRouterExpressConnectRouterStateRefreshFunc(d, response, "$.EcrGrantedInstanceList[*].Status", []string{}))
+		if jobDetail, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
+		}
+	}
+	update = false
+	action = "RevokeInstanceFromExpressConnectRouter"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["EcrId"] = d.Id()
+	request["ClientToken"] = helper.BuildClientToken(action)
+	if d.HasChange("granted_instances") {
+		update = true
+		jsonPathResult, err := jsonpath.Get("$.node_id", d.Get("granted_instances"))
+		if err == nil {
+			request["InstanceId"] = jsonPathResult
+		}
+	}
+
+	if d.HasChange("granted_instances") {
+		update = true
+		jsonPathResult1, err := jsonpath.Get("$.node_type", d.Get("granted_instances"))
+		if err == nil {
+			request["InstanceType"] = jsonPathResult1
+		}
+	}
+
+	if d.HasChange("granted_instances") {
+		update = true
+		jsonPathResult2, err := jsonpath.Get("$.node_region_id", d.Get("granted_instances"))
+		if err == nil {
+			request["InstanceRegionId"] = jsonPathResult2
+		}
+	}
+
+	if update {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"Conflict.Lock"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			logs.AddDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		expressConnectRouterServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"0"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, expressConnectRouterServiceV2.DescribeAsyncExpressConnectRouterExpressConnectRouterStateRefreshFunc(d, response, "$.TotalCount", []string{}))
+		if jobDetail, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 		}
 	}
 	update = false
