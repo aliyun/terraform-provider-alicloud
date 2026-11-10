@@ -38,7 +38,7 @@ func ResourceDisk() *schema.Resource {
 			"category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_essd", "cloud_ssd", "cloud_auto", "cloud_essd_entry", "elastic_ephemeral_disk_standard", "elastic_ephemeral_disk_premium"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_essd", "cloud_ssd", "cloud_auto", "cloud_essd_entry", "cloud_regional_disk_auto", "elastic_ephemeral_disk_standard", "elastic_ephemeral_disk_premium"}, false),
 				Default:      "cloud_efficiency",
 			},
 			"create_time": {

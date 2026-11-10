@@ -32,11 +32,20 @@ func DataSourceCSKubernetesVersion() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Default", "Serverless", "Edge", "Acs"}, false),
 				Optional:     true,
 			},
+			"support_policy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Standard", "Extended"}, false),
+			},
 			"metadata": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"support_policy": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"version": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -91,6 +100,11 @@ func dataSourceCSKubernetesVersionRead(d *schema.ResourceData, meta interface{})
 	for _, metadata := range resp {
 		result := make(map[string]interface{})
 		result["version"] = *metadata.Version
+		policy := tea.StringValue(metadata.SupportPolicy)
+		if policy == "" {
+			policy = "Standard"
+		}
+		result["support_policy"] = policy
 		result["runtime"] = formatRuntime(metadata.Runtimes)
 		results = append(results, result)
 	}
@@ -118,6 +132,9 @@ func describeKubernetesVersionMetadata(d *schema.ResourceData, client *connectiv
 	request.ClusterType = tea.String(d.Get("cluster_type").(string))
 	request.Profile = tea.String(d.Get("profile").(string))
 	request.KubernetesVersion = tea.String(d.Get("kubernetes_version").(string))
+	if v, ok := d.GetOk("support_policy"); ok {
+		request.SetSupportPolicy(v.(string))
+	}
 	var resp *roacs.DescribeKubernetesVersionMetadataResponse
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
