@@ -77,7 +77,7 @@ The following arguments are supported:
 * `allowed_prefixes` - (Optional) The list of allowed route prefixes.
 * `allowed_prefixes_mode` - (Optional, Computed, String) The prefix route mode. Valid values: `MatchMode`, `IncrementalMode`. `MatchMode` publishes only the configured route prefixes and withdraws all detail routes published before. `IncrementalMode` publishes the configured route prefixes and withdraws only the detail routes published before that fall within the configured prefixes, while the other published detail routes are kept. When it is omitted, the mode returned by the service is stored in state. When only `allowed_prefixes` is changed, this parameter is not sent and the mode already applied on the association is kept; an empty string is treated as unset. Available since v2.3.0.
 * `association_region_id` - (Required, ForceNew) The region ID of the resource to be associated.
-* `description` - (Optional, Computed, String) The description of the association. The length is 0 to 128 characters. An empty string clears the description. Available since v2.3.0.
+* `description` - (Optional, String) The description of the association. The length is 0 to 128 characters. An empty string clears the description. Available since v2.3.0.
 * `ecr_id` - (Required, ForceNew) The ECR ID.
 * `vpc_id` - (Required, ForceNew) The VPC ID.
 * `vpc_owner_id` - (Optional, ForceNew) The ID of the Alibaba Cloud account that owns the VPC.
@@ -91,7 +91,6 @@ The following attributes are exported:
 * `allowed_prefixes_mode` - The prefix route mode.
 * `association_id` - The ID of the association between the ECR and the VPC.
 * `create_time` - The time when the association was created.
-* `description` - The description of the association.
 * `status` - The deployment state of the associated resource.
 
 ## Timeouts

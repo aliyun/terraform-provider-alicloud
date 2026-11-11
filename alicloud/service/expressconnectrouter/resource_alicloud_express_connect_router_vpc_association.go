@@ -57,7 +57,6 @@ func ResourceVpcAssociation() *schema.Resource {
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 			"ecr_id": {
 				Type:     schema.TypeString,
