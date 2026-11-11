@@ -45,6 +45,7 @@ func TestUnitDemo(t *testing.T) { unrelated() }
 		{"unit only", strings.Replace(old, "func TestUnitDemo(t *testing.T) { unrelated() }", "func TestUnitDemo(t *testing.T) { unrelated(); check() }", 1), nil},
 		{"comment only", old + "// ordinary comment\n", nil},
 		{"new import for new test", strings.Replace(old, "import \"fmt\"", "import (\"fmt\"; \"os\")", 1) + "func TestAccDemo_new(t *testing.T) { os.Getenv(\"TEST\") }", []string{"TestAccDemo_new"}},
+		{"test-like factory variable", old + "\nvar TestAccFactories = factory()\nfunc factory() int { return 1 }\nfunc TestUnitFactories(t *testing.T) { use(TestAccFactories) }\n", nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			result := selectScope(fixture(t, map[string]string{file: old}), fixture(t, map[string]string{file: tc.source}), []string{file})
