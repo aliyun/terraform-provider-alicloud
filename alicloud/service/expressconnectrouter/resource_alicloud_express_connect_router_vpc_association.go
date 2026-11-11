@@ -2,6 +2,7 @@
 package expressconnectrouter
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -12,8 +13,49 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+// Retryable error codes are taken from the OpenAPI error tables of the write
+// actions (ExpressConnectRouter 2023-09-01). Terminal errors (quota, parameter
+// format/size, already-exists, unsupported feature and not-found) are
+// deliberately absent so they fail fast.
+var (
+	vpcAssociationCreateRetryableCodes = []string{
+		"Conflict.Lock",
+		"IncorrectStatus.Ecr",
+		"IncorrectStatus.Vpc",
+		"IncorrectStatus.VpcOperating",
+		"IncorrectStatus.Vswitch",
+		"IncorrectStatus.RouteEntry",
+		"OperationDenied.ForceDeleting",
+		"OperationFailed.CallingVpcYaochi",
+		"InternalErrorTemp",
+	}
+	vpcAssociationModifyRetryableCodes = []string{
+		"Conflict.Lock",
+		"IncorrectStatus.Ecr",
+		"OperationDenied.ForceDeleting",
+	}
+	vpcAssociationModifyAllowedPrefixRetryableCodes = []string{
+		"Conflict.Lock",
+		"IncorrectStatus.Ecr",
+		"IncorrectStatus.EcrAssociation",
+		"OperationDenied.ForceDeleting",
+	}
+)
+
+var (
+	// vpcAssociationRetryWait is a factory so every lifecycle operation owns its
+	// own backoff state; unit tests replace it to keep retries immediate.
+	vpcAssociationRetryWait = func() func() {
+		return helper.IncrementalWait(3*time.Second, 5*time.Second)
+	}
+	// vpcAssociationStateWaitDelay is the first state poll delay; unit tests set
+	// it to zero so the mocked ACTIVE state is observed immediately.
+	vpcAssociationStateWaitDelay = 5 * time.Second
 )
 
 func ResourceVpcAssociation() *schema.Resource {
@@ -29,6 +71,9 @@ func ResourceVpcAssociation() *schema.Resource {
 			Create: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+			return validateVpcAssociationPrefixModeRawConfig(diff.GetRawConfig())
 		},
 		Schema: map[string]*schema.Schema{
 			"allowed_prefixes": {
@@ -102,11 +147,14 @@ func resourceVpcAssociationCreate(d *schema.ResourceData, meta interface{}) erro
 		request["VpcOwnerId"] = v
 	}
 	if v, ok := d.GetOk("allowed_prefixes"); ok {
-		allowedPrefixesMaps := v.([]interface{})
-		request["AllowedPrefixes"] = allowedPrefixesMaps
-	}
-	if v, ok := d.GetOk("allowed_prefixes_mode"); ok {
-		request["AllowedPrefixesMode"] = v
+		request["AllowedPrefixes"] = v.([]interface{})
+		// The service rejects AllowedPrefixesMode when no prefix is sent, so the
+		// mode is only ever sent together with a non-empty prefix list.
+		if mode, modeOk := d.GetOk("allowed_prefixes_mode"); modeOk {
+			request["AllowedPrefixesMode"] = mode
+		}
+	} else if _, modeOk := d.GetOk("allowed_prefixes_mode"); modeOk {
+		return errVpcAssociationModeWithoutPrefixes()
 	}
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
@@ -114,11 +162,11 @@ func resourceVpcAssociationCreate(d *schema.ResourceData, meta interface{}) erro
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	wait := vpcAssociationRetryWait()
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		if err != nil {
-			if errs.IsExpectedErrors(err, []string{"Conflict.Lock"}) || helper.NeedRetry(err) {
+			if errs.IsExpectedErrors(err, vpcAssociationCreateRetryableCodes) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -135,7 +183,7 @@ func resourceVpcAssociationCreate(d *schema.ResourceData, meta interface{}) erro
 	d.SetId(fmt.Sprintf("%v:%v:%v", request["EcrId"], response["AssociationId"], request["VpcId"]))
 
 	expressConnectRouterServiceV2 := NewService(client)
-	stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutCreate), vpcAssociationStateWaitDelay, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
@@ -186,13 +234,21 @@ func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
 	expressConnectRouterServiceV2 := NewService(client)
+	// A single deadline is shared by the sequential modifications and their
+	// state waits so a second write cannot restart the full update budget.
+	budget := newVpcAssociationUpdateBudget(d.Timeout(schema.TimeoutUpdate))
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	var err error
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+
+	if d.HasChange("allowed_prefixes_mode") {
+		if v, ok := d.GetOk("allowed_prefixes"); !ok || len(v.([]interface{})) == 0 {
+			return errVpcAssociationModeWithoutPrefixes()
+		}
+	}
 
 	// Update description via ModifyExpressConnectRouterAssociation.
 	if d.HasChange("description") {
@@ -203,11 +259,15 @@ func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) erro
 		request["AssociationId"] = parts[1]
 		request["Description"] = d.Get("description")
 		request["ClientToken"] = helper.BuildClientToken(action)
-		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+		timeout := budget.remaining()
+		if timeout <= 0 {
+			return vpcAssociationUpdateTimeoutError(d)
+		}
+		wait := vpcAssociationRetryWait()
+		err = retry.Retry(timeout, func() *retry.RetryError {
 			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 			if err != nil {
-				// IncorrectStatus.Ecr: another ECR operation is in progress; retry within the update timeout.
-				if errs.IsExpectedErrors(err, []string{"IncorrectStatus.Ecr", "Conflict.Lock"}) || helper.NeedRetry(err) {
+				if errs.IsExpectedErrors(err, vpcAssociationModifyRetryableCodes) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -219,22 +279,27 @@ func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
+		timeout = budget.remaining()
+		if timeout <= 0 {
+			return vpcAssociationUpdateTimeoutError(d)
+		}
+		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, timeout, vpcAssociationStateWaitDelay, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
 	// Update allowed_prefixes / allowed_prefixes_mode via ModifyExpressConnectRouterAssociationAllowedPrefix.
-	if d.HasChange("allowed_prefixes") || d.HasChange("allowed_prefixes_mode") {
+	prefixes, prefixesOk := d.GetOk("allowed_prefixes")
+	if d.HasChange("allowed_prefixes") || (d.HasChange("allowed_prefixes_mode") && prefixesOk) {
 		action := "ModifyExpressConnectRouterAssociationAllowedPrefix"
 		request = make(map[string]interface{})
 		query = make(map[string]interface{})
 		request["EcrId"] = parts[0]
 		request["AssociationId"] = parts[1]
 		request["ClientToken"] = helper.BuildClientToken(action)
-		if v, ok := d.GetOk("allowed_prefixes"); ok {
-			request["AllowedPrefixes"] = v.([]interface{})
+		if prefixesOk {
+			request["AllowedPrefixes"] = prefixes.([]interface{})
 			// The service falls back to MatchMode when AllowedPrefixesMode is omitted, so
 			// send the effective mode with the prefixes to keep the applied mode. The mode
 			// is only valid together with a non-empty prefix list: sending it while the
@@ -243,12 +308,15 @@ func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) erro
 				request["AllowedPrefixesMode"] = mode
 			}
 		}
-		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+		timeout := budget.remaining()
+		if timeout <= 0 {
+			return vpcAssociationUpdateTimeoutError(d)
+		}
+		wait := vpcAssociationRetryWait()
+		err = retry.Retry(timeout, func() *retry.RetryError {
 			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 			if err != nil {
-				// IncorrectStatus.Ecr / IncorrectStatus.EcrAssociation: a concurrent ECR or
-				// association operation is in progress; retry within the update timeout.
-				if errs.IsExpectedErrors(err, []string{"IncorrectStatus.Ecr", "IncorrectStatus.EcrAssociation", "Conflict.Lock"}) || helper.NeedRetry(err) {
+				if errs.IsExpectedErrors(err, vpcAssociationModifyAllowedPrefixRetryableCodes) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -260,7 +328,11 @@ func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
+		timeout = budget.remaining()
+		if timeout <= 0 {
+			return vpcAssociationUpdateTimeoutError(d)
+		}
+		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, timeout, vpcAssociationStateWaitDelay, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
@@ -286,7 +358,7 @@ func resourceVpcAssociationDelete(d *schema.ResourceData, meta interface{}) erro
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	wait := vpcAssociationRetryWait()
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = helper.BuildClientToken(action)
@@ -310,9 +382,66 @@ func resourceVpcAssociationDelete(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	expressConnectRouterServiceV2 := NewService(client)
-	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), vpcAssociationStateWaitDelay, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
+}
+
+// errVpcAssociationModeWithoutPrefixes reports the only combination the
+// service cannot honor: a prefix mode without any prefix to apply it to.
+func errVpcAssociationModeWithoutPrefixes() error {
+	return fmt.Errorf("`allowed_prefixes_mode` requires a non-empty `allowed_prefixes` list because the service rejects the prefix mode when no prefix is sent; configure at least one allowed prefix or remove `allowed_prefixes_mode`")
+}
+
+// validateVpcAssociationPrefixModeRawConfig rejects the mode-only combination
+// at plan time when both values are known. Unknown values are skipped because
+// the apply-time checks repeat the validation once references are resolved.
+func validateVpcAssociationPrefixModeRawConfig(raw cty.Value) error {
+	if raw.IsNull() || !raw.IsKnown() {
+		return nil
+	}
+	mode := raw.GetAttr("allowed_prefixes_mode")
+	if mode.IsNull() || !mode.IsKnown() {
+		return nil
+	}
+	if strings.TrimSpace(mode.AsString()) == "" {
+		return nil
+	}
+	prefixes := raw.GetAttr("allowed_prefixes")
+	if !prefixes.IsKnown() {
+		return nil
+	}
+	if prefixes.IsNull() || prefixes.LengthInt() == 0 {
+		return errVpcAssociationModeWithoutPrefixes()
+	}
+	return nil
+}
+
+type vpcAssociationUpdateBudget struct {
+	deadline time.Time
+}
+
+func newVpcAssociationUpdateBudget(timeout time.Duration) *vpcAssociationUpdateBudget {
+	return &vpcAssociationUpdateBudget{deadline: time.Now().Add(timeout)}
+}
+
+func (b *vpcAssociationUpdateBudget) remaining() time.Duration {
+	return remainingVpcAssociationTimeout(b.deadline, time.Now())
+}
+
+// remainingVpcAssociationTimeout is split from the clock read so the shared
+// budget regression can assert that later steps inherit the remainder instead
+// of restarting the full update timeout.
+func remainingVpcAssociationTimeout(deadline, now time.Time) time.Duration {
+	remaining := deadline.Sub(now)
+	if remaining < 0 {
+		return 0
+	}
+	return remaining
+}
+
+func vpcAssociationUpdateTimeoutError(d *schema.ResourceData) error {
+	return errs.WrapError(errs.GetTimeErrorFromString(fmt.Sprintf(errs.DefaultTimeoutMsg, d.Id(), "update", "the shared update deadline was exhausted by the preceding modifications")))
 }

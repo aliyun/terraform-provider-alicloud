@@ -2,6 +2,7 @@ package expressconnectrouter_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
@@ -10,6 +11,16 @@ import (
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// vpcAssociationImportStep verifies that every successful configuration step is
+// importable on its own, not only the final state of the lifecycle.
+func vpcAssociationImportStep(resourceId string) resource.TestStep {
+	return resource.TestStep{
+		ResourceName:      resourceId,
+		ImportState:       true,
+		ImportStateVerify: true,
+	}
+}
 
 // Test ExpressConnectRouter ExpressConnectRouterVpcAssociation. >>> Resource test cases, automatically generated.
 // Case 初始版本测试用例 6348
@@ -46,6 +57,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 					}),
 				),
 			},
+			vpcAssociationImportStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"allowed_prefixes": []string{
@@ -57,6 +69,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 					}),
 				),
 			},
+			vpcAssociationImportStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"allowed_prefixes": []string{
@@ -68,6 +81,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 					}),
 				),
 			},
+			vpcAssociationImportStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"allowed_prefixes": []string{},
@@ -78,6 +92,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 					}),
 				),
 			},
+			vpcAssociationImportStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"allowed_prefixes": []string{
@@ -89,6 +104,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 					}),
 				),
 			},
+			vpcAssociationImportStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"association_region_id": acctest.DefaultRegionToTest,
@@ -108,12 +124,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 					}),
 				),
 			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
+			vpcAssociationImportStep(resourceId),
 		},
 	})
 }
@@ -182,12 +193,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 					}),
 				),
 			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
+			vpcAssociationImportStep(resourceId),
 		},
 	})
 }
@@ -231,6 +237,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 					}),
 				),
 			},
+			vpcAssociationImportStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"allowed_prefixes": []string{
@@ -242,6 +249,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 					}),
 				),
 			},
+			vpcAssociationImportStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"allowed_prefixes": []string{},
@@ -252,6 +260,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 					}),
 				),
 			},
+			vpcAssociationImportStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"allowed_prefixes": []string{
@@ -263,12 +272,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 					}),
 				),
 			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
+			vpcAssociationImportStep(resourceId),
 		},
 	})
 }
@@ -307,6 +311,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_allow
 					}),
 				),
 			},
+			vpcAssociationImportStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"association_region_id": acctest.DefaultRegionToTest,
@@ -321,13 +326,14 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_allow
 					}),
 				),
 			},
+			vpcAssociationImportStep(resourceId),
 		},
 	})
 }
 
 // Case VpcAssociation complete scenario: description lifecycle (set, update, clear)
 // and allowed_prefixes_mode switching 6348
-func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_complete6348(t *testing.T) {
+func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_complete6348_descriptionAndModeLifecycle(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_router_vpc_association.default"
 	ra := acctest.ResourceAttrInit(resourceId, AlicloudExpressConnectRouterExpressConnectRouterVpcAssociationMap6348)
@@ -369,11 +375,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_compl
 					}),
 				),
 			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
+			vpcAssociationImportStep(resourceId),
 			{
 				// Update only the description through ModifyExpressConnectRouterAssociation.
 				Config: testAccConfig(map[string]interface{}{
@@ -386,11 +388,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_compl
 					}),
 				),
 			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
+			vpcAssociationImportStep(resourceId),
 			{
 				// Clear the description with an explicit empty string. The API accepts a
 				// 0-128 character description, so "" is a legal value that clears it.
@@ -403,11 +401,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_compl
 					}),
 				),
 			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
+			vpcAssociationImportStep(resourceId),
 			{
 				// Switch the mode to IncrementalMode and set a description again.
 				Config: testAccConfig(map[string]interface{}{
@@ -421,11 +415,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_compl
 					}),
 				),
 			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
+			vpcAssociationImportStep(resourceId),
 			{
 				// Change only allowed_prefixes with the mode untouched: the update must
 				// send the stored mode along with the prefixes, because the service
@@ -441,11 +431,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_compl
 					}),
 				),
 			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
+			vpcAssociationImportStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"allowed_prefixes": []string{
@@ -453,6 +439,33 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_compl
 				}),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+// Case VpcAssociation invalid mode-only configuration 6348: the service rejects
+// AllowedPrefixesMode without a prefix list, so the provider must reject it
+// locally at plan time instead of sending an invalid request.
+func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_invalidModeOnly6348(t *testing.T) {
+	resourceId := "alicloud_express_connect_router_vpc_association.default"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutervpcassociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudExpressConnectRouterExpressConnectRouterVpcAssociationBasicDependence6348)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"association_region_id": acctest.DefaultRegionToTest,
+					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
+					"ecr_id":                "${alicloud_express_connect_router_express_connect_router.defaultM9YxGW.id}",
+					"allowed_prefixes_mode": "MatchMode",
+				}),
+				ExpectError: regexp.MustCompile(`allowed_prefixes_mode.*non-empty.*allowed_prefixes`),
 			},
 		},
 	})

@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudExpressConnectRouterVpcAssociationsDataSource_basic0(t *testing.T) {
@@ -126,6 +127,39 @@ func TestAccAliCloudExpressConnectRouterVpcAssociationsDataSource_basic0(t *test
 	}
 
 	aliCloudExpressConnectRouterVpcAssociationsInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, associationIdConf, vpcIdConfConf, associationRegionIdConf, statusConf, allConf)
+}
+
+// TestAccAliCloudExpressConnectRouterVpcAssociationsDataSource_identity0 pins the
+// queried association to the resource under test so an unrelated association
+// with the same description cannot satisfy the check.
+func TestAccAliCloudExpressConnectRouterVpcAssociationsDataSource_identity0(t *testing.T) {
+	rand := tfacctest.RandIntRange(10000, 99999)
+	resourceId := "data.alicloud_express_connect_router_vpc_associations.default"
+	associationResourceId := "alicloud_express_connect_router_vpc_association.default"
+	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutervpcassociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceExpressConnectRouterVpcAssociationsConfig)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ecr_id": "${alicloud_express_connect_router_vpc_association.default.ecr_id}",
+					"ids":    []string{"${alicloud_express_connect_router_vpc_association.default.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair(resourceId, "associations.0.id", associationResourceId, "id"),
+					resource.TestCheckResourceAttrPair(resourceId, "associations.0.ecr_id", associationResourceId, "ecr_id"),
+					resource.TestCheckResourceAttrPair(resourceId, "associations.0.association_id", associationResourceId, "association_id"),
+					resource.TestCheckResourceAttrPair(resourceId, "associations.0.vpc_id", associationResourceId, "vpc_id"),
+					resource.TestCheckResourceAttr(resourceId, "associations.0.description", "tf-testacc-ds-description"),
+				),
+			},
+		},
+	})
 }
 
 func dataSourceExpressConnectRouterVpcAssociationsConfig(name string) string {
