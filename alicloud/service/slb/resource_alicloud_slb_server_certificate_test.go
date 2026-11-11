@@ -32,6 +32,9 @@ func testSweepSlbServerCertificate(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
 	}
 
 	req := slbsdk.CreateDescribeServerCertificatesRequest()
