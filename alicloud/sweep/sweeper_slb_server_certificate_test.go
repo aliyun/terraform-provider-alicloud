@@ -27,21 +27,38 @@ func testSweepSlbServerCertificateDocumentationExample(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
-	// Only documentation example certificates are in scope here; test
-	// certificates keep their existing sweeper and prefix set.
+	return sweepSlbServerCertificateDocumentationExample(func() (interface{}, error) {
+		req := slbsdk.CreateDescribeServerCertificatesRequest()
+		req.RegionId = client.RegionId
+		return client.WithSlbClient(func(slbClient *slbsdk.Client) (interface{}, error) {
+			return slbClient.DescribeServerCertificates(req)
+		})
+	}, func(id string) error {
+		deleteReq := slbsdk.CreateDeleteServerCertificateRequest()
+		deleteReq.ServerCertificateId = id
+		_, err := client.WithSlbClient(func(slbClient *slbsdk.Client) (interface{}, error) {
+			return slbClient.DeleteServerCertificate(deleteReq)
+		})
+		return err
+	})
+}
+
+// Only documentation example certificates are in scope here; test certificates
+// keep their existing sweeper and prefix set.
+func sweepSlbServerCertificateDocumentationExample(describe func() (interface{}, error), deleteCertificate func(id string) error) error {
+	raw, err := describe()
+	if err != nil {
+		return err
+	}
+	resp, ok := raw.(*slbsdk.DescribeServerCertificatesResponse)
+	if !ok || resp == nil {
+		return fmt.Errorf("unexpected DescribeServerCertificates response type %T", raw)
+	}
+
 	prefixes := []string{
 		"terraform-example",
 	}
 
-	req := slbsdk.CreateDescribeServerCertificatesRequest()
-	req.RegionId = client.RegionId
-	raw, err := client.WithSlbClient(func(slbClient *slbsdk.Client) (interface{}, error) {
-		return slbClient.DescribeServerCertificates(req)
-	})
-	if err != nil {
-		return err
-	}
-	resp, _ := raw.(*slbsdk.DescribeServerCertificatesResponse)
 	var matched []slbsdk.ServerCertificate
 	for _, serverCertificate := range resp.ServerCertificates.ServerCertificate {
 		name := serverCertificate.ServerCertificateName
@@ -61,14 +78,7 @@ func testSweepSlbServerCertificateDocumentationExample(region string) error {
 		log.Printf("[INFO] Deleting Slb Server Certificate : %s (%s)", name, id)
 		matched = append(matched, serverCertificate)
 	}
-	return deleteSlbServerCertificates(matched, func(id string) error {
-		deleteReq := slbsdk.CreateDeleteServerCertificateRequest()
-		deleteReq.ServerCertificateId = id
-		_, err := client.WithSlbClient(func(slbClient *slbsdk.Client) (interface{}, error) {
-			return slbClient.DeleteServerCertificate(deleteReq)
-		})
-		return err
-	})
+	return deleteSlbServerCertificates(matched, deleteCertificate)
 }
 
 // deleteSlbServerCertificates keeps deleting the remaining certificates but
@@ -109,5 +119,65 @@ func TestUnitSweepSlbServerCertificateDocumentationExampleDeleteError(t *testing
 
 	if err := deleteSlbServerCertificates(certificates, func(string) error { return nil }); err != nil {
 		t.Fatalf("want nil when every deletion succeeds, got %v", err)
+	}
+}
+
+func TestUnitSweepSlbServerCertificateDocumentationExampleUnexpectedResponse(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  interface{}
+	}{
+		{name: "nil response", raw: nil},
+		{name: "typed nil response", raw: (*slbsdk.DescribeServerCertificatesResponse)(nil)},
+		{name: "unexpected response type", raw: struct{}{}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			deleteCalls := 0
+			err := sweepSlbServerCertificateDocumentationExample(
+				func() (interface{}, error) { return c.raw, nil },
+				func(string) error { deleteCalls++; return nil },
+			)
+			if err == nil {
+				t.Fatalf("want an error for %s, got nil", c.name)
+			}
+			if deleteCalls != 0 {
+				t.Fatalf("want no delete calls for %s, got %d", c.name, deleteCalls)
+			}
+		})
+	}
+}
+
+func TestUnitSweepSlbServerCertificateDocumentationExampleDescribeError(t *testing.T) {
+	describeFailure := errors.New("Throttling.User")
+	deleteCalls := 0
+	err := sweepSlbServerCertificateDocumentationExample(
+		func() (interface{}, error) { return nil, describeFailure },
+		func(string) error { deleteCalls++; return nil },
+	)
+	if !errors.Is(err, describeFailure) {
+		t.Fatalf("want the describe failure, got %v", err)
+	}
+	if deleteCalls != 0 {
+		t.Fatalf("want no delete calls, got %d", deleteCalls)
+	}
+}
+
+func TestUnitSweepSlbServerCertificateDocumentationExampleFiltersPrefix(t *testing.T) {
+	resp := &slbsdk.DescribeServerCertificatesResponse{}
+	resp.ServerCertificates.ServerCertificate = []slbsdk.ServerCertificate{
+		{ServerCertificateName: "terraform-example-slb-domain-extension", ServerCertificateId: "cert-1"},
+		{ServerCertificateName: "tf-testAccSlbServerCertificate", ServerCertificateId: "cert-2"},
+	}
+	var deleted []string
+	err := sweepSlbServerCertificateDocumentationExample(
+		func() (interface{}, error) { return resp, nil },
+		func(id string) error { deleted = append(deleted, id); return nil },
+	)
+	if err != nil {
+		t.Fatalf("want nil, got %v", err)
+	}
+	if len(deleted) != 1 || deleted[0] != "cert-1" {
+		t.Fatalf("want only the terraform-example certificate deleted, got %v", deleted)
 	}
 }
