@@ -332,6 +332,71 @@ func TestUnitVpcAssociationUpdateDescriptionRetry(t *testing.T) {
 	}
 }
 
+// newVpcAssociationUpdateDataFromState builds a ResourceData whose previous
+// state is explicit, so a change to an empty string is a real diff instead of
+// an unset value.
+func newVpcAssociationUpdateDataFromState(t *testing.T, state map[string]string, config map[string]interface{}) *schema.ResourceData {
+	t.Helper()
+	m := schema.InternalMap(ResourceVpcAssociation().Schema)
+	instanceState := &terraform.InstanceState{ID: "ecr-1:assoc-1:vpc-1", Attributes: state}
+	instanceState.Attributes["id"] = instanceState.ID
+	diff, err := m.Diff(context.Background(), instanceState, terraform.NewResourceConfigRaw(config), nil, nil, false)
+	if err != nil {
+		t.Fatalf("build diff: %v", err)
+	}
+	d, err := m.Data(instanceState, diff)
+	if err != nil {
+		t.Fatalf("build resource data: %v", err)
+	}
+	return d
+}
+
+func TestUnitVpcAssociationUpdateDescriptionClearSendsEmptyString(t *testing.T) {
+	silenceVpcAssociationWaits(t)
+	var forms []url.Values
+	client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+		}
+		switch r.Form.Get("Action") {
+		case "ModifyExpressConnectRouterAssociation":
+			forms = append(forms, r.Form)
+			writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
+		case "DescribeExpressConnectRouterAssociation":
+			writeVpcAssociationActive(t, w)
+		default:
+			t.Errorf("unexpected action %q", r.Form.Get("Action"))
+		}
+	})
+
+	d := newVpcAssociationUpdateDataFromState(t,
+		map[string]string{
+			"ecr_id":                "ecr-1",
+			"vpc_id":                "vpc-1",
+			"association_region_id": "cn-hangzhou",
+			"description":           "old-description",
+		},
+		map[string]interface{}{
+			"ecr_id":                "ecr-1",
+			"vpc_id":                "vpc-1",
+			"association_region_id": "cn-hangzhou",
+			"description":           "",
+		})
+	if !d.HasChange("description") {
+		t.Fatalf("clearing the description must be a change")
+	}
+	if err := resourceVpcAssociationUpdate(d, client); err != nil {
+		t.Fatalf("clear description: %v", err)
+	}
+	if len(forms) != 1 {
+		t.Fatalf("ModifyExpressConnectRouterAssociation calls = %d, want 1", len(forms))
+	}
+	values, present := forms[0]["Description"]
+	if !present || len(values) != 1 || values[0] != "" {
+		t.Fatalf("Description present=%v values=%v, want one explicit empty value", present, values)
+	}
+}
+
 func TestUnitVpcAssociationUpdatePrefixSendsStoredMode(t *testing.T) {
 	silenceVpcAssociationWaits(t)
 	var mu sync.Mutex
