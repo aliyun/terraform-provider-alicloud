@@ -1314,6 +1314,8 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 		systemDiskMap["DeleteWithInstance"] = diskMap["delete_with_instance"]
 		systemDiskMap["Iops"] = diskMap["iops"]
 		systemDiskMap["PerformanceLevel"] = diskMap["performance_level"]
+		systemDiskMap["Encrypted"] = requests.NewBoolean(diskMap["encrypted"].(bool))
+		systemDiskMap["KMSKeyId"] = diskMap["kms_key_id"]
 		request["SystemDisk"] = systemDiskMap
 	}
 	if d.HasChange("tags") {
