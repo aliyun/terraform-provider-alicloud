@@ -103,7 +103,7 @@ resource "alicloud_slb_domain_extension" "example1" {
 The following arguments are supported:
 
 * `load_balancer_id` - (Required, ForceNew) The ID of the SLB instance.
-* `listener_port` - (Optional, Int, ForceNew, Available since v2.3.0) The listener port used by the HTTPS listener of the SLB instance, which is the standard field mapped to the `ListenerPort` API parameter. Valid values: `1` to `65535`. Exactly one of `listener_port` or `frontend_port` must be specified; the constraint is enforced at plan time.
+* `listener_port` - (Optional, Int, ForceNew, Available since v2.3.0) The listener port used by the HTTPS listener of the SLB instance. Valid values: `1` to `65535`. Exactly one of `listener_port` or `frontend_port` must be specified; the constraint is enforced at plan time.
 * `frontend_port` - (Optional, Int, ForceNew, Deprecated since v2.3.0) The frontend port used by the HTTPS listener of the SLB instance. Valid values: `1` to `65535`. It has been deprecated from provider version 2.3.0, use `listener_port` instead. Exactly one of `listener_port` or `frontend_port` must be specified.
 * `domain` - (Required, ForceNew) The domain name.
 * `server_certificate_id` - (Required) The ID of the certificate used by the domain name.
