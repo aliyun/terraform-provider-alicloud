@@ -47,7 +47,8 @@ func TestAccAliCloudSLBDomainExtensionBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_id":      CHECKSET,
-						"frontend_port":         CHECKSET,
+						"listener_port":         "443",
+						"frontend_port":         "443",
 						"domain":                "www.test.com",
 						"server_certificate_id": CHECKSET,
 					}),
@@ -69,7 +70,8 @@ func TestAccAliCloudSLBDomainExtensionBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_id":      CHECKSET,
-						"frontend_port":         CHECKSET,
+						"listener_port":         "443",
+						"frontend_port":         "443",
 						"domain":                "www.test.com",
 						"server_certificate_id": CHECKSET,
 					}),
@@ -118,8 +120,8 @@ func TestAccAliCloudSLBDomainExtensionListenerPort(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_id":      CHECKSET,
-						"listener_port":         CHECKSET,
-						"frontend_port":         CHECKSET,
+						"listener_port":         "443",
+						"frontend_port":         "443",
 						"domain":                "www.test.com",
 						"server_certificate_id": CHECKSET,
 					}),
