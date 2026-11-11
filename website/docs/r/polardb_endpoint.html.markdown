@@ -17,6 +17,8 @@ Provides a PolarDB endpoint resource to manage custom endpoint of PolarDB cluste
 
 -> **NOTE:** The primary endpoint and the default cluster endpoint can not be created or deleted manually.
 
+-> **NOTE:** A PolarDB cluster has only one default cluster endpoint, and it can be managed either by this resource (after importing it) or by `alicloud_polardb_cluster_endpoint`. Manage one endpoint address from only one Terraform resource. If the same default cluster endpoint is controlled by both resources, every apply of either resource sends `ModifyDBClusterEndpoint` to the same endpoint, the later write overrides the earlier one, and the two configurations keep reporting differences against each other. Different endpoint addresses do not conflict and can be managed separately: for example, a custom endpoint created by this resource and the default cluster endpoint managed by `alicloud_polardb_cluster_endpoint` have different identities and can coexist.
+
 -> **NOTE:** The DynamoDB type endpoint does not support deletion. When destroying the Terraform resource, the DynamoDB endpoint will be removed from state but not deleted from the cloud.
 
 -> **NOTE:** The endpoint's advanced configuration must stay compatible with global consistency (high-performance mode). An incompatible `endpoint_config` is rejected by the service with an `EndpointConfig.Conflict` error.
