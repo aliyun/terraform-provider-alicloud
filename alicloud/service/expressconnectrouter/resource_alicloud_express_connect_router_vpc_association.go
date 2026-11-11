@@ -34,6 +34,9 @@ var (
 	// vpcAssociationStateWaitDelay is the first state poll delay; unit tests set
 	// it to zero so the mocked ACTIVE state is observed immediately.
 	vpcAssociationStateWaitDelay = 5 * time.Second
+	// vpcAssociationNow is the clock behind the update budget; unit tests shift
+	// it to prove that sequential writes share one deadline.
+	vpcAssociationNow = time.Now
 )
 
 func ResourceVpcAssociation() *schema.Resource {
@@ -461,11 +464,11 @@ type vpcAssociationUpdateBudget struct {
 }
 
 func newVpcAssociationUpdateBudget(timeout time.Duration) *vpcAssociationUpdateBudget {
-	return &vpcAssociationUpdateBudget{deadline: time.Now().Add(timeout)}
+	return &vpcAssociationUpdateBudget{deadline: vpcAssociationNow().Add(timeout)}
 }
 
 func (b *vpcAssociationUpdateBudget) remaining() time.Duration {
-	return remainingVpcAssociationTimeout(b.deadline, time.Now())
+	return remainingVpcAssociationTimeout(b.deadline, vpcAssociationNow())
 }
 
 // remainingVpcAssociationTimeout is split from the clock read so the shared

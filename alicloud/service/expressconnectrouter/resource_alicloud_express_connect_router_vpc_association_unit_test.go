@@ -152,7 +152,7 @@ func TestUnitVpcAssociationCreateRetryCodes(t *testing.T) {
 				"association_region_id": "cn-hangzhou",
 			})
 			d.MarkNewResource()
-			if err := resourceVpcAssociationCreate(d, client); err != nil {
+			if err := ResourceVpcAssociation().Create(d, client); err != nil {
 				t.Fatalf("create with transient %s should succeed after a retry: %v", code, err)
 			}
 			if got := atomic.LoadInt32(&createCalls); got != 2 {
@@ -200,7 +200,7 @@ func TestUnitVpcAssociationCreateTerminalCodesAreNotRetried(t *testing.T) {
 				"association_region_id": "cn-hangzhou",
 			})
 			d.MarkNewResource()
-			err := resourceVpcAssociationCreate(d, client)
+			err := ResourceVpcAssociation().Create(d, client)
 			if err == nil {
 				t.Fatalf("terminal error %s must be returned", code)
 			}
@@ -248,7 +248,7 @@ func TestUnitVpcAssociationCreateSendsModeOnlyWithPrefixes(t *testing.T) {
 			"description":           "unit-description",
 		})
 		d.MarkNewResource()
-		if err := resourceVpcAssociationCreate(d, client); err != nil {
+		if err := ResourceVpcAssociation().Create(d, client); err != nil {
 			t.Fatalf("create with mode and prefixes: %v", err)
 		}
 		mu.Lock()
@@ -282,7 +282,7 @@ func TestUnitVpcAssociationCreateSendsModeOnlyWithPrefixes(t *testing.T) {
 			"allowed_prefixes_mode": "MatchMode",
 		})
 		d.MarkNewResource()
-		err := resourceVpcAssociationCreate(d, client)
+		err := ResourceVpcAssociation().Create(d, client)
 		if err == nil || !containsAll(err.Error(), "allowed_prefixes_mode", "non-empty", "allowed_prefixes") {
 			t.Fatalf("mode-only create error = %v, want the local combination error", err)
 		}
@@ -324,7 +324,7 @@ func TestUnitVpcAssociationUpdateDescriptionRetry(t *testing.T) {
 		"association_region_id": "cn-hangzhou",
 		"description":           "unit-description",
 	})
-	if err := resourceVpcAssociationUpdate(d, client); err != nil {
+	if err := ResourceVpcAssociation().Update(d, client); err != nil {
 		t.Fatalf("description update should retry a recoverable status: %v", err)
 	}
 	if got := atomic.LoadInt32(&modifyCalls); got != 2 {
@@ -349,6 +349,101 @@ func newVpcAssociationUpdateDataFromState(t *testing.T, state map[string]string,
 		t.Fatalf("build resource data: %v", err)
 	}
 	return d
+}
+
+func TestUnitVpcAssociationUpdateParameterErrorFailsFast(t *testing.T) {
+	silenceVpcAssociationWaits(t)
+	var calls int32
+	client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+		}
+		switch r.Form.Get("Action") {
+		case "ModifyExpressConnectRouterAssociation":
+			atomic.AddInt32(&calls, 1)
+			writeVpcAssociationJSON(t, w, http.StatusBadRequest, map[string]string{
+				"Code": "IllegalParamFormat.Description", "Message": "description format is illegal", "RequestId": "unit-test",
+			})
+		default:
+			t.Errorf("unexpected action %q", r.Form.Get("Action"))
+		}
+	})
+
+	d := newVpcAssociationUpdateResourceData(t, map[string]interface{}{
+		"ecr_id":                "ecr-1",
+		"vpc_id":                "vpc-1",
+		"association_region_id": "cn-hangzhou",
+		"description":           "unit-description",
+	})
+	if err := ResourceVpcAssociation().Update(d, client); err == nil {
+		t.Fatalf("parameter errors must be returned to the caller")
+	}
+	if got := atomic.LoadInt32(&calls); got != 1 {
+		t.Fatalf("ModifyExpressConnectRouterAssociation calls = %d, want 1 (parameter errors must not retry)", got)
+	}
+}
+
+func TestUnitVpcAssociationUpdateSharesOneDeadline(t *testing.T) {
+	silenceVpcAssociationWaits(t)
+	start := time.Now()
+	var offsetSeconds int64
+	previousNow := vpcAssociationNow
+	vpcAssociationNow = func() time.Time {
+		return start.Add(time.Duration(atomic.LoadInt64(&offsetSeconds)) * time.Second)
+	}
+	t.Cleanup(func() { vpcAssociationNow = previousNow })
+
+	var modifies, describes int32
+	client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+		}
+		switch r.Form.Get("Action") {
+		case "ModifyExpressConnectRouterAssociation":
+			atomic.AddInt32(&modifies, 1)
+			// Consume the whole five minute update budget during the first write.
+			atomic.StoreInt64(&offsetSeconds, 300)
+			writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
+		case "ModifyExpressConnectRouterAssociationAllowedPrefix":
+			atomic.AddInt32(&modifies, 1)
+			writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
+		case "DescribeExpressConnectRouterAssociation":
+			atomic.AddInt32(&describes, 1)
+			writeVpcAssociationActive(t, w)
+		default:
+			t.Errorf("unexpected action %q", r.Form.Get("Action"))
+		}
+	})
+
+	d := newVpcAssociationUpdateDataFromState(t,
+		map[string]string{
+			"ecr_id":                "ecr-1",
+			"vpc_id":                "vpc-1",
+			"association_region_id": "cn-hangzhou",
+			"description":           "old-description",
+			"allowed_prefixes.#":    "1",
+			"allowed_prefixes.0":    "172.16.1.0/24",
+		},
+		map[string]interface{}{
+			"ecr_id":                "ecr-1",
+			"vpc_id":                "vpc-1",
+			"association_region_id": "cn-hangzhou",
+			"description":           "new-description",
+			"allowed_prefixes":      []interface{}{"172.16.2.0/24"},
+		})
+	if !d.HasChange("description") || !d.HasChange("allowed_prefixes") {
+		t.Fatalf("both sequential writes must be pending")
+	}
+	err := ResourceVpcAssociation().Update(d, client)
+	if err == nil || !containsAll(err.Error(), "Timeout", "shared update deadline") {
+		t.Fatalf("shared budget error = %v, want the shared deadline timeout", err)
+	}
+	if got := atomic.LoadInt32(&modifies); got != 1 {
+		t.Fatalf("modify calls = %d, want 1; a per-step budget would have issued the second write", got)
+	}
+	if got := atomic.LoadInt32(&describes); got != 0 {
+		t.Fatalf("describe calls = %d, want 0 after the budget is exhausted", got)
+	}
 }
 
 func TestUnitVpcAssociationUpdateDescriptionClearSendsEmptyString(t *testing.T) {
@@ -385,7 +480,7 @@ func TestUnitVpcAssociationUpdateDescriptionClearSendsEmptyString(t *testing.T) 
 	if !d.HasChange("description") {
 		t.Fatalf("clearing the description must be a change")
 	}
-	if err := resourceVpcAssociationUpdate(d, client); err != nil {
+	if err := ResourceVpcAssociation().Update(d, client); err != nil {
 		t.Fatalf("clear description: %v", err)
 	}
 	if len(forms) != 1 {
@@ -434,7 +529,7 @@ func TestUnitVpcAssociationUpdatePrefixSendsStoredMode(t *testing.T) {
 	if err := d.Set("allowed_prefixes_mode", "IncrementalMode"); err != nil {
 		t.Fatalf("seed stored mode: %v", err)
 	}
-	if err := resourceVpcAssociationUpdate(d, client); err != nil {
+	if err := ResourceVpcAssociation().Update(d, client); err != nil {
 		t.Fatalf("prefix update with stored mode: %v", err)
 	}
 	mu.Lock()
@@ -466,7 +561,7 @@ func TestUnitVpcAssociationUpdateRejectsModeOnlyChange(t *testing.T) {
 		"association_region_id": "cn-hangzhou",
 		"allowed_prefixes_mode": "IncrementalMode",
 	})
-	err := resourceVpcAssociationUpdate(d, client)
+	err := ResourceVpcAssociation().Update(d, client)
 	if err == nil || !containsAll(err.Error(), "allowed_prefixes_mode", "non-empty", "allowed_prefixes") {
 		t.Fatalf("mode-only update error = %v, want the local combination error", err)
 	}
