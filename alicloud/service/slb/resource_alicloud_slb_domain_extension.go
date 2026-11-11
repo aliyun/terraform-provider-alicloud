@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -32,7 +33,7 @@ func ResourceDomainExtension() *schema.Resource {
 			},
 			"listener_port": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntBetween(1, 65535),
+				ValidateFunc: validators.IntBetween(1, 65535),
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
