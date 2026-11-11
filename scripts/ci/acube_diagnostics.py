@@ -150,7 +150,7 @@ def publish_report(output, report):
             for phase in report['phases']:
                 block += '| ' + ' | '.join(str(phase.get(k, '')).replace('|', '/')
                                             for k in ('name', 'status', 'exitCode')) + ' |\n'
-        for field in ('tests', 'cleanup', 'unsuccessfulCases'):
+        for field in ('tests', 'cleanup', 'unsuccessfulCases', 'example'):
             if report.get(field):
                 block += '\n' + field + ':\n```json\n' + json.dumps(report[field], ensure_ascii=False) + '\n```\n'
         if report.get('logExcerpt'):

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exact-SHA Code integration checks. CI orchestrates; preproduction FC executes."""
 import argparse
+import copy
 from decimal import Decimal, InvalidOperation
 import hashlib
 import importlib.util
@@ -15,6 +16,7 @@ import urllib.error
 import urllib.request
 
 from acube_diagnostics import publish_report, redact, report_directory, terminal_report
+import doc_examples
 
 REPOSITORY = 'code.alibaba-inc.com/opensource-tools/terraform-provider-alicloud'
 BASE_URL = 'https://pre-acube.aliyun-inc.com'
@@ -39,11 +41,21 @@ def numeric_id(value):
 
 
 def git(*args):
-    return subprocess.check_output(['git', *args], text=True).strip()
+    value = subprocess.check_output(['git', *args]).decode('utf-8')
+    return value if args[0] == 'show' else value.strip()
 
 
 def content(head, file):
-    return git('show', head + ':' + file) + '\n'
+    return git('show', head + ':' + file)
+
+
+def source_file(ref, file):
+    entry = git('ls-tree', ref, '--', doc_examples.repository_path(file))
+    if not entry:
+        return None
+    if entry.split()[0] not in ('100644', '100755'):
+        raise ValueError('Scenario input must be a tracked regular file: ' + file)
+    return content(ref, file)
 
 
 def acceptance_scope(base, head):
@@ -63,7 +75,6 @@ def plan(base, head, include_examples=True):
     scope = acceptance_scope(base, head)
     docs = set()
     if include_examples:
-        # A test/helper-only change does not by itself change the published examples.
         for file in scope['resourceFiles'] if not scope['blocked'] else []:
             name = Path(file).name
             if file.startswith('alicloud/service/') and name.startswith(('resource_', 'data_source_')):
@@ -71,40 +82,16 @@ def plan(base, head, include_examples=True):
                 for line in resolved.splitlines():
                     parts = line.split('\t')
                     if len(parts) == 3 and parts[2] in ('resource', 'data_source'):
-                        docs.add('website/docs/' + ('r/' if parts[2] == 'resource' else 'd/') + parts[1].removeprefix('alicloud_') + '.html.markdown')
+                        docs.add('website/docs/' + ('r/' if parts[2] == 'resource' else 'd/') +
+                                 parts[1].removeprefix('alicloud_') + '.html.markdown')
             elif name.startswith(('resource_alicloud_', 'data_source_alicloud_')):
                 kind = 'r/' if name.startswith('resource_') else 'd/'
                 stem = re.sub(r'^(resource|data_source)_alicloud_', '', name).removesuffix('.go')
                 docs.add('website/docs/' + kind + stem + '.html.markdown')
-        for file in git('diff', '--name-only', '--diff-filter=ACMRT', base, head).splitlines():
-            if file.startswith(('website/docs/r/', 'website/docs/d/')) and file.endswith('.html.markdown'):
-                docs.add(file)
-    examples = []
-    for doc in sorted(docs):
-        blocks = re.findall(r'^```(?:terraform|hcl|tf)\s*\n(.*?)^```\s*$', content(head, doc), re.M | re.S)
-        if not blocks:
-            raise ValueError('No executable examples in ' + doc)
-        resource = Path(doc).name.split('.')[0]
-        fixtures = []
-        candidates = git('ls-tree', '-r', '--name-only', head, 'ci/assets/open-service/').splitlines()
-        services = sorted({f.split('/')[3] for f in candidates}, key=lambda x: (-len(x), x))
-        selected = next((s for s in services if resource.startswith(s + '_')), None)
-        for file in candidates:
-            if selected and file.startswith('ci/assets/open-service/' + selected + '/'):
-                if not file.endswith('.tf'):
-                    raise ValueError('Unsupported example fixture (must not be omitted): ' + file)
-                fixtures.append({'path': file, 'content': content(head, file)})
-        for index, original in enumerate(blocks):
-            # Existing CI injected a candidate-provider fixture into every example.
-            # Do not overwrite an example's explicit provider/version constraints.
-            provider = '' if re.search(r'\brequired_providers\b', original) else (
-                'terraform {\n required_providers {\n alicloud = { source = "aliyun/alicloud" }\n }\n}\n')
-            main = original + '\n' + provider + '\n'.join(f['content'] for f in fixtures)
-            examples.append({'name': doc + '#' + str(index), 'originalSha256': hashlib.sha256(original.encode()).hexdigest(),
-                             'fixtures': [{'path': f['path'], 'sha256': hashlib.sha256(f['content'].encode()).hexdigest()} for f in fixtures],
-                             'mainTf': main})
+    document_plan = doc_examples.plan(base, head, docs, git, source_file) if include_examples else {}
     return {'version': 1, 'repository': REPOSITORY, 'base': base, 'head': head,
-            'packages': scope['packages'], 'examples': examples, 'scope': scope}
+            'packages': scope['packages'], 'examples': document_plan.get('examples', []),
+            'documents': document_plan, 'scope': scope}
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -142,30 +129,35 @@ class Client:
 
 
 def validate_result(status, request):
-    if status.get('status') != 'success':
+    if not isinstance(status, dict) or status.get('status') != 'success':
         raise ValueError('ACube task did not succeed')
     result = status.get('result') or {}
+    if not isinstance(result, dict):
+        raise ValueError('Invalid ACube result')
     for key in ('sourceId', 'checkBaseSourceId', 'commitSha', 'baseCommitSha', 'mode'):
         if result.get(key) != request[key]: raise ValueError('Result identity mismatch: ' + key)
-    if result.get('exitCode') != 0 or result.get('timedOut') is True:
+    if type(result.get('exitCode')) not in (int, float) or result['exitCode'] != 0 or result.get('timedOut') is True:
         raise ValueError('Invalid successful result')
     if request['mode'] == 'acctest':
         tests = result.get('tests') or {}
-        cases = tests.get('cases') or []
-        if len(cases) != len(request['testCases']) or {c.get('name') for c in cases} != set(request['testCases']):
+        cases = tests.get('cases') if isinstance(tests, dict) else None
+        if (not isinstance(cases, list) or any(not isinstance(c, dict) for c in cases)
+                or len(cases) != len(request['testCases']) or {c.get('name') for c in cases} != set(request['testCases'])):
             raise ValueError('Missing or duplicate AccTest results')
         if result.get('testDirectory') != request['variables']['TEST'] or any(c.get('result') != 'PASS' for c in cases):
             raise ValueError('AccTest FAIL/SKIP is not PASS; inspect case-level evidence')
     else:
-        hcl = result.get('hcl') or {}
-        if hcl.get('action') != 'example' or hcl.get('mainTfSha256') != hashlib.sha256(request['mainTf'].encode()).hexdigest():
-            raise ValueError('Example identity mismatch')
-        cleanup = hcl.get('cleanup') or {}
-        if cleanup.get('stateEmpty') is not True or cleanup.get('status') != 'success':
-            raise ValueError('Example cleanup unconfirmed')
-        if (hcl.get('importCheck') or {}).get('policy') != 'provider-docs-v1':
-            raise ValueError('Example Import verification missing')
+        doc_examples.validate_result(result, request)
     return result
+
+
+def reusable_cases(client, request):
+    value = client.call('POST', '/acctest/reusable-cases', request)
+    if (not isinstance(value, dict) or set(value) - set(request['testCases'])
+            or any(type(task) not in (str, int) or not re.fullmatch(r'[1-9][0-9]{0,18}', str(task))
+                   for task in value.values())):
+        raise ValueError('Invalid ACube case reuse receipt')
+    return {name: str(task) for name, task in value.items()}
 
 
 def execute(client, frozen, kind, run_id, output, poll=time.sleep):
@@ -180,24 +172,34 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
     else:
         items = [(e['name'], e) for e in frozen['examples']]
     (output / 'plan.json').write_text(json.dumps(frozen, indent=2))
-    if frozen.get('scope', {}).get('blocked'):
+    (output / 'plan.json').chmod(0o600)
+    blockers = list(frozen.get('scope', {}).get('blocked', []))
+    if kind == 'examples':
+        blockers.extend(frozen.get('documents', {}).get('blocked', []))
+        inventory = {key:frozen.get('documents', {}).get(key, []) for key in ('proseReview', 'notApplicable')}
+        (output / 'diagnostics' / 'document-review.json').write_text(json.dumps(inventory, indent=2))
+        print('Document review: ' + json.dumps(inventory), flush=True)
+    if blockers:
         report = {'status': 'blocked', 'head': frozen['head'], 'base': frozen['base'],
-                  'error': 'Manual ACC scope review required; no cloud tasks submitted',
-                  'scope': frozen['scope']}
+                  'error': 'Manual ACC scope review required; no cloud tasks submitted' if kind == 'acctest'
+                           else 'Document/scope contract incomplete; no cloud tasks submitted',
+                  'scope': frozen.get('scope', {}), 'blockers': blockers}
         target = output / 'diagnostics' / 'scope.json'
         target.write_text(json.dumps(report, indent=2))
         target.chmod(0o600)
         print(json.dumps(report), flush=True)
-        raise ValueError(report['error'] + ': ' + '; '.join(frozen['scope']['blocked']))
+        raise ValueError(report['error'] + ': ' + '; '.join(blockers))
     if not items:
         print('Not applicable: no ' + kind + ' changes in the complete range'); return
     capabilities = client.call('GET', '/capabilities')
-    if capabilities.get('submissionIdempotency') != 'oss-admission-v1' or 'example' not in capabilities.get('hclActions', []):
+    if (capabilities.get('submissionIdempotency') != 'oss-admission-v1'
+            or kind == 'examples' and 'example' not in capabilities.get('hclActions', [])):
         raise ValueError('ACube CI capability is not deployed; refusing non-idempotent submission')
     sources = [client.call('POST', '/sources/import', {'repository': REPOSITORY, 'commitSha': frozen[key]}) for key in ('head','base')]
     if any(not re.fullmatch('[a-f0-9]{64}', s.get('sourceId', '')) for s in sources): raise ValueError('Invalid source import')
     failures = []
     pending = []
+    reuse_plans = []
     for name, value in items:
         request = {'sourceId': sources[0]['sourceId'], 'checkBaseSourceId': sources[1]['sourceId'],
                    'commitSha': frozen['head'], 'baseCommitSha': frozen['base'], 'headRepo': REPOSITORY, 'baseRepo': REPOSITORY,
@@ -206,27 +208,51 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         if kind == 'acctest': request.update(testCases=value, variables={'TEST':name},
                                            testConcurrency=2)
         else: request.update(mainTf=value['mainTf'], hclAction='example')
-        request['idempotencyKey'] = 'ci-v1-' + digest({'run':run_id, 'plan':digest(frozen),'kind':kind,'name':name})
+        # A documentation inventory/contract cannot change an identical ACC submission key.
+        request['idempotencyKey'] = 'ci-v1-' + digest({'run':run_id, 'kind':kind, 'name':name, 'request':request})
         item_file = output / (digest(name) + '.json')
         try:
             reused_cases = {}
-            if kind == 'acctest' and capabilities.get('accTestCaseReuse') == 'exact-source-v1':
-                reused_cases = client.call('POST', '/acctest/reusable-cases', request)
-                if any(case not in value or not str(task).isdigit() or int(task) <= 0
-                       for case, task in reused_cases.items()):
-                    raise ValueError('Invalid ACube case reuse receipt')
+            candidate = copy.deepcopy(request)
+            saved = json.loads(item_file.read_text()) if item_file.exists() else None
+            if saved is not None:
+                if not isinstance(saved, dict) or saved.get('candidateRequest') != candidate:
+                    raise ValueError('Saved submission identity differs; retain original evidence and use a new output directory')
+                reused_cases = saved.get('reusedCases', {})
+                if (not isinstance(reused_cases, dict) or set(reused_cases) - set(candidate.get('testCases', []))
+                        or any(not isinstance(task, str) or not re.fullmatch(r'[1-9][0-9]{0,18}', task)
+                               for task in reused_cases.values())):
+                    raise ValueError('Invalid saved reuse references; reconcile the original record')
+            elif kind == 'acctest' and (capabilities.get('accTestCaseReuse') == 'exact-source-v1'
+                    or capabilities.get('accTestContentReuse') == 'whole-source-and-comments-v1'):
+                reused_cases = reusable_cases(client, candidate)
+            if kind == 'acctest':
+                request = copy.deepcopy(candidate)
                 request['testCases'] = [case for case in value if case not in reused_cases]
                 if reused_cases:
                     print(json.dumps({'name': name, 'reusedCases': reused_cases}), flush=True)
-                if not request['testCases']:
-                    item_file.write_text(json.dumps({'name': name, 'request': request,
-                                                     'reusedCases': reused_cases}, indent=2))
-                    continue
-            receipt = client.call('POST', '', request)
+            expected_request = None if kind == 'acctest' and not request['testCases'] else request
+            if saved is not None and saved.get('request') != expected_request:
+                raise ValueError('Saved remainder differs; reconcile the original submission')
+            record = saved or {'name': name, 'candidateRequest': candidate, 'request': request,
+                               'reusedCases': reused_cases, 'submission': 'UNKNOWN'}
+            if reused_cases:
+                reuse_plans.append((item_file, candidate, reused_cases))
+            if kind == 'examples':
+                record['example'] = value
+            if kind == 'acctest' and not request['testCases']:
+                record.update(request=None, submission='reused')
+                item_file.write_text(json.dumps(record, indent=2))
+                item_file.chmod(0o600)
+                continue
+            # Keep the original references even if the remainder's submission receipt is lost.
+            item_file.write_text(json.dumps(record, indent=2))
+            item_file.chmod(0o600)
+            receipt = record.get('receipt') or client.call('POST', '', request)
             task_id = str(receipt.get('taskId', ''))
-            if not task_id.isdigit():
+            if not re.fullmatch(r'[1-9][0-9]{0,18}', task_id):
                 raise ValueError('Missing submission receipt; recover using the same run ID')
-            record = {'name': name, 'request': request, 'receipt': receipt, 'reusedCases': reused_cases}
+            record.update(receipt=receipt, submission='accepted')
             item_file.write_text(json.dumps(record, indent=2))
             pending.append((item_file, task_id, record, time.monotonic() + 8 * 3600))
             print(json.dumps({'name': name, 'taskId': task_id, 'sourceId': request['sourceId'],
@@ -260,6 +286,8 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                 except ValueError as error:
                     validation_error = str(error)
                 report = terminal_report(record['name'], task_id, status, record['request'], validation_error, logs)
+                if record.get('example') and not validation_error:
+                    report['example'] = doc_examples.proof(record['example'], task_id)
                 if log_warning:
                     report['diagnosticWarning'] = log_warning
                 publish_report(output, report)
@@ -271,6 +299,31 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         pending = running
         if pending:
             poll(30)
+    for item_file, candidate, initial in reuse_plans:
+        try:
+            # The service rechecks runner epochs, newer failures and independent PASS invocations.
+            current = reusable_cases(client, candidate)
+            if not set(initial) <= set(current):
+                raise ValueError('Reused AccTest evidence was revoked/invalidated; original references retained')
+            record = json.loads(item_file.read_text())
+            record['currentReusedCases'] = {name:current[name] for name in initial}
+            record['reuseValidation'] = 'passed'
+            record.pop('reuseValidationError', None)
+            item_file.write_text(json.dumps(record, indent=2))
+            item_file.chmod(0o600)
+            report = dict(status='success', candidateCommitSha=candidate['commitSha'],
+                          evidenceScope='REUSED_CASES_ONLY', initialReusedCases=initial,
+                          currentReusedCases=record['currentReusedCases'])
+            (output/'diagnostics'/('reuse-'+item_file.name)).write_text(json.dumps(report, indent=2))
+            print('ACC reuse verified: ' + json.dumps(report), flush=True)
+        except ValueError as error:
+            record = json.loads(item_file.read_text())
+            record.update(reuseValidation='invalid', reuseValidationError=str(error))
+            item_file.write_text(json.dumps(record, indent=2))
+            (output/'diagnostics'/('reuse-'+item_file.name)).write_text(json.dumps(
+                dict(status='blocked', candidateCommitSha=candidate['commitSha'],
+                     initialReusedCases=initial, error=str(error)), indent=2))
+            failures.append(dict(reusedCases=initial, error=str(error)))
     if failures: raise ValueError(json.dumps(failures))
 
 
