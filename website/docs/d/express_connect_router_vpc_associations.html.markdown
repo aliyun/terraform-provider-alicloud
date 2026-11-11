@@ -21,6 +21,14 @@ variable "name" {
   default = "terraform-example"
 }
 
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_account" "default" {
 }
 
@@ -78,7 +86,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `association_node_type` - The type of the associated resource.
   * `vpc_owner_id` - The ID of the Alibaba Cloud account that owns the VPC.
   * `allowed_prefixes_mode` - The prefix-based routing mode.
-  * `description` - The description of the association.
+  * `description` - (String) The description of the association. Available since v2.3.0.
   * `status` - The status of the association.
   * `create_time` - The time when the association was created.
   * `modify_time` - The time when the association was modified.

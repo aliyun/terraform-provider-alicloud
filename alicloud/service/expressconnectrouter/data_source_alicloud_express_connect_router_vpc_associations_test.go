@@ -100,6 +100,7 @@ func TestAccAliCloudExpressConnectRouterVpcAssociationsDataSource_basic0(t *test
 			"associations.0.association_node_type": acctest.CHECKSET,
 			"associations.0.vpc_owner_id":          acctest.CHECKSET,
 			"associations.0.allowed_prefixes_mode": acctest.CHECKSET,
+			"associations.0.description":           "tf-testacc-ds-description",
 			"associations.0.status":                acctest.CHECKSET,
 			"associations.0.create_time":           acctest.CHECKSET,
 			"associations.0.modify_time":           acctest.CHECKSET,
@@ -146,6 +147,7 @@ resource "alicloud_express_connect_router_express_connect_router" "default" {
 
 resource "alicloud_vpc" "default" {
   cidr_block = "172.16.0.0/16"
+  vpc_name   = var.name
 }
 
 resource "alicloud_express_connect_router_vpc_association" "default" {
@@ -154,6 +156,7 @@ resource "alicloud_express_connect_router_vpc_association" "default" {
   association_region_id = data.alicloud_regions.default.regions.0.id
   vpc_owner_id          = data.alicloud_account.default.id
   allowed_prefixes      = ["172.16.1.0/24", "172.16.2.0/24", "172.16.3.0/24"]
+  description           = "tf-testacc-ds-description"
 }
 `, name)
 }

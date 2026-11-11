@@ -132,6 +132,7 @@ variable "name" {
 
 resource "alicloud_vpc" "default8qAtD6" {
   cidr_block = "172.16.0.0/16"
+  vpc_name   = var.name
 }
 
 resource "alicloud_express_connect_router_express_connect_router" "defaultM9YxGW" {
@@ -324,8 +325,9 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_allow
 	})
 }
 
-// Case VpcAssociation description and allowed_prefixes_mode 6348
-func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_description6348(t *testing.T) {
+// Case VpcAssociation complete scenario: description lifecycle (set, update, clear)
+// and allowed_prefixes_mode switching 6348
+func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_complete6348(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_router_vpc_association.default"
 	ra := acctest.ResourceAttrInit(resourceId, AlicloudExpressConnectRouterExpressConnectRouterVpcAssociationMap6348)
@@ -345,12 +347,14 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_descr
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
+				// Create with MatchMode and a description. Prefixes are declared in the
+				// ascending order returned by the API so later import verification is stable.
 				Config: testAccConfig(map[string]interface{}{
 					"association_region_id": acctest.DefaultRegionToTest,
 					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
 					"ecr_id":                "${alicloud_express_connect_router_express_connect_router.defaultM9YxGW.id}",
 					"allowed_prefixes": []string{
-						"172.16.4.0/24", "172.16.3.0/24", "172.16.2.0/24", "172.16.1.0/24"},
+						"172.16.1.0/24", "172.16.2.0/24", "172.16.3.0/24", "172.16.4.0/24"},
 					"allowed_prefixes_mode": "MatchMode",
 					"description":           "tf-testacc-description",
 				}),
@@ -366,40 +370,89 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_descr
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Update only the description through ModifyExpressConnectRouterAssociation.
 				Config: testAccConfig(map[string]interface{}{
-					"association_region_id": acctest.DefaultRegionToTest,
-					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
-					"ecr_id":                "${alicloud_express_connect_router_express_connect_router.defaultM9YxGW.id}",
-					"allowed_prefixes": []string{
-						"172.16.4.0/24", "172.16.3.0/24", "172.16.2.0/24", "172.16.1.0/24"},
-					"allowed_prefixes_mode": "IncrementalMode",
-					"description":           "tf-testacc-description-update",
+					"description": "tf-testacc-description-update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"allowed_prefixes_mode": "IncrementalMode",
+						"allowed_prefixes_mode": "MatchMode",
 						"description":           "tf-testacc-description-update",
 					}),
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Clear the description with an explicit empty string. The API accepts a
+				// 0-128 character description, so "" is a legal value that clears it.
 				Config: testAccConfig(map[string]interface{}{
-					"association_region_id": acctest.DefaultRegionToTest,
-					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
-					"ecr_id":                "${alicloud_express_connect_router_express_connect_router.defaultM9YxGW.id}",
-					"allowed_prefixes": []string{
-						"172.16.4.0/24", "172.16.3.0/24", "172.16.2.0/24", "172.16.1.0/24"},
+					"description": "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Switch the mode to IncrementalMode and set a description again.
+				Config: testAccConfig(map[string]interface{}{
 					"allowed_prefixes_mode": "IncrementalMode",
-					"description":           "tf-testacc-description-update",
+					"description":           "tf-testacc-description-incremental",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_prefixes_mode": "IncrementalMode",
+						"description":           "tf-testacc-description-incremental",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Change only allowed_prefixes with the mode untouched: the update must
+				// omit AllowedPrefixesMode and the API must keep the mode already
+				// applied on the association.
+				Config: testAccConfig(map[string]interface{}{
+					"allowed_prefixes": []string{
+						"172.16.1.0/24", "172.16.2.0/24", "172.16.3.0/24"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_prefixes.#":    "3",
+						"allowed_prefixes_mode": "IncrementalMode",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allowed_prefixes": []string{
+						"172.16.1.0/24", "172.16.2.0/24", "172.16.3.0/24"},
 				}),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
