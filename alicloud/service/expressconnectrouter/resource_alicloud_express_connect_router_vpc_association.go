@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
@@ -50,7 +51,10 @@ func ResourceVpcAssociation() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-			return validateVpcAssociationPrefixModeRawConfig(diff.GetRawConfig())
+			if err := validateVpcAssociationPrefixModeRawConfig(diff.GetRawConfig()); err != nil {
+				return err
+			}
+			return suppressVpcAssociationPrefixReorder(diff)
 		},
 		Schema: map[string]*schema.Schema{
 			"allowed_prefixes": {
@@ -394,6 +398,63 @@ func validateVpcAssociationPrefixModeRawConfig(raw cty.Value) error {
 		return errVpcAssociationModeWithoutPrefixes()
 	}
 	return nil
+}
+
+// suppressVpcAssociationPrefixReorder keeps the stored member order when the
+// configured prefixes differ only in order. The service returns the prefixes in
+// its own canonical order, so an order-only change would otherwise leave a
+// permanent plan diff; the member set, not its order, is what the resource
+// manages.
+func suppressVpcAssociationPrefixReorder(diff *schema.ResourceDiff) error {
+	oldRaw, newRaw := diff.GetChange("allowed_prefixes")
+	oldPrefixes, ok := vpcAssociationPrefixStrings(oldRaw)
+	if !ok {
+		return nil
+	}
+	newPrefixes, ok := vpcAssociationPrefixStrings(newRaw)
+	if !ok || len(newPrefixes) == 0 {
+		return nil
+	}
+	if !equalVpcAssociationPrefixSet(oldPrefixes, newPrefixes) {
+		return nil
+	}
+	return diff.SetNew("allowed_prefixes", oldRaw)
+}
+
+// vpcAssociationPrefixStrings accepts a fully known string list; a list that
+// still carries unknown or non-string members is left for the apply-time path.
+func vpcAssociationPrefixStrings(raw interface{}) ([]string, bool) {
+	entries, ok := raw.([]interface{})
+	if !ok || len(entries) == 0 {
+		return nil, false
+	}
+	values := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		value, ok := entry.(string)
+		if !ok {
+			return nil, false
+		}
+		values = append(values, value)
+	}
+	return values, true
+}
+
+// equalVpcAssociationPrefixSet compares the members as a multiset so a repeated
+// prefix still counts as a real configuration difference.
+func equalVpcAssociationPrefixSet(oldPrefixes, newPrefixes []string) bool {
+	if len(oldPrefixes) != len(newPrefixes) {
+		return false
+	}
+	oldSorted := append([]string(nil), oldPrefixes...)
+	newSorted := append([]string(nil), newPrefixes...)
+	sort.Strings(oldSorted)
+	sort.Strings(newSorted)
+	for i := range oldSorted {
+		if oldSorted[i] != newSorted[i] {
+			return false
+		}
+	}
+	return true
 }
 
 type vpcAssociationUpdateBudget struct {

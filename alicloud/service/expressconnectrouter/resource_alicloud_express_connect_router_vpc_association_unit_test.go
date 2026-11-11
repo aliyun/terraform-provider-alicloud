@@ -550,3 +550,51 @@ func containsAll(value string, substrings ...string) bool {
 	}
 	return true
 }
+
+func TestUnitVpcAssociationPrefixReorderIsSuppressed(t *testing.T) {
+	cases := []struct {
+		name string
+		old  []string
+		new  []string
+		want bool
+	}{
+		{
+			name: "permutation_is_equal",
+			old:  []string{"172.16.1.0/24", "172.16.2.0/24", "172.16.3.0/24"},
+			new:  []string{"172.16.3.0/24", "172.16.1.0/24", "172.16.2.0/24"},
+			want: true,
+		},
+		{
+			name: "different_member_is_not_equal",
+			old:  []string{"172.16.1.0/24", "172.16.2.0/24"},
+			new:  []string{"172.16.1.0/24", "172.16.9.0/24"},
+			want: false,
+		},
+		{
+			name: "duplicate_multiplicity_matters",
+			old:  []string{"172.16.1.0/24", "172.16.1.0/24", "172.16.2.0/24"},
+			new:  []string{"172.16.1.0/24", "172.16.2.0/24", "172.16.2.0/24"},
+			want: false,
+		},
+		{
+			name: "length_difference_is_not_equal",
+			old:  []string{"172.16.1.0/24"},
+			new:  []string{"172.16.1.0/24", "172.16.2.0/24"},
+			want: false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := equalVpcAssociationPrefixSet(tc.old, tc.new); got != tc.want {
+				t.Fatalf("equalVpcAssociationPrefixSet(%v, %v) = %t, want %t", tc.old, tc.new, got, tc.want)
+			}
+		})
+	}
+
+	if _, ok := vpcAssociationPrefixStrings([]interface{}{"172.16.1.0/24", 42}); ok {
+		t.Fatal("a list with a non-string member must not be treated as a known prefix list")
+	}
+	if _, ok := vpcAssociationPrefixStrings([]interface{}{}); ok {
+		t.Fatal("an empty list must not reach the suppression path")
+	}
+}
