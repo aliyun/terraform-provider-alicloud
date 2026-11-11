@@ -75,6 +75,12 @@ func TestAccAliCloudSLBDomainExtensionBasic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
 		},
 	})
 }
