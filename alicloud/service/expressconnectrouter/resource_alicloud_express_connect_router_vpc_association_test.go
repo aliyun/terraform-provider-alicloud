@@ -314,6 +314,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_allow
 					}),
 				),
 			},
+			vpcAssociationImportStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"association_region_id": acctest.DefaultRegionToTest,
