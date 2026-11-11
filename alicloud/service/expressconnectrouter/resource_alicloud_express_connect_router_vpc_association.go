@@ -236,14 +236,12 @@ func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) erro
 		if v, ok := d.GetOk("allowed_prefixes"); ok {
 			request["AllowedPrefixes"] = v.([]interface{})
 		}
-		// Only send AllowedPrefixesMode when the user changed it to a non-empty
-		// value; for pure allowed_prefixes updates, keep the original behavior of
-		// omitting it so the API keeps the mode already applied on the association.
-		// An explicit empty string is treated as unset and is never sent.
-		if d.HasChange("allowed_prefixes_mode") {
-			if v, ok := d.GetOk("allowed_prefixes_mode"); ok {
-				request["AllowedPrefixesMode"] = v
-			}
+		// The service falls back to MatchMode when AllowedPrefixesMode is omitted,
+		// so always send the effective mode together with the prefixes to keep the
+		// mode already applied on the association. An explicit empty string is
+		// treated as unset and is never sent.
+		if v, ok := d.GetOk("allowed_prefixes_mode"); ok {
+			request["AllowedPrefixesMode"] = v
 		}
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
