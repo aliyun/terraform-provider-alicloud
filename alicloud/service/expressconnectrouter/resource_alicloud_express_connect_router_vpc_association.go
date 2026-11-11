@@ -51,16 +51,14 @@ func ResourceVpcAssociation() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-			if err := validateVpcAssociationPrefixModeRawConfig(diff.GetRawConfig()); err != nil {
-				return err
-			}
-			return suppressVpcAssociationPrefixReorder(diff)
+			return validateVpcAssociationPrefixModeRawConfig(diff.GetRawConfig())
 		},
 		Schema: map[string]*schema.Schema{
 			"allowed_prefixes": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:             schema.TypeList,
+				Optional:         true,
+				Elem:             &schema.Schema{Type: schema.TypeString},
+				DiffSuppressFunc: suppressVpcAssociationPrefixReorder,
 			},
 			"allowed_prefixes_mode": {
 				Type:     schema.TypeString,
@@ -400,25 +398,26 @@ func validateVpcAssociationPrefixModeRawConfig(raw cty.Value) error {
 	return nil
 }
 
-// suppressVpcAssociationPrefixReorder keeps the stored member order when the
-// configured prefixes differ only in order. The service returns the prefixes in
-// its own canonical order, so an order-only change would otherwise leave a
-// permanent plan diff; the member set, not its order, is what the resource
-// manages.
-func suppressVpcAssociationPrefixReorder(diff *schema.ResourceDiff) error {
-	oldRaw, newRaw := diff.GetChange("allowed_prefixes")
+// suppressVpcAssociationPrefixReorder treats an order-only change of
+// allowed_prefixes as no drift. The service returns the prefixes in its own
+// canonical order, so comparing position by position would leave a permanent
+// plan diff after every refresh; the members, not their order, are what this
+// attribute manages. A membership change (added, removed, replaced or repeated
+// prefix) is never suppressed.
+func suppressVpcAssociationPrefixReorder(_, _, _ string, d *schema.ResourceData) bool {
+	if d == nil {
+		return false
+	}
+	oldRaw, newRaw := d.GetChange("allowed_prefixes")
 	oldPrefixes, ok := vpcAssociationPrefixStrings(oldRaw)
 	if !ok {
-		return nil
+		return false
 	}
 	newPrefixes, ok := vpcAssociationPrefixStrings(newRaw)
-	if !ok || len(newPrefixes) == 0 {
-		return nil
+	if !ok {
+		return false
 	}
-	if !equalVpcAssociationPrefixSet(oldPrefixes, newPrefixes) {
-		return nil
-	}
-	return diff.SetNew("allowed_prefixes", oldRaw)
+	return equalVpcAssociationPrefixSet(oldPrefixes, newPrefixes)
 }
 
 // vpcAssociationPrefixStrings accepts a fully known string list; a list that
