@@ -73,7 +73,7 @@ this is a example for class netType instance. you can find more detail with the 
 
 The following arguments are supported:
 
-* `name` - (Required) HBase instance name. Length must be 2-128 characters long. Only Chinese characters, English letters, numbers, period (.), underline (_), or dash (-) are permitted. 
+* `name` - (Required) HBase instance name. Length must be 2-128 characters long. Only Chinese characters, English letters, numbers, period (.), underline (_), or dash (-) are permitted.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the HBase instance. If vswitch_id is not empty, this zone_id can be "" or consistent.
 * `engine` - (Optional, ForceNew) Valid values are "hbase/hbaseue/bds". The following types are supported after v1.73.0: `hbaseue` and `bds`. Single hbase instance need to set engine=hbase, core_instance_quantity=1.
 * `engine_version` - (Required, ForceNew) HBase major version. hbase:1.1/2.0, hbaseue:2.0, bds:1.0, unsupport other engine temporarily. Value options can refer to the latest docs [CreateInstance](https://www.alibabacloud.com/help/en/data-lake-analytics/latest/createinstance).
@@ -90,19 +90,20 @@ The following arguments are supported:
 * `auto_renew` - (Optional, ForceNew) Valid values are `true`, `false`, system default to `false`, valid when pay_type = PrePaid.
 * `vswitch_id` - (Optional, ForceNew) If vswitch_id is not empty, that mean net_type = vpc and has a same region. If vswitch_id is empty, net_type=classic. Intl site not support classic network.
 * `cold_storage_size` - (Optional) 0 or [800, 100000000], step:10-GB increments. 0 means is_cold_storage = false. [800, 100000000] means is_cold_storage = true.
-* `maintain_start_time` - (Optional, Available in 1.73.0) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time), for example 02:00Z.
-* `maintain_end_time` - (Optional, Available in 1.73.0) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time), for example 04:00Z.
-* `deletion_protection` - (Optional, Available in 1.73.0) The switch of delete protection. True: delete protect, False: no delete protect. You must set false when you want to delete cluster.
-* `immediate_delete_flag` - (Optional, Available in 1.109.0) The switch of delete immediate. True: delete immediate, False: delete delay. You will not found the cluster no matter set true or false.
-* `tags` - (Optional, Available in 1.73.0) A mapping of tags to assign to the resource.
-* `account` - (Optional, Available in 1.105.0+) The account of the cluster web ui. Size [0-128].
-* `password` - (Optional, Available in 1.105.0+) The password of the cluster web ui account. Size [0-128].
-* `ip_white` - (Optional, Available in 1.105.0+) The white ip list of the cluster.
-* `security_groups` - (Optional, Available in 1.105.0+) The security group resource of the cluster.
-* `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The id of the VPC.
-* `ui_proxy_conn_addrs` - (Available in 1.105.0+) The Web UI proxy addresses of the cluster. See [`ui_proxy_conn_addrs`](#ui_proxy_conn_addrs) below.
-* `zk_conn_addrs` - (Available in 1.105.0+) The zookeeper addresses of the cluster. See [`zk_conn_addrs`](#zk_conn_addrs) below.
-* `slb_conn_addrs` - (Available in 1.105.0+) The slb service addresses of the cluster. See [`slb_conn_addrs`](#slb_conn_addrs) below.
+* `maintain_start_time` - (Optional, Available since v1.73.0) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time), for example 02:00Z.
+* `maintain_end_time` - (Optional, Available since v1.73.0) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time), for example 04:00Z.
+* `deletion_protection` - (Optional, Available since v1.73.0) The switch of delete protection. True: delete protect, False: no delete protect. You must set false when you want to delete cluster.
+* `immediate_delete_flag` - (Optional, Available since v1.109.0) The switch of delete immediate. True: delete immediate, False: delete delay. You will not found the cluster no matter set true or false.
+* `tags` - (Optional, Available since v1.73.0) A mapping of tags to assign to the resource.
+* `account` - (Optional, Available since v1.105.0) The account of the cluster web ui. Size [0-128].
+* `password` - (Optional, Available since v1.105.0) The password of the cluster web ui account. Size [0-128].
+* `ip_white` - (Optional, Available since v1.105.0) The white ip list of the cluster.
+* `ip_whitelist` - (Optional, Available since 2.3.0) The custom IP whitelist groups of the cluster. Only the groups declared in the configuration are managed. See [`ip_whitelist`](#ip_whitelist) below.
+* `security_groups` - (Optional, Available since v1.105.0) The security group resource of the cluster.
+* `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The id of the VPC.
+* `ui_proxy_conn_addrs` - (Available since v1.105.0) The Web UI proxy addresses of the cluster. See [`ui_proxy_conn_addrs`](#ui_proxy_conn_addrs) below.
+* `zk_conn_addrs` - (Available since v1.105.0) The zookeeper addresses of the cluster. See [`zk_conn_addrs`](#zk_conn_addrs) below.
+* `slb_conn_addrs` - (Available since v1.105.0) The slb service addresses of the cluster. See [`slb_conn_addrs`](#slb_conn_addrs) below.
 
   -> **NOTE:** Now only instance name can be change. The others(instance_type, disk_size, core_instance_quantity and so on) will be supported in the furture.
 
@@ -143,6 +144,13 @@ The following attributes are exported:
 * `id` - The ID of the HBase.
 * `master_instance_quantity` - Count nodes of the master node.
 
+### `ip_whitelist`
+
+The ip_whitelist supports the following:
+
+* `group_name` - (Optional) The name of the whitelist group. It must be set in each declared `ip_whitelist` group. It cannot be `default`, which is managed by `ip_white`.
+* `ip_list` - (Optional) The IP addresses of the whitelist group, separated by commas (`,`). It must be set in each declared `ip_whitelist` group. The order of the addresses does not affect the plan.
+* `ip_version` - (Optional) The IP version of the whitelist group. Valid values: `4`, `6`.
 
 ## Timeouts
 
@@ -150,7 +158,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 * `create` - (Defaults to 60 mins) Used when creating the HBase instance (until it reaches the initial `ACTIVATION` status).
 * `update` - (Defaults to 60 mins) Used when updating the HBase instance (until it reaches the initial `ACTIVATION` status).
-* `delete` - (Defaults to 30 mins) Used when terminating the HBase instance. 
+* `delete` - (Defaults to 30 mins) Used when terminating the HBase instance.
 
 ## Import
 
