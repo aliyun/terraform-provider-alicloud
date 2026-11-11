@@ -101,7 +101,19 @@ func newVpcAssociationUpdateResourceData(t *testing.T, raw map[string]interface{
 
 func TestUnitVpcAssociationCreateRetryCodes(t *testing.T) {
 	silenceVpcAssociationWaits(t)
-	for _, code := range vpcAssociationCreateRetryableCodes {
+	// The expected transient set is restated here so the test fails when a
+	// documented retryable code silently disappears from the resource.
+	for _, code := range []string{
+		"Conflict.Lock",
+		"IncorrectStatus.Ecr",
+		"IncorrectStatus.Vpc",
+		"IncorrectStatus.VpcOperating",
+		"IncorrectStatus.Vswitch",
+		"IncorrectStatus.RouteEntry",
+		"OperationDenied.ForceDeleting",
+		"OperationFailed.CallingVpcYaochi",
+		"InternalErrorTemp",
+	} {
 		code := code
 		t.Run(code, func(t *testing.T) {
 			var createCalls int32

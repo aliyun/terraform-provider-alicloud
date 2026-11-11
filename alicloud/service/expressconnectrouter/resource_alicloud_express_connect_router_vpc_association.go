@@ -18,35 +18,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-// Retryable error codes are taken from the OpenAPI error tables of the write
-// actions (ExpressConnectRouter 2023-09-01). Terminal errors (quota, parameter
-// format/size, already-exists, unsupported feature and not-found) are
-// deliberately absent so they fail fast.
-var (
-	vpcAssociationCreateRetryableCodes = []string{
-		"Conflict.Lock",
-		"IncorrectStatus.Ecr",
-		"IncorrectStatus.Vpc",
-		"IncorrectStatus.VpcOperating",
-		"IncorrectStatus.Vswitch",
-		"IncorrectStatus.RouteEntry",
-		"OperationDenied.ForceDeleting",
-		"OperationFailed.CallingVpcYaochi",
-		"InternalErrorTemp",
-	}
-	vpcAssociationModifyRetryableCodes = []string{
-		"Conflict.Lock",
-		"IncorrectStatus.Ecr",
-		"OperationDenied.ForceDeleting",
-	}
-	vpcAssociationModifyAllowedPrefixRetryableCodes = []string{
-		"Conflict.Lock",
-		"IncorrectStatus.Ecr",
-		"IncorrectStatus.EcrAssociation",
-		"OperationDenied.ForceDeleting",
-	}
-)
-
+// Retryable error codes are declared inline at each write action because the
+// compatibility checker parses the IsExpectedErrors argument from the source
+// text to detect removed retry codes. The codes are the transient entries of
+// the OpenAPI error tables of the write actions (ExpressConnectRouter
+// 2023-09-01); terminal errors (quota, parameter format/size, already-exists,
+// unsupported feature and not-found) are deliberately absent so they fail fast.
 var (
 	// vpcAssociationRetryWait is a factory so every lifecycle operation owns its
 	// own backoff state; unit tests replace it to keep retries immediate.
@@ -166,7 +143,7 @@ func resourceVpcAssociationCreate(d *schema.ResourceData, meta interface{}) erro
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		if err != nil {
-			if errs.IsExpectedErrors(err, vpcAssociationCreateRetryableCodes) || helper.NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"Conflict.Lock", "IncorrectStatus.Ecr", "IncorrectStatus.Vpc", "IncorrectStatus.VpcOperating", "IncorrectStatus.Vswitch", "IncorrectStatus.RouteEntry", "OperationDenied.ForceDeleting", "OperationFailed.CallingVpcYaochi", "InternalErrorTemp"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -267,7 +244,7 @@ func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) erro
 		err = retry.Retry(timeout, func() *retry.RetryError {
 			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 			if err != nil {
-				if errs.IsExpectedErrors(err, vpcAssociationModifyRetryableCodes) || helper.NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"Conflict.Lock", "IncorrectStatus.Ecr", "OperationDenied.ForceDeleting"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -316,7 +293,7 @@ func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) erro
 		err = retry.Retry(timeout, func() *retry.RetryError {
 			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 			if err != nil {
-				if errs.IsExpectedErrors(err, vpcAssociationModifyAllowedPrefixRetryableCodes) || helper.NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"Conflict.Lock", "IncorrectStatus.Ecr", "IncorrectStatus.EcrAssociation", "OperationDenied.ForceDeleting"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}

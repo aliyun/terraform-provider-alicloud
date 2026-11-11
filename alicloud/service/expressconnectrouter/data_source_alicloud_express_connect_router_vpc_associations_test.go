@@ -137,7 +137,6 @@ func TestAccAliCloudExpressConnectRouterVpcAssociationsDataSource_identity0(t *t
 	resourceId := "data.alicloud_express_connect_router_vpc_associations.default"
 	associationResourceId := "alicloud_express_connect_router_vpc_association.default"
 	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutervpcassociation%d", acctest.DefaultRegionToTest, rand)
-	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceExpressConnectRouterVpcAssociationsConfig)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -146,10 +145,7 @@ func TestAccAliCloudExpressConnectRouterVpcAssociationsDataSource_identity0(t *t
 		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"ecr_id": "${alicloud_express_connect_router_vpc_association.default.ecr_id}",
-					"ids":    []string{"${alicloud_express_connect_router_vpc_association.default.id}"},
-				}),
+				Config: dataSourceExpressConnectRouterVpcAssociationsIdentityConfig(name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(resourceId, "associations.0.id", associationResourceId, "id"),
 					resource.TestCheckResourceAttrPair(resourceId, "associations.0.ecr_id", associationResourceId, "ecr_id"),
@@ -160,6 +156,18 @@ func TestAccAliCloudExpressConnectRouterVpcAssociationsDataSource_identity0(t *t
 			},
 		},
 	})
+}
+
+// dataSourceExpressConnectRouterVpcAssociationsIdentityConfig scopes the query
+// to the association created in the same configuration so the attribute pairs
+// in the identity test compare against the object that was actually created.
+func dataSourceExpressConnectRouterVpcAssociationsIdentityConfig(name string) string {
+	return dataSourceExpressConnectRouterVpcAssociationsConfig(name) + `
+data "alicloud_express_connect_router_vpc_associations" "default" {
+  ecr_id = alicloud_express_connect_router_vpc_association.default.ecr_id
+  ids    = [alicloud_express_connect_router_vpc_association.default.id]
+}
+`
 }
 
 func dataSourceExpressConnectRouterVpcAssociationsConfig(name string) string {
