@@ -3,6 +3,7 @@ import contextlib
 import io
 import json
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 import unittest
@@ -49,7 +50,10 @@ class IntegrationTest(unittest.TestCase):
             if args[0]=='show':
                 return 'func TestAccOne(t *testing.T) {\nfunc TestAccTwo(t *testing.T) {' if args[-1].endswith('_test.go') else '```terraform\nresource "alicloud_demo" "test" {}\n```'
             raise AssertionError(args)
-        with patch.object(m,'git',side_effect=git): p=m.plan('a'*40,'b'*40)
+        scope = dict(packages={'alicloud':['TestAccOne','TestAccTwo']},
+                     resourceFiles=['alicloud/resource_alicloud_demo.go'], blocked=[])
+        with patch.object(m, 'acceptance_scope', return_value=scope), patch.object(m,'git',side_effect=git):
+            p=m.plan('a'*40,'b'*40)
         self.assertEqual(p['packages'],{'alicloud':['TestAccOne','TestAccTwo']})
         self.assertEqual(len(p['examples']),1)
         self.assertIn('source = "aliyun/alicloud"',p['examples'][0]['mainTf'])
@@ -70,36 +74,53 @@ class IntegrationTest(unittest.TestCase):
             raise AssertionError(args)
 
         resolved = 'db_instance.go\talicloud_db_instance\tresource\n'
-        with patch.object(m, 'git', side_effect=git), patch.object(m.subprocess, 'check_output', return_value=resolved) as run:
+        scope = dict(packages={'alicloud/service/rds':['TestAccDBInstance']}, resourceFiles=[resource+'.go'], blocked=[])
+        with patch.object(m, 'acceptance_scope', return_value=scope), patch.object(m, 'git', side_effect=git), patch.object(m.subprocess, 'check_output', return_value=resolved) as run:
             result = m.plan('base', 'head')
         self.assertEqual(result['packages'], {'alicloud/service/rds': ['TestAccDBInstance']})
         self.assertEqual([example['name'] for example in result['examples']], [doc + '#0'])
         run.assert_called_once_with(['go', 'run', 'scripts/title/title_check.go', '-resolve', resource + '.go'], text=True)
 
     def test_plan_has_no_integration_scope_for_unit_test_only_change(self):
-        with patch.object(m, 'git', return_value='alicloud/resource_alicloud_demo_unit_test.go') as git:
+        scope = dict(packages={}, resourceFiles=[], blocked=[])
+        with patch.object(m, 'acceptance_scope', return_value=scope), patch.object(m, 'git', return_value='alicloud/resource_alicloud_demo_unit_test.go') as git:
             result = m.plan('base', 'head')
         self.assertEqual(result['packages'], {})
         self.assertEqual(result['examples'], [])
         git.assert_called_once_with('diff', '--name-only', '--diff-filter=ACMRT', 'base', 'head')
 
-    def test_plan_rejects_resource_without_acceptance_cases(self):
-        resource = 'alicloud/resource_alicloud_demo'
-        with patch.object(m, 'git', side_effect=[resource + '.go', 'func TestHelper(t *testing.T) {']):
-            with self.assertRaisesRegex(ValueError, 'No AccTest cases in ' + resource + '_test.go'):
-                m.plan('base', 'head')
+    def test_unresolved_scope_is_saved_and_never_submits_cloud_tasks(self):
+        scope = dict(packages={}, resourceFiles=[], blocked=['manual ACC scope decision required for public code'])
+        with patch.object(m, 'acceptance_scope', return_value=scope), patch.object(m, 'git', return_value=''):
+            frozen = m.plan('base', 'head')
+        with tempfile.TemporaryDirectory() as root, patch.object(m.Client, 'call') as call:
+            for kind in ['acctest', 'examples']:
+                with self.assertRaisesRegex(ValueError, 'Manual ACC scope review required'):
+                    m.execute(None, frozen, kind, 'run-123', Path(root))
+            call.assert_not_called()
+            self.assertEqual(json.loads((Path(root)/'diagnostics/scope.json').read_text())['status'], 'blocked')
 
-    def test_acc_only_plan_does_not_load_docs_or_invoke_go(self):
-        def git(*args):
-            if args[0] == 'diff':
-                return 'alicloud/service/vpc/resource_vpc.go\nwebsite/docs/r/vpc.html.markdown'
-            self.assertEqual(args, ('show', 'head:alicloud/service/vpc/resource_vpc_test.go'))
-            return 'func TestAccVpc(t *testing.T) {'
-        with patch.object(m, 'git', side_effect=git), patch.object(m.subprocess, 'check_output') as run:
+    def test_acc_only_plan_does_not_load_docs_or_invoke_title_resolver(self):
+        scope = dict(packages={'alicloud/service/vpc':['TestAccVpc']},
+                     resourceFiles=['alicloud/service/vpc/resource_vpc.go'], blocked=[])
+        with patch.object(m, 'acceptance_scope', return_value=scope), patch.object(m, 'git') as git, patch.object(m.subprocess, 'check_output') as run:
             result = m.plan('base', 'head', include_examples=False)
         self.assertEqual(result['packages'], {'alicloud/service/vpc': ['TestAccVpc']})
         self.assertEqual(result['examples'], [])
         run.assert_not_called()
+        git.assert_not_called()
+
+    def test_test_only_change_does_not_select_document_examples(self):
+        scope = dict(packages={'alicloud':['TestAccDemo_changed']}, resourceFiles=[], blocked=[])
+        with patch.object(m, 'acceptance_scope', return_value=scope), patch.object(m, 'git', return_value='alicloud/resource_alicloud_demo_test.go'):
+            result = m.plan('base', 'head')
+        self.assertEqual(result['packages'], {'alicloud':['TestAccDemo_changed']})
+        self.assertEqual(result['examples'], [])
+
+    def test_acc_scope_source_only_regressions(self):
+        root = Path(__file__).resolve().parent/'accscope'
+        subprocess.run(['go', 'test', '-v', str(root/'main.go'), str(root/'main_test.go')],
+                       check=True, env={**os.environ, 'GO111MODULE':'off', 'GOWORK':'off'})
 
     def test_same_run_and_plan_recover_same_key_across_processes(self):
         request=self.request()

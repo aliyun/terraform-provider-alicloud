@@ -58,9 +58,9 @@ acceptance tests or expand the runtime schema checkers' existing capabilities.
 imports head/base via full SHA, groups unique AccTests by package (concurrency 2),
 and runs each affected documentation example with `hclAction=example` including
 Import/generated config, deprecated attributes and cleanup. The two jobs report independently,
-so an AccTest failure cannot hide the Example result. MR creation and updates run
-the check; push triggers are limited to master to avoid executing each feature
-commit twice (push plus MR). GitHub workflows are unchanged.
+so an AccTest failure cannot hide the Example result. The YAML declares the MR
+`accepted` event and master pushes. Provider paths include all of `alicloud/**`,
+including shared test-support packages and fixtures. GitHub workflows are unchanged.
 
 Configure the protected repository secret `ACUBE_PROVIDER_RUN_TOKEN` for
 `https://pre-acube.aliyun-inc.com`; cloud account keys stay in FC. The authenticated
@@ -81,6 +81,63 @@ SKIP, missing/duplicate cases, mismatched sources and unconfirmed cleanup fail
 closed and remain visible. Neither a PlanOnly case nor top-level ACube success
 proves complete acceptance. Required external prerequisites must be resolved or
 explicitly accepted; this adapter does not silently waive them.
+
+### ACC selection aligned with the agent workflow
+
+The scope follows the workflow's
+[shared test standard](https://code.alibaba-inc.com/terraflow/terraform-agent-workflow/blob/9a15deb6f798a2f46cfb8c5ff557e0eff635328e/skills/provider-resource-standards/references/test-standards.md#L185).
+`accscope/main.go` parses committed base/head Go declarations using only the Go
+standard library. It does not load dependencies or compile Provider packages.
+The CI adapter runs it with `GO111MODULE=off` and `GOWORK=off`, independently of
+the candidate Provider's Go module/toolchain requirements.
+
+- Resource/data-source implementation changes select the type's acceptance
+  functions in its companion and supplemental test files, excluding separately
+  implemented types. Sources and selectors retain their actual Go package.
+- A test-only change selects newly added or changed `TestAcc*` declarations.
+  Test helpers/config constants are followed transitively to their consumers;
+  an unrelated case in the same file is not selected. A change confined to
+  `TestUnit*` does not request cloud ACC. Changing TestMain/test initialization
+  selects the package's acceptance cases.
+- Service changes follow declarations and method references in both snapshots,
+  including removed call edges. Reached resource implementations select that
+  type's cases and examples. Statically declared receiver types distinguish
+  same-name methods; uncertain receivers require review.
+- Shared test helpers in `_test.go` and `alicloud/acctest/` are traced across
+  packages and import aliases. Literal package-relative fixture paths, including
+  static `filepath.Join` arguments, select their actual consumers.
+- Deletions and both paths of renames participate. Removed acceptance cases,
+  unresolved helper/service/fixture consumers and unknown build/receiver effects
+  block rather than become a successful empty selection. Source-only changes to
+  CI tooling do not themselves request Provider ACC.
+
+`.acube-ci/plan.json` records the exact cases, affected resource files, selection
+reasons and blockers. A blocked plan writes `diagnostics/scope.json` and fails
+before **any** ACube capability/source/task requests. Test-only changes do not
+automatically submit the resource's documentation examples. Scope regression
+tests are part of `CI Adapter Regression`; they use synthetic source and real
+local Git snapshots without cloud calls or Provider builds.
+
+#### Explicit remaining differences
+
+- General production helpers, request/retry/authentication code and module
+  dependency changes require a maintainer's ACC scope decision under the shared
+  standard. This adapter has no authoritative input for that decision: it emits
+  a blocked plan, not automatic PASS or an implicit waiver. Provider registration
+  changes also require review when their type scope cannot be inferred here.
+- This is a source reference analysis, not a typed runtime call graph. Reaching a
+  resource implementation conservatively selects its type's tests; it cannot
+  prove which lifecycle steps exercise a changed branch. Factory/interface
+  dispatch, reflection, generated/build-specific code, package initialization and
+  dynamically constructed fixture paths may require manual impact review.
+  Nonstandard naming/layout or dynamic test discovery is not silently expanded
+  to all Provider resources.
+- Direct documentation edits still run all fenced blocks on that page and
+  inject the existing provider/fixture setup. Full scenario dependency/wording
+  assertions and the workflow's stricter original-HCL contract remain separate.
+- ACube preproduction, fixed case concurrency 2, the existing exact-source reuse
+  protocol, log-warning policy and trigger events remain platform differences.
+  A CI success is not the workflow's independent QA acceptance or merge approval.
 
 #### RocketMQ subscription acceptance
 

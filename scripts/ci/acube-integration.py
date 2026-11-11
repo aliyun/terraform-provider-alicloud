@@ -46,24 +46,26 @@ def content(head, file):
     return git('show', head + ':' + file) + '\n'
 
 
+def acceptance_scope(base, head):
+    """Parse Git snapshots with the Go standard library; never compile Provider code."""
+    try:
+        value = subprocess.check_output(
+            ['go', 'run', str(Path(__file__).with_name('accscope')/'main.go'),
+             '-base', base, '-head', head], text=True, stderr=subprocess.PIPE,
+            env={**os.environ, 'GO111MODULE': 'off', 'GOWORK': 'off'})
+        return json.loads(value)
+    except subprocess.CalledProcessError as error:
+        raise ValueError('Cannot establish ACC impact scope; no cloud tasks submitted: '
+                         + (error.stderr or '')[:4000]) from None
+
+
 def plan(base, head, include_examples=True):
-    """Keep the existing resource/test and split-layout documentation scope; deduplicate."""
-    files = git('diff', '--name-only', '--diff-filter=ACMRT', base, head).splitlines()
-    packages, docs = {}, set()
-    for file in files:
-        name = Path(file).name
-        if name.endswith('_unit_test.go'):
-            continue
-        source = file.startswith('alicloud/') and name.endswith('.go') and name.startswith(
-            ('resource_', 'data_source_', 'ephemeral_', 'action_', 'list_'))
-        if source:
-            test = file if file.endswith('_test.go') else file[:-3] + '_test.go'
-            names = re.findall(r'^func\s+(TestAcc[A-Za-z0-9_]+)\s*\(', content(head, test), re.M)
-            if not names:
-                raise ValueError('No AccTest cases in ' + test)
-            packages.setdefault(str(Path(test).parent), set()).update(names)
-            if not include_examples:
-                continue
+    scope = acceptance_scope(base, head)
+    docs = set()
+    if include_examples:
+        # A test/helper-only change does not by itself change the published examples.
+        for file in scope['resourceFiles'] if not scope['blocked'] else []:
+            name = Path(file).name
             if file.startswith('alicloud/service/') and name.startswith(('resource_', 'data_source_')):
                 resolved = subprocess.check_output(['go', 'run', 'scripts/title/title_check.go', '-resolve', file], text=True)
                 for line in resolved.splitlines():
@@ -72,10 +74,11 @@ def plan(base, head, include_examples=True):
                         docs.add('website/docs/' + ('r/' if parts[2] == 'resource' else 'd/') + parts[1].removeprefix('alicloud_') + '.html.markdown')
             elif name.startswith(('resource_alicloud_', 'data_source_alicloud_')):
                 kind = 'r/' if name.startswith('resource_') else 'd/'
-                stem = re.sub(r'^(resource|data_source)_alicloud_', '', name).removesuffix('.go').removesuffix('_test')
+                stem = re.sub(r'^(resource|data_source)_alicloud_', '', name).removesuffix('.go')
                 docs.add('website/docs/' + kind + stem + '.html.markdown')
-        elif include_examples and file.startswith(('website/docs/r/', 'website/docs/d/')) and file.endswith('.html.markdown'):
-            docs.add(file)
+        for file in git('diff', '--name-only', '--diff-filter=ACMRT', base, head).splitlines():
+            if file.startswith(('website/docs/r/', 'website/docs/d/')) and file.endswith('.html.markdown'):
+                docs.add(file)
     examples = []
     for doc in sorted(docs):
         blocks = re.findall(r'^```(?:terraform|hcl|tf)\s*\n(.*?)^```\s*$', content(head, doc), re.M | re.S)
@@ -101,7 +104,7 @@ def plan(base, head, include_examples=True):
                              'fixtures': [{'path': f['path'], 'sha256': hashlib.sha256(f['content'].encode()).hexdigest()} for f in fixtures],
                              'mainTf': main})
     return {'version': 1, 'repository': REPOSITORY, 'base': base, 'head': head,
-            'packages': {k: sorted(v) for k, v in sorted(packages.items())}, 'examples': examples}
+            'packages': scope['packages'], 'examples': examples, 'scope': scope}
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -177,6 +180,15 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
     else:
         items = [(e['name'], e) for e in frozen['examples']]
     (output / 'plan.json').write_text(json.dumps(frozen, indent=2))
+    if frozen.get('scope', {}).get('blocked'):
+        report = {'status': 'blocked', 'head': frozen['head'], 'base': frozen['base'],
+                  'error': 'Manual ACC scope review required; no cloud tasks submitted',
+                  'scope': frozen['scope']}
+        target = output / 'diagnostics' / 'scope.json'
+        target.write_text(json.dumps(report, indent=2))
+        target.chmod(0o600)
+        print(json.dumps(report), flush=True)
+        raise ValueError(report['error'] + ': ' + '; '.join(frozen['scope']['blocked']))
     if not items:
         print('Not applicable: no ' + kind + ' changes in the complete range'); return
     capabilities = client.call('GET', '/capabilities')
