@@ -401,8 +401,8 @@ func TestUnitVpcAssociationUpdateSharesOneDeadline(t *testing.T) {
 		switch r.Form.Get("Action") {
 		case "ModifyExpressConnectRouterAssociation":
 			atomic.AddInt32(&modifies, 1)
-			// Consume the whole five minute update budget during the first write.
-			atomic.StoreInt64(&offsetSeconds, 300)
+			// Jump far past any configured update timeout during the first write.
+			atomic.StoreInt64(&offsetSeconds, 86400)
 			writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
 		case "ModifyExpressConnectRouterAssociationAllowedPrefix":
 			atomic.AddInt32(&modifies, 1)
