@@ -94,6 +94,17 @@ The granted_instances supports the following:
 * `node_region_id` - (Computed, String, Available since v2.3.0) The region ID of the granted network instance.
 * `node_owner_uid` - (Computed, String, Available since v2.3.0) The ID of the Alibaba Cloud account that owns the granted network instance.
 
+## RAM Permissions
+
+The two read-only attributes [`disabled_route_entries`](#disabled_route_entries) and [`granted_instances`](#granted_instances) (available since v2.3.0) are populated by the following supplementary Describe actions. Each is an independent RAM permission on the `expressconnectrouter` service and is queried on every `read`/`refresh`/`plan`:
+
+* `expressconnectrouter:DescribeDisabledExpressConnectRouterRouteEntries` — lists the route entries currently disabled on the ECR.
+* `expressconnectrouter:DescribeInstanceGrantedToExpressConnectRouter` — lists the network instances granted to the ECR.
+
+These actions are in addition to the base resource actions (`expressconnectrouter:CreateExpressConnectRouter`, `expressconnectrouter:ModifyExpressConnectRouter`, `expressconnectrouter:DeleteExpressConnectRouter`, `expressconnectrouter:DescribeExpressConnectRouter`, etc.).
+
+-> **NOTE:** If you maintain a narrow custom RAM policy that predates v2.3.0, `refresh` and `plan` will surface a `403 NoPermission` error from whichever supplementary action your role lacks, rather than silently leaving the computed field empty. Grant the two actions above — at resource level (`acs:expressconnectrouter::<accountId>:expressconnectrouter/<EcrId>`) or service level (`*`) — so refresh and plan stay green.
+
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:

@@ -227,23 +227,17 @@ func resourceExpressConnectRouterRead(d *schema.ResourceData, meta interface{}) 
 
 	// disabled_route_entries is a read-only view of the route entries that are
 	// currently disabled on the ECR, listed via DescribeDisabledExpressConnectRouterRouteEntries.
-	// It is a supplementary collection added after the resource shipped. The action
-	// expressconnectrouter:DescribeDisabledExpressConnectRouterRouteEntries is an
-	// independent RAM permission; existing identities with a minimal policy that
-	// predates this field lack it and receive a 403. Tolerate that case by leaving
-	// the computed field unset and continuing the Read instead of failing refresh
-	// and update. Any other error (e.g. InvalidParameter) still propagates.
+	// It is a supplementary collection added after the resource shipped. Per R5.3
+	// the only legitimate error swallowed in Read is NotFound (R4.18); a 403
+	// permission error from this supplementary call must propagate so the caller
+	// learns the RAM role lacks
+	// expressconnectrouter:DescribeDisabledExpressConnectRouterRouteEntries,
+	// rather than silently leaving the computed field unset and reporting success.
 	disabledRouteEntriesMaps := make([]map[string]interface{}, 0)
-	disabledRouteEntriesAccessDenied := false
 	nextToken := ""
 	for {
 		routeResp, err := expressConnectRouterServiceV2.DescribeDescribeDisabledExpressConnectRouterRouteEntries(d.Id(), nextToken)
 		if err != nil {
-			if errs.IsAccessDenied(err) {
-				log.Printf("[DEBUG] Resource alicloud_express_connect_router: DescribeDisabledExpressConnectRouterRouteEntries returned access denied (the RAM role likely lacks expressconnectrouter:DescribeDisabledExpressConnectRouterRouteEntries); leaving disabled_route_entries unset and continuing Read: %s", err)
-				disabledRouteEntriesAccessDenied = true
-				break
-			}
 			return errs.WrapError(err)
 		}
 		if list, ok := routeResp["DisabledRouteEntryList"].([]interface{}); ok {
@@ -267,28 +261,21 @@ func resourceExpressConnectRouterRead(d *schema.ResourceData, meta interface{}) 
 			break
 		}
 	}
-	if !disabledRouteEntriesAccessDenied {
-		d.Set("disabled_route_entries", disabledRouteEntriesMaps)
-	}
+	d.Set("disabled_route_entries", disabledRouteEntriesMaps)
 
 	// granted_instances is a read-only view of the network instances granted to
 	// the ECR, listed via DescribeInstanceGrantedToExpressConnectRouter. As with
-	// disabled_route_entries, this is a supplementary collection whose action
-	// expressconnectrouter:DescribeInstanceGrantedToExpressConnectRouter is an
-	// independent RAM permission; existing minimal-permission identities receive
-	// a 403 and must not see their refresh/update break, so tolerate access-denied
-	// by leaving the field unset. Any other error still propagates.
+	// disabled_route_entries, this is a supplementary collection added after the
+	// resource shipped. Per R5.3 the only legitimate error swallowed in Read is
+	// NotFound (R4.18); a 403 permission error from this call must propagate so
+	// the caller learns the RAM role lacks
+	// expressconnectrouter:DescribeInstanceGrantedToExpressConnectRouter, rather
+	// than silently leaving the computed field unset and reporting success.
 	grantedInstancesMaps := make([]map[string]interface{}, 0)
-	grantedInstancesAccessDenied := false
 	nextToken = ""
 	for {
 		grantResp, err := expressConnectRouterServiceV2.DescribeDescribeInstanceGrantedToExpressConnectRouter(d.Id(), nextToken)
 		if err != nil {
-			if errs.IsAccessDenied(err) {
-				log.Printf("[DEBUG] Resource alicloud_express_connect_router: DescribeInstanceGrantedToExpressConnectRouter returned access denied (the RAM role likely lacks expressconnectrouter:DescribeInstanceGrantedToExpressConnectRouter); leaving granted_instances unset and continuing Read: %s", err)
-				grantedInstancesAccessDenied = true
-				break
-			}
 			return errs.WrapError(err)
 		}
 		if list, ok := grantResp["EcrGrantedInstanceList"].([]interface{}); ok {
@@ -332,9 +319,7 @@ func resourceExpressConnectRouterRead(d *schema.ResourceData, meta interface{}) 
 			break
 		}
 	}
-	if !grantedInstancesAccessDenied {
-		d.Set("granted_instances", grantedInstancesMaps)
-	}
+	d.Set("granted_instances", grantedInstancesMaps)
 
 	return nil
 }

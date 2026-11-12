@@ -485,10 +485,11 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouter_regions5682(t *test
 // The shared ACC assertion for disabled_route_entries/granted_instances only checks `# = 0`,
 // which accepts both a legitimately empty result and a swallowed API error. These unit tests
 // drive the real Read path against an isolated HTTP fixture (no cloud authorization needed) so
-// that a non-access-denied page failure has to surface as an error and must never be written as
-// an empty or partial list. An access-denied (403) response on these supplementary collection
-// APIs is tolerated instead: the field is left unset and Read continues, so existing RAM
-// identities that predate the new actions keep refreshing/updating without a 403 break.
+// that any page failure — including an access-denied (403) response — has to surface as an
+// error and must never be written as an empty or partial list. Per R5.3 the only legitimate
+// error swallowed in Read is NotFound (R4.18); a 403 on these supplementary collection APIs
+// propagates so the caller learns the RAM role lacks the new action, rather than silently
+// leaving the computed field unset and reporting success.
 const (
 	ecrUnitResourceID = "ecr-unit-fixture"
 	ecrUnitForeignID  = "ecr-foreign-fixture"
@@ -837,7 +838,7 @@ func TestUnitExpressConnectRouterReadCollections(t *testing.T) {
 		}
 	})
 
-	t.Run("disabled_route_entries_first_page_access_denied_is_tolerated", func(t *testing.T) {
+	t.Run("disabled_route_entries_first_page_access_denied_propagates", func(t *testing.T) {
 		fixture := newECRUnitFixture(map[string][]ecrUnitResponse{
 			ecrUnitRouteAction: {
 				{status: http.StatusForbidden, body: map[string]interface{}{
@@ -848,25 +849,33 @@ func TestUnitExpressConnectRouterReadCollections(t *testing.T) {
 		})
 
 		d, err := ecrUnitRead(t, fixture)
-		if err != nil {
-			t.Fatalf("read failed for an access-denied supplementary collection, want it tolerated: %v", err)
+		if err == nil {
+			t.Fatal("read swallowed an access-denied supplementary collection and returned success")
+		}
+		for _, want := range []string{ecrUnitRouteAction, "NoPermission", "StatusCode: 403"} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("error %q does not carry %q", err.Error(), want)
+			}
+		}
+		if errs.NotFoundError(err) {
+			t.Errorf("an access-denied error was classified as NotFound: %v", err)
 		}
 		if got := len(ecrUnitCollection(t, d, "disabled_route_entries")); got != 0 {
-			t.Errorf("disabled_route_entries has %d entries after an access-denied first page, want 0 (field left unset)", got)
+			t.Errorf("disabled_route_entries was written with %d entries after an access-denied first page, want 0", got)
 		}
 		if got := len(fixture.requestsFor(ecrUnitRouteAction)); got != 1 {
 			t.Errorf("%s was requested %d times after an access-denied first page, want 1 (no retry)", ecrUnitRouteAction, got)
 		}
-		// granted_instances is unrelated and must still be requested from its own (default empty) page.
-		if got := len(fixture.requestsFor(ecrUnitGrantedAction)); got != 1 {
-			t.Errorf("%s was requested %d times when the route collection was access-denied, want 1", ecrUnitGrantedAction, got)
+		// granted_instances must not be requested once disabled_route_entries has failed: Read returns immediately.
+		if got := len(fixture.requestsFor(ecrUnitGrantedAction)); got != 0 {
+			t.Errorf("%s was requested %d times after the route collection was access-denied, want 0", ecrUnitGrantedAction, got)
 		}
 		if d.Id() != ecrUnitResourceID {
 			t.Errorf("resource id %q was wiped after an access-denied supplementary call, want %q", d.Id(), ecrUnitResourceID)
 		}
 	})
 
-	t.Run("granted_instances_first_page_access_denied_is_tolerated", func(t *testing.T) {
+	t.Run("granted_instances_first_page_access_denied_propagates", func(t *testing.T) {
 		fixture := newECRUnitFixture(map[string][]ecrUnitResponse{
 			ecrUnitGrantedAction: {
 				{status: http.StatusForbidden, body: map[string]interface{}{
@@ -877,16 +886,24 @@ func TestUnitExpressConnectRouterReadCollections(t *testing.T) {
 		})
 
 		d, err := ecrUnitRead(t, fixture)
-		if err != nil {
-			t.Fatalf("read failed for an access-denied supplementary collection, want it tolerated: %v", err)
+		if err == nil {
+			t.Fatal("read swallowed an access-denied supplementary collection and returned success")
+		}
+		for _, want := range []string{ecrUnitGrantedAction, "NoPermission", "StatusCode: 403"} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("error %q does not carry %q", err.Error(), want)
+			}
+		}
+		if errs.NotFoundError(err) {
+			t.Errorf("an access-denied error was classified as NotFound: %v", err)
 		}
 		if got := len(ecrUnitCollection(t, d, "granted_instances")); got != 0 {
-			t.Errorf("granted_instances has %d entries after an access-denied first page, want 0 (field left unset)", got)
+			t.Errorf("granted_instances was written with %d entries after an access-denied first page, want 0", got)
 		}
 		if got := len(fixture.requestsFor(ecrUnitGrantedAction)); got != 1 {
 			t.Errorf("%s was requested %d times after an access-denied first page, want 1 (no retry)", ecrUnitGrantedAction, got)
 		}
-		// disabled_route_entries is unrelated and must still be populated from its own (default empty) page.
+		// disabled_route_entries runs first and is populated from its own (default empty) page before granted_instances fails.
 		if got := len(fixture.requestsFor(ecrUnitRouteAction)); got != 1 {
 			t.Errorf("%s was requested %d times when the granted collection was access-denied, want 1", ecrUnitRouteAction, got)
 		}
