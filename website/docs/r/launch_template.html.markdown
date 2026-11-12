@@ -22,9 +22,6 @@ data "alicloud_images" "images" {
   owners = "system"
 }
 
-data "alicloud_instances" "instances" {
-}
-
 resource "alicloud_launch_template" "template" {
   name                          = "tf-template"
   description                   = "test1"
@@ -32,7 +29,7 @@ resource "alicloud_launch_template" "template" {
   host_name                     = "tf-host"
   instance_charge_type          = "PrePaid"
   instance_name                 = "tf-instance-name"
-  instance_type                 = data.alicloud_instances.instances.instances[0].instance_type
+  instance_type                 = "ecs.s6-c1m1.small"
   internet_charge_type          = "PayByBandwidth"
   internet_max_bandwidth_in     = 5
   internet_max_bandwidth_out    = 0

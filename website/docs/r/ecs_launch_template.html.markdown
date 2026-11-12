@@ -31,10 +31,6 @@ data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones.0.id
-}
-
 data "alicloud_images" "default" {
   name_regex = "^ubuntu_18.*64"
   owners     = "system"
@@ -64,7 +60,7 @@ resource "alicloud_ecs_launch_template" "default" {
   host_name                     = "terraform-example"
   instance_charge_type          = "PrePaid"
   instance_name                 = "terraform-example"
-  instance_type                 = data.alicloud_instance_types.default.instance_types.0.id
+  instance_type                 = "ecs.s6-c1m1.small"
   internet_charge_type          = "PayByBandwidth"
   internet_max_bandwidth_in     = "5"
   internet_max_bandwidth_out    = "5"

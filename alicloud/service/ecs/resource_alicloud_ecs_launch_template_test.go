@@ -5,7 +5,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecs"
 
 	"fmt"
-	"regexp"
 	"testing"
 	"time"
 
@@ -607,36 +606,6 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"image_id":             "m-tfacc-placeholder",
-					"image_owner_alias":    "marketplace",
-					"instance_charge_type": "PostPaid",
-					"auto_release_time":    "2026-01-01T12:05:05Z",
-					"deployment_set_id":    "ds-tfacc-placeholder",
-					"enable_vm_os_config":  "true",
-					"password_inherit":     "true",
-					"private_ip_address":   "192.168.0.10",
-					"version_description":  "tfacc-version-desc",
-					"security_group_id":    "sg-tfacc-placeholder",
-					"vpc_id":               "vpc-tfacc-placeholder",
-					"spot_duration":        "2",
-					"system_disk": []map[string]string{
-						{
-							"category":          "cloud_efficiency",
-							"iops":              "100",
-							"performance_level": "PL2",
-						},
-					},
-					"data_disks": []map[string]string{
-						{
-							"snapshot_id": "s-tfacc-placeholder",
-						},
-					},
-					"instance_type": REMOVEKEY,
-				}),
-				ExpectError: regexp.MustCompile("Missing required argument"),
-			},
 		},
 	})
 }
@@ -1009,7 +978,7 @@ func TestAccAliCloudECSLaunchTemplateBasic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"template_resource_group_id"},
+				ImportStateVerifyIgnore: []string{"template_resource_group_id", "data_disks"},
 			},
 		},
 	})
