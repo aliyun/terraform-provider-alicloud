@@ -294,9 +294,10 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 
 // Case VpcAssociation allowed_prefixes collection order 6348
 // The service returns its own canonical prefix order, so the reordered
-// configuration must be a clean no-op instead of a permanent diff. Each applied
-// state is independently importable, and the final plan-only step repeats the
-// convergence check from the other direction.
+// configuration must be a clean no-op instead of a permanent diff. Created and
+// updated states are independently importable, and an unchanged baseline apply
+// keeps the reorder pair adjacent. The final plan-only step repeats convergence
+// from the other direction.
 func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_allowedPrefixesOrder6348(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_router_vpc_association.default"
@@ -331,6 +332,22 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_allow
 				),
 			},
 			vpcAssociationImportStep(resourceId),
+			{
+				// Re-apply the unchanged baseline to establish an applied order without
+				// a create or update. The following reorder is a separate no-op too.
+				Config: testAccConfig(map[string]interface{}{
+					"association_region_id": acctest.DefaultRegionToTest,
+					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
+					"ecr_id":                "${alicloud_express_connect_router_express_connect_router.defaultM9YxGW.id}",
+					"allowed_prefixes": []string{
+						"172.16.1.0/24", "172.16.2.0/24", "172.16.3.0/24", "172.16.4.0/24"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_prefixes.#": "4",
+					}),
+				),
+			},
 			{
 				// The SDK requires an empty post-apply plan, which proves the
 				// reordered members converged.

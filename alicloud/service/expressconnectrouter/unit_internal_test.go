@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -78,6 +80,27 @@ func TestUnitVpcAssociationPrefixOrderSuppress(t *testing.T) {
 		})
 	}
 
+	for _, tc := range []struct {
+		name     string
+		oldValue string
+		newValue string
+		expected bool
+	}{
+		{"ReorderOnly", "172.16.1.0/24,172.16.2.0/24", "172.16.2.0/24,172.16.1.0/24", true},
+		{"LongerReorder", "172.16.1.0/24,172.16.2.0/24,172.16.3.0/24", "172.16.3.0/24,172.16.1.0/24,172.16.2.0/24", true},
+		{"MemberAdded", "172.16.1.0/24,172.16.2.0/24", "172.16.1.0/24,172.16.2.0/24,172.16.3.0/24", false},
+		{"MemberRemoved", "172.16.1.0/24,172.16.2.0/24", "172.16.1.0/24", false},
+		{"MemberReplaced", "172.16.1.0/24,172.16.2.0/24", "172.16.1.0/24,172.16.9.0/24", false},
+		{"MultiplicityChanged", "172.16.1.0/24,172.16.1.0/24,172.16.2.0/24", "172.16.1.0/24,172.16.2.0/24,172.16.2.0/24", false},
+	} {
+		t.Run("direct_"+tc.name, func(t *testing.T) {
+			d := newVpcAssociationPrefixDiffData(t, tc.oldValue, tc.newValue)
+			if got := suppressVpcAssociationPrefixReorder("allowed_prefixes.#", tc.oldValue, tc.newValue, d); got != tc.expected {
+				t.Fatalf("suppress(%q, %q) = %t, want %t", tc.oldValue, tc.newValue, got, tc.expected)
+			}
+		})
+	}
+
 	if suppressVpcAssociationPrefixReorder("allowed_prefixes.#", "172.16.1.0/24", "172.16.1.0/24", nil) {
 		t.Fatal("a nil ResourceData carries no old/new pair and must not suppress")
 	}
@@ -87,4 +110,38 @@ func TestUnitVpcAssociationPrefixOrderSuppress(t *testing.T) {
 	if _, ok := vpcAssociationPrefixStrings([]interface{}{}); ok {
 		t.Fatal("an empty list must not be treated as a known prefix list")
 	}
+}
+
+func newVpcAssociationPrefixDiffData(t *testing.T, oldValue, newValue string) *schema.ResourceData {
+	t.Helper()
+	r := &schema.Resource{Schema: map[string]*schema.Schema{
+		"allowed_prefixes": {
+			Type:             schema.TypeList,
+			Optional:         true,
+			Elem:             &schema.Schema{Type: schema.TypeString},
+			DiffSuppressFunc: suppressVpcAssociationPrefixReorder,
+		},
+	}}
+	oldMembers := strings.Split(oldValue, ",")
+	state := &terraform.InstanceState{ID: "ecr-1:vpc-1", Attributes: map[string]string{
+		"allowed_prefixes.#": strconv.Itoa(len(oldMembers)),
+	}}
+	for i, member := range oldMembers {
+		state.Attributes[fmt.Sprintf("allowed_prefixes.%d", i)] = member
+	}
+	newMembers := make([]interface{}, 0, len(strings.Split(newValue, ",")))
+	for _, member := range strings.Split(newValue, ",") {
+		newMembers = append(newMembers, member)
+	}
+	diff, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(map[string]interface{}{
+		"allowed_prefixes": newMembers,
+	}), nil)
+	if err != nil {
+		t.Fatalf("build prefix diff: %v", err)
+	}
+	d, err := schema.InternalMap(r.Schema).Data(state, diff)
+	if err != nil {
+		t.Fatalf("build prefix resource data: %v", err)
+	}
+	return d
 }
