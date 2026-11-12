@@ -278,9 +278,11 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 }
 
 // Case VpcAssociation allowed_prefixes collection order 6348
-// The two applies stay adjacent so the second one is the convergent reorder of
-// the first: the service returns its own canonical prefix order, so the
-// reordered configuration must be a clean no-op instead of a permanent diff.
+// The two applies stay adjacent, with no import or plan step in between, so the
+// second one is the convergent reorder of the first: the service returns its own
+// canonical prefix order, so the reordered configuration must be a clean no-op
+// instead of a permanent diff. The reordered plan-only step repeats the check
+// from the other direction and the import step verifies the reordered state.
 func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_allowedPrefixesOrder6348(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_router_vpc_association.default"
@@ -314,8 +316,9 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_allow
 					}),
 				),
 			},
-			vpcAssociationImportStep(resourceId),
 			{
+				// Adjacent reorder apply: the SDK requires an empty post-apply plan,
+				// which is what proves the reordered members converged.
 				Config: testAccConfig(map[string]interface{}{
 					"association_region_id": acctest.DefaultRegionToTest,
 					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
@@ -328,6 +331,20 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_allow
 						"allowed_prefixes.#": "4",
 					}),
 				),
+			},
+			{
+				// Reorder again in a plan-only step: a clean plan over the ascending
+				// order after the descending apply keeps the convergence claim without
+				// a third real prefix update.
+				Config: testAccConfig(map[string]interface{}{
+					"association_region_id": acctest.DefaultRegionToTest,
+					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
+					"ecr_id":                "${alicloud_express_connect_router_express_connect_router.defaultM9YxGW.id}",
+					"allowed_prefixes": []string{
+						"172.16.1.0/24", "172.16.2.0/24", "172.16.3.0/24", "172.16.4.0/24"},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 			vpcAssociationImportStep(resourceId),
 		},
