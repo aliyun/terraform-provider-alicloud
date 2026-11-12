@@ -89,12 +89,25 @@ resource "alicloud_ga_basic_endpoint_group" "default" {
 The following arguments are supported:
 
 * `accelerator_id` - (Required, ForceNew) The ID of the basic GA instance.
-* `endpoint_group_region` - (Required, ForceNew) The ID of the region where you want to create the endpoint group.
-* `endpoint_type` - (Optional, ForceNew) The type of the endpoint. Valid values: `ENI`, `SLB` and `ECS`.
+* `endpoint_group_region` - (Required, ForceNew) The ID of the region to which the endpoint group belongs.
+
+  You can call the [ListAvailableBusiRegions](https://www.alibabacloud.com/help/en/doc-detail/2253223.html) operation to query the region ID.
+* `endpoint_type` - (Optional, ForceNew) The type of the endpoint. Valid values:
+  - `ENI`: elastic network interface (ENI).
+  - `SLB`: Classic Load Balancer (CLB) instance.
+  - `ECS`: Elastic Compute Service (ECS) instance.
 * `endpoint_address` - (Optional, ForceNew) The address of the endpoint.
-* `endpoint_sub_address` - (Optional, ForceNew) The sub address of the endpoint.
-* `basic_endpoint_group_name` - (Optional) The name of the endpoint group. The `basic_endpoint_group_name` must be 2 to 128 characters in length, and can contain letters, digits, underscores (_), and hyphens (-). The name must start with a letter.
-* `description` - (Optional) The description of the endpoint group. The `description` cannot exceed 256 characters in length and cannot contain http:// or https://.
+* `endpoint_sub_address` - (Optional, ForceNew) The secondary address of the endpoint.
+
+  This parameter is required only if the accelerated IP address is associated with the secondary private IP address of an ECS instance or an ENI.
+  - If you set the endpoint type to `ECS`, you can set `EndpointSubAddress` to the secondary private IP address of the primary ENI. If you leave this parameter empty, the primary private IP address of the primary ENI is used.
+  - If you set the endpoint type to `ENI`, you can set `EndpointSubAddress` to the secondary private IP address of the secondary ENI. If you leave this parameter empty, the primary private IP address of the secondary ENI is used.
+* `basic_endpoint_group_name` - (Optional) The name of the endpoint group.
+
+  The name must be 1 to 128 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). It must start with a letter.
+* `description` - (Optional) The description of the endpoint group.
+
+  The description can be up to 200 characters in length and cannot start with `http://` or `https://`.
 
 ## Attributes Reference
 
