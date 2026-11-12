@@ -242,6 +242,15 @@ The post_pay_module_switch_obj supports the following:
 * `web_lock` - (Optional, Int, Available since v1.269.0) File Tamper Protection Module. Valid values:
   - `1`: On.
   - `0`: Off.
+* `ai_digital` - (Optional, Int, Available since v2.3.0) The AI digital human module. Valid values:
+  - `1`: On.
+  - `0`: Off.
+* `image_scan` - (Optional, Int, Available since v2.3.0) The image scan module. Valid values:
+  - `1`: On.
+  - `0`: Off.
+* `cspm_instance` - (Optional, Int, Available since v2.3.0) The Agentic cloud security configuration check module. Valid values:
+  - `1`: On.
+  - `0`: Off.
 
 ## Attributes Reference
 
