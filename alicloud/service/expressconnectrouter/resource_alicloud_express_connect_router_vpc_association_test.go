@@ -438,8 +438,8 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_compl
 			vpcAssociationImportStep(resourceId),
 			{
 				// Change only allowed_prefixes with the mode untouched: the update must
-				// send the stored mode along with the prefixes, because the service
-				// falls back to MatchMode when AllowedPrefixesMode is omitted.
+				// send the stored mode along with the prefixes, because the API contract
+				// does not declare the mode used when AllowedPrefixesMode is omitted.
 				Config: testAccConfig(map[string]interface{}{
 					"allowed_prefixes": []string{
 						"172.16.1.0/24", "172.16.2.0/24", "172.16.3.0/24"},

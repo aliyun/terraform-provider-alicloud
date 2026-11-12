@@ -282,10 +282,12 @@ func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) erro
 		request["ClientToken"] = helper.BuildClientToken(action)
 		if prefixesOk {
 			request["AllowedPrefixes"] = prefixes.([]interface{})
-			// The service falls back to MatchMode when AllowedPrefixesMode is omitted, so
-			// send the effective mode with the prefixes to keep the applied mode. The mode
-			// is only valid together with a non-empty prefix list: sending it while the
-			// list is emptied is rejected with IllegalParam.AllowedPrefixesMode.
+			// Send the stored mode together with the prefixes so a prefix-only update
+			// keeps the applied mode. The API contract does not declare the mode used
+			// when AllowedPrefixesMode is omitted, so the provider must not depend on a
+			// server-side default. The mode is only valid together with a non-empty
+			// prefix list: sending it while the list is emptied is rejected with
+			// IllegalParam.AllowedPrefixesMode.
 			if mode, modeOk := d.GetOk("allowed_prefixes_mode"); modeOk {
 				request["AllowedPrefixesMode"] = mode
 			}

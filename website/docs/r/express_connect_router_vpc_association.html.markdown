@@ -88,7 +88,6 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<ecr_id>:<association_id>:<vpc_id>`.
-* `allowed_prefixes_mode` - The prefix route mode.
 * `association_id` - The ID of the association between the ECR and the VPC.
 * `create_time` - The time when the association was created.
 * `status` - The deployment state of the associated resource.
