@@ -497,8 +497,8 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_compl
 }
 
 // Case VpcAssociation invalid mode-only configuration 6348: the service rejects
-// AllowedPrefixesMode without a prefix list, so the provider must reject it
-// locally at plan time instead of sending an invalid request.
+// AllowedPrefixesMode without a prefix list with IllegalParam.AllowedPrefixesMode,
+// so the provider must reject it locally at plan time instead of sending an invalid request.
 func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_invalidModeOnly6348(t *testing.T) {
 	resourceId := "alicloud_express_connect_router_vpc_association.default"
 	rand := tfacctest.RandIntRange(10000, 99999)

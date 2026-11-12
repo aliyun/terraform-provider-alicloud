@@ -128,8 +128,8 @@ func resourceVpcAssociationCreate(d *schema.ResourceData, meta interface{}) erro
 	}
 	if v, ok := d.GetOk("allowed_prefixes"); ok {
 		request["AllowedPrefixes"] = v.([]interface{})
-		// The service rejects AllowedPrefixesMode when no prefix is sent, so the
-		// mode is only ever sent together with a non-empty prefix list.
+		// The service rejects AllowedPrefixesMode with IllegalParam.AllowedPrefixesMode
+		// when no prefix is sent, so the mode is only sent with a non-empty prefix list.
 		if mode, modeOk := d.GetOk("allowed_prefixes_mode"); modeOk {
 			request["AllowedPrefixesMode"] = mode
 		}
