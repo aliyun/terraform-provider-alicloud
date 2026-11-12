@@ -7,6 +7,7 @@ import (
 
 	acctest "github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAlicloudSLBListenersDataSource_http(t *testing.T) {
@@ -87,6 +88,129 @@ func TestAccAlicloudSLBListenersDataSource_http(t *testing.T) {
 	}
 
 	slbListenersCheckInfo.DataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
+}
+
+// TestAccAliCloudSLBListenersDataSource_id verifies that every listener element
+// exposes the same ID as the alicloud_slb_listener resource, so it can be used
+// directly as the listener_id of alicloud_slb_listener_acl_attachment.
+//
+// Two listeners share one load balancer, so the test discriminates the elements:
+// querying the second port returns exactly that listener with its own ID,
+// protocol and port, and querying a port that no listener uses returns an empty
+// result instead of falling back to another listener.
+//
+// The load balancer and both listeners are created by this test, so the destroy
+// check proves that each of those exact objects was released: a route level or
+// generic not-found answer is not accepted as a release proof.
+func TestAccAliCloudSLBListenersDataSource_id(t *testing.T) {
+	rand := tfacctest.RandInt()
+	dataSourceId := "data.alicloud_slb_listeners.default"
+	firstListener := "alicloud_slb_listener.first"
+	secondListener := "alicloud_slb_listener.second"
+	var created []testAccSlbResource
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckSlbResourcesReleased(&created),
+		Steps: []resource.TestStep{
+			{
+				// The single element and the ID pair pin the result to the queried
+				// listener: the first listener has a different ID, so it cannot be the
+				// element that satisfies this check.
+				Config: testAccSlbListenersDataSourceIdConfig(rand, 81),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(dataSourceId, "slb_listeners.#", "1"),
+					resource.TestCheckResourceAttrPair(dataSourceId, "slb_listeners.0.id", secondListener, "id"),
+					resource.TestCheckResourceAttr(dataSourceId, "slb_listeners.0.protocol", "http"),
+					resource.TestCheckResourceAttr(dataSourceId, "slb_listeners.0.frontend_port", "81"),
+					testAccCaptureSlbResources(&created,
+						"alicloud_slb_load_balancer.default",
+						firstListener,
+						secondListener,
+					),
+				),
+			},
+			{
+				// Both listeners still exist and the queried port does not, so the
+				// result must be empty.
+				Config: testAccSlbListenersDataSourceIdConfig(rand, 82),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(dataSourceId, "slb_listeners.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+// testAccSlbListenersDataSourceIdConfig creates one VPC load balancer with two
+// HTTP listeners on different frontend ports and queries the data source by
+// queryPort, so the query can select one listener while another one exists.
+func testAccSlbListenersDataSourceIdConfig(rand int, queryPort int) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccSlbListenersDataSourceId-%d"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_slb_zones" "default" {
+  available_slb_address_type = "vpc"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_slb_zones.default.zones.0.id
+}
+
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
+  vswitch_id         = data.alicloud_vswitches.default.ids[0]
+  load_balancer_spec = "slb.s1.small"
+}
+
+resource "alicloud_slb_listener" "first" {
+  load_balancer_id          = "${alicloud_slb_load_balancer.default.id}"
+  backend_port              = 80
+  frontend_port             = 80
+  protocol                  = "http"
+  bandwidth                 = 10
+  health_check              = "on"
+  health_check_connect_port = 20
+  healthy_threshold         = 8
+  unhealthy_threshold       = 8
+  health_check_timeout      = 8
+  health_check_interval     = 5
+  description               = "${var.name}-first"
+}
+
+resource "alicloud_slb_listener" "second" {
+  load_balancer_id          = "${alicloud_slb_load_balancer.default.id}"
+  backend_port              = 81
+  frontend_port             = 81
+  protocol                  = "http"
+  bandwidth                 = 10
+  health_check              = "on"
+  health_check_connect_port = 20
+  healthy_threshold         = 8
+  unhealthy_threshold       = 8
+  health_check_timeout      = 8
+  health_check_interval     = 5
+  description               = "${var.name}-second"
+}
+
+data "alicloud_slb_listeners" "default" {
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
+  frontend_port    = %d
+  protocol         = "http"
+
+  # Both listeners must exist before the query runs, otherwise the filtered
+  # result only reflects the listeners that happened to be created first.
+  depends_on = [alicloud_slb_listener.first, alicloud_slb_listener.second]
+}
+`, rand, queryPort)
 }
 
 func TestAccAlicloudSLBListenersDataSource_https(t *testing.T) {
