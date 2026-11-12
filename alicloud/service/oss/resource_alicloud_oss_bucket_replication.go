@@ -129,6 +129,25 @@ func ResourceAlicloudOssBucketReplication() *schema.Resource {
 								},
 							},
 						},
+						"incremental_delete_marker": {
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"status": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+										ValidateFunc: validation.StringInSlice([]string{
+											"Enabled",
+											"Disabled",
+										}, false),
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -201,8 +220,13 @@ type SseKmsEncryptedObjectsType struct {
 	Status string `xml:"Status"`
 }
 
+type IncrementalDeleteMarkerType struct {
+	Status string `xml:"Status"`
+}
+
 type SourceSelectionCriteriaType struct {
-	SseKmsEncryptedObjects *SseKmsEncryptedObjectsType `xml:"SseKmsEncryptedObjects,omitempty"`
+	SseKmsEncryptedObjects  *SseKmsEncryptedObjectsType  `xml:"SseKmsEncryptedObjects,omitempty"`
+	IncrementalDeleteMarker *IncrementalDeleteMarkerType `xml:"IncrementalDeleteMarker,omitempty"`
 }
 
 type EncryptionConfigurationType struct {
@@ -314,6 +338,15 @@ func expandReplicationRule(d *schema.ResourceData) ReplicationRule {
 			}
 			i.SseKmsEncryptedObjects = &j
 		}
+		//IncrementalDeleteMarker
+		if val1, ok := e["incremental_delete_marker"].([]interface{}); ok && len(val1) > 0 && val1[0] != nil {
+			s := val1[0].(map[string]interface{})
+			j := IncrementalDeleteMarkerType{}
+			if v, ok := s["status"].(string); ok && v != "" {
+				j.Status = v
+				i.IncrementalDeleteMarker = &j
+			}
+		}
 		rule.SourceSelectionCriteria = &i
 	}
 
@@ -414,6 +447,13 @@ func flattenReplicationRule(d *schema.ResourceData, rc *ReplicationConfiguration
 					sseKmsEncryptedObjects["status"] = r.SourceSelectionCriteria.SseKmsEncryptedObjects.Status
 				}
 				sourceSelectionCriteria["sse_kms_encrypted_objects"] = []interface{}{sseKmsEncryptedObjects}
+			}
+			if r.SourceSelectionCriteria.IncrementalDeleteMarker != nil {
+				incrementalDeleteMarker := make(map[string]interface{})
+				if r.SourceSelectionCriteria.IncrementalDeleteMarker.Status != "" {
+					incrementalDeleteMarker["status"] = r.SourceSelectionCriteria.IncrementalDeleteMarker.Status
+				}
+				sourceSelectionCriteria["incremental_delete_marker"] = []interface{}{incrementalDeleteMarker}
 			}
 			rule["source_selection_criteria"] = []interface{}{sourceSelectionCriteria}
 		}
