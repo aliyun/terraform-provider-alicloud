@@ -77,7 +77,7 @@ output "arms_dispatch_rule_id_1" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `dispatch_rule_name` - (Optional, ForceNew) The name of the dispatch rule.
+* `dispatch_rule_name` - (Optional, ForceNew) The name of the dispatch rule. The value is matched server-side as a substring, so `foo` also matches a rule named `foo-bar`.
 * `ids` - (Optional, ForceNew, Computed)  A list of dispatch rule id.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Dispatch Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).

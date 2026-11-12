@@ -226,18 +226,76 @@ func (s *Service) DescribeArmsPrometheusAlertRule(id string) (object map[string]
 	return object, nil
 }
 
-func (s *Service) ListArmsNotificationPolicies(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
+// armsNotificationPolicyMaxPages bounds the ListNotificationPolicies walk so a
+// server that keeps reporting full pages cannot spin forever.
+const armsNotificationPolicyMaxPages = 10000
+
+// decodeArmsNotificationPolicyPage validates and extracts the policies of one
+// ListNotificationPolicies page. A response without the documented array container
+// is malformed, not an empty result. PageBean.Total is deliberately not used: ARMS
+// under-reports it while a policy is still being indexed, which would end the walk
+// one page early and hide the newest rules.
+func decodeArmsNotificationPolicyPage(response map[string]interface{}) ([]map[string]interface{}, error) {
+	action := "ListNotificationPolicies"
+	value, err := jsonpath.Get("$.PageBean.NotificationPolicies", response)
+	if err != nil {
+		return nil, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.PageBean.NotificationPolicies", response)
+	}
+	items, ok := value.([]interface{})
+	if !ok {
+		return nil, errs.WrapErrorf(fmt.Errorf("unexpected NotificationPolicies response type %T", value), errs.DefaultErrorMsg, action, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	policies := make([]map[string]interface{}, 0, len(items))
+	for index, item := range items {
+		policy, ok := item.(map[string]interface{})
+		if !ok {
+			return nil, errs.WrapErrorf(fmt.Errorf("unexpected NotificationPolicies[%d] response type %T", index, item), errs.DefaultErrorMsg, action, action, errs.AlibabaCloudSdkGoERROR)
+		}
+		policies = append(policies, policy)
+	}
+	return policies, nil
+}
+
+// listArmsNotificationPolicies walks every ListNotificationPolicies page until a
+// page comes back smaller than the requested size, so the walk ends on the API's own
+// answer rather than on a total that may still be catching up.
+func listArmsNotificationPolicies(fetch func(page int) (map[string]interface{}, error)) ([]map[string]interface{}, error) {
+	objects := make([]map[string]interface{}, 0)
+	for page := 1; page <= armsNotificationPolicyMaxPages; page++ {
+		response, err := fetch(page)
+		if err != nil {
+			return nil, err
+		}
+		policies, err := decodeArmsNotificationPolicyPage(response)
+		if err != nil {
+			return nil, err
+		}
+		objects = append(objects, policies...)
+		if len(policies) < helper.PageSizeXLarge {
+			return objects, nil
+		}
+	}
+	return nil, errs.Error("ARMS notification policy pagination exceeded maximum pages")
+}
+
+func (s *Service) fetchArmsNotificationPolicyPage(page int, name string) (map[string]interface{}, error) {
 	client := s.client
 	action := "ListNotificationPolicies"
 	request := map[string]interface{}{
-		"Page":     1,
+		"Page":     page,
 		"Size":     helper.PageSizeXLarge,
 		"IsDetail": true,
 		"RegionId": s.client.RegionId,
 	}
+	// Name is matched server-side as a substring, preserving the data source's
+	// historical dispatch_rule_name semantics across every page.
+	if name != "" {
+		request["Name"] = name
+	}
+	var response map[string]interface{}
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
-	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
+		var err error
 		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 		if err != nil {
 			if helper.NeedRetry(err) {
@@ -250,21 +308,18 @@ func (s *Service) ListArmsNotificationPolicies(id string) (object map[string]int
 	})
 	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, action, action, errs.AlibabaCloudSdkGoERROR)
 	}
-	v, err := jsonpath.Get("$.PageBean.NotificationPolicies", response)
-	if err != nil {
-		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.PageBean.NotificationPolicies", response)
-	}
-	if len(v.([]interface{})) < 1 {
-		return object, errs.WrapErrorf(errs.NotFoundErr("ARMS", id), errs.NotFoundWithResponse, response)
-	}
-	for _, v := range v.([]interface{}) {
-		if fmt.Sprint(v.(map[string]interface{})["Id"]) == id {
-			return v.(map[string]interface{}), nil
-		}
-	}
-	return object, errs.WrapErrorf(errs.NotFoundErr("ARMS", id), errs.NotFoundWithResponse, response)
+	return response, nil
+}
+
+// ListArmsNotificationPolicies walks every notification policy page. name, when set,
+// is forwarded to the API as the Name substring filter so the result keeps the
+// dispatch_rule_name matching semantics of the data source.
+func (s *Service) ListArmsNotificationPolicies(name string) ([]map[string]interface{}, error) {
+	return listArmsNotificationPolicies(func(page int) (map[string]interface{}, error) {
+		return s.fetchArmsNotificationPolicyPage(page, name)
+	})
 }
 
 func (s *Service) ArmsDispatchRuleStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
