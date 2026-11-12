@@ -57,11 +57,15 @@ func TestUnitVpcAssociationPrefixOrderSuppress(t *testing.T) {
 				attributes[fmt.Sprintf("allowed_prefixes.%d", i)] = prefix
 			}
 			state := &terraform.InstanceState{ID: "ecr-1:assoc-1:vpc-1", Attributes: attributes}
+			newPrefixes := make([]interface{}, 0, len(tc.newValue))
+			for _, prefix := range tc.newValue {
+				newPrefixes = append(newPrefixes, prefix)
+			}
 			config := map[string]interface{}{
 				"ecr_id":                "ecr-1",
 				"vpc_id":                "vpc-1",
 				"association_region_id": "cn-hangzhou",
-				"allowed_prefixes":      tc.newValue,
+				"allowed_prefixes":      newPrefixes,
 			}
 			diff, err := ResourceVpcAssociation().Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), nil)
 			if err != nil {
