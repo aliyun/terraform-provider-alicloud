@@ -12,8 +12,13 @@ triggers:
       - 'go.mod'
       - 'go.sum'
       - 'website/docs/**'
+      - 'ci/assets/document-examples/**'
+      - 'ci/assets/open-service/**'
+      - 'examples/**'
+      - '**/*.tf'
+      - '**/*.hcl'
       - 'alicloud/*.go'
-      - 'alicloud/service/**/*.go'
+      - 'alicloud/**'
   push:
     branches: [master]
     paths:
@@ -24,8 +29,13 @@ triggers:
       - 'go.mod'
       - 'go.sum'
       - 'website/docs/**'
+      - 'ci/assets/document-examples/**'
+      - 'ci/assets/open-service/**'
+      - 'examples/**'
+      - '**/*.tf'
+      - '**/*.hcl'
       - 'alicloud/*.go'
-      - 'alicloud/service/**/*.go'
+      - 'alicloud/**'
 
 envs:
   CODE_CI_SHALLOW_RANGE: '1'
@@ -43,11 +53,15 @@ jobs:
   IntegrationTest:
     timeout: 9h
     steps:
+      - name: Setup Go
+        uses: setup-env
+        inputs:
+          go-version: '1.25.8'
       - uses: checkout
         inputs:
           fetch-depth: '32'
       - name: CI Adapter Regression
-        run: python3 -m unittest discover -s scripts/ci -p test_acube_integration.py
+        run: python3 -m unittest discover -s scripts/ci -p 'test_acube_*.py'
       - name: Integration Test Check
         envs:
           ACUBE_CI_RUN_ID: '${{pipeline.inst.id}}'
