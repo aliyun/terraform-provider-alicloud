@@ -46,7 +46,7 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_launch_template" "template" {
-  name                          = "tf-template"
+  launch_template_name          = "tf-template"
   description                   = "test1"
   image_id                      = data.alicloud_images.images.images[0].id
   host_name                     = "tf-host"
