@@ -28,6 +28,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "alicloud_ga_basic_accelerator" "default" {
   duration               = 1
   pricing_cycle          = "Month"
