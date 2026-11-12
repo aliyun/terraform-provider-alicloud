@@ -64,14 +64,17 @@ resource "alicloud_launch_template" "template" {
   spot_price_limit              = 5
   spot_strategy                 = "SpotWithPriceLimit"
   security_group_id             = alicloud_security_group.default.id
-  system_disk_category          = "cloud_ssd"
-  system_disk_description       = "test disk"
-  system_disk_name              = "hello"
-  system_disk_size              = 40
-  userdata                      = "xxxxxxxxxxxxxx"
   vswitch_id                    = alicloud_vswitch.default.id
   vpc_id                        = alicloud_vpc.default.id
   zone_id                       = data.alicloud_zones.default.zones.0.id
+  user_data                     = "xxxxxxxxxxxxxx"
+
+  system_disk {
+    category    = "cloud_ssd"
+    description = "test disk"
+    name        = "hello"
+    size        = 40
+  }
 
   tags = {
     tag1 = "hello"
