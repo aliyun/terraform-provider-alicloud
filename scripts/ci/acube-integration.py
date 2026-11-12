@@ -16,7 +16,7 @@ import time
 import urllib.error
 import urllib.request
 
-from acube_diagnostics import publish_report, redact, report_directory, terminal_report
+from acube_diagnostics import publish_acc_summary, publish_report, redact, report_directory, terminal_report
 import doc_examples
 
 REPOSITORY = 'code.alibaba-inc.com/opensource-tools/terraform-provider-alicloud'
@@ -196,6 +196,7 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         print(json.dumps(report), flush=True)
         raise ValueError(report['error'] + ': ' + '; '.join(blockers))
     if not items:
+        if kind == 'acctest': publish_acc_summary(output, frozen['head'], [])
         print('Not applicable: no ' + kind + ' changes in the complete range'); return
     capabilities = client.call('GET', '/capabilities')
     if (capabilities.get('submissionIdempotency') != 'oss-admission-v1'
@@ -207,6 +208,9 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
     failures = []
     pending = []
     reuse_plans = []
+    acc_rows = {name: dict(name=name, total=len(cases), reused=None, toRun=None,
+                          reuseValidation='unconfirmed', originalTaskIds=[])
+                for name, cases in items} if kind == 'acctest' else {}
     for name, value in items:
         request = {'sourceId': sources[0]['sourceId'], 'checkBaseSourceId': sources[1]['sourceId'],
                    'commitSha': frozen['head'], 'baseCommitSha': frozen['base'], 'headRepo': REPOSITORY, 'baseRepo': REPOSITORY,
@@ -243,6 +247,12 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                 raise ValueError('Saved remainder differs; reconcile the original submission')
             record = saved or {'name': name, 'candidateRequest': candidate, 'request': request,
                                'reusedCases': reused_cases, 'submission': 'UNKNOWN'}
+            if kind == 'acctest':
+                acc_rows[name].update(reused=0 if not reused_cases else None, toRun=len(request['testCases']),
+                    reuseValidation='pending' if reused_cases else 'not-needed',
+                    originalTaskIds=sorted(set(reused_cases.values())))
+                print('ACC 用例分配：' + name + '，总数=' + str(len(value)) + '，复用候选='
+                      + str(len(reused_cases)) + '，需执行（补跑）=' + str(len(request['testCases'])), flush=True)
             if reused_cases:
                 reuse_plans.append((item_file, candidate, reused_cases))
             if kind == 'examples':
@@ -260,6 +270,7 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
             if not re.fullmatch(r'[1-9][0-9]{0,18}', task_id):
                 raise ValueError('Missing submission receipt; recover using the same run ID')
             record.update(receipt=receipt, submission='accepted')
+            if kind == 'acctest': acc_rows[name]['taskId'] = task_id
             item_file.write_text(json.dumps(record, indent=2))
             pending.append((item_file, task_id, record, time.monotonic() + 8 * 3600))
             print(json.dumps({'name': name, 'taskId': task_id, 'sourceId': request['sourceId'],
@@ -315,6 +326,7 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
             record = json.loads(item_file.read_text())
             record['currentReusedCases'] = {name:current[name] for name in initial}
             record['reuseValidation'] = 'passed'
+            acc_rows[record['name']].update(reused=len(initial), reuseValidation='verified')
             record.pop('reuseValidationError', None)
             item_file.write_text(json.dumps(record, indent=2))
             item_file.chmod(0o600)
@@ -326,11 +338,13 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         except ValueError as error:
             record = json.loads(item_file.read_text())
             record.update(reuseValidation='invalid', reuseValidationError=str(error))
+            acc_rows[record['name']].update(reused=None, reuseValidation='unconfirmed')
             item_file.write_text(json.dumps(record, indent=2))
             (output/'diagnostics'/('reuse-'+item_file.name)).write_text(json.dumps(
                 dict(status='blocked', candidateCommitSha=candidate['commitSha'],
                      initialReusedCases=initial, error=str(error)), indent=2))
             failures.append(dict(reusedCases=initial, error=str(error)))
+    if kind == 'acctest': publish_acc_summary(output, frozen['head'], list(acc_rows.values()), bool(failures))
     if failures: raise ValueError(json.dumps(failures))
 
 

@@ -84,6 +84,12 @@ from remote stdout. Log download failures preserve the original task failure.
 Both jobs publish only `.acube-ci/diagnostics/` as downloadable artifacts, even
 when the check fails; original requests and signed download URLs remain private.
 
+ACC logs and the CI Summary show total cases, confirmed reused cases and cases
+assigned to this execution, both overall and by package, with original task IDs.
+`diagnostics/acc-summary.json` contains the same counts. Query/revalidation errors
+show an unconfirmed reuse count, never zero misses; assigned cases are not a PASS
+count. Resume runs report the original split without counting it again.
+
 SKIP, missing/duplicate cases, mismatched sources and unconfirmed cleanup fail
 closed and remain visible. Neither a PlanOnly case nor top-level ACube success
 proves complete acceptance. Required external prerequisites must be resolved or

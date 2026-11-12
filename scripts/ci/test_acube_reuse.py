@@ -105,6 +105,69 @@ class ReuseTest(unittest.TestCase):
         self.assertEqual(record['status']['status'], 'success')
         self.assertEqual(reports[0]['status'], 'success')
 
+    def test_ci_summary_counts_cases_not_receipts_for_all_partial_and_no_hits(self):
+        for hits, counts in [({'TestAccOne': 42, 'TestAccTwo': 42}, (2, 0)),
+                             ({'TestAccOne': 42}, (1, 1)), ({}, (0, 2))]:
+            with self.subTest(hits=hits), tempfile.TemporaryDirectory() as root:
+                output, summary = Path(root) / 'output', Path(root) / 'summary.md'
+                client = Client([hits] * 2)
+                with patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': str(summary)}), contextlib.redirect_stdout(io.StringIO()) as log:
+                    m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+                report = json.loads((output / 'diagnostics/acc-summary.json').read_text())
+                self.assertEqual((report['total'], report['reused'], report['toRun']), (2, *counts))
+                self.assertEqual(report['packages'][0]['originalTaskIds'], ['42'] if hits else [])
+                self.assertEqual(len(client.submissions), int(counts[1] > 0))
+                text = '总数=2，已确认复用=' + str(counts[0]) + '，需执行（补跑）=' + str(counts[1])
+                self.assertIn(text, log.getvalue())
+                self.assertIn(text, summary.read_text())
+                self.assertIn(PACKAGE, summary.read_text())
+                self.assertIn('复用核验', summary.read_text())
+
+    def test_ci_summary_aggregates_packages_and_zero_scope_without_cloud_calls(self):
+        frozen = self.frozen()
+        frozen['packages']['alicloud/service/other'] = ['TestAccOne']
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()):
+            output = Path(root)
+            client = Client([{'TestAccOne': 42, 'TestAccTwo': 42}, {'TestAccOne': 42},
+                             {'TestAccOne': 42, 'TestAccTwo': 42}, {'TestAccOne': 42}])
+            m.execute(client, frozen, 'acctest', 'run-123', output)
+            report = json.loads((output / 'diagnostics/acc-summary.json').read_text())
+            self.assertEqual((report['total'], report['reused'], report['toRun']), (3, 3, 0))
+            self.assertEqual(len(report['packages']), 2)
+            empty = self.frozen(); empty['packages'] = {}
+            client = Client([])
+            m.execute(client, empty, 'acctest', 'run-456', output)
+            report = json.loads((output / 'diagnostics/acc-summary.json').read_text())
+            self.assertEqual((report['total'], report['reused'], report['toRun']), (0, 0, 0))
+            self.assertEqual(client.calls, [])
+
+    def test_ci_summary_marks_query_and_revalidation_failures_unconfirmed(self):
+        for lookups, planned, submitted in [([ValueError('ACube HTTP 503')], None, 0),
+                                             ([{'TestAccOne': 42}, {}], 1, 1)]:
+            with self.subTest(lookups=lookups), tempfile.TemporaryDirectory() as root:
+                output, summary = Path(root) / 'output', Path(root) / 'summary.md'
+                client = Client(lookups)
+                with patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': str(summary)}), contextlib.redirect_stdout(io.StringIO()):
+                    with self.assertRaises(ValueError):
+                        m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+                report = json.loads((output / 'diagnostics/acc-summary.json').read_text())
+                self.assertEqual(report['status'], 'blocked')
+                self.assertIsNone(report['reused'])
+                self.assertEqual(report['toRun'], planned)
+                self.assertIn('已确认复用=未确认', summary.read_text())
+                self.assertEqual(len(client.submissions), submitted)
+
+    def test_resume_summary_retains_original_split_without_counting_execution_twice(self):
+        client = Client([{'TestAccOne': 42}, {'TestAccOne': 42}, {'TestAccOne': 42, 'TestAccTwo': 43}])
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()):
+            output = Path(root)
+            for _ in range(2):
+                m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+                report = json.loads((output / 'diagnostics/acc-summary.json').read_text())
+                self.assertEqual((report['total'], report['reused'], report['toRun']), (2, 1, 1))
+                self.assertEqual(report['packages'][0]['taskId'], '43')
+            self.assertEqual(len(client.submissions), 1)
+
     def test_server_can_rebind_valid_evidence_without_rewriting_initial_receipt(self):
         client = Client([{'TestAccOne': 41, 'TestAccTwo': 42}, {'TestAccOne': 51, 'TestAccTwo': 52}])
         record, _ = self.run_plan(client)
