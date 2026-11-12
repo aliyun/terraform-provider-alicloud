@@ -281,3 +281,60 @@ func TestUnitAliCloudGaBasicAccelerator(t *testing.T) {
 		}
 	}
 }
+
+// TestUnitAliCloudGaBasicAcceleratorPaymentMapping pins the payment/coupon
+// request and response mapping at the SDK boundary, which the CRUD lifecycle
+// mock above cannot observe because it discards the request parameters.
+// lintignore: R001
+func TestUnitAliCloudGaBasicAcceleratorPaymentMapping(t *testing.T) {
+	p := unitTestProviderResources()
+	d, _ := schema.InternalMap(p["alicloud_ga_basic_accelerator"].Schema).Data(nil, nil)
+	d.MarkNewResource()
+	attributes := map[string]interface{}{
+		"duration":               1,
+		"pricing_cycle":          "Month",
+		"basic_accelerator_name": "tf-example-value",
+		"description":            "tf-example-value",
+		"bandwidth_billing_type": "BandwidthPackage",
+		"auto_pay":               true,
+		"auto_use_coupon":        "true",
+		"payment_type":           "PayAsYouGo",
+	}
+	for key, value := range attributes {
+		assert.Nil(t, d.Set(key, value))
+	}
+
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := unitTestSharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		return
+	}
+
+	createRequest := map[string]interface{}{}
+	readResponse := map[string]interface{}{
+		"Name":                 "tf-example-value",
+		"Description":          "tf-example-value",
+		"BandwidthBillingType": "BandwidthPackage",
+		"InstanceChargeType":   "PREPAY",
+		"State":                "active",
+	}
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, queries map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		if *action == "CreateBasicAccelerator" {
+			for key, value := range queries {
+				createRequest[key] = value
+			}
+			return map[string]interface{}{"AcceleratorId": "ga-basic-accelerator-id"}, nil
+		}
+		return readResponse, nil
+	})
+	defer patches.Reset()
+
+	assert.Nil(t, resourceAliCloudGaBasicAcceleratorCreate(d, rawClient))
+	assert.Equal(t, "POSTPAY", createRequest["ChargeType"])
+	assert.Equal(t, "true", createRequest["AutoUseCoupon"])
+	assert.Equal(t, true, createRequest["AutoPay"])
+
+	assert.Nil(t, resourceAliCloudGaBasicAcceleratorRead(d, rawClient))
+	assert.Equal(t, "Subscription", d.Get("payment_type"))
+}
