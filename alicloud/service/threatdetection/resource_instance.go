@@ -158,6 +158,18 @@ func resourceAliCloudThreatDetectionInstance() *schema.Resource {
 							Type:     schema.TypeInt,
 							Optional: true,
 						},
+						"ai_digital": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"image_scan": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"cspm_instance": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -592,6 +604,9 @@ func resourceAliCloudThreatDetectionInstanceRead(d *schema.ResourceData, meta in
 		postPayModuleSwitchObjMap["serverless"] = postPayModuleSwitchObjRaw["Serverless"]
 		postPayModuleSwitchObjMap["vul"] = postPayModuleSwitchObjRaw["Vul"]
 		postPayModuleSwitchObjMap["web_lock"] = postPayModuleSwitchObjRaw["WebLock"]
+		postPayModuleSwitchObjMap["ai_digital"] = postPayModuleSwitchObjRaw["AiDigital"]
+		postPayModuleSwitchObjMap["image_scan"] = postPayModuleSwitchObjRaw["ImageScan"]
+		postPayModuleSwitchObjMap["cspm_instance"] = postPayModuleSwitchObjRaw["CspmInstance"]
 
 		postPayModuleSwitchObjMaps = append(postPayModuleSwitchObjMaps, postPayModuleSwitchObjMap)
 	}
@@ -962,6 +977,18 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 			sdk1, _ := jsonpath.Get("$[0].sdk", v)
 			if sdk1 != nil && sdk1 != "" {
 				postPayModuleSwitchObj["Sdk"] = sdk1
+			}
+			aiDigital1, _ := jsonpath.Get("$[0].ai_digital", v)
+			if aiDigital1 != nil && aiDigital1 != "" {
+				postPayModuleSwitchObj["AiDigital"] = aiDigital1
+			}
+			imageScan1, _ := jsonpath.Get("$[0].image_scan", v)
+			if imageScan1 != nil && imageScan1 != "" {
+				postPayModuleSwitchObj["ImageScan"] = imageScan1
+			}
+			cspmInstance1, _ := jsonpath.Get("$[0].cspm_instance", v)
+			if cspmInstance1 != nil && cspmInstance1 != "" {
+				postPayModuleSwitchObj["CspmInstance"] = cspmInstance1
 			}
 
 			postPayModuleSwitchObjJson, err := json.Marshal(postPayModuleSwitchObj)
