@@ -1,13 +1,28 @@
 package expressconnectrouter_test
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"regexp"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
+	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/expressconnectrouter"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -278,11 +293,10 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 }
 
 // Case VpcAssociation allowed_prefixes collection order 6348
-// The two applies stay adjacent, with no import or plan step in between, so the
-// second one is the convergent reorder of the first: the service returns its own
-// canonical prefix order, so the reordered configuration must be a clean no-op
-// instead of a permanent diff. The reordered plan-only step repeats the check
-// from the other direction and the import step verifies the reordered state.
+// The service returns its own canonical prefix order, so the reordered
+// configuration must be a clean no-op instead of a permanent diff. Each applied
+// state is independently importable, and the final plan-only step repeats the
+// convergence check from the other direction.
 func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_allowedPrefixesOrder6348(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_router_vpc_association.default"
@@ -316,9 +330,10 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_allow
 					}),
 				),
 			},
+			vpcAssociationImportStep(resourceId),
 			{
-				// Adjacent reorder apply: the SDK requires an empty post-apply plan,
-				// which is what proves the reordered members converged.
+				// The SDK requires an empty post-apply plan, which proves the
+				// reordered members converged.
 				Config: testAccConfig(map[string]interface{}{
 					"association_region_id": acctest.DefaultRegionToTest,
 					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
@@ -332,6 +347,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_allow
 					}),
 				),
 			},
+			vpcAssociationImportStep(resourceId),
 			{
 				// Reorder again in a plan-only step: a clean plan over the ascending
 				// order after the descending apply keeps the convergence claim without
@@ -346,7 +362,6 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_allow
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
 			},
-			vpcAssociationImportStep(resourceId),
 		},
 	})
 }
@@ -492,3 +507,734 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_inval
 }
 
 // Test ExpressConnectRouter ExpressConnectRouterVpcAssociation. <<< Resource test cases, automatically generated.
+
+func newVpcAssociationUnitClient(t *testing.T, handler http.HandlerFunc) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").
+		SetAccessKeyId("test-key").
+		SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatalf("build credential: %v", err)
+	}
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	endpoints := new(sync.Map)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatalf("build client: %v", err)
+	}
+	endpoints.Store("expressconnectrouter", endpoint)
+	return client
+}
+
+func writeVpcAssociationJSON(t *testing.T, w http.ResponseWriter, status int, body interface{}) {
+	t.Helper()
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(body); err != nil {
+		t.Errorf("encode response: %v", err)
+	}
+}
+
+func writeVpcAssociationActive(t *testing.T, w http.ResponseWriter) {
+	writeVpcAssociationJSON(t, w, http.StatusOK, map[string]interface{}{
+		"RequestId": "unit-test",
+		"AssociationList": []map[string]interface{}{{
+			"AssociationId":       "assoc-1",
+			"AssociationNodeType": "VPC",
+			"EcrId":               "ecr-1",
+			"VpcId":               "vpc-1",
+			"RegionId":            "cn-hangzhou",
+			"Status":              "ACTIVE",
+			"Description":         "unit-description",
+			"AllowedPrefixesMode": "MatchMode",
+			"AllowedPrefixes":     []string{"172.16.1.0/24"},
+			"VpcOwnerId":          1,
+		}},
+	})
+}
+
+func vpcAssociationUnitConfig() map[string]interface{} {
+	return map[string]interface{}{
+		"ecr_id":                "ecr-1",
+		"vpc_id":                "vpc-1",
+		"association_region_id": "cn-hangzhou",
+	}
+}
+
+func vpcAssociationUnitState(overrides map[string]string) *terraform.InstanceState {
+	state := &terraform.InstanceState{
+		ID: "ecr-1:assoc-1:vpc-1",
+		Attributes: map[string]string{
+			"id":                    "ecr-1:assoc-1:vpc-1",
+			"ecr_id":                "ecr-1",
+			"vpc_id":                "vpc-1",
+			"association_id":        "assoc-1",
+			"association_region_id": "cn-hangzhou",
+		},
+	}
+	for key, value := range overrides {
+		state.Attributes[key] = value
+	}
+	return state
+}
+
+func vpcAssociationRawConfigValues(config map[string]interface{}) map[string]cty.Value {
+	values := map[string]cty.Value{
+		"allowed_prefixes":      cty.NullVal(cty.List(cty.String)),
+		"allowed_prefixes_mode": cty.NullVal(cty.String),
+		"association_id":        cty.NullVal(cty.String),
+		"association_region_id": cty.NullVal(cty.String),
+		"create_time":           cty.NullVal(cty.String),
+		"description":           cty.NullVal(cty.String),
+		"ecr_id":                cty.NullVal(cty.String),
+		"status":                cty.NullVal(cty.String),
+		"vpc_id":                cty.NullVal(cty.String),
+		"vpc_owner_id":          cty.NullVal(cty.Number),
+	}
+	for _, key := range []string{"allowed_prefixes_mode", "association_region_id", "description", "ecr_id", "vpc_id"} {
+		if value, ok := config[key]; ok {
+			values[key] = cty.StringVal(value.(string))
+		}
+	}
+	if raw, ok := config["allowed_prefixes"]; ok {
+		switch prefixes := raw.(type) {
+		case string:
+			values["allowed_prefixes"] = cty.UnknownVal(cty.List(cty.String))
+		case []string:
+			values["allowed_prefixes"] = vpcAssociationRawPrefixList(prefixes)
+		case []interface{}:
+			if len(prefixes) == 0 {
+				values["allowed_prefixes"] = cty.ListValEmpty(cty.String)
+			} else {
+				values["allowed_prefixes"] = cty.ListVal(vpcAssociationRawPrefixValues(prefixes))
+			}
+		}
+	}
+	return values
+}
+
+func vpcAssociationRawPrefixValues(prefixes []interface{}) []cty.Value {
+	values := make([]cty.Value, 0, len(prefixes))
+	for _, prefix := range prefixes {
+		values = append(values, cty.StringVal(prefix.(string)))
+	}
+	return values
+}
+
+func vpcAssociationRawPrefixList(prefixes []string) cty.Value {
+	if len(prefixes) == 0 {
+		return cty.ListValEmpty(cty.String)
+	}
+	values := make([]cty.Value, 0, len(prefixes))
+	for _, prefix := range prefixes {
+		values = append(values, cty.StringVal(prefix))
+	}
+	return cty.ListVal(values)
+}
+
+func vpcAssociationRawConfig(config map[string]interface{}) cty.Value {
+	return cty.ObjectVal(vpcAssociationRawConfigValues(config))
+}
+
+func vpcAssociationRawConfigWithValues(config map[string]interface{}, mode, prefixes cty.Value) cty.Value {
+	values := vpcAssociationRawConfigValues(config)
+	values["allowed_prefixes_mode"] = mode
+	values["allowed_prefixes"] = prefixes
+	return cty.ObjectVal(values)
+}
+
+func vpcAssociationApply(t *testing.T, r *schema.Resource, state *terraform.InstanceState, config map[string]interface{}, client *connectivity.AliyunClient) (*terraform.InstanceState, diag.Diagnostics) {
+	t.Helper()
+	rawConfig := vpcAssociationRawConfig(config)
+	if state != nil {
+		state.RawConfig = rawConfig
+	}
+	diff, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), nil)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	if diff == nil {
+		return nil, diag.FromErr(fmt.Errorf("expected a lifecycle diff"))
+	}
+	diff.RawConfig = rawConfig
+	return r.Apply(context.Background(), state, diff, client)
+}
+
+func TestUnitVpcAssociationCreateRetryCodes(t *testing.T) {
+	for _, code := range []string{
+		"Conflict.Lock",
+		"IncorrectStatus.Ecr",
+		"IncorrectStatus.Vpc",
+		"IncorrectStatus.VpcOperating",
+		"IncorrectStatus.Vswitch",
+		"IncorrectStatus.RouteEntry",
+		"OperationDenied.ForceDeleting",
+		"OperationFailed.CallingVpcYaochi",
+		"InternalErrorTemp",
+	} {
+		code := code
+		t.Run(code, func(t *testing.T) {
+			var createCalls int32
+			client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if err := r.ParseForm(); err != nil {
+					t.Errorf("parse request: %v", err)
+				}
+				switch r.Form.Get("Action") {
+				case "CreateExpressConnectRouterAssociation":
+					if atomic.AddInt32(&createCalls, 1) == 1 {
+						writeVpcAssociationJSON(t, w, http.StatusBadRequest, map[string]string{
+							"Code": code, "Message": "transient " + code, "RequestId": "unit-test",
+						})
+						return
+					}
+					writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{
+						"AssociationId": "assoc-1", "RequestId": "unit-test",
+					})
+				case "DescribeExpressConnectRouterAssociation":
+					writeVpcAssociationActive(t, w)
+				default:
+					t.Errorf("unexpected action %q", r.Form.Get("Action"))
+					writeVpcAssociationJSON(t, w, http.StatusBadRequest, map[string]string{
+						"Code": "InvalidParameter", "Message": "unexpected action",
+					})
+				}
+			})
+
+			state, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), nil, vpcAssociationUnitConfig(), client)
+			if diags.HasError() {
+				t.Fatalf("create with transient %s should succeed after a retry: %v", code, diags)
+			}
+			if got := atomic.LoadInt32(&createCalls); got != 2 {
+				t.Fatalf("CreateExpressConnectRouterAssociation calls = %d, want 2", got)
+			}
+			if got, want := state.ID, "ecr-1:assoc-1:vpc-1"; got != want {
+				t.Fatalf("resource id = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestUnitVpcAssociationCreateTerminalCodesAreNotRetried(t *testing.T) {
+	for _, code := range []string{
+		"InvalidParameter",
+		"QuotaExceeded.VpcCountPerEcr",
+		"IllegalParamFormat.AllowedPrefixes",
+		"ResourceAlreadyExist.VpcId",
+		"UnsupportedRegion",
+	} {
+		code := code
+		t.Run(code, func(t *testing.T) {
+			var createCalls int32
+			client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if err := r.ParseForm(); err != nil {
+					t.Errorf("parse request: %v", err)
+				}
+				if r.Form.Get("Action") != "CreateExpressConnectRouterAssociation" {
+					t.Errorf("terminal error must not trigger %q", r.Form.Get("Action"))
+					writeVpcAssociationJSON(t, w, http.StatusBadRequest, map[string]string{
+						"Code": "InvalidParameter", "Message": "unexpected action",
+					})
+					return
+				}
+				atomic.AddInt32(&createCalls, 1)
+				writeVpcAssociationJSON(t, w, http.StatusBadRequest, map[string]string{
+					"Code": code, "Message": "terminal " + code, "RequestId": "unit-test",
+				})
+			})
+
+			state, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), nil, vpcAssociationUnitConfig(), client)
+			if !diags.HasError() {
+				t.Fatalf("terminal error %s must be returned", code)
+			}
+			if got := atomic.LoadInt32(&createCalls); got != 1 {
+				t.Fatalf("CreateExpressConnectRouterAssociation calls = %d, want 1", got)
+			}
+			if state != nil && state.ID != "" {
+				t.Fatalf("failed create assigned id %q", state.ID)
+			}
+		})
+	}
+}
+
+func TestUnitVpcAssociationCreateSendsModeOnlyWithPrefixes(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		setMode  bool
+		mode     string
+		wantMode string
+	}{
+		{name: "mode_with_prefixes_is_sent", setMode: true, mode: "MatchMode", wantMode: "MatchMode"},
+		{name: "empty_mode_with_prefixes_is_omitted", setMode: true, mode: ""},
+		{name: "unset_mode_with_prefixes_is_omitted"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var lastForm url.Values
+			client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if err := r.ParseForm(); err != nil {
+					t.Errorf("parse request: %v", err)
+				}
+				switch r.Form.Get("Action") {
+				case "CreateExpressConnectRouterAssociation":
+					lastForm = r.Form
+					writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{
+						"AssociationId": "assoc-1", "RequestId": "unit-test",
+					})
+				case "DescribeExpressConnectRouterAssociation":
+					writeVpcAssociationActive(t, w)
+				default:
+					t.Errorf("unexpected action %q", r.Form.Get("Action"))
+				}
+			})
+
+			config := vpcAssociationUnitConfig()
+			config["allowed_prefixes"] = []interface{}{"172.16.1.0/24"}
+			config["description"] = "unit-description"
+			if tc.setMode {
+				config["allowed_prefixes_mode"] = tc.mode
+			}
+			_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), nil, config, client)
+			if diags.HasError() {
+				t.Fatalf("create with prefixes: %v", diags)
+			}
+			if lastForm == nil {
+				t.Fatal("CreateExpressConnectRouterAssociation request was not captured")
+			}
+			if !formHasArrayValue(lastForm, "AllowedPrefixes", "172.16.1.0/24") {
+				t.Errorf("AllowedPrefixes did not carry the configured prefix: %v", lastForm)
+			}
+			if got := lastForm.Get("Description"); got != "unit-description" {
+				t.Errorf("Description = %q, want unit-description", got)
+			}
+			values, present := lastForm["AllowedPrefixesMode"]
+			if tc.wantMode == "" {
+				if present {
+					t.Errorf("AllowedPrefixesMode must be omitted, got %v", values)
+				}
+			} else if !present || len(values) != 1 || values[0] != tc.wantMode {
+				t.Errorf("AllowedPrefixesMode present=%v values=%v, want %s", present, values, tc.wantMode)
+			}
+		})
+	}
+
+	t.Run("mode_without_prefixes_is_rejected_before_request", func(t *testing.T) {
+		var requests int32
+		client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+			atomic.AddInt32(&requests, 1)
+			t.Errorf("unexpected request for an invalid mode-only configuration")
+			writeVpcAssociationJSON(t, w, http.StatusBadRequest, map[string]string{
+				"Code": "InvalidParameter", "Message": "unexpected request",
+			})
+		})
+
+		config := vpcAssociationUnitConfig()
+		config["allowed_prefixes_mode"] = "MatchMode"
+		_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), nil, config, client)
+		if !diags.HasError() || !containsAll(fmt.Sprintf("%v", diags), "allowed_prefixes_mode", "non-empty", "allowed_prefixes") {
+			t.Fatalf("mode-only create error = %v, want the local combination error", diags)
+		}
+		if got := atomic.LoadInt32(&requests); got != 0 {
+			t.Fatalf("invalid mode-only create issued %d requests, want 0", got)
+		}
+	})
+}
+
+func TestUnitVpcAssociationUpdateDescriptionRetry(t *testing.T) {
+	var modifyCalls int32
+	client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+		}
+		switch r.Form.Get("Action") {
+		case "ModifyExpressConnectRouterAssociation":
+			if atomic.AddInt32(&modifyCalls, 1) == 1 {
+				writeVpcAssociationJSON(t, w, http.StatusBadRequest, map[string]string{
+					"Code": "IncorrectStatus.Ecr", "Message": "another operation is running", "RequestId": "unit-test",
+				})
+				return
+			}
+			if got := r.Form.Get("Description"); got != "unit-description" {
+				t.Errorf("Description = %q, want unit-description", got)
+			}
+			writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
+		case "DescribeExpressConnectRouterAssociation":
+			writeVpcAssociationActive(t, w)
+		default:
+			t.Errorf("unexpected action %q", r.Form.Get("Action"))
+		}
+	})
+
+	config := vpcAssociationUnitConfig()
+	config["description"] = "unit-description"
+	state := vpcAssociationUnitState(map[string]string{"description": "old-description"})
+	_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), state, config, client)
+	if diags.HasError() {
+		t.Fatalf("description update should retry a recoverable status: %v", diags)
+	}
+	if got := atomic.LoadInt32(&modifyCalls); got != 2 {
+		t.Fatalf("ModifyExpressConnectRouterAssociation calls = %d, want 2", got)
+	}
+}
+
+func TestUnitVpcAssociationUpdateParameterErrorFailsFast(t *testing.T) {
+	var calls int32
+	client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+		}
+		switch r.Form.Get("Action") {
+		case "ModifyExpressConnectRouterAssociation":
+			atomic.AddInt32(&calls, 1)
+			writeVpcAssociationJSON(t, w, http.StatusBadRequest, map[string]string{
+				"Code": "IllegalParamFormat.Description", "Message": "description format is illegal", "RequestId": "unit-test",
+			})
+		default:
+			t.Errorf("unexpected action %q", r.Form.Get("Action"))
+		}
+	})
+
+	config := vpcAssociationUnitConfig()
+	config["description"] = "unit-description"
+	state := vpcAssociationUnitState(map[string]string{"description": "old-description"})
+	_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), state, config, client)
+	if !diags.HasError() {
+		t.Fatal("parameter errors must be returned to the caller")
+	}
+	if got := atomic.LoadInt32(&calls); got != 1 {
+		t.Fatalf("ModifyExpressConnectRouterAssociation calls = %d, want 1 (parameter errors must not retry)", got)
+	}
+}
+
+func TestUnitVpcAssociationUpdateSharesOneDeadline(t *testing.T) {
+	var modifies, describes int32
+	client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+		}
+		switch r.Form.Get("Action") {
+		case "ModifyExpressConnectRouterAssociation":
+			atomic.AddInt32(&modifies, 1)
+			time.Sleep(50 * time.Millisecond)
+			writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
+		case "ModifyExpressConnectRouterAssociationAllowedPrefix":
+			atomic.AddInt32(&modifies, 1)
+			writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
+		case "DescribeExpressConnectRouterAssociation":
+			atomic.AddInt32(&describes, 1)
+			writeVpcAssociationActive(t, w)
+		default:
+			t.Errorf("unexpected action %q", r.Form.Get("Action"))
+		}
+	})
+
+	r := expressconnectrouter.ResourceVpcAssociation()
+	r.Timeouts.Update = schema.DefaultTimeout(20 * time.Millisecond)
+	config := vpcAssociationUnitConfig()
+	config["description"] = "new-description"
+	config["allowed_prefixes"] = []interface{}{"172.16.2.0/24"}
+	state := vpcAssociationUnitState(map[string]string{
+		"description":        "old-description",
+		"allowed_prefixes.#": "1",
+		"allowed_prefixes.0": "172.16.1.0/24",
+	})
+	_, diags := vpcAssociationApply(t, r, state, config, client)
+	if !diags.HasError() || !containsAll(fmt.Sprintf("%v", diags), "Timeout", "shared update deadline") {
+		t.Fatalf("shared budget error = %v, want the shared deadline timeout", diags)
+	}
+	if got := atomic.LoadInt32(&modifies); got != 1 {
+		t.Fatalf("modify calls = %d, want 1; a per-step budget would have issued the second write", got)
+	}
+	if got := atomic.LoadInt32(&describes); got != 0 {
+		t.Fatalf("describe calls = %d, want 0 after the budget is exhausted", got)
+	}
+}
+
+func TestUnitVpcAssociationUpdateDescriptionClearSendsEmptyString(t *testing.T) {
+	var forms []url.Values
+	client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+		}
+		switch r.Form.Get("Action") {
+		case "ModifyExpressConnectRouterAssociation":
+			forms = append(forms, r.Form)
+			writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
+		case "DescribeExpressConnectRouterAssociation":
+			writeVpcAssociationActive(t, w)
+		default:
+			t.Errorf("unexpected action %q", r.Form.Get("Action"))
+		}
+	})
+
+	config := vpcAssociationUnitConfig()
+	config["description"] = ""
+	state := vpcAssociationUnitState(map[string]string{"description": "old-description"})
+	_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), state, config, client)
+	if diags.HasError() {
+		t.Fatalf("clear description: %v", diags)
+	}
+	if len(forms) != 1 {
+		t.Fatalf("ModifyExpressConnectRouterAssociation calls = %d, want 1", len(forms))
+	}
+	values, present := forms[0]["Description"]
+	if !present || len(values) != 1 || values[0] != "" {
+		t.Fatalf("Description present=%v values=%v, want one explicit empty value", present, values)
+	}
+}
+
+func TestUnitVpcAssociationUpdatePrefixSendsStoredMode(t *testing.T) {
+	var forms []url.Values
+	client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+		}
+		switch r.Form.Get("Action") {
+		case "ModifyExpressConnectRouterAssociationAllowedPrefix":
+			forms = append(forms, r.Form)
+			if len(forms) == 1 {
+				writeVpcAssociationJSON(t, w, http.StatusBadRequest, map[string]string{
+					"Code": "IncorrectStatus.EcrAssociation", "Message": "association is busy", "RequestId": "unit-test",
+				})
+				return
+			}
+			writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
+		case "DescribeExpressConnectRouterAssociation":
+			writeVpcAssociationActive(t, w)
+		default:
+			t.Errorf("unexpected action %q", r.Form.Get("Action"))
+		}
+	})
+
+	config := vpcAssociationUnitConfig()
+	config["allowed_prefixes"] = []interface{}{"172.16.2.0/24"}
+	config["allowed_prefixes_mode"] = "IncrementalMode"
+	state := vpcAssociationUnitState(map[string]string{
+		"allowed_prefixes.#":    "1",
+		"allowed_prefixes.0":    "172.16.1.0/24",
+		"allowed_prefixes_mode": "IncrementalMode",
+	})
+	_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), state, config, client)
+	if diags.HasError() {
+		t.Fatalf("prefix update with stored mode: %v", diags)
+	}
+	if len(forms) != 2 {
+		t.Fatalf("ModifyExpressConnectRouterAssociationAllowedPrefix calls = %d, want 2", len(forms))
+	}
+	for i, form := range forms {
+		if got := form.Get("AllowedPrefixesMode"); got != "IncrementalMode" {
+			t.Errorf("request %d AllowedPrefixesMode = %q, want IncrementalMode", i+1, got)
+		}
+		if !formHasArrayValue(form, "AllowedPrefixes", "172.16.2.0/24") {
+			t.Errorf("request %d did not carry the prefix list: %v", i+1, form)
+		}
+	}
+}
+
+func TestUnitVpcAssociationUpdateExplicitEmptyModeOmitsMode(t *testing.T) {
+	var forms []url.Values
+	client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+		}
+		switch r.Form.Get("Action") {
+		case "ModifyExpressConnectRouterAssociationAllowedPrefix":
+			forms = append(forms, r.Form)
+			writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
+		case "DescribeExpressConnectRouterAssociation":
+			writeVpcAssociationActive(t, w)
+		default:
+			t.Errorf("unexpected action %q", r.Form.Get("Action"))
+		}
+	})
+
+	config := vpcAssociationUnitConfig()
+	config["allowed_prefixes"] = []interface{}{"172.16.2.0/24"}
+	config["allowed_prefixes_mode"] = ""
+	state := vpcAssociationUnitState(map[string]string{
+		"allowed_prefixes.#":    "1",
+		"allowed_prefixes.0":    "172.16.1.0/24",
+		"allowed_prefixes_mode": "IncrementalMode",
+	})
+	_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), state, config, client)
+	if diags.HasError() {
+		t.Fatalf("explicit empty mode update: %v", diags)
+	}
+	if len(forms) != 1 {
+		t.Fatalf("ModifyExpressConnectRouterAssociationAllowedPrefix calls = %d, want 1", len(forms))
+	}
+	if !formHasArrayValue(forms[0], "AllowedPrefixes", "172.16.2.0/24") {
+		t.Fatalf("AllowedPrefixes did not carry the configured prefix: %v", forms[0])
+	}
+	if values, present := forms[0]["AllowedPrefixesMode"]; present {
+		t.Fatalf("AllowedPrefixesMode must be omitted for an explicit empty value, got %v", values)
+	}
+}
+
+func TestUnitVpcAssociationUpdateRejectsModeOnlyChange(t *testing.T) {
+	var requests int32
+	client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&requests, 1)
+		t.Errorf("unexpected request for a mode-only update")
+	})
+
+	config := vpcAssociationUnitConfig()
+	config["allowed_prefixes_mode"] = "IncrementalMode"
+	state := vpcAssociationUnitState(map[string]string{"allowed_prefixes_mode": "MatchMode"})
+	_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), state, config, client)
+	if !diags.HasError() || !containsAll(fmt.Sprintf("%v", diags), "allowed_prefixes_mode", "non-empty", "allowed_prefixes") {
+		t.Fatalf("mode-only update error = %v, want the local combination error", diags)
+	}
+	if got := atomic.LoadInt32(&requests); got != 0 {
+		t.Fatalf("invalid mode-only update issued %d requests, want 0", got)
+	}
+}
+
+func TestUnitVpcAssociationPrefixModeConfigValidation(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		mode     cty.Value
+		prefixes cty.Value
+		config   map[string]interface{}
+		wantErr  bool
+	}{
+		{
+			name:     "mode_with_prefix_is_valid",
+			mode:     cty.StringVal("MatchMode"),
+			prefixes: cty.ListVal([]cty.Value{cty.StringVal("172.16.1.0/24")}),
+			config: map[string]interface{}{
+				"allowed_prefixes_mode": "MatchMode",
+				"allowed_prefixes":      []interface{}{"172.16.1.0/24"},
+			},
+		},
+		{
+			name:     "mode_with_empty_prefix_is_rejected",
+			mode:     cty.StringVal("MatchMode"),
+			prefixes: cty.ListValEmpty(cty.String),
+			config: map[string]interface{}{
+				"allowed_prefixes_mode": "MatchMode",
+				"allowed_prefixes":      []interface{}{},
+			},
+			wantErr: true,
+		},
+		{
+			name:     "null_mode_is_valid",
+			mode:     cty.NullVal(cty.String),
+			prefixes: cty.ListValEmpty(cty.String),
+			config: map[string]interface{}{
+				"allowed_prefixes": []interface{}{},
+			},
+		},
+		{
+			name:     "empty_mode_is_valid",
+			mode:     cty.StringVal(""),
+			prefixes: cty.ListValEmpty(cty.String),
+			config: map[string]interface{}{
+				"allowed_prefixes_mode": "",
+				"allowed_prefixes":      []interface{}{},
+			},
+		},
+		{
+			name:     "unknown_prefix_is_skipped",
+			mode:     cty.StringVal("IncrementalMode"),
+			prefixes: cty.UnknownVal(cty.List(cty.String)),
+			config: map[string]interface{}{
+				"allowed_prefixes_mode": "IncrementalMode",
+				"allowed_prefixes":      "74D93920-ED26-11E3-AC10-0800200C9A66",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			config := vpcAssociationUnitConfig()
+			for key, value := range tc.config {
+				config[key] = value
+			}
+			state := vpcAssociationUnitState(nil)
+			state.RawConfig = vpcAssociationRawConfigWithValues(config, tc.mode, tc.prefixes)
+			_, err := expressconnectrouter.ResourceVpcAssociation().Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), nil)
+			if tc.wantErr && (err == nil || !containsAll(err.Error(), "allowed_prefixes_mode", "non-empty", "allowed_prefixes")) {
+				t.Fatalf("validation error = %v, want the local combination error", err)
+			}
+			if !tc.wantErr && err != nil {
+				t.Fatalf("unexpected validation error: %v", err)
+			}
+		})
+	}
+}
+
+func TestUnitDescribeVpcAssociationTargetIdentity(t *testing.T) {
+	client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+		}
+		if r.Form.Get("Action") != "DescribeExpressConnectRouterAssociation" {
+			t.Errorf("unexpected action %q", r.Form.Get("Action"))
+		}
+		writeVpcAssociationJSON(t, w, http.StatusOK, map[string]interface{}{
+			"RequestId": "unit-test",
+			"AssociationList": []map[string]interface{}{
+				{
+					"AssociationId":       "assoc-a",
+					"AssociationNodeType": "VPC",
+					"EcrId":               "ecr-1",
+					"VpcId":               "vpc-a",
+					"Status":              "ACTIVE",
+					"Description":         "same-description",
+				},
+				{
+					"AssociationId":       "assoc-b",
+					"AssociationNodeType": "VPC",
+					"EcrId":               "ecr-1",
+					"VpcId":               "vpc-b",
+					"Status":              "ACTIVE",
+					"Description":         "same-description",
+				},
+			},
+		})
+	})
+	service := expressconnectrouter.NewService(client)
+
+	object, err := service.DescribeExpressConnectRouterExpressConnectRouterVpcAssociation("ecr-1:assoc-b:vpc-b")
+	if err != nil {
+		t.Fatalf("describe association B: %v", err)
+	}
+	if got := object["AssociationId"]; got != "assoc-b" {
+		t.Fatalf("describe B returned association %v, want assoc-b", got)
+	}
+
+	if _, err := service.DescribeExpressConnectRouterExpressConnectRouterVpcAssociation("ecr-1:assoc-c:vpc-c"); !errs.NotFoundError(err) {
+		t.Fatalf("missing association C error = %v, want NotFound even though A exists", err)
+	}
+}
+
+func formHasArrayValue(form url.Values, key, want string) bool {
+	prefix := key + "."
+	for formKey, values := range form {
+		if formKey != key && !strings.HasPrefix(formKey, prefix) {
+			continue
+		}
+		for _, value := range values {
+			if value == want {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func containsAll(value string, substrings ...string) bool {
+	for _, substring := range substrings {
+		if !strings.Contains(value, substring) {
+			return false
+		}
+	}
+	return true
+}

@@ -27,15 +27,13 @@ import (
 // unsupported feature and not-found) are deliberately absent so they fail fast.
 var (
 	// vpcAssociationRetryWait is a factory so every lifecycle operation owns its
-	// own backoff state; unit tests replace it to keep retries immediate.
+	// own backoff state.
 	vpcAssociationRetryWait = func() func() {
 		return helper.IncrementalWait(3*time.Second, 5*time.Second)
 	}
-	// vpcAssociationStateWaitDelay is the first state poll delay; unit tests set
-	// it to zero so the mocked ACTIVE state is observed immediately.
 	vpcAssociationStateWaitDelay = 5 * time.Second
-	// vpcAssociationNow is the clock behind the update budget; unit tests shift
-	// it to prove that sequential writes share one deadline.
+	// vpcAssociationNow is the clock behind the update budget shared by the
+	// sequential writes and their state waits.
 	vpcAssociationNow = time.Now
 )
 
