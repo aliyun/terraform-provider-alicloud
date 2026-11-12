@@ -402,10 +402,9 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 				Computed: true,
 			},
 			"http_put_response_hop_limit": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.IntBetween(1, 64),
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"image_options": {
 				Type:     schema.TypeList,

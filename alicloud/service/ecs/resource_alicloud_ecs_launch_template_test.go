@@ -634,7 +634,6 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 					},
 					"instance_type": REMOVEKEY,
 				}),
-				PlanOnly: true,
 			},
 		},
 	})

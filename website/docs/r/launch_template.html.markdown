@@ -18,8 +18,31 @@ For information about Launch Template and how to use it, see [Launch Template](h
 ## Example Usage
 
 ```terraform
+data "alicloud_zones" "default" {
+  available_disk_category     = "cloud_efficiency"
+  available_resource_creation = "VSwitch"
+}
+
 data "alicloud_images" "images" {
-  owners = "system"
+  name_regex = "^ubuntu_18.*64"
+  owners     = "system"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.17.3.0/24"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = "terraform-example"
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  security_group_name = "terraform-example"
+  vpc_id              = alicloud_vpc.default.id
 }
 
 resource "alicloud_launch_template" "template" {
@@ -32,24 +55,23 @@ resource "alicloud_launch_template" "template" {
   instance_type                 = "ecs.s6-c1m1.small"
   internet_charge_type          = "PayByBandwidth"
   internet_max_bandwidth_in     = 5
-  internet_max_bandwidth_out    = 0
-  io_optimized                  = "none"
+  internet_max_bandwidth_out    = 5
+  io_optimized                  = "optimized"
   key_pair_name                 = "tf-key-pair"
   ram_role_name                 = "xxxxx"
   network_type                  = "vpc"
   security_enhancement_strategy = "Active"
   spot_price_limit              = 5
   spot_strategy                 = "SpotWithPriceLimit"
-  security_group_id             = "sg-zxcvj0lasdf102350asdf9a"
+  security_group_id             = alicloud_security_group.default.id
   system_disk_category          = "cloud_ssd"
   system_disk_description       = "test disk"
   system_disk_name              = "hello"
   system_disk_size              = 40
-  resource_group_id             = "rg-zkdfjahg9zxncv0"
   userdata                      = "xxxxxxxxxxxxxx"
-  vswitch_id                    = "sw-ljkngaksdjfj0nnasdf"
-  vpc_id                        = "vpc-asdfnbg0as8dfk1nb2"
-  zone_id                       = "beijing-a"
+  vswitch_id                    = alicloud_vswitch.default.id
+  vpc_id                        = alicloud_vpc.default.id
+  zone_id                       = data.alicloud_zones.default.zones.0.id
 
   tags = {
     tag1 = "hello"
@@ -59,8 +81,8 @@ resource "alicloud_launch_template" "template" {
     name              = "eth0"
     description       = "hello1"
     primary_ip        = "10.0.0.2"
-    security_group_id = "xxxx"
-    vswitch_id        = "xxxxxxx"
+    security_group_id = alicloud_security_group.default.id
+    vswitch_id        = alicloud_vswitch.default.id
   }
   data_disks {
     name        = "disk1"
