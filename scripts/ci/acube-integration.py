@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -126,7 +127,7 @@ class Client:
                 error.close()
                 if not safe or error.code not in (429, 502, 503, 504) or attempt == 9 or time.monotonic() >= deadline:
                     raise ValueError('ACube HTTP ' + str(error.code)) from None
-            except (urllib.error.URLError, TimeoutError):
+            except (urllib.error.URLError, TimeoutError, socket.timeout):
                 if not safe or attempt == 9 or time.monotonic() >= deadline:
                     raise ValueError('ACube unavailable; rerun the same CI run to recover the original receipt') from None
             print(json.dumps({'acubeRetry': attempt + 1, 'method': method, 'path': path}), flush=True)

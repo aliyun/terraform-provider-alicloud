@@ -48,9 +48,10 @@ class IntegrationTest(unittest.TestCase):
         response = io.BytesIO(b'{"code":"SUCCESS","data":{"TestAccOne":28427}}')
         response.headers = {'X-AccTest-Reuse-Query': 'complete-v1'}
         failures = [m.urllib.error.HTTPError(m.BASE_URL, 502, 'gateway', {}, io.BytesIO()) for _ in range(5)]
+        failures.append(m.socket.timeout('read operation timed out'))
         with patch.object(client.opener, 'open', side_effect=failures + [response]) as opened, patch.object(m.time, 'sleep') as sleep:
             self.assertEqual(m.reusable_cases(client, self.request()), {'TestAccOne': '28427'})
-            self.assertEqual(sleep.call_count, 5)
+            self.assertEqual(sleep.call_count, 6)
             self.assertTrue(all(c.args[0].full_url.endswith('/acctest/reusable-cases') for c in opened.call_args_list))
 
     def test_reuse_http_failure_cannot_become_a_miss_or_submit_acc(self):
