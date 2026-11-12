@@ -52,6 +52,8 @@ def plan(base, head, include_examples=True):
     packages, docs = {}, set()
     for file in files:
         name = Path(file).name
+        if name.endswith('_unit_test.go'):
+            continue
         source = file.startswith('alicloud/') and name.endswith('.go') and name.startswith(
             ('resource_', 'data_source_', 'ephemeral_', 'action_', 'list_'))
         if source:

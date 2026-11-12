@@ -84,7 +84,7 @@ func TestValidateAllowedStringSplitValue(t *testing.T) {
 func TestValidateStringConvertInt64(t *testing.T) {
 	_, errors := ValidateStringConvertInt64()(math.MaxInt64, "name")
 	if len(errors) == 0 {
-		t.Fatalf("%q cannot convert to int64", 110)
+		t.Fatalf("%d cannot convert to int64", 110)
 	}
 
 	_, errors = ValidateStringConvertInt64()("abcd", "name")
@@ -99,7 +99,7 @@ func TestValidateStringConvertInt64(t *testing.T) {
 
 	_, errors = ValidateStringConvertInt64()(strconv.FormatInt(math.MaxInt64, 10), "name")
 	if len(errors) != 0 {
-		t.Fatalf("%q can convert to int64", math.MaxInt64)
+		t.Fatalf("%d can convert to int64", math.MaxInt64)
 	}
 
 }

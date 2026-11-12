@@ -138,6 +138,12 @@ func ResourceCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"support_policy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validators.StringInSlice([]string{"Standard", "Extended"}, false),
+			},
 			"version": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -665,6 +671,10 @@ func resourceCSManagedKubernetesCreate(d *schema.ResourceData, meta interface{})
 		request.SetProfile(v.(string))
 	}
 
+	if v, ok := d.GetOk("support_policy"); ok {
+		request.SetSupportPolicy(v.(string))
+	}
+
 	if v, ok := d.GetOk("version"); ok {
 		request.SetKubernetesVersion(v.(string))
 	}
@@ -921,6 +931,12 @@ func resourceCSManagedKubernetesRead(d *schema.ResourceData, meta interface{}) e
 		d.Set("deletion_protection", object.DeletionProtection)
 	}
 
+	policy := tea.StringValue(object.SupportPolicy)
+	if policy == "" {
+		policy = "Standard"
+	}
+	d.Set("support_policy", policy)
+
 	if object.CurrentVersion != nil {
 		d.Set("version", object.CurrentVersion)
 	}
@@ -1133,9 +1149,16 @@ func resourceCSManagedKubernetesRead(d *schema.ResourceData, meta interface{}) e
 func resourceCSManagedKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true)
 	invoker := helper.NewInvoker()
+	// A cluster must be Pro before it can enable extended support.
+	if d.HasChange("cluster_spec") {
+		if err := migrateCluster(d, meta); err != nil {
+			return errs.WrapError(err)
+		}
+	}
+
 	// modifyCluster
 	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "maintenance_window", "operation_policy",
-		"custom_san", "vswitch_ids", "timezone", "security_group_id", "enable_rrsa", "control_plane_endpoints_config") {
+		"custom_san", "vswitch_ids", "timezone", "security_group_id", "enable_rrsa", "control_plane_endpoints_config", "support_policy") {
 		if err := modifyManagedK8sCluster(d, meta, &invoker); err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "ModifyCluster", errs.AlibabaCloudSdkGoERROR)
 		}
@@ -1159,14 +1182,6 @@ func resourceCSManagedKubernetesUpdate(d *schema.ResourceData, meta interface{})
 	if d.HasChange("audit_log_config") {
 		if err := updateClusterAuditConfig(d, meta); err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "UpdateClusterAuditConfig", errs.AlibabaCloudSdkGoERROR)
-		}
-	}
-
-	// migrate cluster to pro from standard
-	if d.HasChange("cluster_spec") {
-		err := migrateCluster(d, meta)
-		if err != nil {
-			return errs.WrapError(err)
 		}
 	}
 
@@ -1711,6 +1726,11 @@ func modifyManagedK8sCluster(d *schema.ResourceData, meta interface{}, invoker *
 		}
 	}
 
+	if !d.IsNewResource() && d.HasChange("support_policy") {
+		request.SetSupportPolicy(d.Get("support_policy").(string))
+		updated = true
+	}
+
 	if updated == false {
 		return nil
 	}
@@ -1727,6 +1747,11 @@ func modifyManagedK8sCluster(d *schema.ResourceData, meta interface{}, invoker *
 		return nil
 	}
 	taskId := tea.StringValue(resp.Body.TaskId)
+	// Policy-only changes are synchronous and do not create a task.
+	if taskId == "" {
+		return nil
+	}
+
 	c := CsClient{client: csClient}
 	stateConf := helper.BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, c.DescribeTaskRefreshFunc(d, taskId, []string{"fail", "failed"}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {

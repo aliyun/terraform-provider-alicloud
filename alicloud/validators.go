@@ -95,7 +95,7 @@ func validateSslVpnPortValue(is []int) schema.SchemaValidateFunc {
 		for _, i := range is {
 			if i == value {
 				errors = append(errors, fmt.Errorf(
-					"%q must contain a valid int value should not be in array %#v, got %q",
+					"%q must contain a valid int value should not be in array %#v, got %d",
 					k, is, value))
 				return
 			}
