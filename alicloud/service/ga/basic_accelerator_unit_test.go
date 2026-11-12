@@ -5,6 +5,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
@@ -304,12 +305,7 @@ func TestUnitAliCloudGaBasicAcceleratorPaymentMapping(t *testing.T) {
 		assert.Nil(t, d.Set(key, value))
 	}
 
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := unitTestSharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		return
-	}
+	rawClient := &connectivity.AliyunClient{RegionId: "cn-hangzhou"}
 
 	createRequest := map[string]interface{}{}
 	readResponse := map[string]interface{}{
@@ -319,16 +315,23 @@ func TestUnitAliCloudGaBasicAcceleratorPaymentMapping(t *testing.T) {
 		"InstanceChargeType":   "PREPAY",
 		"State":                "active",
 	}
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, queries map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-		if *action == "CreateBasicAccelerator" {
-			for key, value := range queries {
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(rawClient), "GetRetryTimeout", func(_ *connectivity.AliyunClient, defaultTimeout time.Duration) time.Duration {
+		return defaultTimeout
+	})
+	defer patches.Reset()
+	patches.ApplyMethod(reflect.TypeOf(rawClient), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, apiName string, query map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
+		switch apiName {
+		case "CreateBasicAccelerator":
+			for key, value := range query {
 				createRequest[key] = value
 			}
 			return map[string]interface{}{"AcceleratorId": "ga-basic-accelerator-id"}, nil
+		case "ListTagResources":
+			return map[string]interface{}{}, nil
+		default:
+			return readResponse, nil
 		}
-		return readResponse, nil
 	})
-	defer patches.Reset()
 
 	assert.Nil(t, resourceAliCloudGaBasicAcceleratorCreate(d, rawClient))
 	assert.Equal(t, "POSTPAY", createRequest["ChargeType"])
