@@ -110,7 +110,9 @@ func ResourceUserPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) 
 		return errs.WrapError(err)
 	}
 
-	d.Set("policy_name", objectRaw["PolicyName"])
+	// policy_name is ForceNew, so it must keep the casing in the ID (the user's input) instead of the
+	// canonical casing returned by the API, otherwise every plan produces a forced replacement.
+	d.Set("policy_name", parts[1])
 	d.Set("policy_type", objectRaw["PolicyType"])
 	d.Set("user_name", parts[3])
 

@@ -99,6 +99,50 @@ func TestAccAliCloudRamUserPolicyAttachment_basic9643(t *testing.T) {
 	})
 }
 
+// Case UserPolicyAttachment_LowercaseSystemPolicyName
+func TestAccAliCloudRamUserPolicyAttachment_lowercaseSystemPolicyName(t *testing.T) {
+	resourceId := "alicloud_ram_user_policy_attachment.default"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudRamUserPolicyAttachmentBasicDependence9642)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy_type": "System",
+					"user_name":   "${alicloud_ram_user.default4nWJxj.name}",
+					"policy_name": "aliyunecsfullaccess",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "policy_name", "aliyunecsfullaccess"),
+					resource.TestCheckResourceAttr(resourceId, "policy_type", "System"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Import IDs written with a non-canonical policy name/type casing must resolve too.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateId:     fmt.Sprintf("user:aliyunecsfullaccess:system:%s", name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "policy_name", "aliyunecsfullaccess"),
+					resource.TestCheckResourceAttr(resourceId, "policy_type", "System"),
+					resource.TestCheckResourceAttr(resourceId, "user_name", name),
+				),
+			},
+		},
+	})
+}
+
 var AliCloudRamUserPolicyAttachmentMap9642 = map[string]string{}
 
 func AliCloudRamUserPolicyAttachmentBasicDependence9642(name string) string {

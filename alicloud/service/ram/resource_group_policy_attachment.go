@@ -106,10 +106,15 @@ func ResourceGroupPolicyAttachmentRead(d *schema.ResourceData, meta interface{})
 		return errs.WrapError(err)
 	}
 
-	d.Set("policy_name", objectRaw["PolicyName"])
-	d.Set("policy_type", objectRaw["PolicyType"])
+	parts, err := helper.ParseResourceId(d.Id(), 4)
+	if err != nil {
+		return errs.WrapError(err)
+	}
 
-	parts := strings.Split(d.Id(), ":")
+	// policy_name is ForceNew, so it must keep the casing in the ID (the user's input) instead of the
+	// canonical casing returned by the API, otherwise every plan produces a forced replacement.
+	d.Set("policy_name", parts[1])
+	d.Set("policy_type", objectRaw["PolicyType"])
 	d.Set("group_name", parts[3])
 
 	return nil
