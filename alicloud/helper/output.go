@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/user"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // GetUserHomeDir returns the current user's home directory.
@@ -67,4 +69,16 @@ func DataResourceIdHash(ids []string) string {
 	}
 
 	return fmt.Sprintf("%d", Hashcode(buf.String()))
+}
+
+func DataResourceWriteOutputFile(output types.String, objects []map[string]interface{}) error {
+	if output.IsNull() || output.IsUnknown() || output.ValueString() == "" {
+		return nil
+	}
+
+	if err := WriteToFile(output.ValueString(), objects); err != nil {
+		return err
+	}
+
+	return nil
 }

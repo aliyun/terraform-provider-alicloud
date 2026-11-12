@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"reflect"
 	"sort"
 	"strconv"
@@ -370,6 +371,59 @@ func Interface2Bool(i interface{}) bool {
 		return i.(bool)
 	default:
 		return false
+	}
+}
+
+// Interface2Int32 converts i to int32 only when its value genuinely fits in the
+// int32 range. A value that overflows int32 (e.g. a full-width int64) is not
+// representable, so it is treated as unconvertible and yields 0 rather than
+// silently wrapping to a garbage value like int32(math.MaxInt64) == -1.
+func Interface2Int32(i interface{}) int32 {
+	if i == nil {
+		return 0
+	}
+	// json.Number's Kind is String, so handle it before the Kind switch to keep
+	// its integer value intact rather than going through the plain-string path.
+	if n, ok := i.(json.Number); ok {
+		v, err := n.Int64()
+		if err != nil || v > math.MaxInt32 || v < math.MinInt32 {
+			return 0
+		}
+		return int32(v)
+	}
+	switch reflect.TypeOf(i).Kind() {
+	case reflect.String:
+		// ParseInt with bitSize 32 returns ErrRange on overflow; reject it.
+		v, err := strconv.ParseInt(i.(string), 10, 32)
+		if err != nil {
+			return 0
+		}
+		return int32(v)
+	case reflect.Bool:
+		if i.(bool) {
+			return 1
+		}
+		return 0
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		v := reflect.ValueOf(i).Int()
+		if v > math.MaxInt32 || v < math.MinInt32 {
+			return 0
+		}
+		return int32(v)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		v := reflect.ValueOf(i).Uint()
+		if v > math.MaxInt32 {
+			return 0
+		}
+		return int32(v)
+	case reflect.Float32, reflect.Float64:
+		v := reflect.ValueOf(i).Float()
+		if v > math.MaxInt32 || v < math.MinInt32 {
+			return 0
+		}
+		return int32(v)
+	default:
+		return 0
 	}
 }
 
