@@ -40,6 +40,9 @@ func ResourceAckNodepool() *schema.Resource {
 			Update: schema.DefaultTimeout(60 * time.Minute),
 			Delete: schema.DefaultTimeout(60 * time.Minute),
 		},
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+			validateNodePoolAutoRepairPolicyConflict(),
+		},
 		Schema: map[string]*schema.Schema{
 			"auto_mode": {
 				Type:     schema.TypeList,
@@ -625,9 +628,27 @@ func ResourceAckNodepool() *schema.Resource {
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"restart_node": {
-										Type:     schema.TypeBool,
+										Type:       schema.TypeBool,
+										Optional:   true,
+										Computed:   true,
+										Deprecated: "Field 'management.auto_repair_policy.restart_node' has been deprecated from provider version 2.3.0. Use 'management.auto_repair_policy.auto_repair_policy_id' instead: set it to 'r-repair-sys-comp-failure' to replace restart_node = true, or to 'r-repair-sys-comp-failure-without-reboots' to replace restart_node = false. When both are set, auto_repair_policy_id takes precedence and restart_node is ignored.",
+									},
+									"auto_repair_policy_id": {
+										Type:     schema.TypeString,
 										Optional: true,
 										Computed: true,
+									},
+									"max_parallel_repairing_nodes": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										Computed:     true,
+										ValidateFunc: validateCSAutoRepairRateLimit,
+									},
+									"max_unhealthy_nodes_threshold": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										Computed:     true,
+										ValidateFunc: validateCSAutoRepairRateLimit,
 									},
 								},
 							},
@@ -1833,6 +1854,18 @@ func resourceAckNodepoolCreate(d *schema.ResourceData, meta interface{}) error {
 		if restartNode1 != nil && restartNode1 != "" {
 			auto_repair_policy["restart_node"] = restartNode1
 		}
+		autoRepairPolicyId, _ := jsonpath.Get("$[0].auto_repair_policy[0].auto_repair_policy_id", d.Get("management"))
+		if autoRepairPolicyId != nil && autoRepairPolicyId != "" {
+			auto_repair_policy["auto_repair_policy_id"] = autoRepairPolicyId
+		}
+		maxParallelRepairingNodes, _ := jsonpath.Get("$[0].auto_repair_policy[0].max_parallel_repairing_nodes", d.Get("management"))
+		if maxParallelRepairingNodes != nil && maxParallelRepairingNodes != "" {
+			auto_repair_policy["max_parallel_repairing_nodes"] = maxParallelRepairingNodes
+		}
+		maxUnhealthyNodesThreshold, _ := jsonpath.Get("$[0].auto_repair_policy[0].max_unhealthy_nodes_threshold", d.Get("management"))
+		if maxUnhealthyNodesThreshold != nil && maxUnhealthyNodesThreshold != "" {
+			auto_repair_policy["max_unhealthy_nodes_threshold"] = maxUnhealthyNodesThreshold
+		}
 
 		if len(auto_repair_policy) > 0 {
 			management["auto_repair_policy"] = auto_repair_policy
@@ -2347,12 +2380,27 @@ func resourceAckNodepoolRead(d *schema.ResourceData, meta interface{}) error {
 		}
 		if len(auto_repair_policyRaw) > 0 {
 			autoRepairPolicyMap["restart_node"] = auto_repair_policyRaw["restart_node"]
+			if v, ok := auto_repair_policyRaw["auto_repair_policy_id"]; ok && v != nil {
+				autoRepairPolicyMap["auto_repair_policy_id"] = v
+			}
+			if v, ok := auto_repair_policyRaw["max_parallel_repairing_nodes"]; ok && v != nil {
+				autoRepairPolicyMap["max_parallel_repairing_nodes"] = v
+			}
+			if v, ok := auto_repair_policyRaw["max_unhealthy_nodes_threshold"]; ok && v != nil {
+				autoRepairPolicyMap["max_unhealthy_nodes_threshold"] = v
+			}
 
 			autoRepairPolicyMaps = append(autoRepairPolicyMaps, autoRepairPolicyMap)
 		} else if v, err := jsonpath.Get("$[0].auto_repair_policy[0].restart_node", d.Get("management")); err == nil && v != nil {
 			// the API omits the policy object when the feature is disabled;
 			// keep the configured value to avoid a perpetual diff
-			autoRepairPolicyMaps = append(autoRepairPolicyMaps, map[string]interface{}{"restart_node": v})
+			autoRepairPolicyMap = map[string]interface{}{"restart_node": v}
+			for _, key := range []string{"auto_repair_policy_id", "max_parallel_repairing_nodes", "max_unhealthy_nodes_threshold"} {
+				if configured, err := jsonpath.Get(fmt.Sprintf("$[0].auto_repair_policy[0].%s", key), d.Get("management")); err == nil && configured != nil && configured != "" {
+					autoRepairPolicyMap[key] = configured
+				}
+			}
+			autoRepairPolicyMaps = append(autoRepairPolicyMaps, autoRepairPolicyMap)
 		}
 		managementMap["auto_repair_policy"] = autoRepairPolicyMaps
 		autoUpgradePolicyMaps := make([]map[string]interface{}, 0)
@@ -2516,6 +2564,29 @@ func resourceAckNodepoolRead(d *schema.ResourceData, meta interface{}) error {
 
 	d.Set("name", d.Get("node_pool_name"))
 	return nil
+}
+
+// autoRepairPolicyUpdatePayload builds the auto_repair_policy block of an update request
+// from the merged configuration and state.
+func autoRepairPolicyUpdatePayload(d *schema.ResourceData) map[string]interface{} {
+	management := d.Get("management")
+	policy := make(map[string]interface{})
+	if restartNode, _ := jsonpath.Get("$[0].auto_repair_policy[0].restart_node", management); restartNode != nil && restartNode != "" {
+		policy["restart_node"] = restartNode
+	}
+	// The service derives an id from the deprecated restart_node switch and only
+	// injects it into responses, so echoing the value held in state would persist
+	// the derived binding and silently disable restart_node for that pool.
+	if policyID, _ := jsonpath.Get("$[0].auto_repair_policy[0].auto_repair_policy_id", management); policyID != nil && autoRepairPolicyIDConfigured(d.GetRawConfig()) {
+		policy["auto_repair_policy_id"] = policyID
+	}
+	if maxParallelRepairingNodes, _ := jsonpath.Get("$[0].auto_repair_policy[0].max_parallel_repairing_nodes", management); maxParallelRepairingNodes != nil {
+		policy["max_parallel_repairing_nodes"] = maxParallelRepairingNodes
+	}
+	if maxUnhealthyNodesThreshold, _ := jsonpath.Get("$[0].auto_repair_policy[0].max_unhealthy_nodes_threshold", management); maxUnhealthyNodesThreshold != nil {
+		policy["max_unhealthy_nodes_threshold"] = maxUnhealthyNodesThreshold
+	}
+	return policy
 }
 
 func resourceAckNodepoolUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -3165,12 +3236,7 @@ func resourceAckNodepoolUpdate(d *schema.ResourceData, meta interface{}) error {
 			if len(auto_vul_fix_policy) > 0 {
 				management["auto_vul_fix_policy"] = auto_vul_fix_policy
 			}
-			auto_repair_policy := make(map[string]interface{})
-			restartNode1, _ := jsonpath.Get("$[0].auto_repair_policy[0].restart_node", d.Get("management"))
-			if restartNode1 != nil && restartNode1 != "" {
-				auto_repair_policy["restart_node"] = restartNode1
-			}
-
+			auto_repair_policy := autoRepairPolicyUpdatePayload(d)
 			if len(auto_repair_policy) > 0 {
 				management["auto_repair_policy"] = auto_repair_policy
 			}
@@ -4059,4 +4125,25 @@ func isKubeletValueEmpty(v interface{}) bool {
 		return len(t) == 0
 	}
 	return false
+}
+
+// validateCSAutoRepairRateLimit accepts either an absolute node count
+// (1~100000) or a percentage in (0%, 100%].
+func validateCSAutoRepairRateLimit(v interface{}, k string) (ws []string, es []error) {
+	value, ok := v.(string)
+	if !ok || value == "" {
+		return
+	}
+	if strings.HasSuffix(value, "%") {
+		percent, err := strconv.ParseFloat(strings.TrimSuffix(value, "%"), 64)
+		if err != nil || percent <= 0 || percent > 100 {
+			es = append(es, fmt.Errorf("%q must be a percentage in (0%%, 100%%], got %q", k, value))
+		}
+		return
+	}
+	count, err := strconv.ParseInt(value, 10, 64)
+	if err != nil || count < 1 || count > 100000 {
+		es = append(es, fmt.Errorf("%q must be an integer between 1 and 100000, or a percentage in (0%%, 100%%], got %q", k, value))
+	}
+	return
 }

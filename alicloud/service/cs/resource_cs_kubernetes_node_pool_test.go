@@ -8463,6 +8463,132 @@ func TestAccAliCloudAckNodepool_ResourcePoolOptions(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudCSKubernetesNodePool_autoRepairPolicy(t *testing.T) {
+	var v map[string]interface{}
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.default"
+	ra := acctest.ResourceAttrInit(resourceId, map[string]string{})
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cs.NewAckServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeAckNodepool")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePoolAutoRepair-%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceCSAutoRepairPolicyNodePoolConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// auto repair is enabled with the service default policy
+				Config: testAccConfig(map[string]interface{}{
+					"name":                 "${var.name}",
+					"cluster_id":           "${alicloud_cs_managed_kubernetes.default.id}",
+					"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+					"instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"key_name":             "${alicloud_key_pair.default.key_name}",
+					"system_disk_category": "cloud_efficiency",
+					"system_disk_size":     40,
+					"desired_size":         1,
+					"management": []map[string]interface{}{
+						{
+							"enable":      "true",
+							"auto_repair": "true",
+						},
+					},
+					"depends_on": []string{"alicloud_cs_kubernetes_addon.nlc", "alicloud_cs_kubernetes_addon.npd"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"management.0.auto_repair": "true",
+					}),
+				),
+			},
+			{
+				// binding a custom policy with rate limits adds the block
+				Config: testAccConfig(map[string]interface{}{
+					"management": []map[string]interface{}{
+						{
+							"enable":      "true",
+							"auto_repair": "true",
+							"auto_repair_policy": []map[string]interface{}{
+								{
+									"auto_repair_policy_id":         "${alicloud_cs_auto_repair_policy.default.policy_id}",
+									"max_parallel_repairing_nodes":  "2",
+									"max_unhealthy_nodes_threshold": "10",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"management.0.auto_repair_policy.0.auto_repair_policy_id":         acctest.CHECKSET,
+						"management.0.auto_repair_policy.0.max_parallel_repairing_nodes":  "2",
+						"management.0.auto_repair_policy.0.max_unhealthy_nodes_threshold": "10",
+					}),
+				),
+			},
+			{
+				// the rate limits are updated in place
+				Config: testAccConfig(map[string]interface{}{
+					"management": []map[string]interface{}{
+						{
+							"enable":      "true",
+							"auto_repair": "true",
+							"auto_repair_policy": []map[string]interface{}{
+								{
+									"auto_repair_policy_id":         "${alicloud_cs_auto_repair_policy.default.policy_id}",
+									"max_parallel_repairing_nodes":  "3",
+									"max_unhealthy_nodes_threshold": "20",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"management.0.auto_repair_policy.0.max_parallel_repairing_nodes":  "3",
+						"management.0.auto_repair_policy.0.max_unhealthy_nodes_threshold": "20",
+					}),
+				),
+			},
+		},
+	})
+}
+
+// The following TypeLists predate the auto repair policy work and have no member
+// order coverage of their own. They are untouched by this change; each marker is
+// stock debt that a separate change should retire by adding a convergent reorder
+// acceptance test.
+//
+// collection-order: bypass containerd_config.insecure_registries -- pre-existing stock TypeList outside this change
+// collection-order: bypass containerd_config.registry_mirrors -- pre-existing stock TypeList outside this change
+// collection-order: bypass data_disks -- pre-existing stock TypeList outside this change
+// collection-order: bypass instance_patterns -- pre-existing stock TypeList outside this change
+// collection-order: bypass instance_patterns.cpu_architectures -- pre-existing stock TypeList outside this change
+// collection-order: bypass instance_patterns.excluded_instance_types -- pre-existing stock TypeList outside this change
+// collection-order: bypass instance_patterns.instance_categories -- pre-existing stock TypeList outside this change
+// collection-order: bypass instance_patterns.instance_type_families -- pre-existing stock TypeList outside this change
+// collection-order: bypass instance_types -- pre-existing stock TypeList outside this change
+// collection-order: bypass instances -- pre-existing stock TypeList outside this change
+// collection-order: bypass kubelet_configuration.allowed_unsafe_sysctls -- pre-existing stock TypeList outside this change
+// collection-order: bypass kubelet_configuration.cluster_dns -- pre-existing stock TypeList outside this change
+// collection-order: bypass kubelet_configuration.reserved_memory -- pre-existing stock TypeList outside this change
+// collection-order: bypass labels -- pre-existing stock TypeList outside this change
+// collection-order: bypass rds_instances -- pre-existing stock TypeList outside this change
+// collection-order: bypass resource_pool_options.private_pool_ids -- pre-existing stock TypeList outside this change
+// collection-order: bypass rolling_policy.node_names -- pre-existing stock TypeList outside this change
+// collection-order: bypass spot_price_limit -- pre-existing stock TypeList outside this change
+// collection-order: bypass system_disk_categories -- pre-existing stock TypeList outside this change
+// collection-order: bypass taints -- pre-existing stock TypeList outside this change
 func TestAccAliCloudCSKubernetesNodePool_collectionOrder(t *testing.T) {
 	var v *aliyungocs.NodePoolDetail
 
