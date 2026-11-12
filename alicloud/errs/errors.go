@@ -472,3 +472,35 @@ func IsProviderNotFound(err error) bool {
 	}
 	return false
 }
+
+// IsAccessDenied reports whether err is a RAM/permission access-denied response
+// (HTTP 403) surfaced by an Alibaba Cloud RPC call. It traverses *ComplexError
+// the same way IsExpectedErrors does — by following Cause, not errors.As —
+// because ComplexError intentionally carries no Unwrap method, so errors.As
+// cannot reach the wrapped *tea.SDKError through it.
+//
+// Resources use this to tolerate supplementary read-only collection calls that
+// were added after a resource shipped: when the caller's RAM role lacks the new
+// action, the core resource has already been read successfully, so a 403 on the
+// supplementary list API should leave that computed field unset rather than
+// fail refresh/update and break existing minimal-permission identities. Other
+// failures (4xx InvalidParameter, 5xx, not-found, etc.) are not access-denied
+// and must still propagate.
+func IsAccessDenied(err error) bool {
+	if err == nil {
+		return false
+	}
+	if e, ok := err.(*ComplexError); ok {
+		return IsAccessDenied(e.Cause)
+	}
+	if e, ok := err.(*tea.SDKError); ok {
+		return tea.IntValue(e.StatusCode) == 403
+	}
+	// Fall back to errors.As for any other wrapping that implements Unwrap
+	// (e.g. a retry.RetryError), in case the SDK error sits behind such a layer.
+	var s *tea.SDKError
+	if stderrors.As(err, &s) {
+		return tea.IntValue(s.StatusCode) == 403
+	}
+	return false
+}

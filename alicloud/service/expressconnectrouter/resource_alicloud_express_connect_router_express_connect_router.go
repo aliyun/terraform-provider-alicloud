@@ -2,6 +2,7 @@
 package expressconnectrouter
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
@@ -226,11 +227,23 @@ func resourceExpressConnectRouterRead(d *schema.ResourceData, meta interface{}) 
 
 	// disabled_route_entries is a read-only view of the route entries that are
 	// currently disabled on the ECR, listed via DescribeDisabledExpressConnectRouterRouteEntries.
+	// It is a supplementary collection added after the resource shipped. The action
+	// expressconnectrouter:DescribeDisabledExpressConnectRouterRouteEntries is an
+	// independent RAM permission; existing identities with a minimal policy that
+	// predates this field lack it and receive a 403. Tolerate that case by leaving
+	// the computed field unset and continuing the Read instead of failing refresh
+	// and update. Any other error (e.g. InvalidParameter) still propagates.
 	disabledRouteEntriesMaps := make([]map[string]interface{}, 0)
+	disabledRouteEntriesAccessDenied := false
 	nextToken := ""
 	for {
 		routeResp, err := expressConnectRouterServiceV2.DescribeDescribeDisabledExpressConnectRouterRouteEntries(d.Id(), nextToken)
 		if err != nil {
+			if errs.IsAccessDenied(err) {
+				log.Printf("[DEBUG] Resource alicloud_express_connect_router: DescribeDisabledExpressConnectRouterRouteEntries returned access denied (the RAM role likely lacks expressconnectrouter:DescribeDisabledExpressConnectRouterRouteEntries); leaving disabled_route_entries unset and continuing Read: %s", err)
+				disabledRouteEntriesAccessDenied = true
+				break
+			}
 			return errs.WrapError(err)
 		}
 		if list, ok := routeResp["DisabledRouteEntryList"].([]interface{}); ok {
@@ -254,15 +267,28 @@ func resourceExpressConnectRouterRead(d *schema.ResourceData, meta interface{}) 
 			break
 		}
 	}
-	d.Set("disabled_route_entries", disabledRouteEntriesMaps)
+	if !disabledRouteEntriesAccessDenied {
+		d.Set("disabled_route_entries", disabledRouteEntriesMaps)
+	}
 
 	// granted_instances is a read-only view of the network instances granted to
-	// the ECR, listed via DescribeInstanceGrantedToExpressConnectRouter.
+	// the ECR, listed via DescribeInstanceGrantedToExpressConnectRouter. As with
+	// disabled_route_entries, this is a supplementary collection whose action
+	// expressconnectrouter:DescribeInstanceGrantedToExpressConnectRouter is an
+	// independent RAM permission; existing minimal-permission identities receive
+	// a 403 and must not see their refresh/update break, so tolerate access-denied
+	// by leaving the field unset. Any other error still propagates.
 	grantedInstancesMaps := make([]map[string]interface{}, 0)
+	grantedInstancesAccessDenied := false
 	nextToken = ""
 	for {
 		grantResp, err := expressConnectRouterServiceV2.DescribeDescribeInstanceGrantedToExpressConnectRouter(d.Id(), nextToken)
 		if err != nil {
+			if errs.IsAccessDenied(err) {
+				log.Printf("[DEBUG] Resource alicloud_express_connect_router: DescribeInstanceGrantedToExpressConnectRouter returned access denied (the RAM role likely lacks expressconnectrouter:DescribeInstanceGrantedToExpressConnectRouter); leaving granted_instances unset and continuing Read: %s", err)
+				grantedInstancesAccessDenied = true
+				break
+			}
 			return errs.WrapError(err)
 		}
 		if list, ok := grantResp["EcrGrantedInstanceList"].([]interface{}); ok {
@@ -277,7 +303,22 @@ func resourceExpressConnectRouterRead(d *schema.ResourceData, meta interface{}) 
 					"node_region_id": item["NodeRegionId"],
 				}
 				if ownerUID, ok := item["NodeOwnerUid"]; ok && ownerUID != nil {
-					grantedInstance["node_owner_uid"] = fmt.Sprint(ownerUID)
+					// NodeOwnerUid is an account ID returned as a JSON number. The
+					// tea-rpc client decodes response bodies with json.Decoder.UseNumber,
+					// so numbers arrive as json.Number (a string-backed type) rather
+					// than float64; that preserves the full precision of UIDs which
+					// exceed 2^53 (e.g. 9007199254740993) and would otherwise be
+					// rendered in scientific notation or truncated. Handle the type
+					// explicitly so the guarantee does not depend on fmt's implicit
+					// String conversion, and pass a string response through unchanged.
+					switch val := ownerUID.(type) {
+					case json.Number:
+						grantedInstance["node_owner_uid"] = val.String()
+					case string:
+						grantedInstance["node_owner_uid"] = val
+					default:
+						grantedInstance["node_owner_uid"] = fmt.Sprint(val)
+					}
 				}
 				grantedInstancesMaps = append(grantedInstancesMaps, grantedInstance)
 			}
@@ -291,7 +332,9 @@ func resourceExpressConnectRouterRead(d *schema.ResourceData, meta interface{}) 
 			break
 		}
 	}
-	d.Set("granted_instances", grantedInstancesMaps)
+	if !grantedInstancesAccessDenied {
+		d.Set("granted_instances", grantedInstancesMaps)
+	}
 
 	return nil
 }
