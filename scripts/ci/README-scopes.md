@@ -70,6 +70,13 @@ and private `.acube-ci/` evidence; the same CI Run/plan/item key returns the ori
 receipt after lost responses or process restarts. A new CI Run is an explicit new
 attempt. Do not rerun until the original cloud execution/cleanup is reconciled.
 
+ACC additionally requires `accTestReuseQuery=complete-v1` and a per-response
+`X-AccTest-Reuse-Query: complete-v1` header. A confirmed empty result can authorize
+missing cases; a timeout, HTTP failure or response without completion proof cannot.
+Safe lookups and fenced submissions retry transient 429/502/503/504 failures for
+up to 180 seconds (at most ten attempts), covering preproduction's single-instance
+restart window while retaining the original submission key and task receipt.
+
 Every terminal task prints a redacted result to the job log and appends the same
 evidence to the Aone Markdown summary. Failures include the remote error, HCL
 phases, cleanup status, unsuccessful AccTests and a bounded diagnostic excerpt

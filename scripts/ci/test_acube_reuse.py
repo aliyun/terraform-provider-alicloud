@@ -27,7 +27,7 @@ class Client:
     def call(self, method, path, body=None):
         self.calls.append((method, path))
         if path == '/capabilities':
-            return {'submissionIdempotency': 'oss-admission-v1', **self.capabilities}
+            return {'submissionIdempotency': 'oss-admission-v1', 'accTestReuseQuery': 'complete-v1', **self.capabilities}
         if path == '/sources/import':
             return {'sourceId': ('a' if body['commitSha'] == 'c'*40 else 'b')*64}
         if path == '/acctest/reusable-cases':

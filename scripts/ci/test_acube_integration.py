@@ -29,6 +29,48 @@ class IntegrationTest(unittest.TestCase):
     def request(self):
         return dict(mode='acctest',sourceId='a'*64,checkBaseSourceId='b'*64,commitSha='c'*40,
                     baseCommitSha='d'*40,variables={'TEST':'alicloud/service/rocketmq'},testCases=['TestAccOne','TestAccTwo'])
+
+    def test_reuse_transport_requires_completion_proof_even_for_empty_results(self):
+        for proof in (None, 'complete-v1'):
+            client = m.Client('test-token-' + 'x' * 32)
+            response = io.BytesIO(b'{"code":"SUCCESS","data":{}}')
+            response.headers = {} if proof is None else {'X-AccTest-Reuse-Query': proof}
+            with patch.object(client.opener, 'open', return_value=response) as opened:
+                if proof:
+                    self.assertEqual(m.reusable_cases(client, self.request()), {})
+                else:
+                    with self.assertRaisesRegex(ValueError, 'completion proof'):
+                        m.reusable_cases(client, self.request())
+                self.assertEqual(opened.call_count, 1)
+
+    def test_reuse_query_recovers_beyond_old_retry_window_and_never_posts_a_task(self):
+        client = m.Client('test-token-' + 'x' * 32)
+        response = io.BytesIO(b'{"code":"SUCCESS","data":{"TestAccOne":28427}}')
+        response.headers = {'X-AccTest-Reuse-Query': 'complete-v1'}
+        failures = [m.urllib.error.HTTPError(m.BASE_URL, 502, 'gateway', {}, io.BytesIO()) for _ in range(5)]
+        with patch.object(client.opener, 'open', side_effect=failures + [response]) as opened, patch.object(m.time, 'sleep') as sleep:
+            self.assertEqual(m.reusable_cases(client, self.request()), {'TestAccOne': '28427'})
+            self.assertEqual(sleep.call_count, 5)
+            self.assertTrue(all(c.args[0].full_url.endswith('/acctest/reusable-cases') for c in opened.call_args_list))
+
+    def test_reuse_http_failure_cannot_become_a_miss_or_submit_acc(self):
+        real = m.Client('test-token-' + 'x' * 32)
+        calls = []
+        class Client:
+            def call(_, method, path, body=None):
+                calls.append((method, path))
+                if path == '/capabilities':
+                    return {'submissionIdempotency': 'oss-admission-v1', 'accTestReuseQuery': 'complete-v1',
+                            'accTestContentReuse': 'whole-source-and-comments-v1'}
+                if path == '/sources/import': return {'sourceId': ('a' if body['commitSha'][0] == 'a' else 'b') * 64}
+                if path == '/acctest/reusable-cases': return real.call(method, path, body)
+                raise AssertionError('No task submission is authorized')
+        error = m.urllib.error.HTTPError(m.BASE_URL, 503, 'unavailable', {}, io.BytesIO())
+        with tempfile.TemporaryDirectory() as root, patch.object(real.opener, 'open', side_effect=error), patch.object(m.time, 'sleep'):
+            with self.assertRaises(ValueError):
+                m.execute(Client(), {'head': 'a' * 40, 'base': 'b' * 40, 'packages': {'alicloud': ['TestAccOne']}},
+                          'acctest', 'run-123', Path(root))
+        self.assertNotIn(('POST', ''), calls)
     def result(self):
         r=self.request()
         return dict(status='success', result=dict(r,exitCode=0,testDirectory=r['variables']['TEST'],tests={
@@ -113,7 +155,7 @@ class IntegrationTest(unittest.TestCase):
         observed=[]
         class Client:
             def call(_,method,path,body=None):
-                if path=='/capabilities': return {'submissionIdempotency':'oss-admission-v1','hclActions':['example']}
+                if path=='/capabilities': return {'submissionIdempotency':'oss-admission-v1','accTestReuseQuery':'complete-v1','hclActions':['example']}
                 if path=='/sources/import': return {'sourceId':request['sourceId'] if body['commitSha']==request['commitSha'] else request['checkBaseSourceId']}
                 if path=='': keys.append(body['idempotencyKey']); return {'taskId':123,'reused':len(keys)>1}
                 if path=='/123/logs': return {}
@@ -127,7 +169,7 @@ class IntegrationTest(unittest.TestCase):
         submitted=[]
         class Client:
             def call(_,method,path,body=None):
-                if path=='/capabilities':return {'submissionIdempotency':'oss-admission-v1','hclActions':['example']}
+                if path=='/capabilities':return {'submissionIdempotency':'oss-admission-v1','accTestReuseQuery':'complete-v1','hclActions':['example']}
                 if path=='/sources/import':return {'sourceId':'a'*64}
                 if path=='':submitted.append(body);return {'taskId':len(submitted)}
                 if path.endswith('/logs'):return {}
@@ -151,7 +193,7 @@ class IntegrationTest(unittest.TestCase):
         class Client:
             def call(_, method, path, body=None):
                 if path == '/capabilities':
-                    return {'submissionIdempotency': 'oss-admission-v1', 'hclActions': ['example'],
+                    return {'submissionIdempotency': 'oss-admission-v1', 'accTestReuseQuery':'complete-v1', 'hclActions': ['example'],
                             'accTestCaseReuse': 'exact-source-v1'}
                 if path == '/sources/import':
                     return {'sourceId': request['sourceId'] if body['commitSha'] == request['commitSha']
@@ -178,7 +220,7 @@ class IntegrationTest(unittest.TestCase):
         class Client:
             def call(_,method,path,body=None):
                 calls.append((method,path))
-                if path=='/capabilities': return {'submissionIdempotency':'oss-admission-v1','hclActions':['example']}
+                if path=='/capabilities': return {'submissionIdempotency':'oss-admission-v1','accTestReuseQuery':'complete-v1','hclActions':['example']}
                 if path=='/sources/import': return {'sourceId':'a'*64}
                 if path=='': return {'taskId':123}
                 if path=='/123': return {'status':'failed'}
@@ -199,7 +241,7 @@ class IntegrationTest(unittest.TestCase):
             'privatePayload': token}}
         class Client:
             def call(_, method, path, body=None):
-                if path == '/capabilities': return {'submissionIdempotency': 'oss-admission-v1', 'hclActions': ['example']}
+                if path == '/capabilities': return {'submissionIdempotency': 'oss-admission-v1', 'accTestReuseQuery':'complete-v1', 'hclActions': ['example']}
                 if path == '/sources/import': return {'sourceId': 'a' * 64}
                 if path == '': return {'taskId': 123}
                 if path == '/123': return status
@@ -230,7 +272,7 @@ class IntegrationTest(unittest.TestCase):
     def test_log_index_failure_does_not_replace_remote_failure(self):
         class Client:
             def call(_, method, path, body=None):
-                if path == '/capabilities': return {'submissionIdempotency': 'oss-admission-v1', 'hclActions': ['example']}
+                if path == '/capabilities': return {'submissionIdempotency': 'oss-admission-v1', 'accTestReuseQuery':'complete-v1', 'hclActions': ['example']}
                 if path == '/sources/import': return {'sourceId': 'a' * 64}
                 if path == '': return {'taskId': 123}
                 if path == '/123': return {'status': 'failed', 'result': {'error': 'Original remote failure', 'exitCode': 1}}

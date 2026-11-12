@@ -111,21 +111,26 @@ class Client:
         request = urllib.request.Request(BASE_URL + '/api/v1/provider_runs' + path, data=payload, method=method,
             headers={'X-Provider-Run-Token': self.token, 'Content-Type': 'application/json'})
         # POST replay is safe only for source import or a server-fenced submission.
-        safe = method == 'GET' or path == '/sources/import' or body and body.get('idempotencyKey')
-        for attempt in range(4):
+        safe = method == 'GET' or path in ('/sources/import', '/acctest/reusable-cases') or body and body.get('idempotencyKey')
+        deadline = time.monotonic() + 180
+        for attempt in range(10):
             try:
-                with self.opener.open(request, timeout=90) as response:
+                with self.opener.open(request, timeout=max(1, min(90, deadline - time.monotonic()))) as response:
+                    if path == '/acctest/reusable-cases' and response.headers.get('X-AccTest-Reuse-Query') != 'complete-v1':
+                        raise ValueError('ACube reuse query has no completion proof; no missing-case submission is authorized')
                     value = json.load(response)
                 if not isinstance(value, dict) or value.get('code') != 'SUCCESS' or not isinstance(value.get('data'), dict):
                     raise ValueError('Invalid ACube response')
                 return value['data']
             except urllib.error.HTTPError as error:
-                if not safe or error.code not in (429, 502, 503, 504) or attempt == 3:
+                error.close()
+                if not safe or error.code not in (429, 502, 503, 504) or attempt == 9 or time.monotonic() >= deadline:
                     raise ValueError('ACube HTTP ' + str(error.code)) from None
             except (urllib.error.URLError, TimeoutError):
-                if not safe or attempt == 3:
+                if not safe or attempt == 9 or time.monotonic() >= deadline:
                     raise ValueError('ACube unavailable; rerun the same CI run to recover the original receipt') from None
-            time.sleep(2 ** attempt)
+            print(json.dumps({'acubeRetry': attempt + 1, 'method': method, 'path': path}), flush=True)
+            time.sleep(max(0, min(2 ** attempt, 20, deadline - time.monotonic())))
 
 
 def validate_result(status, request):
@@ -193,8 +198,9 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         print('Not applicable: no ' + kind + ' changes in the complete range'); return
     capabilities = client.call('GET', '/capabilities')
     if (capabilities.get('submissionIdempotency') != 'oss-admission-v1'
+            or kind == 'acctest' and capabilities.get('accTestReuseQuery') != 'complete-v1'
             or kind == 'examples' and 'example' not in capabilities.get('hclActions', [])):
-        raise ValueError('ACube CI capability is not deployed; refusing non-idempotent submission')
+        raise ValueError('ACube CI capability is not deployed; no cloud task submission authorized')
     sources = [client.call('POST', '/sources/import', {'repository': REPOSITORY, 'commitSha': frozen[key]}) for key in ('head','base')]
     if any(not re.fullmatch('[a-f0-9]{64}', s.get('sourceId', '')) for s in sources): raise ValueError('Invalid source import')
     failures = []
