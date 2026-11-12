@@ -320,9 +320,12 @@ func TestUnitAliCloudGaBasicAcceleratorPaymentMapping(t *testing.T) {
 		"InstanceChargeType":   "PREPAY",
 		"State":                "active",
 	}
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, queries map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, queries map[string]interface{}, body map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 		switch *action {
 		case "CreateBasicAccelerator":
+			for key, value := range body {
+				createRequest[key] = value
+			}
 			for key, value := range queries {
 				createRequest[key] = value
 			}
