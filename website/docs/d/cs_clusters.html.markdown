@@ -16,6 +16,14 @@ This data source provides Ack Cluster available to the user.[What is Cluster](ht
 ## Example Usage
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 provider "alicloud" {
   region = "cn-hangzhou"
 }
@@ -80,12 +88,17 @@ resource "alicloud_cs_managed_kubernetes" "default" {
 }
 
 data "alicloud_cs_clusters" "default" {
-  ids        = ["${alicloud_cs_managed_kubernetes.default.id}"]
-  name_regex = alicloud_cs_managed_kubernetes.default.name
+  ids            = ["${alicloud_cs_managed_kubernetes.default.id}"]
+  name_regex     = alicloud_cs_managed_kubernetes.default.name
+  enable_details = true
 }
 
 output "alicloud_cs_managed_kubernetes_example_id" {
   value = data.alicloud_cs_clusters.default.clusters.0.id
+}
+
+output "alicloud_cs_managed_kubernetes_example_api_server_internet" {
+  value = data.alicloud_cs_clusters.default.clusters.0.connections.0.api_server_internet
 }
 ```
 
@@ -123,37 +136,42 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Cluster IDs.
 * `names` - A list of name of Clusters.
 * `clusters` - A list of Cluster Entries. Each element contains the following attributes:
-    * `auto_mode` - **NOTE:** This field is only available when `enable_details` is `true`. Intelligent managed mode configuration.
-        * `enabled` - Specifies whether to enable the intelligent managed mode.
-    * `cluster_domain` - The local domain name of the cluster.
-    * `cluster_id` - The cluster ID.
-    * `cluster_name` - Custom cluster name.
-    * `cluster_spec` - The cluster specification.
-    * `cluster_type` - The cluster type.
-    * `current_version` - The current version of the cluster.
-    * `deletion_protection` - Cluster deletion protection prevents accidental deletion of the cluster through the console or API.
-    * `ip_stack` - The IP protocol stack of the cluster.
-    * `maintenance_window` - **NOTE:** This field is only available when `enable_details` is `true`. Cluster maintenance window.
-        * `duration` - The duration of the maintenance window.
-        * `enable` - Indicates whether to enable the maintenance window.
-        * `maintenance_time` - Maintenance start time.
-        * `recurrence` - The recurrence rule for the maintenance window, defined using RFC5545 Recurrence Rule syntax.
-        * `weekly_period` - The maintenance cycle.
-    * `node_cidr_mask` - **NOTE:** This field is only available when `enable_details` is `true`. The number of IP addresses per node, determined by specifying the CIDR block of the network.
-    * `operation_policy` - **NOTE:** This field is only available when `enable_details` is `true`. The automatic operations and maintenance policy for the cluster.
-        * `cluster_auto_upgrade` - Cluster automatic upgrade.
-            * `channel` - Cluster automatic upgrade frequency.
-            * `enabled` - Whether to enable cluster automatic upgrade.
-    * `pod_cidr` - The CIDR block for the pod network.
-    * `profile` - ACK managed cluster profile.
-    * `proxy_mode` - kube-proxy proxy mode.
-    * `region_id` - The region ID where the cluster is deployed.
-    * `resource_group_id` - The resource group ID of the cluster.
-    * `security_group_id` - The security group ID for the control plane.
-    * `service_cidr` - The Service CIDR block.
-    * `state` - Cluster operational status.
-    * `tags` - Cluster resource tags.
-    * `timezone` - Cluster time zone.
-    * `vpc_id` - The Virtual Private Cloud (VPC) used by the cluster.
-    * `vswitch_ids` - Virtual switches for the cluster control plane.
-    * `id` - The ID of the resource supplied above.
+  * `auto_mode` - **NOTE:** This field is only available when `enable_details` is `true`. Intelligent managed mode configuration.
+    * `enabled` - Specifies whether to enable the intelligent managed mode.
+  * `cluster_domain` - The local domain name of the cluster.
+  * `cluster_id` - The cluster ID.
+  * `cluster_name` - Custom cluster name.
+  * `cluster_spec` - The cluster specification.
+  * `cluster_type` - The cluster type.
+  * `connections` - (Available since v2.3.0) **NOTE:** This field is only available when `enable_details` is `true`. The connection information of the cluster.
+    * `api_server_internet` - The public API Server endpoint of the cluster.
+    * `api_server_intranet` - The internal API Server endpoint of the cluster.
+    * `master_public_ip` - The public IP address of the master node.
+    * `service_domain` - The service domain of the cluster.
+  * `current_version` - The current version of the cluster.
+  * `deletion_protection` - Cluster deletion protection prevents accidental deletion of the cluster through the console or API.
+  * `ip_stack` - The IP protocol stack of the cluster.
+  * `maintenance_window` - **NOTE:** This field is only available when `enable_details` is `true`. Cluster maintenance window.
+    * `duration` - The duration of the maintenance window.
+    * `enable` - Indicates whether to enable the maintenance window.
+    * `maintenance_time` - Maintenance start time.
+    * `recurrence` - The recurrence rule for the maintenance window, defined using RFC5545 Recurrence Rule syntax.
+    * `weekly_period` - The maintenance cycle.
+  * `node_cidr_mask` - **NOTE:** This field is only available when `enable_details` is `true`. The number of IP addresses per node, determined by specifying the CIDR block of the network.
+  * `operation_policy` - **NOTE:** This field is only available when `enable_details` is `true`. The automatic operations and maintenance policy for the cluster.
+    * `cluster_auto_upgrade` - Cluster automatic upgrade.
+      * `channel` - Cluster automatic upgrade frequency.
+      * `enabled` - Whether to enable cluster automatic upgrade.
+  * `pod_cidr` - The CIDR block for the pod network.
+  * `profile` - ACK managed cluster profile.
+  * `proxy_mode` - kube-proxy proxy mode.
+  * `region_id` - The region ID where the cluster is deployed.
+  * `resource_group_id` - The resource group ID of the cluster.
+  * `security_group_id` - The security group ID for the control plane.
+  * `service_cidr` - The Service CIDR block.
+  * `state` - Cluster operational status.
+  * `tags` - Cluster resource tags.
+  * `timezone` - Cluster time zone.
+  * `vpc_id` - The Virtual Private Cloud (VPC) used by the cluster.
+  * `vswitch_ids` - Virtual switches for the cluster control plane.
+  * `id` - The ID of the resource supplied above.
