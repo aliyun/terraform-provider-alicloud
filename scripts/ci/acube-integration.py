@@ -186,15 +186,16 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         (output / 'diagnostics' / 'document-review.json').write_text(json.dumps(inventory, indent=2))
         print('Document review: ' + json.dumps(inventory), flush=True)
     if blockers:
+        reason = 'AccTest scope could not be determined' if frozen.get('scope', {}).get('blocked') else 'Document example validation could not be planned'
         report = {'status': 'blocked', 'head': frozen['head'], 'base': frozen['base'],
-                  'error': 'Manual ACC scope review required; no cloud tasks submitted' if kind == 'acctest'
-                           else 'Document/scope contract incomplete; no cloud tasks submitted',
+                  'error': reason + '; no cloud tasks submitted',
                   'scope': frozen.get('scope', {}), 'blockers': blockers}
         target = output / 'diagnostics' / 'scope.json'
         target.write_text(json.dumps(report, indent=2))
         target.chmod(0o600)
-        print(json.dumps(report), flush=True)
-        raise ValueError(report['error'] + ': ' + '; '.join(blockers))
+        for blocker in blockers:
+            print(f'CI planning blocker: {blocker}', file=sys.stderr, flush=True)
+        raise ValueError(f"{report['error']} ({len(blockers)} blocker(s); see scope.json in CI diagnostics)")
     if not items:
         if kind == 'acctest': publish_acc_summary(output, frozen['head'], [])
         print('Not applicable: no ' + kind + ' changes in the complete range'); return

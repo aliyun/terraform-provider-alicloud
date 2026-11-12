@@ -160,7 +160,10 @@ func TestAccDemo(t *testing.T) {}`,
 	file := "alicloud/service/demo/service.go"
 	files[file] = strings.Replace(files[file], `"old"`, `"new"`, 1)
 	result := selectScope(before, fixture(t, files), []string{file})
-	if len(result.Blocked) == 0 || !strings.Contains(strings.Join(result.Blocked, "\n"), "receiver") {
+	message := strings.Join(result.Blocked, "\n")
+	if !strings.Contains(message, "resource_demo.go:2") ||
+		!strings.Contains(message, "receiver type could not be resolved") ||
+		!strings.Contains(message, "Service.Describe (alicloud/service/demo/service.go)") {
 		t.Fatalf("unknown receiver incorrectly treated as proven: %+v", result)
 	}
 }
@@ -297,5 +300,37 @@ func TestAccOther(t *testing.T) {}`,
 	result := selectScope(before, fixture(t, files), []string{file})
 	if len(result.Blocked) != 0 || !reflect.DeepEqual(result.Packages["alicloud/service/consumer"], []string{"TestAccDemo"}) {
 		t.Fatalf("static receiver was not resolved: %+v", result)
+	}
+}
+
+func TestAccScopeUsesConstructorResultsForSameNamedMethods(t *testing.T) {
+	files := map[string]string{
+		"alicloud/service/cr/service.go": `package cr
+type CrServiceV2 struct{}
+func NewCrServiceV2() *CrServiceV2 { return &CrServiceV2{} }
+func (s *CrServiceV2) Describe() string { return "old" }`,
+		"alicloud/service/cr/resource_cr.go": `package cr
+func resourceCr() { svc := NewCrServiceV2(); svc.Describe() }`,
+		"alicloud/service/cr/resource_cr_test.go": `package cr
+import "testing"
+func TestAccCr(t *testing.T) {}
+func TestUnitCr(t *testing.T) { svc := NewCrServiceV2(); svc.Describe() }`,
+		"alicloud/service/amqpopen/service.go": `package amqpopen
+type AmqpServiceV2 struct{}
+func NewAmqpServiceV2() *AmqpServiceV2 { return &AmqpServiceV2{} }
+func (s *AmqpServiceV2) Describe() string { return "unrelated" }`,
+		"alicloud/service/amqpopen/resource_amqp.go": `package amqpopen
+func resourceAmqp() { svc := NewAmqpServiceV2(); svc.Describe() }`,
+		"alicloud/service/amqpopen/resource_amqp_test.go": `package amqpopen
+import "testing"
+func TestAccAmqp(t *testing.T) {}`,
+	}
+	before := fixture(t, files)
+	file := "alicloud/service/cr/service.go"
+	files[file] = strings.Replace(files[file], `"old"`, `"new"`, 1)
+	result := selectScope(before, fixture(t, files), []string{file})
+	want := map[string][]string{"alicloud/service/cr": {"TestAccCr"}}
+	if len(result.Blocked) != 0 || !reflect.DeepEqual(result.Packages, want) {
+		t.Fatalf("constructor receiver scope = %+v, want only %v", result, want)
 	}
 }

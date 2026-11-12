@@ -120,12 +120,15 @@ class IntegrationTest(unittest.TestCase):
         scope = dict(packages={}, resourceFiles=[], blocked=['manual ACC scope decision required for public code'])
         with patch.object(m, 'acceptance_scope', return_value=scope), patch.object(m, 'git', return_value=''):
             frozen = m.plan('base', 'head')
-        with tempfile.TemporaryDirectory() as root, patch.object(m.Client, 'call') as call:
+        with tempfile.TemporaryDirectory() as root, patch.object(m.Client, 'call') as call, contextlib.redirect_stderr(io.StringIO()) as stderr:
             for kind in ['acctest', 'examples']:
                 with self.assertRaisesRegex(ValueError, 'no cloud tasks submitted'):
                     m.execute(None, frozen, kind, 'run-123', Path(root))
             call.assert_not_called()
-            self.assertEqual(json.loads((Path(root)/'diagnostics/scope.json').read_text())['status'], 'blocked')
+            self.assertIn('CI planning blocker: ' + scope['blocked'][0], stderr.getvalue())
+            report = json.loads((Path(root)/'diagnostics/scope.json').read_text())
+            self.assertEqual(report['status'], 'blocked')
+            self.assertEqual(report['blockers'], scope['blocked'])
 
     def test_acc_only_plan_does_not_load_docs_or_invoke_title_resolver(self):
         scope = dict(packages={'alicloud/service/vpc':['TestAccVpc']},

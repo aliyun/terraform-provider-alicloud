@@ -25,12 +25,14 @@ const module = "github.com/aliyun/terraform-provider-alicloud/"
 
 type reference struct {
 	pkg, name, receiver string
-	method              bool
+	method, factory     bool
+	line                int
 }
 
 type declaration struct {
 	id, pkg, name, file, receiver, hash string
 	refs                                []reference
+	result                              reference
 	assets                              []string
 	test                                bool
 	acc, unit                           bool
@@ -100,8 +102,23 @@ func valueType(expr ast.Expr, pkg string, imports map[string]string, depth int) 
 	case *ast.UnaryExpr:
 		return valueType(x.X, pkg, imports, depth+1)
 	case *ast.CallExpr:
-		if fn, ok := x.Fun.(*ast.Ident); ok && fn.Name == "new" && len(x.Args) == 1 {
-			return typeReference(x.Args[0], pkg, imports)
+		switch fn := x.Fun.(type) {
+		case *ast.Ident:
+			if fn.Obj != nil {
+				if _, ok := fn.Obj.Decl.(*ast.FuncDecl); !ok {
+					return reference{}
+				}
+			}
+			if fn.Obj == nil && fn.Name == "new" && len(x.Args) == 1 {
+				return typeReference(x.Args[0], pkg, imports)
+			}
+			return reference{pkg: pkg, name: fn.Name, factory: true}
+		case *ast.SelectorExpr:
+			if alias, ok := fn.X.(*ast.Ident); ok && alias.Obj == nil {
+				if imported := imports[alias.Name]; strings.HasPrefix(imported, module+"alicloud/") {
+					return reference{pkg: strings.TrimPrefix(imported, module), name: fn.Sel.Name, factory: true}
+				}
+			}
 		}
 	case *ast.Ident:
 		if x.Obj != nil {
@@ -181,6 +198,12 @@ func parseSource(s *snapshot, file string, data []byte) error {
 		}
 		d := &declaration{id: pkg + ":" + key + "@" + file, pkg: pkg, name: name, receiver: receiver,
 			file: file, test: strings.HasSuffix(file, "_test.go")}
+		if fn, ok := node.(*ast.FuncDecl); ok && fn.Recv == nil && fn.Type.Results != nil {
+			results := fn.Type.Results.List
+			if len(results) == 1 && len(results[0].Names) <= 1 {
+				d.result = typeReference(results[0].Type, pkg, imports)
+			}
+		}
 		if fn, ok := node.(*ast.FuncDecl); ok && fn.Recv == nil && fn.Type.Results == nil && len(fn.Type.Params.List) == 1 {
 			if pointer, ok := fn.Type.Params.List[0].Type.(*ast.StarExpr); ok {
 				if typ, ok := pointer.X.(*ast.SelectorExpr); ok && typ.Sel.Name == "T" {
@@ -206,7 +229,8 @@ func parseSource(s *snapshot, file string, data []byte) error {
 				if target.name == "" {
 					target.pkg = pkg
 				}
-				d.refs = append(d.refs, reference{pkg: target.pkg, name: x.Sel.Name, receiver: target.name, method: true})
+				d.refs = append(d.refs, reference{pkg: target.pkg, name: x.Sel.Name,
+					receiver: target.name, method: true, factory: target.factory, line: fset.Position(x.Sel.Pos()).Line})
 				ast.Inspect(x.X, func(child ast.Node) bool {
 					if id, ok := child.(*ast.Ident); ok && (id.Obj == nil || top[id.Obj.Decl.(ast.Node)]) {
 						d.refs = append(d.refs, reference{pkg: pkg, name: id.Name})
@@ -382,6 +406,17 @@ func reverseGraph(s *snapshot) map[string][]edge {
 	graph := map[string][]edge{}
 	for id, d := range s.decls {
 		for _, ref := range d.refs {
+			if ref.factory {
+				factories := index[ref.pkg+":"+ref.receiver]
+				result := reference{}
+				if len(factories) == 1 {
+					result = s.decls[factories[0]].result
+				}
+				ref.pkg, ref.receiver = result.pkg, result.name
+				if ref.receiver == "" {
+					ref.pkg = d.pkg
+				}
+			}
 			key := ref.pkg + ":" + ref.name
 			if ref.method {
 				key = ref.pkg + ":*." + ref.name
@@ -404,13 +439,23 @@ func reverseGraph(s *snapshot) map[string][]edge {
 					unresolved = true
 				}
 			}
-			for _, target := range matches {
-				ambiguity := ""
-				if len(matches) > 1 {
-					ambiguity = "ambiguous receiver/build variants for " + key + " in " + d.file
-				} else if unresolved {
-					ambiguity = "unresolved cross-package receiver for " + key + " in " + d.file
+			ambiguity := ""
+			if ref.method && (len(matches) > 1 || unresolved) {
+				candidates := map[string]bool{}
+				for _, target := range matches {
+					method := s.decls[target]
+					candidates[fmt.Sprintf("%s.%s (%s)", method.receiver, method.name, method.file)] = true
 				}
+				reason := "receiver type could not be resolved"
+				if ref.receiver != "" && !unresolved {
+					reason = "multiple declarations match the receiver (check build variants)"
+				}
+				ambiguity = fmt.Sprintf("%s:%d: cannot determine AccTest impact of %s: %s; candidates: %s",
+					d.file, ref.line, ref.name, reason, strings.Join(sortedKeys(candidates), ", "))
+			} else if len(matches) > 1 {
+				ambiguity = "multiple declarations match " + key + " in " + d.file + " (check build variants)"
+			}
+			for _, target := range matches {
 				if target != id {
 					graph[target] = append(graph[target], edge{caller: id, ambiguity: ambiguity})
 				}
