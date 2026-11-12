@@ -3,6 +3,7 @@ import contextlib
 import io
 import json
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 import unittest
@@ -28,99 +29,151 @@ class IntegrationTest(unittest.TestCase):
     def request(self):
         return dict(mode='acctest',sourceId='a'*64,checkBaseSourceId='b'*64,commitSha='c'*40,
                     baseCommitSha='d'*40,variables={'TEST':'alicloud/service/rocketmq'},testCases=['TestAccOne','TestAccTwo'])
+
+    def test_reuse_transport_requires_completion_proof_even_for_empty_results(self):
+        for proof in (None, 'complete-v1'):
+            client = m.Client('test-token-' + 'x' * 32)
+            response = io.BytesIO(b'{"code":"SUCCESS","data":{}}')
+            response.headers = {} if proof is None else {'X-AccTest-Reuse-Query': proof}
+            with patch.object(client.opener, 'open', return_value=response) as opened:
+                if proof:
+                    self.assertEqual(m.reusable_cases(client, self.request()), {})
+                else:
+                    with self.assertRaisesRegex(ValueError, 'completion proof'):
+                        m.reusable_cases(client, self.request())
+                self.assertEqual(opened.call_count, 1)
+
+    def test_reuse_query_recovers_beyond_old_retry_window_and_never_posts_a_task(self):
+        client = m.Client('test-token-' + 'x' * 32)
+        response = io.BytesIO(b'{"code":"SUCCESS","data":{"TestAccOne":28427}}')
+        response.headers = {'X-AccTest-Reuse-Query': 'complete-v1'}
+        failures = [m.urllib.error.HTTPError(m.BASE_URL, 502, 'gateway', {}, io.BytesIO()) for _ in range(5)]
+        failures.append(m.socket.timeout('read operation timed out'))
+        with patch.object(client.opener, 'open', side_effect=failures + [response]) as opened, patch.object(m.time, 'sleep') as sleep:
+            self.assertEqual(m.reusable_cases(client, self.request()), {'TestAccOne': '28427'})
+            self.assertEqual(sleep.call_count, 6)
+            self.assertTrue(all(c.args[0].full_url.endswith('/acctest/reusable-cases') for c in opened.call_args_list))
+
+    def test_reuse_http_failure_cannot_become_a_miss_or_submit_acc(self):
+        real = m.Client('test-token-' + 'x' * 32)
+        calls = []
+        class Client:
+            def call(_, method, path, body=None):
+                calls.append((method, path))
+                if path == '/capabilities':
+                    return {'submissionIdempotency': 'oss-admission-v1', 'accTestReuseQuery': 'complete-v1',
+                            'accTestContentReuse': 'whole-source-and-comments-v1'}
+                if path == '/sources/import': return {'sourceId': ('a' if body['commitSha'][0] == 'a' else 'b') * 64}
+                if path == '/acctest/reusable-cases': return real.call(method, path, body)
+                raise AssertionError('No task submission is authorized')
+        error = m.urllib.error.HTTPError(m.BASE_URL, 503, 'unavailable', {}, io.BytesIO())
+        with tempfile.TemporaryDirectory() as root, patch.object(real.opener, 'open', side_effect=error), patch.object(m.time, 'sleep'):
+            with self.assertRaises(ValueError):
+                m.execute(Client(), {'head': 'a' * 40, 'base': 'b' * 40, 'packages': {'alicloud': ['TestAccOne']}},
+                          'acctest', 'run-123', Path(root))
+        self.assertNotIn(('POST', ''), calls)
     def result(self):
         r=self.request()
         return dict(status='success', result=dict(r,exitCode=0,testDirectory=r['variables']['TEST'],tests={
             'cases':[{'name':n,'result':'PASS'} for n in r['testCases']]}))
     def test_missing_skipped_duplicate_and_foreign_results_fail(self):
         m.validate_result(self.result(), self.request())
-        for defect in ['skip','missing','duplicate','source','directory']:
+        for defect in ['skip','missing','duplicate','source','directory','malformed']:
             r=self.result()
             if defect=='skip': r['result']['tests']['cases'][0]['result']='SKIP'
             if defect=='missing': r['result']['tests']['cases'].pop()
             if defect=='duplicate': r['result']['tests']['cases'][1]=r['result']['tests']['cases'][0]
             if defect=='source': r['result']['sourceId']='wrong'
             if defect=='directory': r['result']['testDirectory']='alicloud'
+            if defect=='malformed': r['result']['tests']['cases']=[None]
             with self.subTest(defect=defect),self.assertRaises(ValueError): m.validate_result(r,self.request())
     def test_plan_deduplicates_complete_package_cases_and_preserves_example(self):
-        def git(*args):
-            if args[0]=='diff': return 'alicloud/resource_alicloud_demo.go\nalicloud/resource_alicloud_demo_test.go\nwebsite/docs/r/demo.html.markdown'
-            if args[0]=='ls-tree': return ''
-            if args[0]=='show':
-                return 'func TestAccOne(t *testing.T) {\nfunc TestAccTwo(t *testing.T) {' if args[-1].endswith('_test.go') else '```terraform\nresource "alicloud_demo" "test" {}\n```'
-            raise AssertionError(args)
-        with patch.object(m,'git',side_effect=git): p=m.plan('a'*40,'b'*40)
+        scope = dict(packages={'alicloud':['TestAccOne','TestAccTwo']},
+                     resourceFiles=['alicloud/resource_alicloud_demo.go'], blocked=[])
+        documents = {'examples': [{'name': 'demo', 'mainTf': 'frozen scene'}], 'blocked': []}
+        with patch.object(m, 'acceptance_scope', return_value=scope), patch.object(m.doc_examples, 'plan', return_value=documents) as planner:
+            p=m.plan('a'*40,'b'*40)
         self.assertEqual(p['packages'],{'alicloud':['TestAccOne','TestAccTwo']})
-        self.assertEqual(len(p['examples']),1)
-        self.assertIn('source = "aliyun/alicloud"',p['examples'][0]['mainTf'])
-        self.assertEqual(len(p['examples'][0]['originalSha256']),64)
+        self.assertEqual(p['examples'], documents['examples'])
+        self.assertEqual(planner.call_args.args[2], {'website/docs/r/demo.html.markdown'})
     def test_plan_excludes_unit_tests_and_keeps_resource_coverage(self):
         resource = 'alicloud/service/rds/resource_alicloud_db_instance'
         doc = 'website/docs/r/db_instance.html.markdown'
 
-        def git(*args):
-            if args[0] == 'diff':
-                return '\n'.join([resource + '.go', resource + '_unit_test.go'])
-            if args[0] == 'ls-tree':
-                return ''
-            if args == ('show', 'head:' + resource + '_test.go'):
-                return 'func TestAccDBInstance(t *testing.T) {'
-            if args == ('show', 'head:' + doc):
-                return '```terraform\nresource "alicloud_db_instance" "test" {}\n```'
-            raise AssertionError(args)
-
         resolved = 'db_instance.go\talicloud_db_instance\tresource\n'
-        with patch.object(m, 'git', side_effect=git), patch.object(m.subprocess, 'check_output', return_value=resolved) as run:
+        scope = dict(packages={'alicloud/service/rds':['TestAccDBInstance']}, resourceFiles=[resource+'.go'], blocked=[])
+        with patch.object(m, 'acceptance_scope', return_value=scope), patch.object(m.doc_examples, 'plan', return_value={'examples': []}) as planner, patch.object(m.subprocess, 'check_output', return_value=resolved) as run:
             result = m.plan('base', 'head')
         self.assertEqual(result['packages'], {'alicloud/service/rds': ['TestAccDBInstance']})
-        self.assertEqual([example['name'] for example in result['examples']], [doc + '#0'])
+        self.assertEqual(planner.call_args.args[2], {doc})
         run.assert_called_once_with(['go', 'run', 'scripts/title/title_check.go', '-resolve', resource + '.go'], text=True)
 
     def test_plan_has_no_integration_scope_for_unit_test_only_change(self):
-        with patch.object(m, 'git', return_value='alicloud/resource_alicloud_demo_unit_test.go') as git:
+        scope = dict(packages={}, resourceFiles=[], blocked=[])
+        with patch.object(m, 'acceptance_scope', return_value=scope), patch.object(m, 'git', return_value='alicloud/resource_alicloud_demo_unit_test.go') as git:
             result = m.plan('base', 'head')
         self.assertEqual(result['packages'], {})
         self.assertEqual(result['examples'], [])
-        git.assert_called_once_with('diff', '--name-only', '--diff-filter=ACMRT', 'base', 'head')
+        git.assert_called_once_with('diff', '--no-renames', '--name-only', 'base', 'head')
 
-    def test_plan_rejects_resource_without_acceptance_cases(self):
-        resource = 'alicloud/resource_alicloud_demo'
-        with patch.object(m, 'git', side_effect=[resource + '.go', 'func TestHelper(t *testing.T) {']):
-            with self.assertRaisesRegex(ValueError, 'No AccTest cases in ' + resource + '_test.go'):
-                m.plan('base', 'head')
+    def test_unresolved_scope_is_saved_and_never_submits_cloud_tasks(self):
+        scope = dict(packages={}, resourceFiles=[], blocked=['manual ACC scope decision required for public code'])
+        with patch.object(m, 'acceptance_scope', return_value=scope), patch.object(m, 'git', return_value=''):
+            frozen = m.plan('base', 'head')
+        with tempfile.TemporaryDirectory() as root, patch.object(m.Client, 'call') as call, contextlib.redirect_stderr(io.StringIO()) as stderr:
+            for kind in ['acctest', 'examples']:
+                with self.assertRaisesRegex(ValueError, 'no cloud tasks submitted'):
+                    m.execute(None, frozen, kind, 'run-123', Path(root))
+            call.assert_not_called()
+            self.assertIn('CI planning blocker: ' + scope['blocked'][0], stderr.getvalue())
+            report = json.loads((Path(root)/'diagnostics/scope.json').read_text())
+            self.assertEqual(report['status'], 'blocked')
+            self.assertEqual(report['blockers'], scope['blocked'])
 
-    def test_acc_only_plan_does_not_load_docs_or_invoke_go(self):
-        def git(*args):
-            if args[0] == 'diff':
-                return 'alicloud/service/vpc/resource_vpc.go\nwebsite/docs/r/vpc.html.markdown'
-            self.assertEqual(args, ('show', 'head:alicloud/service/vpc/resource_vpc_test.go'))
-            return 'func TestAccVpc(t *testing.T) {'
-        with patch.object(m, 'git', side_effect=git), patch.object(m.subprocess, 'check_output') as run:
+    def test_acc_only_plan_does_not_load_docs_or_invoke_title_resolver(self):
+        scope = dict(packages={'alicloud/service/vpc':['TestAccVpc']},
+                     resourceFiles=['alicloud/service/vpc/resource_vpc.go'], blocked=[])
+        with patch.object(m, 'acceptance_scope', return_value=scope), patch.object(m, 'git') as git, patch.object(m.subprocess, 'check_output') as run:
             result = m.plan('base', 'head', include_examples=False)
         self.assertEqual(result['packages'], {'alicloud/service/vpc': ['TestAccVpc']})
         self.assertEqual(result['examples'], [])
         run.assert_not_called()
+        git.assert_not_called()
 
-    def test_same_run_and_plan_recover_same_key_across_processes(self):
+    def test_test_only_change_does_not_select_document_examples(self):
+        scope = dict(packages={'alicloud':['TestAccDemo_changed']}, resourceFiles=[], blocked=[])
+        with patch.object(m, 'acceptance_scope', return_value=scope), patch.object(m, 'git', return_value='alicloud/resource_alicloud_demo_test.go'):
+            result = m.plan('base', 'head')
+        self.assertEqual(result['packages'], {'alicloud':['TestAccDemo_changed']})
+        self.assertEqual(result['examples'], [])
+
+    def test_acc_scope_source_only_regressions(self):
+        root = Path(__file__).resolve().parent/'accscope'
+        subprocess.run(['go', 'test', '-v', str(root/'main.go'), str(root/'main_test.go')],
+                       check=True, env={**os.environ, 'GO111MODULE':'off', 'GOWORK':'off'})
+
+    def test_same_output_recovers_receipt_without_resubmission(self):
         request=self.request()
         frozen={'head':request['commitSha'],'base':request['baseCommitSha'],'packages':{'alicloud/service/rocketmq':['TestAccOne','TestAccTwo']},'examples':[]}
         keys=[]
+        observed=[]
         class Client:
             def call(_,method,path,body=None):
-                if path=='/capabilities': return {'submissionIdempotency':'oss-admission-v1','hclActions':['example']}
+                if path=='/capabilities': return {'submissionIdempotency':'oss-admission-v1','accTestReuseQuery':'complete-v1','hclActions':['example']}
                 if path=='/sources/import': return {'sourceId':request['sourceId'] if body['commitSha']==request['commitSha'] else request['checkBaseSourceId']}
                 if path=='': keys.append(body['idempotencyKey']); return {'taskId':123,'reused':len(keys)>1}
                 if path=='/123/logs': return {}
-                if path=='/123': return self.result()
+                if path=='/123': observed.append(path); return self.result()
                 raise AssertionError(path)
         with tempfile.TemporaryDirectory() as root:
             for _ in range(2): m.execute(Client(),frozen,'acctest','ci-123',Path(root))
-        self.assertEqual(keys[0],keys[1])
+        self.assertEqual(len(keys), 1)
+        self.assertEqual(len(observed), 2)
     def test_packages_are_submitted_before_polling(self):
         submitted=[]
         class Client:
             def call(_,method,path,body=None):
-                if path=='/capabilities':return {'submissionIdempotency':'oss-admission-v1','hclActions':['example']}
+                if path=='/capabilities':return {'submissionIdempotency':'oss-admission-v1','accTestReuseQuery':'complete-v1','hclActions':['example']}
                 if path=='/sources/import':return {'sourceId':'a'*64}
                 if path=='':submitted.append(body);return {'taskId':len(submitted)}
                 if path.endswith('/logs'):return {}
@@ -144,7 +197,7 @@ class IntegrationTest(unittest.TestCase):
         class Client:
             def call(_, method, path, body=None):
                 if path == '/capabilities':
-                    return {'submissionIdempotency': 'oss-admission-v1', 'hclActions': ['example'],
+                    return {'submissionIdempotency': 'oss-admission-v1', 'accTestReuseQuery':'complete-v1', 'hclActions': ['example'],
                             'accTestCaseReuse': 'exact-source-v1'}
                 if path == '/sources/import':
                     return {'sourceId': request['sourceId'] if body['commitSha'] == request['commitSha']
@@ -171,7 +224,7 @@ class IntegrationTest(unittest.TestCase):
         class Client:
             def call(_,method,path,body=None):
                 calls.append((method,path))
-                if path=='/capabilities': return {'submissionIdempotency':'oss-admission-v1','hclActions':['example']}
+                if path=='/capabilities': return {'submissionIdempotency':'oss-admission-v1','accTestReuseQuery':'complete-v1','hclActions':['example']}
                 if path=='/sources/import': return {'sourceId':'a'*64}
                 if path=='': return {'taskId':123}
                 if path=='/123': return {'status':'failed'}
@@ -192,7 +245,7 @@ class IntegrationTest(unittest.TestCase):
             'privatePayload': token}}
         class Client:
             def call(_, method, path, body=None):
-                if path == '/capabilities': return {'submissionIdempotency': 'oss-admission-v1', 'hclActions': ['example']}
+                if path == '/capabilities': return {'submissionIdempotency': 'oss-admission-v1', 'accTestReuseQuery':'complete-v1', 'hclActions': ['example']}
                 if path == '/sources/import': return {'sourceId': 'a' * 64}
                 if path == '': return {'taskId': 123}
                 if path == '/123': return status
@@ -209,7 +262,7 @@ class IntegrationTest(unittest.TestCase):
                 m.execute(Client(), {'head': 'a' * 40, 'base': 'b' * 40, 'packages': {},
                                      'examples': [{'name': 'website/docs/r/demo.html.markdown#0', 'mainTf': 'private HCL'}]},
                           'examples', 'run-123', Path(root))
-            reports = list((Path(root) / 'diagnostics').glob('*.json'))
+            reports = [p for p in (Path(root) / 'diagnostics').glob('*.json') if p.name != 'document-review.json']
             self.assertEqual(len(reports), 1)
             report = json.loads(reports[0].read_text())
             self.assertEqual(report['phases'][-1]['name'], 'destroy')
@@ -223,7 +276,7 @@ class IntegrationTest(unittest.TestCase):
     def test_log_index_failure_does_not_replace_remote_failure(self):
         class Client:
             def call(_, method, path, body=None):
-                if path == '/capabilities': return {'submissionIdempotency': 'oss-admission-v1', 'hclActions': ['example']}
+                if path == '/capabilities': return {'submissionIdempotency': 'oss-admission-v1', 'accTestReuseQuery':'complete-v1', 'hclActions': ['example']}
                 if path == '/sources/import': return {'sourceId': 'a' * 64}
                 if path == '': return {'taskId': 123}
                 if path == '/123': return {'status': 'failed', 'result': {'error': 'Original remote failure', 'exitCode': 1}}
