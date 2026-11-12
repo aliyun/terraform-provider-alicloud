@@ -5,7 +5,6 @@ import (
 	"os"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
@@ -284,8 +283,9 @@ func TestUnitAliCloudGaBasicAccelerator(t *testing.T) {
 }
 
 // TestUnitAliCloudGaBasicAcceleratorPaymentMapping pins the payment/coupon
-// request and response mapping at the SDK boundary, which the CRUD lifecycle
-// mock above cannot observe because it discards the request parameters.
+// request and response mapping at the HTTP request boundary, which the CRUD
+// lifecycle mock above cannot observe because it discards the request
+// parameters. Dummy credentials keep it offline.
 // lintignore: R001
 func TestUnitAliCloudGaBasicAcceleratorPaymentMapping(t *testing.T) {
 	p := unitTestProviderResources()
@@ -305,7 +305,12 @@ func TestUnitAliCloudGaBasicAcceleratorPaymentMapping(t *testing.T) {
 		assert.Nil(t, d.Set(key, value))
 	}
 
-	rawClient := &connectivity.AliyunClient{RegionId: "cn-hangzhou"}
+	t.Setenv("ALICLOUD_ACCESS_KEY", "test-access-key")
+	t.Setenv("ALICLOUD_SECRET_KEY", "test-secret-key")
+	rawClient, err := unitTestSharedClientForRegion("cn-hangzhou")
+	if err != nil {
+		t.Fatalf("building the mock client failed: %s", err)
+	}
 
 	createRequest := map[string]interface{}{}
 	readResponse := map[string]interface{}{
@@ -315,23 +320,20 @@ func TestUnitAliCloudGaBasicAcceleratorPaymentMapping(t *testing.T) {
 		"InstanceChargeType":   "PREPAY",
 		"State":                "active",
 	}
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(rawClient), "GetRetryTimeout", func(_ *connectivity.AliyunClient, defaultTimeout time.Duration) time.Duration {
-		return defaultTimeout
-	})
-	defer patches.Reset()
-	patches.ApplyMethod(reflect.TypeOf(rawClient), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, apiName string, query map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
-		switch apiName {
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, queries map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		switch *action {
 		case "CreateBasicAccelerator":
-			for key, value := range query {
+			for key, value := range queries {
 				createRequest[key] = value
 			}
 			return map[string]interface{}{"AcceleratorId": "ga-basic-accelerator-id"}, nil
 		case "ListTagResources":
-			return map[string]interface{}{}, nil
+			return map[string]interface{}{"TagResources": map[string]interface{}{"TagResource": []interface{}{}}}, nil
 		default:
 			return readResponse, nil
 		}
 	})
+	defer patches.Reset()
 
 	assert.Nil(t, resourceAliCloudGaBasicAcceleratorCreate(d, rawClient))
 	assert.Equal(t, "POSTPAY", createRequest["ChargeType"])
