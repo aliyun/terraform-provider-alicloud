@@ -1039,7 +1039,9 @@ func TestUnitVpcAssociationUpdatePrefixSendsStoredMode(t *testing.T) {
 	}
 }
 
-func TestUnitVpcAssociationUpdateExplicitEmptyModeOmitsMode(t *testing.T) {
+// SDKv2 treats an explicit empty Optional+Computed value as unset during Diff,
+// so the Update retains and sends the stored mode with the changed prefixes.
+func TestUnitVpcAssociationUpdateExplicitEmptyModeSendsStoredMode(t *testing.T) {
 	var forms []url.Values
 	client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
@@ -1074,8 +1076,9 @@ func TestUnitVpcAssociationUpdateExplicitEmptyModeOmitsMode(t *testing.T) {
 	if !formHasArrayValue(forms[0], "AllowedPrefixes", "172.16.2.0/24") {
 		t.Fatalf("AllowedPrefixes did not carry the configured prefix: %v", forms[0])
 	}
-	if values, present := forms[0]["AllowedPrefixesMode"]; present {
-		t.Fatalf("AllowedPrefixesMode must be omitted for an explicit empty value, got %v", values)
+	values, present := forms[0]["AllowedPrefixesMode"]
+	if !present || len(values) != 1 || values[0] != "IncrementalMode" {
+		t.Fatalf("AllowedPrefixesMode present=%v values=%v, want the stored IncrementalMode", present, values)
 	}
 }
 
