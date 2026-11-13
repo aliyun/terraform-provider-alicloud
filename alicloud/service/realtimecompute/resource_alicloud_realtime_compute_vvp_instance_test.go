@@ -51,7 +51,6 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636(t *testing.T) {
 					},
 					"vvp_instance_name": name,
 					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
-					"zone_id":           "cn-hangzhou-i",
 					"vswitch_ids": []string{
 						"${data.alicloud_vswitches.default.ids.0}"},
 					"payment_type": "PayAsYouGo",
@@ -216,7 +215,6 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594(t *testing.T) {
 					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
 					"vswitch_ids": []string{
 						"${data.alicloud_vswitches.default.ids.0}"},
-					"zone_id":               "cn-hangzhou-i",
 					"payment_type":          "Subscription",
 					"pricing_cycle":         "Month",
 					"duration":              "1",
@@ -252,7 +250,9 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594(t *testing.T) {
 					"auto_renew_duration": 2,
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"resource_spec.#": "1",
+					}),
 				),
 			},
 			{
@@ -331,7 +331,6 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636_twin(t *testing.T) {
 					},
 					"vvp_instance_name": name,
 					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
-					"zone_id":           "cn-hangzhou-i",
 					"vswitch_ids": []string{
 						"${data.alicloud_vswitches.default.ids.0}"},
 					"payment_type": "PayAsYouGo",
@@ -354,6 +353,23 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636_twin(t *testing.T) {
 						"vpc_id":            acctest.CHECKSET,
 						"vswitch_ids.#":     "1",
 						"payment_type":      "PayAsYouGo",
+						"storage.#":         "1",
+						"resource_spec.#":   "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_spec": []map[string]interface{}{
+						{
+							"cpu":       "4",
+							"memory_gb": "16",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_spec.#": "1",
 					}),
 				),
 			},
@@ -412,7 +428,6 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594_twin(t *testing.T) {
 							"memory_gb": "16",
 						},
 					},
-					"zone_id":       "cn-hangzhou-i",
 					"payment_type":  "Subscription",
 					"pricing_cycle": "Month",
 					"duration":      "1",
@@ -444,21 +459,18 @@ variable "name" {
     default = "%s"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.1.0/24"
-  zone_id    = "ap-southeast-1a"
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = "cn-hangzhou-i"
 }
 
 resource "alicloud_oss_bucket" "defaultOSS" {
   bucket = var.name
 }
-
 `, name)
 }
 
@@ -505,9 +517,8 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594_intl(t *testing.T) {
 						},
 					},
 					"vvp_instance_name":     name,
-					"vpc_id":                "${alicloud_vpc.default.id}",
-					"vswitch_ids":           []string{"${alicloud_vswitch.default.id}"},
-					"zone_id":               "ap-southeast-1a",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_ids":           []string{"${data.alicloud_vswitches.default.ids.0}"},
 					"payment_type":          "Subscription",
 					"pricing_cycle":         "Month",
 					"duration":              "1",
