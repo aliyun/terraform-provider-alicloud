@@ -47,7 +47,7 @@ jobs:
     steps:
       - name: Select runner
         id: select
-        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@cc0a874ce1783a88cc1bacfb961e4dd7c909cbb6
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@4ecae9a3bec65f772b270eb262728d98c1e2f261
 
   errcheck:
     name: runner / errcheck
