@@ -73,6 +73,15 @@ attempt. Do not rerun until the original cloud execution/cleanup is reconciled.
 ACC additionally requires `accTestReuseQuery=complete-v1` and a per-response
 `X-AccTest-Reuse-Query: complete-v1` header. A confirmed empty result can authorize
 missing cases; a timeout, HTTP failure or response without completion proof cannot.
+Content reuse scans at most 1024 filtered history candidates in eight pages of 128.
+If unresolved cases remain at the limit, the service discards all tentative hits
+and returns an empty map with `X-AccTest-Reuse-Query: skipped-scan-limit-v1` and
+`X-AccTest-Reuse-Scan-Limit: 1024`. This explicit policy outcome authorizes a fresh
+plan to run every selected ACC case, records `reuseSkipReason=scan-limit-1024`,
+and appears as “超限不复用” in the CI Summary. It is not full-history completion.
+The 12-second query budget and storage/runner failures still fail closed.
+An existing plan with reused receipts must retain them; a skipped completion
+recheck cannot validate those receipts or silently submit replacement tasks.
 Safe lookups and fenced submissions retry transient 429/502/503/504 failures for
 up to 180 seconds (at most ten attempts), covering preproduction's single-instance
 restart window while retaining the original submission key and task receipt.
