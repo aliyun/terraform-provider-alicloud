@@ -101,8 +101,8 @@ The following arguments are supported:
 * `endpoint_sub_address` - (Optional, ForceNew, String) The secondary address of the endpoint.
 
   This parameter is required only if the accelerated IP address is associated with the secondary private IP address of an ECS instance or an ENI.
-  - If you set the endpoint type to `ECS`, you can set `EndpointSubAddress` to the secondary private IP address of the primary ENI. If you leave this parameter empty, the primary private IP address of the primary ENI is used.
-  - If you set the endpoint type to `ENI`, you can set `EndpointSubAddress` to the secondary private IP address of the secondary ENI. If you leave this parameter empty, the primary private IP address of the secondary ENI is used.
+  - If you set the endpoint type to `ECS`, you can set `endpoint_sub_address` to the secondary private IP address of the primary ENI. If you leave this parameter empty, the primary private IP address of the primary ENI is used.
+  - If you set the endpoint type to `ENI`, you can set `endpoint_sub_address` to the secondary private IP address of the secondary ENI. If you leave this parameter empty, the primary private IP address of the secondary ENI is used.
 * `basic_endpoint_group_name` - (Optional, String) The name of the endpoint group.
 
   The name must be 1 to 128 characters in length and must start with a letter or a Chinese character. The name can contain digits, periods (.), underscores (_), and hyphens (-).
