@@ -887,6 +887,7 @@ func TestUnitVpcAssociationPrefixOrderSuppress(t *testing.T) {
 				"association_region_id": "cn-hangzhou",
 				"allowed_prefixes":      newPrefixes,
 			}
+			state.RawConfig = vpcAssociationRawConfig(config)
 			diff, err := expressconnectrouter.ResourceVpcAssociation().Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatalf("build prefix diff: %v", err)
@@ -1237,6 +1238,7 @@ func TestUnitVpcAssociationUpdatePrefixPresenceTransitions(t *testing.T) {
 		})
 		config := vpcAssociationUnitConfig()
 		config["description"] = "new-description"
+		config["allowed_prefixes"] = []interface{}{"172.16.1.0/24"}
 		state := vpcAssociationUnitState(map[string]string{
 			"allowed_prefixes.#": "1",
 			"allowed_prefixes.0": "172.16.1.0/24",

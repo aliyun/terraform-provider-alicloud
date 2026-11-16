@@ -426,6 +426,10 @@ func suppressVpcAssociationPrefixReorder(_, _, _ string, d *schema.ResourceData)
 	if d == nil {
 		return false
 	}
+	rawPrefixes, configured, err := vpcAssociationRawConfigAttribute(d, "allowed_prefixes")
+	if err != nil || !configured || rawPrefixes.LengthInt() == 0 {
+		return false
+	}
 	oldRaw, newRaw := d.GetChange("allowed_prefixes")
 	oldPrefixes, ok := vpcAssociationPrefixStrings(oldRaw)
 	if !ok {
