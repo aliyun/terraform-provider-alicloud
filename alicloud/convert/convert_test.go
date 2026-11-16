@@ -3,6 +3,7 @@ package convert
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 	"testing"
@@ -72,6 +73,68 @@ func TestUnitCommonInterfaceToBool(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%v", tt.input), func(t *testing.T) {
 			result := Interface2Bool(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestUnitCommonInterface2Int32(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected int32
+	}{
+		// nil and unsupported types are unconvertible.
+		{"nil", nil, 0},
+		{"unsupported slice", []int{1, 2}, 0},
+
+		// json.Number: RPC responses decode integers as json.Number.
+		{"json.Number positive", json.Number("42"), 42},
+		{"json.Number negative", json.Number("-7"), -7},
+		{"json.Number zero", json.Number("0"), 0},
+		{"json.Number overflow", json.Number("9223372036854775807"), 0},
+
+		// string: parsed base 10; empty / non-numeric / overflow are rejected.
+		{"string digits", "123", 123},
+		{"string negative", "-50", -50},
+		{"string empty", "", 0},
+		{"string non-numeric", "abc", 0},
+		{"string overflow", "99999999999999", 0},
+
+		// bool: true -> 1, false -> 0.
+		{"bool true", true, 1},
+		{"bool false", false, 0},
+
+		// Signed integers within int32 range convert directly.
+		{"int", int(100), 100},
+		{"int8", int8(-12), -12},
+		{"int16", int16(300), 300},
+		{"int32", int32(70000), 70000},
+		{"int64 small", int64(88), 88},
+
+		// int64 boundary: MaxInt32 fits, MaxInt32+1 overflows.
+		{"int64 max int32 boundary", int64(math.MaxInt32), math.MaxInt32},
+		{"int64 over max int32", int64(math.MaxInt32) + 1, 0},
+		// Full 64-bit width cannot be represented in int32 -> unconvertible (0),
+		// never the wrapped garbage value int32(math.MaxInt64) == -1.
+		{"int64 max", int64(math.MaxInt64), 0},
+		{"int64 min", int64(math.MinInt64), 0},
+
+		// Unsigned integers: within int32 range convert, above it overflow.
+		{"uint", uint(9), 9},
+		{"uint8", uint8(250), 250},
+		{"uint64 small", uint64(1234), 1234},
+		{"uint64 over max int32", uint64(math.MaxUint32), 0},
+
+		// Floats truncate toward zero when within range.
+		{"float32", float32(3.9), 3},
+		{"float64 negative", float64(-2.7), -2},
+		{"float64 overflow", float64(1e15), 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Interface2Int32(tt.input)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

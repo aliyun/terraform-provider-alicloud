@@ -642,6 +642,42 @@ func (dsa *DataSourceAttr) DataSourceTestCheckWithPreCheck(t *testing.T, rand in
 	})
 }
 
+// DataSourceTestCheckWithProtoV5 is DataSourceTestCheck served by the muxed
+// ProtoV5 provider instead of the SDKv2-only SDKProviderFactories. Framework
+// data sources — those registered under ServicePackage.DataSources rather than
+// SDKDataSources — are only visible through the muxed server, so their tests
+// must use this variant or terraform reports "does not support data source".
+// lintignore: AT001
+func (dsa *DataSourceAttr) DataSourceTestCheckWithProtoV5(t *testing.T, rand int, configs ...DataSourceTestAccConfig) {
+	var steps []resource.TestStep
+	for _, conf := range configs {
+		steps = append(steps, conf.buildDataSourceSteps(t, dsa, rand)...)
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			PreCheck(t)
+		},
+		ProtoV5ProviderFactories: ProtoV5ProviderFactories(),
+		Steps:                    steps,
+	})
+}
+
+// DataSourceTestCheckWithProtoV5PreCheck is DataSourceTestCheckWithPreCheck
+// served by the muxed ProtoV5 provider; see DataSourceTestCheckWithProtoV5 for
+// when a data source test needs it.
+// lintignore: AT001
+func (dsa *DataSourceAttr) DataSourceTestCheckWithProtoV5PreCheck(t *testing.T, rand int, preCheck func(), configs ...DataSourceTestAccConfig) {
+	var steps []resource.TestStep
+	for _, conf := range configs {
+		steps = append(steps, conf.buildDataSourceSteps(t, dsa, rand)...)
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 preCheck,
+		ProtoV5ProviderFactories: ProtoV5ProviderFactories(),
+		Steps:                    steps,
+	})
+}
+
 // per schema attribute test config
 type DataSourceTestAccConfig struct {
 	// be equal to testCase config string,but the result has only one record
