@@ -3,25 +3,6 @@ triggers:
   merge_request:
     target-branches:
       - master
-    paths:
-      - 'scripts/ci/**'
-      - 'scripts/local-ci-check.sh'
-      - 'scripts/vetcheck.sh'
-      - 'scripts/gofmtcheck.sh'
-      - 'scripts/goimportscheck.sh'
-      - 'scripts/errcheck.sh'
-      - 'scripts/compatibility/**'
-      - 'scripts/title/**'
-      - 'scripts/release/**'
-      - 'scripts/internal/**'
-      - '.aoneci/**'
-      - 'GNUmakefile'
-      - 'scripts/collection-order/**'
-      - 'go.mod'
-      - 'go.sum'
-      - '.go-version'
-      - '.aoneci/acctest-terraform-basic.yml'
-      - '**/*.go'
 envs:
   CODE_CI_SHALLOW_RANGE: '1'
   CODE_HEAD: '${{git.commitId}}'
@@ -33,7 +14,49 @@ envs:
   CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
 
 jobs:
+  CheckScope:
+    outputs:
+      applicable: ${{ steps.scope.outputs.applicable }}
+    steps:
+      - uses: checkout
+        inputs:
+          fetch-depth: '32'
+      - id: scope
+        name: Check whether this pipeline applies
+        run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          result=0
+          git diff --quiet --no-ext-diff "$DIFF_BASE" "$DIFF_HEAD" -- \
+            ':(glob)scripts/ci/**' \
+            ':(glob)scripts/local-ci-check.sh' \
+            ':(glob)scripts/vetcheck.sh' \
+            ':(glob)scripts/gofmtcheck.sh' \
+            ':(glob)scripts/goimportscheck.sh' \
+            ':(glob)scripts/errcheck.sh' \
+            ':(glob)scripts/compatibility/**' \
+            ':(glob)scripts/title/**' \
+            ':(glob)scripts/release/**' \
+            ':(glob)scripts/internal/**' \
+            ':(glob)GNUmakefile' \
+            ':(glob)scripts/collection-order/**' \
+            ':(glob)go.mod' \
+            ':(glob)go.sum' \
+            ':(glob).go-version' \
+            ':(glob)**/*.go' \
+            ':(glob).aoneci/**' || result=$?
+          case "$result" in
+            0)
+              echo 'No files in scope; this check passes without running Go jobs.'
+              printf '%s' no > "$AONE_CI_OUTPUTS/applicable"
+              ;;
+            1) printf '%s' yes > "$AONE_CI_OUTPUTS/applicable" ;;
+            *) exit "$result" ;;
+          esac
   PipelineSafety:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
     steps:
       - uses: checkout
       - uses: setup-env
@@ -52,6 +75,8 @@ jobs:
           python3 -m unittest discover -s scripts/ci -p test_document_checks.py
           go test ./scripts/compatibility ./scripts/title
   BreakingChange:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
     steps:
       - name: Setup Go
         uses: setup-env
@@ -68,6 +93,8 @@ jobs:
           git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
           go run scripts/compatibility/breaking_change_check.go -fileNames="diff.out"
   Formatter:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
     steps:
       - name: Setup Go
         uses: setup-env
@@ -86,6 +113,8 @@ jobs:
           export PATH="$(go env GOPATH)/bin:$PATH"
           python3 scripts/ci/run-format-check.py
   Compile:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
     steps:
       - name: Setup Go
         uses: setup-env
@@ -102,6 +131,8 @@ jobs:
           python3 scripts/ci/run-vet-check.py
 
   ProductionBuild:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
     steps:
       - uses: setup-env
         inputs:
@@ -119,6 +150,8 @@ jobs:
           make check-production-deps
 
   TypeListOrderCoverage:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
     steps:
       - uses: setup-env
         inputs:
