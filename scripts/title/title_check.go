@@ -2,6 +2,9 @@
 // changed files: every registered entity a changed provider source file
 // implements must be announced in the title, docs-only and testcase-only
 // changes must say so, and no title may truncate with an ellipsis.
+// New-entity names may share a prefix using one explicit suffix group,
+// e.g. alicloud_sandbox_template{,_cache}. Every expanded name is checked
+// separately and Resource/Data Source declarations remain kind-specific.
 //
 // The changed files and their statuses come from `git diff --name-status`
 // between the -base and -head commits, so the gate needs no diff file
@@ -19,7 +22,7 @@
 // move with the `resource/<name>:` form, the way PR #10817 and #10831
 // did. Ephemeral, action and list registrations have no house title form
 // yet; they only clear the docs-only and testcase-only states, and so do
-// register.go and shared helper files that implement no registration.
+// register.go and shared provider Go files that implement no registration.
 //
 // A whole-product migration can name too many entities for one title —
 // the per-entity fragments ran the largest packages (RAM, ResourceManager,
@@ -512,6 +515,52 @@ func aggregateMarker(prTitle string) string {
 	return m[1]
 }
 
+var newDeclarationRe = regexp.MustCompile(`New (Resource|Data Source): `)
+var newDeclarationTokenRe = regexp.MustCompile(`^[^\s;]+`)
+var newNamePrefixRe = regexp.MustCompile(`^alicloud_[a-z0-9_]+`)
+var compactNewNameRe = regexp.MustCompile(`^(alicloud_[a-z0-9_]+)\{([a-z0-9_,]*)\}$`)
+
+// newDeclarations parses exact, kind-aware entity names. One suffix group
+// is a lossless spelling shortcut, not a wildcard or product-wide waiver.
+// The empty suffix explicitly includes the prefix itself. Nested groups,
+// ranges, wildcards, duplicate choices and incomplete groups are rejected.
+func newDeclarations(prTitle string) (map[string]bool, bool) {
+	declared := make(map[string]bool)
+	matches := newDeclarationRe.FindAllStringSubmatchIndex(prTitle, -1)
+	for i, match := range matches {
+		end := len(prTitle)
+		if i+1 < len(matches) {
+			end = matches[i+1][0]
+		}
+		kind := prTitle[match[2]:match[3]]
+		token := strings.TrimSuffix(newDeclarationTokenRe.FindString(prTitle[match[1]:end]), ",")
+		key := "New " + kind + ": "
+		if !strings.ContainsAny(token, "{}") {
+			if name := newNamePrefixRe.FindString(token); name != "" {
+				declared[key+name] = true
+			}
+			continue
+		}
+		group := compactNewNameRe.FindStringSubmatch(token)
+		if group == nil {
+			return nil, false
+		}
+		suffixes := strings.Split(group[2], ",")
+		if len(suffixes) < 2 {
+			return nil, false
+		}
+		seen := make(map[string]bool)
+		for _, suffix := range suffixes {
+			if seen[suffix] {
+				return nil, false
+			}
+			seen[suffix] = true
+			declared[key+group[1]+suffix] = true
+		}
+	}
+	return declared, true
+}
+
 // checkTitle enforces the title conventions: every registered entity a
 // changed source file implements must be announced in the title — the
 // new-entity form for entities the base did not know, the modified form
@@ -532,6 +581,10 @@ func checkTitle(prTitle string, files []titleFile) bool {
 	}
 
 	agg := parseAggregate(prTitle, files)
+	declared, validDeclarations := newDeclarations(prTitle)
+	if !validDeclarations {
+		reportError("Invalid compact new-entity declaration; use one explicit suffix group, for example New Resource: alicloud_name{,_cache}.")
+	}
 
 	docsOnly, testcaseOnly := true, true
 	docsChanged, testcaseChanged := false, false
@@ -542,18 +595,18 @@ func checkTitle(prTitle string, files []titleFile) bool {
 		case file.docs:
 			docsChanged = true
 			testcaseOnly = false
-		case file.service, file.flat:
+		case strings.HasPrefix(file.name, "alicloud/") && strings.HasSuffix(file.name, ".go"), file.service, file.flat:
 			docsOnly = false
 			testcaseOnly = false
 		}
 		for _, e := range file.entities {
 			if !e.existing {
 				if e.dataSource {
-					if !strings.Contains(prTitle, "New Data Source: "+e.typeName) {
-						reportError("The PR title should contains new datasource info New Data Source: %s", e.typeName)
+					if !declared["New Data Source: "+e.typeName] {
+						reportError("The PR title should contains new datasource info New Data Source: %s; compact example: alicloud_name{,_cache} (scripts/title/README.md).", e.typeName)
 					}
-				} else if !strings.Contains(prTitle, "New Resource: "+e.typeName) {
-					reportError("The PR title should contains new resource info New Resource: %s", e.typeName)
+				} else if !declared["New Resource: "+e.typeName] {
+					reportError("The PR title should contains new resource info New Resource: %s; compact example: alicloud_name{,_cache} (scripts/title/README.md).", e.typeName)
 				}
 				continue
 			}

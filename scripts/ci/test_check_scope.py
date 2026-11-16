@@ -34,7 +34,7 @@ class ScopeTest(unittest.TestCase):
         self.write('alicloud/change/same.go', 'package change')
         self.write('website/docs/r/old.html.markdown', 'old')
         self.base = self.commit()
-        self.env = mock.patch.dict(os.environ, {'DIFF_BASE': self.base})
+        self.env = mock.patch.dict(os.environ, {'DIFF_BASE': self.base, 'CODE_CI_SHALLOW_RANGE': '0'})
         self.env.start()
         self.addCleanup(self.env.stop)
 
@@ -105,7 +105,8 @@ class ScopeTest(unittest.TestCase):
 
     def test_shared_inputs_fall_back_to_full_go_analysis(self):
         for path in ['go.mod', 'go.sum', '.golangci.yml', '.go-version',
-                     'scripts/ci/check_scope.py', '.github/workflows/acctest-terraform-lint.yml']:
+                     'scripts/ci/check_scope.py', '.github/workflows/acctest-terraform-lint.yml',
+                     '.aoneci/acctest-terraform-basic.yml', '.aoneci/acctest-terraform-lint.yml']:
             self.assertEqual(check_scope.go_packages([path]), ['./...'])
 
     def test_unusual_go_package_path_falls_back_to_full(self):
@@ -144,6 +145,22 @@ class ScopeTest(unittest.TestCase):
         os.chdir(destination)
         with self.assertRaisesRegex(ValueError, 'shallow'):
             check_scope.changed_paths()
+
+    def test_opt_in_shallow_checkout_requires_a_verified_range(self):
+        self.write('README.md', 'change')
+        self.commit()
+        source = Path.cwd().as_uri()
+        with mock.patch.dict(os.environ, {'CODE_CI_SHALLOW_RANGE': '1'}):
+            for depth in (1, 2):
+                destination = Path(self.directory.name) / f'shallow-{depth}'
+                subprocess.run(['git', '-c', 'core.hooksPath=/dev/null', 'clone', '-q', f'--depth={depth}',
+                                source, str(destination)], check=True)
+                os.chdir(destination)
+                if depth == 1:
+                    with self.assertRaises(subprocess.CalledProcessError):
+                        check_scope.changed_paths()
+                else:
+                    self.assertEqual(check_scope.changed_paths(), ['README.md'])
 
     def test_irrelevant_changes_skip_provider_but_shared_inputs_do_not(self):
         for kind in ['consistency', 'testing', 'collection']:

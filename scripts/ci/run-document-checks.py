@@ -4,6 +4,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
+import re
 import subprocess
 import shlex
 from check_scope import changed_paths
@@ -12,6 +13,8 @@ import time
 
 GROUPS = {
     "node": ("markdown-link", "markdown-lint"),
+    "spelling": ("misspell",),
+    "format": ("terrafmt",),
     "go": ("basic-check", "Content", "misspell", "terrafmt"),
 }
 
@@ -71,7 +74,8 @@ def scoped_commands(paths, full=False):
     full = full or any(p in {'.go-version', 'go.mod', 'go.sum', '.markdown-link-check.json'}
                        or p.startswith(('.github/markdownlint/', 'scripts/ci/',
                                         'scripts/document/', 'scripts/basic-check.sh',
-                                        '.github/workflows/document-check.yml')) for p in paths)
+                                        '.github/workflows/document-check.yml',
+                                        '.aoneci/document-check.yml')) for p in paths)
     # Content and Markdown lint were already diff-based; do not newly enforce
     # historical findings in unchanged pages when global checks fall back.
     docs = [p for p in paths if p.startswith('website/docs/') and Path(p).is_file()]
@@ -103,11 +107,25 @@ def run_checks(checks, summary_path=None):
             name, command = item
             log = Path(directory) / (name + ".log")
             started = time.monotonic()
-            with log.open("w") as stream:
-                process = subprocess.run(
-                    ["bash", "-e", "-o", "pipefail", "-c", command],
-                    stdout=stream, stderr=subprocess.STDOUT, check=False,
-                )
+            for attempt in range(3):
+                with log.open("a") as stream:
+                    offset = stream.tell()
+                    process = subprocess.run(
+                        ["bash", "-e", "-o", "pipefail", "-c", command],
+                        stdout=stream, stderr=subprocess.STDOUT, check=False,
+                    )
+                with log.open(errors="replace") as stream:
+                    stream.seek(offset)
+                    output = stream.read()
+                statuses = re.findall(r'^\s*\[[^\]]+\].*?Status:\s*(\d+)', output, re.MULTILINE)
+                transient = (statuses and all(status == '0' for status in statuses)
+                             and re.search(r'\b(ETIMEDOUT|ECONNRESET|EAI_AGAIN)\b', output))
+                if process.returncode == 0 or name != 'markdown-link' or not transient or attempt == 2:
+                    break
+                delay = (2, 5)[attempt]
+                with log.open("a") as stream:
+                    stream.write(f'Network failure: retrying markdown-link ({attempt + 2}/3) in {delay}s.\n')
+                time.sleep(delay)
             return name, process.returncode, time.monotonic() - started, log
 
         with ThreadPoolExecutor(max_workers=len(checks)) as pool:

@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -96,6 +97,90 @@ func TestAccAliCloudRocketmqInstance_SendReceiveRatioValidation(t *testing.T) {
 				}),
 				PlanOnly:    true,
 				ExpectError: regexp.MustCompile(`expected product_info\.0\.send_receive_ratio to be in the range \(0\.050000 - 0\.500000\), got 0\.030000`),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRocketmqInstance_CommodityCodeIntlEnum verifies the
+// commodity_code schema enum accepts the international-site values
+// (ons_rmqpost_public_intl, ons_rmqsub_public_intl,
+// ons_rmqsrvlesspost_public_intl) required by international accounts such as
+// cn-hongkong PayAsYouGo, and that unknown values are still rejected.
+//
+// The plan-only steps do not create cloud resources and do not require an
+// international test account: they assert schema-level acceptance only. For
+// valid intl values the plan is expected to be non-empty (the config validates
+// and would create), proving schema acceptance; the invalid value step expects
+// the ValidateFunc rejection. Full international-site ACC (real CreateInstance
+// against cn-hongkong with an intl account) is gated on an intl test account
+// and is intentionally not claimed here; this matches the task's unresolved
+// intl-account dependency.
+func TestAccAliCloudRocketmqInstance_CommodityCodeIntlEnum(t *testing.T) {
+	resourceId := "alicloud_rocketmq_instance.commodity_code_enum"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%srocketmqinstancecommodity%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudRocketmqInstanceBasicDependence4101)
+	base := func(commodityCode string) map[string]interface{} {
+		return map[string]interface{}{
+			"instance_name": name,
+			"product_info": []map[string]interface{}{
+				{
+					"msg_process_spec":       "rmq.s1.micro",
+					"send_receive_ratio":     "0.3",
+					"message_retention_time": "70",
+				},
+			},
+			"service_code": "rmq",
+			"series_code":  "standard",
+			"network_info": []map[string]interface{}{
+				{
+					"vpc_info": []map[string]interface{}{
+						{
+							"vpc_id":     "${alicloud_vpc.createVPC.id}",
+							"vswitch_id": "${alicloud_vswitch.createVSwitch.id}",
+						},
+					},
+					"internet_info": []map[string]interface{}{
+						{
+							"internet_spec": "disable",
+							"flow_out_type": "uninvolved",
+						},
+					},
+				},
+			},
+			"payment_type":    "PayAsYouGo",
+			"sub_series_code": "cluster_ha",
+			"commodity_code":  commodityCode,
+		}
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
+			acctest.PreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:             testAccConfig(base("ons_rmqpost_public_intl")),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config:             testAccConfig(base("ons_rmqsub_public_intl")),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config:             testAccConfig(base("ons_rmqsrvlesspost_public_intl")),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config:      testAccConfig(base("ons_rmqpost_public_invalid")),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`expected commodity_code to be one of \[.*ons_rmqpost_public_intl.*\], got ons_rmqpost_public_invalid`),
 			},
 		},
 	})
@@ -1191,7 +1276,7 @@ func TestAccAliCloudRocketmqInstance_basic4128(t *testing.T) {
 			acctest.PreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
 		ProviderFactories: acctest.SDKProviderFactories,
-		CheckDestroy:      nil, // bypass linter, prepaid (Subscription) resource cannot destroy
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2020,7 +2105,7 @@ func TestAccAliCloudRocketmqInstance_basic4128_twin(t *testing.T) {
 			acctest.PreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
 		ProviderFactories: acctest.SDKProviderFactories,
-		CheckDestroy:      nil, // bypass linter, postpay resource cannot destroy
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2639,6 +2724,7 @@ type rocketmqTraceOnCapturedRequest struct {
 	method string
 	path   string
 	body   []byte
+	query  string
 }
 
 // rocketmqTraceOnFixture serves the RocketMQ and BSS endpoints used by the
@@ -2648,8 +2734,32 @@ type rocketmqTraceOnCapturedRequest struct {
 // non-retryable, so the read/update portions of the chain still run and the
 // test stays fast.
 type rocketmqTraceOnFixture struct {
-	mu       sync.Mutex
-	requests []rocketmqTraceOnCapturedRequest
+	mu                  sync.Mutex
+	requests            []rocketmqTraceOnCapturedRequest
+	ipWhitelists        []string
+	whitelistReadFails  bool
+	commodityCode       string
+	paymentType         string
+	software            map[string]interface{}
+	renewalFailures     int
+	billingErrorCode    string
+	billingEmpty        bool
+	renewStatus         string
+	renewalDuration     int
+	renewalDurationUnit string
+	// refunded marks the instance as released after a successful RefundInstance
+	// call so DescribeInstance observes status=RELEASED and returns NotFound;
+	// the Subscription delete stateConf then terminates without timing out.
+	// refundErrorCode simulates a BssOpenApi RefundInstance business error: an
+	// empty code succeeds and sets refunded; "ResourceNotExists"/
+	// "ExistRefundingOrderError" exercise the idempotent delete path;
+	// "InternalError" simulates a transient 500 on the first attempt that the
+	// production delete retries, so the second attempt succeeds; any other
+	// code (e.g. CommodityNotSupported) leaves refunded false so the Provider
+	// retains the Terraform state.
+	refunded        bool
+	refundErrorCode string
+	refundRequests  []rocketmqTraceOnCapturedRequest
 }
 
 func (f *rocketmqTraceOnFixture) serveHTTP(w http.ResponseWriter, r *http.Request) {
@@ -2659,6 +2769,7 @@ func (f *rocketmqTraceOnFixture) serveHTTP(w http.ResponseWriter, r *http.Reques
 		method: r.Method,
 		path:   r.URL.Path,
 		body:   body,
+		query:  r.URL.RawQuery,
 	})
 	f.mu.Unlock()
 
@@ -2672,12 +2783,96 @@ func (f *rocketmqTraceOnFixture) serveHTTP(w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, `{"code":"InvalidParameter","message":"fixture captured the update request","requestId":"fixture"}`)
 	case r.Method == http.MethodGet && r.URL.Path == instancePath:
-		fmt.Fprintf(w, `{"data":{"instanceId":%q,"instanceName":"rmq-trace-on-instance","status":"RUNNING","seriesCode":"standard","serviceCode":"rmq","subSeriesCode":"serverless","paymentType":"PayAsYouGo","productInfo":{"msgProcessSpec":"rmq.s3.nxlarge","autoScaling":true,"messageRetentionTime":72,"sendReceiveRatio":0.2,"traceOn":false},"networkInfo":{"vpcInfo":{"vpcId":"vpc-rmqtraceon"},"internetInfo":{"internetSpec":"disable","flowOutType":"uninvolved"}}}}`, rocketmqTraceOnFixtureInstanceId)
+		if f.refunded {
+			// A refunded Subscription instance is released: DescribeInstance
+			// treats status=RELEASED as NotFound, which lets the delete
+			// stateConf terminate instead of polling RUNNING forever.
+			fmt.Fprintf(w, `{"data":{"instanceId":%q,"status":"RELEASED"}}`, rocketmqTraceOnFixtureInstanceId)
+			return
+		}
+		paymentType := f.paymentType
+		if paymentType == "" {
+			paymentType = "PayAsYouGo"
+		}
+		software, _ := json.Marshal(f.software)
+		fmt.Fprintf(w, `{"data":{"instanceId":%q,"instanceName":"rmq-trace-on-instance","status":"RUNNING","seriesCode":"standard","serviceCode":"rmq","subSeriesCode":"serverless","commodityCode":%q,"paymentType":%q,"software":%s,"productInfo":{"msgProcessSpec":"rmq.s3.nxlarge","autoScaling":true,"messageRetentionTime":72,"sendReceiveRatio":0.2,"traceOn":false},"networkInfo":{"vpcInfo":{"vpcId":"vpc-rmqtraceon"},"internetInfo":{"internetSpec":"disable","flowOutType":"uninvolved"}}}}`, rocketmqTraceOnFixtureInstanceId, f.commodityCode, paymentType, software)
+	case r.Method == http.MethodDelete && r.URL.Path == instancePath:
+		// A PayAsYouGo delete releases the instance synchronously; mark it
+		// released so the delete stateConf observes RELEASED and terminates.
+		f.mu.Lock()
+		f.refunded = true
+		f.mu.Unlock()
+		fmt.Fprint(w, `{}`)
 	case r.Method == http.MethodGet && r.URL.Path == instancePath+"/account":
 		fmt.Fprint(w, `{"data":{}}`)
 	case r.Method == http.MethodGet && r.URL.Path == instancePath+"/ip/whitelists":
-		fmt.Fprint(w, `{"data":{"ipWhitelists":[]}}`)
+		if f.whitelistReadFails {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `{"code":"InvalidParameter","message":"fixture cannot confirm whitelist"}`)
+			return
+		}
+		values := f.ipWhitelists
+		if values == nil {
+			values = []string{}
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{"data": map[string]interface{}{"ipWhitelists": values}})
 	case r.URL.Path == "/":
+		params, _ := url.ParseQuery(r.URL.RawQuery + "&" + string(body))
+		if params.Get("Action") == "QueryAvailableInstances" {
+			if f.billingErrorCode != "" {
+				fmt.Fprintf(w, `{"Code":%q,"Message":"account not exists","Success":false,"RequestId":"fixture"}`, f.billingErrorCode)
+				return
+			}
+			if f.billingEmpty {
+				fmt.Fprint(w, `{"Success":true,"RequestId":"fixture","Data":{"InstanceList":[]}}`)
+				return
+			}
+			status, unit := f.renewStatus, f.renewalDurationUnit
+			if status == "" {
+				status = "ManualRenewal"
+			}
+			if unit == "" {
+				unit = "M"
+			}
+			fmt.Fprintf(w, `{"Success":true,"RequestId":"fixture","Data":{"InstanceList":[{"InstanceID":%q,"RenewStatus":%q,"RenewalDuration":%d,"RenewalDurationUnit":%q}]}}`, rocketmqTraceOnFixtureInstanceId, status, f.renewalDuration, unit)
+			return
+		}
+		if params.Get("Action") == "RefundInstance" {
+			f.mu.Lock()
+			f.refundRequests = append(f.refundRequests, rocketmqTraceOnCapturedRequest{method: r.Method, path: r.URL.Path, body: body, query: r.URL.RawQuery})
+			count := len(f.refundRequests)
+			code := f.refundErrorCode
+			// InternalError simulates a transient BssOpenApi server fault on the
+			// first attempt; the production delete retries within the delete
+			// budget, so the second attempt succeeds and releases the instance.
+			if code == "InternalError" && count == 1 {
+				f.mu.Unlock()
+				fmt.Fprintf(w, `{"Code":%q,"Message":"An error occurred in the internal server.","Success":false,"RequestId":"fixture"}`, code)
+				return
+			}
+			// A successful refund, or an already-absent/already-refunding
+			// order, means the instance is released; mark it so the delete
+			// stateConf observes RELEASED instead of polling RUNNING forever.
+			if code == "" || code == "InternalError" || code == "ResourceNotExists" || code == "ExistRefundingOrderError" {
+				f.refunded = true
+			}
+			f.mu.Unlock()
+			if code == "ResourceNotExists" || code == "ExistRefundingOrderError" {
+				fmt.Fprintf(w, `{"Code":%q,"Message":"fixture refund already in progress","Success":false,"RequestId":"fixture"}`, code)
+				return
+			}
+			if code != "" && code != "InternalError" {
+				fmt.Fprintf(w, `{"Code":%q,"Message":"fixture refund rejected","Success":false,"RequestId":"fixture"}`, code)
+				return
+			}
+			fmt.Fprint(w, `{"Code":"Success","Success":true,"RequestId":"fixture","Data":{"HostId":"cn-hangzhou","OrderId":2100000000001}}`)
+			return
+		}
+		if params.Get("Action") == "SetRenewal" && f.renewalFailures > 0 {
+			f.renewalFailures--
+			fmt.Fprint(w, `{"Code":"InvalidParameter","Message":"without unreleased resources.","Success":false,"RequestId":"fixture"}`)
+			return
+		}
 		fmt.Fprintf(w, `{"Success":true,"RequestId":"fixture","Data":{"InstanceList":[{"InstanceID":%q,"RenewStatus":"ManualRenewal","RenewalDuration":0,"RenewalDurationUnit":"M"}]}}`, rocketmqTraceOnFixtureInstanceId)
 	default:
 		fmt.Fprint(w, `{}`)
@@ -2696,6 +2891,26 @@ func (f *rocketmqTraceOnFixture) captured(method, path string) []rocketmqTraceOn
 	return captured
 }
 
+// capturedRefund returns the BssOpenApi RefundInstance requests captured by
+// the fixture, with the merged query+body form values so tests can assert the
+// ProductCode, ProductType and ImmediatelyRelease parameters.
+func (f *rocketmqTraceOnFixture) capturedRefund() []rocketmqTraceOnCapturedRequest {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := make([]rocketmqTraceOnCapturedRequest, len(f.refundRequests))
+	copy(out, f.refundRequests)
+	return out
+}
+
+func (f *rocketmqTraceOnFixture) refundQuery() url.Values {
+	reqs := f.capturedRefund()
+	if len(reqs) == 0 {
+		return url.Values{}
+	}
+	values, _ := url.ParseQuery(reqs[0].query + "&" + string(reqs[0].body))
+	return values
+}
+
 func newRocketmqTraceOnFixture(t *testing.T) (*rocketmqTraceOnFixture, *connectivity.AliyunClient) {
 	t.Helper()
 	fixture := &rocketmqTraceOnFixture{}
@@ -2712,7 +2927,8 @@ func newRocketmqTraceOnFixture(t *testing.T) (*rocketmqTraceOnFixture, *connecti
 	t.Setenv("NO_PROXY", endpoint)
 	config := &connectivity.Config{
 		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
-		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		AccountId: "1234567890123456",
+		RegionId:  "cn-hangzhou", AccountType: "test", Protocol: "http",
 		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
 	}
 	client, err := config.Client()
@@ -2960,4 +3176,139 @@ func TestUnitAliCloudRocketmqInstanceTraceOnRequestSerialization(t *testing.T) {
 		}
 		rocketmqTraceOnFixtureAssertSent(t, rocketmqTraceOnFixtureProductInfo(t, updates[0]), "an explicit trace_on=false", false)
 	})
+}
+
+// Exercise the real create-tail update against a private HTTP fixture. The
+// service's initial whitelist is not Terraform's empty pre-create state.
+func TestUnitAliCloudRocketmqInstanceCreateTailConfiguration(t *testing.T) {
+	r := rocketmq.ResourceInstance()
+	instancePath := "/instances/" + rocketmqTraceOnFixtureInstanceId
+	t.Run("unconfigured fields preserve service defaults", func(t *testing.T) {
+		fixture, client := newRocketmqTraceOnFixture(t)
+		fixture.ipWhitelists = []string{"0.0.0.0/0"}
+		d := rocketmqTraceOnFixtureNewResourceData(t, r, rocketmqTraceOnFixtureRawConfig("rmq-create-config", nil), cty.NullVal(cty.Bool))
+		if err := r.Update(d, client); err != nil {
+			t.Fatal(err)
+		}
+		if len(fixture.captured(http.MethodPatch, instancePath+"/software/config")) != 0 {
+			t.Fatal("an unset maintenance window must not be written")
+		}
+		for _, method := range []string{http.MethodPost, http.MethodDelete} {
+			if len(fixture.captured(method, instancePath+"/ip/whitelist")) != 0 {
+				t.Fatal("an unset whitelist must preserve the service default")
+			}
+		}
+	})
+	t.Run("legacy maintenance state remains readable", func(t *testing.T) {
+		fixture, client := newRocketmqTraceOnFixture(t)
+		fixture.software = map[string]interface{}{"maintainTime": "02:00-06:00", "softwareVersion": "5.0", "upgradeMethod": "auto"}
+		d := rocketmqTraceOnFixtureNewResourceData(t, r, rocketmqTraceOnFixtureRawConfig("rmq-legacy", nil), cty.NullVal(cty.Bool))
+		if err := r.Read(d, client); err != nil {
+			t.Fatal(err)
+		}
+		if d.Get("software.0.maintain_time") != "02:00-06:00" {
+			t.Fatal("legacy maintenance state was lost")
+		}
+	})
+	t.Run("explicit whitelist replaces the server default", func(t *testing.T) {
+		fixture, client := newRocketmqTraceOnFixture(t)
+		fixture.ipWhitelists = []string{"0.0.0.0/0", "10.0.0.0/8"}
+		raw := rocketmqTraceOnFixtureRawConfig("rmq-create-config", nil)
+		raw["ip_whitelists"] = []interface{}{"10.0.0.0/8", "192.168.0.0/16"}
+		d := rocketmqTraceOnFixtureNewResourceData(t, r, raw, cty.NullVal(cty.Bool))
+		if err := r.Update(d, client); err != nil {
+			t.Fatal(err)
+		}
+		deletes := fixture.captured(http.MethodDelete, instancePath+"/ip/whitelist")
+		if len(deletes) != 1 {
+			t.Fatalf("expected removal of server default, got %d deletes", len(deletes))
+		}
+		query, err := url.ParseQuery(deletes[0].query)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if query.Get("ipWhitelists") != "0.0.0.0/0" {
+			t.Fatalf("removed the wrong entries: %v", query)
+		}
+		adds := fixture.captured(http.MethodPost, instancePath+"/ip/whitelist")
+		if len(adds) != 1 {
+			t.Fatalf("expected one missing-entry request, got %d", len(adds))
+		}
+		var body map[string]interface{}
+		if err := json.Unmarshal(adds[0].body, &body); err != nil {
+			t.Fatal(err)
+		}
+		values, _ := body["ipWhitelists"].([]interface{})
+		if len(values) != 1 || values[0] != "192.168.0.0/16" {
+			t.Fatalf("unexpected additions: %v", values)
+		}
+	})
+	t.Run("unconfirmed server whitelist prevents writes", func(t *testing.T) {
+		fixture, client := newRocketmqTraceOnFixture(t)
+		fixture.whitelistReadFails = true
+		raw := rocketmqTraceOnFixtureRawConfig("rmq-create-config", nil)
+		raw["ip_whitelists"] = []interface{}{"10.0.0.0/8"}
+		d := rocketmqTraceOnFixtureNewResourceData(t, r, raw, cty.NullVal(cty.Bool))
+		if err := r.Update(d, client); err == nil {
+			t.Fatal("expected the authoritative read failure")
+		}
+		for _, method := range []string{http.MethodPost, http.MethodDelete} {
+			if len(fixture.captured(method, instancePath+"/ip/whitelist")) != 0 {
+				t.Fatal("unconfirmed whitelist must not be changed")
+			}
+		}
+		if d.Id() != rocketmqTraceOnFixtureInstanceId {
+			t.Fatal("failed reconciliation must retain the resource ID")
+		}
+	})
+}
+
+func TestUnitAliCloudRocketmqInstanceRenewalBillingIdentity(t *testing.T) {
+	for _, product := range []string{"ons_rmqsub_public_cn", "ons_rmqsub_public_intl", ""} {
+		t.Run(product, func(t *testing.T) {
+			fixture, client := newRocketmqTraceOnFixture(t)
+			fixture.commodityCode, fixture.paymentType = product, "Subscription"
+			if product == "ons_rmqsub_public_cn" {
+				fixture.renewalFailures = 1
+			}
+			r := rocketmq.ResourceInstance()
+			raw := rocketmqTraceOnFixtureRawConfig("rmq-renewal", nil)
+			raw["payment_type"] = "Subscription"
+			raw["auto_renew"] = true
+			raw["auto_renew_period"] = 1
+			raw["auto_renew_period_unit"] = "Month"
+			d := rocketmqTraceOnFixtureNewResourceData(t, r, raw, cty.NullVal(cty.Bool))
+			err := r.Update(d, client)
+			if product == "" && err == nil {
+				t.Fatal("missing billing identity must fail before renewal")
+			}
+			if product != "" && err != nil {
+				t.Fatal(err)
+			}
+			count := 0
+			for _, request := range fixture.captured(http.MethodPost, "/") {
+				values, err := url.ParseQuery(request.query + "&" + string(request.body))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if values.Get("Action") != "SetRenewal" {
+					continue
+				}
+				count++
+				if values.Get("ProductCode") != "ons" || values.Get("ProductType") != product || values.Get("SubscriptionType") != "Subscription" || values.Get("InstanceIDs") != rocketmqTraceOnFixtureInstanceId {
+					t.Fatalf("incorrect renewal identity: %v", values)
+				}
+			}
+			expected := 1
+			if product == "ons_rmqsub_public_cn" {
+				expected = 2
+			}
+			if product == "" {
+				expected = 0
+			}
+			if count != expected {
+				t.Fatalf("renewal requests=%d, expected=%d", count, expected)
+			}
+		})
+	}
 }

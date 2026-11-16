@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -500,6 +501,61 @@ func TestAccAliCloudECSSecurityGroupRuleSourceGroupOwnerIDCrossAccount(t *testin
 	})
 }
 
+// TestAccAliCloudECSSecurityGroupRuleCidrIp covers the accepted single IPv4 CIDR
+// form and the plan-time rejection of a comma separated CIDR list (#4888).
+func TestAccAliCloudECSSecurityGroupRuleCidrIp(t *testing.T) {
+	resourceId := "alicloud_security_group_rule.test"
+	name := tfacctest.RandString(4)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckSecurityGroupRuleCidrIpDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: hclSecurityGroupRuleCidrIpSingle(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "type", "ingress"),
+					resource.TestCheckResourceAttr(resourceId, "ip_protocol", "tcp"),
+					resource.TestCheckResourceAttr(resourceId, "nic_type", "intranet"),
+					resource.TestCheckResourceAttr(resourceId, "policy", "accept"),
+					resource.TestCheckResourceAttr(resourceId, "port_range", "22/22"),
+					resource.TestCheckResourceAttr(resourceId, "priority", "1"),
+					resource.TestCheckResourceAttr(resourceId, "cidr_ip", "192.168.0.0/16"),
+					resource.TestCheckResourceAttr(resourceId, "description", "tf-testAccSGRCidrIp"),
+					resource.TestCheckResourceAttrSet(resourceId, "security_group_id"),
+					resource.TestCheckResourceAttr(resourceId, "source_security_group_id", ""),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// The original defect created the rule and failed about ten minutes
+				// later while reading it back; the list is rejected at plan time now.
+				Config:      hclSecurityGroupRuleCidrIpMultiple(name),
+				ExpectError: regexp.MustCompile("multiple CIDRs are not supported in one security group rule"),
+			},
+			{
+				// Restore the valid configuration after the rejected plan so the
+				// post-test destroy does not reuse the invalid CIDR list.
+				Config: hclSecurityGroupRuleCidrIpSingle(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "cidr_ip", "192.168.0.0/16"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 type testAccSecurityGroupRuleCrossAccountPeer struct {
 	accountID       string
 	vpcID           string
@@ -741,6 +797,28 @@ func testAccCheckSecurityGroupRuleDestroy(s *terraform.State) error {
 	return nil
 }
 
+// testAccCheckSecurityGroupRuleCidrIpDestroy fails when the rule is still
+// readable after destroy; the shared helper only ignores NotFound errors.
+func testAccCheckSecurityGroupRuleCidrIpDestroy(s *terraform.State) error {
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	ecsService := ecssvc.NewService(client)
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_security_group_rule" {
+			continue
+		}
+		rule, err := ecsService.DescribeSecurityGroupRule(rs.Primary.ID)
+		if err == nil {
+			return fmt.Errorf("security group rule %s still exists: %#v", rs.Primary.ID, rule)
+		}
+		if !NotFoundError(err) {
+			return WrapError(err)
+		}
+	}
+
+	return nil
+}
+
 func hclSecurityGroupRuleBasic(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -837,6 +915,63 @@ resource "alicloud_security_group_rule" "test" {
   security_group_id = alicloud_security_group.test.0.id
   cidr_ip           = "0.0.0.0/0"
   description       = "abcd"
+}
+`, name)
+}
+
+func hclSecurityGroupRuleCidrIpSingle(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccSGRCidrIp%s"
+}
+
+data "alicloud_vpcs" "test" {
+  name_regex = "^default-NODELETING$"
+}
+
+resource "alicloud_security_group" "test" {
+  vpc_id              = data.alicloud_vpcs.test.ids.0
+  security_group_name = var.name
+}
+
+resource "alicloud_security_group_rule" "test" {
+  type              = "ingress"
+  ip_protocol       = "tcp"
+  nic_type          = "intranet"
+  policy            = "accept"
+  port_range        = "22/22"
+  priority          = 1
+  security_group_id = alicloud_security_group.test.id
+  cidr_ip           = "192.168.0.0/16"
+  description       = "tf-testAccSGRCidrIp"
+}
+`, name)
+}
+
+func hclSecurityGroupRuleCidrIpMultiple(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccSGRCidrIpMulti%s"
+}
+
+data "alicloud_vpcs" "test" {
+  name_regex = "^default-NODELETING$"
+}
+
+resource "alicloud_security_group" "test" {
+  vpc_id              = data.alicloud_vpcs.test.ids.0
+  security_group_name = var.name
+}
+
+resource "alicloud_security_group_rule" "test" {
+  type              = "ingress"
+  ip_protocol       = "tcp"
+  nic_type          = "intranet"
+  policy            = "accept"
+  port_range        = "22/22"
+  priority          = 1
+  security_group_id = alicloud_security_group.test.id
+  cidr_ip           = "192.168.0.0/16,10.0.0.0/8"
 }
 `, name)
 }
@@ -1245,5 +1380,76 @@ func TestUnitECSSecurityGroupRuleInvalidImportID(t *testing.T) {
 	d.SetId("sg-12345678:ingress:tcp:80/80:internet:0.0.0.0/0")
 	if v := parseSecurityRuleId(d, nil, 6); v != "" {
 		t.Fatalf("expected empty policy for a six-part ID, got %q", v)
+	}
+}
+
+func TestUnitECSSecurityGroupRuleCidrIpValidation(t *testing.T) {
+	validateFunc := resourceAliyunSecurityGroupRule().Schema["cidr_ip"].ValidateFunc
+	if validateFunc == nil {
+		t.Fatal("expected cidr_ip to declare a ValidateFunc")
+	}
+
+	for _, value := range []string{"0.0.0.0/0", "192.168.0.0/16", "172.16.5.4", "182.254.11.243/32", "10.0.0.0/8"} {
+		if _, errs := validateFunc(value, "cidr_ip"); len(errs) != 0 {
+			t.Fatalf("expected %q to be accepted, got %v", value, errs)
+		}
+	}
+
+	// A comma or whitespace separated list must be rejected at plan time instead
+	// of being sent to the API and failing later while reading the rule back (#4888).
+	for _, value := range []string{"192.168.0.0/16,10.0.0.0/8", "192.168.0.0/16 10.0.0.0/8", "1.2.3.4, 5.6.7.8"} {
+		_, errs := validateFunc(value, "cidr_ip")
+		if len(errs) != 1 {
+			t.Fatalf("expected %q to be rejected, got %v", value, errs)
+		}
+		if !strings.Contains(errs[0].Error(), "multiple CIDRs are not supported in one security group rule") {
+			t.Fatalf("expected the multi-CIDR advice for %q, got %v", value, errs[0])
+		}
+		if !strings.Contains(errs[0].Error(), "define one alicloud_security_group_rule resource per CIDR") {
+			t.Fatalf("expected the per-CIDR resource advice for %q, got %v", value, errs[0])
+		}
+	}
+
+	// A single value that is only padded or has a trailing separator keeps the
+	// generic single-value message instead of the multi-CIDR advice.
+	for _, value := range []string{" 192.168.0.0/16", "192.168.0.0/16 ", "192.168.0.0/16,"} {
+		_, errs := validateFunc(value, "cidr_ip")
+		if len(errs) != 1 {
+			t.Fatalf("expected %q to be rejected, got %v", value, errs)
+		}
+		if strings.Contains(errs[0].Error(), "multiple CIDRs") {
+			t.Fatalf("expected the generic message for %q, got %v", value, errs[0])
+		}
+		if !strings.Contains(errs[0].Error(), "must be a valid IPv4 address or CIDR block") {
+			t.Fatalf("expected the generic IPv4 message for %q, got %v", value, errs[0])
+		}
+	}
+
+	// IPv6 values belong to ipv6_cidr_ip and must say so.
+	for _, value := range []string{"::/0", "2001:db8::/32", "::1", "::ffff:192.168.0.1"} {
+		_, errs := validateFunc(value, "cidr_ip")
+		if len(errs) != 1 {
+			t.Fatalf("expected %q to be rejected, got %v", value, errs)
+		}
+		if !strings.Contains(errs[0].Error(), "ipv6_cidr_ip") {
+			t.Fatalf("expected the ipv6_cidr_ip hint for %q, got %v", value, errs[0])
+		}
+	}
+
+	// An explicitly empty value keeps the pre-existing "empty means unset"
+	// behaviour: d.GetOk already skips it, so rejecting it here would break
+	// configurations that pass an empty module or variable default.
+	if _, errs := validateFunc("", "cidr_ip"); len(errs) != 0 {
+		t.Fatalf("expected the empty string to be treated as unset, got %v", errs)
+	}
+
+	for _, value := range []string{"not-a-cidr", "192.168.0.0/33", "192.168.0.0/16/8"} {
+		_, errs := validateFunc(value, "cidr_ip")
+		if len(errs) != 1 {
+			t.Fatalf("expected %q to be rejected, got %v", value, errs)
+		}
+		if !strings.Contains(errs[0].Error(), "must be a valid IPv4 address or CIDR block") {
+			t.Fatalf("expected the generic IPv4 message for %q, got %v", value, errs[0])
+		}
 	}
 }

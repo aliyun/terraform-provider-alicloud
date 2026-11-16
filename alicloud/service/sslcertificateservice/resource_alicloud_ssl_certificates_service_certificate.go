@@ -41,6 +41,10 @@ func resourceAliCloudSslCertificatesServiceCertificate() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"cert_identifier": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"certificate_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -195,6 +199,7 @@ func resourceAliCloudSslCertificatesServiceCertificateRead(d *schema.ResourceDat
 	}
 
 	d.Set("cert", objectRaw["Cert"])
+	d.Set("cert_identifier", objectRaw["CertIdentifier"])
 	d.Set("certificate_name", objectRaw["Name"])
 	d.Set("encrypt_cert", objectRaw["EncryptCert"])
 	d.Set("encrypt_private_key", objectRaw["EncryptPrivateKey"])

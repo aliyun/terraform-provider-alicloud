@@ -133,5 +133,11 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  DataSourceLoadBalancers,
 			},
 		},
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_slb_listener_acl_attachment",
+				Factory:  NewListenerAclAttachmentResource,
+			},
+		},
 	}
 }
