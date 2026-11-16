@@ -105,6 +105,74 @@ class ReuseTest(unittest.TestCase):
         self.assertEqual(record['status']['status'], 'success')
         self.assertEqual(reports[0]['status'], 'success')
 
+    def test_scan_limit_runs_every_case_and_preserves_skip_reason_when_resuming(self):
+        client = Client([m.ReuseScanLimitReached()])
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()) as log:
+            output, summary = Path(root) / 'output', Path(root) / 'summary.md'
+            with patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': str(summary)}):
+                for _ in range(2):
+                    m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+            record = json.loads((output / (m.digest(PACKAGE) + '.json')).read_text())
+            report = json.loads((output / 'diagnostics/acc-summary.json').read_text())
+            self.assertIn('超限不复用（1024 条）', summary.read_text())
+            self.assertIn('本计划全部执行', log.getvalue())
+        self.assertEqual(len(client.queries), 1)
+        self.assertEqual(len(client.submissions), 1)
+        self.assertEqual(client.submissions[0]['testCases'], CASES)
+        self.assertEqual(record['reusedCases'], {})
+        self.assertEqual(record['reuseSkipReason'], 'scan-limit-1024')
+        self.assertEqual(record['receipt']['taskId'], 43)
+        self.assertEqual((report['total'], report['reused'], report['toRun']), (2, 0, 2))
+        self.assertEqual(report['packages'][0]['reuseValidation'], 'skipped-limit')
+
+    def test_resume_rejects_unknown_skip_reasons_without_replaying_or_rewriting_original_receipt(self):
+        for invalid in ('', 'scan-limit-2048', 1024, False, [], ['scan-limit-1024'], {}):
+            with self.subTest(reason=invalid), tempfile.TemporaryDirectory() as root:
+                client = Client([m.ReuseScanLimitReached()])
+                output = Path(root)
+                with contextlib.redirect_stdout(io.StringIO()):
+                    m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+                    path = output / (m.digest(PACKAGE) + '.json')
+                    record = json.loads(path.read_text())
+                    record['reuseSkipReason'] = invalid
+                    path.write_text(json.dumps(record, indent=2))
+                    original = path.read_bytes()
+                    with self.assertRaisesRegex(ValueError, 'Invalid saved reuse skip reason'):
+                        m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+                self.assertEqual(path.read_bytes(), original)
+                self.assertEqual(len(client.submissions), 1)
+                self.assertEqual(len(client.queries), 1)
+
+    def test_resume_rejects_skip_reason_with_reused_receipts_without_submitting_replacements(self):
+        client = Client([{'TestAccOne': 42}] * 2)
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()):
+            output = Path(root)
+            m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+            path = output / (m.digest(PACKAGE) + '.json')
+            record = json.loads(path.read_text())
+            record['reuseSkipReason'] = 'scan-limit-1024'
+            path.write_text(json.dumps(record, indent=2))
+            original = path.read_bytes()
+            with self.assertRaisesRegex(ValueError, 'Invalid saved reuse skip reason'):
+                m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+            self.assertEqual(path.read_bytes(), original)
+        self.assertEqual(len(client.submissions), 1)
+        self.assertEqual(len(client.queries), 2)
+
+    def test_scan_limit_during_revalidation_preserves_original_references_without_new_submissions(self):
+        client = Client([{'TestAccOne': 42}, m.ReuseScanLimitReached(), m.ReuseScanLimitReached()])
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()):
+            output = Path(root)
+            for _ in range(2):
+                with self.assertRaisesRegex(ValueError, '1024 history candidates'):
+                    m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+            record = json.loads((output / (m.digest(PACKAGE) + '.json')).read_text())
+        self.assertEqual(len(client.submissions), 1)
+        self.assertEqual(client.submissions[0]['testCases'], ['TestAccTwo'])
+        self.assertEqual(record['reusedCases'], {'TestAccOne': '42'})
+        self.assertEqual(record['receipt']['taskId'], 43)
+        self.assertEqual(record['reuseValidation'], 'invalid')
+
     def test_ci_summary_counts_cases_not_receipts_for_all_partial_and_no_hits(self):
         for hits, counts in [({'TestAccOne': 42, 'TestAccTwo': 42}, (2, 0)),
                              ({'TestAccOne': 42}, (1, 1)), ({}, (0, 2))]:

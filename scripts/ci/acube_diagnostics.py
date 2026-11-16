@@ -10,6 +10,7 @@ import urllib.request
 
 
 MAX_LOG_BYTES = 2 * 1024 * 1024
+REUSE_SCAN_LIMIT = 1024
 ANSI = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
 SENSITIVE = re.compile(
     r'(?i)access[_-]?key|secret[_-]?key|password|authorization|cookie|'
@@ -152,7 +153,8 @@ def publish_acc_summary(output, commit, packages, failed=False):
     block = '\n### ACC 用例统计 · ' + report['status'] + '\n\n' + totals + '\n\n'
     block += '| 包 | 总数 | 已确认复用 | 需执行（补跑） | 复用核验 | 原任务 | 执行任务 |\n'
     block += '| --- | ---: | ---: | ---: | --- | --- | --- |\n'
-    labels = {'verified': '已通过', 'not-needed': '无需复用', 'pending': '待复核', 'unconfirmed': '未确认'}
+    labels = {'verified': '已通过', 'not-needed': '无需复用', 'pending': '待复核', 'unconfirmed': '未确认',
+              'skipped-limit': f'超限不复用（{REUSE_SCAN_LIMIT} 条）'}
     for row in packages:
         cells = [redact(row['name']).replace('|', '\\|').replace('\n', ' '), str(row['total']),
                  count(row['reused']), count(row['toRun']), labels[row['reuseValidation']],
@@ -175,7 +177,7 @@ def publish_report(output, report):
                  + '- Check: `' + report['name'] + '`\n'
                  + '- Commit: `' + str(report.get('commitSha')) + '`\n'
                  + '- Exit code: `' + str(report.get('exitCode')) + '`\n')
-        for field in ('error', 'validationError', 'diagnosticWarning'):
+        for field in ('error', 'taskError', 'validationError', 'diagnosticWarning'):
             if report.get(field):
                 block += '- ' + field + ': ' + report[field] + '\n'
         if report.get('phases'):

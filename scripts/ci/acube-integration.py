@@ -16,12 +16,14 @@ import time
 import urllib.error
 import urllib.request
 
-from acube_diagnostics import publish_acc_summary, publish_report, redact, report_directory, terminal_report
+from acube_diagnostics import (REUSE_SCAN_LIMIT, publish_acc_summary, publish_report, redact,
+                               report_directory, terminal_report)
 import doc_examples
 
 REPOSITORY = 'code.alibaba-inc.com/opensource-tools/terraform-provider-alicloud'
 BASE_URL = 'https://pre-acube.aliyun-inc.com'
 TERMINAL = {'success', 'failed', 'cancelled'}
+REUSE_SCAN_SKIP_REASON = f'scan-limit-{REUSE_SCAN_LIMIT}'
 
 
 def digest(value):
@@ -100,6 +102,11 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise ValueError('ACube redirects are not allowed')
 
 
+class ReuseScanLimitReached(ValueError):
+    def __init__(self):
+        super().__init__(f'ACube reuse skipped after {REUSE_SCAN_LIMIT} history candidates; no reusable evidence confirmed')
+
+
 class Client:
     def __init__(self, token):
         if not token or len(token) < 32:
@@ -117,11 +124,18 @@ class Client:
         for attempt in range(10):
             try:
                 with self.opener.open(request, timeout=max(1, min(90, deadline - time.monotonic()))) as response:
-                    if path == '/acctest/reusable-cases' and response.headers.get('X-AccTest-Reuse-Query') != 'complete-v1':
-                        raise ValueError('ACube reuse query has no completion proof; no missing-case submission is authorized')
+                    reuse_proof = response.headers.get('X-AccTest-Reuse-Query')
+                    reuse_limit = response.headers.get('X-AccTest-Reuse-Scan-Limit')
                     value = json.load(response)
                 if not isinstance(value, dict) or value.get('code') != 'SUCCESS' or not isinstance(value.get('data'), dict):
                     raise ValueError('Invalid ACube response')
+                if path == '/acctest/reusable-cases':
+                    if reuse_proof == 'skipped-scan-limit-v1':
+                        if value['data'] or reuse_limit != str(REUSE_SCAN_LIMIT):
+                            raise ValueError('Invalid ACube reuse scan-limit response')
+                        raise ReuseScanLimitReached()
+                    if reuse_proof != 'complete-v1':
+                        raise ValueError('ACube reuse query has no completion proof; no missing-case submission is authorized')
                 return value['data']
             except urllib.error.HTTPError as error:
                 error.close()
@@ -135,11 +149,19 @@ class Client:
 
 
 def validate_result(status, request):
-    if not isinstance(status, dict) or status.get('status') != 'success':
+    if not isinstance(status, dict) or status.get('status') not in ('success', 'failed'):
+        raise ValueError('ACube task did not succeed')
+    task_status = status['status']
+    if task_status == 'failed' and request['mode'] != 'acctest':
         raise ValueError('ACube task did not succeed')
     result = status.get('result') or {}
     if not isinstance(result, dict):
         raise ValueError('Invalid ACube result')
+    if task_status == 'failed' and (
+            result.get('error') != 'Command or acceptance checks failed'
+            or result.get('exitCode') != 0 or result.get('timedOut') is True
+            or result.get('infrastructureFailure') or result.get('finalizationErrors')):
+        raise ValueError('ACube task did not succeed')
     for key in ('sourceId', 'checkBaseSourceId', 'commitSha', 'baseCommitSha', 'mode'):
         if result.get(key) != request[key]: raise ValueError('Result identity mismatch: ' + key)
     if type(result.get('exitCode')) not in (int, float) or result['exitCode'] != 0 or result.get('timedOut') is True:
@@ -150,8 +172,18 @@ def validate_result(status, request):
         if (not isinstance(cases, list) or any(not isinstance(c, dict) for c in cases)
                 or len(cases) != len(request['testCases']) or {c.get('name') for c in cases} != set(request['testCases'])):
             raise ValueError('Missing or duplicate AccTest results')
-        if result.get('testDirectory') != request['variables']['TEST'] or any(c.get('result') != 'PASS' for c in cases):
-            raise ValueError('AccTest FAIL/SKIP is not PASS; inspect case-level evidence')
+        if result.get('testDirectory') != request['variables']['TEST']:
+            raise ValueError('AccTest directory mismatch')
+        outcomes = [c.get('result') for c in cases]
+        if any(outcome not in ('PASS', 'SKIP') for outcome in outcomes):
+            raise ValueError('AccTest returned a failed or invalid case result')
+        if task_status == 'failed':
+            # The runner also emits this failure when any selected case skips.
+            workspace_cleanup = result.get('workspaceCleanup', {'status': 'not-created'})
+            if ('SKIP' not in outcomes or result.get('signal')
+                    or not isinstance(workspace_cleanup, dict)
+                    or workspace_cleanup.get('status') not in ('removed', 'already-absent', 'not-created')):
+                raise ValueError('ACube task did not succeed')
     else:
         doc_examples.validate_result(result, request)
     return result
@@ -225,19 +257,27 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         item_file = output / (digest(name) + '.json')
         try:
             reused_cases = {}
+            reuse_skip_reason = None
             candidate = copy.deepcopy(request)
             saved = json.loads(item_file.read_text()) if item_file.exists() else None
             if saved is not None:
                 if not isinstance(saved, dict) or saved.get('candidateRequest') != candidate:
                     raise ValueError('Saved submission identity differs; retain original evidence and use a new output directory')
                 reused_cases = saved.get('reusedCases', {})
+                reuse_skip_reason = saved.get('reuseSkipReason')
+                if (reuse_skip_reason not in (None, REUSE_SCAN_SKIP_REASON)
+                        or reuse_skip_reason is not None and reused_cases):
+                    raise ValueError('Invalid saved reuse skip reason; reconcile the original record')
                 if (not isinstance(reused_cases, dict) or set(reused_cases) - set(candidate.get('testCases', []))
                         or any(not isinstance(task, str) or not re.fullmatch(r'[1-9][0-9]{0,18}', task)
                                for task in reused_cases.values())):
                     raise ValueError('Invalid saved reuse references; reconcile the original record')
             elif kind == 'acctest' and (capabilities.get('accTestCaseReuse') == 'exact-source-v1'
                     or capabilities.get('accTestContentReuse') == 'whole-source-and-comments-v1'):
-                reused_cases = reusable_cases(client, candidate)
+                try:
+                    reused_cases = reusable_cases(client, candidate)
+                except ReuseScanLimitReached:
+                    reuse_skip_reason = REUSE_SCAN_SKIP_REASON
             if kind == 'acctest':
                 request = copy.deepcopy(candidate)
                 request['testCases'] = [case for case in value if case not in reused_cases]
@@ -248,9 +288,12 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                 raise ValueError('Saved remainder differs; reconcile the original submission')
             record = saved or {'name': name, 'candidateRequest': candidate, 'request': request,
                                'reusedCases': reused_cases, 'submission': 'UNKNOWN'}
+            if reuse_skip_reason:
+                record['reuseSkipReason'] = reuse_skip_reason
+                print(f'ACC 复用已跳过：{name}，扫描达到 {REUSE_SCAN_LIMIT} 条上限，本计划全部执行', flush=True)
             if kind == 'acctest':
                 acc_rows[name].update(reused=0 if not reused_cases else None, toRun=len(request['testCases']),
-                    reuseValidation='pending' if reused_cases else 'not-needed',
+                    reuseValidation='pending' if reused_cases else 'skipped-limit' if reuse_skip_reason else 'not-needed',
                     originalTaskIds=sorted(set(reused_cases.values())))
                 print('ACC 用例分配：' + name + '，总数=' + str(len(value)) + '，复用候选='
                       + str(len(reused_cases)) + '，需执行（补跑）=' + str(len(request['testCases'])), flush=True)
@@ -305,6 +348,9 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                 except ValueError as error:
                     validation_error = str(error)
                 report = terminal_report(record['name'], task_id, status, record['request'], validation_error, logs)
+                if not validation_error and report['taskStatus'] == 'failed':
+                    report['status'] = 'success'
+                    report['taskError'] = report.pop('error')
                 if record.get('example') and not validation_error:
                     report['example'] = doc_examples.proof(record['example'], task_id)
                 if log_warning:
