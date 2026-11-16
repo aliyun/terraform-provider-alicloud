@@ -90,6 +90,9 @@ The following arguments are supported:
 * `desktop_name` - (Optional) The desktop name of the Desktop.
 * `desktop_type` - (Optional) The desktop type of the Desktop.
 * `office_site_id` - (Required, ForceNew) The ID of the Simple Office Site.
+* `subnet_id` - (Optional, Computed, ForceNew, Available since v2.3.0) The ID of the vSwitch in the office site VPC where the Desktop is created. It is required when the office site is bound to a VPC that you created yourself. Changing this argument recreates the Desktop.
+
+  -> **NOTE:** For office sites whose VPC is created by the service, the API accepts this value but does not return it. Terraform keeps the configured value in the state and therefore cannot detect changes made outside Terraform.
 * `end_user_ids` - (Optional, ForceNew) The desktop end user id of the Desktop.
 * `host_name` - (Optional, Computed) The hostname of the Desktop. It takes effect only for Windows desktops in an AD office site. The value must be 2 to 15 characters and can contain letters, digits and hyphens (-); it cannot start or end with a hyphen, cannot contain consecutive hyphens, and cannot consist of digits only. For multiple desktops, the `name_prefix[begin_number,bits]name_suffix` format can be used to assign sequential hostnames. If it is not specified, the hostname assigned by the system is used.
 
