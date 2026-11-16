@@ -38,10 +38,6 @@ variable "region" {
   default = "cn-hangzhou"
 }
 
-variable "endpoint_group_region" {
-  default = "cn-beijing"
-}
-
 provider "alicloud" {
   region  = var.region
   profile = "default"
@@ -79,7 +75,7 @@ resource "alicloud_ga_basic_accelerator" "default" {
 
 resource "alicloud_ga_basic_endpoint_group" "default" {
   accelerator_id            = alicloud_ga_basic_accelerator.default.id
-  endpoint_group_region     = var.endpoint_group_region
+  endpoint_group_region     = var.region
   endpoint_type             = "SLB"
   endpoint_address          = alicloud_slb_load_balancer.default.id
   basic_endpoint_group_name = "terraform-example"
