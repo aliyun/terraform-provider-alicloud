@@ -71,12 +71,10 @@ resource "alicloud_slb_load_balancer" "default" {
 }
 
 resource "alicloud_ga_basic_accelerator" "default" {
-  duration               = 1
+  payment_type           = "PayAsYouGo"
   basic_accelerator_name = "terraform-example"
   description            = "terraform-example"
   bandwidth_billing_type = "CDT"
-  auto_use_coupon        = "true"
-  auto_pay               = true
 }
 
 resource "alicloud_ga_basic_endpoint_group" "default" {
