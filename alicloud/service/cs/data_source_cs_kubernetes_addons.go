@@ -83,43 +83,19 @@ func DataSourceCSKubernetesAddons() *schema.Resource {
 }
 
 func dataCSKubernetesAddonsRead(d *schema.ResourceData, meta interface{}) error {
-	filterAddons := make(map[string]*Component)
-	var ids, names []string
-
 	clusterId := d.Get("cluster_id").(string)
 	addons, err := describeAvailableAddons(d, meta)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "describeAddonsMeta", err)
+	}
+
+	var ids, names []string
 	for _, addon := range addons {
-		if nameRegex, ok := d.GetOk("name_regex"); ok {
-			r, err := regexp.Compile(nameRegex.(string))
-			if err != nil {
-				return errs.WrapError(err)
-			}
-			if !r.MatchString(addon.ComponentName) {
-				continue
-			}
-		}
-		if ids, ok := d.GetOk("ids"); ok {
-			findId := func(id string, ids []string) (ret bool) {
-				for _, i := range ids {
-					if id == i {
-						ret = true
-					}
-				}
-				return
-			}
-			if !findId(fmt.Sprintf("%s%s%s", clusterId, COLON_SEPARATED, addon.ComponentName), convert.ExpandStringList(ids.([]interface{}))) {
-				continue
-			}
-		}
-		filterAddons[addon.ComponentName] = addon
 		ids = append(ids, fmt.Sprintf("%s%s%s", clusterId, COLON_SEPARATED, addon.ComponentName))
 		names = append(names, addon.ComponentName)
 	}
 
-	if err != nil {
-		return errs.WrapErrorf(err, errs.DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "describeAddonsMeta", err)
-	}
-	result := fetchAddonsMetadata(filterAddons)
+	result := fetchAddonsMetadata(addons)
 
 	d.Set("cluster_id", clusterId)
 	d.Set("ids", ids)
@@ -130,8 +106,48 @@ func dataCSKubernetesAddonsRead(d *schema.ResourceData, meta interface{}) error 
 	return nil
 }
 
+// addonsNameMatcher turns the ids and name_regex arguments into a filter that is applied before
+// the per-addon requests, instead of dropping their results afterwards.
+func addonsNameMatcher(d *schema.ResourceData, clusterId string) (func(name string) bool, error) {
+	var nameRegex *regexp.Regexp
+	if nameRegexArg, ok := d.GetOk("name_regex"); ok {
+		regex, err := regexp.Compile(nameRegexArg.(string))
+		if err != nil {
+			return nil, err
+		}
+		nameRegex = regex
+	}
+
+	var wantedIds map[string]bool
+	if idsArg, ok := d.GetOk("ids"); ok {
+		wantedIds = make(map[string]bool)
+		for _, id := range convert.ExpandStringList(idsArg.([]interface{})) {
+			wantedIds[id] = true
+		}
+	}
+
+	if nameRegex == nil && wantedIds == nil {
+		return nil, nil
+	}
+
+	return func(name string) bool {
+		if nameRegex != nil && !nameRegex.MatchString(name) {
+			return false
+		}
+		if wantedIds != nil && !wantedIds[fmt.Sprintf("%s%s%s", clusterId, COLON_SEPARATED, name)] {
+			return false
+		}
+		return true
+	}, nil
+}
+
 func describeAvailableAddons(d *schema.ResourceData, meta interface{}) (map[string]*Component, error) {
 	clusterId := d.Get("cluster_id").(string)
+
+	match, err := addonsNameMatcher(d, clusterId)
+	if err != nil {
+		return nil, err
+	}
 
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
@@ -139,7 +155,7 @@ func describeAvailableAddons(d *schema.ResourceData, meta interface{}) (map[stri
 	}
 	csClient := CsClient{client}
 
-	availableAddons, err := csClient.DescribeCsKubernetesAllAvailableAddons(clusterId)
+	availableAddons, err := csClient.DescribeCsKubernetesAllAvailableAddons(clusterId, match)
 	if err != nil {
 		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAllAvailableAddons", err)
 	}
