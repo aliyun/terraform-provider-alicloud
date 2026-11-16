@@ -74,11 +74,16 @@ def acceptance_scope(base, head):
                          + (error.stderr or '')[:4000]) from None
 
 
+def scope_blockers(scope, kind):
+    coverage = set(scope.get('coverageBlockers', [])) if kind == 'examples' else set()
+    return [reason for reason in scope.get('blocked', []) if reason not in coverage]
+
+
 def plan(base, head, include_examples=True):
     scope = acceptance_scope(base, head)
     docs = set()
     if include_examples:
-        for file in scope['resourceFiles'] if not scope['blocked'] else []:
+        for file in scope['resourceFiles'] if not scope_blockers(scope, 'examples') else []:
             name = Path(file).name
             if file.startswith('alicloud/service/') and name.startswith(('resource_', 'data_source_')):
                 resolved = subprocess.check_output(['go', 'run', 'scripts/title/title_check.go', '-resolve', file], text=True)
@@ -211,14 +216,21 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         items = [(e['name'], e) for e in frozen['examples']]
     (output / 'plan.json').write_text(json.dumps(frozen, indent=2))
     (output / 'plan.json').chmod(0o600)
-    blockers = list(frozen.get('scope', {}).get('blocked', []))
+    scope_errors = scope_blockers(frozen.get('scope', {}), kind)
+    blockers = list(scope_errors)
+    unverified_coverage = frozen.get('scope', {}).get('unverifiedCoverage', [])
+    if kind == 'acctest' and unverified_coverage:
+        (output / 'diagnostics' / 'acc-unverified-coverage.json').write_text(
+            json.dumps(unverified_coverage, indent=2))
+        for gap in unverified_coverage:
+            print('AccTest coverage unverified: ' + gap, flush=True)
     if kind == 'examples':
         blockers.extend(frozen.get('documents', {}).get('blocked', []))
-        inventory = {key:frozen.get('documents', {}).get(key, []) for key in ('proseReview', 'notApplicable')}
+        inventory = {key:frozen.get('documents', {}).get(key, []) for key in ('proseReview', 'notApplicable', 'unverified')}
         (output / 'diagnostics' / 'document-review.json').write_text(json.dumps(inventory, indent=2))
         print('Document review: ' + json.dumps(inventory), flush=True)
     if blockers:
-        reason = 'AccTest scope could not be determined' if frozen.get('scope', {}).get('blocked') else 'Document example validation could not be planned'
+        reason = 'AccTest scope could not be determined' if scope_errors else 'Document example validation could not be planned'
         report = {'status': 'blocked', 'head': frozen['head'], 'base': frozen['base'],
                   'error': reason + '; no cloud tasks submitted',
                   'scope': frozen.get('scope', {}), 'blockers': blockers}
@@ -229,7 +241,13 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
             print(f'CI planning blocker: {blocker}', file=sys.stderr, flush=True)
         raise ValueError(f"{report['error']} ({len(blockers)} blocker(s); see scope.json in CI diagnostics)")
     if not items:
-        if kind == 'acctest': publish_acc_summary(output, frozen['head'], [])
+        if kind == 'acctest':
+            publish_acc_summary(output, frozen['head'], [])
+            if unverified_coverage:
+                print('No runnable AccTests found for indirectly affected resources; see acc-unverified-coverage.json')
+                return
+        if kind == 'examples' and frozen.get('documents', {}).get('unverified'):
+            print('No runnable examples selected; see unverified scenes in document-review.json'); return
         print('Not applicable: no ' + kind + ' changes in the complete range'); return
     capabilities = client.call('GET', '/capabilities')
     if (capabilities.get('submissionIdempotency') != 'oss-admission-v1'

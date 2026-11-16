@@ -309,7 +309,15 @@ def _inventory(ref, doc, read):
     blocks = extract(doc, text)
     metadata = read(ref, manifest_path(doc))
     if metadata is None:
-        raise ValueError('Review scene grouping, assertions and ready in ' + manifest_path(doc))
+        if not blocks or linked_sources(doc, text):
+            raise ValueError('Add ' + manifest_path(doc) +
+                             ' to describe linked HCL inputs or explain why this page has no runnable examples')
+        # Each fence is an independent candidate. Never concatenate fences or
+        # inject configuration without a reviewed manifest.
+        specs = [dict(id=f'example-{block["index"]}', blocks=[block['index']],
+                      originalSha256=block['sha256'], ready=True,
+                      assertions=[dict(id=check, check=check) for check in NATIVE_CHECKS])
+                 for block in blocks]
     else:
         manifest = json.loads(metadata)
         if (not isinstance(manifest, dict) or type(manifest.get('version')) is not int
@@ -377,6 +385,33 @@ def _inventory(ref, doc, read):
     return dict(cases=cases, blocks=blocks, metadata=metadata, text=text)
 
 
+def validate_standalone_dependencies(text):
+    tokens = hcl_tokens(text)
+    _, blocks = hcl_entries(tokens)
+    declared = set()
+    for kind, labels, body in blocks:
+        if kind in ('resource', 'data'):
+            declared.add(tuple((['data'] if kind == 'data' else []) + labels))
+        elif kind == 'variable':
+            declared.add(('var', *labels))
+        elif kind == 'locals':
+            declared.update(('local', name) for name in hcl_entries(body)[0])
+    # Check ordinary traversals. Terraform validate still checks templates
+    # and dynamic expressions when the extracted scene reaches the runner.
+    for index, (kind, name) in enumerate(tokens):
+        if kind != 'identifier' or index and tokens[index-1] == ('symbol', '.'):
+            continue
+        if name not in ('data', 'var', 'local') and not name.startswith('alicloud_'):
+            continue
+        width = 3 if name == 'data' else 2
+        parts = tokens[index:index+width*2-1]
+        if (len(parts) == width*2-1 and all(t[0] == 'identifier' for t in parts[::2])
+                and all(t == ('symbol', '.') for t in parts[1::2])):
+            address = tuple(value for _, value in parts[::2])
+            if address not in declared:
+                raise ValueError('Reference is outside this HCL fence: ' + '.'.join(address))
+
+
 def validate_case(case):
     if case['originalSha256'] != case['expectedOriginalSha256']:
         raise ValueError('Source scenario changed; refresh its reviewed originalSha256: ' + case['name'])
@@ -429,9 +464,13 @@ def plan(base, head, full_docs, git, read):
             if doc.endswith('.html.markdown') and linked_sources(doc, read(head, doc)) & changed:
                 dependencies.add(doc)
         docs.update(dependencies)
-    result = dict(examples=[], blocked=[], blockedCases=[], proseReview=[], notApplicable=[])
+    result = dict(examples=[], blocked=[], blockedCases=[], proseReview=[], notApplicable=[], unverified=[])
     for doc in sorted(docs):
+        manifest = manifest_path(doc)
+        direct = doc in changed or doc in dependencies or manifest in changed
+        implicit = False
         try:
+            implicit = read(head, manifest) is None and read(base, manifest) is None
             current_text, prior_text = read(head, doc), read(base, doc)
             if current_text is None:
                 raise ValueError('Removed document requires explicit scope review: ' + doc)
@@ -456,20 +495,38 @@ def plan(base, head, full_docs, git, read):
                 raise ValueError('Removed scenarios require explicit scope review: ' + doc)
             if current.get('notApplicableReason'):
                 result['notApplicable'].append(dict(document=doc, reason=current['notApplicableReason']))
+            prior_hashes = {case['fingerprint'] for case in (prior or {}).get('cases', {}).values()}
             for identifier, case in current['cases'].items():
                 old = (prior or {}).get('cases', {}).get(identifier)
-                if doc not in full_docs and old and case['fingerprint'] == old['fingerprint']:
+                unchanged = (case['fingerprint'] in prior_hashes if implicit
+                             else old and case['fingerprint'] == old['fingerprint'])
+                if doc not in full_docs and unchanged:
                     continue
                 try:
                     validate_case(case)
+                    if implicit:
+                        validate_standalone_dependencies(case['mainTf'])
                 except ValueError as error:
+                    if implicit:
+                        reason = (f'{doc}:{case["line"]}: {error}. '
+                                  f'Provide a self-contained HCL fence or review {manifest}.')
+                        if not direct or unchanged:
+                            result['unverified'].append(dict(document=doc, scene=case['name'],
+                                                             status='NOT_VERIFIED', reason=reason))
+                            continue
+                    else:
+                        reason = doc + ': ' + str(error)
                     result['blockedCases'].append({**case, 'error': str(error)})
-                    result['blocked'].append(doc + ': ' + str(error))
+                    result['blocked'].append(reason)
                     continue
                 case['selectionReason'] = 'affected implementation/service' if doc in full_docs else 'changed scene/input/assertion'
                 result['examples'].append(case)
         except (ValueError, KeyError, TypeError) as error:
-            result['blocked'].append(doc + ': ' + str(error))
+            reason = doc + ': ' + str(error)
+            if implicit and not direct:
+                result['unverified'].append(dict(document=doc, status='NOT_VERIFIED', reason=reason))
+            else:
+                result['blocked'].append(reason)
     return result
 
 
