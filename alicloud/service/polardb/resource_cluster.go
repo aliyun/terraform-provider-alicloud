@@ -1095,8 +1095,9 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 					wait()
 					return retry.RetryableError(err)
 				}
-				logs.AddDebug(action, response, request)
+				return retry.NonRetryableError(err)
 			}
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
@@ -1230,8 +1231,9 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 					wait()
 					return retry.RetryableError(err)
 				}
-				logs.AddDebug(action, response, request)
+				return retry.NonRetryableError(err)
 			}
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
@@ -1459,8 +1461,9 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 					wait()
 					return retry.RetryableError(err)
 				}
-				logs.AddDebug(action, response, request)
+				return retry.NonRetryableError(err)
 			}
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
@@ -1491,8 +1494,9 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 					wait()
 					return retry.RetryableError(err)
 				}
-				logs.AddDebug(action, response, request)
+				return retry.NonRetryableError(err)
 			}
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
@@ -1529,8 +1533,9 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 					wait()
 					return retry.RetryableError(err)
 				}
-				logs.AddDebug(action, response, request)
+				return retry.NonRetryableError(err)
 			}
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
@@ -1616,8 +1621,9 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 					wait()
 					return retry.RetryableError(err)
 				}
-				logs.AddDebug(action, response, request)
+				return retry.NonRetryableError(err)
 			}
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
@@ -1646,8 +1652,9 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 					wait()
 					return retry.RetryableError(err)
 				}
-				logs.AddDebug(action, response, request)
+				return retry.NonRetryableError(err)
 			}
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
@@ -1672,8 +1679,9 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 					wait()
 					return retry.RetryableError(err)
 				}
-				logs.AddDebug(action, response, request)
+				return retry.NonRetryableError(err)
 			}
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
