@@ -218,6 +218,12 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
     (output / 'plan.json').chmod(0o600)
     scope_errors = scope_blockers(frozen.get('scope', {}), kind)
     blockers = list(scope_errors)
+    unverified_coverage = frozen.get('scope', {}).get('unverifiedCoverage', [])
+    if kind == 'acctest' and unverified_coverage:
+        (output / 'diagnostics' / 'acc-unverified-coverage.json').write_text(
+            json.dumps(unverified_coverage, indent=2))
+        for gap in unverified_coverage:
+            print('AccTest coverage unverified: ' + gap, flush=True)
     if kind == 'examples':
         blockers.extend(frozen.get('documents', {}).get('blocked', []))
         inventory = {key:frozen.get('documents', {}).get(key, []) for key in ('proseReview', 'notApplicable', 'unverified')}
@@ -235,7 +241,11 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
             print(f'CI planning blocker: {blocker}', file=sys.stderr, flush=True)
         raise ValueError(f"{report['error']} ({len(blockers)} blocker(s); see scope.json in CI diagnostics)")
     if not items:
-        if kind == 'acctest': publish_acc_summary(output, frozen['head'], [])
+        if kind == 'acctest':
+            publish_acc_summary(output, frozen['head'], [])
+            if unverified_coverage:
+                print('No runnable AccTests found for indirectly affected resources; see acc-unverified-coverage.json')
+                return
         if kind == 'examples' and frozen.get('documents', {}).get('unverified'):
             print('No runnable examples selected; see unverified scenes in document-review.json'); return
         print('Not applicable: no ' + kind + ' changes in the complete range'); return

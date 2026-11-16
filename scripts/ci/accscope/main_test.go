@@ -436,3 +436,30 @@ func TestAccDemo(t *testing.T) {}
 		t.Fatalf("shadowed alias established handler coverage: %+v", result)
 	}
 }
+
+func TestAccScopeReportsIndirectCoverageGapWithoutBlockingOtherCases(t *testing.T) {
+	const dir = "alicloud/service/rds/"
+	const serviceFile = dir + "service.go"
+	const legacy = dir + "resource_alicloud_rds_ddr_instance.go"
+	sources := map[string]string{
+		serviceFile:                              `package rds; type RdsService struct{}; func (s *RdsService) GetSecurityIps() int { return 1 }`,
+		legacy:                                   `package rds; func readLegacy(s *RdsService) { s.GetSecurityIps() }`,
+		dir + "resource_alicloud_db_instance.go": `package rds; func readInstance(s *RdsService) { s.GetSecurityIps() }`,
+		dir + "resource_alicloud_db_instance_test.go": `package rds; func TestAccInstance(t *testing.T) {}`,
+	}
+	before := fixture(t, sources)
+	sources[serviceFile] = strings.Replace(sources[serviceFile], "return 1", "return 2", 1)
+	indirect := selectScope(before, fixture(t, sources), []string{serviceFile})
+	if !reflect.DeepEqual(indirect.Packages[strings.TrimSuffix(dir, "/")], []string{"TestAccInstance"}) ||
+		len(indirect.Blocked) != 0 || len(indirect.UnverifiedCoverage) != 1 ||
+		!strings.Contains(indirect.UnverifiedCoverage[0], legacy) {
+		t.Fatalf("expected runnable case and nonblocking legacy coverage diagnostic, got %+v", indirect)
+	}
+
+	sources[legacy] = strings.Replace(sources[legacy], "s.GetSecurityIps()", "s.GetSecurityIps(); s.GetSecurityIps()", 1)
+	direct := selectScope(before, fixture(t, sources), []string{serviceFile, legacy})
+	if len(direct.Blocked) != 1 || len(direct.CoverageBlockers) != 1 || len(direct.UnverifiedCoverage) != 0 ||
+		!strings.Contains(direct.Blocked[0], legacy) {
+		t.Fatalf("expected missing coverage on directly modified legacy resource to block, got %+v", direct)
+	}
+}

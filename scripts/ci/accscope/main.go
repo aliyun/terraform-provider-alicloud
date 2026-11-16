@@ -51,11 +51,12 @@ type snapshot struct {
 }
 
 type accScope struct {
-	Packages         map[string][]string `json:"packages"`
-	ResourceFiles    []string            `json:"resourceFiles"`
-	Reasons          map[string][]string `json:"reasons"`
-	Blocked          []string            `json:"blocked"`
-	CoverageBlockers []string            `json:"coverageBlockers"`
+	Packages           map[string][]string `json:"packages"`
+	ResourceFiles      []string            `json:"resourceFiles"`
+	Reasons            map[string][]string `json:"reasons"`
+	Blocked            []string            `json:"blocked"`
+	UnverifiedCoverage []string            `json:"unverifiedCoverage,omitempty"`
+	CoverageBlockers   []string            `json:"coverageBlockers"`
 }
 
 func command(args ...string) ([]byte, error) {
@@ -712,6 +713,7 @@ func selectScope(before, after *snapshot, files []string) accScope {
 	result := accScope{Packages: map[string][]string{}, ResourceFiles: []string{}, Reasons: map[string][]string{}, Blocked: []string{}}
 	selected, resources, blocked := map[string]bool{}, map[string]bool{}, map[string]bool{}
 	missingCoverage := map[string]map[string]bool{}
+	directResources := map[string]bool{}
 	changedFiles := map[string]bool{}
 	for _, file := range files {
 		changedFiles[file] = true
@@ -777,6 +779,7 @@ func selectScope(before, after *snapshot, files []string) accScope {
 					blocked["cannot resolve AccTest scope for "+reason] = true
 					continue
 				}
+				directResources[targets[0]] = true
 				selectResource(targets[0], reason)
 			}
 		}
@@ -861,6 +864,7 @@ func selectScope(before, after *snapshot, files []string) accScope {
 				}
 			}
 		} else if resourceFile(d.file, registered) {
+			directResources[d.file] = true
 			selectResource(d.file, reason)
 		} else if service(d) {
 			if covered, unit := impact(id, reason, true); !covered && !unit {
@@ -903,13 +907,20 @@ func selectScope(before, after *snapshot, files []string) accScope {
 		}
 		result.Reasons[key] = sortedKeys(unique)
 	}
-	coverageBlockers := map[string]bool{}
+	coverageBlockers, unverifiedCoverage := map[string]bool{}, map[string]bool{}
 	for file, reasons := range missingCoverage {
+		if !directResources[file] {
+			message := "Indirectly affected resource has no runnable AccTest: " + file +
+				" (selected by " + strings.Join(sortedKeys(reasons), ", ") + ")"
+			unverifiedCoverage[message] = true
+			continue
+		}
 		message := "No AccTest cases for affected resource: " + file +
 			" (selected by " + strings.Join(sortedKeys(reasons), ", ") + "); confirm replacement/coverage"
 		coverageBlockers[message] = true
 		blocked[message] = true
 	}
+	result.UnverifiedCoverage = sortedKeys(unverifiedCoverage)
 	result.CoverageBlockers = sortedKeys(coverageBlockers)
 	result.ResourceFiles, result.Blocked = sortedKeys(resources), sortedKeys(blocked)
 	return result
