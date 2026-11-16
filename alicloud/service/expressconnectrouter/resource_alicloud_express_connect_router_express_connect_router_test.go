@@ -1003,6 +1003,56 @@ func TestUnitExpressConnectRouterReadCollections(t *testing.T) {
 		}
 	})
 
+	t.Run("non_adjacent_route_page_token_cycle_terminates_with_an_error", func(t *testing.T) {
+		fixture := newECRUnitFixture(map[string][]ecrUnitResponse{
+			ecrUnitRouteAction: {
+				{body: map[string]interface{}{
+					"NextToken": "route-token-a",
+					"DisabledRouteEntryList": []interface{}{
+						map[string]interface{}{"DestinationCidrBlock": "10.0.0.0/24", "NexthopInstanceId": "ri-cycle-1"},
+					},
+				}},
+				{body: map[string]interface{}{
+					"NextToken": "route-token-b",
+					"DisabledRouteEntryList": []interface{}{
+						map[string]interface{}{"DestinationCidrBlock": "10.0.1.0/24", "NexthopInstanceId": "ri-cycle-2"},
+					},
+				}},
+				{body: map[string]interface{}{
+					"NextToken": "route-token-a",
+					"DisabledRouteEntryList": []interface{}{
+						map[string]interface{}{"DestinationCidrBlock": "10.0.2.0/24", "NexthopInstanceId": "ri-cycle-3"},
+					},
+				}},
+			},
+		})
+
+		d, err := ecrUnitRead(t, fixture)
+		if err == nil {
+			t.Fatal("a non-adjacent NextToken cycle was treated as valid pagination")
+		}
+		if errs.NotFoundError(err) {
+			t.Errorf("a pagination loop error was classified as NotFound: %v", err)
+		}
+		for _, want := range []string{"route-token-a", ecrUnitRouteAction} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("error %q does not carry %q", err.Error(), want)
+			}
+		}
+		requests := fixture.requestsFor(ecrUnitRouteAction)
+		if got := len(requests); got != 3 {
+			t.Errorf("%s was requested %d times, want exactly 3 before the historical token guard fires", ecrUnitRouteAction, got)
+		}
+		for index, want := range []string{"", "route-token-a", "route-token-b"} {
+			if index < len(requests) && requests[index].NextToken != want {
+				t.Errorf("request %d NextToken = %q, want %q", index+1, requests[index].NextToken, want)
+			}
+		}
+		if got := len(ecrUnitCollection(t, d, "disabled_route_entries")); got != 0 {
+			t.Errorf("disabled_route_entries has %d entries after a token cycle, want no partial collection write", got)
+		}
+	})
+
 	t.Run("repeated_granted_page_token_terminates_with_an_error", func(t *testing.T) {
 		repeated := map[string]interface{}{"EcrGrantedInstanceList": []interface{}{}, "NextToken": "stuck-grant-token"}
 		fixture := newECRUnitFixture(map[string][]ecrUnitResponse{
@@ -1026,6 +1076,59 @@ func TestUnitExpressConnectRouterReadCollections(t *testing.T) {
 		}
 		if got := len(ecrUnitCollection(t, d, "granted_instances")); got != 0 {
 			t.Errorf("granted_instances has %d entries after a repeated token, want 0", got)
+		}
+	})
+
+	t.Run("non_adjacent_granted_page_token_cycle_terminates_with_an_error", func(t *testing.T) {
+		fixture := newECRUnitFixture(map[string][]ecrUnitResponse{
+			ecrUnitGrantedAction: {
+				{body: map[string]interface{}{
+					"NextToken": "grant-token-a",
+					"EcrGrantedInstanceList": []interface{}{
+						map[string]interface{}{"NodeId": "vbr-cycle-1", "NodeType": "VBR", "NodeRegionId": "cn-hangzhou", "NodeOwnerUid": "1"},
+					},
+				}},
+				{body: map[string]interface{}{
+					"NextToken": "grant-token-b",
+					"EcrGrantedInstanceList": []interface{}{
+						map[string]interface{}{"NodeId": "vbr-cycle-2", "NodeType": "VBR", "NodeRegionId": "cn-hangzhou", "NodeOwnerUid": "2"},
+					},
+				}},
+				{body: map[string]interface{}{
+					"NextToken": "grant-token-a",
+					"EcrGrantedInstanceList": []interface{}{
+						map[string]interface{}{"NodeId": "vbr-cycle-3", "NodeType": "VBR", "NodeRegionId": "cn-hangzhou", "NodeOwnerUid": "3"},
+					},
+				}},
+			},
+		})
+
+		d, err := ecrUnitRead(t, fixture)
+		if err == nil {
+			t.Fatal("a non-adjacent NextToken cycle was treated as valid pagination")
+		}
+		if errs.NotFoundError(err) {
+			t.Errorf("a pagination loop error was classified as NotFound: %v", err)
+		}
+		for _, want := range []string{"grant-token-a", ecrUnitGrantedAction} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("error %q does not carry %q", err.Error(), want)
+			}
+		}
+		if got := len(fixture.requestsFor(ecrUnitRouteAction)); got != 1 {
+			t.Errorf("%s was requested %d times, want 1: the route loop must finish before the granted loop starts", ecrUnitRouteAction, got)
+		}
+		requests := fixture.requestsFor(ecrUnitGrantedAction)
+		if got := len(requests); got != 3 {
+			t.Errorf("%s was requested %d times, want exactly 3 before the historical token guard fires", ecrUnitGrantedAction, got)
+		}
+		for index, want := range []string{"", "grant-token-a", "grant-token-b"} {
+			if index < len(requests) && requests[index].NextToken != want {
+				t.Errorf("request %d NextToken = %q, want %q", index+1, requests[index].NextToken, want)
+			}
+		}
+		if got := len(ecrUnitCollection(t, d, "granted_instances")); got != 0 {
+			t.Errorf("granted_instances has %d entries after a token cycle, want no partial collection write", got)
 		}
 	})
 }

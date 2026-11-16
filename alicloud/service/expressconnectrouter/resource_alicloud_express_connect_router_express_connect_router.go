@@ -235,6 +235,7 @@ func resourceExpressConnectRouterRead(d *schema.ResourceData, meta interface{}) 
 	// rather than silently leaving the computed field unset and reporting success.
 	disabledRouteEntriesMaps := make([]map[string]interface{}, 0)
 	nextToken := ""
+	seenRouteTokens := make(map[string]struct{})
 	for {
 		routeResp, err := expressConnectRouterServiceV2.DescribeDescribeDisabledExpressConnectRouterRouteEntries(d.Id(), nextToken)
 		if err != nil {
@@ -253,9 +254,10 @@ func resourceExpressConnectRouterRead(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 		if nt, ok := routeResp["NextToken"].(string); ok && nt != "" {
-			if nt == nextToken {
+			if _, seen := seenRouteTokens[nt]; seen {
 				return errs.WrapErrorf(fmt.Errorf("the server repeated NextToken %q", nt), errs.DefaultErrorMsg, d.Id(), "DescribeDisabledExpressConnectRouterRouteEntries", errs.AlibabaCloudSdkGoERROR)
 			}
+			seenRouteTokens[nt] = struct{}{}
 			nextToken = nt
 		} else {
 			break
@@ -273,6 +275,7 @@ func resourceExpressConnectRouterRead(d *schema.ResourceData, meta interface{}) 
 	// than silently leaving the computed field unset and reporting success.
 	grantedInstancesMaps := make([]map[string]interface{}, 0)
 	nextToken = ""
+	seenGrantedTokens := make(map[string]struct{})
 	for {
 		grantResp, err := expressConnectRouterServiceV2.DescribeDescribeInstanceGrantedToExpressConnectRouter(d.Id(), nextToken)
 		if err != nil {
@@ -311,9 +314,10 @@ func resourceExpressConnectRouterRead(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 		if nt, ok := grantResp["NextToken"].(string); ok && nt != "" {
-			if nt == nextToken {
+			if _, seen := seenGrantedTokens[nt]; seen {
 				return errs.WrapErrorf(fmt.Errorf("the server repeated NextToken %q", nt), errs.DefaultErrorMsg, d.Id(), "DescribeInstanceGrantedToExpressConnectRouter", errs.AlibabaCloudSdkGoERROR)
 			}
+			seenGrantedTokens[nt] = struct{}{}
 			nextToken = nt
 		} else {
 			break
