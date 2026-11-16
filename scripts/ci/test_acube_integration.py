@@ -54,6 +54,33 @@ class IntegrationTest(unittest.TestCase):
             self.assertEqual(sleep.call_count, 6)
             self.assertTrue(all(c.args[0].full_url.endswith('/acctest/reusable-cases') for c in opened.call_args_list))
 
+    def test_explicit_scan_limit_is_not_retried_or_returned_as_a_completed_miss(self):
+        client = m.Client('test-token-' + 'x' * 32)
+        response = io.BytesIO(b'{"code":"SUCCESS","data":{}}')
+        response.headers = {'X-AccTest-Reuse-Query': 'skipped-scan-limit-v1',
+                            'X-AccTest-Reuse-Scan-Limit': '1024'}
+        with patch.object(client.opener, 'open', return_value=response) as opened, patch.object(m.time, 'sleep') as sleep:
+            with self.assertRaises(m.ReuseScanLimitReached):
+                m.reusable_cases(client, self.request())
+            self.assertEqual(opened.call_count, 1)
+            sleep.assert_not_called()
+
+    def test_scan_limit_proof_rejects_partial_hits_unknown_limits_and_malformed_responses(self):
+        for limit, data, expected in [(None, {}, 'Invalid ACube reuse scan-limit response'),
+                                      ('2048', {}, 'Invalid ACube reuse scan-limit response'),
+                                      ('1024', {'TestAccOne': 42}, 'Invalid ACube reuse scan-limit response'),
+                                      ('1024', [], 'Invalid ACube response')]:
+            with self.subTest(limit=limit, data=data):
+                client = m.Client('test-token-' + 'x' * 32)
+                response = io.BytesIO(json.dumps({'code': 'SUCCESS', 'data': data}).encode())
+                response.headers = {'X-AccTest-Reuse-Query': 'skipped-scan-limit-v1'}
+                if limit is not None:
+                    response.headers['X-AccTest-Reuse-Scan-Limit'] = limit
+                with patch.object(client.opener, 'open', return_value=response):
+                    with self.assertRaisesRegex(ValueError, '^' + expected + '$') as error:
+                        m.reusable_cases(client, self.request())
+                    self.assertNotIsInstance(error.exception, m.ReuseScanLimitReached)
+
     def test_reuse_http_failure_cannot_become_a_miss_or_submit_acc(self):
         real = m.Client('test-token-' + 'x' * 32)
         calls = []

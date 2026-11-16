@@ -104,6 +104,34 @@ class DocumentExamplesTest(unittest.TestCase):
         self.assertEqual(len(result['examples']), 2)
         self.assertEqual({case['selectionReason'] for case in result['examples']}, {'affected implementation/service'})
 
+    def test_self_contained_fences_run_without_manifest(self):
+        outcome = Repository({}, {DOC: page(CONFIG, CONFIG.replace('"one"', '"two"'))}).plan()
+        self.assertEqual(outcome['blocked'], [])
+        self.assertEqual([case['id'] for case in outcome['examples']], ['example-1', 'example-2'])
+        self.assertTrue(all(case['mainTf'] == case['originalMainTf'] for case in outcome['examples']))
+
+    def test_historical_incomplete_scene_is_reported_and_changed_scene_blocks(self):
+        incomplete = CONFIG.replace('name = "one"', 'name = var.missing')
+        before = {DOC: page(incomplete, CONFIG)}
+        indirect = Repository(before, before).plan([DOC])
+        self.assertEqual(indirect['blocked'], [])
+        self.assertEqual([case['id'] for case in indirect['examples']], ['example-2'])
+        self.assertEqual(indirect['unverified'][0]['status'], 'NOT_VERIFIED')
+        after = {DOC: page(incomplete.replace('var.missing', 'var.other'), CONFIG)}
+        direct = Repository(before, after).plan([DOC])
+        self.assertIn('Reference is outside this HCL fence: var.other', direct['blocked'][0])
+        self.assertEqual([case['id'] for case in direct['examples']], ['example-2'])
+
+    def test_missing_acc_coverage_only_blocks_acc_job(self):
+        issue = 'No AccTest cases for affected resource'
+        scope = dict(packages={}, resourceFiles=[], blocked=[issue], coverageBlockers=[issue])
+        frozen = dict(head='head', base='base', scope=scope, documents={}, examples=[], packages={})
+        with tempfile.TemporaryDirectory() as root, patch.object(integration.Client, 'call') as call:
+            integration.execute(None, frozen, 'examples', 'run-123', Path(root))
+            with self.assertRaisesRegex(ValueError, 'AccTest scope'):
+                integration.execute(None, frozen, 'acctest', 'run-123', Path(root))
+            call.assert_not_called()
+
     def test_ungrouped_unready_missing_stale_or_unsupported_contract_blocks(self):
         for defect in ('missing', 'ungrouped', 'not-ready', 'stale-sha', 'no-assertions', 'api-assertion', 'duplicate-id'):
             with self.subTest(defect=defect):
@@ -113,6 +141,7 @@ class DocumentExamplesTest(unittest.TestCase):
                 case = manifest['cases'][0]
                 if defect == 'missing':
                     del files[manifest_path]
+                    files[DOC] = page(PROVIDER, RESOURCE)
                 elif defect == 'ungrouped':
                     files[DOC] += page(RESOURCE)
                 elif defect == 'not-ready':

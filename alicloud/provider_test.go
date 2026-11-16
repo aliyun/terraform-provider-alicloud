@@ -1,34 +1,22 @@
 package alicloud
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/aliyun/terraform-provider-alicloud/internal/acctestcredentials"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	fc "github.com/aliyun/fc-go-sdk"
+	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
-	bsssvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/bssopenapi"
 	ecssvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecs"
 	fcsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/fc"
 	osssvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/oss"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // Marked setup copies remain local because importing alicloud/acctest would create an import cycle.
@@ -60,54 +48,6 @@ const (
 	ProviderNameAlicloudAlt2 = "alicloudalt2"
 	ProviderNameAlicloudAlt3 = "alicloudalt3"
 )
-
-// Migrated to alicloud/acctest.SDKProviderFactoriesAlternate.
-func testAccProviderFactoriesAlternate() map[string]func() (*schema.Provider, error) {
-	altProvider := Provider()
-	return map[string]func() (*schema.Provider, error){
-		"alicloud": func() (*schema.Provider, error) {
-			return testAccProvider, nil
-		},
-		ProviderNameAlicloudAlt: func() (*schema.Provider, error) {
-			return altProvider, nil
-		},
-	}
-}
-
-// Migrated to alicloud/acctest.SDKProviderFactoriesMultiRegion.
-func testAccProviderFactoriesMultiRegion(n int) map[string]func() (*schema.Provider, error) {
-	factories := map[string]func() (*schema.Provider, error){
-		"alicloud": func() (*schema.Provider, error) {
-			return testAccProvider, nil
-		},
-	}
-	altNames := []string{ProviderNameAlicloudAlt, ProviderNameAlicloudAlt2, ProviderNameAlicloudAlt3}
-	for i := 0; i < n-1 && i < len(altNames); i++ {
-		p := Provider()
-		factories[altNames[i]] = func() (*schema.Provider, error) {
-			return p, nil
-		}
-	}
-	return factories
-}
-
-// Migrated to alicloud/acctest.ConfigAlternateRegionProvider.
-func configAlternateRegionProvider(region string) string {
-	return fmt.Sprintf(`
-provider "alicloudalt" {
-  region = "%s"
-}
-`, region)
-}
-
-// Migrated to alicloud/acctest.ConfigNamedRegionalProvider.
-func configNamedRegionalProvider(providerName string, region string) string {
-	return fmt.Sprintf(`
-provider "%s" {
-  region = "%s"
-}
-`, providerName, region)
-}
 
 func init() {
 	testAccProvider = Provider()
@@ -235,7 +175,7 @@ func testAccPreCheck(t *testing.T) {
 }
 
 // Test_testAccPreChecksSyncDefaultRegion verifies that prechecks keep the
-// package-level region used by sharedClientForRegion in sync with the final
+// package-level default region in sync with the final
 // ALICLOUD_REGION value. It does not contact any cloud API.
 func Test_testAccPreChecksSyncDefaultRegion(t *testing.T) {
 	testCases := []struct {
@@ -298,80 +238,8 @@ func Test_testAccPreChecksSyncDefaultRegion(t *testing.T) {
 	}
 }
 
-func testAccPreCheckForCleanUpInstances(t *testing.T, instanceRegion, productCode, productType, productCodeIntl, productTypeIntl string) {
-	rawClient, err := sharedClientForRegion(defaultRegionToTest)
-	if err != nil {
-		t.Errorf("error getting AliCloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-	bssOpenApiService := bsssvc.NewBssOpenApiService(client)
-	accountId, err := client.AccountId()
-	if err != nil {
-		t.Errorf("error getting AliCloud client: %s", err)
-	}
-	deadline := time.Now().Add(30 * time.Minute)
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			if time.Now().After(deadline) {
-				log.Println("Deadline reached, stopping waiting.")
-				return
-			}
-			instances, err := bssOpenApiService.QueryAvailableInstanceList(instanceRegion, productCode, productType, productCodeIntl, productTypeIntl)
-			if err != nil {
-				t.Errorf("error querying available instances: %s", err)
-				return
-			}
-			instanceId := ""
-			for _, instance := range instances {
-				v := instance.(map[string]interface{})
-				if v["Status"].(string) != "Normal" {
-					continue
-				}
-				instanceId = v["InstanceID"].(string)
-			}
-			if instanceId == "" {
-				return
-			}
-			t.Logf("waiting for cleaning up existed instances %s in region %s...", instanceId, instanceRegion)
-			sendMessage(fmt.Sprintf(`
-[Critical] Please cleaning up instance before running integration test.
-
-AccountId: %s
-ProductCode: %s
-InstanceId: %s
-Time: %s
-`, accountId, productCode, instanceId, time.Now().String()))
-			time.Sleep(3 * time.Minute)
-		}
-	}
-}
-
 // currently not all account site type support create PostPaid resources, PayByBandwidth and other limits.
 // The setting of account site type can skip some unsupported cases automatically.
-
-// Migrated to alicloud/acctest.PreCheckWithAccountSiteType.
-func testAccPreCheckWithAccountSiteType(t *testing.T, account AccountSite) {
-	acctestcredentials.Select(t, string(account))
-}
-
-// Migrated to alicloud/acctest.PreCheckPrePaidResources.
-func testAccPreCheckPrePaidResources(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ENABLE_CHECKING_PRE_PAID")); v != "true" {
-		t.Skip("Skipping testing PrePaid resources, otherwise setting environment parameter 'ENABLE_CHECKING_PRE_PAID'.")
-		t.Skipped()
-	}
-}
-
-// Migrated to alicloud/acctest.ClassicNetworkResources.
-func testAccClassicNetworkResources(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ENABLE_CLASSIC_NETWORK")); v != "true" {
-		t.Skip("Skipping testing classic resources, otherwise setting environment parameter 'ENABLE_CLASSIC_NETWORK'.")
-		t.Skipped()
-	}
-}
 
 // Skip automatically the testcases which does not support some known regions.
 // If supported is true, the regions should a list of supporting the service regions.
@@ -467,319 +335,11 @@ func checkoutSupportedRegions(t *testing.T, supported bool, regions []connectivi
 	}
 }
 
-// Migrated to alicloud/acctest.CheckoutAccount.
-func checkoutAccount(t *testing.T, SLAVE bool) {
-	if SLAVE {
-		if os.Getenv("ALICLOUD_ACCESS_KEY_SLAVE") == "" || os.Getenv("ALICLOUD_SECRET_KEY_SLAVE") == "" {
-			t.Logf("\nALICLOUD_ACCESS_KEY_SLAVE or ALICLOUD_SECRET_KEY_SLAVE is empty and please add them.")
-		} else {
-			os.Setenv("ALICLOUD_ACCESS_KEY_MASTER", os.Getenv("ALICLOUD_ACCESS_KEY"))
-			os.Setenv("ALICLOUD_SECRET_KEY_MASTER", os.Getenv("ALICLOUD_SECRET_KEY"))
-			os.Setenv("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY_SLAVE"))
-			os.Setenv("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY_SLAVE"))
-			t.Logf("%s is using the slave account", t.Name())
-		}
-	} else {
-		if os.Getenv("ALICLOUD_ACCESS_KEY_MASTER") == "" || os.Getenv("ALICLOUD_SECRET_KEY_MASTER") == "" {
-			t.Logf("\nALICLOUD_ACCESS_KEY_MASTER or ALICLOUD_SECRET_KEY_MASTER is empty and please add them.")
-		} else {
-			os.Setenv("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY_MASTER"))
-			os.Setenv("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY_MASTER"))
-		}
-	}
-}
-
-// Skip automatically the sweep testcases which does not support some known regions.
-// If supported is true, the regions should a list of supporting the service regions.
-// If supported is false, the regions should a list of unsupporting the service regions.
-// Migrated to alicloud/sweep.SweepPreCheckWithRegions.
-func testSweepPreCheckWithRegions(region string, supported bool, regions []connectivity.Region) bool {
-	find := false
-	for _, r := range regions {
-		if region == string(r) {
-			find = true
-			break
-		}
-	}
-	return (find && !supported) || (!find && supported)
-}
-
-// Migrated to alicloud/acctest.CheckAlicloudDataSourceID.
-func testAccCheckAlicloudDataSourceID(n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Can't find data source: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("data source ID not set")
-		}
-		return nil
-	}
-}
-
-// Migrated to alicloud/acctest.PreCheckWithMultipleAccount.
-func testAccPreCheckWithMultipleAccount(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_ACCESS_KEY_2")); v == "" {
-		t.Skipf("Skipping unsupported test with multiple account")
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckOSSForImageImport(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_OSS_BUCKET_FOR_IMAGE")); v == "" {
-		t.Skipf("Skipping tests without OSS_Bucket set.")
-		t.Skipped()
-	}
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_OSS_OBJECT_FOR_IMAGE")); v == "" {
-		t.Skipf("Skipping OSS_Object does not exist.")
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckKMSForKeyIdImport(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_KMS_KEY_ID")); v == "" {
-		t.Skipf("Skipping tests without KEY_ID set.")
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckWithCmsContactGroupSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_CMS_CONTACT_GROUP")); v == "" {
-		t.Skipf("Skipping the test case with no cms contact group setting")
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckWithResourceManagerFloderIdSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID1")); v == "" {
-		t.Skip("Skipping the test case with no sag folder id setting")
-		t.Skipped()
-	}
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID2")); v == "" {
-		t.Skip("Skipping the test case with no sag folder id setting")
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckWithResourceManagerAccount(t *testing.T) {
-	if os.Getenv("RESOURCE_MANAGER_ALICLOUD_ACCESS_KEY") == "" || os.Getenv("RESOURCE_MANAGER_ALICLOUD_SECRET_KEY") == "" {
-		t.Skip("Skipping the test case with RESOURCE_MANAGER_ALICLOUD_ACCESS_KEY or RESOURCE_MANAGER_ALICLOUD_SECRET_KEY is empty")
-		t.Skipped()
-	} else {
-		os.Setenv("ALICLOUD_ACCESS_KEY", os.Getenv("RESOURCE_MANAGER_ALICLOUD_ACCESS_KEY"))
-		os.Setenv("ALICLOUD_SECRET_KEY", os.Getenv("RESOURCE_MANAGER_ALICLOUD_SECRET_KEY"))
-	}
-}
-
-// Migrated to alicloud/acctest.PreCheckWithEnvVariable.
-func testAccPreCheckWithEnvVariable(t *testing.T, envVariableName string) {
-	if v := strings.TrimSpace(os.Getenv(envVariableName)); v == "" {
-		t.Skipf("Skipping the test case with no env variable %s", envVariableName)
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckWithSlbInstanceSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_SLB_INSTANCE_ID")); v == "" {
-		t.Skipf("Skipping the test case with no slb instance id setting")
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckWithExpressConnectUidSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_EXPRESS_CONNECT_UID")); v == "" {
-		t.Skipf("Skipping the test case with no express connect uid  id setting")
-		t.Skipped()
-	}
-}
-
-// Migrated to alicloud/acctest.PreCheckWithTime.
-func testAccPreCheckWithTime(t *testing.T, days []int) {
-	skipped := true
-	for _, d := range days {
-		if time.Now().Day() == d {
-			skipped = false
-			break
-		}
-	}
-	if skipped {
-		t.Skipf("Skipping the test case when not in specified days %#v of every month", days)
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckWithAlikafkaAclEnable(t *testing.T) {
-	aclEnable := os.Getenv("ALICLOUD_ALIKAFKA_ACL_ENABLE")
-
-	if aclEnable != "true" {
-		t.Skipf("Skipping the test case because the acl is not enabled.")
-		t.Skipped()
-	}
-}
-
-// Migrated to alicloud/acctest.PreCheckEnterpriseAccountEnabled.
-func testAccPreCheckEnterpriseAccountEnabled(t *testing.T) {
-	enable := os.Getenv("ENTERPRISE_ACCOUNT_ENABLED")
-	if enable != "true" {
-		t.Skipf("Skipping the test case because the enterprise account is not enabled.")
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckWithNoDefaultVpc(t *testing.T) {
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-	request := vpc.CreateDescribeVpcsRequest()
-	request.RegionId = string(client.Region)
-	request.PageSize = requests.NewInteger(PageSizeSmall)
-	request.PageNumber = requests.NewInteger(1)
-	request.IsDefault = requests.NewBoolean(true)
-
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeVpcs(request)
-	})
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	response, _ := raw.(*vpc.DescribeVpcsResponse)
-
-	if len(response.Vpcs.Vpc) < 1 {
-		request.IsDefault = requests.NewBoolean(false)
-		request.VpcName = "default"
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVpcs(request)
-		})
-		if err != nil {
-			t.Skipf("Skipping the test case with err: %s", err)
-			t.Skipped()
-		}
-		response2, _ := raw.(*vpc.DescribeVpcsResponse)
-		if len(response2.Vpcs.Vpc) < 1 {
-			t.Skipf("Skipping the test case with there is no default vpc")
-			t.Skipped()
-		}
-	}
-}
-
-func testAccPreCheckWithNoDefaultVswitch(t *testing.T) {
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-	request := vpc.CreateDescribeVSwitchesRequest()
-	request.RegionId = string(client.Region)
-	request.PageSize = requests.NewInteger(PageSizeSmall)
-	request.PageNumber = requests.NewInteger(1)
-	request.IsDefault = requests.NewBoolean(true)
-
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeVSwitches(request)
-	})
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	response, _ := raw.(*vpc.DescribeVSwitchesResponse)
-
-	if len(response.VSwitches.VSwitch) < 1 {
-		t.Skipf("Skipping the test case with there is no default vswitche")
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckWithResourceManagerAccountsSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_RESOURCE_MANAGER_ACCOUNT_ID")); v == "" {
-		t.Skip("Skipping the test case with no sag account id setting")
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckWithResourceManagerHandshakesSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("INVITED_ALICLOUD_ACCOUNT_ID")); v == "" {
-		t.Skipf("Skipping the test case with there is no \"INVITED_ALICLOUD_ACCOUNT_ID\" setting")
-		t.Skipped()
-	}
-}
-
 type DingTalkMessage struct {
 	MsgType string `json:"msgtype"`
 	Text    struct {
 		Content string `json:"content"`
 	} `json:"text"`
-}
-
-func sendMessage(msg string) {
-	// 钉钉机器人的 Webhook 地址
-	webhookURL := "https://oapi.dingtalk.com/robot/send?access_token=" + os.Getenv("DINGTALK_WEBHOOK_ACCESS_TOKEN")
-
-	// 构建消息内容
-	message := DingTalkMessage{
-		MsgType: "text",
-		Text: struct {
-			Content string `json:"content"`
-		}{
-			Content: msg,
-		},
-	}
-
-	// 将消息内容转换为 JSON 格式
-	jsonData, err := json.Marshal(message)
-	if err != nil {
-		log.Println("[ERROR] send dingTalk message failed. Error:", err)
-		return
-	}
-
-	// 发送 POST 请求
-	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		log.Println("[ERROR] send dingTalk message failed. Error:", err)
-		return
-	}
-	defer resp.Body.Close()
-}
-
-func setStsCredential() {
-	// 创建OSSClient实例。
-	client, err := oss.New("https://oss-cn-zhangjiakou.aliyuncs.com", os.Getenv("ALICLOUD_ACCESS_KEY"), os.Getenv("ALICLOUD_SECRET_KEY"))
-	if err != nil {
-		return
-	}
-
-	bucket, err := client.Bucket("terraform-alicloud-provider-ct")
-	if err != nil {
-		return
-	}
-
-	// 下载文件到流。
-	body, err := bucket.GetObject("sts/credential.json")
-	if err != nil {
-		return
-	}
-	// 数据读取完成后，获取的流必须关闭，否则会造成连接泄漏，导致请求无连接可用，程序无法正常工作。
-	defer body.Close()
-
-	data, err := ioutil.ReadAll(body)
-	if err != nil {
-		return
-	}
-	var credential map[string]interface{}
-	err = json.Unmarshal(data, &credential)
-	if credential != nil && len(credential) > 0 {
-		os.Setenv("ALICLOUD_ACCESS_KEY", credential["Credentials"].(map[string]interface{})["AccessKeyId"].(string))
-		os.Setenv("ALICLOUD_SECRET_KEY", credential["Credentials"].(map[string]interface{})["AccessKeySecret"].(string))
-		os.Setenv("ALICLOUD_SECURITY_TOKEN", credential["Credentials"].(map[string]interface{})["SecurityToken"].(string))
-	}
 }
 
 var providerCommon = `

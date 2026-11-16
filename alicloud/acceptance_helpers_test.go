@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"testing"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -80,21 +80,6 @@ func resourceCheckInit(resourceId string, resourceObject interface{}, serviceFun
 		resourceId:      resourceId,
 		resourceObject:  resourceObject,
 		serviceFunc:     serviceFunc,
-		additionalAttrs: additionalAttrs,
-	}
-	if len(rc.additionalAttrs) > 0 {
-		rc.setAdditionalAttrsType()
-	}
-	return rc
-}
-
-// Migrated to alicloud/acctest.ResourceCheckInitWithDescribeMethod.
-func resourceCheckInitWithDescribeMethod(resourceId string, resourceObject interface{}, serviceFunc func() interface{}, describeMethod string, additionalAttrs ...string) *resourceCheck {
-	rc := &resourceCheck{
-		resourceId:      resourceId,
-		resourceObject:  resourceObject,
-		serviceFunc:     serviceFunc,
-		describeMethod:  describeMethod,
 		additionalAttrs: additionalAttrs,
 	}
 	if len(rc.additionalAttrs) > 0 {
@@ -200,7 +185,7 @@ func (rc *resourceCheck) checkResourceDestroy() resource.TestCheckFunc {
 		}
 
 		if resourceType == "" {
-			return WrapError(Error("The resourceId %s is not correct and it should prefix with alicloud_", rc.resourceId))
+			return WrapError(errs.Error("The resourceId %s is not correct and it should prefix with alicloud_", rc.resourceId))
 		}
 
 		for _, rs := range s.RootModule().Resources {
@@ -212,13 +197,13 @@ func (rc *resourceCheck) checkResourceDestroy() resource.TestCheckFunc {
 			if !errorValue.IsNil() {
 				err = errorValue.Interface().(error)
 				if err != nil {
-					if NotFoundError(err) {
+					if errs.NotFoundError(err) {
 						continue
 					}
 					return WrapError(err)
 				}
 			} else {
-				return WrapError(Error("the resource %s %s was not destroyed ! ", rc.resourceId, rs.Primary.ID))
+				return WrapError(errs.Error("the resource %s %s was not destroyed ! ", rc.resourceId, rs.Primary.ID))
 			}
 		}
 		return nil
@@ -243,7 +228,7 @@ func (rc *resourceCheck) callDescribeMethod(rs *terraform.ResourceState) ([]refl
 	typeName := value.Type().String()
 	value = value.MethodByName(rc.describeMethod)
 	if !value.IsValid() {
-		return nil, WrapError(Error("The service type %s does not have method %s", typeName, rc.describeMethod))
+		return nil, WrapError(errs.Error("The service type %s does not have method %s", typeName, rc.describeMethod))
 	}
 	inValue := []reflect.Value{reflect.ValueOf(rs.Primary.ID)}
 	for _, attr := range rc.additionalAttrs {
@@ -430,19 +415,6 @@ func resourceTestAccConfigFunc(resourceId string,
 	return basicInfo.configBuild(false)
 }
 
-// Migrated to alicloud/acctest.DataSourceTestAccConfigFunc.
-func dataSourceTestAccConfigFunc(resourceId string,
-	name string,
-	configDependence func(name string) string) ResourceTestAccConfigFunc {
-	basicInfo := resourceConfig{
-		name:             name,
-		resourceId:       resourceId,
-		attributeMap:     make(map[string]interface{}),
-		configDependence: configDependence,
-	}
-	return basicInfo.configBuild(true)
-}
-
 // be used for generate testcase step config
 // Migrated to alicloud/acctest.resourceConfig.
 type resourceConfig struct {
@@ -618,103 +590,6 @@ func addIndentation(indentation int) string {
 	return strings.Repeat(INDENTATIONSYMBOL, indentation)
 }
 
-// in most cases, the TestCheckFunc list of dataSource test case is repeated，so we make an abstract in
-// order to reduce redundant code.
-// dataSourceAttr has 3 field ,incloud resourceId  existMapFunc fakeMapFunc, every dataSource test can use only one
-// Migrated to alicloud/acctest.DataSourceAttr.
-type dataSourceAttr struct {
-	// IDRefreshName, like "data.alicloud_dns_records.record"
-	resourceId string
-
-	// get existMap function
-	existMapFunc func(rand int) map[string]string
-
-	// get fakeMap function
-	fakeMapFunc func(rand int) map[string]string
-}
-
-// get exist and empty resourceAttrMapUpdate function
-// Migrated to alicloud/acctest.DataSourceAttr.checkDataSourceAttr.
-func (dsa *dataSourceAttr) checkDataSourceAttr(rand int) (exist, empty resourceAttrMapUpdate) {
-	exist = resourceAttrInit(dsa.resourceId, dsa.existMapFunc(rand)).resourceAttrMapUpdateSet()
-	empty = resourceAttrInit(dsa.resourceId, dsa.fakeMapFunc(rand)).resourceAttrMapUpdateSet()
-	return
-}
-
-// according to configs generate step list and execute the test
-// Migrated to alicloud/acctest.DataSourceAttr.DataSourceTestCheck.
-// lintignore: AT001
-func (dsa *dataSourceAttr) dataSourceTestCheck(t *testing.T, rand int, configs ...dataSourceTestAccConfig) {
-	var steps []resource.TestStep
-	for _, conf := range configs {
-		steps = append(steps, conf.buildDataSourceSteps(t, dsa, rand)...)
-	}
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		Steps:             steps,
-	})
-}
-
-// according to configs generate step list and execute the test with preCheck
-// Migrated to alicloud/acctest.DataSourceAttr.DataSourceTestCheckWithPreCheck.
-// lintignore: AT001
-func (dsa *dataSourceAttr) dataSourceTestCheckWithPreCheck(t *testing.T, rand int, preCheck func(), configs ...dataSourceTestAccConfig) {
-	var steps []resource.TestStep
-	for _, conf := range configs {
-		steps = append(steps, conf.buildDataSourceSteps(t, dsa, rand)...)
-	}
-	resource.Test(t, resource.TestCase{
-		PreCheck:          preCheck,
-		ProviderFactories: testAccProviderFactory,
-		Steps:             steps,
-	})
-}
-
-// per schema attribute test config
-// Migrated to alicloud/acctest.DataSourceTestAccConfig.
-type dataSourceTestAccConfig struct {
-	// be equal to testCase config string,but the result has only one record
-	existConfig string
-
-	// if the dataSourceAttr.existMapFunc returned map value not match we want, existChangMap can alter checkMap for existConfig
-	existChangMap map[string]string
-
-	// be equal to testCase config string,but the result is empty
-	fakeConfig string
-
-	// if the dataSourceAttr.fakeMapFunc returned map value not match we want, fakeChangMap can alter checkMap for fakeConfig
-	fakeChangMap map[string]string
-}
-
-// build test cases for each attribute
-// Migrated to alicloud/acctest.DataSourceTestAccConfig.buildDataSourceSteps.
-func (conf *dataSourceTestAccConfig) buildDataSourceSteps(t *testing.T, info *dataSourceAttr, rand int) []resource.TestStep {
-	testAccCheckExist, testAccCheckEmpty := info.checkDataSourceAttr(rand)
-	var steps []resource.TestStep
-	if conf.existConfig != "" {
-		step := resource.TestStep{
-			Config: conf.existConfig,
-			Check: resource.ComposeTestCheckFunc(
-				testAccCheckExist(conf.existChangMap),
-			),
-		}
-		steps = append(steps, step)
-	}
-	if conf.fakeConfig != "" {
-		step := resource.TestStep{
-			Config: conf.fakeConfig,
-			Check: resource.ComposeTestCheckFunc(
-				testAccCheckEmpty(conf.fakeChangMap),
-			),
-		}
-		steps = append(steps, step)
-	}
-	return steps
-}
-
 const EcsInstanceCommonNoZonesTestCase = `
 data "alicloud_instance_types" "default" {
   instance_type_family = "ecs.sn1ne"
@@ -816,27 +691,6 @@ locals {
 }
 `
 
-const PolarDBPostgreSQLCommonTestCase = `
-data "alicloud_polardb_zones" "default"{}
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
-}
-resource "alicloud_vpc" "default" {
-    vpc_name = var.name
-}
-resource "alicloud_vswitch" "this" {
- vswitch_name = "tf_testAccPolarDB"
- vpc_id = alicloud_vpc.default.id
- zone_id = data.alicloud_polardb_zones.default.ids.0
- cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
-}
-locals {
-  vpc_id = alicloud_vpc.default.id
-  vswitch_id = concat(alicloud_vswitch.this.*.id, [""])[0]	
-  zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-2]
-}
-`
-
 const AdbCommonTestCase = `
 data "alicloud_adb_zones" "default" {}
 data "alicloud_vpcs" "default" {
@@ -849,53 +703,6 @@ data "alicloud_vswitches" "default" {
 
 locals {
   vswitch_id = data.alicloud_vswitches.default.ids.0
-}
-`
-
-const KVStoreCommonTestCase = `
-data "alicloud_kvstore_zones" "default"{
-	instance_charge_type = "PostPaid"
-}
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-	zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
-	vpc_id = data.alicloud_vpcs.default.ids.0
-}
-`
-
-const DBMultiAZCommonTestCase = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
-  multi = true
-}
-resource "alicloud_vpc" "default" {
-  vpc_name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.multi_zone_ids[0]}"
-  name              = "${var.name}"
-}
-`
-const SlbVpcCommonTestCase = `
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
-resource "alicloud_vpc" "default" {
-  vpc_name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
 }
 `
 
