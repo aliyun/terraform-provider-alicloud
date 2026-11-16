@@ -149,6 +149,7 @@ jobs:
           set -euo pipefail
           make check-production-deps
 
+  # Isolated CLI Verify Import steps preserve the prior apply for reorder checks.
   TypeListOrderCoverage:
     needs: CheckScope
     when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
