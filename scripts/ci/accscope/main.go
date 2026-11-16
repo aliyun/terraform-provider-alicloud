@@ -380,6 +380,20 @@ func parseSource(s *snapshot, file string, data []byte) error {
 					d.assets = append(d.assets, path.Clean(path.Join(path.Dir(file), value)))
 				}
 			case *ast.CallExpr:
+				if fn, ok := x.Fun.(*ast.SelectorExpr); ok && len(x.Args) == 1 && d.test {
+					switch fn.Sel.Name {
+					case "NewServer", "NewTLSServer", "NewUnstartedServer":
+						if alias, ok := fn.X.(*ast.Ident); ok && alias.Obj == nil && imports[alias.Name] == "net/http/httptest" {
+							handler := valueType(x.Args[0], pkg, imports, 0)
+							if handler.name != "" {
+								// httptest accepts http.Handler and invokes ServeHTTP through the interface.
+								d.refs = append(d.refs, reference{pkg: handler.pkg, name: "ServeHTTP",
+									receiver: handler.name, method: true, factory: handler.factory,
+									field: handler.field, line: fset.Position(fn.Pos()).Line})
+							}
+						}
+					}
+				}
 				if fn, ok := x.Fun.(*ast.SelectorExpr); ok && fn.Sel.Name == "Join" {
 					var parts []string
 					for _, arg := range x.Args {

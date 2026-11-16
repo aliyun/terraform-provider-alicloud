@@ -405,3 +405,34 @@ func TestAccOther(t *testing.T) {}`,
 		t.Fatalf("unexpected interface impact: %+v", result)
 	}
 }
+
+func TestAccScopeTracesHTTPTestHandlerAndItsHelpers(t *testing.T) {
+	const file = "alicloud/service/demo/resource_demo_test.go"
+	source := `package demo
+import (
+	"net/http"
+	servers "net/http/httptest"
+	"testing"
+)
+type fixture struct{}
+func (f *fixture) ServeHTTP(w http.ResponseWriter, r *http.Request) { body() }
+func body() { old() }
+func read(f *fixture) { servers.NewServer(f) }
+func TestUnitDemo(t *testing.T) { read(&fixture{}) }
+func TestAccDemo(t *testing.T) {}
+`
+	before := fixture(t, map[string]string{file: source})
+	changed := strings.NewReplacer("body() }", "body(); extra() }", "old()", "updated()").Replace(source)
+	result := selectScope(before, fixture(t, map[string]string{file: changed}), []string{file})
+	if len(result.Blocked) != 0 || len(result.Packages) != 0 {
+		t.Fatalf("handler is only used by the unit test: %+v", result)
+	}
+
+	shadowed := strings.ReplaceAll(changed, "servers.NewServer(f)", "servers := otherFactory(); servers.NewServer(f)")
+	// Compare two snapshots with the shadow in place to avoid passing via the old edge.
+	prior := strings.ReplaceAll(source, "servers.NewServer(f)", "servers := otherFactory(); servers.NewServer(f)")
+	result = selectScope(fixture(t, map[string]string{file: prior}), fixture(t, map[string]string{file: shadowed}), []string{file})
+	if len(result.Blocked) == 0 {
+		t.Fatalf("shadowed alias established handler coverage: %+v", result)
+	}
+}
