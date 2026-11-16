@@ -1,10 +1,6 @@
 package alicloud
 
 import (
-	"github.com/alibabacloud-go/tea/tea"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
-	"github.com/denverdino/aliyungo/common"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
@@ -19,7 +15,7 @@ import (
 // error in the provider. The same holds for addDebug in common.go.
 //
 // ComplexError and ProviderError must be type aliases — the "=" is
-// load-bearing: the type assertion in rdsErrorHasCode below must keep
+// load-bearing: type assertions at the remaining call sites must keep
 // matching values wrapped by errs, or error-code exemptions silently
 // stop working.
 type ComplexError = errs.ComplexError
@@ -106,51 +102,6 @@ var (
 	OtsSecondaryIndexIsTemporarilyUnavailable = errs.OtsSecondaryIndexIsTemporarilyUnavailable
 	OtsSearchIndexIsTemporarilyUnavailable    = errs.OtsSearchIndexIsTemporarilyUnavailable
 )
-
-// rdsRetryableQueryError is the root copy of the type that moved to
-// alicloud/service/rds with the RDS service. The root package keeps it so the
-// root rdsErrorHasCode below keeps compiling for non-RDS tests (vpc/route)
-// that still reference the root helper. RDS has its own copy in service/rds.
-type rdsRetryableQueryError struct {
-	cause error
-}
-
-func (e *rdsRetryableQueryError) Error() string { return e.cause.Error() }
-func (e *rdsRetryableQueryError) Unwrap() error { return e.cause }
-
-// rdsErrorHasCode matches structured RDS error codes and unwraps query retry metadata.
-func rdsErrorHasCode(err error, codes ...string) bool {
-	for {
-		if e, ok := err.(*ComplexError); ok {
-			err = e.Cause
-			continue
-		}
-		if e, ok := err.(*rdsRetryableQueryError); ok {
-			err = e.cause
-			continue
-		}
-		break
-	}
-	var code string
-	switch e := err.(type) {
-	case *errors.ServerError:
-		code = e.ErrorCode()
-	case *tea.SDKError:
-		code = tea.StringValue(e.Code)
-	case *ProviderError:
-		code = e.ErrorCode()
-	case *common.Error:
-		code = e.Code
-	default:
-		return false
-	}
-	for _, expected := range codes {
-		if code == expected {
-			return true
-		}
-	}
-	return false
-}
 
 // A default message of ComplexError's Err. It is format to Resource <resource-id> <operation> Failed!!! <error source>
 const ResponseCodeMsg = errs.ResponseCodeMsg
