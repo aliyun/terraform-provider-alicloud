@@ -110,6 +110,9 @@ func ResourceVpcAssociation() *schema.Resource {
 func resourceVpcAssociationCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
+	if err := validateVpcAssociationPrefixModeRawConfig(d.GetRawConfig()); err != nil {
+		return err
+	}
 
 	action := "CreateExpressConnectRouterAssociation"
 	var request map[string]interface{}
@@ -126,18 +129,28 @@ func resourceVpcAssociationCreate(d *schema.ResourceData, meta interface{}) erro
 	if v, ok := d.GetOk("vpc_owner_id"); ok {
 		request["VpcOwnerId"] = v
 	}
-	if v, ok := d.GetOk("allowed_prefixes"); ok {
-		request["AllowedPrefixes"] = v.([]interface{})
-		// The service rejects AllowedPrefixesMode with IllegalParam.AllowedPrefixesMode
-		// when no prefix is sent, so the mode is only sent with a non-empty prefix list.
-		if mode, modeOk := d.GetOk("allowed_prefixes_mode"); modeOk {
-			request["AllowedPrefixesMode"] = mode
+	_, prefixesConfigured, err := vpcAssociationRawConfigAttribute(d, "allowed_prefixes")
+	if err != nil {
+		return err
+	}
+	mode, modeConfigured, err := vpcAssociationRawConfigAttribute(d, "allowed_prefixes_mode")
+	if err != nil {
+		return err
+	}
+	if prefixesConfigured {
+		request["AllowedPrefixes"] = d.Get("allowed_prefixes").([]interface{})
+		if modeConfigured && strings.TrimSpace(mode.AsString()) != "" {
+			request["AllowedPrefixesMode"] = mode.AsString()
 		}
-	} else if _, modeOk := d.GetOk("allowed_prefixes_mode"); modeOk {
+	} else if modeConfigured && strings.TrimSpace(mode.AsString()) != "" {
 		return errVpcAssociationModeWithoutPrefixes()
 	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
+	description, descriptionConfigured, err := vpcAssociationRawConfigAttribute(d, "description")
+	if err != nil {
+		return err
+	}
+	if descriptionConfigured {
+		request["Description"] = description.AsString()
 	}
 
 	runtime := util.RuntimeOptions{}
@@ -212,6 +225,9 @@ func resourceVpcAssociationRead(d *schema.ResourceData, meta interface{}) error 
 
 func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	if err := validateVpcAssociationPrefixModeRawConfig(d.GetRawConfig()); err != nil {
+		return err
+	}
 	parts := strings.Split(d.Id(), ":")
 	expressConnectRouterServiceV2 := NewService(client)
 	// A single deadline is shared by the sequential modifications and their
@@ -223,12 +239,6 @@ func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) erro
 	var err error
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-
-	if d.HasChange("allowed_prefixes_mode") {
-		if v, ok := d.GetOk("allowed_prefixes"); !ok || len(v.([]interface{})) == 0 {
-			return errVpcAssociationModeWithoutPrefixes()
-		}
-	}
 
 	// Update description via ModifyExpressConnectRouterAssociation.
 	if d.HasChange("description") {
@@ -270,22 +280,21 @@ func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	// Update allowed_prefixes / allowed_prefixes_mode via ModifyExpressConnectRouterAssociationAllowedPrefix.
-	prefixes, prefixesOk := d.GetOk("allowed_prefixes")
-	if d.HasChange("allowed_prefixes") || (d.HasChange("allowed_prefixes_mode") && prefixesOk) {
+	prefixes, prefixesConfigured, err := vpcAssociationRawConfigAttribute(d, "allowed_prefixes")
+	if err != nil {
+		return err
+	}
+	if d.HasChange("allowed_prefixes") || d.HasChange("allowed_prefixes_mode") {
 		action := "ModifyExpressConnectRouterAssociationAllowedPrefix"
 		request = make(map[string]interface{})
 		query = make(map[string]interface{})
 		request["EcrId"] = parts[0]
 		request["AssociationId"] = parts[1]
 		request["ClientToken"] = helper.BuildClientToken(action)
-		if prefixesOk {
-			request["AllowedPrefixes"] = prefixes.([]interface{})
-			// Send the stored mode together with the prefixes so a prefix-only update
-			// keeps the applied mode. The API contract does not declare the mode used
-			// when AllowedPrefixesMode is omitted, so the provider must not depend on a
-			// server-side default. The mode is only valid together with a non-empty
-			// prefix list: sending it while the list is emptied is rejected with
-			// IllegalParam.AllowedPrefixesMode.
+		if prefixesConfigured && prefixes.LengthInt() > 0 {
+			request["AllowedPrefixes"] = d.Get("allowed_prefixes").([]interface{})
+			// The stored mode accompanies prefix-only updates instead of relying on an
+			// undeclared server-side default.
 			if mode, modeOk := d.GetOk("allowed_prefixes_mode"); modeOk {
 				request["AllowedPrefixesMode"] = mode
 			}
@@ -371,42 +380,48 @@ func resourceVpcAssociationDelete(d *schema.ResourceData, meta interface{}) erro
 	return nil
 }
 
-// errVpcAssociationModeWithoutPrefixes reports the only combination the
-// service cannot honor: a prefix mode without any prefix to apply it to.
 func errVpcAssociationModeWithoutPrefixes() error {
-	return fmt.Errorf("`allowed_prefixes_mode` requires a non-empty `allowed_prefixes` list because the service rejects the prefix mode when no prefix is sent; configure at least one allowed prefix or remove `allowed_prefixes_mode`")
+	return fmt.Errorf("`allowed_prefixes_mode` requires a non-empty `allowed_prefixes` list; configure at least one allowed prefix or remove `allowed_prefixes_mode`")
 }
 
-// validateVpcAssociationPrefixModeRawConfig rejects the mode-only combination
-// at plan time when both values are known. Unknown values are skipped because
-// the apply-time checks repeat the validation once references are resolved.
+func errVpcAssociationEmptyPrefixes() error {
+	return fmt.Errorf("`allowed_prefixes` must contain at least one prefix when configured; remove the argument instead of configuring an explicit empty list")
+}
+
+func vpcAssociationRawConfigAttribute(d *schema.ResourceData, attribute string) (cty.Value, bool, error) {
+	value, diagnostics := d.GetRawConfigAt(cty.GetAttrPath(attribute))
+	if diagnostics.HasError() {
+		return cty.NilVal, false, errs.WrapError(fmt.Errorf("read raw configuration for `%s`: %s", attribute, diagnostics[0].Summary))
+	}
+	if !value.IsKnown() || value.IsNull() {
+		return value, false, nil
+	}
+	return value, true, nil
+}
+
+// Empty slices have no RPC form representation; unknown values are rechecked at apply time.
 func validateVpcAssociationPrefixModeRawConfig(raw cty.Value) error {
 	if raw.IsNull() || !raw.IsKnown() {
 		return nil
 	}
-	mode := raw.GetAttr("allowed_prefixes_mode")
-	if mode.IsNull() || !mode.IsKnown() {
-		return nil
-	}
-	if strings.TrimSpace(mode.AsString()) == "" {
-		return nil
-	}
 	prefixes := raw.GetAttr("allowed_prefixes")
+	if prefixes.IsKnown() && !prefixes.IsNull() && prefixes.LengthInt() == 0 {
+		return errVpcAssociationEmptyPrefixes()
+	}
+	mode := raw.GetAttr("allowed_prefixes_mode")
+	if mode.IsNull() || !mode.IsKnown() || strings.TrimSpace(mode.AsString()) == "" {
+		return nil
+	}
 	if !prefixes.IsKnown() {
 		return nil
 	}
-	if prefixes.IsNull() || prefixes.LengthInt() == 0 {
+	if prefixes.IsNull() {
 		return errVpcAssociationModeWithoutPrefixes()
 	}
 	return nil
 }
 
-// suppressVpcAssociationPrefixReorder treats an order-only change of
-// allowed_prefixes as no drift. The service returns the prefixes in its own
-// canonical order, so comparing position by position would leave a permanent
-// plan diff after every refresh; the members, not their order, are what this
-// attribute manages. A membership change (added, removed, replaced or repeated
-// prefix) is never suppressed.
+// suppressVpcAssociationPrefixReorder manages prefix members without ordering them; membership and multiplicity changes remain diffs.
 func suppressVpcAssociationPrefixReorder(_, _, _ string, d *schema.ResourceData) bool {
 	if d == nil {
 		return false
