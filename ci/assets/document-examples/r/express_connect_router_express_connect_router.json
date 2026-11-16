@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "basic",
+      "blocks": [1],
+      "originalSha256": "e82a4424fdefb53b1075321f90ac9b96e8e058d616f629283e6a357f8f1ed4e3",
+      "ready": true,
+      "assertions": [
+        {
+          "id": "lifecycle",
+          "check": "lifecycle"
+        },
+        {
+          "id": "import",
+          "check": "import"
+        },
+        {
+          "id": "cleanup",
+          "check": "cleanup"
+        }
+      ]
+    }
+  ]
+}
