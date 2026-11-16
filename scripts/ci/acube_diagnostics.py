@@ -175,7 +175,7 @@ def publish_report(output, report):
                  + '- Check: `' + report['name'] + '`\n'
                  + '- Commit: `' + str(report.get('commitSha')) + '`\n'
                  + '- Exit code: `' + str(report.get('exitCode')) + '`\n')
-        for field in ('error', 'validationError', 'diagnosticWarning'):
+        for field in ('error', 'taskError', 'validationError', 'diagnosticWarning'):
             if report.get(field):
                 block += '- ' + field + ': ' + report[field] + '\n'
         if report.get('phases'):
