@@ -590,8 +590,45 @@ func (s *CsClient) GetCsKubernetesAddonInstance(clusterId string, addonName stri
 	return component, nil
 }
 
+// ListCsKubernetesAddonInstances returns the addon instances installed in the cluster with one
+// request. The response carries no config, so an installed addon still needs
+// GetCsKubernetesAddonInstance to report current_config.
+func (s *CsClient) ListCsKubernetesAddonInstances(clusterId string) (map[string]*client.ListClusterAddonInstancesResponseBodyAddons, error) {
+	result := make(map[string]*client.ListClusterAddonInstancesResponseBodyAddons)
+
+	var err error
+	var resp *client.ListClusterAddonInstancesResponse
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		resp, err = s.client.ListClusterAddonInstances(tea.String(clusterId))
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "ListClusterAddonInstances", err)
+	}
+
+	if resp == nil || resp.Body == nil {
+		return nil, errs.WrapErrorf(fmt.Errorf("ListClusterAddonInstances response body is nil"), errs.DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "ListClusterAddonInstances", err)
+	}
+
+	for _, addon := range resp.Body.Addons {
+		result[tea.StringValue(addon.Name)] = addon
+	}
+
+	return result, nil
+}
+
 // DescribeCsKubernetesAllAvailableAddons returns the status of all cluster addons, including both installed instances and available addons that can be installed.
-func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map[string]*Component, error) {
+// match, when not nil, selects the addons the caller is interested in, so the per-addon requests are only made for those.
+func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string, match func(name string) bool) (map[string]*Component, error) {
 	// ListAddons
 	availableAddons, err := s.ListAddons(clusterId)
 	if err != nil {
@@ -599,6 +636,27 @@ func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map
 	}
 
 	result := make(map[string]*Component)
+	if match != nil {
+		filtered := make(map[string]*client.ListAddonsResponseBodyAddons)
+		for name, addonInfo := range availableAddons {
+			if match(name) {
+				filtered[name] = addonInfo
+			}
+		}
+		availableAddons = filtered
+	}
+	if len(availableAddons) == 0 {
+		return result, nil
+	}
+
+	// ListClusterAddonInstances, which replaces a GetClusterAddonInstance probe per addon:
+	// most catalog addons are not installed, and probing them one by one is both slower and
+	// rate-limited per user.
+	installedAddons, err := s.ListCsKubernetesAddonInstances(clusterId)
+	if err != nil {
+		return nil, err
+	}
+
 	for name, addonInfo := range availableAddons {
 		addon := &Component{}
 		result[name] = addon
@@ -607,11 +665,18 @@ func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map
 		addon.Required = tea.BoolValue(addonInfo.InstallByDefault)
 		addon.SupportedActions = tea.StringSliceValue(addonInfo.SupportedActions)
 
-		// GetClusterAddonInstance
+		// An installed addon without a version is reported as not installed by the API.
+		if instance, ok := installedAddons[name]; !ok || tea.StringValue(instance.Version) == "" {
+			// Update if addon not installed
+			addon.NextVersion = tea.StringValue(addonInfo.Version)
+			continue
+		}
+
+		// GetClusterAddonInstance, only for the installed addons selected above
 		addonInstance, err := s.GetCsKubernetesAddonInstance(clusterId, name)
 		if err != nil {
 			if errs.NotFoundError(err) {
-				// Update if addon not installed
+				// The addon was removed after it was listed
 				addon.NextVersion = tea.StringValue(addonInfo.Version)
 				continue
 			}
