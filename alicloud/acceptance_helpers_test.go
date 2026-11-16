@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -184,7 +185,7 @@ func (rc *resourceCheck) checkResourceDestroy() resource.TestCheckFunc {
 		}
 
 		if resourceType == "" {
-			return WrapError(Error("The resourceId %s is not correct and it should prefix with alicloud_", rc.resourceId))
+			return WrapError(errs.Error("The resourceId %s is not correct and it should prefix with alicloud_", rc.resourceId))
 		}
 
 		for _, rs := range s.RootModule().Resources {
@@ -196,13 +197,13 @@ func (rc *resourceCheck) checkResourceDestroy() resource.TestCheckFunc {
 			if !errorValue.IsNil() {
 				err = errorValue.Interface().(error)
 				if err != nil {
-					if NotFoundError(err) {
+					if errs.NotFoundError(err) {
 						continue
 					}
 					return WrapError(err)
 				}
 			} else {
-				return WrapError(Error("the resource %s %s was not destroyed ! ", rc.resourceId, rs.Primary.ID))
+				return WrapError(errs.Error("the resource %s %s was not destroyed ! ", rc.resourceId, rs.Primary.ID))
 			}
 		}
 		return nil
@@ -227,7 +228,7 @@ func (rc *resourceCheck) callDescribeMethod(rs *terraform.ResourceState) ([]refl
 	typeName := value.Type().String()
 	value = value.MethodByName(rc.describeMethod)
 	if !value.IsValid() {
-		return nil, WrapError(Error("The service type %s does not have method %s", typeName, rc.describeMethod))
+		return nil, WrapError(errs.Error("The service type %s does not have method %s", typeName, rc.describeMethod))
 	}
 	inValue := []reflect.Value{reflect.ValueOf(rs.Primary.ID)}
 	for _, attr := range rc.additionalAttrs {
