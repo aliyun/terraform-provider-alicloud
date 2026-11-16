@@ -121,6 +121,11 @@ the candidate Provider's Go module/toolchain requirements.
   an unrelated case in the same file is not selected. A change confined to
   `TestUnit*` does not request cloud ACC. Changing TestMain/test initialization
   selects the package's acceptance cases.
+- Shared production packages such as connectivity and tags do not seed ACC
+  or document examples. Product helpers select consumers through resolved
+  references. A filename prefix alone does not make a split helper a data source.
+- Static product registration changes select the mapped factories in both
+  snapshots. Unresolved mappings or changes to registration logic require review.
 - Service changes follow declarations and method references in both snapshots,
   including removed call edges. Reached resource implementations select that
   type's cases and examples. Statically declared receiver types distinguish
@@ -150,7 +155,9 @@ Unchanged HCL under a prose-only edit does not run again; the report explicitly
 keeps wording assertions NOT_VERIFIED for independent QA. Test-only changes
 continue to select ACC without selecting documentation lifecycles.
 
-Before execution, review a version-1 JSON contract at
+A self-contained HCL fence is one runnable scene and uses the standard
+lifecycle, import and cleanup checks. For grouped fences, linked HCL or adapted
+inputs, review a version-1 JSON contract at
 `ci/assets/document-examples/r/<resource>.json` (`d/<data_source>.json` for data
 sources). The matching page is `website/docs/r/<resource>.html.markdown`. For
 example, a shared Provider fence and two independent resource fences use cases
@@ -190,9 +197,11 @@ source must be accounted for. The full change range follows declared inputs,
 including input-only edits, deletions and both paths of renames. CI triggers
 include scenario contracts and all .tf/.hcl paths.
 
-No scene is automatically ready merely because a fence was extracted. Missing
-contracts, unresolved grouping/inputs, stale source hashes, unsupported assertions
-and removed scenes fail before any ACube requests for the documentation job.
+A directly changed scene that cannot be planned blocks the documentation job
+with the source location and reason. Historical scenes selected indirectly
+without a contract are reported as NOT_VERIFIED when they cannot run
+independently. Existing explicit contracts still require full coverage and fresh
+hashes. Missing AccTest cases block the acceptance job independently.
 A page without executable examples needs an explicit version=1 contract with
 cases=[] and a nonempty notApplicableReason. A removed page requires scope review.
 Known unlabelled/indented HCL is blocked for explicit transcription into a
