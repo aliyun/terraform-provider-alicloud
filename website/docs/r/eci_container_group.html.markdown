@@ -172,6 +172,8 @@ The acr_registry_info supports the following:
 * `region_id` - (Optional, ForceNew) The ACR enterprise edition instance belongs to the region.
 * `instance_name` - (Optional) The name of the ACR enterprise edition instance.
 * `domains` - (Optional, List) The domain name of the ACR Enterprise Edition instance. Defaults to all domain names of the corresponding instance. Support specifying individual domain names, multiple separated by half comma.
+* `arn_service` - (Optional, ForceNew, Available since v2.3.0) The ARN of the RAM role that belongs to the account where the container group is created. It is used together with `arn_user` to pull images from an ACR Enterprise Edition instance that belongs to another Alibaba Cloud account.
+* `arn_user` - (Optional, ForceNew, Available since v2.3.0) The ARN of the RAM role that belongs to the account where the ACR Enterprise Edition instance resides. The role must trust the role specified by `arn_service`.
 
 ### `image_registry_credential`
 

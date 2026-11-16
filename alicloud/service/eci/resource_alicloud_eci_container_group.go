@@ -847,6 +847,16 @@ func ResourceEciContainerGroup() *schema.Resource {
 								Type: schema.TypeString,
 							},
 						},
+						"arn_service": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"arn_user": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
 					},
 				},
 			},
@@ -1017,6 +1027,12 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 			AcrRegistryInfos[i]["InstanceId"] = AcrRegistryInfosMap["instance_id"]
 			AcrRegistryInfos[i]["Domain"] = AcrRegistryInfosMap["domains"]
 			AcrRegistryInfos[i]["RegionId"] = AcrRegistryInfosMap["region_id"]
+			if v, ok := AcrRegistryInfosMap["arn_service"].(string); ok && v != "" {
+				AcrRegistryInfos[i]["ArnService"] = v
+			}
+			if v, ok := AcrRegistryInfosMap["arn_user"].(string); ok && v != "" {
+				AcrRegistryInfos[i]["ArnUser"] = v
+			}
 		}
 		request["AcrRegistryInfo"] = AcrRegistryInfos
 	}
