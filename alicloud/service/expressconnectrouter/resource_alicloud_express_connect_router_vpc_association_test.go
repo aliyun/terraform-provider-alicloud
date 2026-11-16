@@ -395,7 +395,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_compl
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutervpcassociation%d", acctest.DefaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testAcc%sexpressconnectrouterexpressconnectroutervpcassociation%d", acctest.DefaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudExpressConnectRouterExpressConnectRouterVpcAssociationBasicDependence6348)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

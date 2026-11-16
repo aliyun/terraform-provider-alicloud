@@ -141,7 +141,7 @@ func TestAccAliCloudExpressConnectRouterVpcAssociationsDataSource_identity0(t *t
 	rand := tfacctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_express_connect_router_vpc_associations.default"
 	associationResourceId := "alicloud_express_connect_router_vpc_association.default"
-	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutervpcassociation%d", acctest.DefaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testAcc%sexpressconnectrouterexpressconnectroutervpcassociation%d", acctest.DefaultRegionToTest, rand)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
