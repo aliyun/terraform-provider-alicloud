@@ -17,7 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-// Service holds the Realtime Compute (foasconsole 2019-06-01 / ververica
+// Service holds the Realtime Compute (foasconsole 2021-10-28 / ververica
 // 2022-07-18) client and the product-specific API helpers used by the SDKv2
 // realtimecompute resources and data sources migrated into this package.
 type Service struct {
@@ -39,12 +39,12 @@ func (s *Service) DescribeRealtimeComputeVvpInstance(id string) (object map[stri
 	action := "DescribeInstances"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["DescribeInstancesRequest.InstanceId"] = id
-	query["DescribeInstancesRequest.Region"] = s.client.RegionId
+	query["InstanceId"] = id
+	query["Region"] = s.client.RegionId
 
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcGet("foasconsole", "2019-06-01", action, query, request)
+		response, err = client.RpcGet("foasconsole", "2021-10-28", action, query, request)
 
 		if err != nil {
 			if helper.NeedRetry(err) {
@@ -53,9 +53,9 @@ func (s *Service) DescribeRealtimeComputeVvpInstance(id string) (object map[stri
 			}
 			return retry.NonRetryableError(err)
 		}
-		logs.AddDebug(action, response, request)
 		return nil
 	})
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
 		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
@@ -127,7 +127,7 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 			request["ResourceType"] = resourceType
 			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-				response, err = client.RpcPost("foasconsole", "2019-06-01", action, query, request, true)
+				response, err = client.RpcPost("foasconsole", "2021-10-28", action, query, request, true)
 
 				if err != nil {
 					if helper.NeedRetry(err) {
@@ -161,7 +161,7 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 			request["ResourceType"] = resourceType
 			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-				response, err = client.RpcPost("foasconsole", "2019-06-01", action, query, request, true)
+				response, err = client.RpcPost("foasconsole", "2021-10-28", action, query, request, true)
 
 				if err != nil {
 					if helper.NeedRetry(err) {
