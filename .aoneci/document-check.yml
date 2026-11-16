@@ -48,9 +48,10 @@ jobs:
             exit 0
           fi
           git fetch --no-tags origin master:refs/remotes/origin/master
-          DIFF_BASE="$(git merge-base origin/master HEAD)" \
-          DIFF_HEAD="$(git rev-parse HEAD)" \
-            bash scripts/ci/test-framework-guard.sh
+          # The MR checkout can be shallow, which leaves merge-base without a
+          # common ancestor; AUTO_RANGE unshallows and resolves the range
+          # against origin/master the same way scripts/basic-check.sh does.
+          TEST_FRAMEWORK_GUARD_AUTO_RANGE=true bash scripts/ci/test-framework-guard.sh
 
   Content:
     steps:
