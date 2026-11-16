@@ -634,7 +634,11 @@ func ecrUnitScopeToEcr(action, ecrID string, body map[string]interface{}) map[st
 func ecrUnitRead(t *testing.T, fixture *ecrUnitFixture) (*schema.ResourceData, error) {
 	t.Helper()
 
-	server := httptest.NewServer(fixture)
+	// Wire the handler method explicitly instead of passing the fixture as an
+	// http.Handler: the CI impact analysis (scripts/ci/accscope) cannot follow
+	// interface dispatch, so an implicit pass would leave ServeHTTP and its
+	// response helpers without statically resolvable test consumers.
+	server := httptest.NewServer(http.HandlerFunc(fixture.ServeHTTP))
 	t.Cleanup(server.Close)
 
 	credential, err := credentials.NewCredential(new(credentials.Config).
