@@ -115,7 +115,6 @@ func TestAccDemo_other(t *testing.T) {}`,
 
 func TestAccScopeDoesNotWaiveUnresolvedOrDeletedCoverage(t *testing.T) {
 	for _, tc := range []struct{ name, file, before, after string }{
-		{"public helper", "alicloud/helper/request.go", `package helper; func Request() { old() }`, `package helper; func Request() { changed() }`},
 		{"service without caller", "alicloud/service/demo/service_demo.go", `package demo; func Describe() { old() }`, `package demo; func Describe() { changed() }`},
 		{"removed test", "alicloud/resource_demo_test.go", `package alicloud; func TestAccDemo(t *testing.T) {}`, `package alicloud`},
 		{"removed implementation", "alicloud/resource_demo.go", `package alicloud; func resourceDemo() {}`, `package alicloud`},
@@ -332,5 +331,77 @@ func TestAccAmqp(t *testing.T) {}`,
 	want := map[string][]string{"alicloud/service/cr": {"TestAccCr"}}
 	if len(result.Blocked) != 0 || !reflect.DeepEqual(result.Packages, want) {
 		t.Fatalf("constructor receiver scope = %+v, want only %v", result, want)
+	}
+}
+
+func TestRegistrationAndHelperSelectOnlyActualDataSource(t *testing.T) {
+	const dir = "alicloud/service/ecs/"
+	const register = dir + "register.go"
+	const helper = dir + "data_source_framework_helpers.go"
+	const implementation = dir + "data_source_image_pipeline_executions.go"
+	const shared = "alicloud/connectivity/client.go"
+	files := map[string]string{
+		register: `package ecs
+func ServicePackage() conns.ServicePackage {
+	return conns.ServicePackage{DataSources: []conns.DataSource{
+		{TypeName: "alicloud_other", Factory: NewOther},
+	}}
+}`,
+		helper:         `package ecs; func decode() { old() }`,
+		implementation: `package ecs; import "example.invalid/datasource"; func NewExecutions() datasource.DataSource { decode(); return nil }`,
+		implementation[:len(implementation)-3] + "_test.go": `package ecs; func TestAccExecutions(t *testing.T) {}`,
+		dir + "data_source_other.go":                        `package ecs; import "example.invalid/datasource"; func NewOther() datasource.DataSource { return nil }`,
+		dir + "data_source_other_test.go":                   `package ecs; func TestAccOther(t *testing.T) {}`,
+		shared:                                              `package connectivity; func Do() { old() }`,
+	}
+	before := fixture(t, files)
+	files[register] = strings.Replace(files[register], "{TypeName:", "{TypeName: \"alicloud_executions\", Factory: NewExecutions}, {TypeName:", 1)
+	files[helper] = strings.Replace(files[helper], "old()", "changed()", 1)
+	files[shared] = strings.Replace(files[shared], "old()", "changed()", 1)
+	after := fixture(t, files)
+	for _, changed := range [][]string{{register}, {helper}, {register, helper, shared}} {
+		result := selectScope(before, after, changed)
+		if len(result.Blocked) != 0 || !reflect.DeepEqual(result.Packages, map[string][]string{dir[:len(dir)-1]: {"TestAccExecutions"}}) ||
+			!reflect.DeepEqual(result.ResourceFiles, []string{implementation}) {
+			t.Fatalf("changes %v selected %+v", changed, result)
+		}
+	}
+	result := selectScope(before, after, []string{shared})
+	if len(result.Blocked) != 0 || len(result.Packages) != 0 || len(result.ResourceFiles) != 0 {
+		t.Fatalf("shared change selected %+v", result)
+	}
+}
+
+func TestAccScopeResolvesEmbeddedLocalInterfaceAndStructField(t *testing.T) {
+	const service = "alicloud/service/demo/service.go"
+	files := map[string]string{
+		service: `package demo
+type Reader interface { Describe(id string) error }
+type Service interface { Reader; Update(string) error }
+type Client struct{}
+func (*Client) Update(string) error { return nil }
+func (*Client) Describe(string) error { return old() }
+type Other struct{}
+func (*Other) Describe(string) error { return nil }
+type Wrapper struct { client *Client }
+func (w Wrapper) Read() error { return w.client.Describe("id") }
+func (Wrapper) Update(string) error { return nil }
+func (w Wrapper) Describe(id string) error { return w.Read() }`,
+		"alicloud/service/demo/resource_demo.go": `package demo
+func resourceDemo(service Service) { service.Describe("id") }`,
+		"alicloud/service/demo/resource_demo_test.go": `package demo
+import "testing"
+func TestAccDemo(t *testing.T) {}`,
+		"alicloud/service/demo/resource_other.go": `package demo
+func resourceOther(client *Other) { client.Describe("id") }`,
+		"alicloud/service/demo/resource_other_test.go": `package demo
+import "testing"
+func TestAccOther(t *testing.T) {}`,
+	}
+	before := fixture(t, files)
+	files[service] = strings.Replace(files[service], "old()", "changed()", 1)
+	result := selectScope(before, fixture(t, files), []string{service})
+	if len(result.Blocked) != 0 || !reflect.DeepEqual(result.Packages["alicloud/service/demo"], []string{"TestAccDemo"}) {
+		t.Fatalf("unexpected interface impact: %+v", result)
 	}
 }
