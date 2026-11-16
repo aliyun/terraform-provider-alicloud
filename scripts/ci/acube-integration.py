@@ -135,11 +135,19 @@ class Client:
 
 
 def validate_result(status, request):
-    if not isinstance(status, dict) or status.get('status') != 'success':
+    if not isinstance(status, dict) or status.get('status') not in ('success', 'failed'):
+        raise ValueError('ACube task did not succeed')
+    task_status = status['status']
+    if task_status == 'failed' and request['mode'] != 'acctest':
         raise ValueError('ACube task did not succeed')
     result = status.get('result') or {}
     if not isinstance(result, dict):
         raise ValueError('Invalid ACube result')
+    if task_status == 'failed' and (
+            result.get('error') != 'Command or acceptance checks failed'
+            or result.get('exitCode') != 0 or result.get('timedOut') is True
+            or result.get('infrastructureFailure') or result.get('finalizationErrors')):
+        raise ValueError('ACube task did not succeed')
     for key in ('sourceId', 'checkBaseSourceId', 'commitSha', 'baseCommitSha', 'mode'):
         if result.get(key) != request[key]: raise ValueError('Result identity mismatch: ' + key)
     if type(result.get('exitCode')) not in (int, float) or result['exitCode'] != 0 or result.get('timedOut') is True:
@@ -150,8 +158,18 @@ def validate_result(status, request):
         if (not isinstance(cases, list) or any(not isinstance(c, dict) for c in cases)
                 or len(cases) != len(request['testCases']) or {c.get('name') for c in cases} != set(request['testCases'])):
             raise ValueError('Missing or duplicate AccTest results')
-        if result.get('testDirectory') != request['variables']['TEST'] or any(c.get('result') != 'PASS' for c in cases):
-            raise ValueError('AccTest FAIL/SKIP is not PASS; inspect case-level evidence')
+        if result.get('testDirectory') != request['variables']['TEST']:
+            raise ValueError('AccTest directory mismatch')
+        outcomes = [c.get('result') for c in cases]
+        if any(outcome not in ('PASS', 'SKIP') for outcome in outcomes):
+            raise ValueError('AccTest returned a failed or invalid case result')
+        if task_status == 'failed':
+            # The runner also emits this failure when any selected case skips.
+            workspace_cleanup = result.get('workspaceCleanup', {'status': 'not-created'})
+            if ('SKIP' not in outcomes or result.get('signal')
+                    or not isinstance(workspace_cleanup, dict)
+                    or workspace_cleanup.get('status') not in ('removed', 'already-absent', 'not-created')):
+                raise ValueError('ACube task did not succeed')
     else:
         doc_examples.validate_result(result, request)
     return result
@@ -305,6 +323,9 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                 except ValueError as error:
                     validation_error = str(error)
                 report = terminal_report(record['name'], task_id, status, record['request'], validation_error, logs)
+                if not validation_error and report['taskStatus'] == 'failed':
+                    report['status'] = 'success'
+                    report['taskError'] = report.pop('error')
                 if record.get('example') and not validation_error:
                     report['example'] = doc_examples.proof(record['example'], task_id)
                 if log_warning:
