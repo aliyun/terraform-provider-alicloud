@@ -19,17 +19,7 @@ import (
 // validateDBConnectionPort is shared by gpdb and rds connection resources,
 // so it moved to the leaf package and is aliased here for the flat layout.
 var (
-	validateCIDRNetworkAddress       = validators.ValidateCIDRNetworkAddress
-	validateVpnCIDRNetworkAddress    = validators.ValidateVpnCIDRNetworkAddress
-	validateSwitchCIDRNetworkAddress = validators.ValidateSwitchCIDRNetworkAddress
-	validateDBConnectionPort         = validators.ValidateDBConnectionPort
-	validateAllowedSplitStringValue  = validators.ValidateAllowedSplitStringValue
-	validateStringConvertInt64       = validators.ValidateStringConvertInt64
-	normalizeYamlString              = validators.NormalizeYamlString
-	normalizeJsonString              = validators.NormalizeJsonString
-	validateYamlString               = validators.ValidateYamlString
-	validateNormalName               = validators.ValidateNormalName
-	skipResourceSchemaValidation     = validators.SkipResourceSchemaValidation
+	validateDBConnectionPort = validators.ValidateDBConnectionPort
 
 	IntBetween                 = validators.IntBetween
 	ValidateNullableIntBetween = validators.ValidateNullableIntBetween

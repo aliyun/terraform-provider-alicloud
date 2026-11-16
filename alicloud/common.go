@@ -36,55 +36,21 @@ var (
 	addDebug         = logs.AddDebug
 	debugOn          = logs.DebugOn
 	buildClientToken = helper.BuildClientToken
-	incrementalWait  = helper.IncrementalWait
-	writeToFile      = helper.WriteToFile
-	GetUserHomeDir   = helper.GetUserHomeDir
 
-	// conversion helpers (convert/convert.go)
-	expandStringList                  = convert.ExpandStringList
-	convertListStringToListInterface  = convert.ConvertListStringToListInterface
-	expandIntList                     = convert.ExpandIntList
-	convertListToJsonString           = convert.ConvertListToJsonString
-	convertJsonStringToStringList     = convert.ConvertJsonStringToStringList
-	encodeToBase64String              = convert.EncodeToBase64String
-	decodeFromBase64String            = convert.DecodeFromBase64String
-	convertJsonStringToMap            = convert.ConvertJsonStringToMap
-	convertListToCommaSeparate        = convert.ConvertListToCommaSeparate
-	filterEmptyStrings                = convert.FilterEmptyStrings
-	convertBoolToString               = convert.ConvertBoolToString
-	convertStringToBool               = convert.ConvertStringToBool
-	convertIntergerToString           = convert.ConvertIntergerToString
-	convertFloat64ToString            = convert.ConvertFloat64ToString
-	convertJsonStringToList           = convert.ConvertJsonStringToList
-	expandArrayToMap                  = convert.ExpandArrayToMap
-	convertJsonStringToObject         = convert.ConvertJsonStringToObject
-	convertObjectToJsonString         = convert.ConvertObjectToJsonString
-	convertMaptoJsonString            = convert.ConvertMaptoJsonString
-	convertMapToJsonStringIgnoreError = convert.ConvertMapToJsonStringIgnoreError
-	convertInterfaceToJsonString      = convert.ConvertInterfaceToJsonString
-	convertListMapToJsonString        = convert.ConvertListMapToJsonString
-	convertMapFloat64ToJsonString     = convert.ConvertMapFloat64ToJsonString
-	convertArrayObjectToJsonString    = convert.ConvertArrayObjectToJsonString
-	convertArrayToString              = convert.ConvertArrayToString
-	convertToJsonWithoutEscapeHTML    = convert.ConvertToJsonWithoutEscapeHTML
-	convertToInterfaceArray           = convert.ConvertToInterfaceArray
-	convertYamlToObject               = convert.ConvertYamlToObject
-	Interface2String                  = convert.Interface2String
-	Interface2StrSlice                = convert.Interface2StrSlice
-	Str2InterfaceSlice                = convert.Str2InterfaceSlice
-	Interface2Bool                    = convert.Interface2Bool
-	expandSingletonToList             = convert.ExpandSingletonToList
-	convertChargeTypeToPaymentType    = convert.ConvertChargeTypeToPaymentType
-	convertPaymentTypeToChargeType    = convert.ConvertPaymentTypeToChargeType
-	NormalizeMap                      = convert.NormalizeMap
-	normalizeValue                    = convert.NormalizeValue
+	writeToFile    = helper.WriteToFile
+	GetUserHomeDir = helper.GetUserHomeDir
+
+	Interface2String   = convert.Interface2String
+	Interface2StrSlice = convert.Interface2StrSlice
+	Str2InterfaceSlice = convert.Str2InterfaceSlice
+	Interface2Bool     = convert.Interface2Bool
+
+	NormalizeMap = convert.NormalizeMap
 
 	// tag converters (tags/tags.go)
-	ConvertTags             = tags.ConvertTags
-	ConvertLowercaseTags    = tags.ConvertLowercaseTags
-	ConvertTagsForKms       = tags.ConvertTagsForKms
-	expandTagsToMap         = tags.ExpandTagsToMap
-	expandTagsToMapWithTags = tags.ExpandTagsToMapWithTags
+	ConvertTags          = tags.ConvertTags
+	ConvertLowercaseTags = tags.ConvertLowercaseTags
+	ConvertTagsForKms    = tags.ConvertTagsForKms
 
 	// pointer helpers (helper/pointer.go)
 	StringPointer = helper.StringPointer
@@ -99,23 +65,10 @@ var (
 	ParseResourceIdWithEscaped = helper.ParseResourceIdWithEscaped
 	EscapeColons               = helper.EscapeColons
 
-	// compare helpers (helper/compare.go)
-	compareJsonTemplateAreEquivalent      = helper.CompareJsonTemplateAreEquivalent
-	compareJsonHasSubset                  = helper.CompareJsonHasSubset
-	compareArrayJsonTemplateAreEquivalent = helper.CompareArrayJsonTemplateAreEquivalent
-	compareYamlTemplateAreEquivalent      = helper.CompareYamlTemplateAreEquivalent
-	compareMapWithIgnoreEquivalent        = helper.CompareMapWithIgnoreEquivalent
-	IsSlicesValuesEqual                   = helper.IsSlicesValuesEqual
+	IsSlicesValuesEqual = helper.IsSlicesValuesEqual
 
 	// state-wait helpers (helper/state.go)
-	BuildStateConf      = helper.BuildStateConf
-	computePeriodByUnit = helper.ComputePeriodByUnit
-	checkWaitForReady   = helper.CheckWaitForReady
-
-	// format helpers (convert/format.go)
-	formatInt     = convert.FormatInt
-	formatBool    = convert.FormatBool
-	formatFloat64 = convert.FormatFloat64
+	BuildStateConf = helper.BuildStateConf
 
 	// invoker (helper/invoker.go); methods resolve through the aliased type
 	NewInvoker         = helper.NewInvoker
@@ -123,46 +76,31 @@ var (
 	ServiceBusyCatcher = helper.ServiceBusyCatcher
 	ThrottlingCatcher  = helper.ThrottlingCatcher
 
-	// openapi param helpers (helper/param.go)
-	rpcParam     = helper.RpcParam
-	roaParam     = helper.RoaParam
-	xmlParam     = helper.XmlParam
-	jsonXmlParam = helper.JsonXmlParam
-	xmlJsonParam = helper.XmlJsonParam
-
 	// misc utilities (helper/misc.go)
-	IntMin                       = helper.IntMin
-	getPagination                = helper.GetPagination
-	userDataHashSum              = helper.UserDataHashSum
-	Trim                         = helper.Trim
-	ConvertIntegerToInt          = helper.ConvertIntegerToInt
-	getNextpageNumber            = helper.GetNextpageNumber
-	terraformToAPI               = helper.TerraformToAPI
-	loadFileContent              = helper.LoadFileContent
-	GetFunc                      = helper.GetFunc
-	Case2Camel                   = helper.Case2Camel
-	FirstLower                   = helper.FirstLower
-	SplitSlice                   = helper.SplitSlice
-	splitMultiZoneId             = helper.SplitMultiZoneId
-	mapMerge                     = helper.MapMerge
-	mapSort                      = helper.MapSort
-	getOneStringOrAllStringSlice = helper.GetOneStringOrAllStringSlice
-	Unique                       = helper.Unique
-	IsSubCollection              = helper.IsSubCollection
-	MergeMaps                    = helper.MergeMaps
-	InArray                      = helper.InArray
-	MD5                          = helper.MD5
-	bytesToTB                    = helper.BytesToTB
-	compressIPv6OrCIDR           = helper.CompressIPv6OrCIDR
-	randIntRange                 = helper.RandIntRange
-	IsEmpty                      = helper.IsEmpty
-	IsNil                        = helper.IsNil
-	GetDaysBetween2Date          = helper.GetDaysBetween2Date
-	isProtocolValid              = helper.IsProtocolValid
-	ValidProtocols               = helper.ValidProtocols
-	isPagingRequest              = helper.IsPagingRequest
-	setPagingRequest             = helper.SetPagingRequest
-	getWriteOnlyValue            = helper.GetWriteOnlyValue
+	IntMin = helper.IntMin
+
+	Trim                = helper.Trim
+	ConvertIntegerToInt = helper.ConvertIntegerToInt
+	getNextpageNumber   = helper.GetNextpageNumber
+
+	GetFunc    = helper.GetFunc
+	Case2Camel = helper.Case2Camel
+	FirstLower = helper.FirstLower
+	SplitSlice = helper.SplitSlice
+
+	mapSort = helper.MapSort
+
+	Unique          = helper.Unique
+	IsSubCollection = helper.IsSubCollection
+	MergeMaps       = helper.MergeMaps
+	InArray         = helper.InArray
+	MD5             = helper.MD5
+
+	IsEmpty             = helper.IsEmpty
+	IsNil               = helper.IsNil
+	GetDaysBetween2Date = helper.GetDaysBetween2Date
+
+	ValidProtocols = helper.ValidProtocols
 )
 
 // Consts moved to helper and tags; re-exported as const aliases.
@@ -382,11 +320,10 @@ const DefaultTimeoutMedium = 500
 // timeout for long time progerss product, rds e.g.
 const DefaultLongTimeout = 1000
 
-const (
-	// HeaderEnableEBTrigger header key for enabling eventbridge trigger
-	// TODO: delete the header after eventbridge trigger is totally exposed to user
-	HeaderEnableEBTrigger = "x-fc-enable-eventbridge-trigger"
-)
+const
+// HeaderEnableEBTrigger header key for enabling eventbridge trigger
+// TODO: delete the header after eventbridge trigger is totally exposed to user
+HeaderEnableEBTrigger = "x-fc-enable-eventbridge-trigger"
 
 // default region for all resource
 const DEFAULT_REGION = "cn-beijing"
