@@ -16,7 +16,7 @@ import time
 import urllib.error
 import urllib.request
 
-from acube_diagnostics import (REUSE_SCAN_LIMIT, publish_acc_summary, publish_report, redact,
+from acube_diagnostics import (REUSE_SCAN_LIMIT, acc_execution_counts, publish_acc_summary, publish_report, redact,
                                report_directory, terminal_report)
 import doc_examples
 
@@ -362,6 +362,10 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                 acc_rows[name].update(reused=0 if not reused_cases else None, toRun=len(request['testCases']),
                     reuseValidation='pending' if reused_cases else 'skipped-limit' if reuse_skip_reason else 'not-needed',
                     originalTaskIds=sorted(set(reused_cases.values())))
+                acc_rows[name].update(executed=None, passed=None, failed=None, skipped=None,
+                                      unknown=len(request['testCases']))
+                if not request['testCases']:
+                    acc_rows[name].update(executed=0, passed=0, failed=0, skipped=0)
                 print('ACC 用例分配：' + name + '，总数=' + str(len(value)) + '，复用候选='
                       + str(len(reused_cases)) + '，需执行（补跑）=' + str(len(request['testCases'])), flush=True)
             if reused_cases:
@@ -415,6 +419,8 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                 except ValueError as error:
                     validation_error = str(error)
                 report = terminal_report(record['name'], task_id, status, record['request'], validation_error, logs)
+                if kind == 'acctest':
+                    acc_rows[record['name']].update(acc_execution_counts(status, record['request']['testCases']))
                 if not validation_error and report['taskStatus'] == 'failed':
                     report['status'] = 'success'
                     report['taskError'] = report.pop('error')
