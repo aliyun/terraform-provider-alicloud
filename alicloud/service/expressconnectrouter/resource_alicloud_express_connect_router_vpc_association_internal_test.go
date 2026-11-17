@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func TestUnitVpcAssociationUpdateBudgetIsShared(t *testing.T) {
@@ -93,8 +94,23 @@ func vpcAssociationPrefixSuppressData(t *testing.T, oldValue, newValue string) *
 		data = d
 		return suppress(key, old, new, d)
 	}
+	rawPrefixes := make([]cty.Value, 0, len(newPrefixes))
+	for _, prefix := range newPrefixes {
+		rawPrefixes = append(rawPrefixes, cty.StringVal(prefix.(string)))
+	}
 	state := &terraform.InstanceState{ID: "ecr-1:assoc-1:vpc-1", Attributes: attributes}
-	state.RawConfig = vpcAssociationRawConfig(config)
+	state.RawConfig = cty.ObjectVal(map[string]cty.Value{
+		"allowed_prefixes":      cty.ListVal(rawPrefixes),
+		"allowed_prefixes_mode": cty.NullVal(cty.String),
+		"association_id":        cty.NullVal(cty.String),
+		"association_region_id": cty.StringVal("cn-hangzhou"),
+		"create_time":           cty.NullVal(cty.String),
+		"description":           cty.NullVal(cty.String),
+		"ecr_id":                cty.StringVal("ecr-1"),
+		"status":                cty.NullVal(cty.String),
+		"vpc_id":                cty.StringVal("vpc-1"),
+		"vpc_owner_id":          cty.NullVal(cty.Number),
+	})
 	if _, err := resource.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), nil); err != nil {
 		t.Fatalf("build suppressor resource data: %v", err)
 	}
