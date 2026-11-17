@@ -66,6 +66,7 @@ def acceptance_scope(base, head):
     try:
         value = subprocess.check_output(
             ['go', 'run', str(Path(__file__).with_name('accscope')/'main.go'),
+             str(Path(__file__).with_name('accscope')/'layout.go'),
              '-base', base, '-head', head], text=True, stderr=subprocess.PIPE,
             env={**os.environ, 'GO111MODULE': 'off', 'GOWORK': 'off'})
         return json.loads(value)
@@ -77,6 +78,48 @@ def acceptance_scope(base, head):
 def scope_blockers(scope, kind):
     coverage = set(scope.get('coverageBlockers', [])) if kind == 'examples' else set()
     return [reason for reason in scope.get('blocked', []) if reason not in coverage]
+
+
+def planning_diagnostic(reason):
+    """Keep original evidence, add stable categories and actionable repair steps."""
+    guide = 'scripts/ci/provider-layout.md'
+    if reason.startswith('[LAYOUT'):
+        code = reason.split(']', 1)[0][1:]
+        fix = reason.split(' Fix: ', 1)[-1].split(' Guide: ', 1)[0]
+    elif 'No AccTest cases for affected resource:' in reason:
+        code = 'ACC001'
+        fix = ('Resolve this file through register.go TypeName/Factory. For an actual entrypoint, add or restore '
+               'TestAcc functions in its companion *_test.go. For a private helper, merge it into the owning '
+               'resource/data source and merge its tests into the owner test file. Do not add an empty or skipped '
+               'AccTest just to satisfy discovery; real coverage is required.')
+    elif 'test helper consumers' in reason:
+        code = 'ACC002'
+        fix = ('Inspect the named mock/helper receiver and all callers. Keep private test helpers with the owning '
+               'TestUnit/TestAcc functions; use explicit receiver/interface types where possible. If valid interface '
+               'dispatch is still unresolved, provide the caller chain for maintainer review and a scope regression; '
+               'do not rename the method or remove the test to bypass impact analysis.')
+    elif 'registration' in reason or ':ServicePackage' in reason:
+        code = 'ACC003'
+        fix = ('Use literal TypeName/Factory entries in register.go and ensure each Factory resolves to one '
+               'implementation. Preserve aliases. Separate registration-map edits from initialization/control-flow '
+               'changes; unresolved registration logic requires maintainer impact review.')
+    elif 'removed/renamed AccTest' in reason:
+        code = 'ACC004'
+        fix = ('Restore the acceptance case or identify its replacement and retained assertions. A filename-only '
+               'move should preserve the TestAcc function name. Renaming/removing a case requires replacement '
+               'coverage review; do not convert it into TestUnit or skip it.')
+    elif 'consumer' in reason or 'receiver' in reason or 'service impact' in reason:
+        code = 'ACC005'
+        fix = ('Trace the named symbol to its production/test consumers in both base and head. Put single-entity '
+               'logic in the owning implementation; put genuinely shared logic in service.go/service_<purpose>.go. '
+               'Retain tests for every affected entity. Resolve ambiguous receivers explicitly or request maintainer '
+               'review with the caller chain; unresolved does not mean unused.')
+    else:
+        code = 'SCOPE001'
+        fix = ('Inspect the exact source and blocker in diagnostics/scope.json. Resolve build/dependency/fixture '
+               'or document-contract ambiguity before retrying. Follow scripts/ci/README-scopes.md for document '
+               'contracts; unsupported dynamic code needs maintainer scope review, not a blanket skip.')
+    return {'code': code, 'reason': reason, 'fix': fix, 'guide': guide}
 
 
 def plan(base, head, include_examples=True):
@@ -234,11 +277,17 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         report = {'status': 'blocked', 'head': frozen['head'], 'base': frozen['base'],
                   'error': reason + '; no cloud tasks submitted',
                   'scope': frozen.get('scope', {}), 'blockers': blockers}
+        report['diagnostics'] = [planning_diagnostic(blocker) for blocker in blockers]
         target = output / 'diagnostics' / 'scope.json'
         target.write_text(json.dumps(report, indent=2))
         target.chmod(0o600)
-        for blocker in blockers:
-            print(f'CI planning blocker: {blocker}', file=sys.stderr, flush=True)
+        for item in report['diagnostics']:
+            print(f"CI planning blocker: {item['reason']}\n  Code: {item['code']}\n"
+                  f"  Repair: {item['fix']}\n  Guide: {item['guide']}", file=sys.stderr, flush=True)
+        print(f"Local recheck (no cloud tasks): CI_CHECK_BASE={frozen['base']} make ci-check-quick. "
+              'After committing, inspect scope with GO111MODULE=off GOWORK=off go run '
+              'scripts/ci/accscope/main.go scripts/ci/accscope/layout.go '
+              f"-base {frozen['base']} -head HEAD; blocked must be empty.", file=sys.stderr, flush=True)
         raise ValueError(f"{report['error']} ({len(blockers)} blocker(s); see scope.json in CI diagnostics)")
     if not items:
         if kind == 'acctest':

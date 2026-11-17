@@ -67,6 +67,7 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s scripts/ci -p test_aone_range.py
           python3 -m unittest discover -s scripts/ci -p test_acube_integration.py
+          python3 -m unittest discover -s scripts/ci -p test_acube_layout.py
           python3 -m unittest discover -s scripts/ci -p test_aone_go_checks.py
           python3 -m unittest discover -s scripts/release -p 'test_*.py'
           bash scripts/ci/resolve-change-range_test.sh
@@ -74,6 +75,23 @@ jobs:
           python3 -m unittest discover -s scripts/ci -p test_check_scope.py
           python3 -m unittest discover -s scripts/ci -p test_document_checks.py
           go test ./scripts/compatibility ./scripts/title
+  ProviderLayout:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
+    steps:
+      - uses: checkout
+        inputs:
+          fetch-depth: '32'
+      - uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - name: Check new service file layout
+        run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          GO111MODULE=off GOWORK=off go run scripts/ci/accscope/main.go scripts/ci/accscope/layout.go \
+            -base "$DIFF_BASE" -head "$DIFF_HEAD" -layout-only
   BreakingChange:
     needs: CheckScope
     when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}

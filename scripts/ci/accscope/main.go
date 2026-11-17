@@ -48,6 +48,7 @@ type snapshot struct {
 	assets        map[string]string
 	hazards       map[string]string
 	registrations map[string]map[string]string
+	packages      map[string]string
 }
 
 type accScope struct {
@@ -57,6 +58,7 @@ type accScope struct {
 	Blocked            []string            `json:"blocked"`
 	UnverifiedCoverage []string            `json:"unverifiedCoverage,omitempty"`
 	CoverageBlockers   []string            `json:"coverageBlockers"`
+	LayoutIssues       []layoutIssue       `json:"layoutIssues,omitempty"`
 }
 
 func command(args ...string) ([]byte, error) {
@@ -246,6 +248,10 @@ func parseSource(s *snapshot, file string, data []byte) error {
 		return err
 	}
 	pkg := path.Dir(file) + "#" + f.Name.Name
+	if s.packages == nil {
+		s.packages = map[string]string{}
+	}
+	s.packages[file] = f.Name.Name
 	imports := map[string]string{}
 	for _, imp := range f.Imports {
 		value, _ := strconv.Unquote(imp.Path.Value)
@@ -524,6 +530,11 @@ func resourceFile(file string, registered map[string]bool) bool {
 	if strings.HasSuffix(file, "_test.go") {
 		return false
 	}
+	// In a registered service package only actual factory files are entrypoints.
+	// A helper's spelling must never manufacture another Terraform entity.
+	if registered[path.Dir(file)+"/"] {
+		return false
+	}
 	for _, prefix := range []string{"resource_", "data_source_alicloud_", "ephemeral_", "action_", "list_"} {
 		if strings.HasPrefix(path.Base(file), prefix) {
 			return true
@@ -714,6 +725,48 @@ func selectScope(before, after *snapshot, files []string) accScope {
 	selected, resources, blocked := map[string]bool{}, map[string]bool{}, map[string]bool{}
 	missingCoverage := map[string]map[string]bool{}
 	directResources := map[string]bool{}
+	// File moves do not remove a uniquely identified symbol. Preserve package,
+	// receiver and declaration name; ambiguous moves still require review.
+	relocated := map[string]*declaration{}
+	afterSymbols := map[string][]*declaration{}
+	for _, d := range after.decls {
+		key := d.pkg + ":" + d.receiver + ":" + d.name
+		afterSymbols[key] = append(afterSymbols[key], d)
+	}
+	for id, d := range before.decls {
+		if !after.files[d.file] {
+			matches := afterSymbols[d.pkg+":"+d.receiver+":"+d.name]
+			if len(matches) == 1 && matches[0].file != d.file && matches[0].test == d.test && (!d.acc || matches[0].acc) {
+				relocated[id] = matches[0]
+			}
+		}
+	}
+	movedFiles := map[string]string{}
+	beforeEntries, afterEntries := factoryFiles(before), factoryFiles(after)
+	beforeFactories := map[string]bool{}
+	for file, mappings := range before.registrations {
+		for _, factory := range mappings {
+			beforeFactories[path.Dir(file)+":"+factory] = true
+		}
+	}
+	moveTargets, unresolvedMove := map[string]map[string]bool{}, map[string]bool{}
+	for id, d := range before.decls {
+		if !after.files[d.file] && beforeEntries[d.file] && d.receiver == "" && beforeFactories[path.Dir(d.file)+":"+d.name] {
+			if moveTargets[d.file] == nil {
+				moveTargets[d.file] = map[string]bool{}
+			}
+			if target := relocated[id]; target != nil && afterEntries[target.file] {
+				moveTargets[d.file][target.file] = true
+			} else {
+				unresolvedMove[d.file] = true
+			}
+		}
+	}
+	for file, targets := range moveTargets {
+		if len(targets) == 1 && !unresolvedMove[file] {
+			movedFiles[file] = sortedKeys(targets)[0]
+		}
+	}
 	changedFiles := map[string]bool{}
 	for _, file := range files {
 		changedFiles[file] = true
@@ -732,6 +785,9 @@ func selectScope(before, after *snapshot, files []string) accScope {
 		}
 	}
 	selectResource := func(file, reason string) {
+		if moved := movedFiles[file]; moved != "" {
+			file = moved
+		}
 		resources[file] = true
 		stem := strings.TrimSuffix(file, ".go")
 		found := false
@@ -754,6 +810,11 @@ func selectScope(before, after *snapshot, files []string) accScope {
 	}
 	registered := map[string]bool{}
 	for _, snap := range []*snapshot{before, after} {
+		for file := range snap.files {
+			if path.Base(file) == "register.go" {
+				registered[path.Dir(file)+"/"] = true
+			}
+		}
 		factories := map[string][]string{}
 		for _, d := range snap.decls {
 			if !d.test && d.receiver == "" && d.result.name != "" {
@@ -793,6 +854,9 @@ func selectScope(before, after *snapshot, files []string) accScope {
 		for len(queue) > 0 {
 			id := queue[0]
 			queue = queue[1:]
+			if moved := relocated[id]; moved != nil {
+				id = moved.id
+			}
 			if seen[id] {
 				continue
 			}
@@ -845,7 +909,7 @@ func selectScope(before, after *snapshot, files []string) accScope {
 			continue
 		}
 		if d.test || strings.HasPrefix(d.file, "alicloud/acctest/") {
-			if d.acc && current == nil {
+			if d.acc && current == nil && relocated[id] == nil {
 				blocked["removed/renamed AccTest "+reason+"; confirm replacement coverage"] = true
 				continue
 			}
@@ -873,8 +937,10 @@ func selectScope(before, after *snapshot, files []string) accScope {
 		} else if path.Base(d.file) == "register.go" {
 			blocked["unsupported registration change: "+reason+"; manual impact review required"] = true
 		} else if strings.HasPrefix(dir, "alicloud/service/") {
-			// An unresolved same-name method does not establish a helper consumer.
-			impact(id, reason, false)
+			// Do not turn unknown helper consumers into a successful empty scope.
+			if covered, unit := impact(id, reason, true); !covered && !unit {
+				blocked["cannot resolve production helper consumers for "+reason+"; manual ACC scope review required"] = true
+			}
 		}
 	}
 	for file := range changedFiles {
@@ -928,12 +994,52 @@ func selectScope(before, after *snapshot, files []string) accScope {
 
 func main() {
 	base, head := flag.String("base", "", "comparison SHA"), flag.String("head", "", "candidate SHA")
+	layoutOnly := flag.Bool("layout-only", false, "validate new service file organization without planning cloud tests")
+	worktree := flag.Bool("worktree", false, "include local/untracked changes; only valid with -layout-only")
 	flag.Parse()
-	if *base == "" || *head == "" || strings.HasPrefix(*base, "-") || strings.HasPrefix(*head, "-") {
-		fmt.Fprintln(os.Stderr, "both -base and -head are required")
+	if *base == "" || (!*worktree && *head == "") || strings.HasPrefix(*base, "-") || strings.HasPrefix(*head, "-") || (*worktree && !*layoutOnly) {
+		fmt.Fprintln(os.Stderr, "use -base <commit> -head <commit>, or -base <commit> -worktree -layout-only; see "+layoutGuide)
 		os.Exit(1)
 	}
-	files, err := command("diff", "--no-renames", "--name-only", *base, *head)
+	resolvedBase, resolveErr := command("rev-parse", "--verify", *base+"^{commit}")
+	if resolveErr != nil {
+		fmt.Fprintln(os.Stderr, "cannot establish ACC scope: comparison base is unavailable; fetch the CI base commit and retry; see "+layoutGuide)
+		os.Exit(1)
+	}
+	*base = strings.TrimSpace(string(resolvedBase))
+	diffArgs := []string{"diff", "--no-renames", "--name-only", *base}
+	if !*worktree {
+		diffArgs = append(diffArgs, *head)
+	}
+	diffArgs = append(diffArgs, "--")
+	files, err := command(diffArgs...)
+	if err == nil && *worktree {
+		var untracked []byte
+		untracked, err = command("ls-files", "--others", "--exclude-standard", "--", "alicloud/")
+		files = append(append(files, '\n'), untracked...)
+	}
+	failedLayout := false
+	emit := func(before, after *snapshot, relevant []string) error {
+		issues := layoutIssues(before, after, relevant)
+		if *layoutOnly {
+			for _, issue := range issues {
+				fmt.Fprintln(os.Stderr, issue.String())
+			}
+			failedLayout = len(issues) != 0
+			if failedLayout {
+				fmt.Fprintf(os.Stderr, "Local recheck (no cloud calls): GO111MODULE=off GOWORK=off go run scripts/ci/accscope/main.go scripts/ci/accscope/layout.go -base %s -worktree -layout-only\n", *base)
+			}
+			return json.NewEncoder(os.Stdout).Encode(struct {
+				Issues []layoutIssue `json:"layoutIssues"`
+			}{issues})
+		}
+		scope := selectScope(before, after, relevant)
+		scope.LayoutIssues = issues
+		for _, issue := range issues {
+			scope.Blocked = append(scope.Blocked, issue.String())
+		}
+		return json.NewEncoder(os.Stdout).Encode(scope)
+	}
 	if err == nil {
 		var relevant []string
 		for _, file := range strings.Split(strings.TrimSpace(string(files)), "\n") {
@@ -943,20 +1049,27 @@ func main() {
 		}
 		if len(relevant) == 0 {
 			empty := &snapshot{decls: map[string]*declaration{}, files: map[string]bool{}, assets: map[string]string{}}
-			err = json.NewEncoder(os.Stdout).Encode(selectScope(empty, empty, nil))
+			err = emit(empty, empty, nil)
 		} else {
 			var before, after *snapshot
 			before, err = readSnapshot(*base)
 			if err == nil {
-				after, err = readSnapshot(*head)
+				if *worktree {
+					after, err = readWorkingSnapshot()
+				} else {
+					after, err = readSnapshot(*head)
+				}
 			}
 			if err == nil {
-				err = json.NewEncoder(os.Stdout).Encode(selectScope(before, after, relevant))
+				err = emit(before, after, relevant)
 			}
 		}
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "cannot establish ACC scope:", err)
+		os.Exit(1)
+	}
+	if failedLayout {
 		os.Exit(1)
 	}
 }

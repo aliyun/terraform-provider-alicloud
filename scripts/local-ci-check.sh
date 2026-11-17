@@ -289,6 +289,17 @@ echo -e "${GREEN}  Part 1: Code Quality Checks${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
 echo
 
+# File organization is checked before package compilation and also in quick mode.
+# Resolve to a SHA before interpolation into run_check's shell command.
+LAYOUT_BASE="${CI_CHECK_BASE:-HEAD}"
+if [ -z "${CI_CHECK_BASE:-}" ] && [ -z "$(git status --porcelain --untracked-files=normal)" ]; then
+  LAYOUT_BASE=HEAD^
+fi
+LAYOUT_BASE=$(git rev-parse --verify "${LAYOUT_BASE}^{commit}")
+run_check "Provider File Layout" \
+  "GO111MODULE=off GOWORK=off go run \"$SCRIPT_DIR/ci/accscope/main.go\" \"$SCRIPT_DIR/ci/accscope/layout.go\" -base $LAYOUT_BASE -worktree -layout-only" \
+  || true
+
 # 1.1 Go Format Check
 run_check "Go Format Check (gofmt)" \
   "\"$SCRIPT_DIR/gofmtcheck.sh\"" \

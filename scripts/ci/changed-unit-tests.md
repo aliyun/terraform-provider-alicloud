@@ -4,6 +4,8 @@
 
 - Changed `_test.go` files select their `TestUnit*` functions.
 - Changed `resource_*.go` and `data_source_*.go` implementations select companion `_test.go` files.
+- Historical supplemental and `_unit_test.go` companions are included. In service packages, a file without a registered Factory is a helper even when its name starts with `resource_` or `data_source_`; helper edits broaden to package unit tests. Missing companions also broaden instead of silently selecting nothing.
+- Local untracked files are included. The [new-file layout guard](provider-layout.md) recommends merged implementation/test files while retaining the internal/external test-package exception.
 - If `alicloud/provider.go` changes only by adding/removing literal resource/data-source registrations, an AST comparison against `CI_CHECK_BASE` selects the actual factory implementations' companion tests (including registration aliases). No matching `TestUnit*` is reported explicitly. Existing-key factory replacements, changes outside those maps, qualified/dynamic factories, missing implementations/tests, or an unreadable base retain package-wide coverage.
 - Other Go source changes, including shared helpers and service clients, select all `TestUnit*` in the package.
 - Deleted test files broaden to the remaining package unit tests.

@@ -15,6 +15,21 @@ spec = importlib.util.spec_from_file_location('integration', Path(__file__).with
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 
 class IntegrationTest(unittest.TestCase):
+    def test_scope_errors_have_stable_self_service_guidance(self):
+        for reason, code, repair in [
+            ('No AccTest cases for affected resource: example.go', 'ACC001', 'companion'),
+            ('cannot resolve test helper consumers for mock.go:RpcPostWithContext', 'ACC002', 'receiver'),
+            ('manual ACC scope decision required for public code: register.go:ServicePackage', 'ACC003', 'Factory'),
+            ('removed/renamed AccTest example.go:TestAccDemo', 'ACC004', 'replacement'),
+            ('cannot resolve production helper consumers for helper.go:decode', 'ACC005', 'consumers'),
+        ]:
+            with self.subTest(code=code):
+                result = m.planning_diagnostic(reason)
+                self.assertEqual(result['code'], code)
+                self.assertEqual(result['reason'], reason)
+                self.assertIn(repair, result['fix'])
+                self.assertEqual(result['guide'], 'scripts/ci/provider-layout.md')
+
     def setUp(self):
         # Synthetic regression receipts must never appear in the real CI Summary.
         summary = patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': ''})
@@ -176,7 +191,7 @@ class IntegrationTest(unittest.TestCase):
 
     def test_acc_scope_source_only_regressions(self):
         root = Path(__file__).resolve().parent/'accscope'
-        subprocess.run(['go', 'test', '-v', str(root/'main.go'), str(root/'main_test.go')],
+        subprocess.run(['go', 'test', '-v', *map(str, sorted(root.glob('*.go')))],
                        check=True, env={**os.environ, 'GO111MODULE':'off', 'GOWORK':'off'})
 
     def test_same_output_recovers_receipt_without_resubmission(self):
