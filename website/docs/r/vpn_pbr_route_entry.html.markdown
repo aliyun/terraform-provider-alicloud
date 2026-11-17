@@ -27,6 +27,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -146,6 +154,10 @@ The following arguments are supported:
 * `route_source` - (Required, ForceNew) The source CIDR block of the policy-based route.
 * `route_dest` - (Required, ForceNew) The destination CIDR block of the policy-based route.
 * `weight` - (Required) The weight of the policy-based route. Valid values: 0 and 100.
+* `description` - (Optional, ForceNew, String, Available since v2.3.0) The description of the policy-based route. The description must be 1 to 100 characters in length. This field is only set when the route entry is created; changing it forces a new resource to be created. The Describe API does not return this field, so the imported state does not contain it and setting it after an import also creates a new resource.
+* `priority` - (Optional, Computed, Int, Available since v2.3.0) The policy priority of the policy-based route. Valid values: `1` to `100`. Defaults to `10` on the server when this argument is omitted. A smaller value indicates a higher priority.
+
+  -> **NOTE:** Policy priority is available only for VPN gateways that support it; gateways on earlier versions return the `VpnPbrRouteEntryPriority.NotSupport` error when this argument is set. For more information, see [policy route matching rules](https://www.alibabacloud.com/help/doc-detail/110777.html).
 
 ## Attributes Reference
 
@@ -169,3 +181,5 @@ VPN Pbr route entry can be imported using the id, which consists of vpn_gateway_
 ```shell
 $ terraform import alicloud_vpn_pbr_route_entry.example <vpn_gateway_id>:<next_hop>:<route_source>:<route_dest>
 ```
+
+The four-part ID must match exactly one remote route entry. If primary/backup or other route entries share the same four-part key, the ID cannot disambiguate them and the import returns an error instead of selecting one.
