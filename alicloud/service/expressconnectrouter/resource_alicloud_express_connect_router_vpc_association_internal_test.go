@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/zclconf/go-cty/cty"
 )
 
 func TestUnitVpcAssociationUpdateBudgetIsShared(t *testing.T) {
