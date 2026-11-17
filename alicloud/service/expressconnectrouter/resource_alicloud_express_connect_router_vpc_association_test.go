@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,6 +21,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/expressconnectrouter"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -103,8 +105,32 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 				Config: testAccConfig(map[string]interface{}{
 					"allowed_prefixes": []string{},
 				}),
-				ExpectError: regexp.MustCompile(`allowed_prefixes.*at least one prefix`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_prefixes.#": "0",
+					}),
+				),
 			},
+			vpcAssociationImportStep(resourceId),
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allowed_prefixes": []string{},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "tf-testacc-empty-prefixes",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_prefixes.#": "0",
+						"description":        "tf-testacc-empty-prefixes",
+					}),
+				),
+			},
+			vpcAssociationImportStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"allowed_prefixes": []string{
@@ -266,8 +292,13 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_basic
 				Config: testAccConfig(map[string]interface{}{
 					"allowed_prefixes": []string{},
 				}),
-				ExpectError: regexp.MustCompile(`allowed_prefixes.*at least one prefix`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_prefixes.#": "0",
+					}),
+				),
 			},
+			vpcAssociationImportStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"allowed_prefixes": []string{
@@ -506,6 +537,170 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_inval
 			},
 		},
 	})
+}
+
+// Temporary service probe for comment 70571; replaced by the final Provider regression after the A/B result is known.
+func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_modeOnlyServiceProbe6348(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_express_connect_router_vpc_association.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudExpressConnectRouterExpressConnectRouterVpcAssociationMap6348)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return expressconnectrouter.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeExpressConnectRouterExpressConnectRouterVpcAssociation")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sexpressconnectrouterexpressconnectroutervpcassociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudExpressConnectRouterExpressConnectRouterVpcAssociationBasicDependence6348)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"association_region_id": acctest.DefaultRegionToTest,
+					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
+					"ecr_id":                "${alicloud_express_connect_router_express_connect_router.defaultM9YxGW.id}",
+					"allowed_prefixes":      []string{"172.16.1.0/24", "172.16.2.0/24"},
+					"allowed_prefixes_mode": "MatchMode",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_prefixes.#":    "2",
+						"allowed_prefixes_mode": "MatchMode",
+					}),
+					checkVpcAssociationModeOnlyServiceProbe(t, &v, "IncrementalMode"),
+				),
+			},
+			vpcAssociationImportStep(resourceId),
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allowed_prefixes":      []string{"172.16.1.0/24", "172.16.2.0/24"},
+					"allowed_prefixes_mode": "MatchMode",
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func checkVpcAssociationModeOnlyServiceProbe(t *testing.T, v *map[string]interface{}, targetMode string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		object := *v
+		ecrId := fmt.Sprint(object["EcrId"])
+		associationId := fmt.Sprint(object["AssociationId"])
+		vpcId := fmt.Sprint(object["VpcId"])
+		originalMode := fmt.Sprint(object["AllowedPrefixesMode"])
+		originalPrefixes, err := vpcAssociationServiceProbePrefixes(object["AllowedPrefixes"])
+		if err != nil || len(originalPrefixes) == 0 || originalMode == "" {
+			return fmt.Errorf("probe precondition: mode=%q prefixes=%v err=%v", originalMode, originalPrefixes, err)
+		}
+
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		service := expressconnectrouter.NewService(client)
+		id := fmt.Sprintf("%s:%s:%s", ecrId, associationId, vpcId)
+		callModify := func(includePrefixes bool, mode string) error {
+			request := map[string]interface{}{
+				"EcrId":               ecrId,
+				"AssociationId":       associationId,
+				"AllowedPrefixesMode": mode,
+			}
+			if includePrefixes {
+				request["AllowedPrefixes"] = originalPrefixes
+			}
+			_, err := client.RpcPost("ExpressConnectRouter", "2023-09-01", "ModifyExpressConnectRouterAssociationAllowedPrefix", map[string]interface{}{}, request, true)
+			return err
+		}
+		readActive := func() (map[string]interface{}, error) {
+			stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, 2*time.Minute, 5*time.Second, service.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(id, "Status", []string{}))
+			result, err := stateConf.WaitForState()
+			if err != nil {
+				return nil, err
+			}
+			current, ok := result.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("unexpected association readback type %T", result)
+			}
+			return current, nil
+		}
+		assertState := func(current map[string]interface{}, expectedMode string) error {
+			currentPrefixes, err := vpcAssociationServiceProbePrefixes(current["AllowedPrefixes"])
+			if err != nil {
+				return err
+			}
+			if fmt.Sprint(current["AllowedPrefixesMode"]) != expectedMode || !reflect.DeepEqual(currentPrefixes, originalPrefixes) {
+				return fmt.Errorf("mode=%q prefixes=%v, want mode=%q prefixes=%v", current["AllowedPrefixesMode"], currentPrefixes, expectedMode, originalPrefixes)
+			}
+			return nil
+		}
+
+		probeErr := func() error {
+			omittedErr := callModify(false, targetMode)
+			omittedState, readErr := readActive()
+			if readErr != nil {
+				return fmt.Errorf("read after omitted-prefix Modify: %w", readErr)
+			}
+			if omittedErr == nil {
+				if err := assertState(omittedState, targetMode); err != nil {
+					return fmt.Errorf("omitted-prefix Modify changed unexpected remote state: %w", err)
+				}
+			} else {
+				if !errs.IsExpectedErrors(omittedErr, []string{"IllegalParam.AllowedPrefixesMode"}) {
+					return fmt.Errorf("omitted-prefix Modify returned an unclassified error: %w", omittedErr)
+				}
+				if err := assertState(omittedState, originalMode); err != nil {
+					return fmt.Errorf("rejected omitted-prefix Modify changed remote state: %w", err)
+				}
+			}
+
+			if err := callModify(true, targetMode); err != nil {
+				return fmt.Errorf("echo-prefix Modify: %w", err)
+			}
+			echoState, err := readActive()
+			if err != nil {
+				return fmt.Errorf("read after echo-prefix Modify: %w", err)
+			}
+			if err := assertState(echoState, targetMode); err != nil {
+				return fmt.Errorf("echo-prefix Modify changed unexpected remote state: %w", err)
+			}
+			t.Logf("Q40378 mode-only A/B: omitted-prefix error=%v; echo-prefix preserved %d prefixes and applied %s", omittedErr != nil, len(originalPrefixes), targetMode)
+			return nil
+		}()
+
+		restoreErr := callModify(true, originalMode)
+		if restoreErr == nil {
+			var restored map[string]interface{}
+			restored, restoreErr = readActive()
+			if restoreErr == nil {
+				restoreErr = assertState(restored, originalMode)
+			}
+		}
+		if probeErr != nil || restoreErr != nil {
+			return fmt.Errorf("probe=%v; restore=%v", probeErr, restoreErr)
+		}
+		return nil
+	}
+}
+
+func vpcAssociationServiceProbePrefixes(raw interface{}) ([]string, error) {
+	entries, ok := raw.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected AllowedPrefixes type %T", raw)
+	}
+	prefixes := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		prefix, ok := entry.(string)
+		if !ok {
+			return nil, fmt.Errorf("unexpected AllowedPrefixes member type %T", entry)
+		}
+		prefixes = append(prefixes, prefix)
+	}
+	sort.Strings(prefixes)
+	return prefixes, nil
 }
 
 // Test ExpressConnectRouter ExpressConnectRouterVpcAssociation. <<< Resource test cases, automatically generated.
@@ -955,33 +1150,58 @@ func TestUnitVpcAssociationCreateOptionalZeroValues(t *testing.T) {
 		})
 	}
 
-	for _, tc := range []struct {
-		name string
-		mode string
-	}{
-		{name: "explicit_empty_prefixes"},
-		{name: "explicit_empty_prefixes_with_mode", mode: "MatchMode"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			var requests int32
-			client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
-				atomic.AddInt32(&requests, 1)
-				t.Errorf("unexpected request for an explicit empty prefix list")
-			})
-			config := vpcAssociationUnitConfig()
-			config["allowed_prefixes"] = []interface{}{}
-			if tc.mode != "" {
-				config["allowed_prefixes_mode"] = tc.mode
+	t.Run("explicit_empty_prefixes", func(t *testing.T) {
+		var createForm url.Values
+		client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+			if err := r.ParseForm(); err != nil {
+				t.Errorf("parse request: %v", err)
 			}
-			_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), nil, config, client)
-			if !diags.HasError() || !containsAll(fmt.Sprintf("%v", diags), "allowed_prefixes", "at least one prefix") {
-				t.Fatalf("explicit empty prefix error = %v, want the field-specific validation error", diags)
-			}
-			if got := atomic.LoadInt32(&requests); got != 0 {
-				t.Fatalf("explicit empty prefix create issued %d requests, want 0", got)
+			switch r.Form.Get("Action") {
+			case "CreateExpressConnectRouterAssociation":
+				createForm = r.Form
+				writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{
+					"AssociationId": "assoc-1", "RequestId": "unit-test",
+				})
+			case "DescribeExpressConnectRouterAssociation":
+				writeVpcAssociationActive(t, w)
+			default:
+				t.Errorf("unexpected action %q", r.Form.Get("Action"))
 			}
 		})
-	}
+		config := vpcAssociationUnitConfig()
+		config["allowed_prefixes"] = []interface{}{}
+		_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), nil, config, client)
+		if diags.HasError() {
+			t.Fatalf("create with an explicit empty prefix list: %v", diags)
+		}
+		if createForm == nil {
+			t.Fatal("CreateExpressConnectRouterAssociation request was not captured")
+		}
+		if formHasParameter(createForm, "AllowedPrefixes") {
+			t.Fatalf("AllowedPrefixes must be omitted for an explicit empty list: %v", createForm)
+		}
+		if _, present := createForm["AllowedPrefixesMode"]; present {
+			t.Fatalf("AllowedPrefixesMode must be omitted when unconfigured: %v", createForm)
+		}
+	})
+
+	t.Run("explicit_empty_prefixes_with_mode", func(t *testing.T) {
+		var requests int32
+		client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+			atomic.AddInt32(&requests, 1)
+			t.Errorf("unexpected request for an empty prefix list with a mode")
+		})
+		config := vpcAssociationUnitConfig()
+		config["allowed_prefixes"] = []interface{}{}
+		config["allowed_prefixes_mode"] = "MatchMode"
+		_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), nil, config, client)
+		if !diags.HasError() || !containsAll(fmt.Sprintf("%v", diags), "allowed_prefixes_mode", "non-empty", "allowed_prefixes") {
+			t.Fatalf("empty prefixes with mode error = %v, want the local combination error", diags)
+		}
+		if got := atomic.LoadInt32(&requests); got != 0 {
+			t.Fatalf("empty prefixes with mode create issued %d requests, want 0", got)
+		}
+	})
 }
 
 func TestUnitVpcAssociationUpdateDescriptionRetry(t *testing.T) {
@@ -1195,40 +1415,19 @@ func TestUnitVpcAssociationUpdatePrefixPresenceTransitions(t *testing.T) {
 		}
 	})
 
-	t.Run("explicit_empty_is_rejected_before_any_update", func(t *testing.T) {
-		var requests int32
-		client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
-			atomic.AddInt32(&requests, 1)
-			t.Errorf("unexpected request for an explicit empty prefix list")
-		})
-		config := vpcAssociationUnitConfig()
-		config["allowed_prefixes"] = []interface{}{}
-		config["description"] = "new-description"
-		state := vpcAssociationUnitState(map[string]string{
-			"allowed_prefixes.#": "1",
-			"allowed_prefixes.0": "172.16.1.0/24",
-			"description":        "old-description",
-		})
-		_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), state, config, client)
-		if !diags.HasError() || !containsAll(fmt.Sprintf("%v", diags), "allowed_prefixes", "at least one prefix") {
-			t.Fatalf("explicit empty prefix update error = %v, want the field-specific validation error", diags)
-		}
-		if got := atomic.LoadInt32(&requests); got != 0 {
-			t.Fatalf("explicit empty prefix update issued %d requests, want 0", got)
-		}
-	})
-
-	t.Run("unrelated_update_does_not_modify_prefixes", func(t *testing.T) {
-		var prefixCalls int32
+	t.Run("explicit_empty_omits_prefix_and_mode_parameters", func(t *testing.T) {
+		var descriptionForm url.Values
+		var prefixForms []url.Values
 		client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
 			if err := r.ParseForm(); err != nil {
 				t.Errorf("parse request: %v", err)
 			}
 			switch r.Form.Get("Action") {
 			case "ModifyExpressConnectRouterAssociation":
+				descriptionForm = r.Form
 				writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
 			case "ModifyExpressConnectRouterAssociationAllowedPrefix":
-				atomic.AddInt32(&prefixCalls, 1)
+				prefixForms = append(prefixForms, r.Form)
 				writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
 			case "DescribeExpressConnectRouterAssociation":
 				writeVpcAssociationActive(t, w)
@@ -1237,21 +1436,88 @@ func TestUnitVpcAssociationUpdatePrefixPresenceTransitions(t *testing.T) {
 			}
 		})
 		config := vpcAssociationUnitConfig()
+		config["allowed_prefixes"] = []interface{}{}
 		config["description"] = "new-description"
-		config["allowed_prefixes"] = []interface{}{"172.16.1.0/24"}
 		state := vpcAssociationUnitState(map[string]string{
-			"allowed_prefixes.#": "1",
-			"allowed_prefixes.0": "172.16.1.0/24",
-			"description":        "old-description",
+			"allowed_prefixes.#":    "1",
+			"allowed_prefixes.0":    "172.16.1.0/24",
+			"allowed_prefixes_mode": "MatchMode",
+			"description":           "old-description",
 		})
 		_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), state, config, client)
 		if diags.HasError() {
-			t.Fatalf("unrelated description update: %v", diags)
+			t.Fatalf("explicit empty prefix update: %v", diags)
 		}
-		if got := atomic.LoadInt32(&prefixCalls); got != 0 {
-			t.Fatalf("unrelated update issued %d prefix modifications, want 0", got)
+		if descriptionForm == nil || descriptionForm.Get("Description") != "new-description" {
+			t.Fatalf("description update form = %v, want the configured description", descriptionForm)
+		}
+		if len(prefixForms) != 1 {
+			t.Fatalf("ModifyExpressConnectRouterAssociationAllowedPrefix calls = %d, want 1", len(prefixForms))
+		}
+		if formHasParameter(prefixForms[0], "AllowedPrefixes") {
+			t.Fatalf("AllowedPrefixes must be omitted for an explicit empty list: %v", prefixForms[0])
+		}
+		if _, present := prefixForms[0]["AllowedPrefixesMode"]; present {
+			t.Fatalf("AllowedPrefixesMode must be omitted for an empty prefix update: %v", prefixForms[0])
 		}
 	})
+
+	for _, tc := range []struct {
+		name           string
+		prefixes       []interface{}
+		stateOverrides map[string]string
+	}{
+		{
+			name:     "unrelated_update_does_not_modify_prefixes",
+			prefixes: []interface{}{"172.16.1.0/24"},
+			stateOverrides: map[string]string{
+				"allowed_prefixes.#": "1",
+				"allowed_prefixes.0": "172.16.1.0/24",
+			},
+		},
+		{
+			name:     "unrelated_update_with_empty_prefixes_does_not_modify_prefixes",
+			prefixes: []interface{}{},
+			stateOverrides: map[string]string{
+				"allowed_prefixes.#": "0",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var prefixCalls int32
+			client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if err := r.ParseForm(); err != nil {
+					t.Errorf("parse request: %v", err)
+				}
+				switch r.Form.Get("Action") {
+				case "ModifyExpressConnectRouterAssociation":
+					writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
+				case "ModifyExpressConnectRouterAssociationAllowedPrefix":
+					atomic.AddInt32(&prefixCalls, 1)
+					writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
+				case "DescribeExpressConnectRouterAssociation":
+					writeVpcAssociationActive(t, w)
+				default:
+					t.Errorf("unexpected action %q", r.Form.Get("Action"))
+				}
+			})
+			config := vpcAssociationUnitConfig()
+			config["description"] = "new-description"
+			config["allowed_prefixes"] = tc.prefixes
+			stateOverrides := map[string]string{"description": "old-description"}
+			for key, value := range tc.stateOverrides {
+				stateOverrides[key] = value
+			}
+			state := vpcAssociationUnitState(stateOverrides)
+			_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), state, config, client)
+			if diags.HasError() {
+				t.Fatalf("unrelated description update: %v", diags)
+			}
+			if got := atomic.LoadInt32(&prefixCalls); got != 0 {
+				t.Fatalf("unrelated update issued %d prefix modifications, want 0", got)
+			}
+		})
+	}
 }
 
 func TestUnitVpcAssociationUpdatePrefixSendsStoredMode(t *testing.T) {
@@ -1350,7 +1616,11 @@ func TestUnitVpcAssociationUpdateRejectsModeOnlyChange(t *testing.T) {
 
 	config := vpcAssociationUnitConfig()
 	config["allowed_prefixes_mode"] = "IncrementalMode"
-	state := vpcAssociationUnitState(map[string]string{"allowed_prefixes_mode": "MatchMode"})
+	state := vpcAssociationUnitState(map[string]string{
+		"allowed_prefixes.#":    "1",
+		"allowed_prefixes.0":    "172.16.1.0/24",
+		"allowed_prefixes_mode": "MatchMode",
+	})
 	_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), state, config, client)
 	if !diags.HasError() || !containsAll(fmt.Sprintf("%v", diags), "allowed_prefixes_mode", "non-empty", "allowed_prefixes") {
 		t.Fatalf("mode-only update error = %v, want the local combination error", diags)
@@ -1385,26 +1655,24 @@ func TestUnitVpcAssociationPrefixModeConfigValidation(t *testing.T) {
 				"allowed_prefixes_mode": "MatchMode",
 				"allowed_prefixes":      []interface{}{},
 			},
-			wantError: []string{"allowed_prefixes", "at least one prefix"},
+			wantError: []string{"allowed_prefixes_mode", "non-empty", "allowed_prefixes"},
 		},
 		{
-			name:     "null_mode_with_empty_prefix_is_rejected",
+			name:     "null_mode_with_empty_prefix_is_valid",
 			mode:     cty.NullVal(cty.String),
 			prefixes: cty.ListValEmpty(cty.String),
 			config: map[string]interface{}{
 				"allowed_prefixes": []interface{}{},
 			},
-			wantError: []string{"allowed_prefixes", "at least one prefix"},
 		},
 		{
-			name:     "empty_mode_with_empty_prefix_is_rejected",
+			name:     "empty_mode_with_empty_prefix_is_valid",
 			mode:     cty.StringVal(""),
 			prefixes: cty.ListValEmpty(cty.String),
 			config: map[string]interface{}{
 				"allowed_prefixes_mode": "",
 				"allowed_prefixes":      []interface{}{},
 			},
-			wantError: []string{"allowed_prefixes", "at least one prefix"},
 		},
 		{
 			name:     "null_prefix_without_mode_is_valid",
@@ -1437,6 +1705,20 @@ func TestUnitVpcAssociationPrefixModeConfigValidation(t *testing.T) {
 				t.Fatalf("unexpected validation error: %v", err)
 			}
 		})
+	}
+}
+
+func TestUnitVpcAssociationEmptyPrefixNoChangePlan(t *testing.T) {
+	config := vpcAssociationUnitConfig()
+	config["allowed_prefixes"] = []interface{}{}
+	state := vpcAssociationUnitState(map[string]string{"allowed_prefixes.#": "0"})
+	state.RawConfig = vpcAssociationRawConfig(config)
+	diff, err := expressconnectrouter.ResourceVpcAssociation().Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), nil)
+	if err != nil {
+		t.Fatalf("empty prefix no-change plan: %v", err)
+	}
+	if diff != nil && !diff.Empty() {
+		t.Fatalf("empty prefix no-change plan produced a diff: %v", diff)
 	}
 }
 

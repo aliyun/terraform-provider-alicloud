@@ -384,10 +384,6 @@ func errVpcAssociationModeWithoutPrefixes() error {
 	return fmt.Errorf("`allowed_prefixes_mode` requires a non-empty `allowed_prefixes` list; configure at least one allowed prefix or remove `allowed_prefixes_mode`")
 }
 
-func errVpcAssociationEmptyPrefixes() error {
-	return fmt.Errorf("`allowed_prefixes` must contain at least one prefix when configured; remove the argument instead of configuring an explicit empty list")
-}
-
 func vpcAssociationRawConfigAttribute(d *schema.ResourceData, attribute string) (cty.Value, bool, error) {
 	value, diagnostics := d.GetRawConfigAt(cty.GetAttrPath(attribute))
 	if diagnostics.HasError() {
@@ -405,9 +401,6 @@ func validateVpcAssociationPrefixModeRawConfig(raw cty.Value) error {
 		return nil
 	}
 	prefixes := raw.GetAttr("allowed_prefixes")
-	if prefixes.IsKnown() && !prefixes.IsNull() && prefixes.LengthInt() == 0 {
-		return errVpcAssociationEmptyPrefixes()
-	}
 	mode := raw.GetAttr("allowed_prefixes_mode")
 	if mode.IsNull() || !mode.IsKnown() || strings.TrimSpace(mode.AsString()) == "" {
 		return nil
@@ -415,7 +408,7 @@ func validateVpcAssociationPrefixModeRawConfig(raw cty.Value) error {
 	if !prefixes.IsKnown() {
 		return nil
 	}
-	if prefixes.IsNull() {
+	if prefixes.IsNull() || prefixes.LengthInt() == 0 {
 		return errVpcAssociationModeWithoutPrefixes()
 	}
 	return nil
