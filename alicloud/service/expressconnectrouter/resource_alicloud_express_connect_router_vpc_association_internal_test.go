@@ -94,6 +94,7 @@ func vpcAssociationPrefixSuppressData(t *testing.T, oldValue, newValue string) *
 		return suppress(key, old, new, d)
 	}
 	state := &terraform.InstanceState{ID: "ecr-1:assoc-1:vpc-1", Attributes: attributes}
+	state.RawConfig = vpcAssociationRawConfig(config)
 	if _, err := resource.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), nil); err != nil {
 		t.Fatalf("build suppressor resource data: %v", err)
 	}
