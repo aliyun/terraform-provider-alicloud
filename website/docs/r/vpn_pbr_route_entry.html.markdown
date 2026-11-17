@@ -15,12 +15,11 @@ Provides a VPN Pbr Route Entry resource.
 
 For information about VPN Pbr Route Entry and how to use it, see [What is VPN Pbr Route Entry](https://www.alibabacloud.com/help/en/doc-detail/127248.html).
 
+-> **NOTE:** The example requires an existing active IPsec VPN gateway that supports dual-tunnel IPsec connections and BGP. Set `vpn_gateway_id` to that gateway's ID.
 
 ## Example Usage
 
 Basic Usage
-
--> **NOTE:** The example requires an existing VPN gateway in the selected region.
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_vpn_pbr_route_entry&exampleId=d70d911d-bdd6-c5c7-fd9f-b5a86c81e5ca0d638fa1&activeTab=example&spm=docs.r.vpn_pbr_route_entry.0.d70d911dbd&intl_lang=EN_US" target="_blank">
@@ -41,7 +40,8 @@ variable "name" {
   default = "terraform-example"
 }
 
-data "alicloud_vpn_gateways" "default" {
+variable "vpn_gateway_id" {
+  description = "The ID of an existing active IPsec VPN gateway that supports dual-tunnel IPsec connections and BGP."
 }
 
 resource "alicloud_vpn_customer_gateway" "defaultCustomerGateway" {
@@ -59,7 +59,7 @@ resource "alicloud_vpn_customer_gateway" "changeCustomerGateway" {
 }
 
 resource "alicloud_vpn_connection" "default" {
-  vpn_gateway_id      = data.alicloud_vpn_gateways.default.ids.0
+  vpn_gateway_id      = var.vpn_gateway_id
   vpn_connection_name = var.name
   local_subnet = [
     "3.0.0.0/24"
@@ -134,7 +134,7 @@ resource "alicloud_vpn_connection" "default" {
 
 
 resource "alicloud_vpn_pbr_route_entry" "default" {
-  vpn_gateway_id = data.alicloud_vpn_gateways.default.ids.0
+  vpn_gateway_id = var.vpn_gateway_id
   route_source   = "192.168.1.0/24"
   route_dest     = "10.0.0.0/24"
   next_hop       = alicloud_vpn_connection.default.id
