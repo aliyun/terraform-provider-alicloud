@@ -29,6 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	testingterraform "github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // vpcAssociationImportStep verifies that every successful configuration step is
@@ -589,7 +590,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_modeO
 }
 
 func checkVpcAssociationModeOnlyServiceProbe(t *testing.T, v *map[string]interface{}, targetMode string) resource.TestCheckFunc {
-	return func(_ *terraform.State) error {
+	return func(_ *testingterraform.State) error {
 		object := *v
 		ecrId := fmt.Sprint(object["EcrId"])
 		associationId := fmt.Sprint(object["AssociationId"])
