@@ -16,12 +16,14 @@ import time
 import urllib.error
 import urllib.request
 
-from acube_diagnostics import publish_acc_summary, publish_report, redact, report_directory, terminal_report
+from acube_diagnostics import (REUSE_SCAN_LIMIT, acc_execution_counts, publish_acc_summary, publish_report, redact,
+                               report_directory, terminal_report)
 import doc_examples
 
 REPOSITORY = 'code.alibaba-inc.com/opensource-tools/terraform-provider-alicloud'
 BASE_URL = 'https://pre-acube.aliyun-inc.com'
 TERMINAL = {'success', 'failed', 'cancelled'}
+REUSE_SCAN_SKIP_REASON = f'scan-limit-{REUSE_SCAN_LIMIT}'
 
 
 def digest(value):
@@ -64,6 +66,7 @@ def acceptance_scope(base, head):
     try:
         value = subprocess.check_output(
             ['go', 'run', str(Path(__file__).with_name('accscope')/'main.go'),
+             str(Path(__file__).with_name('accscope')/'layout.go'),
              '-base', base, '-head', head], text=True, stderr=subprocess.PIPE,
             env={**os.environ, 'GO111MODULE': 'off', 'GOWORK': 'off'})
         return json.loads(value)
@@ -72,11 +75,58 @@ def acceptance_scope(base, head):
                          + (error.stderr or '')[:4000]) from None
 
 
+def scope_blockers(scope, kind):
+    coverage = set(scope.get('coverageBlockers', [])) if kind == 'examples' else set()
+    return [reason for reason in scope.get('blocked', []) if reason not in coverage]
+
+
+def planning_diagnostic(reason):
+    """Keep original evidence, add stable categories and actionable repair steps."""
+    guide = 'scripts/ci/provider-layout.md'
+    if reason.startswith('[LAYOUT'):
+        code = reason.split(']', 1)[0][1:]
+        fix = reason.split(' Fix: ', 1)[-1].split(' Guide: ', 1)[0]
+    elif 'No AccTest cases for affected resource:' in reason:
+        code = 'ACC001'
+        fix = ('Resolve this file through register.go TypeName/Factory. For an actual entrypoint, add or restore '
+               'TestAcc functions in its companion *_test.go. For a private helper, merge it into the owning '
+               'resource/data source and merge its tests into the owner test file. Do not add an empty or skipped '
+               'AccTest just to satisfy discovery; real coverage is required.')
+    elif 'test helper consumers' in reason:
+        code = 'ACC002'
+        fix = ('Inspect the named mock/helper receiver and all callers. Keep private test helpers with the owning '
+               'TestUnit/TestAcc functions; use explicit receiver/interface types where possible. If valid interface '
+               'dispatch is still unresolved, provide the caller chain for maintainer review and a scope regression; '
+               'do not rename the method or remove the test to bypass impact analysis.')
+    elif 'registration' in reason or ':ServicePackage' in reason:
+        code = 'ACC003'
+        fix = ('Use literal TypeName/Factory entries in register.go and ensure each Factory resolves to one '
+               'implementation. Preserve aliases. Separate registration-map edits from initialization/control-flow '
+               'changes; unresolved registration logic requires maintainer impact review.')
+    elif 'removed/renamed AccTest' in reason:
+        code = 'ACC004'
+        fix = ('Restore the acceptance case or identify its replacement and retained assertions. A filename-only '
+               'move should preserve the TestAcc function name. Renaming/removing a case requires replacement '
+               'coverage review; do not convert it into TestUnit or skip it.')
+    elif 'consumer' in reason or 'receiver' in reason or 'service impact' in reason:
+        code = 'ACC005'
+        fix = ('Trace the named symbol to its production/test consumers in both base and head. Put single-entity '
+               'logic in the owning implementation; put genuinely shared logic in service.go/service_<purpose>.go. '
+               'Retain tests for every affected entity. Resolve ambiguous receivers explicitly or request maintainer '
+               'review with the caller chain; unresolved does not mean unused.')
+    else:
+        code = 'SCOPE001'
+        fix = ('Inspect the exact source and blocker in diagnostics/scope.json. Resolve build/dependency/fixture '
+               'or document-contract ambiguity before retrying. Follow scripts/ci/README-scopes.md for document '
+               'contracts; unsupported dynamic code needs maintainer scope review, not a blanket skip.')
+    return {'code': code, 'reason': reason, 'fix': fix, 'guide': guide}
+
+
 def plan(base, head, include_examples=True):
     scope = acceptance_scope(base, head)
     docs = set()
     if include_examples:
-        for file in scope['resourceFiles'] if not scope['blocked'] else []:
+        for file in scope['resourceFiles'] if not scope_blockers(scope, 'examples') else []:
             name = Path(file).name
             if file.startswith('alicloud/service/') and name.startswith(('resource_', 'data_source_')):
                 resolved = subprocess.check_output(['go', 'run', 'scripts/title/title_check.go', '-resolve', file], text=True)
@@ -100,6 +150,11 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise ValueError('ACube redirects are not allowed')
 
 
+class ReuseScanLimitReached(ValueError):
+    def __init__(self):
+        super().__init__(f'ACube reuse skipped after {REUSE_SCAN_LIMIT} history candidates; no reusable evidence confirmed')
+
+
 class Client:
     def __init__(self, token):
         if not token or len(token) < 32:
@@ -117,11 +172,18 @@ class Client:
         for attempt in range(10):
             try:
                 with self.opener.open(request, timeout=max(1, min(90, deadline - time.monotonic()))) as response:
-                    if path == '/acctest/reusable-cases' and response.headers.get('X-AccTest-Reuse-Query') != 'complete-v1':
-                        raise ValueError('ACube reuse query has no completion proof; no missing-case submission is authorized')
+                    reuse_proof = response.headers.get('X-AccTest-Reuse-Query')
+                    reuse_limit = response.headers.get('X-AccTest-Reuse-Scan-Limit')
                     value = json.load(response)
                 if not isinstance(value, dict) or value.get('code') != 'SUCCESS' or not isinstance(value.get('data'), dict):
                     raise ValueError('Invalid ACube response')
+                if path == '/acctest/reusable-cases':
+                    if reuse_proof == 'skipped-scan-limit-v1':
+                        if value['data'] or reuse_limit != str(REUSE_SCAN_LIMIT):
+                            raise ValueError('Invalid ACube reuse scan-limit response')
+                        raise ReuseScanLimitReached()
+                    if reuse_proof != 'complete-v1':
+                        raise ValueError('ACube reuse query has no completion proof; no missing-case submission is authorized')
                 return value['data']
             except urllib.error.HTTPError as error:
                 error.close()
@@ -135,11 +197,19 @@ class Client:
 
 
 def validate_result(status, request):
-    if not isinstance(status, dict) or status.get('status') != 'success':
+    if not isinstance(status, dict) or status.get('status') not in ('success', 'failed'):
+        raise ValueError('ACube task did not succeed')
+    task_status = status['status']
+    if task_status == 'failed' and request['mode'] != 'acctest':
         raise ValueError('ACube task did not succeed')
     result = status.get('result') or {}
     if not isinstance(result, dict):
         raise ValueError('Invalid ACube result')
+    if task_status == 'failed' and (
+            result.get('error') != 'Command or acceptance checks failed'
+            or result.get('exitCode') != 0 or result.get('timedOut') is True
+            or result.get('infrastructureFailure') or result.get('finalizationErrors')):
+        raise ValueError('ACube task did not succeed')
     for key in ('sourceId', 'checkBaseSourceId', 'commitSha', 'baseCommitSha', 'mode'):
         if result.get(key) != request[key]: raise ValueError('Result identity mismatch: ' + key)
     if type(result.get('exitCode')) not in (int, float) or result['exitCode'] != 0 or result.get('timedOut') is True:
@@ -150,8 +220,18 @@ def validate_result(status, request):
         if (not isinstance(cases, list) or any(not isinstance(c, dict) for c in cases)
                 or len(cases) != len(request['testCases']) or {c.get('name') for c in cases} != set(request['testCases'])):
             raise ValueError('Missing or duplicate AccTest results')
-        if result.get('testDirectory') != request['variables']['TEST'] or any(c.get('result') != 'PASS' for c in cases):
-            raise ValueError('AccTest FAIL/SKIP is not PASS; inspect case-level evidence')
+        if result.get('testDirectory') != request['variables']['TEST']:
+            raise ValueError('AccTest directory mismatch')
+        outcomes = [c.get('result') for c in cases]
+        if any(outcome not in ('PASS', 'SKIP') for outcome in outcomes):
+            raise ValueError('AccTest returned a failed or invalid case result')
+        if task_status == 'failed':
+            # The runner also emits this failure when any selected case skips.
+            workspace_cleanup = result.get('workspaceCleanup', {'status': 'not-created'})
+            if ('SKIP' not in outcomes or result.get('signal')
+                    or not isinstance(workspace_cleanup, dict)
+                    or workspace_cleanup.get('status') not in ('removed', 'already-absent', 'not-created')):
+                raise ValueError('ACube task did not succeed')
     else:
         doc_examples.validate_result(result, request)
     return result
@@ -179,25 +259,44 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         items = [(e['name'], e) for e in frozen['examples']]
     (output / 'plan.json').write_text(json.dumps(frozen, indent=2))
     (output / 'plan.json').chmod(0o600)
-    blockers = list(frozen.get('scope', {}).get('blocked', []))
+    scope_errors = scope_blockers(frozen.get('scope', {}), kind)
+    blockers = list(scope_errors)
+    unverified_coverage = frozen.get('scope', {}).get('unverifiedCoverage', [])
+    if kind == 'acctest' and unverified_coverage:
+        (output / 'diagnostics' / 'acc-unverified-coverage.json').write_text(
+            json.dumps(unverified_coverage, indent=2))
+        for gap in unverified_coverage:
+            print('AccTest coverage unverified: ' + gap, flush=True)
     if kind == 'examples':
         blockers.extend(frozen.get('documents', {}).get('blocked', []))
-        inventory = {key:frozen.get('documents', {}).get(key, []) for key in ('proseReview', 'notApplicable')}
+        inventory = {key:frozen.get('documents', {}).get(key, []) for key in ('proseReview', 'notApplicable', 'unverified')}
         (output / 'diagnostics' / 'document-review.json').write_text(json.dumps(inventory, indent=2))
         print('Document review: ' + json.dumps(inventory), flush=True)
     if blockers:
-        reason = 'AccTest scope could not be determined' if frozen.get('scope', {}).get('blocked') else 'Document example validation could not be planned'
+        reason = 'AccTest scope could not be determined' if scope_errors else 'Document example validation could not be planned'
         report = {'status': 'blocked', 'head': frozen['head'], 'base': frozen['base'],
                   'error': reason + '; no cloud tasks submitted',
                   'scope': frozen.get('scope', {}), 'blockers': blockers}
+        report['diagnostics'] = [planning_diagnostic(blocker) for blocker in blockers]
         target = output / 'diagnostics' / 'scope.json'
         target.write_text(json.dumps(report, indent=2))
         target.chmod(0o600)
-        for blocker in blockers:
-            print(f'CI planning blocker: {blocker}', file=sys.stderr, flush=True)
+        for item in report['diagnostics']:
+            print(f"CI planning blocker: {item['reason']}\n  Code: {item['code']}\n"
+                  f"  Repair: {item['fix']}\n  Guide: {item['guide']}", file=sys.stderr, flush=True)
+        print(f"Local recheck (no cloud tasks): CI_CHECK_BASE={frozen['base']} make ci-check-quick. "
+              'After committing, inspect scope with GO111MODULE=off GOWORK=off go run '
+              'scripts/ci/accscope/main.go scripts/ci/accscope/layout.go '
+              f"-base {frozen['base']} -head HEAD; blocked must be empty.", file=sys.stderr, flush=True)
         raise ValueError(f"{report['error']} ({len(blockers)} blocker(s); see scope.json in CI diagnostics)")
     if not items:
-        if kind == 'acctest': publish_acc_summary(output, frozen['head'], [])
+        if kind == 'acctest':
+            publish_acc_summary(output, frozen['head'], [])
+            if unverified_coverage:
+                print('No runnable AccTests found for indirectly affected resources; see acc-unverified-coverage.json')
+                return
+        if kind == 'examples' and frozen.get('documents', {}).get('unverified'):
+            print('No runnable examples selected; see unverified scenes in document-review.json'); return
         print('Not applicable: no ' + kind + ' changes in the complete range'); return
     capabilities = client.call('GET', '/capabilities')
     if (capabilities.get('submissionIdempotency') != 'oss-admission-v1'
@@ -225,19 +324,27 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         item_file = output / (digest(name) + '.json')
         try:
             reused_cases = {}
+            reuse_skip_reason = None
             candidate = copy.deepcopy(request)
             saved = json.loads(item_file.read_text()) if item_file.exists() else None
             if saved is not None:
                 if not isinstance(saved, dict) or saved.get('candidateRequest') != candidate:
                     raise ValueError('Saved submission identity differs; retain original evidence and use a new output directory')
                 reused_cases = saved.get('reusedCases', {})
+                reuse_skip_reason = saved.get('reuseSkipReason')
+                if (reuse_skip_reason not in (None, REUSE_SCAN_SKIP_REASON)
+                        or reuse_skip_reason is not None and reused_cases):
+                    raise ValueError('Invalid saved reuse skip reason; reconcile the original record')
                 if (not isinstance(reused_cases, dict) or set(reused_cases) - set(candidate.get('testCases', []))
                         or any(not isinstance(task, str) or not re.fullmatch(r'[1-9][0-9]{0,18}', task)
                                for task in reused_cases.values())):
                     raise ValueError('Invalid saved reuse references; reconcile the original record')
             elif kind == 'acctest' and (capabilities.get('accTestCaseReuse') == 'exact-source-v1'
                     or capabilities.get('accTestContentReuse') == 'whole-source-and-comments-v1'):
-                reused_cases = reusable_cases(client, candidate)
+                try:
+                    reused_cases = reusable_cases(client, candidate)
+                except ReuseScanLimitReached:
+                    reuse_skip_reason = REUSE_SCAN_SKIP_REASON
             if kind == 'acctest':
                 request = copy.deepcopy(candidate)
                 request['testCases'] = [case for case in value if case not in reused_cases]
@@ -248,10 +355,17 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                 raise ValueError('Saved remainder differs; reconcile the original submission')
             record = saved or {'name': name, 'candidateRequest': candidate, 'request': request,
                                'reusedCases': reused_cases, 'submission': 'UNKNOWN'}
+            if reuse_skip_reason:
+                record['reuseSkipReason'] = reuse_skip_reason
+                print(f'ACC 复用已跳过：{name}，扫描达到 {REUSE_SCAN_LIMIT} 条上限，本计划全部执行', flush=True)
             if kind == 'acctest':
                 acc_rows[name].update(reused=0 if not reused_cases else None, toRun=len(request['testCases']),
-                    reuseValidation='pending' if reused_cases else 'not-needed',
+                    reuseValidation='pending' if reused_cases else 'skipped-limit' if reuse_skip_reason else 'not-needed',
                     originalTaskIds=sorted(set(reused_cases.values())))
+                acc_rows[name].update(executed=None, passed=None, failed=None, skipped=None,
+                                      unknown=len(request['testCases']))
+                if not request['testCases']:
+                    acc_rows[name].update(executed=0, passed=0, failed=0, skipped=0)
                 print('ACC 用例分配：' + name + '，总数=' + str(len(value)) + '，复用候选='
                       + str(len(reused_cases)) + '，需执行（补跑）=' + str(len(request['testCases'])), flush=True)
             if reused_cases:
@@ -305,6 +419,11 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                 except ValueError as error:
                     validation_error = str(error)
                 report = terminal_report(record['name'], task_id, status, record['request'], validation_error, logs)
+                if kind == 'acctest':
+                    acc_rows[record['name']].update(acc_execution_counts(status, record['request']['testCases']))
+                if not validation_error and report['taskStatus'] == 'failed':
+                    report['status'] = 'success'
+                    report['taskError'] = report.pop('error')
                 if record.get('example') and not validation_error:
                     report['example'] = doc_examples.proof(record['example'], task_id)
                 if log_warning:

@@ -128,7 +128,7 @@ func Select(changed []string, before, after map[string]string, sources map[strin
 		return nil
 	}
 	for _, path := range changed {
-		if path == "alicloud/provider.go" {
+		if splitlayout.IsProviderSource(path) {
 			for name, constructor := range after {
 				if before[name] != constructor {
 					if err := add(name); err != nil {

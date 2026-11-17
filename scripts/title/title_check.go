@@ -34,16 +34,16 @@
 // never a new entity), and the marker's product must match. New entities,
 // flat entities and a cross-product mix keep demanding their declarations,
 // so the marker is a scoped shortcut, not a "migrate" bypass. The base
-// index also reads the root alicloud/provider.go so a public alias
-// registered there (Quotas #11288) is announced as modified when it moves
-// into a service register, not as new.
+// index also reads the SDKv2 provider (or the historical root provider) so a
+// public alias registered there (Quotas #11288) is announced as modified when
+// it moves into a service register, not as new.
 //
 // The base index is kind-aware: a Resource and a Data Source may share a
 // type name — it is legal and common in the Provider — so the index keeps
 // the two kinds apart. A migration that moves a root DataSource alias into
 // a service Resource register, or vice versa, must announce the new kind,
-// not waive it behind migrate/<product>:. The root alicloud/provider.go
-// DataSourcesMap yields data sources and ResourcesMap yields resources, so
+// not waive it behind migrate/<product>:. The SDKv2 provider DataSourcesMap
+// yields data sources and ResourcesMap yields resources, so
 // ProviderRegisteredNames returns the kind each map belongs to.
 //
 // The gate runs as the base-restored copy of itself in CI — the workflows
@@ -300,8 +300,8 @@ func resolveLines(path string) []string {
 
 // baseIndex is the set of provider entities that existed at the base
 // commit, in either layout: the flat source files directly, the
-// registrations of every product register.go, and the root
-// alicloud/provider.go public aliases. It decides whether a service entity
+// registrations of every product register.go, and the SDKv2 provider's
+// public aliases. It decides whether a service entity
 // is announced as new or as existing. The index is kind-aware: resources
 // and data sources are kept in separate maps, because a Resource and a
 // Data Source may share a type name, and a same-name collision must not
@@ -331,11 +331,10 @@ func (b *baseIndex) has(typeName string, dataSource bool) bool {
 
 // loadBaseIndex builds the entity index of one base commit from git: the
 // flat sources directly under alicloud/, every register.go under
-// alicloud/service/ and alicloud/provider/core, and the root
-// alicloud/provider.go whose DataSourcesMap and ResourcesMap register the
-// public aliases the flat layout keeps at the provider root. A base without
-// the split layout lists no products and simply carries the flat and root
-// names.
+// alicloud/service/ and alicloud/provider/core, and the SDKv2 provider whose
+// DataSourcesMap and ResourcesMap register public aliases. Historical bases
+// fall back to the root provider path. A base without the split layout lists
+// no products and simply carries the flat and provider-registered names.
 func loadBaseIndex(base string) (*baseIndex, error) {
 	flat, err := gitLines("ls-tree", "--name-only", base, "--", "alicloud/")
 	if err != nil {
@@ -356,11 +355,13 @@ func loadBaseIndex(base string) (*baseIndex, error) {
 			sources[path] = src
 		}
 	}
-	// The root provider.go registers aliases (Quotas #11288) that no flat
+	// The SDKv2 provider registers aliases (Quotas #11288) that no flat
 	// filename stem and no service register.go carries; without them a
 	// migration that moves such an alias into a service register is
-	// misannounced as new. A base predating provider.go simply has none.
-	providerSrc, err := exec.Command("git", "show", base+":alicloud/provider.go").Output()
+	// misannounced as new. Older base commits keep them at the root path.
+	providerSrc, err := splitlayout.ReadProviderSourceFrom(func(path string) ([]byte, error) {
+		return exec.Command("git", "show", base+":"+path).Output()
+	})
 	if err != nil {
 		providerSrc = nil
 	}
@@ -368,9 +369,9 @@ func loadBaseIndex(base string) (*baseIndex, error) {
 }
 
 // baseIndexFromSources builds the entity index from the flat source paths,
-// the register.go sources of one tree and the root provider.go source; the
+// the register.go sources of one tree and the SDKv2 provider source; the
 // git plumbing in loadBaseIndex only gathers those. Flat stems, register
-// entries and root aliases are all filed by kind, so a same-name
+// entries and provider aliases are all filed by kind, so a same-name
 // Resource/DataSource collision never lets one kind satisfy the other.
 func baseIndexFromSources(flatFiles []string, registers map[string][]byte, providerSrc []byte) *baseIndex {
 	index := &baseIndex{resources: make(map[string]bool), dataSources: make(map[string]bool), others: make(map[string]bool)}

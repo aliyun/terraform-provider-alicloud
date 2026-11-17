@@ -105,6 +105,74 @@ class ReuseTest(unittest.TestCase):
         self.assertEqual(record['status']['status'], 'success')
         self.assertEqual(reports[0]['status'], 'success')
 
+    def test_scan_limit_runs_every_case_and_preserves_skip_reason_when_resuming(self):
+        client = Client([m.ReuseScanLimitReached()])
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()) as log:
+            output, summary = Path(root) / 'output', Path(root) / 'summary.md'
+            with patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': str(summary)}):
+                for _ in range(2):
+                    m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+            record = json.loads((output / (m.digest(PACKAGE) + '.json')).read_text())
+            report = json.loads((output / 'diagnostics/acc-summary.json').read_text())
+            self.assertIn('超限不复用（1024 条）', summary.read_text())
+            self.assertIn('本计划全部执行', log.getvalue())
+        self.assertEqual(len(client.queries), 1)
+        self.assertEqual(len(client.submissions), 1)
+        self.assertEqual(client.submissions[0]['testCases'], CASES)
+        self.assertEqual(record['reusedCases'], {})
+        self.assertEqual(record['reuseSkipReason'], 'scan-limit-1024')
+        self.assertEqual(record['receipt']['taskId'], 43)
+        self.assertEqual((report['total'], report['reused'], report['toRun']), (2, 0, 2))
+        self.assertEqual(report['packages'][0]['reuseValidation'], 'skipped-limit')
+
+    def test_resume_rejects_unknown_skip_reasons_without_replaying_or_rewriting_original_receipt(self):
+        for invalid in ('', 'scan-limit-2048', 1024, False, [], ['scan-limit-1024'], {}):
+            with self.subTest(reason=invalid), tempfile.TemporaryDirectory() as root:
+                client = Client([m.ReuseScanLimitReached()])
+                output = Path(root)
+                with contextlib.redirect_stdout(io.StringIO()):
+                    m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+                    path = output / (m.digest(PACKAGE) + '.json')
+                    record = json.loads(path.read_text())
+                    record['reuseSkipReason'] = invalid
+                    path.write_text(json.dumps(record, indent=2))
+                    original = path.read_bytes()
+                    with self.assertRaisesRegex(ValueError, 'Invalid saved reuse skip reason'):
+                        m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+                self.assertEqual(path.read_bytes(), original)
+                self.assertEqual(len(client.submissions), 1)
+                self.assertEqual(len(client.queries), 1)
+
+    def test_resume_rejects_skip_reason_with_reused_receipts_without_submitting_replacements(self):
+        client = Client([{'TestAccOne': 42}] * 2)
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()):
+            output = Path(root)
+            m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+            path = output / (m.digest(PACKAGE) + '.json')
+            record = json.loads(path.read_text())
+            record['reuseSkipReason'] = 'scan-limit-1024'
+            path.write_text(json.dumps(record, indent=2))
+            original = path.read_bytes()
+            with self.assertRaisesRegex(ValueError, 'Invalid saved reuse skip reason'):
+                m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+            self.assertEqual(path.read_bytes(), original)
+        self.assertEqual(len(client.submissions), 1)
+        self.assertEqual(len(client.queries), 2)
+
+    def test_scan_limit_during_revalidation_preserves_original_references_without_new_submissions(self):
+        client = Client([{'TestAccOne': 42}, m.ReuseScanLimitReached(), m.ReuseScanLimitReached()])
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()):
+            output = Path(root)
+            for _ in range(2):
+                with self.assertRaisesRegex(ValueError, '1024 history candidates'):
+                    m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+            record = json.loads((output / (m.digest(PACKAGE) + '.json')).read_text())
+        self.assertEqual(len(client.submissions), 1)
+        self.assertEqual(client.submissions[0]['testCases'], ['TestAccTwo'])
+        self.assertEqual(record['reusedCases'], {'TestAccOne': '42'})
+        self.assertEqual(record['receipt']['taskId'], 43)
+        self.assertEqual(record['reuseValidation'], 'invalid')
+
     def test_ci_summary_counts_cases_not_receipts_for_all_partial_and_no_hits(self):
         for hits, counts in [({'TestAccOne': 42, 'TestAccTwo': 42}, (2, 0)),
                              ({'TestAccOne': 42}, (1, 1)), ({}, (0, 2))]:
@@ -115,6 +183,8 @@ class ReuseTest(unittest.TestCase):
                     m.execute(client, self.frozen(), 'acctest', 'run-123', output)
                 report = json.loads((output / 'diagnostics/acc-summary.json').read_text())
                 self.assertEqual((report['total'], report['reused'], report['toRun']), (2, *counts))
+                self.assertEqual((report['executed'], report['passed'], report['failed'], report['unknown']),
+                                 (counts[1], counts[1], 0, 0))
                 self.assertEqual(report['packages'][0]['originalTaskIds'], ['42'] if hits else [])
                 self.assertEqual(len(client.submissions), int(counts[1] > 0))
                 text = '总数=2，已确认复用=' + str(counts[0]) + '，需执行（补跑）=' + str(counts[1])
@@ -122,6 +192,41 @@ class ReuseTest(unittest.TestCase):
                 self.assertIn(text, summary.read_text())
                 self.assertIn(PACKAGE, summary.read_text())
                 self.assertIn('复用核验', summary.read_text())
+
+    def test_poll_error_does_not_report_zero_failures(self):
+        client = Client([{'TestAccOne': 42}] * 2)
+        original = client.call
+        def call(method, path, body=None):
+            if path == '/43':
+                raise ValueError('ACube HTTP 502')
+            return original(method, path, body)
+        client.call = call
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()) as log:
+            with self.assertRaisesRegex(ValueError, '502'):
+                m.execute(client, self.frozen(), 'acctest', 'run-123', Path(root))
+            report = json.loads((Path(root) / 'diagnostics/acc-summary.json').read_text())
+        self.assertEqual((report['total'], report['reused'], report['toRun'], report['unknown']), (2, 1, 1, 1))
+        self.assertIsNone(report['failed'])
+        self.assertIsNone(report['executed'])
+        self.assertIn('失败=未确认', log.getvalue())
+
+    def test_thirteen_cases_with_ten_reused_and_three_new_passes(self):
+        frozen = self.frozen()
+        cases = ['TestAccCase' + str(i) for i in range(13)]
+        frozen['packages'][PACKAGE] = cases
+        client = Client([dict.fromkeys(cases[:10], 42)] * 2)
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()) as log:
+            m.execute(client, frozen, 'acctest', 'run-123', Path(root))
+            report = json.loads((Path(root) / 'diagnostics/acc-summary.json').read_text())
+        self.assertEqual((report['total'], report['reused'], report['executed'], report['failed']), (13, 10, 3, 0))
+        self.assertIn('总数=13，已确认复用=10，需执行（补跑）=3，本次执行=3，本次通过=3，失败=0', log.getvalue())
+
+    def test_execution_counts_distinguish_failure_skip_missing_and_duplicates(self):
+        cases = [{'name': name, 'result': result} for name, result in
+                 [('a', 'PASS'), ('a', 'PASS'), ('b', 'FAIL'), ('c', 'SKIP'),
+                  ('d', 'PASS'), ('d', 'FAIL'), ('unrequested', 'PASS')]]
+        counts = m.acc_execution_counts({'result': {'tests': {'cases': cases}}}, list('abcde'))
+        self.assertEqual(counts, dict(executed=3, passed=1, failed=1, skipped=1, unknown=2))
 
     def test_ci_summary_aggregates_packages_and_zero_scope_without_cloud_calls(self):
         frozen = self.frozen()

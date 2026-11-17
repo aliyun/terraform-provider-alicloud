@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	smartagsdk "github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/smartag"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -25,7 +25,7 @@ func TestAccAliCloudCloudConnectNetworkGrant_basic(t *testing.T) {
 	var providers []*schema.Provider
 	providerFactories := map[string]func() (*schema.Provider, error){
 		"alicloud": func() (*schema.Provider, error) {
-			p := alicloud.Provider()
+			p := sdkv2.Provider()
 			providers = append(providers, p)
 			return p, nil
 		},
@@ -75,7 +75,7 @@ func TestAccAliCloudCloudConnectNetworkGrant_multi(t *testing.T) {
 	var providers []*schema.Provider
 	providerFactories := map[string]func() (*schema.Provider, error){
 		"alicloud": func() (*schema.Provider, error) {
-			p := alicloud.Provider()
+			p := sdkv2.Provider()
 			providers = append(providers, p)
 			return p, nil
 		},

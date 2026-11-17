@@ -15,6 +15,21 @@ spec = importlib.util.spec_from_file_location('integration', Path(__file__).with
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 
 class IntegrationTest(unittest.TestCase):
+    def test_scope_errors_have_stable_self_service_guidance(self):
+        for reason, code, repair in [
+            ('No AccTest cases for affected resource: example.go', 'ACC001', 'companion'),
+            ('cannot resolve test helper consumers for mock.go:RpcPostWithContext', 'ACC002', 'receiver'),
+            ('manual ACC scope decision required for public code: register.go:ServicePackage', 'ACC003', 'Factory'),
+            ('removed/renamed AccTest example.go:TestAccDemo', 'ACC004', 'replacement'),
+            ('cannot resolve production helper consumers for helper.go:decode', 'ACC005', 'consumers'),
+        ]:
+            with self.subTest(code=code):
+                result = m.planning_diagnostic(reason)
+                self.assertEqual(result['code'], code)
+                self.assertEqual(result['reason'], reason)
+                self.assertIn(repair, result['fix'])
+                self.assertEqual(result['guide'], 'scripts/ci/provider-layout.md')
+
     def setUp(self):
         # Synthetic regression receipts must never appear in the real CI Summary.
         summary = patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': ''})
@@ -54,6 +69,33 @@ class IntegrationTest(unittest.TestCase):
             self.assertEqual(sleep.call_count, 6)
             self.assertTrue(all(c.args[0].full_url.endswith('/acctest/reusable-cases') for c in opened.call_args_list))
 
+    def test_explicit_scan_limit_is_not_retried_or_returned_as_a_completed_miss(self):
+        client = m.Client('test-token-' + 'x' * 32)
+        response = io.BytesIO(b'{"code":"SUCCESS","data":{}}')
+        response.headers = {'X-AccTest-Reuse-Query': 'skipped-scan-limit-v1',
+                            'X-AccTest-Reuse-Scan-Limit': '1024'}
+        with patch.object(client.opener, 'open', return_value=response) as opened, patch.object(m.time, 'sleep') as sleep:
+            with self.assertRaises(m.ReuseScanLimitReached):
+                m.reusable_cases(client, self.request())
+            self.assertEqual(opened.call_count, 1)
+            sleep.assert_not_called()
+
+    def test_scan_limit_proof_rejects_partial_hits_unknown_limits_and_malformed_responses(self):
+        for limit, data, expected in [(None, {}, 'Invalid ACube reuse scan-limit response'),
+                                      ('2048', {}, 'Invalid ACube reuse scan-limit response'),
+                                      ('1024', {'TestAccOne': 42}, 'Invalid ACube reuse scan-limit response'),
+                                      ('1024', [], 'Invalid ACube response')]:
+            with self.subTest(limit=limit, data=data):
+                client = m.Client('test-token-' + 'x' * 32)
+                response = io.BytesIO(json.dumps({'code': 'SUCCESS', 'data': data}).encode())
+                response.headers = {'X-AccTest-Reuse-Query': 'skipped-scan-limit-v1'}
+                if limit is not None:
+                    response.headers['X-AccTest-Reuse-Scan-Limit'] = limit
+                with patch.object(client.opener, 'open', return_value=response):
+                    with self.assertRaisesRegex(ValueError, '^' + expected + '$') as error:
+                        m.reusable_cases(client, self.request())
+                    self.assertNotIsInstance(error.exception, m.ReuseScanLimitReached)
+
     def test_reuse_http_failure_cannot_become_a_miss_or_submit_acc(self):
         real = m.Client('test-token-' + 'x' * 32)
         calls = []
@@ -76,11 +118,11 @@ class IntegrationTest(unittest.TestCase):
         r=self.request()
         return dict(status='success', result=dict(r,exitCode=0,testDirectory=r['variables']['TEST'],tests={
             'cases':[{'name':n,'result':'PASS'} for n in r['testCases']]}))
-    def test_missing_skipped_duplicate_and_foreign_results_fail(self):
+    def test_missing_failed_duplicate_and_foreign_results_fail(self):
         m.validate_result(self.result(), self.request())
-        for defect in ['skip','missing','duplicate','source','directory','malformed']:
+        for defect in ['failure','missing','duplicate','source','directory','malformed']:
             r=self.result()
-            if defect=='skip': r['result']['tests']['cases'][0]['result']='SKIP'
+            if defect=='failure': r['result']['tests']['cases'][0]['result']='FAIL'
             if defect=='missing': r['result']['tests']['cases'].pop()
             if defect=='duplicate': r['result']['tests']['cases'][1]=r['result']['tests']['cases'][0]
             if defect=='source': r['result']['sourceId']='wrong'
@@ -149,7 +191,7 @@ class IntegrationTest(unittest.TestCase):
 
     def test_acc_scope_source_only_regressions(self):
         root = Path(__file__).resolve().parent/'accscope'
-        subprocess.run(['go', 'test', '-v', str(root/'main.go'), str(root/'main_test.go')],
+        subprocess.run(['go', 'test', '-v', *map(str, sorted(root.glob('*.go')))],
                        check=True, env={**os.environ, 'GO111MODULE':'off', 'GOWORK':'off'})
 
     def test_same_output_recovers_receipt_without_resubmission(self):
@@ -312,15 +354,69 @@ class IntegrationTest(unittest.TestCase):
         self.assertIn('unavailable', report['diagnosticWarning'])
         self.assertNotIn('private URL', json.dumps(report))
 
-    def test_remote_success_with_skipped_case_is_reported_as_failed_validation(self):
+    def test_remote_success_with_skipped_case_preserves_skip(self):
         status = self.result()
         status['result']['tests']['cases'][0]['result'] = 'SKIP'
-        with self.assertRaises(ValueError) as error:
-            m.validate_result(status, self.request())
-        report = diagnostics.terminal_report('alicloud', '123', status, self.request(), str(error.exception))
-        self.assertEqual(report['status'], 'failed')
+        m.validate_result(status, self.request())
+        report = diagnostics.terminal_report('alicloud', '123', status, self.request())
+        self.assertEqual(report['status'], 'success')
         self.assertEqual(report['taskStatus'], 'success')
         self.assertEqual(report['unsuccessfulCases'], [{'name': 'TestAccOne', 'result': 'SKIP'}])
+
+    def test_legacy_runner_failure_for_skip_does_not_mask_other_failures(self):
+        status = self.result()
+        status['status'] = 'failed'
+        result = status['result']
+        result['error'] = 'Command or acceptance checks failed'
+        result['tests']['cases'][0]['result'] = 'SKIP'
+        m.validate_result(status, self.request())
+        for defect in (
+            {'exitCode': 1}, {'timedOut': True}, {'signal': 'SIGTERM'},
+            {'error': 'Provider result publication failed'},
+            {'infrastructureFailure': {'code': 'WORKSPACE_CLEANUP'}},
+            {'finalizationErrors': [{'stage': 'output-write'}]},
+            {'workspaceCleanup': {'status': 'unverified'}},
+        ):
+            with self.subTest(defect=defect), self.assertRaises(ValueError):
+                m.validate_result(dict(status, result=dict(result, **defect)), self.request())
+        result['tests']['cases'][1]['result'] = 'FAIL'
+        with self.assertRaises(ValueError):
+            m.validate_result(status, self.request())
+
+    def test_execute_passes_when_legacy_runner_only_rejected_a_skip(self):
+        request = self.request()
+        directory = request['variables']['TEST']
+        status = self.result()
+        status['status'] = 'failed'
+        status['result']['error'] = 'Command or acceptance checks failed'
+        status['result']['tests']['cases'][0]['result'] = 'SKIP'
+        status['result']['tests'].update(passed=1, failed=0, skipped=1, missing=0)
+        responses = {
+            ('GET', '/capabilities'): {
+                'submissionIdempotency': 'oss-admission-v1', 'accTestReuseQuery': 'complete-v1',
+            },
+            ('POST', ''): {'taskId': 31800},
+            ('GET', '/31800'): status,
+            ('GET', '/31800/logs'): {},
+        }
+
+        class Client:
+            def call(self, method, path, body=None):
+                if path == '/sources/import':
+                    return {'sourceId': request['sourceId'] if body['commitSha'] == request['commitSha']
+                            else request['checkBaseSourceId']}
+                return responses[method, path]
+
+        frozen = {'head': request['commitSha'], 'base': request['baseCommitSha'],
+                  'packages': {directory: request['testCases']}}
+        with tempfile.TemporaryDirectory() as root, patch.object(m, 'publish_report') as publish:
+            m.execute(Client(), frozen, 'acctest', 'run-123', Path(root))
+            report = publish.call_args.args[1]
+            self.assertEqual(report['status'], 'success')
+            self.assertEqual(report['taskStatus'], 'failed')
+            self.assertEqual(report['tests']['skipped'], 1)
+            summary = Path(root) / 'diagnostics' / 'acc-summary.json'
+            self.assertEqual(json.loads(summary.read_text())['status'], 'success')
 
     def test_integration_summary_includes_each_failed_case_and_concrete_api_error(self):
         cases = [{'name': 'TestAccRocketmq' + str(i), 'result': 'FAIL'} for i in range(5)]
