@@ -1,9 +1,11 @@
 package slb_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	slbsdk "github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
@@ -125,6 +127,85 @@ func TestAccAliCloudSLBDomainExtensionListenerPort(t *testing.T) {
 						"domain":                "www.test.com",
 						"server_certificate_id": CHECKSET,
 					}),
+					func(state *terraform.State) error {
+						resourceState, ok := state.RootModule().Resources[resourceId]
+						if !ok || resourceState.Primary == nil || resourceState.Primary.ID == "" {
+							return fmt.Errorf("G1 evidence: %s has no primary ID", resourceId)
+						}
+						client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+						if client.RegionId != "cn-beijing" {
+							return fmt.Errorf("G1 evidence: expected cn-beijing, got %q", client.RegionId)
+						}
+						accountId, err := client.AccountId()
+						if err != nil {
+							return fmt.Errorf("G1 evidence: resolve account ID: %w", err)
+						}
+						request := slbsdk.CreateDescribeDomainExtensionAttributeRequest()
+						request.DomainExtensionId = resourceState.Primary.ID
+						requestStartedAt := time.Now().UTC()
+						raw, err := client.WithSlbClient(func(slbClient *slbsdk.Client) (interface{}, error) {
+							return slbClient.DescribeDomainExtensionAttribute(request)
+						})
+						responseReceivedAt := time.Now().UTC()
+						if err != nil {
+							return fmt.Errorf("G1 evidence: DescribeDomainExtensionAttribute: %w", err)
+						}
+						response, ok := raw.(*slbsdk.DescribeDomainExtensionAttributeResponse)
+						if !ok || response == nil || response.BaseResponse == nil {
+							return fmt.Errorf("G1 evidence: unexpected SDK response %T", raw)
+						}
+						if response.GetHttpStatus() < 200 || response.GetHttpStatus() >= 300 {
+							return fmt.Errorf("G1 evidence: unexpected HTTP status %d", response.GetHttpStatus())
+						}
+						rawBody := response.GetHttpContentBytes()
+						var wireResponse struct {
+							DomainExtensionId string `json:"DomainExtensionId"`
+							ListenerPort      int    `json:"ListenerPort"`
+							RequestId         string `json:"RequestId"`
+						}
+						if err := json.Unmarshal(rawBody, &wireResponse); err != nil {
+							return fmt.Errorf("G1 evidence: decode raw HTTP response: %w", err)
+						}
+						if wireResponse.DomainExtensionId != resourceState.Primary.ID || wireResponse.ListenerPort != 443 || wireResponse.RequestId == "" {
+							return fmt.Errorf("G1 evidence: raw HTTP response does not contain the target identity, ListenerPort=443 and RequestId")
+						}
+						if response.DomainExtensionId != resourceState.Primary.ID || response.ListenerPort != 443 || response.RequestId == "" {
+							return fmt.Errorf("G1 evidence: SDK response does not contain the target identity, ListenerPort=443 and RequestId")
+						}
+						if response.RequestId != wireResponse.RequestId {
+							return fmt.Errorf("G1 evidence: raw HTTP and SDK RequestId values differ")
+						}
+						contextJson, err := json.Marshal(struct {
+							AccountId          string `json:"accountId"`
+							Action             string `json:"action"`
+							DomainExtensionId  string `json:"domainExtensionId"`
+							HttpStatus         int    `json:"httpStatus"`
+							Region             string `json:"region"`
+							RequestId          string `json:"requestId"`
+							RequestStartedAt   string `json:"requestStartedAt"`
+							ResponseReceivedAt string `json:"responseReceivedAt"`
+						}{
+							AccountId:          accountId,
+							Action:             request.GetActionName(),
+							DomainExtensionId:  resourceState.Primary.ID,
+							HttpStatus:         response.GetHttpStatus(),
+							Region:             client.RegionId,
+							RequestId:          response.RequestId,
+							RequestStartedAt:   requestStartedAt.Format(time.RFC3339Nano),
+							ResponseReceivedAt: responseReceivedAt.Format(time.RFC3339Nano),
+						})
+						if err != nil {
+							return fmt.Errorf("G1 evidence: encode request context: %w", err)
+						}
+						decodedJson, err := json.Marshal(response)
+						if err != nil {
+							return fmt.Errorf("G1 evidence: encode SDK response: %w", err)
+						}
+						fmt.Printf("G1_DESCRIBE_REQUEST_CONTEXT=%s\n", contextJson)
+						fmt.Printf("G1_DESCRIBE_RAW_HTTP_RESPONSE=%s\n", rawBody)
+						fmt.Printf("G1_DESCRIBE_SDK_DECODED_RESPONSE=%s\n", decodedJson)
+						return nil
+					},
 				),
 			},
 			{
