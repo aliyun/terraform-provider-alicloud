@@ -824,7 +824,7 @@ func testAccCheckPvtzInboundEndpointIpConfig(resourceId string, vswitchIndex int
 		if !ok || rs.Primary == nil {
 			return fmt.Errorf("%s is absent from state", resourceId)
 		}
-		vswitchId := fmt.Sprintf("alicloud_vswitch.default[%d]", vswitchIndex)
+		vswitchId := fmt.Sprintf("alicloud_vswitch.default.%d", vswitchIndex)
 		vs, ok := s.RootModule().Resources[vswitchId]
 		if !ok || vs.Primary == nil {
 			return fmt.Errorf("%s is absent from state", vswitchId)
