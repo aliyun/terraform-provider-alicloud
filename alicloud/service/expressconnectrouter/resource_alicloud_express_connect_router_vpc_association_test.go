@@ -604,7 +604,6 @@ func checkVpcAssociationModeOnlyServiceProbe(t *testing.T, resourceId string, ta
 		}
 		ecrId := fmt.Sprint(object["EcrId"])
 		associationId := fmt.Sprint(object["AssociationId"])
-		vpcId := fmt.Sprint(object["VpcId"])
 		originalMode := fmt.Sprint(object["AllowedPrefixesMode"])
 		originalPrefixes, err := vpcAssociationServiceProbePrefixes(object["AllowedPrefixes"])
 		if err != nil || len(originalPrefixes) == 0 || originalMode == "" || originalMode == "<nil>" {
