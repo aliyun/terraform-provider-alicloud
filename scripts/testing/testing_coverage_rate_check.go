@@ -38,7 +38,83 @@ var (
 
 	resourceFileRegex     = regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*")
 	resourceFileTestRegex = regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*_test.go")
+
+	goFuncDeclRegex = regexp.MustCompile(`^func\s+(?:\([^)]*\)\s*)?([a-zA-Z_][a-zA-Z0-9_]*)\s*\(`)
+	importSpecRegex = regexp.MustCompile(`^(?:[a-zA-Z_][a-zA-Z0-9_]*\s+|[._]\s+)?"[^"]+"$`)
+	importDeclRegex = regexp.MustCompile(`^import\s+(?:[a-zA-Z_][a-zA-Z0-9_]*\s+|[._]\s+)?"[^"]+"$`)
+	// 只认可迁移配对表内的限定符，避免把「换 provider 工厂」判成机械改动
+	providerFactoryFieldRegex = regexp.MustCompile(`^(?:ProviderFactories|ProtoV5ProviderFactories|Providers)\s*:\s*(` + migrationQualifierAlt() + `)\.(?:ProviderFactories|SDKProviderFactories|ProtoV5ProviderFactories|Providers|SDKProviders)(?:\(\))?,?$`)
+	providerConstructorRegex  = regexp.MustCompile(`^(?:var\s+)?[a-zA-Z_][a-zA-Z0-9_]*\s*:?=\s*(` + migrationQualifierAlt() + `)\.Provider(?:\(\))?(?:\.(?:ResourcesMap|DataSourcesMap))?$`)
 )
+
+func migrationQualifierAlt() string {
+	return `(?:alicloud|sdkv2|acctest)`
+}
+
+func hasCoverageRelevantTestChanges(file *diffparser.DiffFile) bool {
+	if file.Mode != diffparser.MODIFIED {
+		return true
+	}
+	if len(file.Hunks) == 0 {
+		// Nothing to analyze (e.g. rename-only entry): fail towards checking.
+		return true
+	}
+	for _, hunk := range file.Hunks {
+		if hunkHasCoverageRelevantChange(hunk) {
+			return true
+		}
+	}
+	return false
+}
+
+func hunkHasCoverageRelevantChange(hunk *diffparser.DiffHunk) bool {
+	currentFunc := ""
+	inImport := strings.HasPrefix(strings.TrimSpace(hunk.HunkHeader), "import")
+	for _, line := range hunk.WholeRange.Lines {
+		content := strings.TrimSpace(line.Content)
+		if match := goFuncDeclRegex.FindStringSubmatch(content); len(match) == 2 {
+			currentFunc = match[1]
+		}
+		if strings.HasPrefix(content, "import") && strings.HasSuffix(content, "(") {
+			inImport = true
+		}
+		if line.Mode == diffparser.UNCHANGED {
+			if inImport && content == ")" {
+				inImport = false
+			}
+			if strings.HasPrefix(line.Content, "}") {
+				currentFunc = ""
+			}
+			continue
+		}
+		if content == "" {
+			continue
+		}
+		if inImport {
+			if content == ")" {
+				inImport = false
+				continue
+			}
+			if importSpecRegex.MatchString(content) {
+				continue
+			}
+		}
+		if importDeclRegex.MatchString(content) || (strings.HasPrefix(content, "//") && !strings.HasPrefix(content, "//go:") && !strings.HasPrefix(content, "// +build")) {
+			continue
+		}
+		if strings.HasPrefix(currentFunc, "Test") && !strings.HasPrefix(currentFunc, "TestAcc") && currentFunc != "TestMain" {
+			if strings.HasPrefix(line.Content, "}") {
+				currentFunc = ""
+			}
+			continue
+		}
+		if providerFactoryFieldRegex.MatchString(content) || providerConstructorRegex.MatchString(content) {
+			continue
+		}
+		return true
+	}
+	return false
+}
 
 func main() {
 	exitCode := 0
@@ -78,6 +154,10 @@ func main() {
 	// One split stem resolves once: the implementation and its test share it.
 	splitSeen := make(map[string]bool)
 	for _, file := range diff.Files {
+		if strings.HasSuffix(file.NewName, "_test.go") && !hasCoverageRelevantTestChanges(file) {
+			log.Infof("==> %s has no ACC coverage changes; skip coverage check", file.NewName)
+			continue
+		}
 		isNameCorrect = true
 		resName := ""
 		isResource := true
