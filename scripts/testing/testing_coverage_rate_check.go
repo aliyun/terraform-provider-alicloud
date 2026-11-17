@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 	mapset "github.com/deckarep/golang-set"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -196,13 +196,13 @@ func checkResourceByName(resName string, isResource bool, fileType, testPath, im
 	var resource = &schema.Resource{}
 	var ok bool
 	if isResource {
-		resource, ok = alicloud.Provider().ResourcesMap["alicloud_"+resName]
+		resource, ok = sdkv2.Provider().ResourcesMap["alicloud_"+resName]
 		if !ok || resource == nil {
 			log.Errorf("resource %s is not found in the provider ResourceMap\n\n", resName)
 			return false
 		}
 	} else {
-		resource, ok = alicloud.Provider().DataSourcesMap["alicloud_"+resName]
+		resource, ok = sdkv2.Provider().DataSourcesMap["alicloud_"+resName]
 		if !ok || resource == nil {
 			log.Errorf("data source %s is not found in the provider DataSourcesMap\n\n", resName)
 			return false

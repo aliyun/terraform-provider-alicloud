@@ -11,11 +11,11 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
-	alicloud "github.com/aliyun/terraform-provider-alicloud/alicloud"
 	tfacctest "github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	tferrs "github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	tfhelper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	dmsenterprise "github.com/aliyun/terraform-provider-alicloud/alicloud/service/dmsenterprise"
 	tfsweep "github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -157,7 +157,7 @@ resource "alicloud_dms_enterprise_instance" "default" {
 
 // lintignore: R001
 func TestUnitAccAlicloudDmsEnterpriseProxy(t *testing.T) {
-	p := alicloud.Provider().ResourcesMap
+	p := sdkv2.Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dms_enterprise_proxy"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_dms_enterprise_proxy"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

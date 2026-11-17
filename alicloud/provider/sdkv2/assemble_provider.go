@@ -1,4 +1,4 @@
-package alicloud
+package sdkv2
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/intercept"
 	providerregistry "github.com/aliyun/terraform-provider-alicloud/alicloud/provider/registry"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -18,10 +17,10 @@ func assembleProvider(p *schema.Provider) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	for name, r := range p.ResourcesMap {
-		p.ResourcesMap[name] = sdkv2.WrapResource(name, r, intercept.ChainOf(name, nil))
+		p.ResourcesMap[name] = WrapResource(name, r, intercept.ChainOf(name, nil))
 	}
 	for name, ds := range p.DataSourcesMap {
-		p.DataSourcesMap[name] = sdkv2.WrapDataSource(name, ds, intercept.ChainOf(name, nil))
+		p.DataSourcesMap[name] = WrapDataSource(name, ds, intercept.ChainOf(name, nil))
 	}
 
 	for _, sp := range providerregistry.ServicePackages() {
@@ -31,7 +30,7 @@ func assembleProvider(p *schema.Provider) diag.Diagnostics {
 				diags = append(diags, duplicateDeclaration("resource", name, sp.Name))
 				continue
 			}
-			p.ResourcesMap[name] = sdkv2.WrapResource(name, reg.Factory(), intercept.ChainOf(name, reg.Interceptors))
+			p.ResourcesMap[name] = WrapResource(name, reg.Factory(), intercept.ChainOf(name, reg.Interceptors))
 		}
 		for _, reg := range sp.SDKDataSources {
 			name := reg.TypeName
@@ -39,7 +38,7 @@ func assembleProvider(p *schema.Provider) diag.Diagnostics {
 				diags = append(diags, duplicateDeclaration("data source", name, sp.Name))
 				continue
 			}
-			p.DataSourcesMap[name] = sdkv2.WrapDataSource(name, reg.Factory(), intercept.ChainOf(name, reg.Interceptors))
+			p.DataSourcesMap[name] = WrapDataSource(name, reg.Factory(), intercept.ChainOf(name, reg.Interceptors))
 		}
 	}
 
