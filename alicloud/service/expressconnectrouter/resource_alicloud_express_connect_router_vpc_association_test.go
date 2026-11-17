@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"reflect"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -29,7 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	testingterraform "github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // vpcAssociationImportStep verifies that every successful configuration step is
@@ -540,8 +538,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_inval
 	})
 }
 
-// Temporary service probe for comment 70571; replaced by the final Provider regression after the A/B result is known.
-func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_modeOnlyServiceProbe6348(t *testing.T) {
+func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_modeOnlyExistingPrefixes6348(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_router_vpc_association.default"
 	ra := acctest.ResourceAttrInit(resourceId, AlicloudExpressConnectRouterExpressConnectRouterVpcAssociationMap6348)
@@ -568,18 +565,61 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_modeO
 					"allowed_prefixes":      []string{"172.16.1.0/24", "172.16.2.0/24"},
 					"allowed_prefixes_mode": "MatchMode",
 				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allowed_prefixes.#":    "2",
-						"allowed_prefixes_mode": "MatchMode",
-					}),
-					checkVpcAssociationModeOnlyServiceProbe(t, resourceId, "IncrementalMode"),
-				),
+				Check: testAccCheck(map[string]string{
+					"allowed_prefixes.#":    "2",
+					"allowed_prefixes_mode": "MatchMode",
+				}),
 			},
 			vpcAssociationImportStep(resourceId),
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"allowed_prefixes":      []string{"172.16.1.0/24", "172.16.2.0/24"},
+					"association_region_id": acctest.DefaultRegionToTest,
+					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
+					"ecr_id":                "${alicloud_express_connect_router_express_connect_router.defaultM9YxGW.id}",
+					"allowed_prefixes":      acctest.REMOVEKEY,
+					"allowed_prefixes_mode": "IncrementalMode",
+				}),
+				Check: testAccCheck(map[string]string{
+					"allowed_prefixes.#":    "2",
+					"allowed_prefixes.0":    "172.16.1.0/24",
+					"allowed_prefixes.1":    "172.16.2.0/24",
+					"allowed_prefixes_mode": "IncrementalMode",
+				}),
+			},
+			vpcAssociationImportStep(resourceId),
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"association_region_id": acctest.DefaultRegionToTest,
+					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
+					"ecr_id":                "${alicloud_express_connect_router_express_connect_router.defaultM9YxGW.id}",
+					"allowed_prefixes":      acctest.REMOVEKEY,
+					"allowed_prefixes_mode": "IncrementalMode",
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"association_region_id": acctest.DefaultRegionToTest,
+					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
+					"ecr_id":                "${alicloud_express_connect_router_express_connect_router.defaultM9YxGW.id}",
+					"allowed_prefixes":      []string{},
+					"allowed_prefixes_mode": "MatchMode",
+				}),
+				Check: testAccCheck(map[string]string{
+					"allowed_prefixes.#":    "2",
+					"allowed_prefixes.0":    "172.16.1.0/24",
+					"allowed_prefixes.1":    "172.16.2.0/24",
+					"allowed_prefixes_mode": "MatchMode",
+				}),
+			},
+			vpcAssociationImportStep(resourceId),
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"association_region_id": acctest.DefaultRegionToTest,
+					"vpc_id":                "${alicloud_vpc.default8qAtD6.id}",
+					"ecr_id":                "${alicloud_express_connect_router_express_connect_router.defaultM9YxGW.id}",
+					"allowed_prefixes":      []string{},
 					"allowed_prefixes_mode": "MatchMode",
 				}),
 				PlanOnly:           true,
@@ -587,126 +627,6 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_modeO
 			},
 		},
 	})
-}
-
-func checkVpcAssociationModeOnlyServiceProbe(t *testing.T, resourceId string, targetMode string) resource.TestCheckFunc {
-	return func(state *testingterraform.State) error {
-		rs, ok := state.RootModule().Resources[resourceId]
-		if !ok || rs.Primary.ID == "" {
-			return fmt.Errorf("probe resource %s has no primary ID", resourceId)
-		}
-		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
-		service := expressconnectrouter.NewService(client)
-		id := rs.Primary.ID
-		object, err := service.DescribeExpressConnectRouterExpressConnectRouterVpcAssociation(id)
-		if err != nil {
-			return fmt.Errorf("probe precondition read: %w", err)
-		}
-		ecrId := fmt.Sprint(object["EcrId"])
-		associationId := fmt.Sprint(object["AssociationId"])
-		originalMode := fmt.Sprint(object["AllowedPrefixesMode"])
-		originalPrefixes, err := vpcAssociationServiceProbePrefixes(object["AllowedPrefixes"])
-		if err != nil || len(originalPrefixes) == 0 || originalMode == "" || originalMode == "<nil>" {
-			return fmt.Errorf("probe precondition: mode=%q prefixes=%v err=%v", originalMode, originalPrefixes, err)
-		}
-		callModify := func(includePrefixes bool, mode string) error {
-			request := map[string]interface{}{
-				"EcrId":               ecrId,
-				"AssociationId":       associationId,
-				"AllowedPrefixesMode": mode,
-			}
-			if includePrefixes {
-				request["AllowedPrefixes"] = originalPrefixes
-			}
-			_, err := client.RpcPost("ExpressConnectRouter", "2023-09-01", "ModifyExpressConnectRouterAssociationAllowedPrefix", map[string]interface{}{}, request, true)
-			return err
-		}
-		readActive := func() (map[string]interface{}, error) {
-			stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, 2*time.Minute, 5*time.Second, service.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(id, "Status", []string{}))
-			result, err := stateConf.WaitForState()
-			if err != nil {
-				return nil, err
-			}
-			current, ok := result.(map[string]interface{})
-			if !ok {
-				return nil, fmt.Errorf("unexpected association readback type %T", result)
-			}
-			return current, nil
-		}
-		assertState := func(current map[string]interface{}, expectedMode string) error {
-			currentPrefixes, err := vpcAssociationServiceProbePrefixes(current["AllowedPrefixes"])
-			if err != nil {
-				return err
-			}
-			if fmt.Sprint(current["AllowedPrefixesMode"]) != expectedMode || !reflect.DeepEqual(currentPrefixes, originalPrefixes) {
-				return fmt.Errorf("mode=%q prefixes=%v, want mode=%q prefixes=%v", current["AllowedPrefixesMode"], currentPrefixes, expectedMode, originalPrefixes)
-			}
-			return nil
-		}
-
-		probeErr := func() error {
-			omittedErr := callModify(false, targetMode)
-			omittedState, readErr := readActive()
-			if readErr != nil {
-				return fmt.Errorf("read after omitted-prefix Modify: %w", readErr)
-			}
-			if omittedErr == nil {
-				if err := assertState(omittedState, targetMode); err != nil {
-					return fmt.Errorf("omitted-prefix Modify changed unexpected remote state: %w", err)
-				}
-			} else {
-				if !errs.IsExpectedErrors(omittedErr, []string{"IllegalParam.AllowedPrefixesMode"}) {
-					return fmt.Errorf("omitted-prefix Modify returned an unclassified error: %w", omittedErr)
-				}
-				if err := assertState(omittedState, originalMode); err != nil {
-					return fmt.Errorf("rejected omitted-prefix Modify changed remote state: %w", err)
-				}
-			}
-
-			if err := callModify(true, targetMode); err != nil {
-				return fmt.Errorf("echo-prefix Modify: %w", err)
-			}
-			echoState, err := readActive()
-			if err != nil {
-				return fmt.Errorf("read after echo-prefix Modify: %w", err)
-			}
-			if err := assertState(echoState, targetMode); err != nil {
-				return fmt.Errorf("echo-prefix Modify changed unexpected remote state: %w", err)
-			}
-			t.Logf("Q40378 mode-only A/B: omitted-prefix error=%v; echo-prefix preserved %d prefixes and applied %s", omittedErr != nil, len(originalPrefixes), targetMode)
-			return nil
-		}()
-
-		restoreErr := callModify(true, originalMode)
-		if restoreErr == nil {
-			var restored map[string]interface{}
-			restored, restoreErr = readActive()
-			if restoreErr == nil {
-				restoreErr = assertState(restored, originalMode)
-			}
-		}
-		if probeErr != nil || restoreErr != nil {
-			return fmt.Errorf("probe=%v; restore=%v", probeErr, restoreErr)
-		}
-		return nil
-	}
-}
-
-func vpcAssociationServiceProbePrefixes(raw interface{}) ([]string, error) {
-	entries, ok := raw.([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("unexpected AllowedPrefixes type %T", raw)
-	}
-	prefixes := make([]string, 0, len(entries))
-	for _, entry := range entries {
-		prefix, ok := entry.(string)
-		if !ok {
-			return nil, fmt.Errorf("unexpected AllowedPrefixes member type %T", entry)
-		}
-		prefixes = append(prefixes, prefix)
-	}
-	sort.Strings(prefixes)
-	return prefixes, nil
 }
 
 // Test ExpressConnectRouter ExpressConnectRouterVpcAssociation. <<< Resource test cases, automatically generated.
@@ -871,6 +791,61 @@ func vpcAssociationApply(t *testing.T, r *schema.Resource, state *terraform.Inst
 	}
 	diff.RawConfig = rawConfig
 	return r.Apply(context.Background(), state, diff, client)
+}
+
+func vpcAssociationApplyWithPlanRaw(t *testing.T, r *schema.Resource, state *terraform.InstanceState, config map[string]interface{}, planMode, planPrefixes cty.Value, client *connectivity.AliyunClient) (*terraform.InstanceDiff, *terraform.InstanceState, diag.Diagnostics) {
+	t.Helper()
+	resolvedConfig := vpcAssociationRawConfig(config)
+	if state == nil {
+		state = &terraform.InstanceState{}
+	}
+	state.RawConfig = vpcAssociationRawConfigWithValues(config, planMode, planPrefixes)
+	planConfig := make(map[string]interface{}, len(config)+2)
+	for key, value := range config {
+		planConfig[key] = value
+	}
+	if !planMode.IsKnown() {
+		planConfig["allowed_prefixes_mode"] = "74D93920-ED26-11E3-AC10-0800200C9A66"
+	}
+	if !planPrefixes.IsKnown() {
+		planConfig["allowed_prefixes"] = "74D93920-ED26-11E3-AC10-0800200C9A66"
+	}
+	planned, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(planConfig), nil)
+	if err != nil {
+		return nil, nil, diag.FromErr(err)
+	}
+	if planned == nil {
+		return nil, nil, diag.FromErr(fmt.Errorf("expected a lifecycle diff"))
+	}
+	if !planMode.IsKnown() {
+		change := planned.Attributes["allowed_prefixes_mode"]
+		if change == nil || !change.NewComputed {
+			t.Fatalf("unknown mode must be computed in the plan: %#v", planned.Attributes)
+		}
+	}
+	if !planPrefixes.IsKnown() {
+		count := planned.Attributes["allowed_prefixes.#"]
+		if count == nil || !count.NewComputed {
+			t.Fatalf("unknown prefixes must be computed in the plan: %#v", planned.Attributes)
+		}
+	}
+	state.RawConfig = resolvedConfig
+	resolvedPlanned, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), nil)
+	// Resolved invalid combinations must still exercise the Apply-time recheck.
+	if err != nil && containsAll(err.Error(), "allowed_prefixes_mode", "non-empty", "allowed_prefixes") {
+		planned.RawConfig = resolvedConfig
+		updated, diags := r.Apply(context.Background(), state, planned, client)
+		return planned, updated, diags
+	}
+	if err != nil {
+		return nil, nil, diag.FromErr(err)
+	}
+	if resolvedPlanned == nil {
+		return nil, nil, diag.FromErr(fmt.Errorf("expected a resolved lifecycle diff"))
+	}
+	resolvedPlanned.RawConfig = resolvedConfig
+	updated, diags := r.Apply(context.Background(), state, resolvedPlanned, client)
+	return planned, updated, diags
 }
 
 func TestUnitVpcAssociationCreateRetryCodes(t *testing.T) {
@@ -1613,26 +1588,322 @@ func TestUnitVpcAssociationUpdateExplicitEmptyModeSendsStoredMode(t *testing.T) 
 	}
 }
 
-func TestUnitVpcAssociationUpdateRejectsModeOnlyChange(t *testing.T) {
-	var requests int32
-	client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
-		atomic.AddInt32(&requests, 1)
-		t.Errorf("unexpected request for a mode-only update")
-	})
+func TestUnitVpcAssociationUpdateModeOnlyEchoesStoredPrefixes(t *testing.T) {
+	for _, tc := range []struct {
+		name              string
+		configurePrefixes bool
+		unknownMode       bool
+	}{
+		{name: "omitted_prefixes"},
+		{name: "explicit_empty_prefixes", configurePrefixes: true},
+		{name: "omitted_prefixes_unknown_mode", unknownMode: true},
+		{name: "explicit_empty_prefixes_unknown_mode", configurePrefixes: true, unknownMode: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var forms []url.Values
+			currentMode := "MatchMode"
+			client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if err := r.ParseForm(); err != nil {
+					t.Errorf("parse request: %v", err)
+				}
+				switch r.Form.Get("Action") {
+				case "ModifyExpressConnectRouterAssociationAllowedPrefix":
+					forms = append(forms, r.Form)
+					currentMode = r.Form.Get("AllowedPrefixesMode")
+					writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
+				case "DescribeExpressConnectRouterAssociation":
+					writeVpcAssociationJSON(t, w, http.StatusOK, map[string]interface{}{
+						"RequestId": "unit-test",
+						"AssociationList": []map[string]interface{}{{
+							"AssociationId":       "assoc-1",
+							"AssociationNodeType": "VPC",
+							"EcrId":               "ecr-1",
+							"VpcId":               "vpc-1",
+							"RegionId":            "cn-hangzhou",
+							"Status":              "ACTIVE",
+							"AllowedPrefixesMode": currentMode,
+							"AllowedPrefixes":     []string{"172.16.1.0/24", "172.16.2.0/24"},
+						}},
+					})
+				default:
+					t.Errorf("unexpected action %q", r.Form.Get("Action"))
+				}
+			})
 
-	config := vpcAssociationUnitConfig()
-	config["allowed_prefixes_mode"] = "IncrementalMode"
-	state := vpcAssociationUnitState(map[string]string{
-		"allowed_prefixes.#":    "1",
-		"allowed_prefixes.0":    "172.16.1.0/24",
-		"allowed_prefixes_mode": "MatchMode",
-	})
-	_, diags := vpcAssociationApply(t, expressconnectrouter.ResourceVpcAssociation(), state, config, client)
-	if !diags.HasError() || !containsAll(fmt.Sprintf("%v", diags), "allowed_prefixes_mode", "non-empty", "allowed_prefixes") {
-		t.Fatalf("mode-only update error = %v, want the local combination error", diags)
+			config := vpcAssociationUnitConfig()
+			config["allowed_prefixes_mode"] = "IncrementalMode"
+			if tc.configurePrefixes {
+				config["allowed_prefixes"] = []interface{}{}
+			}
+			state := vpcAssociationUnitState(map[string]string{
+				"allowed_prefixes.#":    "2",
+				"allowed_prefixes.0":    "172.16.1.0/24",
+				"allowed_prefixes.1":    "172.16.2.0/24",
+				"allowed_prefixes_mode": "MatchMode",
+			})
+			resourceUnderTest := expressconnectrouter.ResourceVpcAssociation()
+			var updated *terraform.InstanceState
+			var diags diag.Diagnostics
+			if tc.unknownMode {
+				resolvedConfig := vpcAssociationRawConfig(config)
+				planned, applied, applyDiags := vpcAssociationApplyWithPlanRaw(t, resourceUnderTest, state, config, cty.UnknownVal(cty.String), resolvedConfig.GetAttr("allowed_prefixes"), client)
+				if applyDiags.HasError() {
+					t.Fatalf("unknown mode update: %v", applyDiags)
+				}
+				plannedCount := planned.Attributes["allowed_prefixes.#"]
+				if plannedCount == nil || !plannedCount.NewComputed {
+					t.Fatalf("unknown mode must leave stored prefixes computed in the plan: %#v", planned.Attributes)
+				}
+				updated, diags = applied, applyDiags
+			} else {
+				updated, diags = vpcAssociationApply(t, resourceUnderTest, state, config, client)
+			}
+			if diags.HasError() {
+				t.Fatalf("mode-only update: %v", diags)
+			}
+			if len(forms) != 1 {
+				t.Fatalf("ModifyExpressConnectRouterAssociationAllowedPrefix calls = %d, want 1", len(forms))
+			}
+			assertFormArray(t, forms[0], "AllowedPrefixes", "172.16.1.0/24", "172.16.2.0/24")
+			if got := forms[0].Get("AllowedPrefixesMode"); got != "IncrementalMode" {
+				t.Fatalf("AllowedPrefixesMode = %q, want IncrementalMode", got)
+			}
+			if got := updated.Attributes["allowed_prefixes.#"]; got != "2" {
+				t.Fatalf("updated prefix count = %q, want 2", got)
+			}
+			if got := updated.Attributes["allowed_prefixes_mode"]; got != "IncrementalMode" {
+				t.Fatalf("updated mode = %q, want IncrementalMode", got)
+			}
+			if tc.unknownMode {
+				updated.RawConfig = vpcAssociationRawConfig(config)
+				next, err := resourceUnderTest.Diff(context.Background(), updated, terraform.NewResourceConfigRaw(config), nil)
+				if err != nil {
+					t.Fatalf("plan after resolved unknown mode: %v", err)
+				}
+				if next != nil && !next.Empty() {
+					t.Fatalf("resolved unknown mode must converge on the next plan: %v", next)
+				}
+			}
+		})
 	}
-	if got := atomic.LoadInt32(&requests); got != 0 {
-		t.Fatalf("invalid mode-only update issued %d requests, want 0", got)
+}
+
+func TestUnitVpcAssociationUpdateResolvedModeWithoutStoredPrefixesIsRejected(t *testing.T) {
+	for _, tc := range []struct {
+		name              string
+		configurePrefixes bool
+	}{
+		{name: "omitted_prefixes"},
+		{name: "explicit_empty_prefixes", configurePrefixes: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var requests int32
+			client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+				atomic.AddInt32(&requests, 1)
+				t.Errorf("unexpected request for a resolved mode without stored prefixes")
+			})
+			config := vpcAssociationUnitConfig()
+			config["allowed_prefixes_mode"] = "IncrementalMode"
+			if tc.configurePrefixes {
+				config["allowed_prefixes"] = []interface{}{}
+			}
+			resolvedConfig := vpcAssociationRawConfig(config)
+			state := vpcAssociationUnitState(map[string]string{
+				"allowed_prefixes.#":    "0",
+				"allowed_prefixes_mode": "MatchMode",
+			})
+			resourceUnderTest := expressconnectrouter.ResourceVpcAssociation()
+			_, _, diags := vpcAssociationApplyWithPlanRaw(t, resourceUnderTest, state, config, cty.UnknownVal(cty.String), resolvedConfig.GetAttr("allowed_prefixes"), client)
+			if !diags.HasError() || !containsAll(fmt.Sprintf("%v", diags), "allowed_prefixes_mode", "non-empty", "allowed_prefixes") {
+				t.Fatalf("resolved mode without stored prefixes error = %v, want the combination error", diags)
+			}
+			if got := atomic.LoadInt32(&requests); got != 0 {
+				t.Fatalf("resolved invalid mode update issued %d requests, want 0", got)
+			}
+		})
+	}
+}
+
+func TestUnitVpcAssociationStoredPrefixModeNoChangePlan(t *testing.T) {
+	for _, tc := range []struct {
+		name              string
+		configurePrefixes bool
+	}{
+		{name: "omitted_prefixes"},
+		{name: "explicit_empty_prefixes", configurePrefixes: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			config := vpcAssociationUnitConfig()
+			config["allowed_prefixes_mode"] = "MatchMode"
+			if tc.configurePrefixes {
+				config["allowed_prefixes"] = []interface{}{}
+			}
+			state := vpcAssociationUnitState(map[string]string{
+				"allowed_prefixes.#":    "2",
+				"allowed_prefixes.0":    "172.16.1.0/24",
+				"allowed_prefixes.1":    "172.16.2.0/24",
+				"allowed_prefixes_mode": "MatchMode",
+			})
+			state.RawConfig = vpcAssociationRawConfig(config)
+			diff, err := expressconnectrouter.ResourceVpcAssociation().Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), nil)
+			if err != nil {
+				t.Fatalf("stored prefix mode no-change plan: %v", err)
+			}
+			if diff != nil && !diff.Empty() {
+				t.Fatalf("stored prefix mode no-change plan produced a diff: %v", diff)
+			}
+		})
+	}
+}
+
+func TestUnitVpcAssociationUnknownModeResolvedLegacyRequests(t *testing.T) {
+	for _, resolvedMode := range []string{"null", "empty"} {
+		for _, tc := range []struct {
+			name              string
+			configurePrefixes bool
+		}{
+			{name: "omitted_prefixes"},
+			{name: "explicit_empty_prefixes", configurePrefixes: true},
+		} {
+			t.Run(resolvedMode+"/"+tc.name, func(t *testing.T) {
+				var forms []url.Values
+				client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+					if err := r.ParseForm(); err != nil {
+						t.Errorf("parse request: %v", err)
+					}
+					switch r.Form.Get("Action") {
+					case "ModifyExpressConnectRouterAssociationAllowedPrefix":
+						forms = append(forms, r.Form)
+						writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"RequestId": "unit-test"})
+					case "DescribeExpressConnectRouterAssociation":
+						writeVpcAssociationJSON(t, w, http.StatusOK, map[string]interface{}{
+							"RequestId": "unit-test",
+							"AssociationList": []map[string]interface{}{{
+								"AssociationId":       "assoc-1",
+								"AssociationNodeType": "VPC",
+								"EcrId":               "ecr-1",
+								"VpcId":               "vpc-1",
+								"RegionId":            "cn-hangzhou",
+								"Status":              "ACTIVE",
+								"AllowedPrefixesMode": "MatchMode",
+								"AllowedPrefixes":     []string{"172.16.1.0/24", "172.16.2.0/24"},
+							}},
+						})
+					default:
+						t.Errorf("unexpected action %q", r.Form.Get("Action"))
+					}
+				})
+				config := vpcAssociationUnitConfig()
+				if resolvedMode == "empty" {
+					config["allowed_prefixes_mode"] = ""
+				}
+				if tc.configurePrefixes {
+					config["allowed_prefixes"] = []interface{}{}
+				}
+				state := vpcAssociationUnitState(map[string]string{
+					"allowed_prefixes.#":    "2",
+					"allowed_prefixes.0":    "172.16.1.0/24",
+					"allowed_prefixes.1":    "172.16.2.0/24",
+					"allowed_prefixes_mode": "MatchMode",
+				})
+				resolvedConfig := vpcAssociationRawConfig(config)
+				_, _, diags := vpcAssociationApplyWithPlanRaw(t, expressconnectrouter.ResourceVpcAssociation(), state, config, cty.UnknownVal(cty.String), resolvedConfig.GetAttr("allowed_prefixes"), client)
+				if diags.HasError() {
+					t.Fatalf("resolved legacy mode update: %v", diags)
+				}
+				if len(forms) != 1 {
+					t.Fatalf("prefix Modify calls = %d, want 1", len(forms))
+				}
+				if formHasParameter(forms[0], "AllowedPrefixes") {
+					t.Fatalf("resolved legacy mode must not echo stored prefixes: %v", forms[0])
+				}
+				if _, present := forms[0]["AllowedPrefixesMode"]; present {
+					t.Fatalf("resolved legacy mode must omit the mode parameter: %v", forms[0])
+				}
+			})
+		}
+	}
+}
+
+func TestUnitVpcAssociationUnknownPrefixesResolvedApply(t *testing.T) {
+	for _, lifecycle := range []string{"create", "update"} {
+		for _, tc := range []struct {
+			name       string
+			prefixes   []interface{}
+			configure  bool
+			wantReject bool
+		}{
+			{name: "resolved_null", wantReject: true},
+			{name: "resolved_empty", prefixes: []interface{}{}, configure: true, wantReject: true},
+			{name: "resolved_nonempty", prefixes: []interface{}{"172.16.1.0/24", "172.16.2.0/24"}, configure: true},
+		} {
+			t.Run(lifecycle+"/"+tc.name, func(t *testing.T) {
+				var requests int32
+				var forms []url.Values
+				client := newVpcAssociationUnitClient(t, func(w http.ResponseWriter, r *http.Request) {
+					atomic.AddInt32(&requests, 1)
+					if err := r.ParseForm(); err != nil {
+						t.Errorf("parse request: %v", err)
+					}
+					switch r.Form.Get("Action") {
+					case "CreateExpressConnectRouterAssociation", "ModifyExpressConnectRouterAssociationAllowedPrefix":
+						forms = append(forms, r.Form)
+						writeVpcAssociationJSON(t, w, http.StatusOK, map[string]string{"AssociationId": "assoc-1", "RequestId": "unit-test"})
+					case "DescribeExpressConnectRouterAssociation":
+						writeVpcAssociationJSON(t, w, http.StatusOK, map[string]interface{}{
+							"RequestId": "unit-test",
+							"AssociationList": []map[string]interface{}{{
+								"AssociationId":       "assoc-1",
+								"AssociationNodeType": "VPC",
+								"EcrId":               "ecr-1",
+								"VpcId":               "vpc-1",
+								"RegionId":            "cn-hangzhou",
+								"Status":              "ACTIVE",
+								"AllowedPrefixesMode": "MatchMode",
+								"AllowedPrefixes":     []string{"172.16.1.0/24", "172.16.2.0/24"},
+							}},
+						})
+					default:
+						t.Errorf("unexpected action %q", r.Form.Get("Action"))
+					}
+				})
+				config := vpcAssociationUnitConfig()
+				config["allowed_prefixes_mode"] = "MatchMode"
+				if tc.configure {
+					config["allowed_prefixes"] = tc.prefixes
+				}
+				var state *terraform.InstanceState
+				if lifecycle == "update" {
+					state = vpcAssociationUnitState(map[string]string{
+						"allowed_prefixes.#":    "0",
+						"allowed_prefixes_mode": "IncrementalMode",
+					})
+				}
+				_, updated, diags := vpcAssociationApplyWithPlanRaw(t, expressconnectrouter.ResourceVpcAssociation(), state, config, cty.StringVal("MatchMode"), cty.UnknownVal(cty.List(cty.String)), client)
+				if tc.wantReject {
+					if !diags.HasError() || !containsAll(fmt.Sprintf("%v", diags), "allowed_prefixes_mode", "non-empty", "allowed_prefixes") {
+						t.Fatalf("resolved prefixes error = %v, want the combination error", diags)
+					}
+					if got := atomic.LoadInt32(&requests); got != 0 {
+						t.Fatalf("invalid resolved prefixes issued %d requests, want 0", got)
+					}
+					return
+				}
+				if diags.HasError() {
+					t.Fatalf("resolved non-empty prefixes: %v", diags)
+				}
+				if len(forms) != 1 {
+					t.Fatalf("target write calls = %d, want 1", len(forms))
+				}
+				assertFormArray(t, forms[0], "AllowedPrefixes", "172.16.1.0/24", "172.16.2.0/24")
+				if got := forms[0].Get("AllowedPrefixesMode"); got != "MatchMode" {
+					t.Fatalf("AllowedPrefixesMode = %q, want MatchMode", got)
+				}
+				if got := updated.Attributes["allowed_prefixes.#"]; got != "2" {
+					t.Fatalf("updated prefix count = %q, want 2", got)
+				}
+			})
+		}
 	}
 }
 

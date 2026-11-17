@@ -52,12 +52,29 @@ func ResourceVpcAssociation() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-			return validateVpcAssociationPrefixModeRawConfig(diff.GetRawConfig())
+			previousPrefixes, _ := diff.GetChange("allowed_prefixes")
+			raw := diff.GetRawConfig()
+			if err := validateVpcAssociationPrefixModeRawConfig(raw, previousPrefixes); err != nil {
+				return err
+			}
+			if vpcAssociationModeUsesStoredPrefixes(raw, previousPrefixes) {
+				return diff.SetNew("allowed_prefixes", previousPrefixes)
+			}
+			// An unresolved mode must not plan an empty list that Apply may replace with stored prefixes.
+			if vpcAssociationUnknownModeUsesStoredPrefixes(raw, previousPrefixes) {
+				return diff.SetNewComputed("allowed_prefixes")
+			}
+			// Optional+Computed otherwise turns legacy field removal into a no-op.
+			if vpcAssociationLegacyPrefixRemoval(raw, previousPrefixes) {
+				return diff.SetNew("allowed_prefixes", []interface{}{})
+			}
+			return nil
 		},
 		Schema: map[string]*schema.Schema{
 			"allowed_prefixes": {
 				Type:             schema.TypeList,
 				Optional:         true,
+				Computed:         true,
 				Elem:             &schema.Schema{Type: schema.TypeString},
 				DiffSuppressFunc: suppressVpcAssociationPrefixReorder,
 			},
@@ -110,7 +127,7 @@ func ResourceVpcAssociation() *schema.Resource {
 func resourceVpcAssociationCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	if err := validateVpcAssociationPrefixModeRawConfig(d.GetRawConfig()); err != nil {
+	if err := validateVpcAssociationPrefixModeRawConfig(d.GetRawConfig(), nil); err != nil {
 		return err
 	}
 
@@ -225,7 +242,8 @@ func resourceVpcAssociationRead(d *schema.ResourceData, meta interface{}) error 
 
 func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	if err := validateVpcAssociationPrefixModeRawConfig(d.GetRawConfig()); err != nil {
+	previousPrefixes, _ := d.GetChange("allowed_prefixes")
+	if err := validateVpcAssociationPrefixModeRawConfig(d.GetRawConfig(), previousPrefixes); err != nil {
 		return err
 	}
 	parts := strings.Split(d.Id(), ":")
@@ -295,6 +313,11 @@ func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) erro
 			request["AllowedPrefixes"] = d.Get("allowed_prefixes").([]interface{})
 			// The stored mode accompanies prefix-only updates instead of relying on an
 			// undeclared server-side default.
+			if mode, modeOk := d.GetOk("allowed_prefixes_mode"); modeOk {
+				request["AllowedPrefixesMode"] = mode
+			}
+		} else if vpcAssociationModeUsesStoredPrefixes(d.GetRawConfig(), previousPrefixes) {
+			request["AllowedPrefixes"] = previousPrefixes
 			if mode, modeOk := d.GetOk("allowed_prefixes_mode"); modeOk {
 				request["AllowedPrefixesMode"] = mode
 			}
@@ -396,7 +419,7 @@ func vpcAssociationRawConfigAttribute(d *schema.ResourceData, attribute string) 
 }
 
 // Empty slices have no RPC form representation; unknown values are rechecked at apply time.
-func validateVpcAssociationPrefixModeRawConfig(raw cty.Value) error {
+func validateVpcAssociationPrefixModeRawConfig(raw cty.Value, previousPrefixes interface{}) error {
 	if raw.IsNull() || !raw.IsKnown() {
 		return nil
 	}
@@ -409,9 +432,60 @@ func validateVpcAssociationPrefixModeRawConfig(raw cty.Value) error {
 		return nil
 	}
 	if prefixes.IsNull() || prefixes.LengthInt() == 0 {
+		if vpcAssociationModeUsesStoredPrefixes(raw, previousPrefixes) {
+			return nil
+		}
 		return errVpcAssociationModeWithoutPrefixes()
 	}
 	return nil
+}
+
+func vpcAssociationModeUsesStoredPrefixes(raw cty.Value, previousPrefixes interface{}) bool {
+	if raw.IsNull() || !raw.IsKnown() {
+		return false
+	}
+	prefixes := raw.GetAttr("allowed_prefixes")
+	mode := raw.GetAttr("allowed_prefixes_mode")
+	if mode.IsNull() || !mode.IsKnown() || strings.TrimSpace(mode.AsString()) == "" || !prefixes.IsKnown() {
+		return false
+	}
+	if !prefixes.IsNull() && prefixes.LengthInt() > 0 {
+		return false
+	}
+	_, ok := vpcAssociationPrefixStrings(previousPrefixes)
+	return ok
+}
+
+func vpcAssociationUnknownModeUsesStoredPrefixes(raw cty.Value, previousPrefixes interface{}) bool {
+	if raw.IsNull() || !raw.IsKnown() {
+		return false
+	}
+	prefixes := raw.GetAttr("allowed_prefixes")
+	mode := raw.GetAttr("allowed_prefixes_mode")
+	if mode.IsNull() || mode.IsKnown() || !prefixes.IsKnown() {
+		return false
+	}
+	if !prefixes.IsNull() && prefixes.LengthInt() > 0 {
+		return false
+	}
+	_, ok := vpcAssociationPrefixStrings(previousPrefixes)
+	return ok
+}
+
+func vpcAssociationLegacyPrefixRemoval(raw cty.Value, previousPrefixes interface{}) bool {
+	if raw.IsNull() || !raw.IsKnown() {
+		return false
+	}
+	prefixes := raw.GetAttr("allowed_prefixes")
+	mode := raw.GetAttr("allowed_prefixes_mode")
+	if !prefixes.IsKnown() || !prefixes.IsNull() || !mode.IsKnown() {
+		return false
+	}
+	if !mode.IsNull() && strings.TrimSpace(mode.AsString()) != "" {
+		return false
+	}
+	_, ok := vpcAssociationPrefixStrings(previousPrefixes)
+	return ok
 }
 
 // suppressVpcAssociationPrefixReorder manages prefix members without ordering them; membership and multiplicity changes remain diffs.
