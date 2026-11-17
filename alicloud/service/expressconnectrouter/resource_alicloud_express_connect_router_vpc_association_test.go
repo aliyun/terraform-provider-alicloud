@@ -573,7 +573,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_modeO
 						"allowed_prefixes.#":    "2",
 						"allowed_prefixes_mode": "MatchMode",
 					}),
-					checkVpcAssociationModeOnlyServiceProbe(t, &v, "IncrementalMode"),
+					checkVpcAssociationModeOnlyServiceProbe(t, resourceId, "IncrementalMode"),
 				),
 			},
 			vpcAssociationImportStep(resourceId),
@@ -589,21 +589,27 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation_modeO
 	})
 }
 
-func checkVpcAssociationModeOnlyServiceProbe(t *testing.T, v *map[string]interface{}, targetMode string) resource.TestCheckFunc {
-	return func(_ *testingterraform.State) error {
-		object := *v
+func checkVpcAssociationModeOnlyServiceProbe(t *testing.T, resourceId string, targetMode string) resource.TestCheckFunc {
+	return func(state *testingterraform.State) error {
+		rs, ok := state.RootModule().Resources[resourceId]
+		if !ok || rs.Primary.ID == "" {
+			return fmt.Errorf("probe resource %s has no primary ID", resourceId)
+		}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		service := expressconnectrouter.NewService(client)
+		id := rs.Primary.ID
+		object, err := service.DescribeExpressConnectRouterExpressConnectRouterVpcAssociation(id)
+		if err != nil {
+			return fmt.Errorf("probe precondition read: %w", err)
+		}
 		ecrId := fmt.Sprint(object["EcrId"])
 		associationId := fmt.Sprint(object["AssociationId"])
 		vpcId := fmt.Sprint(object["VpcId"])
 		originalMode := fmt.Sprint(object["AllowedPrefixesMode"])
 		originalPrefixes, err := vpcAssociationServiceProbePrefixes(object["AllowedPrefixes"])
-		if err != nil || len(originalPrefixes) == 0 || originalMode == "" {
+		if err != nil || len(originalPrefixes) == 0 || originalMode == "" || originalMode == "<nil>" {
 			return fmt.Errorf("probe precondition: mode=%q prefixes=%v err=%v", originalMode, originalPrefixes, err)
 		}
-
-		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
-		service := expressconnectrouter.NewService(client)
-		id := fmt.Sprintf("%s:%s:%s", ecrId, associationId, vpcId)
 		callModify := func(includePrefixes bool, mode string) error {
 			request := map[string]interface{}{
 				"EcrId":               ecrId,
