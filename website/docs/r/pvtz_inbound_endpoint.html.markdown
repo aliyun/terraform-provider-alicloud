@@ -11,7 +11,7 @@ description: |-
 
 Provides a Private Zone Inbound Endpoint resource.
 
-For information about Private Zone Inbound Endpoint and how to use it, see [What is Inbound Endpoint](https://www.alibabacloud.com/help/en/privatezone/latest/add-inbound-endpoint).
+For information about Private Zone Inbound Endpoint and how to use it, see [AddInboundEndpoint](https://next.api.aliyun.com/api/pvtz/2018-01-01/AddInboundEndpoint).
 
 -> **NOTE:** Available since v2.3.0.
 
@@ -91,7 +91,7 @@ The ip_configs supports the following:
 
 * `az_id` - (Required, String) The availability zone ID of the VSwitch.
 * `cidr_block` - (Required, String) The subnet mask, in the CIDR format of the VSwitch.
-* `ip` - (Optional, String) The IP address within the subnet mask range. If you omit it when the endpoint is created, the system assigns an IP address from the VSwitch. If you set it, the value is kept in the configuration and sent on update instead of being replaced by an automatically assigned address. If you only remove an explicitly configured `ip` from the configuration, the address that is currently in use is kept and no IP change is sent for that entry. If `ip_configs` changes while an entry has no explicit `ip`, that entry is sent without an address and the system assigns one.
+* `ip` - (Optional, String) The IP address within the subnet mask range. It must not be an empty string. If you omit it when the endpoint is created, the system assigns an IP address from the VSwitch. If you set it, the value is kept in the configuration and sent on update instead of being replaced by an automatically assigned address. If you only remove an explicitly configured `ip` from the configuration, the address that is currently in use is kept and no IP change is sent for that entry. If `ip_configs` changes while an entry has no explicit `ip`, that entry is sent without an address and the system assigns one.
 * `vswitch_id` - (Required, String) The VSwitch ID.
 
 ## Attributes Reference
@@ -101,6 +101,14 @@ The following attributes are exported:
 * `id` - (String) The resource ID in terraform of Inbound Endpoint.
 * `status` - (String) The status of the resource. Valid values: `CHANGE_FAILED`, `CHANGE_INIT`, `EXCEPTION`, `FAILED`, `INIT`, `SUCCESS`.
 * `endpoint_type` - (String) The type of the inbound endpoint reported by the service.
+
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions. Values use Go duration strings such as `30s`, `10m`, or `1h`.
+
+* `create` - (Defaults to 10 minutes) Used when creating the Inbound Endpoint and waiting for it to reach `SUCCESS`.
+* `update` - (Defaults to 10 minutes) Used when updating the Inbound Endpoint and waiting for it to reach `SUCCESS`.
+* `delete` - (Defaults to 10 minutes) Used when deleting the Inbound Endpoint and waiting for it to disappear.
 
 ## Import
 

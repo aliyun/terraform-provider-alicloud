@@ -92,7 +92,7 @@ func (s *Service) DescribeInboundEndpointContext(ctx context.Context, id string)
 	}
 
 	response, err := helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
-		return client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
+		return client.RpcPostWithContext(ctx, "pvtz", "2018-01-01", action, nil, request)
 	}, inboundEndpointReadTimeout, helper.NeedRetry)
 	logs.AddDebug(action, response, request)
 	if err != nil {
@@ -132,7 +132,7 @@ func (s *Service) DeleteInboundEndpoint(ctx context.Context, request map[string]
 
 func (s *Service) writeInboundEndpoint(ctx context.Context, action string, request map[string]interface{}) (map[string]interface{}, error) {
 	response, err := helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
-		return s.client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
+		return s.client.RpcPostWithContext(ctx, "pvtz", "2018-01-01", action, nil, request)
 	}, inboundEndpointTimeout, helper.NeedRetry)
 	logs.AddDebug(action, response, request)
 	return response, err

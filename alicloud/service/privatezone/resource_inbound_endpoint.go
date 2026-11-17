@@ -8,7 +8,9 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -22,12 +24,7 @@ import (
 
 const (
 	inboundEndpointTypeName = "alicloud_pvtz_inbound_endpoint"
-	// inboundEndpointTimeout mirrors the SDKv2 alicloud_pvtz_endpoint create/update default
-	// timeouts (10 minutes each). This resource does not expose user-configurable operation
-	// timeouts, so the default is applied as a fixed internal retry/wait budget. A user-facing
-	// timeouts block would be added through terraform-plugin-framework-timeouts and kept in
-	// state; the fixed budget below is not a substitute for that capability.
-	inboundEndpointTimeout = 10 * time.Minute
+	inboundEndpointTimeout  = 10 * time.Minute
 )
 
 var (
@@ -45,15 +42,16 @@ type inboundEndpointResource struct {
 }
 
 type inboundEndpointResourceModel struct {
-	Id              types.String `tfsdk:"id"`
-	EndpointName    types.String `tfsdk:"endpoint_name"`
-	IpConfigs       types.Set    `tfsdk:"ip_configs"`
-	SecurityGroupId types.String `tfsdk:"security_group_id"`
-	VpcId           types.String `tfsdk:"vpc_id"`
-	VpcRegionId     types.String `tfsdk:"vpc_region_id"`
-	SpecVersion     types.String `tfsdk:"spec_version"`
-	Status          types.String `tfsdk:"status"`
-	EndpointType    types.String `tfsdk:"endpoint_type"`
+	Id              types.String   `tfsdk:"id"`
+	Timeouts        timeouts.Value `tfsdk:"timeouts"`
+	EndpointName    types.String   `tfsdk:"endpoint_name"`
+	IpConfigs       types.Set      `tfsdk:"ip_configs"`
+	SecurityGroupId types.String   `tfsdk:"security_group_id"`
+	VpcId           types.String   `tfsdk:"vpc_id"`
+	VpcRegionId     types.String   `tfsdk:"vpc_region_id"`
+	SpecVersion     types.String   `tfsdk:"spec_version"`
+	Status          types.String   `tfsdk:"status"`
+	EndpointType    types.String   `tfsdk:"endpoint_type"`
 }
 
 type inboundEndpointIpConfigModel struct {
@@ -89,6 +87,11 @@ func (r *inboundEndpointResource) Metadata(ctx context.Context, req resource.Met
 func (r *inboundEndpointResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Blocks: map[string]schema.Block{
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{
+				Create: true,
+				Update: true,
+				Delete: true,
+			}),
 			"ip_configs": schema.SetNestedBlock{
 				// SetNestedBlock implements schema.Block (not schema.Attribute), so it
 				// lives in Blocks, not Attributes. fwadapt serves the Framework resource
@@ -109,6 +112,9 @@ func (r *inboundEndpointResource) Schema(ctx context.Context, req resource.Schem
 							Computed: true,
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.UseStateForUnknown(),
+							},
+							Validators: []validator.String{
+								stringvalidator.LengthAtLeast(1),
 							},
 						},
 						"vswitch_id": schema.StringAttribute{
@@ -278,6 +284,14 @@ func (r *inboundEndpointResource) Create(ctx context.Context, req resource.Creat
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	operationTimeout, timeoutDiagnostics := plan.Timeouts.Create(ctx, inboundEndpointTimeout)
+	resp.Diagnostics.Append(timeoutDiagnostics...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	opCtx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
+
 	// Build the ip_config request from the configuration, not the plan: the plan carries prior
 	// state for Optional+Computed values during a replacement, so an ip the user omitted would
 	// otherwise be replayed onto the new endpoint instead of being assigned by the service.
@@ -296,7 +310,7 @@ func (r *inboundEndpointResource) Create(ctx context.Context, req resource.Creat
 	// No published InboundEndpoint errorCodes table exists (PD E5), so the gate relies on
 	// helper.NeedRetry (5xx/throttling/timeouts); per-code gates are added when reports identify them.
 	pvtzService := Service{r.Meta()}
-	response, err := pvtzService.CreateInboundEndpoint(ctx, inboundEndpointCreateRequest(plan, ipConfigs))
+	response, err := pvtzService.CreateInboundEndpoint(opCtx, inboundEndpointCreateRequest(plan, ipConfigs))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: calling AddInboundEndpoint", inboundEndpointTypeName),
@@ -322,7 +336,7 @@ func (r *inboundEndpointResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	if _, waitErr := pvtzService.inboundEndpointWaitForState(ctx, id, []string{"SUCCESS"}, inboundEndpointFailStates, inboundEndpointTimeout); waitErr != nil {
+	if _, waitErr := pvtzService.inboundEndpointWaitForState(opCtx, id, []string{"SUCCESS"}, inboundEndpointFailStates, operationTimeout); waitErr != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: waiting for SUCCESS status", inboundEndpointTypeName),
 			errs.WrapErrorf(waitErr, errs.IdMsg, id).Error(),
@@ -330,7 +344,7 @@ func (r *inboundEndpointResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	object, err := pvtzService.DescribeInboundEndpointContext(ctx, id)
+	object, err := pvtzService.DescribeInboundEndpointContext(opCtx, id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s after create: calling DescribeInboundEndpoint", inboundEndpointTypeName),
@@ -352,6 +366,7 @@ func (r *inboundEndpointResource) Create(ctx context.Context, req resource.Creat
 	// InboundEndpoint.InvalidId. The outbound SDKv2 endpoint keeps d.Id() from Create for
 	// the same reason and never overwrites it in Read.
 	model.Id = types.StringValue(id)
+	model.Timeouts = plan.Timeouts
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
@@ -389,6 +404,7 @@ func (r *inboundEndpointResource) Read(ctx context.Context, req resource.ReadReq
 	// Keep the original state Id instead of object["Id"] from the Describe response; see the
 	// comment in Create for why object["Id"] cannot be trusted to round-trip the identifier.
 	model.Id = state.Id
+	model.Timeouts = state.Timeouts
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
@@ -436,6 +452,13 @@ func (r *inboundEndpointResource) Update(ctx context.Context, req resource.Updat
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	operationTimeout, timeoutDiagnostics := plan.Timeouts.Update(ctx, inboundEndpointTimeout)
+	resp.Diagnostics.Append(timeoutDiagnostics...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	opCtx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
 
 	id := plan.Id.ValueString()
 	request, update, diags := inboundEndpointUpdateRequest(ctx, plan, state)
@@ -446,7 +469,7 @@ func (r *inboundEndpointResource) Update(ctx context.Context, req resource.Updat
 
 	pvtzService := Service{r.Meta()}
 	if update {
-		_, err := pvtzService.UpdateInboundEndpoint(ctx, request)
+		_, err := pvtzService.UpdateInboundEndpoint(opCtx, request)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Updating %s: calling UpdateInboundEndpoint", inboundEndpointTypeName),
@@ -454,7 +477,7 @@ func (r *inboundEndpointResource) Update(ctx context.Context, req resource.Updat
 			)
 			return
 		}
-		if _, waitErr := pvtzService.inboundEndpointWaitForState(ctx, id, []string{"SUCCESS"}, inboundEndpointFailStates, inboundEndpointTimeout); waitErr != nil {
+		if _, waitErr := pvtzService.inboundEndpointWaitForState(opCtx, id, []string{"SUCCESS"}, inboundEndpointFailStates, operationTimeout); waitErr != nil {
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Updating %s: waiting for SUCCESS status", inboundEndpointTypeName),
 				errs.WrapErrorf(waitErr, errs.IdMsg, id).Error(),
@@ -463,7 +486,7 @@ func (r *inboundEndpointResource) Update(ctx context.Context, req resource.Updat
 		}
 	}
 
-	object, err := pvtzService.DescribeInboundEndpointContext(ctx, id)
+	object, err := pvtzService.DescribeInboundEndpointContext(opCtx, id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s after update: calling DescribeInboundEndpoint", inboundEndpointTypeName),
@@ -479,6 +502,7 @@ func (r *inboundEndpointResource) Update(ctx context.Context, req resource.Updat
 	// Keep the plan Id instead of object["Id"] from the Describe response; see the comment
 	// in Create for why object["Id"] cannot be trusted to round-trip the identifier.
 	model.Id = types.StringValue(id)
+	model.Timeouts = plan.Timeouts
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
@@ -488,6 +512,13 @@ func (r *inboundEndpointResource) Delete(ctx context.Context, req resource.Delet
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	operationTimeout, timeoutDiagnostics := state.Timeouts.Delete(ctx, inboundEndpointTimeout)
+	resp.Diagnostics.Append(timeoutDiagnostics...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	opCtx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
 
 	id := state.Id.ValueString()
 	pvtzService := Service{r.Meta()}
@@ -496,7 +527,7 @@ func (r *inboundEndpointResource) Delete(ctx context.Context, req resource.Delet
 		"Lang":        "en",
 		"ClientToken": helper.BuildClientToken("DeleteInboundEndpoint"),
 	}
-	_, err := pvtzService.DeleteInboundEndpoint(ctx, request)
+	_, err := pvtzService.DeleteInboundEndpoint(opCtx, request)
 	if err != nil {
 		// A typed 404 or either NotExists spelling means the endpoint is already gone.
 		if IsInboundEndpointNotFound(err) {
@@ -511,7 +542,7 @@ func (r *inboundEndpointResource) Delete(ctx context.Context, req resource.Delet
 	// DeleteInboundEndpoint only accepts the request; the endpoint keeps releasing its listeners
 	// and VSwitch bindings afterwards. Wait for the object to be observably gone so Terraform does
 	// not release dependent resources while the endpoint still exists.
-	if waitErr := pvtzService.inboundEndpointWaitForDeleted(ctx, id, inboundEndpointTimeout); waitErr != nil {
+	if waitErr := pvtzService.inboundEndpointWaitForDeleted(opCtx, id, operationTimeout); waitErr != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Deleting %s: waiting for the endpoint to disappear", inboundEndpointTypeName),
 			errs.WrapErrorf(waitErr, errs.IdMsg, id).Error(),

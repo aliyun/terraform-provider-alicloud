@@ -27,9 +27,12 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/privatezone"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpc"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	fwvalidator "github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
@@ -568,9 +571,9 @@ func TestAccAliCloudPvtzInboundEndpoint_basic0(t *testing.T) {
 		CheckDestroy:             testAccCheckPrivateZoneInboundEndpointDestroyWithDependencies(deps),
 		Steps: []resource.TestStep{
 			{
-				// Create with 3 ip_configs (vswitches 0,1,2). ip is Optional+Computed
-				// and service-assigned, omitted as in the outbound endpoint test.
-				Config: testAccPvtzInboundEndpointConfig(name, []int{0, 1, 2}),
+				// The minimum legal create omits both optional IP addresses. Each listener keeps
+				// its configured identity and receives a non-empty address from the service.
+				Config: testAccPvtzInboundEndpointConfig(name, []int{0, 1}),
 				Check: resource.ComposeTestCheckFunc(
 					deps.capture,
 					resource.TestCheckResourceAttr(resourceId, "endpoint_name", name),
@@ -578,7 +581,9 @@ func TestAccAliCloudPvtzInboundEndpoint_basic0(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceId, "vpc_id"),
 					resource.TestCheckResourceAttrSet(resourceId, "security_group_id"),
 					resource.TestCheckResourceAttrSet(resourceId, "vpc_region_id"),
-					resource.TestCheckResourceAttr(resourceId, "ip_configs.#", "3"),
+					resource.TestCheckResourceAttr(resourceId, "ip_configs.#", "2"),
+					testAccCheckPvtzInboundEndpointIpConfig(resourceId, 0),
+					testAccCheckPvtzInboundEndpointIpConfig(resourceId, 1),
 					resource.TestCheckResourceAttrSet(resourceId, "status"),
 					resource.TestCheckResourceAttrSet(resourceId, "endpoint_type"),
 				),
@@ -590,10 +595,12 @@ func TestAccAliCloudPvtzInboundEndpoint_basic0(t *testing.T) {
 			},
 			{
 				// Update endpoint_name only; ip_configs unchanged.
-				Config: testAccPvtzInboundEndpointConfig(name+"1", []int{0, 1, 2}),
+				Config: testAccPvtzInboundEndpointConfig(name+"1", []int{0, 1}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "endpoint_name", name+"1"),
-					resource.TestCheckResourceAttr(resourceId, "ip_configs.#", "3"),
+					resource.TestCheckResourceAttr(resourceId, "ip_configs.#", "2"),
+					testAccCheckPvtzInboundEndpointIpConfig(resourceId, 0),
+					testAccCheckPvtzInboundEndpointIpConfig(resourceId, 1),
 				),
 			},
 			{
@@ -602,10 +609,13 @@ func TestAccAliCloudPvtzInboundEndpoint_basic0(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				// Update ip_configs: 3 -> 2 (vswitches 2,3).
+				// Replace both listeners. Count alone would also pass if the old members remained,
+				// so match every nested identity field against the two new VSwitch resources.
 				Config: testAccPvtzInboundEndpointConfig(name+"1", []int{2, 3}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "ip_configs.#", "2"),
+					testAccCheckPvtzInboundEndpointIpConfig(resourceId, 2),
+					testAccCheckPvtzInboundEndpointIpConfig(resourceId, 3),
 				),
 			},
 			{
@@ -638,6 +648,12 @@ func TestAccAliCloudPvtzInboundEndpoint_basic0(t *testing.T) {
 				ExpectError: regexp.MustCompile(`(?i)ip_configs`),
 			},
 			{
+				// An explicitly empty address is not an omitted address. Schema validation
+				// rejects it before any AddInboundEndpoint or UpdateInboundEndpoint call.
+				Config:      testAccPvtzInboundEndpointConfigWithIPs(name, []int{0, 1}, map[int]string{0: ""}),
+				ExpectError: regexp.MustCompile(`(?i)string length must be at least 1`),
+			},
+			{
 				// The ExpectError steps above leave an invalid config as the last
 				// written one. Restore a valid Config (matching the previous state)
 				// so the post-test destroy runs against a valid plan. This apply
@@ -649,7 +665,7 @@ func TestAccAliCloudPvtzInboundEndpoint_basic0(t *testing.T) {
 			},
 			{
 				// Every successful step in this new test file re-imports the resource, including
-				// the recovery step that follows the two ExpectError steps.
+				// the recovery step that follows the ExpectError steps.
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -779,8 +795,62 @@ func TestAccAliCloudPvtzInboundEndpoint_complete(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
+			{
+				// Operation timeouts are configurable state, not API fields. Changing only this
+				// block exercises Update's configured budget and must leave the endpoint unchanged.
+				Config: testAccPvtzInboundEndpointConfigWithIPsAndTimeouts(name+"1", []int{0, 1}, map[int]string{}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "timeouts.create", "15m"),
+					resource.TestCheckResourceAttr(resourceId, "timeouts.update", "10m"),
+					resource.TestCheckResourceAttr(resourceId, "timeouts.delete", "15m"),
+					resource.TestCheckResourceAttr(resourceId, "ip_configs.#", "2"),
+				),
+			},
+			{
+				// The API cannot return local operation timeouts; every cloud-backed attribute
+				// still participates in ImportStateVerify.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"timeouts"},
+			},
 		},
 	})
+}
+
+func testAccCheckPvtzInboundEndpointIpConfig(resourceId string, vswitchIndex int) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok || rs.Primary == nil {
+			return fmt.Errorf("%s is absent from state", resourceId)
+		}
+		vswitchId := fmt.Sprintf("alicloud_vswitch.default[%d]", vswitchIndex)
+		vs, ok := s.RootModule().Resources[vswitchId]
+		if !ok || vs.Primary == nil {
+			return fmt.Errorf("%s is absent from state", vswitchId)
+		}
+		expected := map[string]string{
+			"az_id":      vs.Primary.Attributes["zone_id"],
+			"cidr_block": vs.Primary.Attributes["cidr_block"],
+			"vswitch_id": vs.Primary.ID,
+		}
+		for key, value := range rs.Primary.Attributes {
+			if !strings.HasPrefix(key, "ip_configs.") || !strings.HasSuffix(key, ".vswitch_id") || value != vs.Primary.ID {
+				continue
+			}
+			prefix := strings.TrimSuffix(key, "vswitch_id")
+			for attribute, want := range expected {
+				if got := rs.Primary.Attributes[prefix+attribute]; got != want || got == "" {
+					return fmt.Errorf("%s%s = %q, want %q", resourceId, prefix+attribute, got, want)
+				}
+			}
+			if ip := rs.Primary.Attributes[prefix+"ip"]; ip == "" {
+				return fmt.Errorf("%s%sip is empty; the service must assign an omitted address", resourceId, prefix)
+			}
+			return nil
+		}
+		return fmt.Errorf("%s has no ip_configs member for %s (%s)", resourceId, vswitchId, vs.Primary.ID)
+	}
 }
 
 // inboundEndpointTestDependencies holds the VPC, VSwitch and security group IDs created by the
@@ -909,9 +979,8 @@ func testAccPvtzInboundEndpointIpConfigsHCLWithIPs(indices []int, ips map[int]st
 			fmt.Sprintf("    cidr_block = alicloud_vswitch.default[%d].cidr_block", idx),
 			fmt.Sprintf("    vswitch_id = alicloud_vswitch.default[%d].id", idx),
 		}
-		// An empty value means the attribute is omitted from the configuration, not set to "":
-		// a known empty string would defeat UseStateForUnknown and create a real diff.
-		if ip := ips[idx]; ip != "" {
+		// Map presence distinguishes an omitted address from an explicitly empty string.
+		if ip, ok := ips[idx]; ok {
 			lines = append(lines, fmt.Sprintf("    ip         = %q", ip))
 		}
 		lines = append(lines, "  }")
@@ -932,6 +1001,19 @@ func testAccPvtzInboundEndpointConfigWithIPs(name string, ipConfigsIndices []int
 	return testAccPvtzInboundEndpointConfigWithHCL(name, testAccPvtzInboundEndpointIpConfigsHCLWithIPs(ipConfigsIndices, ips))
 }
 
+func testAccPvtzInboundEndpointConfigWithIPsAndTimeouts(name string, ipConfigsIndices []int, ips map[int]string) string {
+	return testAccPvtzInboundEndpointConfigWithHCLAndSecurityGroupAndTimeouts(
+		name,
+		testAccPvtzInboundEndpointIpConfigsHCLWithIPs(ipConfigsIndices, ips),
+		"alicloud_security_group.default.id",
+		`timeouts {
+    create = "15m"
+    update = "10m"
+    delete = "15m"
+  }`,
+	)
+}
+
 func testAccPvtzInboundEndpointConfigWithIPsAndSecurityGroup(name string, ipConfigsIndices []int, ips map[int]string, securityGroupRef string) string {
 	return testAccPvtzInboundEndpointConfigWithHCLAndSecurityGroup(name, testAccPvtzInboundEndpointIpConfigsHCLWithIPs(ipConfigsIndices, ips), securityGroupRef)
 }
@@ -941,6 +1023,10 @@ func testAccPvtzInboundEndpointConfigWithHCL(name string, ipConfigsHCL string) s
 }
 
 func testAccPvtzInboundEndpointConfigWithHCLAndSecurityGroup(name string, ipConfigsHCL string, securityGroupRef string) string {
+	return testAccPvtzInboundEndpointConfigWithHCLAndSecurityGroupAndTimeouts(name, ipConfigsHCL, securityGroupRef, "")
+}
+
+func testAccPvtzInboundEndpointConfigWithHCLAndSecurityGroupAndTimeouts(name string, ipConfigsHCL string, securityGroupRef string, timeoutsHCL string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
@@ -979,8 +1065,9 @@ resource "alicloud_pvtz_inbound_endpoint" "default" {
   vpc_region_id     = "%s"
   spec_version      = "standard"
   %s
+  %s
 }
-`, name, name, securityGroupRef, acctest.DefaultRegionToTest, ipConfigsHCL)
+`, name, name, securityGroupRef, acctest.DefaultRegionToTest, ipConfigsHCL, timeoutsHCL)
 }
 
 // The unit coverage below drives the exported resource factory and the exported
@@ -990,12 +1077,17 @@ resource "alicloud_pvtz_inbound_endpoint" "default" {
 
 func inboundEndpointUnitClient(t *testing.T, handler func(http.ResponseWriter, url.Values)) *connectivity.AliyunClient {
 	t.Helper()
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return inboundEndpointUnitRequestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			t.Errorf("parsing request form: %s", err)
 		}
 		handler(w, r.Form)
-	}))
+	})
+}
+
+func inboundEndpointUnitRequestClient(t *testing.T, handler http.HandlerFunc) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 
 	credential, err := credentials.NewCredential(new(credentials.Config).
@@ -1065,6 +1157,158 @@ func inboundEndpointUnitString(value string) tftypes.Value {
 
 func inboundEndpointUnitUnknownString() tftypes.Value {
 	return tftypes.NewValue(tftypes.String, tftypes.UnknownValue)
+}
+
+func inboundEndpointUnitTimeouts(t *testing.T, objType tftypes.Object, values map[string]string) tftypes.Value {
+	t.Helper()
+	timeoutsType, ok := objType.AttributeTypes["timeouts"].(tftypes.Object)
+	if !ok {
+		t.Fatalf("timeouts type is %T, want tftypes.Object", objType.AttributeTypes["timeouts"])
+	}
+	attrs := make(map[string]tftypes.Value, len(timeoutsType.AttributeTypes))
+	for name, attrType := range timeoutsType.AttributeTypes {
+		attrs[name] = tftypes.NewValue(attrType, nil)
+	}
+	for name, value := range values {
+		attrs[name] = inboundEndpointUnitString(value)
+	}
+	return tftypes.NewValue(timeoutsType, attrs)
+}
+
+func TestUnitInboundEndpointIpRejectsOnlyExplicitEmptyString(t *testing.T) {
+	r := inboundEndpointUnitResource(t, &connectivity.AliyunClient{})
+	resourceSchema, _ := inboundEndpointUnitSchema(t, r)
+	block, ok := resourceSchema.Blocks["ip_configs"].(fwschema.SetNestedBlock)
+	if !ok {
+		t.Fatalf("ip_configs has type %T", resourceSchema.Blocks["ip_configs"])
+	}
+	attribute, ok := block.NestedObject.Attributes["ip"].(fwschema.StringAttribute)
+	if !ok {
+		t.Fatalf("ip has type %T", block.NestedObject.Attributes["ip"])
+	}
+	for _, tc := range []struct {
+		name      string
+		value     types.String
+		wantError bool
+	}{
+		{name: "omitted", value: types.StringNull()},
+		{name: "unknown", value: types.StringUnknown()},
+		{name: "configured", value: types.StringValue("172.16.0.10")},
+		{name: "empty", value: types.StringValue(""), wantError: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			hasError := false
+			for _, attributeValidator := range attribute.Validators {
+				validatorResp := fwvalidator.StringResponse{}
+				attributeValidator.ValidateString(context.Background(), fwvalidator.StringRequest{
+					Path:        path.Root("ip_configs").AtName("ip"),
+					ConfigValue: tc.value,
+				}, &validatorResp)
+				hasError = hasError || validatorResp.Diagnostics.HasError()
+			}
+			if hasError != tc.wantError {
+				t.Fatalf("validation error = %v, want %v", hasError, tc.wantError)
+			}
+		})
+	}
+}
+
+func TestUnitInboundEndpointTimeoutsSchema(t *testing.T) {
+	r := inboundEndpointUnitResource(t, &connectivity.AliyunClient{})
+	resourceSchema, _ := inboundEndpointUnitSchema(t, r)
+	block, ok := resourceSchema.Blocks["timeouts"].(fwschema.SingleNestedBlock)
+	if !ok {
+		t.Fatalf("timeouts block has type %T", resourceSchema.Blocks["timeouts"])
+	}
+	if _, ok := block.CustomType.(timeouts.Type); !ok {
+		t.Fatalf("timeouts CustomType = %T, want timeouts.Type", block.CustomType)
+	}
+	if len(block.Attributes) != 3 {
+		t.Fatalf("timeouts has %d attributes, want 3", len(block.Attributes))
+	}
+	for _, operation := range []string{"create", "update", "delete"} {
+		attribute, ok := block.Attributes[operation].(fwschema.StringAttribute)
+		if !ok {
+			t.Fatalf("timeouts.%s has type %T", operation, block.Attributes[operation])
+		}
+		for _, tc := range []struct {
+			value     string
+			wantError bool
+		}{
+			{value: "10m"},
+			{value: "soon", wantError: true},
+			{value: "0s"},
+			{value: "-1m"},
+		} {
+			t.Run(operation+"/"+tc.value, func(t *testing.T) {
+				hasError := false
+				for _, attributeValidator := range attribute.Validators {
+					validatorResp := fwvalidator.StringResponse{}
+					attributeValidator.ValidateString(context.Background(), fwvalidator.StringRequest{
+						Path:        path.Root("timeouts").AtName(operation),
+						ConfigValue: types.StringValue(tc.value),
+					}, &validatorResp)
+					hasError = hasError || validatorResp.Diagnostics.HasError()
+				}
+				if hasError != tc.wantError {
+					t.Fatalf("validation error = %v, want %v", hasError, tc.wantError)
+				}
+			})
+		}
+	}
+}
+
+func TestUnitInboundEndpointTimeoutsStateCompatibility(t *testing.T) {
+	ctx := context.Background()
+	r := inboundEndpointUnitResource(t, &connectivity.AliyunClient{})
+	resourceSchema, objType := inboundEndpointUnitSchema(t, r)
+	decode := func(t *testing.T, rawTimeouts tftypes.Value) timeouts.Value {
+		t.Helper()
+		overrides := inboundEndpointUnitOverrides("tf-testAcc-unit", tftypes.NewValue(objType.AttributeTypes["ip_configs"], nil))
+		overrides["id"] = inboundEndpointUnitString("ep-1")
+		overrides["timeouts"] = rawTimeouts
+		state := tfsdk.State{Schema: resourceSchema, Raw: inboundEndpointUnitValue(objType, overrides)}
+		var value timeouts.Value
+		if diagnostics := state.GetAttribute(ctx, path.Root("timeouts"), &value); diagnostics.HasError() {
+			t.Fatalf("decoding timeouts: %v", diagnostics)
+		}
+		return value
+	}
+
+	t.Run("null uses ten minute defaults", func(t *testing.T) {
+		value := decode(t, tftypes.NewValue(objType.AttributeTypes["timeouts"], nil))
+		if !value.IsNull() {
+			t.Fatal("null timeouts did not remain null")
+		}
+		for operation, accessor := range map[string]func(context.Context, time.Duration) (time.Duration, diag.Diagnostics){
+			"create": value.Create,
+			"update": value.Update,
+			"delete": value.Delete,
+		} {
+			got, diagnostics := accessor(ctx, 10*time.Minute)
+			if diagnostics.HasError() || got != 10*time.Minute {
+				t.Fatalf("%s timeout = %s, diagnostics = %v", operation, got, diagnostics)
+			}
+		}
+	})
+	t.Run("configured values survive decoding", func(t *testing.T) {
+		value := decode(t, inboundEndpointUnitTimeouts(t, objType, map[string]string{
+			"create": "11m", "update": "12m", "delete": "13m",
+		}))
+		for operation, tc := range map[string]struct {
+			accessor func(context.Context, time.Duration) (time.Duration, diag.Diagnostics)
+			want     time.Duration
+		}{
+			"create": {value.Create, 11 * time.Minute},
+			"update": {value.Update, 12 * time.Minute},
+			"delete": {value.Delete, 13 * time.Minute},
+		} {
+			got, diagnostics := tc.accessor(ctx, 10*time.Minute)
+			if diagnostics.HasError() || got != tc.want {
+				t.Fatalf("%s timeout = %s, want %s, diagnostics = %v", operation, got, tc.want, diagnostics)
+			}
+		}
+	})
 }
 
 func inboundEndpointUnitIpConfigs(t *testing.T, objType tftypes.Object, items []map[string]tftypes.Value) tftypes.Value {
@@ -1168,7 +1412,7 @@ func inboundEndpointUnitStateValue(t *testing.T, resourceSchema fwschema.Schema,
 }
 
 // TestUnitInboundEndpointCreateSendsOnlyConfiguredIps proves on the wire that a configured
-// ip reaches AddInboundEndpoint while a null or empty ip is omitted and the service assigns it.
+// ip reaches AddInboundEndpoint while an omitted ip stays absent for service assignment.
 func TestUnitInboundEndpointCreateSendsOnlyConfiguredIps(t *testing.T) {
 	ctx := context.Background()
 	var mu sync.Mutex
@@ -1202,12 +1446,6 @@ func TestUnitInboundEndpointCreateSendsOnlyConfiguredIps(t *testing.T) {
 			"az_id":      inboundEndpointUnitString("cn-hangzhou-b"),
 			"cidr_block": inboundEndpointUnitString("172.16.16.0/20"),
 			"vswitch_id": inboundEndpointUnitString("vsw-auto"),
-		},
-		{
-			"az_id":      inboundEndpointUnitString("cn-hangzhou-c"),
-			"cidr_block": inboundEndpointUnitString("172.16.32.0/20"),
-			"vswitch_id": inboundEndpointUnitString("vsw-empty"),
-			"ip":         inboundEndpointUnitString(""),
 		},
 	})
 	overrides := inboundEndpointUnitOverrides("tf-testAcc-unit", ipConfigs)
@@ -1251,10 +1489,8 @@ func TestUnitInboundEndpointCreateSendsOnlyConfiguredIps(t *testing.T) {
 	if got := byAz["cn-hangzhou-a"]["CidrBlock"]; got != "172.16.0.0/20" {
 		t.Fatalf("cidr block must be sent, got %q", got)
 	}
-	for _, azId := range []string{"cn-hangzhou-b", "cn-hangzhou-c"} {
-		if _, ok := byAz[azId]["Ip"]; ok {
-			t.Fatalf("%s must omit a null or empty ip", azId)
-		}
+	if _, ok := byAz["cn-hangzhou-b"]["Ip"]; ok {
+		t.Fatal("an omitted ip must stay absent from the create request")
 	}
 	if got := byAz["cn-hangzhou-b"]["VSwitchId"]; got != "vsw-auto" {
 		t.Fatalf("vswitch id must still be sent for an auto-assigned ip, got %q", got)
@@ -1490,6 +1726,93 @@ func TestUnitInboundEndpointDeleteWaiterDistinguishesGoneFromAccepted(t *testing
 	}
 }
 
+func TestUnitInboundEndpointRequestsHonorContextCancellation(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		action string
+		call   func(context.Context, *privatezone.Service) error
+	}{
+		{
+			name: "describe", action: "DescribeInboundEndpoint",
+			call: func(ctx context.Context, service *privatezone.Service) error {
+				_, err := service.DescribeInboundEndpointContext(ctx, "ep-1")
+				return err
+			},
+		},
+		{
+			name: "create", action: "AddInboundEndpoint",
+			call: func(ctx context.Context, service *privatezone.Service) error {
+				_, err := service.CreateInboundEndpoint(ctx, map[string]interface{}{"Name": "tf-testAcc-unit"})
+				return err
+			},
+		},
+		{
+			name: "update", action: "UpdateInboundEndpoint",
+			call: func(ctx context.Context, service *privatezone.Service) error {
+				_, err := service.UpdateInboundEndpoint(ctx, map[string]interface{}{"EndpointId": "ep-1"})
+				return err
+			},
+		},
+		{
+			name: "delete", action: "DeleteInboundEndpoint",
+			call: func(ctx context.Context, service *privatezone.Service) error {
+				_, err := service.DeleteInboundEndpoint(ctx, map[string]interface{}{"EndpointId": "ep-1"})
+				return err
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			requestStarted := make(chan struct{})
+			requestCanceled := make(chan error, 1)
+			var started sync.Once
+			client := inboundEndpointUnitRequestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if err := r.ParseForm(); err != nil {
+					t.Errorf("parsing request form: %s", err)
+				}
+				if got := r.Form.Get("Action"); got != tc.action {
+					t.Errorf("Action = %q, want %q", got, tc.action)
+				}
+				started.Do(func() { close(requestStarted) })
+				select {
+				case <-r.Context().Done():
+					requestCanceled <- r.Context().Err()
+				case <-time.After(5 * time.Second):
+					t.Error("the HTTP request did not observe context cancellation")
+					inboundEndpointUnitRespond(t, w, http.StatusOK, map[string]interface{}{"RequestId": "req-timeout"})
+				}
+			})
+			service := privatezone.NewService(client)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			callResult := make(chan error, 1)
+			go func() { callResult <- tc.call(ctx, service) }()
+
+			select {
+			case <-requestStarted:
+			case <-time.After(5 * time.Second):
+				t.Fatal("the API request did not reach the HTTP handler")
+			}
+			cancel()
+			select {
+			case err := <-requestCanceled:
+				if !errors.Is(err, context.Canceled) {
+					t.Fatalf("request context error = %v, want context.Canceled", err)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("the server did not observe request cancellation")
+			}
+			select {
+			case err := <-callResult:
+				if err == nil {
+					t.Fatal("a cancelled API call must return an error")
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("the API call did not return after request cancellation")
+			}
+		})
+	}
+}
+
 // TestUnitInboundEndpointDescribeClassifiesNotFoundOnlyForExactCodes proves the Read path does not
 // turn an endpoint-scoped failure into a missing resource: only a typed 404 or the two not-exists
 // spellings are NotFound, while the short code the service also returns is not.
@@ -1581,6 +1904,54 @@ func TestUnitInboundEndpointDeleteWaiterFailsOnNonNotFoundReadError(t *testing.T
 	}
 	if !strings.Contains(text.String(), "endpoint busy") {
 		t.Fatalf("expected the original API error to surface, got %s", text.String())
+	}
+}
+
+func TestUnitInboundEndpointReadPreservesTimeouts(t *testing.T) {
+	ctx := context.Background()
+	client := inboundEndpointUnitClient(t, func(w http.ResponseWriter, form url.Values) {
+		inboundEndpointUnitRespond(t, w, http.StatusOK, inboundEndpointUnitDescribeBody("ep-1", "tf-testAcc-unit", "SUCCESS"))
+	})
+	r := inboundEndpointUnitResource(t, client)
+	resourceSchema, objType := inboundEndpointUnitSchema(t, r)
+	ipConfigs := inboundEndpointUnitIpConfigs(t, objType, []map[string]tftypes.Value{
+		{
+			"az_id": inboundEndpointUnitString("cn-hangzhou-a"), "cidr_block": inboundEndpointUnitString("172.16.0.0/20"),
+			"vswitch_id": inboundEndpointUnitString("vsw-1"), "ip": inboundEndpointUnitString("172.16.0.10"),
+		},
+		{
+			"az_id": inboundEndpointUnitString("cn-hangzhou-b"), "cidr_block": inboundEndpointUnitString("172.16.16.0/20"),
+			"vswitch_id": inboundEndpointUnitString("vsw-2"), "ip": inboundEndpointUnitString("172.16.0.11"),
+		},
+	})
+	overrides := inboundEndpointUnitOverrides("tf-testAcc-unit", ipConfigs)
+	overrides["id"] = inboundEndpointUnitString("ep-1")
+	overrides["timeouts"] = inboundEndpointUnitTimeouts(t, objType, map[string]string{
+		"create": "11m", "update": "12m", "delete": "13m",
+	})
+	stateValue := inboundEndpointUnitValue(objType, overrides)
+	req := fwresource.ReadRequest{State: tfsdk.State{Schema: resourceSchema, Raw: stateValue}}
+	resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: resourceSchema, Raw: stateValue}}
+	r.Read(ctx, req, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Read returned diagnostics: %v", resp.Diagnostics)
+	}
+	var value timeouts.Value
+	if diagnostics := resp.State.GetAttribute(ctx, path.Root("timeouts"), &value); diagnostics.HasError() {
+		t.Fatalf("decoding refreshed timeouts: %v", diagnostics)
+	}
+	for operation, tc := range map[string]struct {
+		accessor func(context.Context, time.Duration) (time.Duration, diag.Diagnostics)
+		want     time.Duration
+	}{
+		"create": {value.Create, 11 * time.Minute},
+		"update": {value.Update, 12 * time.Minute},
+		"delete": {value.Delete, 13 * time.Minute},
+	} {
+		got, diagnostics := tc.accessor(ctx, 10*time.Minute)
+		if diagnostics.HasError() || got != tc.want {
+			t.Fatalf("%s timeout = %s, want %s, diagnostics = %v", operation, got, tc.want, diagnostics)
+		}
 	}
 }
 
