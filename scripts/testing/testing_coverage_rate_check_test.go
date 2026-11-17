@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	mapset "github.com/deckarep/golang-set"
+	"github.com/waigani/diffparser"
 )
 
 // apiNonRoundTripAttributes is the narrow exemption added to recognize
@@ -338,4 +339,258 @@ func TestUnitScannerIllegalConfigStillBlocked(t *testing.T) {
 	if ok {
 		t.Fatalf("scanner must still block genuinely illegal (unbalanced bracket) configs after the PlanOnly fix; got parse success")
 	}
+}
+
+func TestUnitHasCoverageRelevantTestChanges(t *testing.T) {
+	const path = "alicloud/service/example/resource_example_test.go"
+	testCases := []struct {
+		name  string
+		hunks string
+		want  bool
+	}{
+		{
+			name: "imports and non-ACC unit test provider adaptation",
+			hunks: `@@ -11,7 +11,7 @@ import (
+ "github.com/alibabacloud-go/tea/tea"
+-	alicloud "github.com/aliyun/terraform-provider-alicloud/alicloud"
+ tfacctest "github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
++	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
+ )
+@@ -26,7 +26,7 @@ func exampleConfig() string {
+ func TestUnitExample(t *testing.T) {
+-	p := alicloud.Provider().ResourcesMap
++	p := sdkv2.Provider().ResourcesMap
+ dInit, _ := schema.InternalMap(p["alicloud_example"].Schema).Data(nil, nil)
+ }
+`,
+			want: false,
+		},
+		{
+			name: "imports and ACC provider factory adaptation",
+			hunks: `@@ -5,6 +5,6 @@ import (
+-	alicloud "github.com/aliyun/terraform-provider-alicloud/alicloud"
++	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
+ )
+@@ -18,7 +18,7 @@ func TestAccAliCloudExample(t *testing.T) {
+ resource.Test(t, resource.TestCase{
+-		ProviderFactories: alicloud.ProviderFactories,
++		ProviderFactories: sdkv2.ProviderFactories,
+ Steps: []resource.TestStep{},
+ })
+`,
+			want: false,
+		},
+		{
+			name: "current acctest SDK provider factory adaptation",
+			hunks: `@@ -18,7 +18,7 @@ func TestAccAliCloudExample(t *testing.T) {
+ resource.Test(t, resource.TestCase{
+-		ProviderFactories: alicloud.ProviderFactories,
++		ProviderFactories: acctest.SDKProviderFactories,
+ Steps: []resource.TestStep{},
+ })
+`,
+			want: false,
+		},
+		{
+			name: "current acctest protocol factory adaptation",
+			hunks: `@@ -18,7 +18,7 @@ func TestAccAliCloudExample(t *testing.T) {
+ resource.Test(t, resource.TestCase{
+-		ProviderFactories: alicloud.ProviderFactories,
++		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+ Steps: []resource.TestStep{},
+ })
+`,
+			want: false,
+		},
+		{
+			name: "current acctest SDK providers adaptation",
+			hunks: `@@ -18,7 +18,7 @@ func TestAccAliCloudExample(t *testing.T) {
+ resource.Test(t, resource.TestCase{
+-		Providers: alicloud.Providers,
++		Providers: acctest.SDKProviders,
+ Steps: []resource.TestStep{},
+ })
+`,
+			want: false,
+		},
+		{
+			name: "current acctest provider variable adaptation",
+			hunks: `@@ -40,7 +40,7 @@ func exampleProviderResources() {
+ func exampleProviderResources() {
+-	p := alicloud.Provider().ResourcesMap
++	p := acctest.Provider.ResourcesMap
+ }
+`,
+			want: false,
+		},
+		{
+			name: "unknown provider qualifier is not mechanical adaptation",
+			hunks: `@@ -18,7 +18,7 @@ func TestAccAliCloudExample(t *testing.T) {
+ resource.Test(t, resource.TestCase{
+-		ProviderFactories: alicloud.ProviderFactories,
++		ProviderFactories: other.ProviderFactories,
+ Steps: []resource.TestStep{},
+ })
+`,
+			want: true,
+		},
+		{
+			name: "ACC declaration context does not trigger mechanical adaptation",
+			hunks: `@@ -18,7 +18,7 @@
+ func TestAccAliCloudExample(t *testing.T) {
+ resource.Test(t, resource.TestCase{
+-		ProviderFactories: alicloud.ProviderFactories,
++		ProviderFactories: sdkv2.ProviderFactories,
+ Steps: []resource.TestStep{},
+ })
+`,
+			want: false,
+		},
+		{
+			name: "ordinary Go unit test provider adaptation",
+			hunks: `@@ -40,7 +40,7 @@
+ func TestExample(t *testing.T) {
+-	p := alicloud.Provider().ResourcesMap
++	p := sdkv2.Provider().ResourcesMap
+ }
+`,
+			want: false,
+		},
+		{
+			name: "blank lines only",
+			hunks: `@@ -40,2 +40,2 @@ func exampleConfig() string {
+-
++
+ `,
+			want: false,
+		},
+		{
+			name: "provider adaptation mixed with ACC config change",
+			hunks: `@@ -18,9 +18,10 @@ func TestAccAliCloudExample(t *testing.T) {
+ resource.Test(t, resource.TestCase{
+-		ProviderFactories: alicloud.ProviderFactories,
++		ProviderFactories: sdkv2.ProviderFactories,
+ Steps: []resource.TestStep{
+ {
+-				Config: testAccConfig(map[string]interface{}{}),
++				Config: testAccConfig(map[string]interface{}{
++					"sts_role_arn": "acs:ram::123456789012:role/example",
++				}),
+ },
+ },
+ })
+`,
+			want: true,
+		},
+		{
+			name: "stale unit test hunk header does not hide ACC config",
+			hunks: `@@ -40,7 +40,7 @@ func TestUnitExample(t *testing.T) {
+ }
+
+ var testAccExampleConfig = map[string]interface{}{
+-	"name": "old",
++	"name": "new",
+ }
+`,
+			want: true,
+		},
+		{
+			name: "unit test declaration does not hide later ACC config",
+			hunks: `@@ -40,12 +40,12 @@ func TestUnitExample(t *testing.T) {
+ func TestUnitExample(t *testing.T) {
+-	p := alicloud.Provider().ResourcesMap
++	p := sdkv2.Provider().ResourcesMap
+ }
+
+ var testAccExampleConfig = map[string]interface{}{
+-	"name": "old",
++	"name": "new",
+ }
+`,
+			want: true,
+		},
+		{
+			name: "non-mechanical provider factory change",
+			hunks: `@@ -18,7 +18,7 @@ func TestAccAliCloudExample(t *testing.T) {
+ resource.Test(t, resource.TestCase{
+-		ProviderFactories: alicloud.ProviderFactories,
++		ProviderFactories: testAccCustomProviderFactories,
+ Steps: []resource.TestStep{},
+ })
+`,
+			want: true,
+		},
+		{
+			name: "Go build directive change",
+			hunks: `@@ -1,5 +1,5 @@
+-//go:build unit
++//go:build !unit
+
+ package example
+`,
+			want: true,
+		},
+		{
+			name: "TestMain provider setup change",
+			hunks: `@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
+ func TestMain(m *testing.M) {
+-	setupTestProvider(alicloud.Provider())
++	setupTestProvider(sdkv2.Provider())
+ }
+`,
+			want: true,
+		},
+		{
+			name: "provider name in comments",
+			hunks: `@@ -118,7 +118,7 @@ func testSweepExample(region string) error {
+ // factories for the cross-region tests. Each factory wraps a
+-// fresh alicloud.Provider() (independent SDK Meta) with
++// fresh sdkv2.Provider() (independent SDK Meta) with
+ // provider.ProtoV5ProviderServerFactory.
+ func testAccExampleProviderFactories() {
+`,
+			want: false,
+		},
+		{
+			name: "shared ACC config helper change",
+			hunks: `@@ -40,7 +40,7 @@ func testAccExampleConfig(name string) string {
+ return fmt.Sprintf(` + "`" + `
+ resource "alicloud_example" "default" {
+-	name = "old"
++	name = "new"
+ }
+ ` + "`" + `, name)
+`,
+			want: true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			file := parseCoverageTestDiff(t, path, testCase.hunks)
+			if got := hasCoverageRelevantTestChanges(file); got != testCase.want {
+				t.Fatalf("hasCoverageRelevantTestChanges() = %v, want %v", got, testCase.want)
+			}
+		})
+	}
+}
+
+func TestUnitHasCoverageRelevantTestChangesWithoutHunks(t *testing.T) {
+	file := &diffparser.DiffFile{Mode: diffparser.MODIFIED}
+	if !hasCoverageRelevantTestChanges(file) {
+		t.Fatal("modified test file without hunks must fail towards coverage checking")
+	}
+}
+
+func parseCoverageTestDiff(t *testing.T, path, hunks string) *diffparser.DiffFile {
+	t.Helper()
+	raw := "diff --git a/" + path + " b/" + path + "\n--- a/" + path + "\n+++ b/" + path + "\n" + hunks
+	diff, err := diffparser.Parse(raw)
+	if err != nil {
+		t.Fatalf("parse diff: %v", err)
+	}
+	if len(diff.Files) != 1 {
+		t.Fatalf("parsed %d files, want 1", len(diff.Files))
+	}
+	return diff.Files[0]
 }
