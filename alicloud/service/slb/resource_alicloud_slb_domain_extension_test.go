@@ -12,9 +12,10 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/slb"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	sdkterraform "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccAliCloudSLBDomainExtensionBasic(t *testing.T) {
@@ -241,7 +242,7 @@ func TestUnitAlicloudSLBDomainExtensionPortExactlyOneOf(t *testing.T) {
 
 	errorDetails := func(config map[string]interface{}) []string {
 		var details []string
-		for _, diagnostic := range slb.ResourceDomainExtension().Validate(terraform.NewResourceConfigRaw(config)) {
+		for _, diagnostic := range slb.ResourceDomainExtension().Validate(sdkterraform.NewResourceConfigRaw(config)) {
 			if diagnostic.Severity == diag.Error {
 				details = append(details, diagnostic.Detail)
 			}
