@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	mapset "github.com/deckarep/golang-set"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	log "github.com/sirupsen/logrus"
@@ -83,9 +83,9 @@ func GetSchemaAttributes(resName string, isResource bool) (mapset.Set, mapset.Se
 	var ok bool
 
 	if isResource {
-		resource, ok = alicloud.Provider().ResourcesMap["alicloud_"+resName]
+		resource, ok = sdkv2.Provider().ResourcesMap["alicloud_"+resName]
 	} else {
-		resource, ok = alicloud.Provider().DataSourcesMap["alicloud_"+resName]
+		resource, ok = sdkv2.Provider().DataSourcesMap["alicloud_"+resName]
 	}
 
 	if !ok || resource == nil {

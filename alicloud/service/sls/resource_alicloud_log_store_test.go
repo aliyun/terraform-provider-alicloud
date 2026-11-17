@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	errs "github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	slssvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/sls"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -1334,7 +1334,7 @@ func TestAccAliCloudSlsLogStore_basic5614_old(t *testing.T) {
 	var providers []*schema.Provider
 	providerFactories := map[string]func() (*schema.Provider, error){
 		"alicloud": func() (*schema.Provider, error) {
-			p := alicloud.Provider()
+			p := sdkv2.Provider()
 			providers = append(providers, p)
 			return p, nil
 		},
@@ -1765,7 +1765,7 @@ func TestAccAliCloudSlsLogStore_basic5614_old_twin(t *testing.T) {
 	var providers []*schema.Provider
 	providerFactories := map[string]func() (*schema.Provider, error){
 		"alicloud": func() (*schema.Provider, error) {
-			p := alicloud.Provider()
+			p := sdkv2.Provider()
 			providers = append(providers, p)
 			return p, nil
 		},

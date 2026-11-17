@@ -16,6 +16,8 @@ you should use resource alicloud_ots_table's new field 'instance_name' and 'tabl
 
 -> **NOTE:** Available since v1.9.2.
 
+-> **NOTE:** A table can have at most one primary key with `auto_increment` enabled, the primary key with `auto_increment` enabled cannot be the first primary key (the partition key) of the table, and `enable_local_txn` cannot be enabled together with a primary key that enables `auto_increment`.
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -25,6 +27,14 @@ you should use resource alicloud_ots_table's new field 'instance_name' and 'tabl
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example"
 }
@@ -79,6 +89,94 @@ resource "alicloud_ots_table" "default" {
 }
 ```
 
+### Auto-Increment Primary Key
+
+The following example creates a table whose second primary key column is an auto-increment column. The first primary key column is the partition key and cannot be auto-incremented.
+
+```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
+variable "name" {
+  default = "tf-example"
+}
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
+resource "alicloud_ots_instance" "default" {
+  name        = "${var.name}-${random_integer.default.result}"
+  description = var.name
+  accessed_by = "Any"
+}
+
+resource "alicloud_ots_table" "default" {
+  instance_name = alicloud_ots_instance.default.name
+  table_name    = "terraform_example_auto_increment"
+  time_to_live  = -1
+  max_version   = 1
+
+  primary_key {
+    name = "pk1"
+    type = "Integer"
+  }
+  primary_key {
+    name           = "pk2"
+    type           = "Integer"
+    auto_increment = true
+  }
+}
+```
+
+### Local Transaction
+
+The following example creates a table with local transactions enabled.
+
+```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
+variable "name" {
+  default = "tf-example"
+}
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
+resource "alicloud_ots_instance" "default" {
+  name        = "${var.name}-${random_integer.default.result}"
+  description = var.name
+  accessed_by = "Any"
+}
+
+resource "alicloud_ots_table" "default" {
+  instance_name    = alicloud_ots_instance.default.name
+  table_name       = "terraform_example_local_txn"
+  time_to_live     = -1
+  max_version      = 1
+  enable_local_txn = true
+
+  primary_key {
+    name = "pk1"
+    type = "Integer"
+  }
+}
+```
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ots_table&spm=docs.r.ots_table.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -88,6 +186,7 @@ The following arguments are supported:
 * `instance_name` - (Required, ForceNew) The name of the OTS instance in which table will located.
 * `table_name` - (Required, ForceNew) The table name of the OTS instance. If changed, a new table would be created.
 * `primary_key` - (Required, ForceNew) The property of `TableMeta` which indicates the structure information of a table. It describes the attribute value of primary key. The number of `primary_key` should not be less than one and not be more than four. See [`primary_key`](#primary_key) below.
+* `enable_local_txn` - (Optional, ForceNew, Bool, Available since v2.3.0) Specifies whether to enable local transactions for the table. Defaults to `false`. This field can only be set when the table is created; it cannot be enabled for an existing table through Terraform, and changing it forces a new resource. The value is not returned by the table describe API, so after `terraform import` it is `false` in state and declaring `true` for an imported table forces a new resource.
 * `defined_column` - (Optional, Available since v1.187.0) The property of `TableMeta` which indicates the structure information of a table. It describes the attribute value of defined column. The number of `defined_column` should not be more than 32. See [`defined_column`](#defined_column) below.
 * `time_to_live` - (Required) The retention time of data stored in this table (unit: second). The value maximum is 2147483647 and -1 means never expired.
 * `max_version` - (Required) The maximum number of versions stored in this table. The valid value is 1-2147483647.
@@ -109,6 +208,7 @@ The defined_column supports the following:
 The primary_key supports the following:
 * `name` - (Required, ForceNew) Name for primary key.
 * `type` - (Required, ForceNew) Type for primary key. Only `Integer`, `String` or `Binary` is allowed.
+* `auto_increment` - (Optional, ForceNew, Bool, Available since v2.3.0) Specifies whether the primary key column is auto-incremented. Defaults to `false`. The primary key column must be of type `Integer`, cannot be the first primary key (the partition key) of the table, and only one primary key column in a table can enable `auto_increment`. Changing this field forces a new resource.
 
 ## Attributes Reference
 

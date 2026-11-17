@@ -1,6 +1,12 @@
 package splitlayout
 
-import "testing"
+import (
+	"errors"
+	"os"
+	"path/filepath"
+	"reflect"
+	"testing"
+)
 
 // A framework-only register.go, shaped like alicloud/service/ims/register.go.
 const frameworkRegisterSrc = `package ims
@@ -193,5 +199,73 @@ func TestIsSplitSourceStems(t *testing.T) {
 			t.Errorf("IsSplitSource(%s) = (%q, %q, %v, %v), want (%q, %q, %v, %v)",
 				c.path, product, stem, isTest, ok, c.product, c.stem, c.isTest, c.ok)
 		}
+	}
+}
+
+func TestProviderSourcePaths(t *testing.T) {
+	want := []string{"alicloud/provider/sdkv2/provider.go", "alicloud/provider.go"}
+	if got := ProviderSourcePaths(); !reflect.DeepEqual(got, want) {
+		t.Fatalf("ProviderSourcePaths() = %v, want %v", got, want)
+	}
+	for _, path := range want {
+		if !IsProviderSource(path) {
+			t.Errorf("IsProviderSource(%s) = false, want true", path)
+		}
+	}
+	if IsProviderSource("alicloud/provider/sdkv2/assemble_provider.go") {
+		t.Error("IsProviderSource accepted a non-provider implementation file")
+	}
+}
+
+func TestReadProviderSourceFrom(t *testing.T) {
+	errMissing := errors.New("missing")
+	t.Run("current path wins", func(t *testing.T) {
+		var reads []string
+		got, err := ReadProviderSourceFrom(func(path string) ([]byte, error) {
+			reads = append(reads, path)
+			return []byte("current"), nil
+		})
+		if err != nil || string(got) != "current" || !reflect.DeepEqual(reads, []string{ProviderSourcePath}) {
+			t.Fatalf("got %q, reads=%v, err=%v", got, reads, err)
+		}
+	})
+	t.Run("historical base falls back", func(t *testing.T) {
+		var reads []string
+		got, err := ReadProviderSourceFrom(func(path string) ([]byte, error) {
+			reads = append(reads, path)
+			if path == ProviderSourcePath {
+				return nil, errMissing
+			}
+			return []byte("legacy"), nil
+		})
+		if err != nil || string(got) != "legacy" || !reflect.DeepEqual(reads, ProviderSourcePaths()) {
+			t.Fatalf("got %q, reads=%v, err=%v", got, reads, err)
+		}
+	})
+	t.Run("missing source returns error", func(t *testing.T) {
+		if _, err := ReadProviderSourceFrom(func(string) ([]byte, error) { return nil, errMissing }); !errors.Is(err, errMissing) {
+			t.Fatalf("ReadProviderSourceFrom error = %v, want %v", err, errMissing)
+		}
+	})
+}
+
+func TestReadProviderSource(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if err := os.MkdirAll(filepath.Dir(ProviderSourcePath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(LegacyProviderSourcePath, []byte("legacy"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := ReadProviderSource()
+	if err != nil || string(got) != "legacy" {
+		t.Fatalf("legacy ReadProviderSource() = %q, %v", got, err)
+	}
+	if err := os.WriteFile(ProviderSourcePath, []byte("current"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	got, err = ReadProviderSource()
+	if err != nil || string(got) != "current" {
+		t.Fatalf("current ReadProviderSource() = %q, %v", got, err)
 	}
 }

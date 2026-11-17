@@ -60,6 +60,7 @@ func resourceAliCloudSlsCollectionPolicy() *schema.Resource {
 			"centralize_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 			"data_code": {
 				Type:     schema.TypeString,
@@ -104,11 +105,13 @@ func resourceAliCloudSlsCollectionPolicy() *schema.Resource {
 						"regions": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"instance_ids": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"resource_mode": {
@@ -132,7 +135,6 @@ func resourceAliCloudSlsCollectionPolicy() *schema.Resource {
 			"resource_directory": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Computed: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -143,6 +145,7 @@ func resourceAliCloudSlsCollectionPolicy() *schema.Resource {
 						"members": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 					},
@@ -372,12 +375,19 @@ func resourceAliCloudSlsCollectionPolicyRead(d *schema.ResourceData, meta interf
 		}
 	}
 	resourceDirectoryMaps := make([]map[string]interface{}, 0)
+	// Always populate resource_directory from the API response so state
+	// reflects the remote policy on every Read: the passthrough importer
+	// sets only the ID, and a failed removal leaves the prior state empty.
+	// Removal detection is not done here; Update detects it via HasChange,
+	// so a config that drops the block while the remote policy still has
+	// resourceDirectory surfaces as a visible diff, matching the API
+	// contract that rejects removing resourceDirectory.
 	resourceDirectoryMap := make(map[string]interface{})
 	resourceDirectory1Raw := make(map[string]interface{})
 	if objectRaw["resourceDirectory"] != nil {
 		resourceDirectory1Raw = objectRaw["resourceDirectory"].(map[string]interface{})
 	}
-	if len(resourceDirectory1Raw) > 0 {
+	if len(resourceDirectory1Raw) > 0 && resourceDirectory1Raw["accountGroupType"] != "" {
 		resourceDirectoryMap["account_group_type"] = resourceDirectory1Raw["accountGroupType"]
 
 		members1Raw := make([]interface{}, 0)
@@ -388,10 +398,8 @@ func resourceAliCloudSlsCollectionPolicyRead(d *schema.ResourceData, meta interf
 		resourceDirectoryMap["members"] = members1Raw
 		resourceDirectoryMaps = append(resourceDirectoryMaps, resourceDirectoryMap)
 	}
-	if objectRaw["resourceDirectory"] != nil && objectRaw["resourceDirectory"].(map[string]interface{})["accountGroupType"] != "" {
-		if err := d.Set("resource_directory", resourceDirectoryMaps); err != nil {
-			return err
-		}
+	if err := d.Set("resource_directory", resourceDirectoryMaps); err != nil {
+		return err
 	}
 
 	d.Set("policy_name", d.Id())
@@ -498,8 +506,16 @@ func resourceAliCloudSlsCollectionPolicyUpdate(d *schema.ResourceData, meta inte
 		if members1 != nil && (d.HasChange("resource_directory.0.members") || members1 != "") {
 			objectDataLocalMap2["members"] = members1
 		}
-
-		request["resourceDirectory"] = objectDataLocalMap2
+		// UpsertCollectionPolicy is a full upsert. When resource_directory is
+		// removed from config, objectDataLocalMap2 is empty. Sending an empty
+		// resourceDirectory: {} is rejected by the API with
+		// InvalidResourceDirectoryConfig ("you should set account group type
+		// first"). Omitting the key avoids that rejection; the API still
+		// rejects removal of an existing resource_directory with NotAllowed,
+		// so the user must delete and recreate the policy to remove it.
+		if len(objectDataLocalMap2) > 0 {
+			request["resourceDirectory"] = objectDataLocalMap2
+		}
 	}
 
 	if d.HasChange("data_config") {

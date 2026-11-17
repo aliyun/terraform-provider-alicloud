@@ -1,9 +1,5 @@
 package sweep_test
 
-// The DTS sweepers have to stay in the root test package: the sweep entry
-// (make sweep) runs go test ./alicloud only, so a sweeper registered from
-// alicloud/service/dts would never be executed.
-
 import (
 	"fmt"
 	"log"

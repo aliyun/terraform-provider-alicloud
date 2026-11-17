@@ -402,10 +402,9 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 				Computed: true,
 			},
 			"http_put_response_hop_limit": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.IntBetween(1, 64),
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"image_options": {
 				Type:     schema.TypeList,
@@ -1314,6 +1313,8 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 		systemDiskMap["DeleteWithInstance"] = diskMap["delete_with_instance"]
 		systemDiskMap["Iops"] = diskMap["iops"]
 		systemDiskMap["PerformanceLevel"] = diskMap["performance_level"]
+		systemDiskMap["Encrypted"] = requests.NewBoolean(diskMap["encrypted"].(bool))
+		systemDiskMap["KMSKeyId"] = diskMap["kms_key_id"]
 		request["SystemDisk"] = systemDiskMap
 	}
 	if d.HasChange("tags") {

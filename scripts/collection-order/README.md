@@ -63,6 +63,11 @@ Bypassing stock attributes) is recognized.
 
 ## Required acceptance steps
 
+A standalone CLI import with `ImportStateVerify: true` preserves the previous
+applied snapshot for reorder coverage when it uses isolated state and has no
+configuration override, callbacks, or other test actions. Persistent imports
+and import-block steps interrupt the comparison.
+
 Use at least two distinct, valid members and two steps over the same resource
 in an actual `TestAcc...(*testing.T)` function in
 `resource_alicloud_<name>_test.go`:
