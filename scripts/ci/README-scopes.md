@@ -106,9 +106,15 @@ explicitly accepted; this adapter does not silently waive them.
 
 ### ACC selection aligned with the agent workflow
 
+New service file organization is checked by the Basic `ProviderLayout` job,
+local quick checks and the ACC planner. See [layout rules and error repair](provider-layout.md)
+for stable diagnostic codes, exact merge destinations and the internal/external
+test-package exception. Historical layouts remain readable; filename prefixes
+do not make helpers into resources in registered service packages.
+
 The scope follows the workflow's
 [shared test standard](https://code.alibaba-inc.com/terraflow/terraform-agent-workflow/blob/9a15deb6f798a2f46cfb8c5ff557e0eff635328e/skills/provider-resource-standards/references/test-standards.md#L185).
-`accscope/main.go` parses committed base/head Go declarations using only the Go
+`accscope/main.go` and `accscope/layout.go` parse committed base/head Go declarations using only the Go
 standard library. It does not load dependencies or compile Provider packages.
 The CI adapter runs it with `GO111MODULE=off` and `GOWORK=off`, independently of
 the candidate Provider's Go module/toolchain requirements.
