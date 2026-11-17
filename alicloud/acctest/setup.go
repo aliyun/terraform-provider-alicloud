@@ -7,8 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aliyun/terraform-provider-alicloud/internal/acctestcredentials"
-
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctestcredentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
