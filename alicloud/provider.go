@@ -18,8 +18,10 @@ import (
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/credentials-go/credentials/providers"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -85,7 +87,7 @@ func Provider() *schema.Provider {
 			"account_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Domestic", "International"}, true),
+				ValidateFunc: validators.StringInSlice([]string{"Domestic", "International"}, true),
 				DefaultFunc:  schema.MultiEnvDefaultFunc([]string{"ALIBABA_CLOUD_ACCOUNT_TYPE"}, nil),
 			},
 			"assume_role":           assumeRoleSchema(),
@@ -256,7 +258,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 		if v != nil {
 			s, ok := v.(string)
 			if !ok {
-				return "", WrapError(fmt.Errorf("provider attribute %q in profile %q must be a string, got %T", profileKey, d.Get("profile").(string), v))
+				return "", errs.WrapError(fmt.Errorf("provider attribute %q in profile %q must be a string, got %T", profileKey, d.Get("profile").(string), v))
 			}
 			return s, nil
 		}
@@ -276,7 +278,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 		return nil, diag.FromErr(err)
 	}
 	if region == "" {
-		region = DEFAULT_REGION
+		region = "cn-beijing"
 	}
 	securityToken, err := getProviderConfig("security_token", "sts_token")
 	if err != nil {
@@ -402,7 +404,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	if expiredSeconds != nil {
 		expired, ok := expiredSeconds.(float64)
 		if !ok {
-			return nil, diag.FromErr(WrapError(fmt.Errorf("provider attribute \"expired_seconds\" in profile %q must be a number, got %T", d.Get("profile").(string), expiredSeconds)))
+			return nil, diag.FromErr(errs.WrapError(fmt.Errorf("provider attribute \"expired_seconds\" in profile %q must be a number, got %T", d.Get("profile").(string), expiredSeconds)))
 		}
 		config.RamRoleSessionExpiration = int(expired)
 	}
@@ -1012,7 +1014,7 @@ func assumeRoleSchema() *schema.Schema {
 					Type:         schema.TypeInt,
 					Optional:     true,
 					Description:  descriptions["assume_role_session_expiration"],
-					ValidateFunc: IntBetween(900, 43200),
+					ValidateFunc: validators.IntBetween(900, 43200),
 				},
 				"external_id": {
 					Type:        schema.TypeString,
@@ -2368,7 +2370,7 @@ var deprecatedEndpointMap = map[string]string{
 func defaultConfigPath() (string, error) {
 	home, err := homedir.Dir()
 	if err != nil {
-		return "", WrapError(err)
+		return "", errs.WrapError(err)
 	}
 	return filepath.Join(home, ".aliyun", "config.json"), nil
 }
@@ -2389,12 +2391,12 @@ func loadProfileConfig(d *schema.ResourceData) (map[string]interface{}, error) {
 	// Set Credentials filename, expanding home directory
 	profilePath, err := homedir.Expand(d.Get("shared_credentials_file").(string))
 	if err != nil {
-		return nil, WrapError(fmt.Errorf("failed to expand shared_credentials_file for profile %q: %v", current, err))
+		return nil, errs.WrapError(fmt.Errorf("failed to expand shared_credentials_file for profile %q: %v", current, err))
 	}
 	if profilePath == "" {
 		configPath, err := defaultConfigPath()
 		if err != nil {
-			return nil, WrapError(fmt.Errorf("failed to resolve default credentials file for profile %q: %v", current, err))
+			return nil, errs.WrapError(fmt.Errorf("failed to resolve default credentials file for profile %q: %v", current, err))
 		}
 		profilePath = configPath
 	}
@@ -2403,20 +2405,20 @@ func loadProfileConfig(d *schema.ResourceData) (map[string]interface{}, error) {
 	if !os.IsNotExist(err) {
 		data, err := ioutil.ReadFile(profilePath)
 		if err != nil {
-			return nil, WrapError(fmt.Errorf("failed to read credentials file %s for profile %q: %v", profilePath, current, err))
+			return nil, errs.WrapError(fmt.Errorf("failed to read credentials file %s for profile %q: %v", profilePath, current, err))
 		}
 		config := map[string]interface{}{}
 		if err := json.Unmarshal(data, &config); err != nil {
-			return nil, WrapError(fmt.Errorf("failed to parse credentials file %s for profile %q: invalid JSON: %v", profilePath, current, err))
+			return nil, errs.WrapError(fmt.Errorf("failed to parse credentials file %s for profile %q: invalid JSON: %v", profilePath, current, err))
 		}
 		profiles, ok := config["profiles"].([]interface{})
 		if !ok {
-			return nil, WrapError(fmt.Errorf("invalid credentials file %s for profile %q: field \"profiles\" must be an array of profile objects", profilePath, current))
+			return nil, errs.WrapError(fmt.Errorf("invalid credentials file %s for profile %q: field \"profiles\" must be an array of profile objects", profilePath, current))
 		}
 		for _, entry := range profiles {
 			profileMap, ok := entry.(map[string]interface{})
 			if !ok {
-				return nil, WrapError(fmt.Errorf("invalid credentials file %s for profile %q: profile entries must be JSON objects", profilePath, current))
+				return nil, errs.WrapError(fmt.Errorf("invalid credentials file %s for profile %q: profile entries must be JSON objects", profilePath, current))
 			}
 			if current == profileMap["name"] {
 				profileConfig = profileMap
@@ -2424,7 +2426,7 @@ func loadProfileConfig(d *schema.ResourceData) (map[string]interface{}, error) {
 		}
 		if modeValue, ok := profileConfig["mode"]; ok {
 			if _, ok := modeValue.(string); !ok {
-				return nil, WrapError(fmt.Errorf("invalid credentials file %s for profile %q: field \"mode\" must be a string, got %T", profilePath, current, modeValue))
+				return nil, errs.WrapError(fmt.Errorf("invalid credentials file %s for profile %q: field \"mode\" must be a string, got %T", profilePath, current, modeValue))
 			}
 		}
 	}
@@ -2443,7 +2445,7 @@ func getConfigFromProfile(profileConfig map[string]interface{}, ProfileKey strin
 	}
 	mode, ok := modeValue.(string)
 	if !ok {
-		return nil, WrapError(fmt.Errorf("invalid profile entry: field \"mode\" must be a string, got %T", modeValue))
+		return nil, errs.WrapError(fmt.Errorf("invalid profile entry: field \"mode\" must be a string, got %T", modeValue))
 	}
 	if ProfileKey == "region_id" {
 		return profileConfig["region_id"], nil

@@ -17,8 +17,7 @@
 #   - Exactly the three runner-framework import paths: helper/resource,
 #     helper/acctest, terraform. NOT helper/retry and NOT helper/schema: both
 #     stay on SDKv2 (no plugin-testing counterpart / production schema).
-#   - Non-test files are never touched: common.go keeps SDKv2 terraform because
-#     newInstanceDiff feeds SDKv2 helper/schema (schema.InternalMap(...).Data).
+#   - Non-test files are never touched; this script rewrites test imports only.
 #   - helper/resource and helper/acctest flip in every matching file. terraform
 #     flips only in files that carry neither a plugin-testing runner import nor
 #     a schema-side terraform symbol (InstanceState / InstanceDiff /
@@ -69,9 +68,8 @@ RA_FILES="$(grep -rlF -e "\"$SDK_RESOURCE\"" -e "\"$SDK_ACCTEST\"" \
 # every match. terraform is different — see the header — so flip it only in
 # files that carry neither a plugin-testing runner import nor a schema-side
 # terraform symbol: without the symbol check, files that test the SDKv2
-# production stack directly (common_test.go, sdkv2_wrap_real_resource_test.go)
-# look like fresh pre-flip files, since terraform may be their only framework
-# import.
+# production stack directly look like fresh pre-flip files, since terraform may
+# be their only framework import.
 TF_FILES="$(grep -rlF "\"$SDK_TERRAFORM\"" --include='*_test.go' alicloud \
     | grep -E '^alicloud/[^/]+$' \
     | while IFS= read -r f; do
