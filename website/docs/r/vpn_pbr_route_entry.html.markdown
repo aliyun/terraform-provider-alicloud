@@ -20,6 +20,8 @@ For information about VPN Pbr Route Entry and how to use it, see [What is VPN Pb
 
 Basic Usage
 
+-> **NOTE:** The example requires an existing VPN gateway in the selected region.
+
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_vpn_pbr_route_entry&exampleId=d70d911d-bdd6-c5c7-fd9f-b5a86c81e5ca0d638fa1&activeTab=example&spm=docs.r.vpn_pbr_route_entry.0.d70d911dbd&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
