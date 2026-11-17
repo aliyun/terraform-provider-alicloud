@@ -23,22 +23,13 @@ func DataSourceDesktops() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-			},
-			"names": {
-				Type:     schema.TypeList,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Computed: true,
-			},
-			"desktop_name": {
-				Type:     schema.TypeString,
-				Optional: true,
 			},
 			"office_site_id": {
 				Type:     schema.TypeString,
@@ -48,35 +39,34 @@ func DataSourceDesktops() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"end_user_ids": {
-				Type:     schema.TypeList,
+			"desktop_name": {
+				Type:     schema.TypeString,
 				Optional: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Deleted", "Expired", "Pending", "Running", "Starting", "Stopped", "Stopping"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Starting", "Pending", "Running", "Rebuilding", "Stopping", "Stopped", "Deleted", "Expired"}, false),
+			},
+			"end_user_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"desktops": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"cpu": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"create_time": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -85,11 +75,15 @@ func DataSourceDesktops() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"desktop_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"desktop_name": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"desktop_type": {
+						"policy_group_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -97,13 +91,12 @@ func DataSourceDesktops() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"end_user_ids": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-						},
-						"expired_time": {
+						"network_interface_id": {
 							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"cpu": {
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"image_id": {
@@ -114,15 +107,11 @@ func DataSourceDesktops() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"network_interface_id": {
-							Type:     schema.TypeString,
+						"system_disk_size": {
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"payment_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"policy_group_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -130,9 +119,46 @@ func DataSourceDesktops() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"system_disk_size": {
-							Type:     schema.TypeInt,
+						"create_time": {
+							Type:     schema.TypeString,
 							Computed: true,
+						},
+						"expired_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"end_user_ids": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"disks": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"disk_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"disk_type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"disk_category": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"disk_size": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"performance_level": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -146,9 +172,9 @@ func dataSourceDesktopsRead(d *schema.ResourceData, meta interface{}) error {
 
 	action := "DescribeDesktops"
 	request := make(map[string]interface{})
-	if v, ok := d.GetOk("desktop_name"); ok {
-		request["DesktopName"] = v
-	}
+	request["RegionId"] = client.RegionId
+	request["MaxResults"] = helper.PageSizeLarge
+
 	if v, ok := d.GetOk("office_site_id"); ok {
 		request["OfficeSiteId"] = v
 	}
@@ -156,25 +182,20 @@ func dataSourceDesktopsRead(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("policy_group_id"); ok {
 		request["PolicyGroupId"] = v
 	}
-	request["RegionId"] = client.RegionId
+
+	if v, ok := d.GetOk("desktop_name"); ok {
+		request["DesktopName"] = v
+	}
+
 	if v, ok := d.GetOk("status"); ok {
 		request["DesktopStatus"] = v
 	}
-	if m, ok := d.GetOk("end_user_ids"); ok {
-		for k, v := range m.([]interface{}) {
-			request[fmt.Sprintf("EndUserId.%d", k+1)] = v.(string)
-		}
+
+	if v, ok := d.GetOk("end_user_ids"); ok {
+		request["EndUserId"] = v
 	}
-	request["MaxResults"] = helper.PageSizeLarge
+
 	var objects []map[string]interface{}
-	var desktopNameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok {
-		r, err := regexp.Compile(v.(string))
-		if err != nil {
-			return errs.WrapError(err)
-		}
-		desktopNameRegex = r
-	}
 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
@@ -182,11 +203,24 @@ func dataSourceDesktopsRead(d *schema.ResourceData, meta interface{}) error {
 			if vv == nil {
 				continue
 			}
+
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
+
+	var desktopNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+
+		desktopNameRegex = r
+	}
+
 	var response map[string]interface{}
 	var err error
+
 	for {
 		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
@@ -201,70 +235,119 @@ func dataSourceDesktopsRead(d *schema.ResourceData, meta interface{}) error {
 			return nil
 		})
 		logs.AddDebug(action, response, request)
+
 		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"InvalidDirectoryId.NotFound"}) {
+				return nil
+			}
+
 			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ecd_desktops", action, errs.AlibabaCloudSdkGoERROR)
 		}
+
 		resp, err := jsonpath.Get("$.Desktops", response)
 		if err != nil {
 			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Desktops", response)
 		}
+
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			if desktopNameRegex != nil && !desktopNameRegex.MatchString(fmt.Sprint(item["DesktopName"])) {
-				continue
-			}
+
 			if len(idsMap) > 0 {
 				if _, ok := idsMap[fmt.Sprint(item["DesktopId"])]; !ok {
 					continue
 				}
 			}
+
+			if desktopNameRegex != nil && !desktopNameRegex.MatchString(fmt.Sprint(item["DesktopName"])) {
+				continue
+			}
+
 			objects = append(objects, item)
 		}
+
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
 		} else {
 			break
 		}
 	}
+
 	ids := make([]string, 0)
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
-
-		cpuVal, err := convert.FormatInt(object["Cpu"])
-		if err != nil {
-			return err
-		}
-
-		system_disk_sizeVal, err := convert.FormatInt(object["SystemDiskSize"])
-		if err != nil {
-			return err
-		}
 		mapping := map[string]interface{}{
-			"cpu":                  cpuVal,
-			"create_time":          object["CreationTime"],
 			"id":                   fmt.Sprint(object["DesktopId"]),
 			"desktop_id":           fmt.Sprint(object["DesktopId"]),
-			"desktop_name":         object["DesktopName"],
 			"desktop_type":         object["DesktopType"],
+			"desktop_name":         object["DesktopName"],
+			"policy_group_id":      object["PolicyGroupId"],
 			"directory_id":         object["DirectoryId"],
-			"expired_time":         object["ExpiredTime"],
-			"end_user_ids":         object["EndUserIds"],
+			"network_interface_id": object["NetworkInterfaceId"],
 			"image_id":             object["ImageId"],
 			"memory":               fmt.Sprint(object["Memory"]),
-			"network_interface_id": object["NetworkInterfaceId"],
 			"payment_type":         convertEcdDesktopPaymentTypeResponse(object["ChargeType"]),
-			"policy_group_id":      object["PolicyGroupId"],
 			"status":               object["DesktopStatus"],
-			"system_disk_size":     system_disk_sizeVal,
+			"create_time":          object["CreationTime"],
+			"expired_time":         object["ExpiredTime"],
+			"end_user_ids":         object["EndUserIds"],
 		}
+
+		cpu, err := convert.FormatInt(object["Cpu"])
+		if err != nil {
+			return err
+		}
+
+		mapping["cpu"] = cpu
+
+		systemDiskSize, err := convert.FormatInt(object["SystemDiskSize"])
+		if err != nil {
+			return err
+		}
+
+		mapping["system_disk_size"] = systemDiskSize
+
+		if disks, ok := object["Disks"]; ok {
+			disksMaps := make([]map[string]interface{}, 0)
+			for _, disksList := range convert.ConvertToInterfaceArray(disks) {
+				disksMap := map[string]interface{}{}
+
+				if disksArg, ok := disksList.(map[string]interface{}); ok {
+					if diskId, ok := disksArg["DiskId"]; ok {
+						disksMap["disk_id"] = diskId
+					}
+
+					if diskType, ok := disksArg["DiskType"]; ok {
+						disksMap["disk_type"] = diskType
+					}
+
+					if diskCategory, ok := disksArg["DiskCategory"]; ok {
+						disksMap["disk_category"] = diskCategory
+					}
+
+					if diskSize, ok := disksArg["DiskSize"]; ok {
+						disksMap["disk_size"] = diskSize
+					}
+
+					if performanceLevel, ok := disksArg["PerformanceLevel"]; ok {
+						disksMap["performance_level"] = performanceLevel
+					}
+				}
+
+				disksMaps = append(disksMaps, disksMap)
+			}
+
+			mapping["disks"] = disksMaps
+		}
+
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["DesktopName"])
 		s = append(s, mapping)
 	}
 
 	d.SetId(helper.DataResourceIdHash(ids))
+
 	if err := d.Set("ids", ids); err != nil {
 		return errs.WrapError(err)
 	}
@@ -276,6 +359,7 @@ func dataSourceDesktopsRead(d *schema.ResourceData, meta interface{}) error {
 	if err := d.Set("desktops", s); err != nil {
 		return errs.WrapError(err)
 	}
+
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		helper.WriteToFile(output.(string), s)
 	}

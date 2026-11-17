@@ -2,7 +2,6 @@
 subcategory: "Elastic Desktop Service (ECD)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ecd_desktops"
-sidebar_current: "docs-alicloud-datasource-ecd-desktops"
 description: |-
   Provides a list of Ecd Desktops to the user.
 ---
@@ -18,28 +17,51 @@ This data source provides the Ecd Desktops of the current Alibaba Cloud user.
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "terraform_example"
+}
+
+data "alicloud_ecd_images" "default" {
+  image_type            = "SYSTEM"
+  os_type               = "Windows"
+  desktop_instance_type = "eds.hf.4c8g"
+}
+
+data "alicloud_ecd_desktop_types" "default" {
+  instance_type_family = "eds.hf"
+  cpu_count            = 4
+  memory_size          = 8192
+}
+
 resource "alicloud_ecd_simple_office_site" "default" {
   cidr_block          = "172.16.0.0/12"
   desktop_access_type = "Internet"
-  office_site_name    = "your_office_site_name"
-
+  office_site_name    = var.name
 }
-data "alicloud_ecd_bundles" "default" {
-  bundle_type = "SYSTEM"
+
+resource "alicloud_ecd_bundle" "default" {
+  desktop_type                = data.alicloud_ecd_desktop_types.default.ids.0
+  image_id                    = data.alicloud_ecd_images.default.ids.0
+  user_disk_size_gib          = [110]
+  root_disk_size_gib          = 120
+  root_disk_performance_level = "PL1"
+  user_disk_performance_level = "PL1"
+  bundle_name                 = var.name
+  description                 = var.name
 }
 
 resource "alicloud_ecd_policy_group" "default" {
-  policy_group_name = "your_policy_group_name"
+  policy_group_name = var.name
   clipboard         = "readwrite"
   local_drive       = "read"
   authorize_access_policy_rules {
-    description = "example_value"
+    description = var.name
     cidr_ip     = "1.2.3.4/24"
   }
   authorize_security_policy_rules {
     type        = "inflow"
     policy      = "accept"
-    description = "example_value"
+    description = var.name
     port_range  = "80/80"
     ip_protocol = "TCP"
     priority    = "1"
@@ -47,33 +69,25 @@ resource "alicloud_ecd_policy_group" "default" {
   }
 }
 
+resource "alicloud_ecd_user" "default" {
+  end_user_id = var.name
+  email       = "${var.name}@aaa.com"
+}
+
 resource "alicloud_ecd_desktop" "default" {
   office_site_id  = alicloud_ecd_simple_office_site.default.id
   policy_group_id = alicloud_ecd_policy_group.default.id
-  bundle_id       = data.alicloud_ecd_bundles.default.bundles.0.id
-  desktop_name    = "your_desktop_name"
+  bundle_id       = alicloud_ecd_bundle.default.id
+  desktop_name    = var.name
   end_user_ids    = [alicloud_ecd_user.default.id]
-}
-
-resource "alicloud_ecd_user" "default" {
-  end_user_id = "your_end_user_id"
-  email       = "your_email"
-  phone       = "your_phone"
-  password    = "your_password"
 }
 
 data "alicloud_ecd_desktops" "ids" {
   ids = [alicloud_ecd_desktop.default.id]
 }
-output "ecd_desktop_id_1" {
-  value = data.alicloud_ecd_desktops.ids.desktops.0.id
-}
 
-data "alicloud_ecd_desktops" "nameRegex" {
-  name_regex = alicloud_ecd_desktop.default.desktop_name
-}
-output "ecd_desktop_id_2" {
-  value = data.alicloud_ecd_desktops.nameRegex.desktops.0.id
+output "ecd_desktops_id_0" {
+  value = data.alicloud_ecd_desktops.ids.desktops.0.id
 }
 ```
 
@@ -81,14 +95,14 @@ output "ecd_desktop_id_2" {
 
 The following arguments are supported:
 
-* `desktop_name` - (Optional, ForceNew) The desktop name.
-* `office_site_id` - (Optional, ForceNew) The ID of the Simple Office Site.
-* `ids` - (Optional, ForceNew, Computed)  A list of Desktop IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Desktop name.
+* `ids` - (Optional)  A list of Desktop IDs.
+* `name_regex` - (Optional) A regex string to filter results by Desktop name.
+* `office_site_id` - (Optional) The ID of the Simple Office Site.
+* `policy_group_id` - (Optional) The cloud desktop policy ID.
+* `desktop_name` - (Optional) The cloud desktop name.
+* `status` - (Optional) The cloud desktop status. Valid values: `Starting`, `Pending`, `Running`, `Rebuilding`, `Stopping`, `Stopped`, `Deleted`, `Expired`.
+* `end_user_ids` - (Optional, List) The authorized users of the cloud desktop.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `policy_group_id` - (Optional, ForceNew) The policy group id of the Desktop.
-* `end_user_ids` - (Optional) A list of end user IDs used to filter the results.
-* `status` - (Optional, ForceNew) The status of the Desktop. Valid values: `Deleted`, `Expired`, `Pending`, `Running`, `Starting`, `Stopped`, `Stopping`.
 
 ## Attributes Reference
 
@@ -96,19 +110,25 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Desktop names.
 * `desktops` - A list of Ecd Desktops. Each element contains the following attributes:
-  * `cpu` - The number of CPUs.
-  * `create_time` - The creation time of the Desktop.
-  * `desktop_id` - The desktop id of the Desktop.
-  * `desktop_name` - The desktop name of the Desktop.
-  * `desktop_type` - The desktop type of the Desktop.
-  * `directory_id` - The directory id of the Desktop.
-  * `end_user_ids` - The desktop end user id of the Desktop.
-  * `expired_time` - The expired time of the Desktop.
   * `id` - The ID of the Desktop.
-  * `image_id` - The image id of the Desktop.
-  * `memory` - The memory of the Desktop.
-  * `network_interface_id` - The network interface id of the Desktop.
-  * `payment_type` - The payment type of the Desktop.
-  * `policy_group_id` - The policy group id of the Desktop.
-  * `status` - The status of the Desktop. Valid values: `Deleted`, `Expired`, `Pending`, `Running`, `Starting`, `Stopped`, `Stopping`.
+  * `desktop_id` - The cloud desktop ID.
+  * `desktop_type` - The specifications of the cloud desktop.
+  * `desktop_name` - The cloud desktop name.
+  * `policy_group_id` - The cloud desktop policy ID.
+  * `directory_id` - The directory ID.
+  * `network_interface_id` - The ID of the secondary elastic network interface (ENI) created by the cloud desktop service for a RAM or AD user.
+  * `cpu` - The number of CPUs.
+  * `image_id` - The image ID.
+  * `memory` - The memory size.
   * `system_disk_size` - The system disk size of the Desktop.
+  * `payment_type` - The billing method of the cloud desktop.
+  * `status` - The cloud desktop status.
+  * `create_time` - The creation time of the cloud desktop.
+  * `expired_time` - The expiration time of the subscription cloud desktop.
+  * `end_user_ids` - The IDs of the authorized users of the cloud desktop.
+  * `disks` - (Available since v2.3.0) The disk information.
+    * `disk_id` - The disk ID.
+    * `disk_type` - The disk type.
+    * `disk_category` - The disk category.
+    * `disk_size` - The disk size.
+    * `performance_level` - The performance level of the enhanced standard SSD cloud disk.
