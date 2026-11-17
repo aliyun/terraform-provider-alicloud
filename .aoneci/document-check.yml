@@ -51,6 +51,7 @@ jobs:
           set -euo pipefail
           range=$(python3 scripts/ci/aone-range.py)
           eval "$range"
+          python3 -m unittest discover -s scripts/ci -p test_note_diagnostics.py
           python3 scripts/ci/run-document-checks.py --group node
 
   terrafmt:

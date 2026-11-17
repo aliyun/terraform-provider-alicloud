@@ -29,7 +29,7 @@
 module.exports = {
   names: ["alicloud-note-attachment", "ALICLOUD100"],
   description:
-    "NOTE after an attribute bullet needs a blank line before AND alignment with the attribute it follows (nearest attribute bullet content column)",
+    "Attribute NOTE formatting / 属性 NOTE 格式错误",
   tags: ["alicloud"],
   function: function noteAttachment(params, onError) {
     const lines = params.lines;
@@ -133,26 +133,30 @@ module.exports = {
         : Array.from(new Set([shallowest + 2, nearestAttr + 2]));
       const legalText =
         legal.length === 1 ? String(legal[0]) : legal.join(" or ");
-      if (!blankBefore) {
+      const wrongIndent = !legal.includes(indent);
+      if (!blankBefore || wrongIndent) {
+        const repairs = [];
+        if (!blankBefore) {
+          repairs.push(`在第 ${i + 1} 行 NOTE 前插入一行空行，否则 NOTE 会与属性说明显示在同一段。`);
+        }
+        if (wrongIndent) {
+          repairs.push(`将第 ${i + 1} 行行首的 ${indent} 个空格改为 ${legalText} 个空格，使 NOTE 归属到属性列表内。`);
+        } else {
+          repairs.push(`当前行首 ${indent} 个空格正确，请保留。`);
+        }
+        const quote = (value) => "'" + value.replace(/'/g, "'\\''") + "'";
+        const file = params.name.startsWith("-") ? "./" + params.name : params.name;
+        const corrected = " ".repeat(wrongIndent ? nearestAttr + 2 : indent) + lines[i].trimStart();
         onError({
           lineNumber: i + 1,
-          detail:
-            "no blank line before NOTE: CommonMark absorbs it as a lazy continuation of the attribute text; " +
-            "expected a blank line before AND indent " +
-            legalText +
-            " (aligned with the attribute it follows)",
-          context: lines[i].trim().slice(0, 40),
-        });
-      } else if (!legal.includes(indent)) {
-        onError({
-          lineNumber: i + 1,
-          detail:
-            "NOTE not aligned with the attribute it follows: indent " +
-            indent +
-            ", expected " +
-            legalText +
-            " (parent content column)",
-          context: lines[i].trim().slice(0, 40),
+          detail: ("\n" + repairs.join("\n") +
+            "\n当前内容（竖线后为原文，空格需保留）：\n|" +
+            lines.slice(j, i + 1).join("\n|") +
+            "\n修正示例（复制时去掉每行开头的竖线，保留空行和空格）：\n|" +
+            lines[j] + "\n|\n|" + corrected +
+            "\n本地复查（在仓库根目录执行）：\n" +
+            "python3 scripts/ci/markdown-lint.py " + quote(file) +
+            "\n修复后提交文档改动并重新运行 Documentation Checks。\n").replace(/\n/g, "<ALICLOUD100:NL>"),
         });
       }
     }

@@ -42,10 +42,7 @@ COMMANDS = {'markdown-link': "find website/docs -type f -name '*.md' -print0 |\n
                   '  echo "No Markdown files changed."\n'
                   '  exit 0\n'
                   'fi\n'
-                  'npx --yes markdownlint-cli@0.47.0 \\\n'
-                  '  --config .github/markdownlint/website-docs.json \\\n'
-                  '  --rules .github/markdownlint/rules/note-attachment.js \\\n'
-                  '  -- "${markdown_files[@]}"\n',
+                  'python3 scripts/ci/markdown-lint.py "${markdown_files[@]}"\n',
  'basic-check': 'bash scripts/basic-check.sh',
  'misspell': '"${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}/misspell" \\\n'
              '  -error \\\n'
@@ -88,8 +85,7 @@ def scoped_commands(paths, full=False):
         [p for p in paths if p.startswith('website/docs/') and p.endswith('.markdown') and Path(p).is_file()],
         'npx --yes markdown-link-check@3.14.2 --quiet --verbose --config .markdown-link-check.json "$doc"') + '\n'
     commands['markdown-lint'] = ('git diff --check "$DIFF_BASE" "$DIFF_HEAD" -- website/docs\n' +
-        file_loop(markdown, 'npx --yes markdownlint-cli@0.47.0 --config .github/markdownlint/website-docs.json '
-                  '--rules .github/markdownlint/rules/note-attachment.js -- "$doc"'))
+        file_loop(markdown, 'python3 scripts/ci/markdown-lint.py "$doc"'))
     commands['Content'] = content_command([p for p in docs if p != PROVIDER_INDEX_DOC])
     if not full:
         commands['misspell'] = file_loop(docs,
