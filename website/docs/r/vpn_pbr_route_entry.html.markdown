@@ -155,7 +155,7 @@ The following arguments are supported:
 * `route_dest` - (Required, ForceNew) The destination CIDR block of the policy-based route.
 * `weight` - (Required) The weight of the policy-based route. Valid values: 0 and 100.
 * `description` - (Optional, ForceNew, String, Available since v2.3.0) The description of the policy-based route. The description must be 1 to 100 characters in length. This field is only set when the route entry is created; changing it forces a new resource to be created. The Describe API does not return this field, so the imported state does not contain it and setting it after an import also creates a new resource.
-* `priority` - (Optional, Computed, Int, Available since v2.3.0) The policy priority of the policy-based route. Valid values: `1` to `100`. Defaults to `10` on the server when this argument is omitted. A smaller value indicates a higher priority.
+* `priority` - (Optional, Computed, Int, Available since v2.3.0) The policy priority of the policy-based route. Valid values: `1` to `100`. A smaller value indicates a higher priority. When this argument is omitted during creation, the server assigns `10`. If you later remove it from the configuration, the current value is retained; set `priority = 10` explicitly to restore `10`.
 
   -> **NOTE:** Policy priority is available only for VPN gateways that support it; gateways on earlier versions return the `VpnPbrRouteEntryPriority.NotSupport` error when this argument is set. For more information, see [policy route matching rules](https://www.alibabacloud.com/help/doc-detail/110777.html).
 
