@@ -33,6 +33,40 @@ func unitFixture(t *testing.T, files map[string]string) {
 
 const unitSample = "package p\nimport \"testing\"\nfunc TestUnitA(t *testing.T) {}\nfunc TestAccCloud(t *testing.T) {}\n// func TestUnitComment(t *testing.T) {}\nvar text = `func TestUnitString(t *testing.T) {}`\n"
 
+func TestUnitHistoricalSplitCompanionsRemainSelected(t *testing.T) {
+	unitFixture(t, map[string]string{
+		"p/resource_demo_test.go":       unitSample,
+		"p/resource_demo_unit_test.go":  "package p; import \"testing\"; func TestUnitSplit(t *testing.T) {}",
+		"p/resource_demo_other.go":      "package p",
+		"p/resource_demo_other_test.go": "package p; import \"testing\"; func TestUnitOther(t *testing.T) {}",
+	})
+	cases, _, err := selectCases([]string{"p/resource_demo.go"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cases) != 2 {
+		t.Fatalf("split unit missing or unrelated resource selected: %+v", cases)
+	}
+}
+
+func TestUnitEntryShapedHelperBroadensRegisteredPackage(t *testing.T) {
+	const dir = "alicloud/service/p/"
+	unitFixture(t, map[string]string{
+		dir + "register.go":                   "package p; var registration = []Entry{{Factory: NewDemo}}",
+		dir + "resource_demo.go":              "package p; func NewDemo() Resource { return Resource{} }",
+		dir + "resource_demo_helpers.go":      "package p; func decode() {}",
+		dir + "resource_demo_helpers_test.go": unitSample,
+		dir + "resource_other_test.go":        "package p; import \"testing\"; func TestUnitOther(t *testing.T) {}",
+	})
+	cases, broad, err := selectCases([]string{dir + "resource_demo_helpers.go"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cases) != 2 || len(broad) != 1 {
+		t.Fatalf("helper silently narrowed: %+v %v", cases, broad)
+	}
+}
+
 func TestUnitChangedSelectorCompanionAndEditedTests(t *testing.T) {
 	unitFixture(t, map[string]string{"p/resource_alicloud_foo_test.go": unitSample, "p/other_test.go": "package p\nfunc TestUnitB(t *testing.T) {}"})
 	cases, broad, err := selectCases([]string{"p/resource_alicloud_foo.go", "p/resource_alicloud_foo_test.go"})

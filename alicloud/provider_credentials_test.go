@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -19,600 +18,14 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/mitchellh/go-homedir"
 )
 
-// TestProviderCredentials_ExternalMode 测试 External 模式的凭证获取
-func TestProviderCredentials_ExternalMode(t *testing.T) {
-	// 创建临时目录和文件
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-external-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	// 创建外部程序脚本
-	scriptPath := filepath.Join(tmpDir, "credential-provider.sh")
-	scriptContent := `#!/bin/bash
-cat <<EOF
-{
-  "AccessKeyId": "STS.EXTERNAL123456789",
-  "AccessKeySecret": "external_secret_key_test",
-  "SecurityToken": "external_security_token_test",
-  "Expiration": "2099-12-31T23:59:59Z"
-}
-EOF
-`
-	err = os.WriteFile(scriptPath, []byte(scriptContent), 0755)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// 创建临时配置文件
-	configPath := filepath.Join(tmpDir, "config.json")
-	config := map[string]interface{}{
-		"profiles": []map[string]interface{}{
-			{
-				"name":            "external-test",
-				"mode":            "External",
-				"process_command": scriptPath,
-				"region_id":       "cn-beijing",
-			},
-		},
-		"current": "external-test",
-	}
-
-	configData, err := json.Marshal(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.WriteFile(configPath, configData, 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// 测试配置读取
-	t.Run("ParseExternalConfig", func(t *testing.T) {
-		data, err := os.ReadFile(configPath)
-		if err != nil {
-			t.Fatalf("Failed to read config file: %v", err)
-		}
-
-		var cfg map[string]interface{}
-		err = json.Unmarshal(data, &cfg)
-		if err != nil {
-			t.Fatalf("Failed to parse config JSON: %v", err)
-		}
-
-		profiles := cfg["profiles"].([]interface{})
-		if len(profiles) == 0 {
-			t.Fatal("No profiles found")
-		}
-
-		profile := profiles[0].(map[string]interface{})
-		if profile["mode"] != "External" {
-			t.Errorf("Expected mode 'External', got '%v'", profile["mode"])
-		}
-
-		if profile["name"] != "external-test" {
-			t.Errorf("Expected name 'external-test', got '%v'", profile["name"])
-		}
-	})
-
-	// 测试 provider 配置
-	t.Run("ProviderConfigWithExternal", func(t *testing.T) {
-		// 跳过 Windows 系统（bash 脚本问题）
-		if runtime.GOOS == "windows" {
-			t.Skip("Skipping bash script test on Windows")
-		}
-
-		raw := make(map[string]interface{})
-		raw["profile"] = "external-test"
-		raw["shared_credentials_file"] = configPath
-		raw["region"] = "cn-beijing"
-
-		resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
-
-		// 读取配置文件验证
-		profileConfig, err := loadProfileConfig(resourceData)
-		if err != nil {
-			t.Fatalf("loadProfileConfig failed: %v", err)
-		}
-
-		if profileConfig == nil {
-			t.Fatal("Provider config is nil")
-		}
-
-		mode, ok := profileConfig["mode"]
-		if !ok {
-			t.Fatal("Mode not found in provider config")
-		}
-
-		if mode != "External" {
-			t.Errorf("Expected mode 'External', got '%v'", mode)
-		}
-	})
-}
-
-// TestProviderCredentials_OAuthMode 测试 OAuth 模式的凭证获取
-func TestProviderCredentials_OAuthMode(t *testing.T) {
-	// 创建临时目录
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-oauth-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	// 创建临时配置文件
-	configPath := filepath.Join(tmpDir, "config.json")
-	config := map[string]interface{}{
-		"profiles": []map[string]interface{}{
-			{
-				"name":                "oauth-test",
-				"mode":                "OAuth",
-				"oauth_client_id":     "test-client-id",
-				"oauth_client_secret": "test-client-secret",
-				"oauth_token_url":     "https://oauth.aliyun.com/token",
-				"oauth_scope":         "openid",
-				"region_id":           "cn-hangzhou",
-			},
-		},
-		"current": "oauth-test",
-	}
-
-	configData, err := json.Marshal(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.WriteFile(configPath, configData, 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// 测试配置读取
-	t.Run("ParseOAuthConfig", func(t *testing.T) {
-		data, err := os.ReadFile(configPath)
-		if err != nil {
-			t.Fatalf("Failed to read config file: %v", err)
-		}
-
-		var cfg map[string]interface{}
-		err = json.Unmarshal(data, &cfg)
-		if err != nil {
-			t.Fatalf("Failed to parse config JSON: %v", err)
-		}
-
-		profiles := cfg["profiles"].([]interface{})
-		if len(profiles) == 0 {
-			t.Fatal("No profiles found")
-		}
-
-		profile := profiles[0].(map[string]interface{})
-		if profile["mode"] != "OAuth" {
-			t.Errorf("Expected mode 'OAuth', got '%v'", profile["mode"])
-		}
-
-		if profile["oauth_client_id"] != "test-client-id" {
-			t.Errorf("Expected oauth_client_id 'test-client-id', got '%v'", profile["oauth_client_id"])
-		}
-	})
-
-	// 测试 provider 配置
-	t.Run("ProviderConfigWithOAuth", func(t *testing.T) {
-		raw := make(map[string]interface{})
-		raw["profile"] = "oauth-test"
-		raw["shared_credentials_file"] = configPath
-		raw["region"] = "cn-hangzhou"
-
-		resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
-
-		// 读取配置文件验证
-		profileConfig, err := loadProfileConfig(resourceData)
-		if err != nil {
-			t.Fatalf("loadProfileConfig failed: %v", err)
-		}
-
-		if profileConfig == nil {
-			t.Fatal("Provider config is nil")
-		}
-
-		mode, ok := profileConfig["mode"]
-		if !ok {
-			t.Fatal("Mode not found in provider config")
-		}
-
-		if mode != "OAuth" {
-			t.Errorf("Expected mode 'OAuth', got '%v'", mode)
-		}
-	})
-}
-
-// TestProviderCredentials_MultipleProfiles 测试多个 profile 配置
-func TestProviderCredentials_MultipleProfiles(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-multi-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	// 创建外部程序脚本
-	scriptPath := filepath.Join(tmpDir, "credential-provider.sh")
-	scriptContent := `#!/bin/bash
-cat <<EOF
-{
-  "AccessKeyId": "STS.MULTI123456789",
-  "AccessKeySecret": "multi_secret_key_test",
-  "SecurityToken": "multi_security_token_test",
-  "Expiration": "2099-12-31T23:59:59Z"
-}
-EOF
-`
-	err = os.WriteFile(scriptPath, []byte(scriptContent), 0755)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// 创建包含多个 profile 的配置文件
-	configPath := filepath.Join(tmpDir, "config.json")
-	config := map[string]interface{}{
-		"profiles": []map[string]interface{}{
-			{
-				"name":              "static-ak",
-				"mode":              "AK",
-				"access_key_id":     "LTAI5tSTATIC123",
-				"access_key_secret": "static_secret",
-				"region_id":         "cn-beijing",
-			},
-			{
-				"name":            "external-profile",
-				"mode":            "External",
-				"process_command": scriptPath,
-				"region_id":       "cn-beijing",
-			},
-			{
-				"name":                "oauth-profile",
-				"mode":                "OAuth",
-				"oauth_client_id":     "oauth-client-id",
-				"oauth_client_secret": "oauth-client-secret",
-				"oauth_token_url":     "https://oauth.aliyun.com/token",
-				"region_id":           "cn-hangzhou",
-			},
-			{
-				"name":       "cloudsso-profile",
-				"mode":       "CloudSSO",
-				"start_url":  "https://sso.aliyun.com",
-				"sso_region": "cn-hangzhou",
-				"account_id": "123456789012",
-				"region_id":  "cn-beijing",
-			},
-		},
-		"current": "external-profile",
-	}
-
-	configData, err := json.Marshal(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.WriteFile(configPath, configData, 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	tests := []struct {
-		profileName  string
-		expectedMode string
-	}{
-		{"static-ak", "AK"},
-		{"external-profile", "External"},
-		{"oauth-profile", "OAuth"},
-		{"cloudsso-profile", "CloudSSO"},
-	}
-
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("Profile_%s", tt.profileName), func(t *testing.T) {
-			raw := make(map[string]interface{})
-			raw["profile"] = tt.profileName
-			raw["shared_credentials_file"] = configPath
-			raw["region"] = "cn-beijing"
-
-			resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
-
-			// 每个 provider 实例独立解析自身的 profile
-			profileConfig, err := loadProfileConfig(resourceData)
-			if err != nil {
-				t.Fatalf("loadProfileConfig failed: %v", err)
-			}
-
-			if profileConfig == nil {
-				t.Fatal("Provider config is nil")
-			}
-
-			mode, ok := profileConfig["mode"]
-			if !ok {
-				t.Fatal("Mode not found in provider config")
-			}
-
-			if mode != tt.expectedMode {
-				t.Errorf("Expected mode '%s', got '%v'", tt.expectedMode, mode)
-			}
-		})
-	}
-}
-
-// TestProviderCredentials_GetConfigFromProfile 测试 getConfigFromProfile 函数
-func TestProviderCredentials_GetConfigFromProfile(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-getconfig-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	configPath := filepath.Join(tmpDir, "config.json")
-	config := map[string]interface{}{
-		"profiles": []map[string]interface{}{
-			{
-				"name":            "test-external",
-				"mode":            "External",
-				"process_command": "/usr/local/bin/credential-provider",
-				"region_id":       "cn-shanghai",
-			},
-		},
-		"current": "test-external",
-	}
-
-	configData, err := json.Marshal(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.WriteFile(configPath, configData, 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	raw := make(map[string]interface{})
-	raw["profile"] = "test-external"
-	raw["shared_credentials_file"] = configPath
-	raw["region"] = "cn-beijing"
-
-	resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
-
-	tests := []struct {
-		name        string
-		profileKey  string
-		expectedVal interface{}
-		shouldBeNil bool
-	}{
-		{
-			name:        "GetRegionId",
-			profileKey:  "region_id",
-			expectedVal: "cn-shanghai",
-			shouldBeNil: false,
-		},
-		{
-			name:        "GetMode_External",
-			profileKey:  "mode",
-			expectedVal: "External",
-			shouldBeNil: true,
-		},
-		{
-			name:        "GetAccessKey_ShouldBeNil",
-			profileKey:  "access_key_id",
-			expectedVal: nil,
-			shouldBeNil: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			profileConfig, err := loadProfileConfig(resourceData)
-			if err != nil {
-				t.Fatalf("loadProfileConfig failed: %v", err)
-			}
-			val, err := getConfigFromProfile(profileConfig, tt.profileKey)
-			if err != nil {
-				t.Fatalf("getConfigFromProfile failed: %v", err)
-			}
-
-			if tt.shouldBeNil {
-				if val != nil {
-					t.Errorf("Expected nil, got %v", val)
-				}
-			} else {
-				if val != tt.expectedVal {
-					t.Errorf("Expected %v, got %v", tt.expectedVal, val)
-				}
-			}
-		})
-	}
-}
-
-// TestProviderCredentials_AdvancedModesReturnNil 测试高级模式返回 nil
-func TestProviderCredentials_AdvancedModesReturnNil(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-advanced-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	modes := []string{"External", "OAuth", "CloudSSO", "ChainableRamRoleArn"}
-
-	for _, mode := range modes {
-		t.Run(fmt.Sprintf("Mode_%s", mode), func(t *testing.T) {
-			configPath := filepath.Join(tmpDir, fmt.Sprintf("config_%s.json", mode))
-			config := map[string]interface{}{
-				"profiles": []map[string]interface{}{
-					{
-						"name":      fmt.Sprintf("test-%s", mode),
-						"mode":      mode,
-						"region_id": "cn-beijing",
-					},
-				},
-				"current": fmt.Sprintf("test-%s", mode),
-			}
-
-			configData, err := json.Marshal(config)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			err = os.WriteFile(configPath, configData, 0644)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			raw := make(map[string]interface{})
-			raw["profile"] = fmt.Sprintf("test-%s", mode)
-			raw["shared_credentials_file"] = configPath
-			raw["region"] = "cn-beijing"
-
-			resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
-
-			// 对于高级模式，access_key_id 应该返回 nil
-			profileConfig, err := loadProfileConfig(resourceData)
-			if err != nil {
-				t.Fatalf("loadProfileConfig failed: %v", err)
-			}
-			val, err := getConfigFromProfile(profileConfig, "access_key_id")
-			if err != nil {
-				t.Fatalf("getConfigFromProfile failed: %v", err)
-			}
-
-			// 高级模式应该返回 nil（凭证通过 CLIProfileCredentialsProvider 动态获取）
-			if val != nil {
-				t.Errorf("Expected nil for access_key_id in mode %s, got %v", mode, val)
-			}
-		})
-	}
-}
-
-// TestProviderCredentials_PriorityOrder 测试凭证优先级顺序
-func TestProviderCredentials_PriorityOrder(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-priority-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	// 创建配置文件（低优先级）
-	configPath := filepath.Join(tmpDir, "config.json")
-	config := map[string]interface{}{
-		"profiles": []map[string]interface{}{
-			{
-				"name":              "test-profile",
-				"mode":              "AK",
-				"access_key_id":     "PROFILE_AK",
-				"access_key_secret": "PROFILE_SK",
-				"region_id":         "cn-hangzhou",
-			},
-		},
-		"current": "test-profile",
-	}
-
-	configData, err := json.Marshal(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.WriteFile(configPath, configData, 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Run("StaticConfigOverridesProfile", func(t *testing.T) {
-		raw := make(map[string]interface{})
-		raw["access_key"] = "STATIC_AK" // 静态配置（高优先级）
-		raw["secret_key"] = "STATIC_SK"
-		raw["profile"] = "test-profile" // Profile 配置（低优先级）
-		raw["shared_credentials_file"] = configPath
-		raw["region"] = "cn-beijing"
-
-		resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
-
-		// 使用 getProviderConfig 逻辑验证优先级
-		// 注意：这里我们模拟 provider.go 中的逻辑
-		var accessKey string
-		if v, ok := resourceData.GetOk("access_key"); ok && v != nil && v.(string) != "" {
-			accessKey = v.(string)
-		} else {
-			profileConfig, err := loadProfileConfig(resourceData)
-			if err != nil {
-				t.Fatalf("loadProfileConfig failed: %v", err)
-			}
-			v, err := getConfigFromProfile(profileConfig, "access_key_id")
-			if err != nil {
-				t.Fatalf("getConfigFromProfile failed: %v", err)
-			}
-			if v != nil {
-				accessKey = v.(string)
-			}
-		}
-
-		if accessKey != "STATIC_AK" {
-			t.Errorf("Expected static config 'STATIC_AK' to take priority, got '%s'", accessKey)
-		}
-	})
-
-	t.Run("ProfileUsedWhenNoStaticConfig", func(t *testing.T) {
-		raw := make(map[string]interface{})
-		// 不设置静态 access_key/secret_key
-		raw["profile"] = "test-profile"
-		raw["shared_credentials_file"] = configPath
-		raw["region"] = "cn-beijing"
-
-		resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
-
-		profileConfig, err := loadProfileConfig(resourceData)
-		if err != nil {
-			t.Fatalf("loadProfileConfig failed: %v", err)
-		}
-		val, err := getConfigFromProfile(profileConfig, "access_key_id")
-		if err != nil {
-			t.Fatalf("getConfigFromProfile failed: %v", err)
-		}
-
-		if val != "PROFILE_AK" {
-			t.Errorf("Expected profile config 'PROFILE_AK', got '%v'", val)
-		}
-	})
-}
-
-// TestProviderCredentials_ConfigFileNotFound 测试配置文件不存在的情况
-func TestProviderCredentials_ConfigFileNotFound(t *testing.T) {
-	raw := make(map[string]interface{})
-	raw["profile"] = "non-existent-profile"
-	raw["shared_credentials_file"] = "/tmp/non-existent-config-file-12345.json"
-	raw["region"] = "cn-beijing"
-
-	resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
-
-	profileConfig, err := loadProfileConfig(resourceData)
-	if err != nil {
-		t.Fatalf("loadProfileConfig failed: %v", err)
-	}
-	val, err := getConfigFromProfile(profileConfig, "access_key_id")
-	if err != nil {
-		t.Fatalf("getConfigFromProfile failed: %v", err)
-	}
-
-	// 文件不存在时应该返回 nil（不报错）
-	if val != nil {
-		t.Errorf("Expected nil when config file doesn't exist, got %v", val)
-	}
-}
-
-// writeTestProfileFile 写入仅包含一个 profile 的 aliyun CLI 配置文件
-func writeTestProfileFile(t *testing.T, path string, profile map[string]interface{}) {
+func writeTestConfig(t *testing.T, path string, profiles []map[string]interface{}, current string) {
 	t.Helper()
-	config := map[string]interface{}{
-		"profiles": []map[string]interface{}{profile},
-		"current":  profile["name"],
-	}
-	data, err := json.Marshal(config)
+	data, err := json.Marshal(map[string]interface{}{"profiles": profiles, "current": current})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -621,2236 +34,53 @@ func writeTestProfileFile(t *testing.T, path string, profile map[string]interfac
 	}
 }
 
-// TestProviderCredentials_MultiAliasIsolation 守护多 alias 串配置缺陷：
-// 同一进程内先后配置两个使用不同 profile 的 provider 实例（模拟两个 alias），
-// 各自必须使用自身 profile 的凭证/region/mode，第二个实例不得复用第一个实例的配置。
-func TestProviderCredentials_MultiAliasIsolation(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-multi-alias-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+func writeTestProfileFile(t *testing.T, path string, profile map[string]interface{}) {
+	t.Helper()
+	writeTestConfig(t, path, []map[string]interface{}{profile}, profile["name"].(string))
+}
 
-	pathA := filepath.Join(tmpDir, "config_alias_a.json")
-	writeTestProfileFile(t, pathA, map[string]interface{}{
-		"name":              "alias-a",
-		"mode":              "AK",
-		"access_key_id":     "ALIAS_A_AK",
-		"access_key_secret": "ALIAS_A_SK",
-		"region_id":         "cn-hangzhou",
-	})
-	pathB := filepath.Join(tmpDir, "config_alias_b.json")
-	writeTestProfileFile(t, pathB, map[string]interface{}{
-		"name":              "alias-b",
-		"mode":              "StsToken",
-		"access_key_id":     "ALIAS_B_AK",
-		"access_key_secret": "ALIAS_B_SK",
-		"sts_token":         "ALIAS_B_STS",
-		"region_id":         "cn-beijing",
-	})
-
+func providerResourceData(t *testing.T, raw map[string]interface{}) (*schema.Provider, *schema.ResourceData) {
+	t.Helper()
 	provider := Provider()
-	resourceDataA := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
-		"profile":                 "alias-a",
-		"shared_credentials_file": pathA,
-		"region":                  "cn-hangzhou",
-		"account_type":            "Domestic",
-	})
-	resourceDataB := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
-		"profile":                 "alias-b",
-		"shared_credentials_file": pathB,
-		"region":                  "cn-beijing",
-		"account_type":            "Domestic",
-	})
-
-	// 先配置 alias A，再配置 alias B；B 不得复用 A 的 profile 解析结果
-	clientA, diagsA := providerConfigure(context.Background(), resourceDataA, provider)
-	if diagsA.HasError() {
-		t.Fatalf("providerConfigure failed for alias A: %v", diagsA)
-	}
-	clientB, diagsB := providerConfigure(context.Background(), resourceDataB, provider)
-	if diagsB.HasError() {
-		t.Fatalf("providerConfigure failed for alias B: %v", diagsB)
-	}
-
-	aliyunClientA := clientA.(*connectivity.AliyunClient)
-	aliyunClientB := clientB.(*connectivity.AliyunClient)
-
-	if aliyunClientA.AccessKey != "ALIAS_A_AK" || aliyunClientA.SecretKey != "ALIAS_A_SK" {
-		t.Errorf("alias A should use its own profile credentials, got AccessKey=%q SecretKey=%q",
-			aliyunClientA.AccessKey, aliyunClientA.SecretKey)
-	}
-	if aliyunClientA.RegionId != "cn-hangzhou" {
-		t.Errorf("alias A should use its own region, got %q", aliyunClientA.RegionId)
-	}
-	if aliyunClientB.AccessKey != "ALIAS_B_AK" || aliyunClientB.SecretKey != "ALIAS_B_SK" {
-		t.Errorf("alias B credentials contaminated by another alias: got AccessKey=%q SecretKey=%q",
-			aliyunClientB.AccessKey, aliyunClientB.SecretKey)
-	}
-	if aliyunClientB.SecurityToken != "ALIAS_B_STS" {
-		t.Errorf("alias B should use its own profile sts_token, got %q", aliyunClientB.SecurityToken)
-	}
-	if aliyunClientB.RegionId != "cn-beijing" {
-		t.Errorf("alias B should use its own region, got %q", aliyunClientB.RegionId)
-	}
-
-	// profile 解析层复核：先加载 A 再加载 B，两次结果互不污染
-	profileConfigA, err := loadProfileConfig(resourceDataA)
-	if err != nil {
-		t.Fatalf("loadProfileConfig failed for alias A: %v", err)
-	}
-	profileConfigB, err := loadProfileConfig(resourceDataB)
-	if err != nil {
-		t.Fatalf("loadProfileConfig failed for alias B: %v", err)
-	}
-	if got, gerr := getConfigFromProfile(profileConfigA, "access_key_id"); gerr != nil || got != "ALIAS_A_AK" {
-		t.Errorf("profile A access_key_id = %v (err=%v), want ALIAS_A_AK", got, gerr)
-	}
-	if got, gerr := getConfigFromProfile(profileConfigB, "access_key_id"); gerr != nil || got != "ALIAS_B_AK" {
-		t.Errorf("profile B access_key_id = %v (err=%v), want ALIAS_B_AK", got, gerr)
-	}
-	if got, gerr := getConfigFromProfile(profileConfigB, "sts_token"); gerr != nil || got != "ALIAS_B_STS" {
-		t.Errorf("profile B sts_token = %v (err=%v), want ALIAS_B_STS", got, gerr)
-	}
-	if got, gerr := getConfigFromProfile(profileConfigA, "region_id"); gerr != nil || got != "cn-hangzhou" {
-		t.Errorf("profile A region_id = %v (err=%v), want cn-hangzhou", got, gerr)
-	}
-	if got, gerr := getConfigFromProfile(profileConfigB, "region_id"); gerr != nil || got != "cn-beijing" {
-		t.Errorf("profile B region_id = %v (err=%v), want cn-beijing", got, gerr)
-	}
+	return provider, schema.TestResourceDataRaw(t, provider.Schema, raw)
 }
 
-// TestProviderCredentials_ConcurrentAliasesNoRace 守护被消除的包级全局
-// providerConfig：并发执行多 alias 的 profile 解析（原全局变量的读写路径），
-// 各实例必须得到自身 profile 的结果，且 go test -race 下无竞态报告。
-func TestProviderCredentials_ConcurrentAliasesNoRace(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-concurrent-alias-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	const aliasCount = 8
-
-	type aliasProfile struct {
-		resourceData *schema.ResourceData
-		accessKey    string
-		secretKey    string
-		regionId     string
-	}
-
-	provider := Provider()
-	aliasProfiles := make([]aliasProfile, 0, aliasCount)
-	for i := 0; i < aliasCount; i++ {
-		accessKey := fmt.Sprintf("CONCURRENT_ALIAS_%d_AK", i)
-		secretKey := fmt.Sprintf("CONCURRENT_ALIAS_%d_SK", i)
-		regionId := []string{"cn-hangzhou", "cn-beijing", "cn-shanghai", "cn-shenzhen"}[i%4]
-
-		profilePath := filepath.Join(tmpDir, fmt.Sprintf("config_%d.json", i))
-		writeTestProfileFile(t, profilePath, map[string]interface{}{
-			"name":              fmt.Sprintf("concurrent-alias-%d", i),
-			"mode":              "AK",
-			"access_key_id":     accessKey,
-			"access_key_secret": secretKey,
-			"region_id":         regionId,
-		})
-		raw := map[string]interface{}{
-			"profile":                 fmt.Sprintf("concurrent-alias-%d", i),
-			"shared_credentials_file": profilePath,
-			"region":                  regionId,
-		}
-		aliasProfiles = append(aliasProfiles, aliasProfile{
-			resourceData: schema.TestResourceDataRaw(t, provider.Schema, raw),
-			accessKey:    accessKey,
-			secretKey:    secretKey,
-			regionId:     regionId,
-		})
-	}
-
-	var wg sync.WaitGroup
-	errCh := make(chan error, aliasCount)
-	for i := range aliasProfiles {
-		wg.Add(1)
-		go func(ap aliasProfile) {
-			defer wg.Done()
-			profileConfig, err := loadProfileConfig(ap.resourceData)
-			if err != nil {
-				errCh <- fmt.Errorf("loadProfileConfig failed: %v", err)
-				return
-			}
-			if got, gerr := getConfigFromProfile(profileConfig, "access_key_id"); gerr != nil || got != ap.accessKey {
-				errCh <- fmt.Errorf("access_key_id contaminated: want %q, got %v", ap.accessKey, got)
-				return
-			}
-			if got, gerr := getConfigFromProfile(profileConfig, "access_key_secret"); gerr != nil || got != ap.secretKey {
-				errCh <- fmt.Errorf("access_key_secret contaminated: want %q, got %v", ap.secretKey, got)
-				return
-			}
-			if got, gerr := getConfigFromProfile(profileConfig, "region_id"); gerr != nil || got != ap.regionId {
-				errCh <- fmt.Errorf("region_id contaminated: want %q, got %v", ap.regionId, got)
-				return
-			}
-		}(aliasProfiles[i])
-	}
-	wg.Wait()
-	close(errCh)
-
-	for err := range errCh {
-		t.Error(err)
-	}
-}
-
-// TestProviderConfigure_WithExternalAndOAuth 集成测试（需要实际凭证提供程序）
-func TestProviderConfigure_WithExternalAndOAuth(t *testing.T) {
-	// 这个测试需要实际的外部凭证提供程序，标记为需要环境变量
-	if os.Getenv("ALICLOUD_EXTERNAL_CREDENTIAL_PROVIDER") == "" {
-		t.Skip("Skipping integration test: ALICLOUD_EXTERNAL_CREDENTIAL_PROVIDER not set")
-	}
-
-	// 跳过 Windows 系统
-	if runtime.GOOS == "windows" {
-		t.Skip("Skipping bash script test on Windows")
-	}
-
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-integration-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	scriptPath := os.Getenv("ALICLOUD_EXTERNAL_CREDENTIAL_PROVIDER")
-
-	configPath := filepath.Join(tmpDir, "config.json")
-	config := map[string]interface{}{
-		"profiles": []map[string]interface{}{
-			{
-				"name":            "integration-external",
-				"mode":            "External",
-				"process_command": scriptPath,
-				"region_id":       "cn-beijing",
-			},
-		},
-		"current": "integration-external",
-	}
-
-	configData, err := json.Marshal(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.WriteFile(configPath, configData, 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	raw := make(map[string]interface{})
-	raw["profile"] = "integration-external"
-	raw["shared_credentials_file"] = configPath
-	raw["region"] = "cn-beijing"
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	// 尝试配置 provider（这会实际调用外部凭证提供程序）
-	_, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Logf("Expected: External credential provider might not return valid credentials in test environment")
-		// 不报错，因为在测试环境可能没有真实的凭证
-	} else {
-		t.Log("Successfully configured provider with External credential mode")
-	}
-}
-
-// ==============================================================================
-// providerConfigure 函数测试用例
-// ==============================================================================
-
-// TestProviderConfigure_StaticAK 测试静态 AK/SK 认证
-func TestProviderConfigure_StaticAK(t *testing.T) {
-	raw := map[string]interface{}{
-		"access_key": "LTAI5tTestAccessKey123456",
-		"secret_key": "TestSecretKey123456789012345678",
-		"region":     "cn-hangzhou",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, err := providerConfigure(context.Background(), resourceData, provider)
-	if err.HasError() {
-		t.Fatalf("providerConfigure failed with static AK/SK: %v", err)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with static AK/SK")
-	}
-}
-
-// TestProviderConfigure_StaticAKWithSTS 测试静态 AK/SK + STS Token 认证
-func TestProviderConfigure_StaticAKWithSTS(t *testing.T) {
-	raw := map[string]interface{}{
-		"access_key":     "STS.TestSTSAccessKey123456",
-		"secret_key":     "TestSTSSecretKey1234567890123456",
-		"security_token": "TestSecurityToken1234567890",
-		"region":         "cn-shanghai",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, err := providerConfigure(context.Background(), resourceData, provider)
-	if err.HasError() {
-		t.Fatalf("providerConfigure failed with STS token: %v", err)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with STS token")
-	}
-}
-
-// TestProviderConfigure_MissingCredentials 测试缺少凭证的情况
-func TestProviderConfigure_MissingCredentials(t *testing.T) {
-	// 保存当前环境变量
-	envVars := []string{
-		"ALICLOUD_ACCESS_KEY", "ALICLOUD_SECRET_KEY", "ALICLOUD_SECURITY_TOKEN",
-		"ALIBABA_CLOUD_ACCESS_KEY_ID", "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-		"ALICLOUD_PROFILE", "ALIBABA_CLOUD_PROFILE",
-		"ALICLOUD_ECS_ROLE_NAME",
-	}
-	savedEnvs := make(map[string]string)
-	for _, env := range envVars {
-		savedEnvs[env] = os.Getenv(env)
-		os.Unsetenv(env)
-	}
-	// 测试结束后恢复环境变量
-	defer func() {
-		for env, val := range savedEnvs {
-			if val != "" {
-				os.Setenv(env, val)
-			}
-		}
-	}()
-
-	raw := map[string]interface{}{
-		"region": "cn-hangzhou",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	_, err := providerConfigure(context.Background(), resourceData, provider)
-	if !err.HasError() {
-		t.Fatal("Expected error when credentials are missing")
-	}
-
-	expectedMsg := "no valid credential sources"
-	if !containsString(err[0].Summary+err[0].Detail, expectedMsg) {
-		t.Errorf("Expected error message to contain '%s', got: %v", expectedMsg, err)
-	}
-}
-
-// TestProviderConfigure_MissingSecretKey 测试只有 AccessKey 没有 SecretKey 的情况
-func TestProviderConfigure_MissingSecretKey(t *testing.T) {
-	// 保存当前环境变量
-	envVars := []string{
-		"ALICLOUD_ACCESS_KEY", "ALICLOUD_SECRET_KEY", "ALICLOUD_SECURITY_TOKEN",
-		"ALIBABA_CLOUD_ACCESS_KEY_ID", "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-		"ALICLOUD_PROFILE", "ALIBABA_CLOUD_PROFILE",
-		"ALICLOUD_ECS_ROLE_NAME",
-	}
-	savedEnvs := make(map[string]string)
-	for _, env := range envVars {
-		savedEnvs[env] = os.Getenv(env)
-		os.Unsetenv(env)
-	}
-	defer func() {
-		for env, val := range savedEnvs {
-			if val != "" {
-				os.Setenv(env, val)
-			}
-		}
-	}()
-
-	raw := map[string]interface{}{
-		"access_key": "LTAI5tTestAccessKey123456",
-		"region":     "cn-hangzhou",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	_, err := providerConfigure(context.Background(), resourceData, provider)
-	if !err.HasError() {
-		t.Fatal("Expected error when secret_key is missing")
-	}
-}
-
-// TestProviderConfigure_DefaultRegion 测试默认区域
-func TestProviderConfigure_DefaultRegion(t *testing.T) {
-	raw := map[string]interface{}{
-		"access_key": "LTAI5tTestAccessKey123456",
-		"secret_key": "TestSecretKey123456789012345678",
-		// 不设置 region，应该使用默认值
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, err := providerConfigure(context.Background(), resourceData, provider)
-	if err.HasError() {
-		t.Fatalf("providerConfigure failed: %v", err)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client")
-	}
-}
-
-// TestProviderConfigure_CredentialsURI 测试通过 credentials_uri 获取凭证
-func TestProviderConfigure_CredentialsURI(t *testing.T) {
-	// 创建模拟服务器返回凭证
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := `{
-			"Code": "Success",
-			"AccessKeyId": "LTAI5tURITestAK123456",
-			"AccessKeySecret": "fakeAccessKeySecret",
-			"SecurityToken": "fakeSecurityToken",
-			"Expiration": "2099-12-31T23:59:59Z"
-		}`
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
-	}))
-	defer server.Close()
-
-	raw := map[string]interface{}{
-		"credentials_uri": server.URL,
-		"region":          "cn-hangzhou",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, err := providerConfigure(context.Background(), resourceData, provider)
-	if err.HasError() {
-		t.Fatalf("providerConfigure failed with credentials_uri: %v", err)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with credentials_uri")
-	}
-}
-
-// TestProviderConfigure_CredentialsURIInvalid 测试无效的 credentials_uri
-func TestProviderConfigure_CredentialsURIInvalid(t *testing.T) {
-	// 保存当前环境变量
-	envVars := []string{
-		"ALICLOUD_ACCESS_KEY", "ALICLOUD_SECRET_KEY", "ALICLOUD_SECURITY_TOKEN",
-		"ALIBABA_CLOUD_ACCESS_KEY_ID", "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-		"ALICLOUD_PROFILE", "ALIBABA_CLOUD_PROFILE",
-		"ALICLOUD_ECS_ROLE_NAME",
-	}
-	savedEnvs := make(map[string]string)
-	for _, env := range envVars {
-		savedEnvs[env] = os.Getenv(env)
-		os.Unsetenv(env)
-	}
-	defer func() {
-		for env, val := range savedEnvs {
-			if val != "" {
-				os.Setenv(env, val)
-			}
-		}
-	}()
-
-	// 创建模拟服务器返回错误
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal Server Error"))
-	}))
-	defer server.Close()
-
-	raw := map[string]interface{}{
-		"credentials_uri": server.URL,
-		"region":          "cn-hangzhou",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	_, err := providerConfigure(context.Background(), resourceData, provider)
-	if !err.HasError() {
-		t.Fatal("Expected error with invalid credentials_uri response")
-	}
-
-	// 验证错误消息
-	expectedMsg := "failed"
-	msg := err[0].Summary + err[0].Detail
-	if !containsString(msg, expectedMsg) && !containsString(msg, "no valid credential") {
-		t.Errorf("Expected error message related to credentials, got: %v", err)
-	}
-}
-
-// TestProviderCredentials_CredentialsURIRefresh 验证 credentials_uri 返回的是可刷新的凭证：
-// 侧车给出的 Expiration 临近时 provider 会重新请求该 URI，而不是一路沿用首次获取的静态快照。
-func TestProviderCredentials_CredentialsURIRefresh(t *testing.T) {
-	var hits int32
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		n := atomic.AddInt32(&hits, 1)
-		// Expiration 只留 1 秒，提前刷新阈值随即失效，下一次 GetCredential 必须重新请求。
-		response := fmt.Sprintf(`{
-			"Code": "Success",
-			"AccessKeyId": "STS.RefreshAccessKey%d",
-			"AccessKeySecret": "refreshAccessKeySecret%d",
-			"SecurityToken": "refreshSecurityToken%d",
-			"Expiration": %q
-		}`, n, n, n, time.Now().Add(time.Second).UTC().Format("2006-01-02T15:04:05Z"))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
-	}))
-	defer server.Close()
-
-	credential := newCredentialsURICredential(server.URL, time.Now().Add(time.Hour).UTC().Format("2006-01-02T15:04:05Z"), 0, 0)
-	if credential == nil {
-		t.Fatal("Expected a refreshable credential for a sidecar returning Expiration")
-	}
-
-	first, err := credential.GetCredential()
-	if err != nil {
-		t.Fatalf("First GetCredential failed: %v", err)
-	}
-	second, err := credential.GetCredential()
-	if err != nil {
-		t.Fatalf("Second GetCredential failed: %v", err)
-	}
-
-	if got := atomic.LoadInt32(&hits); got != 2 {
-		t.Fatalf("Expected the credentials URI to be requested twice, got %d", got)
-	}
-	if *first.SecurityToken == *second.SecurityToken {
-		t.Fatalf("Expected the security token to be refreshed, got %q twice", *first.SecurityToken)
-	}
-	if got := *second.Type; got != "credentials_uri" {
-		t.Fatalf("Expected credential type credentials_uri, got %q", got)
-	}
-}
-
-// TestProviderCredentials_CredentialsURIStaticFallback 验证侧车不返回合法 Expiration 时保留一次快照的行为。
-func TestProviderCredentials_CredentialsURIStaticFallback(t *testing.T) {
-	if credential := newCredentialsURICredential("http://127.0.0.1:1/credentials", "", 0, 0); credential != nil {
-		t.Fatal("Expected a nil credential when Expiration is absent")
-	}
-	if credential := newCredentialsURICredential("http://127.0.0.1:1/credentials", "not-a-timestamp", 0, 0); credential != nil {
-		t.Fatal("Expected a nil credential when Expiration is not RFC3339")
-	}
-}
-
-// TestProviderConfigure_CredentialsURIConsumed 验证没有其他凭证来源时 providerConfigure 会读取 credentials_uri，
-// 并把侧车返回的 STS 信息装配到客户端上。refresh 语义由 TestProviderCredentials_CredentialsURIRefresh 覆盖：
-// 客户端内部的 Credential 不对外暴露，只能从 connectivity 包内断言。
-func TestProviderConfigure_CredentialsURIConsumed(t *testing.T) {
-	envVars := []string{
-		"ALICLOUD_ACCESS_KEY", "ALICLOUD_SECRET_KEY", "ALICLOUD_SECURITY_TOKEN",
-		"ALIBABA_CLOUD_ACCESS_KEY_ID", "ALIBABA_CLOUD_ACCESS_KEY_SECRET", "ALIBABA_CLOUD_SECURITY_TOKEN",
-		"ALICLOUD_PROFILE", "ALIBABA_CLOUD_PROFILE",
-		"ALICLOUD_ECS_ROLE_NAME",
-	}
-	savedEnvs := make(map[string]string)
-	for _, env := range envVars {
-		savedEnvs[env] = os.Getenv(env)
-		os.Unsetenv(env)
-	}
-	defer func() {
-		for env, val := range savedEnvs {
-			if val != "" {
-				os.Setenv(env, val)
-			}
-		}
-	}()
-
-	var hits int32
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		n := atomic.AddInt32(&hits, 1)
-		response := fmt.Sprintf(`{
-			"Code": "Success",
-			"AccessKeyId": "STS.ConfigureAccessKey%d",
-			"AccessKeySecret": "configureAccessKeySecret%d",
-			"SecurityToken": "configureSecurityToken%d",
-			"Expiration": %q
-		}`, n, n, n, time.Now().Add(time.Second).UTC().Format("2006-01-02T15:04:05Z"))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
-	}))
-	defer server.Close()
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
-		"credentials_uri": server.URL,
-		"region":          "cn-hangzhou",
-	})
-
+func configureProvider(t *testing.T, raw map[string]interface{}) *connectivity.AliyunClient {
+	t.Helper()
+	provider, resourceData := providerResourceData(t, raw)
 	configured, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Fatalf("providerConfigure failed with credentials_uri: %v", diags)
-	}
-	client, ok := configured.(*connectivity.AliyunClient)
-	if !ok || client == nil {
-		t.Fatalf("Expected an AliyunClient, got %#v", configured)
-	}
-	if client.AccessKey != "STS.ConfigureAccessKey1" || client.SecurityToken != "configureSecurityToken1" {
-		t.Fatalf("Expected the sidecar credentials to be used, got access key %q / token %q", client.AccessKey, client.SecurityToken)
-	}
-}
-
-// TestProviderConfigure_ProfileWithStaticAK 测试 Profile 配置（AK 模式）
-func TestProviderConfigure_ProfileWithStaticAK(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-profile-ak-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	configPath := filepath.Join(tmpDir, "config.json")
-	config := map[string]interface{}{
-		"profiles": []map[string]interface{}{
-			{
-				"name":              "test-ak-profile",
-				"mode":              "AK",
-				"access_key_id":     "fakeAccessKeyId",
-				"access_key_secret": "fakeAccessKeySecret",
-				"region_id":         "cn-beijing",
-			},
-		},
-		"current": "test-ak-profile",
-	}
-
-	configData, err := json.Marshal(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.WriteFile(configPath, configData, 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	raw := map[string]interface{}{
-		"profile":                 "test-ak-profile",
-		"shared_credentials_file": configPath,
-		"region":                  "cn-beijing",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Fatalf("providerConfigure failed with profile AK mode: %v", diags)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with profile AK mode")
-	}
-}
-
-// TestProviderConfigure_ProfileWithSTS 测试 Profile 配置（StsToken 模式）
-func TestProviderConfigure_ProfileWithSTS(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-profile-sts-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	configPath := filepath.Join(tmpDir, "config.json")
-	config := map[string]interface{}{
-		"profiles": []map[string]interface{}{
-			{
-				"name":              "test-sts-profile",
-				"mode":              "StsToken",
-				"access_key_id":     "STS.ProfileSTSAK123456789",
-				"access_key_secret": "ProfileSTSSecret1234567890123",
-				"sts_token":         "ProfileSTSToken12345678901234",
-				"region_id":         "cn-shanghai",
-			},
-		},
-		"current": "test-sts-profile",
-	}
-
-	configData, err := json.Marshal(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.WriteFile(configPath, configData, 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	raw := map[string]interface{}{
-		"profile":                 "test-sts-profile",
-		"shared_credentials_file": configPath,
-		"region":                  "cn-shanghai",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Fatalf("providerConfigure failed with profile STS mode: %v", diags)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with profile STS mode")
-	}
-}
-
-// TestProviderConfigure_ProfileExternal 测试 Profile External 模式
-func TestProviderConfigure_ProfileExternal(t *testing.T) {
-	// 跳过 Windows 系统
-	if runtime.GOOS == "windows" {
-		t.Skip("Skipping bash script test on Windows")
-	}
-
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-profile-external-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	// 创建外部程序脚本，输出格式需符合 credentials-go SDK 的 externalCredentialResponse 结构
-	// 字段名使用 snake_case: access_key_id, access_key_secret, sts_token, expiration
-	scriptPath := filepath.Join(tmpDir, "credential-provider.sh")
-	scriptContent := `#!/bin/sh
-cat <<EOF
-{
-  "mode": "External",
-  "access_key_id": "STS.ExternalAK123456789",
-  "access_key_secret": "ExternalSecretKey1234567890",
-  "sts_token": "ExternalSecurityToken12345",
-  "expiration": "2099-12-31T23:59:59Z"
-}
-EOF
-`
-	err = os.WriteFile(scriptPath, []byte(scriptContent), 0755)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	configPath := filepath.Join(tmpDir, "config.json")
-	config := map[string]interface{}{
-		"profiles": []map[string]interface{}{
-			{
-				"name":            "test-external-profile",
-				"mode":            "External",
-				"process_command": scriptPath,
-				"region_id":       "cn-hangzhou",
-			},
-		},
-		"current": "test-external-profile",
-	}
-
-	configData, err := json.Marshal(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.WriteFile(configPath, configData, 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	raw := map[string]interface{}{
-		"profile":                 "test-external-profile",
-		"shared_credentials_file": configPath,
-		"region":                  "cn-hangzhou",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Fatalf("providerConfigure failed with profile External mode: %v", diags)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with profile External mode")
-	}
-}
-
-// TestProviderConfigure_AssumeRole 测试 assume_role 配置
-// 注意：此测试需要有效凭证才能成功，使用假凭证会因为 STS 调用失败而报错
-func TestProviderConfigure_AssumeRole(t *testing.T) {
-	// 跳过使用假凭证的情况（真实 assume_role 需要实际调用 STS）
-	if os.Getenv("ALICLOUD_ACCESS_KEY") == "" {
-		t.Skip("Skipping assume_role test: requires real credentials to call STS")
-	}
-
-	raw := map[string]interface{}{
-		"access_key": os.Getenv("ALICLOUD_ACCESS_KEY"),
-		"secret_key": os.Getenv("ALICLOUD_SECRET_KEY"),
-		"region":     "cn-hangzhou",
-		"assume_role": []interface{}{
-			map[string]interface{}{
-				"role_arn":           os.Getenv("ALICLOUD_ASSUME_ROLE_ARN"),
-				"session_name":       "test-session",
-				"policy":             "",
-				"session_expiration": 3600,
-				"external_id":        "",
-			},
-		},
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Fatalf("providerConfigure failed with assume_role: %v", diags)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with assume_role")
-	}
-}
-
-// TestProviderConfigure_AssumeRoleConfig 测试 assume_role 配置解析（不实际调用 STS）
-func TestProviderConfigure_AssumeRoleConfig(t *testing.T) {
-	raw := map[string]interface{}{
-		"access_key": "LTAI5tTestAccessKey123456",
-		"secret_key": "TestSecretKey123456789012345678",
-		"region":     "cn-hangzhou",
-		"assume_role": []interface{}{
-			map[string]interface{}{
-				"role_arn":           "acs:ram::123456789012:role/test-role",
-				"session_name":       "test-session",
-				"policy":             "",
-				"session_expiration": 3600,
-				"external_id":        "",
-			},
-		},
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	// 只测试配置能够正确解析，不测试实际的 STS 调用
-	assumeRoleList := resourceData.Get("assume_role").(*schema.Set).List()
-	if len(assumeRoleList) != 1 {
-		t.Fatalf("Expected 1 assume_role config, got %d", len(assumeRoleList))
-	}
-
-	assumeRole := assumeRoleList[0].(map[string]interface{})
-	if assumeRole["role_arn"].(string) != "acs:ram::123456789012:role/test-role" {
-		t.Errorf("Expected role_arn to be 'acs:ram::123456789012:role/test-role', got '%s'", assumeRole["role_arn"])
-	}
-	if assumeRole["session_name"].(string) != "test-session" {
-		t.Errorf("Expected session_name to be 'test-session', got '%s'", assumeRole["session_name"])
-	}
-	if assumeRole["session_expiration"].(int) != 3600 {
-		t.Errorf("Expected session_expiration to be 3600, got %d", assumeRole["session_expiration"])
-	}
-}
-
-// TestProviderConfigure_AssumeRoleDefaultSessionName 测试 assume_role 默认 session_name
-func TestProviderConfigure_AssumeRoleDefaultSessionName(t *testing.T) {
-	raw := map[string]interface{}{
-		"access_key": "LTAI5tTestAccessKey123456",
-		"secret_key": "TestSecretKey123456789012345678",
-		"region":     "cn-hangzhou",
-		"assume_role": []interface{}{
-			map[string]interface{}{
-				"role_arn":           "acs:ram::123456789012:role/test-role",
-				"session_name":       "", // 空的 session_name，应该使用默认值 "terraform"
-				"policy":             "",
-				"session_expiration": 0,
-				"external_id":        "",
-			},
-		},
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	// 测试配置解析，验证 session_name 的默认值逻辑
-	assumeRoleList := resourceData.Get("assume_role").(*schema.Set).List()
-	if len(assumeRoleList) != 1 {
-		t.Fatalf("Expected 1 assume_role config, got %d", len(assumeRoleList))
-	}
-
-	assumeRole := assumeRoleList[0].(map[string]interface{})
-	// 在 providerConfigure 中，空的 session_name 会被设置为 "terraform"
-	if assumeRole["session_name"].(string) != "" {
-		t.Errorf("Expected session_name to be empty in raw config, got '%s'", assumeRole["session_name"])
-	}
-}
-
-// TestProviderConfigure_WithEndpoints 测试自定义 endpoints
-func TestProviderConfigure_WithEndpoints(t *testing.T) {
-	raw := map[string]interface{}{
-		"access_key": "LTAI5tTestAccessKey123456",
-		"secret_key": "TestSecretKey123456789012345678",
-		"region":     "cn-hangzhou",
-		"endpoints": []interface{}{
-			map[string]interface{}{
-				"ecs": "ecs.custom.aliyuncs.com",
-				"vpc": "vpc.custom.aliyuncs.com",
-				"rds": "rds.custom.aliyuncs.com",
-			},
-		},
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Fatalf("providerConfigure failed with custom endpoints: %v", diags)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with custom endpoints")
-	}
-}
-
-// TestProviderConfigure_WithTimeout 测试自定义超时设置
-func TestProviderConfigure_WithTimeout(t *testing.T) {
-	raw := map[string]interface{}{
-		"access_key":             "LTAI5tTestAccessKey123456",
-		"secret_key":             "TestSecretKey123456789012345678",
-		"region":                 "cn-hangzhou",
-		"client_read_timeout":    60,
-		"client_connect_timeout": 30,
-		"max_retry_timeout":      90,
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Fatalf("providerConfigure failed with timeout settings: %v", diags)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with timeout settings")
-	}
-}
-
-// TestProviderConfigure_WithAccountId 测试 account_id 配置
-func TestProviderConfigure_WithAccountId(t *testing.T) {
-	raw := map[string]interface{}{
-		"access_key": "LTAI5tTestAccessKey123456",
-		"secret_key": "TestSecretKey123456789012345678",
-		"region":     "cn-hangzhou",
-		"account_id": "123456789012",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Fatalf("providerConfigure failed with account_id: %v", diags)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with account_id")
-	}
-}
-
-// TestProviderConfigure_WithConfigurationSource 测试 configuration_source 配置
-func TestProviderConfigure_WithConfigurationSource(t *testing.T) {
-	raw := map[string]interface{}{
-		"access_key":           "LTAI5tTestAccessKey123456",
-		"secret_key":           "TestSecretKey123456789012345678",
-		"region":               "cn-hangzhou",
-		"configuration_source": "test/1.0.0",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Fatalf("providerConfigure failed with configuration_source: %v", diags)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with configuration_source")
-	}
-}
-
-// TestProviderConfigure_WithProtocol 测试 protocol 配置
-func TestProviderConfigure_WithProtocol(t *testing.T) {
-	testCases := []struct {
-		name     string
-		protocol string
-	}{
-		{"HTTPS", "HTTPS"},
-		{"HTTP", "HTTP"},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			raw := map[string]interface{}{
-				"access_key": "LTAI5tTestAccessKey123456",
-				"secret_key": "TestSecretKey123456789012345678",
-				"region":     "cn-hangzhou",
-				"protocol":   tc.protocol,
-			}
-
-			provider := Provider()
-			resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-			client, diags := providerConfigure(context.Background(), resourceData, provider)
-			if diags.HasError() {
-				t.Fatalf("providerConfigure failed with protocol %s: %v", tc.protocol, diags)
-			}
-
-			if client == nil {
-				t.Fatalf("Expected non-nil client with protocol %s", tc.protocol)
-			}
-		})
-	}
-}
-
-// TestProviderConfigure_SkipRegionValidation 测试跳过区域验证
-func TestProviderConfigure_SkipRegionValidation(t *testing.T) {
-	raw := map[string]interface{}{
-		"access_key":             "LTAI5tTestAccessKey123456",
-		"secret_key":             "TestSecretKey123456789012345678",
-		"region":                 "invalid-region",
-		"skip_region_validation": true,
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Fatalf("providerConfigure failed with skip_region_validation: %v", diags)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with skip_region_validation")
-	}
-}
-
-// TestProviderConfigure_SecureTransport 测试安全传输配置
-func TestProviderConfigure_SecureTransport(t *testing.T) {
-	raw := map[string]interface{}{
-		"access_key":       "LTAI5tTestAccessKey123456",
-		"secret_key":       "TestSecretKey123456789012345678",
-		"region":           "cn-hangzhou",
-		"secure_transport": "true",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Fatalf("providerConfigure failed with secure_transport: %v", diags)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with secure_transport")
-	}
-}
-
-// TestProviderConfigure_SourceIP 测试 source_ip 配置
-func TestProviderConfigure_SourceIP(t *testing.T) {
-	raw := map[string]interface{}{
-		"access_key": "LTAI5tTestAccessKey123456",
-		"secret_key": "TestSecretKey123456789012345678",
-		"region":     "cn-hangzhou",
-		"source_ip":  "192.168.1.100",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Fatalf("providerConfigure failed with source_ip: %v", diags)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with source_ip")
-	}
-}
-
-// TestProviderConfigure_StaticOverridesProfile 测试静态配置优先级高于 Profile
-func TestProviderConfigure_StaticOverridesProfile(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-priority-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	configPath := filepath.Join(tmpDir, "config.json")
-	config := map[string]interface{}{
-		"profiles": []map[string]interface{}{
-			{
-				"name":              "priority-test",
-				"mode":              "AK",
-				"access_key_id":     "LTAI5tProfileAK1234567890",
-				"access_key_secret": "ProfileSecretKey1234567890",
-				"region_id":         "cn-shanghai",
-			},
-		},
-		"current": "priority-test",
-	}
-
-	configData, err := json.Marshal(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.WriteFile(configPath, configData, 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// 静态配置应该覆盖 profile 配置
-	raw := map[string]interface{}{
-		"access_key":              "fakeAccessKey",
-		"secret_key":              "fakeSecretKey",
-		"profile":                 "priority-test",
-		"shared_credentials_file": configPath,
-		"region":                  "cn-hangzhou",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, diags := providerConfigure(context.Background(), resourceData, provider)
 	if diags.HasError() {
 		t.Fatalf("providerConfigure failed: %v", diags)
 	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client")
+	client, ok := configured.(*connectivity.AliyunClient)
+	if !ok || client == nil {
+		t.Fatalf("expected an AliyunClient, got %#v", configured)
 	}
+	return client
 }
 
-// TestProviderConfigure_ProfileNotFound 测试 Profile 不存在的情况
-func TestProviderConfigure_ProfileNotFound(t *testing.T) {
-	// 保存当前环境变量并清除
-	envVars := []string{
+func clearCredentialEnv(t *testing.T) {
+	t.Helper()
+	for _, key := range []string{
 		"ALICLOUD_ACCESS_KEY", "ALICLOUD_SECRET_KEY", "ALICLOUD_SECURITY_TOKEN",
-		"ALIBABA_CLOUD_ACCESS_KEY_ID", "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-		"ALICLOUD_PROFILE", "ALIBABA_CLOUD_PROFILE",
-		"ALICLOUD_ECS_ROLE_NAME",
-	}
-	savedEnvs := make(map[string]string)
-	for _, env := range envVars {
-		savedEnvs[env] = os.Getenv(env)
-		os.Unsetenv(env)
-	}
-	defer func() {
-		for env, val := range savedEnvs {
-			if val != "" {
-				os.Setenv(env, val)
-			}
-		}
-	}()
-
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-notfound-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	configPath := filepath.Join(tmpDir, "config.json")
-	config := map[string]interface{}{
-		"profiles": []map[string]interface{}{
-			{
-				"name":              "existing-profile",
-				"mode":              "AK",
-				"access_key_id":     "LTAI5tExistingAK1234567890",
-				"access_key_secret": "ExistingSecretKey1234567890",
-				"region_id":         "cn-hangzhou",
-			},
-		},
-		"current": "existing-profile",
-	}
-
-	configData, err := json.Marshal(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.WriteFile(configPath, configData, 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	raw := map[string]interface{}{
-		"profile":                 "non-existing-profile",
-		"shared_credentials_file": configPath,
-		"region":                  "cn-hangzhou",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	_, diags := providerConfigure(context.Background(), resourceData, provider)
-	// Profile 不存在时，应该返回缺少凭证的错误
-	if !diags.HasError() {
-		t.Fatal("Expected error when profile not found")
+		"ALIBABA_CLOUD_ACCESS_KEY_ID", "ALIBABA_CLOUD_ACCESS_KEY_SECRET", "ALIBABA_CLOUD_SECURITY_TOKEN",
+		"ALIBABACLOUD_ACCESS_KEY_ID", "ALICLOUD_PROFILE", "ALIBABA_CLOUD_PROFILE",
+		"ALICLOUD_ECS_ROLE_NAME", "ALICLOUD_SHARED_CREDENTIALS_FILE",
+		"ALIBABA_CLOUD_OIDC_TOKEN", "ALIBABA_CLOUD_OIDC_TOKEN_FILE",
+		"ALIBABA_CLOUD_OIDC_PROVIDER_ARN", "ALIBABA_CLOUD_ROLE_ARN", "ALIBABA_CLOUD_ROLE_SESSION_NAME",
+	} {
+		t.Setenv(key, "")
 	}
 }
 
-// TestProviderConfigure_AllRegions 测试不同区域的配置
-func TestProviderConfigure_AllRegions(t *testing.T) {
-	regions := []string{
-		"cn-hangzhou",
-		"cn-beijing",
-		"cn-shanghai",
-		"cn-shenzhen",
-		"cn-hongkong",
-		"ap-southeast-1",
-		"us-west-1",
-		"eu-central-1",
-	}
-
-	for _, region := range regions {
-		t.Run(region, func(t *testing.T) {
-			raw := map[string]interface{}{
-				"access_key": "LTAI5tTestAccessKey123456",
-				"secret_key": "TestSecretKey123456789012345678",
-				"region":     region,
-			}
-
-			provider := Provider()
-			resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-			client, diags := providerConfigure(context.Background(), resourceData, provider)
-			if diags.HasError() {
-				t.Fatalf("providerConfigure failed for region %s: %v", region, diags)
-			}
-
-			if client == nil {
-				t.Fatalf("Expected non-nil client for region %s", region)
-			}
-		})
-	}
-}
-
-// TestProviderConfigure_EcsRoleName 测试 ECS 角色认证
-func TestProviderConfigure_EcsRoleName(t *testing.T) {
-	// 此测试需要在 ECS 实例上运行，或设置了相应的环境变量
-	if os.Getenv("ALICLOUD_ECS_ROLE_NAME") == "" {
-		t.Skip("Skipping ECS role test: ALICLOUD_ECS_ROLE_NAME not set")
-	}
-
-	raw := map[string]interface{}{
-		"ecs_role_name": os.Getenv("ALICLOUD_ECS_ROLE_NAME"),
-		"region":        "cn-hangzhou",
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Logf("providerConfigure with ecs_role_name failed (expected in non-ECS environment): %v", diags)
-	} else if client == nil {
-		t.Log("Client is nil (expected in non-ECS environment)")
-	}
-}
-
-// TestProviderConfigure_SignVersion 测试签名版本配置
-func TestProviderConfigure_SignVersion(t *testing.T) {
-	raw := map[string]interface{}{
-		"access_key": "LTAI5tTestAccessKey123456",
-		"secret_key": "TestSecretKey123456789012345678",
-		"region":     "cn-hangzhou",
-		"sign_version": []interface{}{
-			map[string]interface{}{
-				"oss": "v4",
-				"sls": "v4",
-			},
-		},
-	}
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	client, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Fatalf("providerConfigure failed with sign_version: %v", diags)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client with sign_version")
-	}
-}
-
-// 辅助函数：检查字符串是否包含子串
-func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsStringHelper(s, substr))
-}
-
-func containsStringHelper(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
-
-// TestProviderConfigure_AdvancedProfileModes 测试高级 Profile 模式 (ChainableRamRoleArn, CloudSSO, External, OAuth)
-func TestProviderConfigure_AdvancedProfileModes(t *testing.T) {
-	// 创建临时目录
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-advanced-profiles-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	// 测试不同的高级模式
-	modes := []struct {
-		name        string
-		mode        string
-		extraConfig map[string]interface{}
-	}{
-		{
-			name: "ChainableRamRoleArn",
-			mode: "ChainableRamRoleArn",
-			extraConfig: map[string]interface{}{
-				"ram_role_arn":           "acs:ram::123456789012:role/test-role",
-				"ram_session_name":       "test-session",
-				"ram_session_expiration": 3600,
-			},
-		},
-		{
-			name: "CloudSSO",
-			mode: "CloudSSO",
-			extraConfig: map[string]interface{}{
-				"start_url":  "https://sso.aliyun.com",
-				"sso_region": "cn-shanghai",
-				"account_id": "123456789012",
-			},
-		},
-		{
-			name: "External",
-			mode: "External",
-			extraConfig: map[string]interface{}{
-				"process_command": "/bin/echo '{\"AccessKeyId\":\"test\",\"AccessKeySecret\":\"test\",\"SecurityToken\":\"test\"}'",
-			},
-		},
-		{
-			name: "OAuth",
-			mode: "OAuth",
-			extraConfig: map[string]interface{}{
-				"oauth_client_id":     "test-client-id",
-				"oauth_client_secret": "test-client-secret",
-				"oauth_token_url":     "https://oauth.aliyun.com/token",
-				"oauth_scope":         "openid",
-			},
-		},
-	}
-
-	for _, mode := range modes {
-		t.Run(mode.name, func(t *testing.T) {
-			// 创建配置文件
-			configPath := filepath.Join(tmpDir, fmt.Sprintf("config_%s.json", mode.name))
-
-			// 构建 profile 配置
-			profile := map[string]interface{}{
-				"name":      fmt.Sprintf("test-%s", mode.name),
-				"mode":      mode.mode,
-				"region_id": "cn-hangzhou",
-			}
-
-			// 添加额外配置
-			for k, v := range mode.extraConfig {
-				profile[k] = v
-			}
-
-			config := map[string]interface{}{
-				"profiles": []map[string]interface{}{profile},
-				"current":  fmt.Sprintf("test-%s", mode.name),
-			}
-
-			// 写入配置文件
-			configData, err := json.Marshal(config)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			err = os.WriteFile(configPath, configData, 0644)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			// 创建测试数据
-			raw := map[string]interface{}{
-				"profile":                 fmt.Sprintf("test-%s", mode.name),
-				"shared_credentials_file": configPath,
-				"region":                  "cn-hangzhou",
-			}
-
-			provider := Provider()
-			resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-			// 测试配置过程
-			client, diags := providerConfigure(context.Background(), resourceData, provider)
-			if diags.HasError() {
-				// 对于 External 和 OAuth 模式，由于缺少真实的凭证提供程序，可能会出错
-				// 我们主要验证配置是否能正确处理这些模式
-				t.Logf("Expected error for mode %s (might be due to missing real credential provider): %v", mode.name, diags)
-			} else {
-				if client == nil {
-					t.Errorf("Expected non-nil client for mode %s", mode.name)
-				}
-			}
-		})
-	}
-}
-
-// TestProviderConfigure_GetConfigFromProfile_AdvancedModes 测试 getConfigFromProfile 对高级模式的处理
-func TestProviderConfigure_GetConfigFromProfile_AdvancedModes(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-getconfig-advanced-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	modes := []string{"ChainableRamRoleArn", "CloudSSO", "External", "OAuth"}
-
-	for _, mode := range modes {
-		t.Run(mode, func(t *testing.T) {
-			// 创建配置文件
-			configPath := filepath.Join(tmpDir, fmt.Sprintf("config_%s.json", mode))
-			profileName := fmt.Sprintf("test-%s", mode)
-			config := map[string]interface{}{
-				"profiles": []map[string]interface{}{
-					{
-						"name":      profileName,
-						"mode":      mode,
-						"region_id": "cn-hangzhou",
-					},
-				},
-				"current": profileName,
-			}
-
-			// 写入配置文件
-			configData, err := json.Marshal(config)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			err = os.WriteFile(configPath, configData, 0644)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			// 创建测试数据
-			raw := map[string]interface{}{
-				"profile":                 profileName,
-				"shared_credentials_file": configPath,
-				"region":                  "cn-hangzhou",
-			}
-
-			provider := Provider()
-			resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-			// 每个 provider 实例独立加载自身的 profile
-			profileConfig, err := loadProfileConfig(resourceData)
-			if err != nil {
-				t.Fatalf("loadProfileConfig failed: %v", err)
-			}
-
-			// 测试获取 region_id（应该正常返回，因为 region_id 是特例）
-			region, err := getConfigFromProfile(profileConfig, "region_id")
-			if err != nil {
-				t.Fatalf("getConfigFromProfile(region_id) failed: %v", err)
-			}
-			if region != "cn-hangzhou" {
-				t.Errorf("Expected region_id 'cn-hangzhou', got '%v' for mode %s", region, mode)
-			}
-
-			// 测试获取 mode（对于高级模式应该返回 nil，除了 region_id 之外的所有字段都返回 nil）
-			modeValue, err := getConfigFromProfile(profileConfig, "mode")
-			if err != nil {
-				t.Fatalf("getConfigFromProfile(mode) failed: %v", err)
-			}
-			if modeValue != nil {
-				t.Errorf("Expected nil for mode in advanced mode %s, got %v", mode, modeValue)
-			}
-
-			// 测试获取 access_key_id（对于高级模式应该返回 nil）
-			accessKey, err := getConfigFromProfile(profileConfig, "access_key_id")
-			if err != nil {
-				t.Fatalf("getConfigFromProfile(access_key_id) failed: %v", err)
-			}
-			if accessKey != nil {
-				t.Errorf("Expected nil for access_key_id in mode %s, got %v", mode, accessKey)
-			}
-
-			// 测试获取 ram_role_name（对于高级模式应该返回 nil）
-			ramRoleName, err := getConfigFromProfile(profileConfig, "ram_role_name")
-			if err != nil {
-				t.Fatalf("getConfigFromProfile(ram_role_name) failed: %v", err)
-			}
-			if ramRoleName != nil {
-				t.Errorf("Expected nil for ram_role_name in mode %s, got %v", mode, ramRoleName)
-			}
-		})
-	}
-}
-
-// TestAdvancedProfileModes_CredentialRetrieval 测试高级 Profile 模式下凭证获取的功能
-func TestAdvancedProfileModes_CredentialRetrieval(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-credential-retrieval-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	// 清理环境变量中的访问凭证，防止默认获取环境变量中的 AK/SK
-	credentialEnvVars := []string{
-		"ALIBABA_CLOUD_ACCESS_KEY_ID",
-		"ALIBABA_CLOUD_SECRET_ACCESS_KEY",
-		"ALIBABA_CLOUD_SECURITY_TOKEN",
-		"ALICLOUD_ACCESS_KEY",
-		"ALICLOUD_SECRET_KEY",
-		"ALICLOUD_SECURITY_TOKEN",
-		"ALICLOUD_REGION",
-		"ALICLOUD_PROFILE",
-		"ALICLOUD_SHARED_CREDENTIALS_FILE",
-	}
-
-	// 保存原始环境变量值
-	originalEnvVars := make(map[string]string)
-	for _, envVar := range credentialEnvVars {
-		originalEnvVars[envVar] = os.Getenv(envVar)
-		os.Unsetenv(envVar)
-	}
-
-	// 测试结束后恢复环境变量
-	defer func() {
-		for envVar, value := range originalEnvVars {
-			if value != "" {
-				os.Setenv(envVar, value)
-			}
-		}
-	}()
-
-	// 对于这个测试，我们只测试配置是否能正确处理高级模式
-	// 实际的凭证获取需要真实的阿里云环境，所以我们只验证流程
-	modes := []struct {
-		name string
-		mode string
-	}{
-		{name: "ChainableRamRoleArn", mode: "ChainableRamRoleArn"},
-		{name: "CloudSSO", mode: "CloudSSO"},
-		{name: "External", mode: "External"},
-		{name: "OAuth", mode: "OAuth"},
-	}
-
-	for _, mode := range modes {
-		t.Run(mode.name, func(t *testing.T) {
-			// 创建配置文件
-			configPath := filepath.Join(tmpDir, fmt.Sprintf("config_%s.json", mode.name))
-			profileName := fmt.Sprintf("test-%s", mode.name)
-
-			// 根据不同模式准备配置
-			profile := map[string]interface{}{
-				"name":      profileName,
-				"mode":      mode.mode,
-				"region_id": "cn-hangzhou",
-			}
-
-			// 为不同模式添加必要的配置字段
-			switch mode.mode {
-			case "ChainableRamRoleArn":
-				profile["ram_role_arn"] = "acs:ram::123456789012:role/test-role"
-				profile["ram_session_name"] = "test-session"
-			case "CloudSSO":
-				profile["start_url"] = "https://sso.aliyun.com"
-				profile["sso_region"] = "cn-shanghai"
-			case "External":
-				profile["process_command"] = "/bin/echo '{}'" // 空输出命令
-			case "OAuth":
-				profile["oauth_client_id"] = "test-client-id"
-				profile["oauth_client_secret"] = "test-client-secret"
-				profile["oauth_site_type"] = "CN"
-			}
-
-			config := map[string]interface{}{
-				"profiles": []map[string]interface{}{profile},
-				"current":  profileName,
-			}
-
-			// 写入配置文件
-			configData, err := json.Marshal(config)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			err = os.WriteFile(configPath, configData, 0644)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			// 创建测试数据
-			raw := map[string]interface{}{
-				"profile":                 profileName,
-				"shared_credentials_file": configPath,
-				"region":                  "cn-hangzhou",
-			}
-
-			provider := Provider()
-			resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-			// 测试 providerConfigure 函数对高级模式的处理
-			// 注意：由于我们没有真实的凭证提供程序，这里会返回错误，但我们主要验证流程
-			client, diags := providerConfigure(context.Background(), resourceData, provider)
-			if diags.HasError() {
-				// 对于 External 和 OAuth 模式，由于缺少真实的凭证提供程序，会出错
-				// 这是预期的行为，我们主要验证配置是否能正确识别这些模式
-				t.Logf("Expected error for mode %s (might be due to missing real credential provider): %v", mode.name, diags)
-			} else {
-				if client == nil {
-					t.Errorf("Expected non-nil client for mode %s", mode.name)
-				}
-			}
-		})
-	}
-}
-
-// TestDefaultConfigPath verifies that defaultConfigPath resolves the aliyun
-// CLI config under the real user home directory and never degenerates to the
-// filesystem root (/.aliyun/config.json) when HOME / USERPROFILE are empty.
-//
-// Regression guard for the Windows service-account / minimal-container
-// scenario where an empty USERPROFILE previously made
-// fmt.Sprintf("%s/.aliyun/config.json", os.Getenv("USERPROFILE")) resolve to
-// the current drive root, silently skipping profile loading and surfacing as
-// an opaque authentication failure.
-func TestDefaultConfigPath(t *testing.T) {
-	// Drive homedir from the live environment and reset its cache between
-	// cases so t.Setenv takes effect.
-	origDisableCache := homedir.DisableCache
-	homedir.DisableCache = true
-	defer func() {
-		homedir.DisableCache = origDisableCache
-		homedir.Reset()
-	}()
-
-	// tempHome is a real directory used as a stand-in home for the "env set"
-	// case so the assertion can be exact; it intentionally has no
-	// .aliyun/config.json inside it.
-	tempHome, err := ioutil.TempDir("", "alicloud-default-config-home-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tempHome)
-
-	tests := []struct {
-		name    string
-		envHome string // value assigned to HOME (and USERPROFILE, no-op on unix)
-	}{
-		{name: "HOME set to real temp dir", envHome: tempHome},
-		{name: "HOME empty (unix fallback to user db)", envHome: ""},
-		{name: "HOME and USERPROFILE both empty", envHome: ""},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			homedir.Reset()
-			t.Setenv("HOME", tt.envHome)
-			t.Setenv("USERPROFILE", tt.envHome)
-
-			got, err := defaultConfigPath()
-
-			// Disk-root regression signatures must never appear, regardless of
-			// whether a home directory could be determined.
-			if got == "/.aliyun/config.json" || strings.HasPrefix(got, "/.aliyun") {
-				t.Fatalf("defaultConfigPath regressed to disk-root path %q (err=%v)", got, err)
-			}
-
-			if err != nil {
-				// When no home can be determined at all, an error is the safe
-				// outcome (callers treat it as "no profile"); the path must
-				// stay empty rather than pointing at the drive root.
-				if got != "" {
-					t.Fatalf("defaultConfigPath returned non-empty path %q alongside error: %v", got, err)
-				}
-				t.Logf("defaultConfigPath returned an error (acceptable, no disk-root): %v", err)
-				return
-			}
-
-			if got == "" {
-				t.Fatalf("defaultConfigPath returned empty path with nil error")
-			}
-			if !strings.HasSuffix(got, filepath.Join(".aliyun", "config.json")) {
-				t.Fatalf("defaultConfigPath result %q does not end with .aliyun/config.json", got)
-			}
-			// For the explicit-temp-home case, assert the exact joined path.
-			if tt.envHome != "" {
-				want := filepath.Join(tt.envHome, ".aliyun", "config.json")
-				if got != want {
-					t.Fatalf("defaultConfigPath = %q, want %q", got, want)
-				}
-			}
-		})
-	}
-}
-
-// TestGetConfigFromProfile_EmptySharedCredentialsFile verifies that with an
-// empty shared_credentials_file, getConfigFromProfile resolves the default
-// path via defaultConfigPath (under the home dir, not the disk root) and
-// degrades gracefully (nil, nil) when that default file does not exist.
-func TestGetConfigFromProfile_EmptySharedCredentialsFile(t *testing.T) {
-	origDisableCache := homedir.DisableCache
-	homedir.DisableCache = true
-	defer func() {
-		homedir.DisableCache = origDisableCache
-		homedir.Reset()
-	}()
-
-	// Empty temp dir as HOME so defaultConfigPath points at a non-existent
-	// path (deterministic, never the operator's real aliyun config).
-	tempHome, err := os.MkdirTemp("", "alicloud-empty-home-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tempHome)
-
-	homedir.Reset()
-	t.Setenv("HOME", tempHome)
-	t.Setenv("USERPROFILE", tempHome)
-
-	// Sanity: the default path must live under the temp home, not the disk root.
-	defaultPath, derr := defaultConfigPath()
-	if derr != nil {
-		t.Fatalf("defaultConfigPath error: %v", derr)
-	}
-	if defaultPath == "/.aliyun/config.json" || strings.HasPrefix(defaultPath, "/.aliyun") {
-		t.Fatalf("defaultConfigPath regressed to disk-root %q", defaultPath)
-	}
-	if want := filepath.Join(tempHome, ".aliyun", "config.json"); defaultPath != want {
-		t.Fatalf("defaultConfigPath = %q, want %q", defaultPath, want)
-	}
-
-	raw := map[string]interface{}{
-		"profile":                 "non-existent-profile",
-		"shared_credentials_file": "", // empty -> exercises defaultConfigPath
-		"region":                  "cn-beijing",
-	}
-	resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
-
-	profileConfig, err := loadProfileConfig(resourceData)
-	if err != nil {
-		t.Fatalf("loadProfileConfig failed: %v", err)
-	}
-	val, err := getConfigFromProfile(profileConfig, "access_key_id")
-	if err != nil {
-		t.Fatalf("getConfigFromProfile failed: %v", err)
-	}
-
-	// Default config absent under temp home: profile not loaded -> graceful.
-	if val != nil {
-		t.Errorf("Expected nil value when default config file is absent, got %v", val)
-	}
-}
-
-// TestUnitGetConfigFromProfile_InvalidJSON verifies that an empty, truncated or
-// otherwise invalid credentials file surfaces a parse error carrying the file
-// path, the profile name and the parse reason, instead of degrading to an empty
-// config that later reports a misleading missing-credential error.
-func TestUnitGetConfigFromProfile_InvalidJSON(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-invalid-json-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	cases := []struct {
-		name    string
-		content string
-	}{
-		// Truncated JSON, as produced when the file is cut off mid-write.
-		{"Truncated", `{"profiles": [{"name": "broken-profile", "mode": "AK"`},
-		// A zero-byte file, as produced when the file is created before any
-		// content is written.
-		{"EmptyFile", ``},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			configPath := filepath.Join(tmpDir, tc.name+".json")
-			if err := os.WriteFile(configPath, []byte(tc.content), 0644); err != nil {
-				t.Fatal(err)
-			}
-
-			raw := map[string]interface{}{
-				"profile":                 "broken-profile",
-				"shared_credentials_file": configPath,
-				"region":                  "cn-beijing",
-			}
-			resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
-
-			profileConfig, err := loadProfileConfig(resourceData)
-			if err == nil {
-				t.Fatalf("Expected an error for an unparsable JSON credentials file (%s), got value %v", tc.name, profileConfig)
-			}
-			errMsg := err.Error()
-			if !strings.Contains(errMsg, configPath) {
-				t.Errorf("Expected error to contain the file path %s, got: %s", configPath, errMsg)
-			}
-			if !strings.Contains(errMsg, "broken-profile") {
-				t.Errorf("Expected error to contain the profile name, got: %s", errMsg)
-			}
-			if !strings.Contains(errMsg, "invalid JSON") {
-				t.Errorf("Expected error to contain the parse reason, got: %s", errMsg)
-			}
-		})
-	}
-}
-
-// TestUnitGetConfigFromProfile_StructureMismatch verifies that a syntactically
-// valid JSON file with an unexpected structure returns an error instead of
-// panicking; the per-instance load never caches a failed result, so a later
-// call retries from disk.
-func TestUnitGetConfigFromProfile_StructureMismatch(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-bad-struct-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	cases := []struct {
-		name    string
-		content string
-	}{
-		{"MissingProfilesField", `{"current": "p1"}`},
-		{"EmptyObject", `{}`},
-		{"ProfilesNotArray", `{"profiles": "not-an-array", "current": "p1"}`},
-		{"ProfilesObject", `{"profiles": {}, "current": "p1"}`},
-		{"ProfileEntryNotObject", `{"profiles": ["just-a-string"], "current": "p1"}`},
-		{"ProfileEntryNotObjectNumber", `{"profiles": [42], "current": "p1"}`},
-		{"ProfileEntryNull", `{"profiles": [null], "current": "p1"}`},
-		{"ModeNotString", `{"profiles": [{"name": "p1", "mode": 123}], "current": "p1"}`},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			configPath := filepath.Join(tmpDir, tc.name+".json")
-			if err := os.WriteFile(configPath, []byte(tc.content), 0644); err != nil {
-				t.Fatal(err)
-			}
-
-			raw := map[string]interface{}{
-				"profile":                 "p1",
-				"shared_credentials_file": configPath,
-				"region":                  "cn-beijing",
-			}
-			resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
-
-			profileConfig, err := loadProfileConfig(resourceData)
-			if err == nil {
-				t.Fatalf("Expected an error for malformed profile structure (%s), got value %v", tc.name, profileConfig)
-			}
-			if !strings.Contains(err.Error(), configPath) || !strings.Contains(err.Error(), "p1") {
-				t.Errorf("Expected error to contain the file path and profile name, got: %s", err.Error())
-			}
-		})
-	}
-}
-
-// TestUnitGetConfigFromProfile_RetryAfterParseFailure verifies that a failed
-// load is not cached: after the credentials file is repaired, a later call in
-// the same process re-reads the file and succeeds.
-func TestUnitGetConfigFromProfile_RetryAfterParseFailure(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-retry-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	configPath := filepath.Join(tmpDir, "config.json")
-	if err := os.WriteFile(configPath, []byte(`{"profiles": [{"name": "retry-profile"`), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	raw := map[string]interface{}{
-		"profile":                 "retry-profile",
-		"shared_credentials_file": configPath,
-		"region":                  "cn-beijing",
-	}
-	resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
-
-	if _, err := loadProfileConfig(resourceData); err == nil {
-		t.Fatal("Expected a parse error for the truncated credentials file")
-	}
-
-	valid := map[string]interface{}{
-		"profiles": []map[string]interface{}{
-			{
-				"name":              "retry-profile",
-				"mode":              "AK",
-				"access_key_id":     "RETRY_AK",
-				"access_key_secret": "RETRY_SK",
-				"region_id":         "cn-hangzhou",
-			},
-		},
-		"current": "retry-profile",
-	}
-	validData, err := json.Marshal(valid)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(configPath, validData, 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	profileConfig, err := loadProfileConfig(resourceData)
-	if err != nil {
-		t.Fatalf("Expected the retry to re-read the repaired file, got error: %v", err)
-	}
-	val, err := getConfigFromProfile(profileConfig, "access_key_id")
-	if err != nil {
-		t.Fatalf("getConfigFromProfile failed: %v", err)
-	}
-	if val != "RETRY_AK" {
-		t.Errorf("Expected RETRY_AK after retrying with the repaired file, got %v", val)
-	}
-}
-
-// TestUnitGetConfigFromProfile_ProfileModeKeySemantics locks the per-mode key
-// semantics of the profile switch: static keys are only returned for their
-// matching mode and yield empty strings otherwise.
-func TestUnitGetConfigFromProfile_ProfileModeKeySemantics(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-mode-semantics-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	configs := map[string]map[string]interface{}{
-		"AK": {
-			"name":              "sem-ak",
-			"mode":              "AK",
-			"access_key_id":     "AK_ID",
-			"access_key_secret": "AK_SECRET",
-			"sts_token":         "STS_TOK",
-			"ram_role_name":     "ROLE_NAME",
-			"region_id":         "cn-hangzhou",
-		},
-		"EcsRamRole": {
-			"name":          "sem-ecs",
-			"mode":          "EcsRamRole",
-			"ram_role_name": "ECS_ROLE",
-			"region_id":     "cn-hangzhou",
-		},
-		"StsToken": {
-			"name":              "sem-sts",
-			"mode":              "StsToken",
-			"access_key_id":     "STS_AK_ID",
-			"access_key_secret": "STS_SK",
-			"sts_token":         "STS_TOK",
-			"region_id":         "cn-hangzhou",
-		},
-		"RamRoleArn": {
-			"name":              "sem-rra",
-			"mode":              "RamRoleArn",
-			"access_key_id":     "RRA_AK_ID",
-			"access_key_secret": "RRA_SK",
-			"ram_role_arn":      "acs:ram::1234567890123456:role/tf",
-			"ram_session_name":  "tf-session",
-			"expired_seconds":   900,
-			"region_id":         "cn-hangzhou",
-		},
-	}
-
-	// mode -> profileKey -> expected value.
-	expectations := map[string]map[string]interface{}{
-		"AK": {
-			"access_key_id": "AK_ID",
-			"sts_token":     "",
-			"ram_role_name": "",
-		},
-		"EcsRamRole": {
-			"access_key_id": "",
-			"ram_role_name": "ECS_ROLE",
-			"sts_token":     "",
-		},
-		"StsToken": {
-			"sts_token":     "STS_TOK",
-			"access_key_id": "STS_AK_ID",
-			"ram_role_name": "",
-		},
-		"RamRoleArn": {
-			"ram_role_arn":     "acs:ram::1234567890123456:role/tf",
-			"ram_session_name": "tf-session",
-			"expired_seconds":  float64(900),
-			"sts_token":        "",
-		},
-	}
-
-	for mode, profile := range configs {
-		t.Run(fmt.Sprintf("Mode_%s", mode), func(t *testing.T) {
-			configPath := filepath.Join(tmpDir, fmt.Sprintf("config_%s.json", mode))
-			content, err := json.Marshal(map[string]interface{}{
-				"profiles": []map[string]interface{}{profile},
-				"current":  profile["name"],
-			})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile(configPath, content, 0644); err != nil {
-				t.Fatal(err)
-			}
-
-			raw := map[string]interface{}{
-				"profile":                 profile["name"],
-				"shared_credentials_file": configPath,
-				"region":                  "cn-beijing",
-			}
-			resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
-
-			profileConfig, err := loadProfileConfig(resourceData)
-			if err != nil {
-				t.Fatalf("loadProfileConfig failed for mode %s: %v", mode, err)
-			}
-			for profileKey, expected := range expectations[mode] {
-				val, err := getConfigFromProfile(profileConfig, profileKey)
-				if err != nil {
-					t.Fatalf("Failed to get %q from profile mode %s: %v", profileKey, mode, err)
-				}
-				if val != expected {
-					t.Errorf("Mode %s key %q: expected %v, got %v", mode, profileKey, expected, val)
-				}
-			}
-		})
-	}
-}
-
-// TestUnitProviderConfigure_InvalidProfileJSON verifies that providerConfigure
-// propagates the credentials file parse error with its file path, profile name
-// and reason, and no longer masks it with the generic missing-credential
-// message.
-func TestUnitProviderConfigure_InvalidProfileJSON(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-cfg-invalid-json-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	configPath := filepath.Join(tmpDir, "config.json")
-	if err := os.WriteFile(configPath, []byte(`{"profiles": [{"name": "broken"`), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	raw := map[string]interface{}{
-		"profile":                 "broken",
-		"shared_credentials_file": configPath,
-		"region":                  "cn-hangzhou",
-	}
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	_, diags := providerConfigure(context.Background(), resourceData, provider)
-	if !diags.HasError() {
-		t.Fatal("Expected providerConfigure to fail for a corrupt credentials file")
-	}
-
-	errMsg := ""
+func diagnosticsText(diags diag.Diagnostics) string {
+	var text strings.Builder
 	for _, d := range diags {
-		errMsg += d.Summary + " " + d.Detail
+		text.WriteString(d.Summary)
+		text.WriteString(" ")
+		text.WriteString(d.Detail)
 	}
-	if !strings.Contains(errMsg, configPath) {
-		t.Errorf("Expected error to contain the file path %s, got: %s", configPath, errMsg)
-	}
-	if !strings.Contains(errMsg, "broken") {
-		t.Errorf("Expected error to contain the profile name, got: %s", errMsg)
-	}
-	if !strings.Contains(errMsg, "invalid JSON") {
-		t.Errorf("Expected error to contain the parse reason, got: %s", errMsg)
-	}
-	if strings.Contains(errMsg, "no valid credential sources") {
-		t.Errorf("The real parse error must not be masked by the generic missing-credential message, got: %s", errMsg)
-	}
-}
-
-// TestUnitProviderConfigure_ProfileAccessKeyNotString locks the profile value
-// type guard in getProviderConfig: a non-string access_key_id in the
-// credentials file must surface a type error naming the attribute and the
-// profile instead of silently producing a broken credential.
-func TestUnitProviderConfigure_ProfileAccessKeyNotString(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-cfg-ak-type-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	configPath := filepath.Join(tmpDir, "config.json")
-	writeTestProfileFile(t, configPath, map[string]interface{}{
-		"name":              "typed-ak",
-		"mode":              "AK",
-		"access_key_id":     123,
-		"access_key_secret": "TYPED_SK",
-		"region_id":         "cn-hangzhou",
-	})
-
-	// TestResourceDataRaw internally runs a schema diff that applies env
-	// DefaultFunc; clear the access-key env defaults so an ambient
-	// ALICLOUD_ACCESS_KEY cannot short-circuit the profile type guard.
-	t.Setenv("ALICLOUD_ACCESS_KEY", "")
-	t.Setenv("ALIBABA_CLOUD_ACCESS_KEY_ID", "")
-	t.Setenv("ALIBABACLOUD_ACCESS_KEY_ID", "")
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
-		"profile":                 "typed-ak",
-		"shared_credentials_file": configPath,
-		"region":                  "cn-hangzhou",
-	})
-
-	_, diags := providerConfigure(context.Background(), resourceData, provider)
-	if !diags.HasError() {
-		t.Fatal("Expected providerConfigure to fail when access_key_id is not a string")
-	}
-
-	errMsg := ""
-	for _, d := range diags {
-		errMsg += d.Summary + " " + d.Detail
-	}
-	if !strings.Contains(errMsg, "access_key_id") {
-		t.Errorf("Expected error to name the attribute access_key_id, got: %s", errMsg)
-	}
-	if !strings.Contains(errMsg, "typed-ak") {
-		t.Errorf("Expected error to contain the profile name, got: %s", errMsg)
-	}
-	if !strings.Contains(errMsg, "must be a string") {
-		t.Errorf("Expected error to contain the type expectation, got: %s", errMsg)
-	}
-}
-
-// TestUnitProviderConfigure_ProfileExpiredSecondsNotNumber locks the
-// expired_seconds type guard in providerConfigure: a non-number
-// expired_seconds in a RamRoleArn profile must surface a type error naming
-// the attribute and the profile instead of a runtime conversion panic.
-func TestUnitProviderConfigure_ProfileExpiredSecondsNotNumber(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "alicloud-test-cfg-exp-type-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	configPath := filepath.Join(tmpDir, "config.json")
-	writeTestProfileFile(t, configPath, map[string]interface{}{
-		"name":              "typed-exp",
-		"mode":              "RamRoleArn",
-		"access_key_id":     "TYPED_EXP_AK",
-		"access_key_secret": "TYPED_EXP_SK",
-		"ram_role_arn":      "acs:ram::1234567890123456:role/tf",
-		"ram_session_name":  "tf-session",
-		"expired_seconds":   "900",
-		"region_id":         "cn-hangzhou",
-	})
-
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
-		"profile":                 "typed-exp",
-		"shared_credentials_file": configPath,
-		"region":                  "cn-hangzhou",
-	})
-
-	_, diags := providerConfigure(context.Background(), resourceData, provider)
-	if !diags.HasError() {
-		t.Fatal("Expected providerConfigure to fail when expired_seconds is not a number")
-	}
-
-	errMsg := ""
-	for _, d := range diags {
-		errMsg += d.Summary + " " + d.Detail
-	}
-	if !strings.Contains(errMsg, "expired_seconds") {
-		t.Errorf("Expected error to name the attribute expired_seconds, got: %s", errMsg)
-	}
-	if !strings.Contains(errMsg, "typed-exp") {
-		t.Errorf("Expected error to contain the profile name, got: %s", errMsg)
-	}
-	if !strings.Contains(errMsg, "must be a number") {
-		t.Errorf("Expected error to contain the type expectation, got: %s", errMsg)
-	}
-}
-
-// TestProviderConfigure_AssumeRoleWithOIDCConfigParse 验证 getAssumeRoleWithOIDCConfig 的解析规则：
-// 文件形态校验文件可读且非空但不再把内容拷进 OIDCToken（保留给 setAuthCredentialByOidc
-// 走可刷新的 oidc_role_arn 分支）；inline token 优先于文件；两种 token 都缺失时报错。
-func TestProviderConfigure_AssumeRoleWithOIDCConfigParse(t *testing.T) {
-	tokenFile := filepath.Join(t.TempDir(), "oidc-token")
-	if err := os.WriteFile(tokenFile, []byte("jwt-token-file"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	emptyFile := filepath.Join(t.TempDir(), "empty-token")
-	if err := os.WriteFile(emptyFile, []byte(""), 0644); err != nil {
-		t.Fatal(err)
-	}
-	missingFile := filepath.Join(t.TempDir(), "missing-token")
-
-	base := map[string]interface{}{
-		"oidc_provider_arn": "acs:ram::123456789012:oidc-provider/test-idp",
-		"role_arn":          "acs:ram::123456789012:role/test-role",
-	}
-
-	// 文件形态：OIDCToken 必须保持为空，这是可刷新凭证分支的入口条件。
-	cfg, err := getAssumeRoleWithOIDCConfig(appendMap(base, map[string]interface{}{"oidc_token_file": tokenFile}))
-	if err != nil {
-		t.Fatalf("file form should parse: %v", err)
-	}
-	if cfg.OIDCToken != "" || cfg.OIDCTokenFile != tokenFile {
-		t.Fatalf("file form must keep OIDCToken empty and OIDCTokenFile set, got token %q / file %q", cfg.OIDCToken, cfg.OIDCTokenFile)
-	}
-
-	// inline 形态：token 直接透传。
-	cfg, err = getAssumeRoleWithOIDCConfig(appendMap(base, map[string]interface{}{"oidc_token": "jwt-token-inline"}))
-	if err != nil {
-		t.Fatalf("inline form should parse: %v", err)
-	}
-	if cfg.OIDCToken != "jwt-token-inline" {
-		t.Fatalf("inline form must carry the token, got %q", cfg.OIDCToken)
-	}
-
-	// 两者都给出：inline 优先，且不再读文件（文件路径甚至可以不存在）。
-	cfg, err = getAssumeRoleWithOIDCConfig(appendMap(base, map[string]interface{}{
-		"oidc_token":      "jwt-token-inline",
-		"oidc_token_file": missingFile,
-	}))
-	if err != nil {
-		t.Fatalf("both forms should keep inline precedence without reading the file: %v", err)
-	}
-	if cfg.OIDCToken != "jwt-token-inline" || cfg.OIDCTokenFile != missingFile {
-		t.Fatalf("expected inline precedence, got token %q / file %q", cfg.OIDCToken, cfg.OIDCTokenFile)
-	}
-
-	// 都缺失：报错。
-	if _, err := getAssumeRoleWithOIDCConfig(base); err == nil || !strings.Contains(err.Error(), "must be specified") {
-		t.Fatalf("expected a missing-token error, got %v", err)
-	}
-
-	// 文件不可读：报错。
-	if _, err := getAssumeRoleWithOIDCConfig(appendMap(base, map[string]interface{}{"oidc_token_file": missingFile})); err == nil || !strings.Contains(err.Error(), "reading oidc_token_file failed") {
-		t.Fatalf("expected an unreadable-file error, got %v", err)
-	}
-
-	// 空文件：报错。
-	if _, err := getAssumeRoleWithOIDCConfig(appendMap(base, map[string]interface{}{"oidc_token_file": emptyFile})); err == nil || !strings.Contains(err.Error(), "content can not be empty") {
-		t.Fatalf("expected an empty-file error, got %v", err)
-	}
+	return text.String()
 }
 
 func appendMap(base, extra map[string]interface{}) map[string]interface{} {
@@ -2864,32 +94,636 @@ func appendMap(base, extra map[string]interface{}) map[string]interface{} {
 	return merged
 }
 
-// TestProviderConfigure_AssumeRoleWithOIDCTokenFileConsumed 验证 providerConfigure 会用
-// oidc_token_file 形态的配置向 STS 换取凭证并装配到客户端上，且 session_expiration 真正
-// 传到了 AssumeRoleWithOIDC 请求。刷新语义（重新读文件、重新换取会话）由 connectivity 包的
-// TestConfigSetAuthCredentialByOidcTokenFileRefresh 覆盖。
-func TestProviderConfigure_AssumeRoleWithOIDCTokenFileConsumed(t *testing.T) {
-	envVars := []string{
-		"ALICLOUD_ACCESS_KEY", "ALICLOUD_SECRET_KEY", "ALICLOUD_SECURITY_TOKEN",
-		"ALIBABA_CLOUD_ACCESS_KEY_ID", "ALIBABA_CLOUD_ACCESS_KEY_SECRET", "ALIBABA_CLOUD_SECURITY_TOKEN",
-		"ALICLOUD_PROFILE", "ALIBABA_CLOUD_PROFILE",
-		"ALICLOUD_ECS_ROLE_NAME",
-		"ALIBABA_CLOUD_OIDC_TOKEN", "ALIBABA_CLOUD_OIDC_TOKEN_FILE",
-		"ALIBABA_CLOUD_OIDC_PROVIDER_ARN", "ALIBABA_CLOUD_ROLE_ARN", "ALIBABA_CLOUD_ROLE_SESSION_NAME",
+func TestProviderCredentials_MultipleProfiles(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	profiles := []map[string]interface{}{
+		{"name": "static-ak", "mode": "AK", "access_key_id": "STATIC_AK"},
+		{"name": "external", "mode": "External", "process_command": "/bin/true"},
+		{"name": "oauth", "mode": "OAuth", "oauth_client_id": "client-id"},
+		{"name": "cloudsso", "mode": "CloudSSO", "start_url": "https://sso.aliyun.com"},
 	}
-	savedEnvs := make(map[string]string)
-	for _, env := range envVars {
-		savedEnvs[env] = os.Getenv(env)
-		os.Unsetenv(env)
-	}
-	defer func() {
-		for env, val := range savedEnvs {
-			if val != "" {
-				os.Setenv(env, val)
-			}
-		}
-	}()
+	writeTestConfig(t, path, profiles, "external")
 
+	for _, profile := range profiles {
+		t.Run(profile["name"].(string), func(t *testing.T) {
+			_, resourceData := providerResourceData(t, map[string]interface{}{
+				"profile": profile["name"], "shared_credentials_file": path, "region": "cn-beijing",
+			})
+			got, err := loadProfileConfig(resourceData)
+			if err != nil {
+				t.Fatalf("loadProfileConfig failed: %v", err)
+			}
+			if got["name"] != profile["name"] || got["mode"] != profile["mode"] {
+				t.Fatalf("loaded wrong profile: %#v", got)
+			}
+		})
+	}
+}
+
+func TestProviderConfigure_GetConfigFromProfile_AdvancedModes(t *testing.T) {
+	for _, mode := range []string{"External", "OAuth", "CloudSSO", "ChainableRamRoleArn"} {
+		t.Run(mode, func(t *testing.T) {
+			name := "test-" + mode
+			path := filepath.Join(t.TempDir(), "config.json")
+			writeTestProfileFile(t, path, map[string]interface{}{
+				"name": name, "mode": mode, "region_id": "cn-hangzhou",
+			})
+			_, resourceData := providerResourceData(t, map[string]interface{}{
+				"profile": name, "shared_credentials_file": path, "region": "cn-hangzhou",
+			})
+			profile, err := loadProfileConfig(resourceData)
+			if err != nil {
+				t.Fatalf("loadProfileConfig failed: %v", err)
+			}
+			if got, err := getConfigFromProfile(profile, "region_id"); err != nil || got != "cn-hangzhou" {
+				t.Fatalf("region_id = %v, err = %v", got, err)
+			}
+			for _, key := range []string{"mode", "access_key_id", "ram_role_name"} {
+				if got, err := getConfigFromProfile(profile, key); err != nil || got != nil {
+					t.Fatalf("%s = %v, err = %v; want nil", key, got, err)
+				}
+			}
+		})
+	}
+}
+
+func TestProviderCredentials_MultiAliasIsolation(t *testing.T) {
+	dir := t.TempDir()
+	pathA := filepath.Join(dir, "a.json")
+	pathB := filepath.Join(dir, "b.json")
+	writeTestProfileFile(t, pathA, map[string]interface{}{
+		"name": "alias-a", "mode": "AK", "access_key_id": "ALIAS_A_AK",
+		"access_key_secret": "ALIAS_A_SK", "region_id": "cn-hangzhou",
+	})
+	writeTestProfileFile(t, pathB, map[string]interface{}{
+		"name": "alias-b", "mode": "StsToken", "access_key_id": "ALIAS_B_AK",
+		"access_key_secret": "ALIAS_B_SK", "sts_token": "ALIAS_B_STS", "region_id": "cn-beijing",
+	})
+
+	clientA := configureProvider(t, map[string]interface{}{
+		"profile": "alias-a", "shared_credentials_file": pathA, "region": "cn-hangzhou",
+	})
+	clientB := configureProvider(t, map[string]interface{}{
+		"profile": "alias-b", "shared_credentials_file": pathB, "region": "cn-beijing",
+	})
+	if clientA.AccessKey != "ALIAS_A_AK" || clientA.SecretKey != "ALIAS_A_SK" || clientA.RegionId != "cn-hangzhou" {
+		t.Fatalf("alias A loaded another profile: %#v", clientA)
+	}
+	if clientB.AccessKey != "ALIAS_B_AK" || clientB.SecretKey != "ALIAS_B_SK" ||
+		clientB.SecurityToken != "ALIAS_B_STS" || clientB.RegionId != "cn-beijing" {
+		t.Fatalf("alias B loaded another profile: %#v", clientB)
+	}
+}
+
+func TestProviderCredentials_ConcurrentAliasesNoRace(t *testing.T) {
+	const aliasCount = 8
+	type aliasProfile struct {
+		resourceData *schema.ResourceData
+		accessKey    string
+		secretKey    string
+		region       string
+	}
+
+	provider := Provider()
+	profiles := make([]aliasProfile, 0, aliasCount)
+	for i := 0; i < aliasCount; i++ {
+		accessKey := fmt.Sprintf("CONCURRENT_ALIAS_%d_AK", i)
+		secretKey := fmt.Sprintf("CONCURRENT_ALIAS_%d_SK", i)
+		region := []string{"cn-hangzhou", "cn-beijing", "cn-shanghai", "cn-shenzhen"}[i%4]
+		name := fmt.Sprintf("concurrent-alias-%d", i)
+		path := filepath.Join(t.TempDir(), "config.json")
+		writeTestProfileFile(t, path, map[string]interface{}{
+			"name": name, "mode": "AK", "access_key_id": accessKey,
+			"access_key_secret": secretKey, "region_id": region,
+		})
+		profiles = append(profiles, aliasProfile{
+			resourceData: schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
+				"profile": name, "shared_credentials_file": path, "region": region,
+			}),
+			accessKey: accessKey, secretKey: secretKey, region: region,
+		})
+	}
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, aliasCount)
+	for _, profile := range profiles {
+		wg.Add(1)
+		go func(profile aliasProfile) {
+			defer wg.Done()
+			config, err := loadProfileConfig(profile.resourceData)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			for key, want := range map[string]interface{}{
+				"access_key_id": profile.accessKey, "access_key_secret": profile.secretKey, "region_id": profile.region,
+			} {
+				if got, err := getConfigFromProfile(config, key); err != nil || got != want {
+					errCh <- fmt.Errorf("%s = %v, err = %v; want %v", key, got, err, want)
+					return
+				}
+			}
+		}(profile)
+	}
+	wg.Wait()
+	close(errCh)
+	for err := range errCh {
+		t.Error(err)
+	}
+}
+
+func TestProviderConfigure(t *testing.T) {
+	base := map[string]interface{}{
+		"access_key": "test-access-key", "secret_key": "test-secret-key", "region": "cn-hangzhou",
+	}
+	testCases := []struct {
+		name       string
+		raw        map[string]interface{}
+		wantRegion string
+		wantToken  string
+	}{
+		{name: "static AK", raw: base, wantRegion: "cn-hangzhou"},
+		{name: "default region", raw: map[string]interface{}{"access_key": "test-access-key", "secret_key": "test-secret-key"}, wantRegion: "cn-beijing"},
+		{name: "static STS", raw: appendMap(base, map[string]interface{}{"security_token": "test-token"}), wantRegion: "cn-hangzhou", wantToken: "test-token"},
+		{name: "endpoints", raw: appendMap(base, map[string]interface{}{"endpoints": []interface{}{map[string]interface{}{"ecs": "ecs.custom.aliyuncs.com", "vpc": "vpc.custom.aliyuncs.com"}}})},
+		{name: "timeouts", raw: appendMap(base, map[string]interface{}{"client_read_timeout": 60, "client_connect_timeout": 30, "max_retry_timeout": 90})},
+		{name: "account ID", raw: appendMap(base, map[string]interface{}{"account_id": "123456789012"})},
+		{name: "configuration source", raw: appendMap(base, map[string]interface{}{"configuration_source": "test/1.0.0"})},
+		{name: "HTTPS", raw: appendMap(base, map[string]interface{}{"protocol": "HTTPS"})},
+		{name: "HTTP", raw: appendMap(base, map[string]interface{}{"protocol": "HTTP"})},
+		{name: "skip region validation", raw: appendMap(base, map[string]interface{}{"region": "invalid-region", "skip_region_validation": true})},
+		{name: "secure transport", raw: appendMap(base, map[string]interface{}{"secure_transport": "true"})},
+		{name: "source IP", raw: appendMap(base, map[string]interface{}{"source_ip": "192.168.1.100"})},
+		{name: "sign version", raw: appendMap(base, map[string]interface{}{"sign_version": []interface{}{map[string]interface{}{"oss": "v4", "sls": "v4"}}})},
+	}
+	for _, region := range []string{"cn-beijing", "cn-shanghai", "cn-shenzhen", "cn-hongkong", "ap-southeast-1", "us-west-1", "eu-central-1"} {
+		testCases = append(testCases, struct {
+			name       string
+			raw        map[string]interface{}
+			wantRegion string
+			wantToken  string
+		}{name: "region " + region, raw: appendMap(base, map[string]interface{}{"region": region}), wantRegion: region})
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Setenv("ALICLOUD_REGION", "")
+			t.Setenv("ALIBABA_CLOUD_REGION", "")
+			client := configureProvider(t, testCase.raw)
+			if testCase.wantRegion != "" && client.RegionId != testCase.wantRegion {
+				t.Fatalf("RegionId = %q, want %q", client.RegionId, testCase.wantRegion)
+			}
+			if client.AccessKey != "test-access-key" || client.SecurityToken != testCase.wantToken {
+				t.Fatalf("unexpected credentials: access key %q, token %q", client.AccessKey, client.SecurityToken)
+			}
+		})
+	}
+}
+
+func TestProviderConfigureCredentialErrors(t *testing.T) {
+	for _, testCase := range []struct {
+		name        string
+		raw         map[string]interface{}
+		wantMessage string
+	}{
+		{name: "missing credentials", raw: map[string]interface{}{"region": "cn-hangzhou"}, wantMessage: "no valid credential sources"},
+		{name: "missing secret key", raw: map[string]interface{}{"access_key": "test-access-key", "region": "cn-hangzhou"}},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			clearCredentialEnv(t)
+			provider, resourceData := providerResourceData(t, testCase.raw)
+			_, diags := providerConfigure(context.Background(), resourceData, provider)
+			if !diags.HasError() {
+				t.Fatal("expected providerConfigure to fail")
+			}
+			if testCase.wantMessage != "" && !strings.Contains(diagnosticsText(diags), testCase.wantMessage) {
+				t.Fatalf("unexpected diagnostics: %v", diags)
+			}
+		})
+	}
+}
+
+func TestProviderConfigureProfileCredentials(t *testing.T) {
+	for _, testCase := range []struct {
+		name      string
+		mode      string
+		token     string
+		accessKey string
+	}{
+		{name: "AK", mode: "AK", accessKey: "PROFILE_AK"},
+		{name: "StsToken", mode: "StsToken", accessKey: "PROFILE_STS_AK", token: "PROFILE_STS_TOKEN"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.json")
+			writeTestProfileFile(t, path, map[string]interface{}{
+				"name": "test-profile", "mode": testCase.mode, "access_key_id": testCase.accessKey,
+				"access_key_secret": "PROFILE_SECRET", "sts_token": testCase.token, "region_id": "cn-beijing",
+			})
+			client := configureProvider(t, map[string]interface{}{
+				"profile": "test-profile", "shared_credentials_file": path, "region": "cn-beijing",
+			})
+			if client.AccessKey != testCase.accessKey || client.SecretKey != "PROFILE_SECRET" || client.SecurityToken != testCase.token {
+				t.Fatalf("unexpected profile credentials: access key %q, secret %q, token %q", client.AccessKey, client.SecretKey, client.SecurityToken)
+			}
+		})
+	}
+}
+
+func TestProviderConfigure_ProfileExternal(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell script fixture")
+	}
+	dir := t.TempDir()
+	scriptPath := filepath.Join(dir, "credential-provider.sh")
+	script := `#!/bin/sh
+cat <<EOF
+{"mode":"External","access_key_id":"STS.ExternalAK","access_key_secret":"ExternalSecret","sts_token":"ExternalToken","expiration":"2099-12-31T23:59:59Z"}
+EOF
+`
+	if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "config.json")
+	writeTestProfileFile(t, path, map[string]interface{}{
+		"name": "external", "mode": "External", "process_command": scriptPath, "region_id": "cn-hangzhou",
+	})
+	configureProvider(t, map[string]interface{}{
+		"profile": "external", "shared_credentials_file": path, "region": "cn-hangzhou",
+	})
+}
+
+func TestProviderConfigure_StaticOverridesProfile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	writeTestProfileFile(t, path, map[string]interface{}{
+		"name": "priority-test", "mode": "AK", "access_key_id": "PROFILE_AK",
+		"access_key_secret": "PROFILE_SECRET", "region_id": "cn-shanghai",
+	})
+	client := configureProvider(t, map[string]interface{}{
+		"access_key": "STATIC_AK", "secret_key": "STATIC_SECRET", "profile": "priority-test",
+		"shared_credentials_file": path, "region": "cn-hangzhou",
+	})
+	if client.AccessKey != "STATIC_AK" || client.SecretKey != "STATIC_SECRET" {
+		t.Fatalf("static credentials did not override profile: %q / %q", client.AccessKey, client.SecretKey)
+	}
+}
+
+func TestProviderConfigure_ProfileNotFound(t *testing.T) {
+	clearCredentialEnv(t)
+	path := filepath.Join(t.TempDir(), "config.json")
+	writeTestProfileFile(t, path, map[string]interface{}{
+		"name": "existing", "mode": "AK", "access_key_id": "AK", "access_key_secret": "SK",
+	})
+	provider, resourceData := providerResourceData(t, map[string]interface{}{
+		"profile": "missing", "shared_credentials_file": path, "region": "cn-hangzhou",
+	})
+	if _, diags := providerConfigure(context.Background(), resourceData, provider); !diags.HasError() {
+		t.Fatal("expected a missing-profile error")
+	}
+}
+
+func TestProviderConfigure_AssumeRoleConfig(t *testing.T) {
+	_, resourceData := providerResourceData(t, map[string]interface{}{
+		"assume_role": []interface{}{map[string]interface{}{
+			"role_arn": "acs:ram::123456789012:role/test-role", "session_name": "test-session", "session_expiration": 3600,
+		}},
+	})
+	assumeRoles := resourceData.Get("assume_role").(*schema.Set).List()
+	if len(assumeRoles) != 1 {
+		t.Fatalf("got %d assume_role blocks", len(assumeRoles))
+	}
+	assumeRole := assumeRoles[0].(map[string]interface{})
+	if assumeRole["role_arn"] != "acs:ram::123456789012:role/test-role" || assumeRole["session_name"] != "test-session" || assumeRole["session_expiration"] != 3600 {
+		t.Fatalf("unexpected assume_role config: %#v", assumeRole)
+	}
+}
+
+func TestProviderConfigure_CredentialsURIConsumed(t *testing.T) {
+	t.Run("consumed", func(t *testing.T) {
+		clearCredentialEnv(t)
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, `{"Code":"Success","AccessKeyId":"STS.ConfigureAccessKey","AccessKeySecret":"configureSecret","SecurityToken":"configureToken","Expiration":"2099-12-31T23:59:59Z"}`)
+		}))
+		defer server.Close()
+		client := configureProvider(t, map[string]interface{}{"credentials_uri": server.URL, "region": "cn-hangzhou"})
+		if client.AccessKey != "STS.ConfigureAccessKey" || client.SecurityToken != "configureToken" {
+			t.Fatalf("sidecar credentials not consumed: %q / %q", client.AccessKey, client.SecurityToken)
+		}
+	})
+
+	t.Run("invalid response", func(t *testing.T) {
+		clearCredentialEnv(t)
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+		provider, resourceData := providerResourceData(t, map[string]interface{}{"credentials_uri": server.URL, "region": "cn-hangzhou"})
+		_, diags := providerConfigure(context.Background(), resourceData, provider)
+		if !diags.HasError() {
+			t.Fatal("expected invalid credentials_uri response to fail")
+		}
+		msg := diagnosticsText(diags)
+		if !strings.Contains(msg, "failed") && !strings.Contains(msg, "no valid credential") {
+			t.Fatalf("expected a credentials-related error, got: %v", diags)
+		}
+	})
+}
+
+func TestProviderCredentials_CredentialsURIRefresh(t *testing.T) {
+	var hits int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := atomic.AddInt32(&hits, 1)
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"Code":"Success","AccessKeyId":"STS.RefreshAccessKey%d","AccessKeySecret":"refreshSecret%d","SecurityToken":"refreshToken%d","Expiration":%q}`,
+			n, n, n, time.Now().Add(time.Second).UTC().Format(time.RFC3339))
+	}))
+	defer server.Close()
+
+	credential := newCredentialsURICredential(server.URL, time.Now().Add(time.Hour).UTC().Format(time.RFC3339), 0, 0)
+	if credential == nil {
+		t.Fatal("expected a refreshable credential")
+	}
+	first, err := credential.GetCredential()
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := credential.GetCredential()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := atomic.LoadInt32(&hits); got != 2 {
+		t.Fatalf("credentials URI requested %d times, want 2", got)
+	}
+	if *first.SecurityToken == *second.SecurityToken || *second.Type != "credentials_uri" {
+		t.Fatalf("credential was not refreshed correctly: %#v / %#v", first, second)
+	}
+}
+
+func TestProviderCredentials_CredentialsURIStaticFallback(t *testing.T) {
+	for _, expiration := range []string{"", "not-a-timestamp"} {
+		if credential := newCredentialsURICredential("http://127.0.0.1:1/credentials", expiration, 0, 0); credential != nil {
+			t.Fatalf("expected nil credential for expiration %q", expiration)
+		}
+	}
+}
+
+func TestDefaultConfigPath(t *testing.T) {
+	origDisableCache := homedir.DisableCache
+	homedir.DisableCache = true
+	t.Cleanup(func() { homedir.DisableCache = origDisableCache; homedir.Reset() })
+
+	for _, testCase := range []struct {
+		name string
+		home string
+	}{{name: "explicit home", home: t.TempDir()}, {name: "empty home", home: ""}} {
+		t.Run(testCase.name, func(t *testing.T) {
+			homedir.Reset()
+			t.Setenv("HOME", testCase.home)
+			t.Setenv("USERPROFILE", testCase.home)
+			got, err := defaultConfigPath()
+			if strings.HasPrefix(got, "/.aliyun") {
+				t.Fatalf("defaultConfigPath regressed to disk root: %q", got)
+			}
+			if err != nil {
+				if got != "" {
+					t.Fatalf("path %q returned with error %v", got, err)
+				}
+				return
+			}
+			if !strings.HasSuffix(got, filepath.Join(".aliyun", "config.json")) {
+				t.Fatalf("unexpected default config path %q", got)
+			}
+			if testCase.home != "" && got != filepath.Join(testCase.home, ".aliyun", "config.json") {
+				t.Fatalf("defaultConfigPath = %q", got)
+			}
+		})
+	}
+}
+
+func TestGetConfigFromProfile_EmptySharedCredentialsFile(t *testing.T) {
+	origDisableCache := homedir.DisableCache
+	homedir.DisableCache = true
+	t.Cleanup(func() { homedir.DisableCache = origDisableCache; homedir.Reset() })
+	home := t.TempDir()
+	homedir.Reset()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	for _, testCase := range []struct {
+		name string
+		path string
+	}{
+		{name: "default path"},
+		{name: "explicit missing path", path: filepath.Join(home, "missing.json")},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			_, resourceData := providerResourceData(t, map[string]interface{}{
+				"profile": "missing", "shared_credentials_file": testCase.path, "region": "cn-beijing",
+			})
+			profile, err := loadProfileConfig(resourceData)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got, err := getConfigFromProfile(profile, "access_key_id"); err != nil || got != nil {
+				t.Fatalf("access_key_id = %v, err = %v; want nil", got, err)
+			}
+		})
+	}
+}
+
+func TestUnitGetConfigFromProfile_InvalidJSON(t *testing.T) {
+	for _, testCase := range []struct {
+		name        string
+		content     string
+		wantMessage string
+	}{
+		{name: "truncated JSON", content: `{"profiles":[{"name":"p1","mode":"AK"`, wantMessage: "invalid JSON"},
+		{name: "empty file", content: ``, wantMessage: "invalid JSON"},
+		{name: "missing profiles", content: `{"current":"p1"}`},
+		{name: "profiles not array", content: `{"profiles":"bad","current":"p1"}`},
+		{name: "profile not object", content: `{"profiles":[42],"current":"p1"}`},
+		{name: "mode not string", content: `{"profiles":[{"name":"p1","mode":123}],"current":"p1"}`},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.json")
+			if err := os.WriteFile(path, []byte(testCase.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+			_, resourceData := providerResourceData(t, map[string]interface{}{
+				"profile": "p1", "shared_credentials_file": path, "region": "cn-beijing",
+			})
+			profile, err := loadProfileConfig(resourceData)
+			if err == nil {
+				t.Fatalf("expected malformed config to fail, got %#v", profile)
+			}
+			if !strings.Contains(err.Error(), path) || !strings.Contains(err.Error(), "p1") || !strings.Contains(err.Error(), testCase.wantMessage) {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestUnitGetConfigFromProfile_RetryAfterParseFailure(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"profiles":[{"name":"retry"`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	_, resourceData := providerResourceData(t, map[string]interface{}{
+		"profile": "retry", "shared_credentials_file": path, "region": "cn-beijing",
+	})
+	if _, err := loadProfileConfig(resourceData); err == nil {
+		t.Fatal("expected initial parse failure")
+	}
+	writeTestProfileFile(t, path, map[string]interface{}{
+		"name": "retry", "mode": "AK", "access_key_id": "RETRY_AK", "access_key_secret": "RETRY_SK",
+	})
+	profile, err := loadProfileConfig(resourceData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, err := getConfigFromProfile(profile, "access_key_id"); err != nil || got != "RETRY_AK" {
+		t.Fatalf("access_key_id = %v, err = %v", got, err)
+	}
+}
+
+func TestUnitGetConfigFromProfile_ProfileModeKeySemantics(t *testing.T) {
+	configs := map[string]map[string]interface{}{
+		"AK":         {"name": "sem-ak", "mode": "AK", "access_key_id": "AK_ID", "access_key_secret": "AK_SECRET", "sts_token": "STS_TOK", "ram_role_name": "ROLE_NAME"},
+		"EcsRamRole": {"name": "sem-ecs", "mode": "EcsRamRole", "ram_role_name": "ECS_ROLE"},
+		"StsToken":   {"name": "sem-sts", "mode": "StsToken", "access_key_id": "STS_AK_ID", "access_key_secret": "STS_SK", "sts_token": "STS_TOK"},
+		"RamRoleArn": {"name": "sem-rra", "mode": "RamRoleArn", "access_key_id": "RRA_AK_ID", "access_key_secret": "RRA_SK", "ram_role_arn": "acs:ram::1234567890123456:role/tf", "ram_session_name": "tf-session", "expired_seconds": 900},
+	}
+	expectations := map[string]map[string]interface{}{
+		"AK":         {"access_key_id": "AK_ID", "sts_token": "", "ram_role_name": ""},
+		"EcsRamRole": {"access_key_id": "", "ram_role_name": "ECS_ROLE", "sts_token": ""},
+		"StsToken":   {"sts_token": "STS_TOK", "access_key_id": "STS_AK_ID", "ram_role_name": ""},
+		"RamRoleArn": {"ram_role_arn": "acs:ram::1234567890123456:role/tf", "ram_session_name": "tf-session", "expired_seconds": float64(900), "sts_token": ""},
+	}
+	for mode, profile := range configs {
+		t.Run(mode, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.json")
+			writeTestProfileFile(t, path, profile)
+			_, resourceData := providerResourceData(t, map[string]interface{}{
+				"profile": profile["name"], "shared_credentials_file": path, "region": "cn-beijing",
+			})
+			loaded, err := loadProfileConfig(resourceData)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for key, want := range expectations[mode] {
+				if got, err := getConfigFromProfile(loaded, key); err != nil || got != want {
+					t.Errorf("%s = %v, err = %v; want %v", key, got, err, want)
+				}
+			}
+		})
+	}
+}
+
+func TestUnitProviderConfigure_InvalidProfileJSON(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"profiles":[{"name":"broken"`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	provider, resourceData := providerResourceData(t, map[string]interface{}{
+		"profile": "broken", "shared_credentials_file": path, "region": "cn-hangzhou",
+	})
+	_, diags := providerConfigure(context.Background(), resourceData, provider)
+	message := diagnosticsText(diags)
+	if !diags.HasError() || !strings.Contains(message, path) || !strings.Contains(message, "broken") || !strings.Contains(message, "invalid JSON") {
+		t.Fatalf("unexpected diagnostics: %v", diags)
+	}
+	if strings.Contains(message, "no valid credential sources") {
+		t.Fatalf("parse error was masked: %v", diags)
+	}
+}
+
+func TestUnitProviderConfigure_ProfileAccessKeyNotString(t *testing.T) {
+	for _, testCase := range []struct {
+		name          string
+		profile       map[string]interface{}
+		wantAttribute string
+		wantMessage   string
+	}{
+		{
+			name: "access key not string",
+			profile: map[string]interface{}{
+				"name": "typed-ak", "mode": "AK", "access_key_id": 123, "access_key_secret": "SK",
+			},
+			wantAttribute: "access_key_id",
+			wantMessage:   "must be a string",
+		},
+		{
+			name: "expired seconds not number",
+			profile: map[string]interface{}{
+				"name": "typed-exp", "mode": "RamRoleArn", "access_key_id": "AK", "access_key_secret": "SK",
+				"ram_role_arn": "acs:ram::1234567890123456:role/tf", "ram_session_name": "tf-session", "expired_seconds": "900",
+			},
+			wantAttribute: "expired_seconds",
+			wantMessage:   "must be a number",
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			clearCredentialEnv(t)
+			path := filepath.Join(t.TempDir(), "config.json")
+			writeTestProfileFile(t, path, testCase.profile)
+			provider, resourceData := providerResourceData(t, map[string]interface{}{
+				"profile": testCase.profile["name"], "shared_credentials_file": path, "region": "cn-hangzhou",
+			})
+			_, diags := providerConfigure(context.Background(), resourceData, provider)
+			message := diagnosticsText(diags)
+			if !diags.HasError() || !strings.Contains(message, testCase.profile["name"].(string)) ||
+				!strings.Contains(message, testCase.wantAttribute) || !strings.Contains(message, testCase.wantMessage) {
+				t.Fatalf("unexpected diagnostics: %v", diags)
+			}
+		})
+	}
+}
+
+func TestProviderConfigure_AssumeRoleWithOIDCConfigParse(t *testing.T) {
+	dir := t.TempDir()
+	tokenFile := filepath.Join(dir, "oidc-token")
+	emptyFile := filepath.Join(dir, "empty-token")
+	missingFile := filepath.Join(dir, "missing-token")
+	if err := os.WriteFile(tokenFile, []byte("jwt-token-file"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(emptyFile, nil, 0644); err != nil {
+		t.Fatal(err)
+	}
+	base := map[string]interface{}{
+		"oidc_provider_arn": "acs:ram::123456789012:oidc-provider/test-idp",
+		"role_arn":          "acs:ram::123456789012:role/test-role",
+	}
+
+	cfg, err := getAssumeRoleWithOIDCConfig(appendMap(base, map[string]interface{}{"oidc_token_file": tokenFile}))
+	if err != nil || cfg.OIDCToken != "" || cfg.OIDCTokenFile != tokenFile {
+		t.Fatalf("file form: cfg = %#v, err = %v", cfg, err)
+	}
+	cfg, err = getAssumeRoleWithOIDCConfig(appendMap(base, map[string]interface{}{
+		"oidc_token": "jwt-token-inline", "oidc_token_file": missingFile,
+	}))
+	if err != nil || cfg.OIDCToken != "jwt-token-inline" || cfg.OIDCTokenFile != missingFile {
+		t.Fatalf("inline precedence: cfg = %#v, err = %v", cfg, err)
+	}
+	for _, testCase := range []struct {
+		name        string
+		config      map[string]interface{}
+		wantMessage string
+	}{
+		{name: "missing token", config: base, wantMessage: "must be specified"},
+		{name: "unreadable file", config: appendMap(base, map[string]interface{}{"oidc_token_file": missingFile}), wantMessage: "reading oidc_token_file failed"},
+		{name: "empty file", config: appendMap(base, map[string]interface{}{"oidc_token_file": emptyFile}), wantMessage: "content can not be empty"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			if _, err := getAssumeRoleWithOIDCConfig(testCase.config); err == nil || !strings.Contains(err.Error(), testCase.wantMessage) {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestProviderConfigure_AssumeRoleWithOIDCTokenFileConsumed(t *testing.T) {
+	clearCredentialEnv(t)
 	tokenFile := filepath.Join(t.TempDir(), "oidc-token")
 	if err := os.WriteFile(tokenFile, []byte("jwt-token-1"), 0644); err != nil {
 		t.Fatal(err)
@@ -2907,23 +741,12 @@ func TestProviderConfigure_AssumeRoleWithOIDCTokenFileConsumed(t *testing.T) {
 		mu.Lock()
 		durations = append(durations, r.FormValue("DurationSeconds"))
 		mu.Unlock()
-		// 会话有效期给足一小时：本用例只验证 configure 装配与 session_expiration 传参，
-		// providerConfigure 后续流程（账号类型探测等）还会多次 GetCredential，短会话会额外触发刷新。
-		response := fmt.Sprintf(`{
-			"Credentials": {
-				"AccessKeyId": "STS.OIDCAccessKey%d",
-				"AccessKeySecret": "oidcAccessKeySecret%d",
-				"SecurityToken": "oidcSecurityToken%d",
-				"Expiration": %q
-			}
-		}`, n, n, n, time.Now().Add(time.Hour).UTC().Format("2006-01-02T15:04:05Z"))
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		fmt.Fprintf(w, `{"Credentials":{"AccessKeyId":"STS.OIDCAccessKey%d","AccessKeySecret":"oidcSecret%d","SecurityToken":"oidcToken%d","Expiration":%q}}`,
+			n, n, n, time.Now().Add(time.Hour).UTC().Format(time.RFC3339))
 	}))
 	defer server.Close()
 
-	// credentials-go 的 HTTP 客户端构建在 http.DefaultTransport 上，注入对测试证书的信任。
 	transport, ok := http.DefaultTransport.(*http.Transport)
 	if !ok {
 		t.Fatalf("unexpected default transport %T", http.DefaultTransport)
@@ -2936,43 +759,25 @@ func TestProviderConfigure_AssumeRoleWithOIDCTokenFileConsumed(t *testing.T) {
 	http.DefaultTransport = trusted
 	defer func() { http.DefaultTransport = saved }()
 
-	provider := Provider()
-	resourceData := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
+	client := configureProvider(t, map[string]interface{}{
 		"region": "cn-hangzhou",
-		// credentials-go 强制 https 且 Host 为裸主机名，这里只覆写 sts。
-		"endpoints": []interface{}{
-			map[string]interface{}{
-				"sts": strings.TrimPrefix(server.URL, "https://"),
-			},
-		},
-		"assume_role_with_oidc": []interface{}{
-			map[string]interface{}{
-				"role_arn":           "acs:ram::123456789012:role/test-role",
-				"oidc_provider_arn":  "acs:ram::123456789012:oidc-provider/test-idp",
-				"role_session_name":  "test-session",
-				"oidc_token_file":    tokenFile,
-				"session_expiration": 1800,
-			},
-		},
+		"endpoints": []interface{}{map[string]interface{}{
+			"sts": strings.TrimPrefix(server.URL, "https://"),
+		}},
+		"assume_role_with_oidc": []interface{}{map[string]interface{}{
+			"role_arn": "acs:ram::123456789012:role/test-role", "oidc_provider_arn": "acs:ram::123456789012:oidc-provider/test-idp",
+			"role_session_name": "test-session", "oidc_token_file": tokenFile, "session_expiration": 1800,
+		}},
 	})
-
-	configured, diags := providerConfigure(context.Background(), resourceData, provider)
-	if diags.HasError() {
-		t.Fatalf("providerConfigure failed with assume_role_with_oidc: %v", diags)
-	}
-	client, ok := configured.(*connectivity.AliyunClient)
-	if !ok || client == nil {
-		t.Fatalf("Expected an AliyunClient, got %#v", configured)
-	}
-	if client.AccessKey != "STS.OIDCAccessKey1" || client.SecurityToken != "oidcSecurityToken1" {
-		t.Fatalf("Expected the assumed credentials to be used, got access key %q / token %q", client.AccessKey, client.SecurityToken)
+	if client.AccessKey != "STS.OIDCAccessKey1" || client.SecurityToken != "oidcToken1" {
+		t.Fatalf("OIDC credentials not consumed: %q / %q", client.AccessKey, client.SecurityToken)
 	}
 	if got := atomic.LoadInt32(&hits); got != 1 {
-		t.Fatalf("Expected the STS endpoint to be hit once, got %d", got)
+		t.Fatalf("STS endpoint hit %d times, want 1", got)
 	}
 	mu.Lock()
+	defer mu.Unlock()
 	if len(durations) != 1 || durations[0] != "1800" {
-		t.Fatalf("Expected session_expiration 1800 to reach the STS request, got %v", durations)
+		t.Fatalf("DurationSeconds = %v, want [1800]", durations)
 	}
-	mu.Unlock()
 }

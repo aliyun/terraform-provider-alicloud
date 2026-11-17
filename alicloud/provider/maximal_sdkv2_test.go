@@ -339,20 +339,27 @@ func TestUnitProviderMaximalSDKv2WrapCopiesEveryNonCRUDField(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			original := tc.build(log)
+			before := *original
 			wrapped := tc.wrap(tc.name, original, chain)
 
 			if wrapped == original {
 				t.Fatal("wrapping returned the input pointer: the shared map literal would be mutated")
 			}
 
-			ov, wv := reflect.ValueOf(*original), reflect.ValueOf(*wrapped)
+			bv, ov, wv := reflect.ValueOf(before), reflect.ValueOf(*original), reflect.ValueOf(*wrapped)
 			rt := ov.Type()
 			for i := 0; i < rt.NumField(); i++ {
 				f := rt.Field(i)
-				if !f.IsExported() || crudFieldNames[f.Name] {
+				if !f.IsExported() {
 					continue
 				}
 				of, wf := ov.Field(i), wv.Field(i)
+				if crudFieldNames[f.Name] {
+					if of.Pointer() != bv.Field(i).Pointer() {
+						t.Errorf("%s mutated the input resource", f.Name)
+					}
+					continue
+				}
 
 				if f.Type.Kind() == reflect.Func {
 					if of.Pointer() != wf.Pointer() {

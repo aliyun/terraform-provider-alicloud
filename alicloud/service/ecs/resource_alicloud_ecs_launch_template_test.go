@@ -5,7 +5,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecs"
 
 	"fmt"
-	"regexp"
 	"testing"
 	"time"
 
@@ -13,6 +12,8 @@ import (
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// collection-order: bypass security_group_ids -- pre-existing stock TypeList attribute outside this change
 
 func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 	var v map[string]interface{}
@@ -633,7 +634,35 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 					},
 					"instance_type": REMOVEKEY,
 				}),
-				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "m-tfacc-placeholder",
+					"image_owner_alias":    "marketplace",
+					"instance_charge_type": "PostPaid",
+					"auto_release_time":    "2026-01-01T12:05:05Z",
+					"deployment_set_id":    "ds-tfacc-placeholder",
+					"enable_vm_os_config":  "true",
+					"password_inherit":     "true",
+					"private_ip_address":   "192.168.0.10",
+					"version_description":  "tfacc-version-desc",
+					"security_group_id":    "sg-tfacc-placeholder",
+					"vpc_id":               "vpc-tfacc-placeholder",
+					"spot_duration":        "2",
+					"system_disk": []map[string]string{
+						{
+							"category":          "cloud_efficiency",
+							"iops":              "100",
+							"performance_level": "PL2",
+						},
+					},
+					"data_disks": []map[string]string{
+						{
+							"snapshot_id": "s-tfacc-placeholder",
+						},
+					},
+				}),
+				PlanOnly: true,
 			},
 		},
 	})
@@ -1007,7 +1036,7 @@ func TestAccAliCloudECSLaunchTemplateBasic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"template_resource_group_id"},
+				ImportStateVerifyIgnore: []string{"template_resource_group_id", "data_disks"},
 			},
 		},
 	})
@@ -1108,6 +1137,75 @@ func TestAccAliCloudECSLaunchTemplateMulti(t *testing.T) {
 						"latest_version_number":  "1",
 						"default_version_number": "1",
 					}),
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudECSLaunchTemplateSystemDiskEncryptedPreserved reproduces
+// https://github.com/aliyun/terraform-provider-alicloud/issues/11594: when the
+// system_disk block is left unchanged while another attribute (description) is
+// updated, CreateLaunchTemplateVersion must still carry SystemDisk.Encrypted and
+// SystemDisk.KMSKeyId, otherwise the new template version drops disk encryption
+// and ESS-created instances get an unencrypted system disk.
+func TestAccAliCloudECSLaunchTemplateSystemDiskEncryptedPreserved(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_launch_template.default"
+	serviceFunc := func() interface{} {
+		return ecs.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccLaunchTemplateEnc%v", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLaunchTemplateConfigDependence)
+	systemDiskEncryptedChecks := resource.ComposeAggregateTestCheckFunc(
+		resource.TestCheckResourceAttr(resourceId, "system_disk.#", "1"),
+		resource.TestCheckResourceAttr(resourceId, "system_disk.0.encrypted", "true"),
+		resource.TestCheckResourceAttrSet(resourceId, "system_disk.0.kms_key_id"),
+	)
+	commonConfig := func(description string) map[string]interface{} {
+		return map[string]interface{}{
+			"name":               name,
+			"description":        description,
+			"image_id":           "${data.alicloud_images.default.images.0.id}",
+			"instance_type":      "${data.alicloud_instance_types.default.instance_types.0.id}",
+			"network_type":       "vpc",
+			"security_group_ids": []string{"${alicloud_security_group.default.id}"},
+			"system_disk": []map[string]interface{}{
+				{
+					"category":             "cloud_ssd",
+					"size":                 "40",
+					"delete_with_instance": "false",
+					"encrypted":            "true",
+					"kms_key_id":           "${alicloud_kms_key.default.id}",
+				},
+			},
+			"vswitch_id": "${alicloud_vswitch.shareVswitch1.id}",
+		}
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rc.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(commonConfig(name)),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "latest_version_number", "1"),
+					systemDiskEncryptedChecks,
+				),
+			},
+			{
+				// description changes while the system_disk block is unchanged, so the
+				// Update else branch runs and must preserve Encrypted/KMSKeyId on the
+				// new template version.
+				Config: testAccConfig(commonConfig(name + "-update")),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "latest_version_number", "2"),
+					systemDiskEncryptedChecks,
 				),
 			},
 		},

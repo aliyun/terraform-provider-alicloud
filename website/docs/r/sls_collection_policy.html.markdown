@@ -27,6 +27,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -73,7 +81,7 @@ resource "alicloud_sls_collection_policy" "default" {
   data_code          = "metering_log"
   centralize_enabled = true
   product_code       = "oss"
-  policy_name        = "xc-example-oss-01"
+  policy_name        = format("xc-example-oss-%s", random_integer.default.result)
   enabled            = true
   data_config {
     data_region = "cn-hangzhou"
@@ -85,8 +93,7 @@ resource "alicloud_sls_collection_policy" "default" {
     dest_logstore = alicloud_log_store.logstore_create_01.logstore_name
   }
   resource_directory {
-    account_group_type = "custom"
-    members            = ["1936728897040477"]
+    account_group_type = "all"
   }
 }
 ```
@@ -99,6 +106,14 @@ Enable real-time log query for one or more specific OSS buckets
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example-on-single-bucket"
 }
@@ -147,7 +162,7 @@ resource "alicloud_sls_collection_policy" "default" {
   data_code          = "access_log"
   centralize_enabled = false
   product_code       = "oss"
-  policy_name        = "xc-example-oss-01"
+  policy_name        = format("xc-example-oss-%s", random_integer.default.result)
   enabled            = true
 }
 ```
@@ -158,7 +173,7 @@ resource "alicloud_sls_collection_policy" "default" {
 
 The following arguments are supported:
 * `centralize_config` - (Optional, Computed, Set) Centralized forwarding configuration. See [`centralize_config`](#centralize_config) below.
-* `centralize_enabled` - (Optional) Specifies whether to enable centralized forwarding. Default value: false.
+* `centralize_enabled` - (Optional, Computed) Specifies whether to enable centralized forwarding. Default value: false.
 * `data_code` - (Required, ForceNew) Log type code.
 * `data_config` - (Optional, ForceNew, Computed, Set) This parameter can be configured only when the log type is a global log type—for example, when productCode is sls. It indicates that global logs will be collected to the specified region upon initial configuration. See [`data_config`](#data_config) below.
 * `enabled` - (Required) Whether enabled.
@@ -168,7 +183,9 @@ The following arguments are supported:
   - It must start with a letter.
   - Its length must be between 3 and 63 characters.
 * `product_code` - (Required, ForceNew) Product code.
-* `resource_directory` - (Optional, Computed, Set) Resource Directory configuration. The account must have Resource Directory enabled and be either a management account or a delegated administrator. See [`resource_directory`](#resource_directory) below.
+* `resource_directory` - (Optional, Set) Resource Directory configuration. The account must have Resource Directory enabled and be either a management account or a delegated administrator. See [`resource_directory`](#resource_directory) below.
+
+  -> **NOTE:** The SLS API does not support removing `resource_directory` from an existing policy. Removing the block from the configuration fails with an error, and subsequent plans keep showing the difference between the remote policy and the configuration until the block is added back or the policy is deleted and recreated.
 
 ### `centralize_config`
 
@@ -186,8 +203,8 @@ The data_config supports the following:
 ### `policy_config`
 
 The policy_config supports the following:
-* `instance_ids` - (Optional, List) The set of instance IDs. This parameter is valid only when resourceMode is set to instanceMode. Only instances whose IDs are included in this set are collected.
-* `regions` - (Optional, List) The set of regions to which instances belong. This parameter is valid only when resourceMode is set to attributeMode and supports wildcards. If the region set filter is an empty array, no region-based filtering is applied, and all instances satisfy the region condition. Otherwise, only instances whose region attribute is included in this region set are collected. The region set and resource tags work together. An instance is collected only if it satisfies both conditions.
+* `instance_ids` - (Optional, Computed, List) The set of instance IDs. This parameter is valid only when resourceMode is set to instanceMode. Only instances whose IDs are included in this set are collected.
+* `regions` - (Optional, Computed, List) The set of regions to which instances belong. This parameter is valid only when resourceMode is set to attributeMode and supports wildcards. If the region set filter is an empty array, no region-based filtering is applied, and all instances satisfy the region condition. Otherwise, only instances whose region attribute is included in this region set are collected. The region set and resource tags work together. An instance is collected only if it satisfies both conditions.
 * `resource_mode` - (Required) Resource collection mode. If set to all, all instances under the account are collected into the default Logstore. If set to attributeMode, instances are filtered based on their region attributes and resource tags. If set to instanceMode, instances are filtered by their instance IDs.
 * `resource_tags` - (Optional, Map) Resource tags. This parameter is valid only when resourceMode is set to attributeMode.  
 If the resource tag filter is empty, no filtering by resource tags is applied, and all instances satisfy the resource tag condition. Otherwise, only instances whose resource tag attributes fully match the specified resource tag configuration are collected.  
@@ -197,7 +214,7 @@ Resource tags and the region set of the instance work together. An instance is c
 
 The resource_directory supports the following:
 * `account_group_type` - (Optional) Supports the all (select all) mode and custom mode under this Resource Directory.
-* `members` - (Optional, List) The list of member accounts when the Resource Directory is configured in custom mode.
+* `members` - (Optional, Computed, List) The list of member accounts when the Resource Directory is configured in custom mode.
 
 ## Attributes Reference
 

@@ -10,6 +10,7 @@ import urllib.request
 
 
 MAX_LOG_BYTES = 2 * 1024 * 1024
+REUSE_SCAN_LIMIT = 1024
 ANSI = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
 SENSITIVE = re.compile(
     r'(?i)access[_-]?key|secret[_-]?key|password|authorization|cookie|'
@@ -127,6 +128,68 @@ def terminal_report(name, task_id, status, request, validation_error=None, logs=
     return report
 
 
+def append_summary(block):
+    summary = os.environ.get('AONE_CI_SUMMARY_MD')
+    if summary:
+        path = Path(summary)
+        # Aone limits the complete Markdown summary to 1 MiB.
+        size = path.stat().st_size if path.exists() else 0
+        if size + len(block.encode()) < 900_000:
+            with path.open('a') as stream:
+                stream.write(block)
+
+
+def acc_execution_counts(status, requested):
+    """Count distinct requested cases, never invocations or a whole-batch total."""
+    cases = ((status.get('result') or {}).get('tests') or {}).get('cases') or []
+    results = {}
+    for case in cases:
+        name, result = case.get('name'), case.get('result')
+        if name not in requested:
+            continue
+        results.setdefault(name, set()).add(result)
+    counts = {key: 0 for key in ('passed', 'failed', 'skipped')}
+    labels = {'PASS': 'passed', 'FAIL': 'failed', 'SKIP': 'skipped'}
+    for outcomes in results.values():
+        # Multiple conflicting invocations are not proof of a final result.
+        if len(outcomes) == 1 and next(iter(outcomes)) in labels:
+            counts[labels[next(iter(outcomes))]] += 1
+    counts['executed'] = sum(counts.values())
+    counts['unknown'] = len(set(requested)) - counts['executed']
+    return counts
+
+
+def publish_acc_summary(output, commit, packages, failed=False):
+    report = {'status': 'blocked' if failed else 'success', 'commitSha': commit,
+              'total': sum(row['total'] for row in packages), 'packages': packages}
+    fields = ('reused', 'toRun', 'executed', 'passed', 'failed', 'skipped', 'unknown')
+    for field in fields:
+        report[field] = sum(row[field] for row in packages) if all(row.get(field) is not None for row in packages) else None
+    (report_directory(output) / 'acc-summary.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
+    def count(value):
+        return '未确认' if value is None else str(value)
+    totals = ('总数=' + str(report['total']) + '，已确认复用=' + count(report['reused'])
+              + '，需执行（补跑）=' + count(report['toRun'])
+              + '，本次执行=' + count(report['executed']) + '，本次通过=' + count(report['passed'])
+              + '，失败=' + count(report['failed']) + '，跳过=' + count(report['skipped'])
+              + '，结果未确认=' + count(report['unknown']))
+    print('ACC 用例统计：' + totals + '，状态=' + report['status'], flush=True)
+    block = '\n### ACC 用例统计 · ' + report['status'] + '\n\n' + totals + '\n\n'
+    block += '| 包 | 总数 | 已确认复用 | 需执行（补跑） | 本次执行 | 本次通过 | 失败 | 跳过 | 结果未确认 | 复用核验 | 原任务 | 执行任务 |\n'
+    block += '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |\n'
+    labels = {'verified': '已通过', 'not-needed': '无需复用', 'pending': '待复核', 'unconfirmed': '未确认',
+              'skipped-limit': f'超限不复用（{REUSE_SCAN_LIMIT} 条）'}
+    for row in packages:
+        cells = [redact(row['name']).replace('|', '\\|').replace('\n', ' '), str(row['total']),
+                 *[count(row.get(field)) for field in fields], labels[row['reuseValidation']],
+                 ', '.join(row['originalTaskIds']) or '—', row.get('taskId') or '—']
+        block += '| ' + ' | '.join(cells) + ' |\n'
+    block += ('\n复用数须完成资格复核；需执行为本轮分配数，不等于通过数。'
+              '本次执行按已返回 PASS/FAIL/SKIP 的不同用例计数，包含跳过；复用不计入本次通过。'
+              '结果未确认包括未返回或冲突的用例结果；接口错误不等于用例失败，也不能视为零失败。\n')
+    append_summary(block)
+
+
 def publish_report(output, report):
     text = json.dumps(report, ensure_ascii=False, indent=2)
     name = hashlib.sha256((report['name'] + ':' + report['taskId']).encode()).hexdigest()
@@ -136,13 +199,11 @@ def publish_report(output, report):
         print('ACube failure detail (redacted):\n' + report['logExcerpt'], flush=True)
     summary = os.environ.get('AONE_CI_SUMMARY_MD')
     if summary:
-        path = Path(summary)
-        # Aone limits the complete Markdown summary to 1 MiB.
         block = ('\n### ACube task ' + report['taskId'] + ': ' + report['status'] + '\n\n'
                  + '- Check: `' + report['name'] + '`\n'
                  + '- Commit: `' + str(report.get('commitSha')) + '`\n'
                  + '- Exit code: `' + str(report.get('exitCode')) + '`\n')
-        for field in ('error', 'validationError', 'diagnosticWarning'):
+        for field in ('error', 'taskError', 'validationError', 'diagnosticWarning'):
             if report.get(field):
                 block += '- ' + field + ': ' + report[field] + '\n'
         if report.get('phases'):
@@ -150,12 +211,11 @@ def publish_report(output, report):
             for phase in report['phases']:
                 block += '| ' + ' | '.join(str(phase.get(k, '')).replace('|', '/')
                                             for k in ('name', 'status', 'exitCode')) + ' |\n'
-        for field in ('tests', 'cleanup', 'unsuccessfulCases'):
+        for field in ('tests', 'cleanup', 'unsuccessfulCases', 'example'):
             if report.get(field):
+                if field == 'tests':
+                    block += '\n以下仅为该补跑任务的结果，不含复用用例；完整范围见 ACC 用例统计。\n'
                 block += '\n' + field + ':\n```json\n' + json.dumps(report[field], ensure_ascii=False) + '\n```\n'
         if report.get('logExcerpt'):
             block += '\n```text\n' + report['logExcerpt'] + '\n```\n'
-        size = path.stat().st_size if path.exists() else 0
-        if size + len(block.encode()) < 900_000:
-            with path.open('a') as stream:
-                stream.write(block)
+        append_summary(block)
