@@ -1019,22 +1019,7 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 	request["Container"] = Containers
 
 	if v, ok := d.GetOk("acr_registry_info"); ok {
-		AcrRegistryInfos := make([]map[string]interface{}, len(v.(*schema.Set).List()))
-		for i, AcrRegistryInfosValue := range v.(*schema.Set).List() {
-			AcrRegistryInfosMap := AcrRegistryInfosValue.(map[string]interface{})
-			AcrRegistryInfos[i] = make(map[string]interface{})
-			AcrRegistryInfos[i]["InstanceName"] = AcrRegistryInfosMap["instance_name"]
-			AcrRegistryInfos[i]["InstanceId"] = AcrRegistryInfosMap["instance_id"]
-			AcrRegistryInfos[i]["Domain"] = AcrRegistryInfosMap["domains"]
-			AcrRegistryInfos[i]["RegionId"] = AcrRegistryInfosMap["region_id"]
-			if v, ok := AcrRegistryInfosMap["arn_service"].(string); ok && v != "" {
-				AcrRegistryInfos[i]["ArnService"] = v
-			}
-			if v, ok := AcrRegistryInfosMap["arn_user"].(string); ok && v != "" {
-				AcrRegistryInfos[i]["ArnUser"] = v
-			}
-		}
-		request["AcrRegistryInfo"] = AcrRegistryInfos
+		request["AcrRegistryInfo"] = buildEciAcrRegistryInfoRequest(v.(*schema.Set).List())
 	}
 
 	if v, ok := d.GetOk("cpu"); ok {
@@ -1306,6 +1291,29 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 	}
 
 	return resourceAliCloudEciContainerGroupRead(d, meta)
+}
+
+// buildEciAcrRegistryInfoRequest converts the acr_registry_info blocks into the
+// CreateContainerGroup AcrRegistryInfo.N.* request parameters. ArnService and
+// ArnUser are only sent when configured.
+func buildEciAcrRegistryInfoRequest(acrRegistryInfos []interface{}) []map[string]interface{} {
+	result := make([]map[string]interface{}, len(acrRegistryInfos))
+	for i, raw := range acrRegistryInfos {
+		acrRegistryInfo := raw.(map[string]interface{})
+		result[i] = map[string]interface{}{
+			"InstanceName": acrRegistryInfo["instance_name"],
+			"InstanceId":   acrRegistryInfo["instance_id"],
+			"Domain":       acrRegistryInfo["domains"],
+			"RegionId":     acrRegistryInfo["region_id"],
+		}
+		if v, ok := acrRegistryInfo["arn_service"].(string); ok && v != "" {
+			result[i]["ArnService"] = v
+		}
+		if v, ok := acrRegistryInfo["arn_user"].(string); ok && v != "" {
+			result[i]["ArnUser"] = v
+		}
+	}
+	return result
 }
 
 func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interface{}) error {

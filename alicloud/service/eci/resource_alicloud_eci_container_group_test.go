@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 )
 
 func init() {
@@ -687,6 +688,121 @@ func TestAccAliCloudEciContainerGroup_basic4(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAccAliCloudEciContainerGroup_acrRegistryInfoArn covers acr_registry_info.arn_service and
+// acr_registry_info.arn_user end to end: the container group pulls a private image from an ACR
+// Enterprise Edition instance through the configured RAM role chain (no registry credential).
+//
+// The ARNs cannot be read back from DescribeContainerGroups, so this is a create-only case:
+// it checks creation (the group must reach Running, i.e. the image was pulled), that refresh
+// keeps the configured ARNs (empty plan), and that changing an ARN plans a replacement.
+//
+// Prerequisites (the test is skipped unless all are set):
+//   - ALICLOUD_ECI_ACR_ARN_SERVICE: role in the container group's account; trusts eci.aliyuncs.com and
+//     holds AliyunSTSAssumeRoleAccess.
+//   - ALICLOUD_ECI_ACR_ARN_USER: role in the ACR instance's account; trusts the ARN_SERVICE role and can
+//     pull images. Set it to the same value as ARN_SERVICE's account role for a same-account test.
+//   - ALICLOUD_ECI_ACR_INSTANCE_ID, ALICLOUD_ECI_ACR_DOMAIN, ALICLOUD_ECI_ACR_IMAGE: the ACR Enterprise
+//     Edition instance, one of its domains and a private image on that domain.
+//   - ALICLOUD_ECI_ACR_VSWITCH_ID, ALICLOUD_ECI_ACR_SECURITY_GROUP_ID: network that can reach the
+//     ACR domain (for a public domain: SNAT and an ACL entry on the instance).
+func TestAccAliCloudEciContainerGroup_acrRegistryInfoArn(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_eci_container_group.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEciContainerGroupMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eci.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEciContainerGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacceci-arn-%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEciContainerGroupAcrRegistryInfoArnDependence)
+	envs := []string{
+		"ALICLOUD_ECI_ACR_ARN_SERVICE", "ALICLOUD_ECI_ACR_ARN_USER", "ALICLOUD_ECI_ACR_INSTANCE_ID",
+		"ALICLOUD_ECI_ACR_DOMAIN", "ALICLOUD_ECI_ACR_IMAGE", "ALICLOUD_ECI_ACR_VSWITCH_ID", "ALICLOUD_ECI_ACR_SECURITY_GROUP_ID",
+	}
+	arnService := os.Getenv("ALICLOUD_ECI_ACR_ARN_SERVICE")
+	arnUser := os.Getenv("ALICLOUD_ECI_ACR_ARN_USER")
+	baseConfig := func(arnUser string) map[string]interface{} {
+		return map[string]interface{}{
+			"container_group_name": strings.ToLower(name),
+			"security_group_id":    os.Getenv("ALICLOUD_ECI_ACR_SECURITY_GROUP_ID"),
+			"vswitch_id":           os.Getenv("ALICLOUD_ECI_ACR_VSWITCH_ID"),
+			"cpu":                  "0.25",
+			"memory":               "0.5",
+			"restart_policy":       "Never",
+			"containers": []map[string]interface{}{
+				{
+					"name":              "acr-arn",
+					"image":             os.Getenv("ALICLOUD_ECI_ACR_IMAGE"),
+					"image_pull_policy": "Always",
+					"commands":          []string{"sleep", "3600"},
+				},
+			},
+			"acr_registry_info": []map[string]interface{}{
+				{
+					"instance_id": os.Getenv("ALICLOUD_ECI_ACR_INSTANCE_ID"),
+					"region_id":   acctest.DefaultRegionToTest,
+					"domains":     []string{os.Getenv("ALICLOUD_ECI_ACR_DOMAIN")},
+					"arn_service": arnService,
+					"arn_user":    arnUser,
+				},
+			},
+		}
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			for _, env := range envs {
+				acctest.PreCheckWithEnvVariable(t, env)
+			}
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(baseConfig(arnUser)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"container_group_name": strings.ToLower(name),
+						"restart_policy":       "Never",
+						"status":               "Running",
+						"acr_registry_info.#":  "1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "acr_registry_info.*", map[string]string{
+						"arn_service": arnService,
+						"arn_user":    arnUser,
+					}),
+				),
+			},
+			{
+				// Refresh keeps the configured ARNs: no diff.
+				Config:   testAccConfig(baseConfig(arnUser)),
+				PlanOnly: true,
+			},
+			{
+				// arn_user is ForceNew: changing it plans a replacement.
+				Config:             testAccConfig(baseConfig(arnUser + "-changed")),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPreRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
+					},
+				},
+			},
+		},
+	})
+}
+
+func AliCloudEciContainerGroupAcrRegistryInfoArnDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+`, name)
 }
 
 func TestAccAliCloudEciContainerGroup_basic5(t *testing.T) {
