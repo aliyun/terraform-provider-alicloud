@@ -322,6 +322,13 @@ func serviceEntrypoint(file string) (bool, error) {
 	return false, nil
 }
 
+// Keep this standalone file runnable with GO111MODULE=off. These paths mirror
+// splitlayout.ProviderSourcePaths without adding a module dependency.
+func isProviderSource(file string) bool {
+	file = filepath.ToSlash(file)
+	return file == "alicloud/provider/sdkv2/provider.go" || file == "alicloud/provider.go"
+}
+
 // Resource/data-source implementations have companion tests. Every other source
 // file is shared helper/service code and broadens to all TestUnit* in its package.
 func selectCases(files []string, bases ...string) ([]unitCase, []string, error) {
@@ -339,7 +346,7 @@ func selectCases(files []string, bases ...string) ([]unitCase, []string, error) 
 		if selected[dir] == nil {
 			selected[dir] = map[string]bool{}
 		}
-		if file == "alicloud/provider.go" && len(bases) == 1 {
+		if isProviderSource(file) && len(bases) == 1 {
 			if tests, ok := registrationTests(bases[0], file); ok {
 				for _, test := range tests {
 					selected[dir][test] = true

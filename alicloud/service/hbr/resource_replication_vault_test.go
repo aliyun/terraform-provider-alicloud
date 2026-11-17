@@ -15,13 +15,13 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/hbr"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
@@ -118,7 +118,7 @@ func testSweepHbrReplicationVault(region string) error {
 // factories for the cross-region replication vault tests: a replication vault
 // in cn-hangzhou sourced from a vault in cn-shanghai, declared via separate
 // "alicloud" and "alicloudshanghai" provider blocks. Each factory wraps a
-// fresh alicloud.Provider() (independent SDK Meta) with
+// fresh sdkv2.Provider() (independent SDK Meta) with
 // provider.ProtoV5ProviderServerFactory so the two regions are not muxed onto
 // the shared global provider, and appends the underlying *schema.Provider to
 // providers so the multi-provider CheckDestroy can verify destruction across
@@ -126,7 +126,7 @@ func testSweepHbrReplicationVault(region string) error {
 func testAccHBRReplicationVaultProviderFactories(providers *[]*schema.Provider) map[string]func() (tfprotov5.ProviderServer, error) {
 	return map[string]func() (tfprotov5.ProviderServer, error){
 		"alicloud": func() (tfprotov5.ProviderServer, error) {
-			p := alicloud.Provider()
+			p := sdkv2.Provider()
 			*providers = append(*providers, p)
 			serverFactory, err := provider.ProtoV5ProviderServerFactory(context.Background(), p)
 			if err != nil {
@@ -135,7 +135,7 @@ func testAccHBRReplicationVaultProviderFactories(providers *[]*schema.Provider) 
 			return serverFactory(), nil
 		},
 		"alicloudshanghai": func() (tfprotov5.ProviderServer, error) {
-			p := alicloud.Provider()
+			p := sdkv2.Provider()
 			*providers = append(*providers, p)
 			serverFactory, err := provider.ProtoV5ProviderServerFactory(context.Background(), p)
 			if err != nil {

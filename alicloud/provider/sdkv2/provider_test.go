@@ -1,45 +1,10 @@
-package alicloud
+package sdkv2
 
 import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
-
-func TestProvider(t *testing.T) {
-	if err := Provider().InternalValidate(); err != nil {
-		t.Fatalf("err: %s", err)
-	}
-}
-
-func TestProvider_impl(t *testing.T) {
-	var _ *schema.Provider = Provider()
-}
-
-func TestProviderSkipRegionValidation(t *testing.T) {
-	testCases := []struct {
-		name     string
-		env      string
-		raw      map[string]interface{}
-		expected bool
-	}{
-		{"unset env defaults to false", "", map[string]interface{}{}, false},
-		{"env true enables skip", "true", map[string]interface{}{}, true},
-		{"env false disables skip", "false", map[string]interface{}{}, false},
-		{"config overrides env", "true", map[string]interface{}{"skip_region_validation": false}, false},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Setenv("ALICLOUD_SKIP_REGION_VALIDATION", testCase.env)
-			d := schema.TestResourceDataRaw(t, Provider().Schema, testCase.raw)
-			if got := d.Get("skip_region_validation").(bool); got != testCase.expected {
-				t.Fatalf("skip_region_validation: expected %v, got %v", testCase.expected, got)
-			}
-		})
-	}
-}
 
 func TestProviderFeatures(t *testing.T) {
 	testCases := []struct {

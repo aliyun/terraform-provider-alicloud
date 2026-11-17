@@ -1,4 +1,4 @@
-package alicloud
+package sdkv2
 
 import (
 	"bytes"

@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	"github.com/aliyun/terraform-provider-alicloud/scripts/collection-order/internal/coverage"
 	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 )
@@ -27,7 +27,7 @@ func main() {
 }
 
 func run(base, head, resourceName string) error {
-	current, err := os.ReadFile("alicloud/provider.go")
+	current, err := splitlayout.ReadProviderSource()
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func run(base, head, resourceName string) error {
 				before[name] = constructor
 			}
 		}
-		changed = []string{"alicloud/provider.go"}
+		changed = []string{splitlayout.ProviderSourcePath}
 	} else {
 		valid := regexp.MustCompile(`^[0-9a-f]{40}$`)
 		if !valid.MatchString(base) || !valid.MatchString(head) {
@@ -89,7 +89,9 @@ func run(base, head, resourceName string) error {
 			return err
 		}
 		changed = strings.Split(strings.TrimSuffix(string(output), "\x00"), "\x00")
-		src, err := git("show", base+":alicloud/provider.go")
+		src, err := splitlayout.ReadProviderSourceFrom(func(path string) ([]byte, error) {
+			return git("show", base+":"+path)
+		})
 		if err != nil {
 			return err
 		}
@@ -119,7 +121,7 @@ func run(base, head, resourceName string) error {
 		fmt.Println("TypeList Order Coverage: no directly changed resource implementations, tests or registrations.")
 		return nil
 	}
-	provider := alicloud.Provider()
+	provider := sdkv2.Provider()
 	failed := false
 	checked := map[string]bool{}
 	for _, name := range coverage.Names(selected) {

@@ -40,6 +40,46 @@ var (
 	servicePathRegex = regexp.MustCompile(`^alicloud/(?:service/([0-9A-Za-z_-]+)|(provider/core))/[0-9A-Za-z_.-]+$`)
 )
 
+const (
+	// ProviderSourcePath is the current SDKv2 provider implementation path.
+	ProviderSourcePath = "alicloud/provider/sdkv2/provider.go"
+	// LegacyProviderSourcePath is the historical root provider implementation path.
+	LegacyProviderSourcePath = "alicloud/provider.go"
+)
+
+// ProviderSourcePaths returns the current SDKv2 implementation path first and
+// the historical root path second for compatibility with older base commits.
+func ProviderSourcePaths() []string {
+	return []string{ProviderSourcePath, LegacyProviderSourcePath}
+}
+
+// IsProviderSource reports whether path holds a full provider implementation
+// in either the current SDKv2 layout or the historical root layout.
+func IsProviderSource(path string) bool {
+	return path == ProviderSourcePath || path == LegacyProviderSourcePath
+}
+
+// ReadProviderSource reads the SDKv2 implementation from either the current or
+// historical layout. The root compatibility forwarding file is never a fallback
+// when the SDKv2 implementation exists.
+func ReadProviderSource() ([]byte, error) {
+	return ReadProviderSourceFrom(os.ReadFile)
+}
+
+// ReadProviderSourceFrom reads the current SDKv2 implementation path first,
+// then the historical root path. It is also used for base-revision git reads.
+func ReadProviderSourceFrom(read func(string) ([]byte, error)) ([]byte, error) {
+	var err error
+	for _, path := range ProviderSourcePaths() {
+		var src []byte
+		src, err = read(path)
+		if err == nil {
+			return src, nil
+		}
+	}
+	return nil, err
+}
+
 // Kind classifies a registration by the kind of provider entity it names.
 type Kind string
 
@@ -235,10 +275,10 @@ func FrameworkRegisteredIn(registerSrc []byte, typeName string) bool {
 	return false
 }
 
-// ProviderRegisteredNames parses the root alicloud/provider.go source and
-// returns the entries registered in its DataSourcesMap and ResourcesMap
-// literals — the public aliases the flat layout registered at the provider
-// root rather than in a product register.go. The base title index needs them
+// ProviderRegisteredNames parses the SDKv2 provider source and returns the
+// entries registered in its DataSourcesMap and ResourcesMap literals — the
+// public aliases registered directly by the provider rather than in a product
+// register.go. The base title index needs them
 // so a migration that moves such an alias into a service register announces
 // it as modified, not as new: the alias type name need not match any flat
 // filename stem (Quotas #11288 registers alicloud_quotas_application_info at
@@ -252,10 +292,10 @@ func FrameworkRegisteredIn(registerSrc []byte, typeName string) bool {
 // only needs the type name and kind, and the provider.go value expressions
 // are not register factories.
 //
-// Provider-level registrations live in provider.go, which the title gate reads
-// at the base commit the same way it reads every register.go; this function
-// only walks the two top-level provider map literals, so nested schema maps
-// (map[string]*schema.Schema) are never mistaken for provider entities.
+// Provider-level registrations live in the SDKv2 provider source, which the
+// title gate reads at the base commit the same way it reads every register.go;
+// this function only walks the two top-level provider map literals, so nested
+// schema maps (map[string]*schema.Schema) are never mistaken for provider entities.
 func ProviderRegisteredNames(providerSrc []byte) []Entry {
 	f, err := parser.ParseFile(token.NewFileSet(), "provider.go", providerSrc, parser.SkipObjectResolution)
 	if err != nil {
