@@ -1461,7 +1461,7 @@ func newListenerAclAttachmentTransportClient(t *testing.T, serverURL string) *co
 	}
 	var endpoints sync.Map
 	endpoints.Store("slb", strings.TrimPrefix(serverURL, "http://"))
-	client, err := (&connectivity.Config{
+	client, err := connectivity.NewClient(&connectivity.Config{
 		SkipRegionValidation: true,
 		RegionId:             "cn-beijing",
 		Protocol:             "HTTP",
@@ -1471,7 +1471,7 @@ func newListenerAclAttachmentTransportClient(t *testing.T, serverURL string) *co
 		Credential:           credential,
 		Endpoints:            &endpoints,
 		SignVersion:          &sync.Map{},
-	}).Client()
+	})
 	if err != nil {
 		t.Fatalf("building the local transport client: %s", err)
 	}

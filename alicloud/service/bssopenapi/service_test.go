@@ -34,7 +34,7 @@ func newBssOpenApiTestClient(t *testing.T) *connectivity.AliyunClient {
 		Endpoints:            endpoints,
 		Credential:           testCredential,
 	}
-	aliyunClient, err := providerConfig.Client()
+	aliyunClient, err := connectivity.NewClient(&providerConfig)
 	assert.Nil(t, err)
 	return aliyunClient
 }

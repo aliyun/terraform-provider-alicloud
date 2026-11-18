@@ -1520,7 +1520,7 @@ func vpnPbrRouteEntryUnitClient(t *testing.T, handler http.HandlerFunc) *connect
 		RegionId: "cn-hangzhou", AccountType: "ResourceOwner", Protocol: "HTTP", SkipRegionValidation: true,
 		Endpoints: endpoints, SignVersion: &sync.Map{}, ClientReadTimeout: 5000, ClientConnectTimeout: 5000,
 	}
-	client, err := config.Client()
+	client, err := connectivity.NewClient(config)
 	if err != nil {
 		t.Fatal(err)
 	}

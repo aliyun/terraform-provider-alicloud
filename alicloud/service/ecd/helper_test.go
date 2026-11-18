@@ -57,7 +57,7 @@ func ecdTestClientForRegion(region string) (interface{}, error) {
 	}
 	conf.Credential = credential
 
-	return conf.Client()
+	return connectivity.NewClient(&conf)
 }
 
 // ecdTestRegion returns the region under test, honoring ALICLOUD_REGION.

@@ -1,4 +1,4 @@
-package connectivity
+package config
 
 import (
 	"crypto/tls"

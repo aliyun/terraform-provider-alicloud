@@ -59,7 +59,7 @@ func threatdetectionTestClientForRegion(region string) (interface{}, error) {
 	}
 	conf.Credential = credential
 
-	return conf.Client()
+	return connectivity.NewClient(&conf)
 }
 
 // threatdetectionSweepAll mirrors the root-package sweepAll gate; it is not

@@ -82,7 +82,7 @@ func threatdetectionTestClientForRegion(region string) (interface{}, error) {
 		return nil, err
 	}
 	conf.Credential = credential
-	return conf.Client()
+	return connectivity.NewClient(&conf)
 }
 
 func TestUnitAlicloudSASGroup(t *testing.T) {

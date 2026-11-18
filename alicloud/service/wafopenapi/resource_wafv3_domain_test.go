@@ -1216,7 +1216,7 @@ func newWafv3WireClient(t *testing.T, endpoint string) *connectivity.AliyunClien
 	endpoints := &sync.Map{}
 	endpoints.Store("waf", endpoint)
 	endpoints.Store("waf_openapi", endpoint)
-	client, err := (&connectivity.Config{
+	client, err := connectivity.NewClient(&connectivity.Config{
 		AccessKey:            "wire-test-ak",
 		SecretKey:            "wire-test-sk",
 		Region:               connectivity.Hangzhou,
@@ -1226,7 +1226,7 @@ func newWafv3WireClient(t *testing.T, endpoint string) *connectivity.AliyunClien
 		SkipRegionValidation: true,
 		Endpoints:            endpoints,
 		Credential:           cred,
-	}).Client()
+	})
 	if err != nil {
 		t.Fatalf("build test client: %v", err)
 	}

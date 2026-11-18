@@ -1184,7 +1184,7 @@ func createTableThroughFixture(t *testing.T, config map[string]interface{}) (*ot
 	}
 	endpoints := &sync.Map{}
 	endpoints.Store("tablestore", strings.TrimPrefix(server.URL, "http://"))
-	client, err := (&connectivity.Config{
+	client, err := connectivity.NewClient(&connectivity.Config{
 		AccessKey:            "test-access-key",
 		SecretKey:            "test-secret-key",
 		Region:               connectivity.Region("cn-beijing"),
@@ -1197,7 +1197,7 @@ func createTableThroughFixture(t *testing.T, config map[string]interface{}) (*ot
 		OtsEndpoint:          server.URL,
 		Endpoints:            endpoints,
 		Credential:           credential,
-	}).Client()
+	})
 	if err != nil {
 		t.Fatalf("failed to build the test client: %v", err)
 	}

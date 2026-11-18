@@ -669,7 +669,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 				"for more information about providing credentials."))
 	}
 
-	client, err := config.Client()
+	client, err := connectivity.NewClient(config)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}

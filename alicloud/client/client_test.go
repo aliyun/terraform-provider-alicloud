@@ -1,4 +1,4 @@
-package connectivity
+package client
 
 import (
 	"encoding/json"
@@ -112,7 +112,7 @@ func NewTestClient(t *testing.T) *AliyunClient {
 	}
 	config.Credential = credential
 
-	client, err := config.Client()
+	client, err := NewClient(config)
 	if err != nil {
 		t.Fatalf("initial client failed: %v", err)
 	}
@@ -223,7 +223,7 @@ func TestUnitCommonWithEcsClient_Proxy(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+			ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.AuthCredential(true))
 			assert.NoError(t, err)
 
 			if tc.expectedHTTP != "" {
@@ -277,7 +277,7 @@ func TestUnitCommonWithVpcClient_Proxy(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			vpcconn, err := vpc.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+			vpcconn, err := vpc.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.AuthCredential(true))
 			assert.NoError(t, err)
 
 			if tc.expectedHTTP != "" {
@@ -331,7 +331,7 @@ func TestUnitCommonWithRamClient_Proxy(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ramconn, err := ram.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+			ramconn, err := ram.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.AuthCredential(true))
 			assert.NoError(t, err)
 
 			if tc.expectedHTTP != "" {
@@ -600,7 +600,7 @@ func TestUnitTeaRoaProxyRouting(t *testing.T) {
 							config := &Config{Protocol: protocol, RegionId: "cn-hangzhou", Credential: credential, Endpoints: endpoints,
 								AccessKey: "test-access-key", SecretKey: "test-secret-key",
 								ClientReadTimeout: 2000, ClientConnectTimeout: 2000}
-							sdkConfig, err := config.getTeaRoaDslSdkConfig(true)
+							sdkConfig, err := config.PrepareTeaROAConfig()
 							if err != nil {
 								t.Fatal(err)
 							}

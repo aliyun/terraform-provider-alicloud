@@ -175,7 +175,7 @@ func polarDBClusterTDEHTTPClient(t *testing.T, capture func(url.Values)) *connec
 		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
 		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
 	}
-	client, err := config.Client()
+	client, err := connectivity.NewClient(config)
 	if err != nil {
 		t.Fatalf("build client: %s", err)
 	}
@@ -308,7 +308,7 @@ func polarDBClusterLocalClient(t *testing.T, handler http.Handler) *connectivity
 		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
 		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
 	}
-	client, err := config.Client()
+	client, err := connectivity.NewClient(config)
 	if err != nil {
 		t.Fatalf("build client: %s", err)
 	}

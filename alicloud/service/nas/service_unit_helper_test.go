@@ -16,7 +16,7 @@ import (
 // binaries, so this helper does not collide with the same-named one in
 // sweeper_test.go. The returned client is *connectivity.AliyunClient, which
 // callers cast as needed; the original Skip-on-error and rawClient assertions
-// are preserved because sweep.SharedClientForRegion returns conf.Client().
+// are preserved because sweep.SharedClientForRegion returns connectivity.NewClient(&conf).
 func nasTestClientForRegion(region string) (interface{}, error) {
 	return sweep.SharedClientForRegion(region)
 }

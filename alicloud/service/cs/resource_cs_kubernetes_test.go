@@ -95,7 +95,7 @@ func csTestClientForRegion(region string) (*connectivity.AliyunClient, error) {
 	}
 	conf.Credential = credential
 
-	return conf.Client()
+	return connectivity.NewClient(&conf)
 }
 
 func init() {

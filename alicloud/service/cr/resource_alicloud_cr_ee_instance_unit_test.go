@@ -58,7 +58,7 @@ func TestUnitCrEeInstanceIntlEmptyListSelfHeal(t *testing.T) {
 		config := &connectivity.Config{AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
 			RegionId: "cn-hangzhou", AccountType: accountType, Protocol: "http", Endpoints: new(sync.Map),
 			SignVersion: new(sync.Map), SkipRegionValidation: true}
-		c, err := config.Client()
+		c, err := connectivity.NewClient(config)
 		if err != nil {
 			t.Fatalf("failed to create client: %s", err)
 		}

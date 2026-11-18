@@ -4142,7 +4142,7 @@ func redisTairInstanceTestClient(t *testing.T, handler http.HandlerFunc) *connec
 		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
 		Endpoints: &endpoints, SignVersion: &signVersion, SkipRegionValidation: true,
 	}
-	client, err := config.Client()
+	client, err := connectivity.NewClient(config)
 	if err != nil {
 		t.Fatal(err)
 	}

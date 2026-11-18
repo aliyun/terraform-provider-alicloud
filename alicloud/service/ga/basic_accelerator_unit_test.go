@@ -357,7 +357,7 @@ func TestUnitAliCloudGaBasicAcceleratorPaymentMapping(t *testing.T) {
 		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
 		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
 	}
-	rawClient, err := clientConfig.Client()
+	rawClient, err := connectivity.NewClient(clientConfig)
 	if err != nil {
 		t.Fatalf("building the local client failed: %s", err)
 	}

@@ -68,7 +68,7 @@ func actiontrailTestClientForRegion(region string) (*connectivity.AliyunClient, 
 	}
 	conf.Credential = credential
 
-	return conf.Client()
+	return connectivity.NewClient(&conf)
 }
 
 // actiontrailSweepAll mirrors the root-package sweepAll gate; it is not

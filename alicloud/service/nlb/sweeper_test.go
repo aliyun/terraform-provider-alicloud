@@ -55,7 +55,7 @@ func nlbTestClientForRegion(region string) (interface{}, error) {
 		return nil, err
 	}
 	conf.Credential = credential
-	return conf.Client()
+	return connectivity.NewClient(&conf)
 }
 
 // sweepAll mirrors the root helper of the same name so the migrated sweeper

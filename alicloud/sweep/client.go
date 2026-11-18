@@ -113,7 +113,7 @@ func SharedClientForRegion(region string) (interface{}, error) {
 	conf.Credential = credential
 
 	// configures a default client for the region, using the above env vars
-	client, err := conf.Client()
+	client, err := connectivity.NewClient(&conf)
 	if err != nil {
 		return nil, err
 	}

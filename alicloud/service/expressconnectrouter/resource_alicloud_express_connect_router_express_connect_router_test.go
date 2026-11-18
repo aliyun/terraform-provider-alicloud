@@ -654,7 +654,7 @@ func ecrUnitRead(t *testing.T, fixture *ecrUnitFixture) (*schema.ResourceData, e
 		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
 		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
 	}
-	client, err := config.Client()
+	client, err := connectivity.NewClient(config)
 	if err != nil {
 		t.Fatalf("build fixture client: %v", err)
 	}

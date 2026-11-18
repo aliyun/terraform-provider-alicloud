@@ -178,7 +178,7 @@ var logMachineGroupMap = map[string]string{
 //
 // Helper-level correctness is further locked down by
 // TestApplyOpenapiSignVersion and TestApplyLogClientSignVersion in
-// alicloud/connectivity/sign_version_test.go. Together the three layers
+// alicloud/client/sign_version_test.go. Together the three layers
 // (helper unit test + one acceptance per path) catch any regression that
 // would drop v4 signing for any resource on either path.
 //

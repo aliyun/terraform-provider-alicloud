@@ -175,7 +175,7 @@ func testAccChatbotFaqCategoryIds(t *testing.T) []string {
 		SkipRegionValidation: true,
 		Credential:           credential,
 	}
-	client, err := config.Client()
+	client, err := connectivity.NewClient(config)
 	if err != nil {
 		t.Fatalf("build chatbot fixture client: %v", err)
 	}

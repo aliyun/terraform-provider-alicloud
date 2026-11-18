@@ -189,7 +189,7 @@ func TestUnitAliCloudInstanceManagedHostId(t *testing.T) {
 		Endpoints:            endpoints,
 		SignVersion:          new(sync.Map),
 	}
-	rawClient, err := config.Client()
+	rawClient, err := connectivity.NewClient(&config)
 	if err != nil {
 		t.Fatalf("build client failed: %v", err)
 	}

@@ -74,7 +74,7 @@ func privatelinkTestClientForRegion(region string) (*connectivity.AliyunClient, 
 	}
 	conf.Credential = credential
 
-	return conf.Client()
+	return connectivity.NewClient(&conf)
 }
 
 // privatelinkTestSweepPreCheckWithRegions mirrors the root-package

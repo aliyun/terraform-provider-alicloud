@@ -54,7 +54,7 @@ func unitTestMockClient(t *testing.T) *connectivity.AliyunClient {
 		SignVersion:          new(sync.Map),
 		SkipRegionValidation: true,
 	}
-	meta, err := config.Client()
+	meta, err := connectivity.NewClient(config)
 	if err != nil {
 		t.Fatal(err)
 	}

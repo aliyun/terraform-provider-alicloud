@@ -1,4 +1,4 @@
-package connectivity
+package client
 
 import (
 	"net/http"
