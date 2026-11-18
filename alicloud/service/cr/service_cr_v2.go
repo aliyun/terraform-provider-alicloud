@@ -107,6 +107,56 @@ func (s *CrServiceV2) DescribeInstanceQueryAvailableInstances(d *schema.Resource
 		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Data.InstanceList[*]", response)
 	}
 
+	// Self-heal for site misjudgement: an international account whose AccountType
+	// was cleared (e.g. by the cfw_pre_intl probe in getAccountType, see
+	// alicloud/connectivity/client.go) queries QueryAvailableInstances with
+	// ProductType=acr_ee_public_cn and gets HTTP 200 Success but an empty
+	// InstanceList. That empty list is misread as NotFound, wiping payment_type
+	// (Required + ForceNew) and triggering an unwanted destroy/rebuild on plan.
+	// Retry once with the international product type and endpoint — symmetric
+	// with the NotApplicable fallback in the retry loop above — before
+	// concluding NotFound. Only applies when the CN product was actually used, so
+	// accounts already detected as international or already switched by the
+	// NotApplicable fallback are unaffected.
+	if list, ok := v.([]interface{}); ok && len(list) == 0 &&
+		!client.IsInternationalAccount() && request["ProductType"] == "acr_ee_public_cn" {
+		intlRequest := make(map[string]interface{})
+		for key, val := range request {
+			intlRequest[key] = val
+		}
+		intlRequest["ProductCode"] = "acr"
+		intlRequest["ProductType"] = "acr_ee_public_intl"
+		intlEndpoint := connectivity.BssOpenAPIEndpointInternational
+		var intlResponse map[string]interface{}
+		intlErr := retry.Retry(1*time.Minute, func() *retry.RetryError {
+			var callErr error
+			intlResponse, callErr = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, intlRequest, true, intlEndpoint)
+			if callErr != nil {
+				if helper.NeedRetry(callErr) {
+					wait()
+					return retry.RetryableError(callErr)
+				}
+				return retry.NonRetryableError(callErr)
+			}
+			return nil
+		})
+		logs.AddDebug(action, intlResponse, intlRequest)
+		if intlErr != nil {
+			// Surface the self-heal retry error so intl gateway failures stay
+			// diagnosable instead of silently falling through to NotFound.
+			logs.AddDebug(action, intlErr, intlRequest)
+		}
+		if intlErr == nil {
+			if intlV, jsonErr := jsonpath.Get("$.Data.InstanceList[*]", intlResponse); jsonErr == nil {
+				if intlList, ok := intlV.([]interface{}); ok && len(intlList) > 0 {
+					return intlList[0].(map[string]interface{}), nil
+				}
+			}
+		}
+		// International retry did not locate the instance either; fall through to
+		// NotFound so Read keeps tolerating the missing billing record as before.
+	}
+
 	if len(v.([]interface{})) == 0 {
 		return object, errs.WrapErrorf(errs.NotFoundErr("Instance", id), errs.NotFoundMsg, response)
 	}
