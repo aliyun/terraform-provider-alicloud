@@ -69,6 +69,7 @@ func (s *ServiceV2) DescribeThreatDetectionInstance(id string) (object map[strin
 
 	return response, nil
 }
+
 func (s *ServiceV2) DescribeInstanceQueryAvailableInstances(d *schema.ResourceData) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}

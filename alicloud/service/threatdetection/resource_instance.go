@@ -158,6 +158,18 @@ func resourceAliCloudThreatDetectionInstance() *schema.Resource {
 							Type:     schema.TypeInt,
 							Optional: true,
 						},
+						"ai_digital": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"image_scan": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"cspm_instance": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -592,6 +604,9 @@ func resourceAliCloudThreatDetectionInstanceRead(d *schema.ResourceData, meta in
 		postPayModuleSwitchObjMap["serverless"] = postPayModuleSwitchObjRaw["Serverless"]
 		postPayModuleSwitchObjMap["vul"] = postPayModuleSwitchObjRaw["Vul"]
 		postPayModuleSwitchObjMap["web_lock"] = postPayModuleSwitchObjRaw["WebLock"]
+		postPayModuleSwitchObjMap["ai_digital"] = postPayModuleSwitchObjRaw["AiDigital"]
+		postPayModuleSwitchObjMap["image_scan"] = postPayModuleSwitchObjRaw["ImageScan"]
+		postPayModuleSwitchObjMap["cspm_instance"] = postPayModuleSwitchObjRaw["CspmInstance"]
 
 		postPayModuleSwitchObjMaps = append(postPayModuleSwitchObjMaps, postPayModuleSwitchObjMap)
 	}
@@ -963,6 +978,18 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 			if sdk1 != nil && sdk1 != "" {
 				postPayModuleSwitchObj["Sdk"] = sdk1
 			}
+			aiDigital1, _ := jsonpath.Get("$[0].ai_digital", v)
+			if aiDigital1 != nil && aiDigital1 != "" {
+				postPayModuleSwitchObj["AiDigital"] = aiDigital1
+			}
+			imageScan1, _ := jsonpath.Get("$[0].image_scan", v)
+			if imageScan1 != nil && imageScan1 != "" {
+				postPayModuleSwitchObj["ImageScan"] = imageScan1
+			}
+			cspmInstance1, _ := jsonpath.Get("$[0].cspm_instance", v)
+			if cspmInstance1 != nil && cspmInstance1 != "" {
+				postPayModuleSwitchObj["CspmInstance"] = cspmInstance1
+			}
 
 			postPayModuleSwitchObjJson, err := json.Marshal(postPayModuleSwitchObj)
 			if err != nil {
@@ -989,6 +1016,80 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 		if v, ok := d.GetOkExists("post_paid_host_auto_bind_version"); ok {
 			request["PostPaidHostAutoBindVersion"] = v
 		}
+
+		if v, ok := d.GetOk("post_pay_module_switch"); ok {
+			request["PostPayModuleSwitch"] = v
+		} else if v := d.Get("post_pay_module_switch_obj"); v != nil {
+			postPayModuleSwitchObj := make(map[string]interface{})
+
+			vul1, _ := jsonpath.Get("$[0].vul", v)
+			if vul1 != nil && vul1 != "" {
+				postPayModuleSwitchObj["Vul"] = vul1
+			}
+			agentless1, _ := jsonpath.Get("$[0].agentless", v)
+			if agentless1 != nil && agentless1 != "" {
+				postPayModuleSwitchObj["Agentless"] = agentless1
+			}
+			webLock1, _ := jsonpath.Get("$[0].web_lock", v)
+			if webLock1 != nil && webLock1 != "" {
+				postPayModuleSwitchObj["WebLock"] = webLock1
+			}
+			serverless1, _ := jsonpath.Get("$[0].serverless", v)
+			if serverless1 != nil && serverless1 != "" {
+				postPayModuleSwitchObj["Serverless"] = serverless1
+			}
+			basicService1, _ := jsonpath.Get("$[0].basic_service", v)
+			if basicService1 != nil && basicService1 != "" {
+				postPayModuleSwitchObj["BasicService"] = basicService1
+			}
+			cspm1, _ := jsonpath.Get("$[0].cspm", v)
+			if cspm1 != nil && cspm1 != "" {
+				postPayModuleSwitchObj["Cspm"] = cspm1
+			}
+			antiRansomware1, _ := jsonpath.Get("$[0].anti_ransomware", v)
+			if antiRansomware1 != nil && antiRansomware1 != "" {
+				postPayModuleSwitchObj["AntiRansomware"] = antiRansomware1
+			}
+			ctdrStorage1, _ := jsonpath.Get("$[0].ctdr_storage", v)
+			if ctdrStorage1 != nil && ctdrStorage1 != "" {
+				postPayModuleSwitchObj["CtdrStorage"] = ctdrStorage1
+			}
+			rasp1, _ := jsonpath.Get("$[0].rasp", v)
+			if rasp1 != nil && rasp1 != "" {
+				postPayModuleSwitchObj["Rasp"] = rasp1
+			}
+			ctdr1, _ := jsonpath.Get("$[0].ctdr", v)
+			if ctdr1 != nil && ctdr1 != "" {
+				postPayModuleSwitchObj["Ctdr"] = ctdr1
+			}
+			postHost1, _ := jsonpath.Get("$[0].post_host", v)
+			if postHost1 != nil && postHost1 != "" {
+				postPayModuleSwitchObj["PostHost"] = postHost1
+			}
+			sdk1, _ := jsonpath.Get("$[0].sdk", v)
+			if sdk1 != nil && sdk1 != "" {
+				postPayModuleSwitchObj["Sdk"] = sdk1
+			}
+			aiDigital1, _ := jsonpath.Get("$[0].ai_digital", v)
+			if aiDigital1 != nil && aiDigital1 != "" {
+				postPayModuleSwitchObj["AiDigital"] = aiDigital1
+			}
+			imageScan1, _ := jsonpath.Get("$[0].image_scan", v)
+			if imageScan1 != nil && imageScan1 != "" {
+				postPayModuleSwitchObj["ImageScan"] = imageScan1
+			}
+			cspmInstance1, _ := jsonpath.Get("$[0].cspm_instance", v)
+			if cspmInstance1 != nil && cspmInstance1 != "" {
+				postPayModuleSwitchObj["CspmInstance"] = cspmInstance1
+			}
+
+			postPayModuleSwitchObjJson, err := json.Marshal(postPayModuleSwitchObj)
+			if err != nil {
+				return errs.WrapError(err)
+			}
+
+			request["PostPayModuleSwitchObj"] = string(postPayModuleSwitchObjJson)
+		}
 	}
 
 	if update && enableModifyPostPayModuleSwitch1 {
@@ -1005,12 +1106,15 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 			return nil
 		})
 		logs.AddDebug(action, response, request)
+
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
+
 	}
 
 	d.Partial(false)
+
 	return resourceAliCloudThreatDetectionInstanceRead(d, meta)
 }
 
