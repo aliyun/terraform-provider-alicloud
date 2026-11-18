@@ -2002,20 +2002,40 @@ func TestUnitInboundEndpointDeleteWaiterFailsOnNonNotFoundReadError(t *testing.T
 }
 
 func TestUnitInboundEndpointStateMapsComputedAttributes(t *testing.T) {
-	model, diags := inboundEndpointState(context.Background(), inboundEndpointUnitDescribeBody("ep-1", "tf-testAcc-unit", "SUCCESS"))
-	if diags.HasError() {
-		t.Fatalf("inboundEndpointState returned diagnostics: %v", diags)
+	ctx := context.Background()
+	client := inboundEndpointUnitClient(t, func(w http.ResponseWriter, form url.Values) {
+		inboundEndpointUnitRespond(t, w, http.StatusOK, inboundEndpointUnitDescribeBody("ep-1", "tf-testAcc-unit", "SUCCESS"))
+	})
+	r := inboundEndpointUnitResource(t, client)
+	resourceSchema, objType := inboundEndpointUnitSchema(t, r)
+	ipConfigs := inboundEndpointUnitIpConfigs(t, objType, []map[string]tftypes.Value{
+		{
+			"az_id": inboundEndpointUnitString("cn-hangzhou-a"), "cidr_block": inboundEndpointUnitString("172.16.0.0/20"),
+			"vswitch_id": inboundEndpointUnitString("vsw-explicit"), "ip": inboundEndpointUnitString("172.16.0.10"),
+		},
+		{
+			"az_id": inboundEndpointUnitString("cn-hangzhou-b"), "cidr_block": inboundEndpointUnitString("172.16.16.0/20"),
+			"vswitch_id": inboundEndpointUnitString("vsw-auto"), "ip": inboundEndpointUnitString("172.16.0.11"),
+		},
+	})
+	overrides := inboundEndpointUnitOverrides("tf-testAcc-unit", ipConfigs)
+	overrides["id"] = inboundEndpointUnitString("ep-1")
+	stateValue := inboundEndpointUnitValue(objType, overrides)
+	req := fwresource.ReadRequest{State: tfsdk.State{Schema: resourceSchema, Raw: stateValue}}
+	resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: resourceSchema, Raw: stateValue}}
+	r.Read(ctx, req, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Read returned diagnostics: %v", resp.Diagnostics)
 	}
-	for attribute, tc := range map[string]struct {
-		got  types.String
-		want string
-	}{
-		"vpc_name":    {model.VpcName, "vpc-unit"},
-		"create_time": {model.CreateTime, "2026-11-18T06:00:00Z"},
-		"update_time": {model.UpdateTime, "2026-11-18T06:05:00Z"},
+	for attribute, want := range map[string]string{
+		"vpc_name": "vpc-unit", "create_time": "2026-11-18T06:00:00Z", "update_time": "2026-11-18T06:05:00Z",
 	} {
-		if tc.got.ValueString() != tc.want {
-			t.Fatalf("%s = %q, want %q", attribute, tc.got.ValueString(), tc.want)
+		var got types.String
+		if diagnostics := resp.State.GetAttribute(ctx, path.Root(attribute), &got); diagnostics.HasError() {
+			t.Fatalf("decoding %s: %v", attribute, diagnostics)
+		}
+		if got.ValueString() != want {
+			t.Fatalf("%s = %q, want %q", attribute, got.ValueString(), want)
 		}
 	}
 }
