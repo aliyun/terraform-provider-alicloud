@@ -7,10 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aliyun/terraform-provider-alicloud/internal/acctestcredentials"
-
-	"github.com/aliyun/terraform-provider-alicloud/alicloud"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctestcredentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -200,7 +199,7 @@ const (
 )
 
 func SDKProviderFactoriesAlternate() map[string]func() (*schema.Provider, error) {
-	altProvider := alicloud.Provider()
+	altProvider := sdkv2.Provider()
 	return map[string]func() (*schema.Provider, error){
 		"alicloud": func() (*schema.Provider, error) {
 			return Provider, nil
@@ -219,7 +218,7 @@ func SDKProviderFactoriesMultiRegion(n int) map[string]func() (*schema.Provider,
 	}
 	altNames := []string{ProviderNameAlicloudAlt, ProviderNameAlicloudAlt2, ProviderNameAlicloudAlt3}
 	for i := 0; i < n-1 && i < len(altNames); i++ {
-		p := alicloud.Provider()
+		p := sdkv2.Provider()
 		factories[altNames[i]] = func() (*schema.Provider, error) {
 			return p, nil
 		}

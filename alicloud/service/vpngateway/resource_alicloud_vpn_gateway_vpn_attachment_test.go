@@ -24,13 +24,13 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	credential "github.com/aliyun/credentials-go/credentials"
-	alicloud "github.com/aliyun/terraform-provider-alicloud/alicloud"
 	tfacctest "github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	tfconvert "github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
 	tferrs "github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	tfhelper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	tflogs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpngateway"
 	tfsweep "github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
@@ -395,7 +395,7 @@ func TestAccAliCloudVPNGatewayVpnAttachment_basic1(t *testing.T) {
 
 // lintignore: R001
 func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
-	p := alicloud.Provider().ResourcesMap
+	p := sdkv2.Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_vpn_gateway_vpn_attachment"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_vpn_gateway_vpn_attachment"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

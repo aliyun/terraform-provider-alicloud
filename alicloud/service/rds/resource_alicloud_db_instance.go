@@ -1905,7 +1905,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 						return nil, "", WrapError(err)
 					}
 					actual := ""
-					if v, ok := object["OptimizedWritesInfo"]; ok {
+					if v, ok := object["OptimizedWritesInfo"]; ok && v != nil {
 						actual = ConvertMySQLInstanceOptimizedWritesResponse(fmt.Sprint(v))
 					}
 					return object, actual, nil
@@ -2260,7 +2260,7 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("create_time", instance["CreationTime"])
 	d.Set("bursting_enabled", instance["BurstingEnabled"])
 	d.Set("pg_bouncer_enabled", instance["PGBouncerEnabled"])
-	if v, ok := instance["OptimizedWritesInfo"]; ok {
+	if v, ok := instance["OptimizedWritesInfo"]; ok && v != nil {
 		value := ConvertMySQLInstanceOptimizedWritesResponse(fmt.Sprint(v))
 		if value != "" {
 			d.Set("optimized_writes", value)
@@ -2382,7 +2382,29 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		if response != nil && len(items) > 0 {
 			renew := items[0].(map[string]interface{})
 			d.Set("auto_renew", renew["AutoRenew"] == "True")
-			d.Set("auto_renew_period", renew["Duration"])
+			// Duration is meaningful only when auto-renewal is enabled. When a Prepaid
+			// instance has auto-renewal disabled, DescribeInstanceAutoRenewalAttribute
+			// returns Duration=0, which violates the schema ValidateFunc IntBetween(1, 12)
+			// and breaks terraform refresh on exported state. Only persist a value the
+			// schema itself would accept, so exported/not-applicable instances refresh cleanly.
+			if renew["AutoRenew"] == "True" {
+				if duration, ok := renew["Duration"]; ok && duration != nil {
+					var period int
+					switch v := duration.(type) {
+					case json.Number:
+						if i, err := v.Int64(); err == nil {
+							period = int(i)
+						}
+					case float64:
+						period = int(v)
+					case int:
+						period = v
+					}
+					if period >= 1 && period <= 12 {
+						d.Set("auto_renew_period", period)
+					}
+				}
+			}
 		}
 		//period, err := computePeriodByUnit(instance["CreationTime"], instance["ExpireTime"], d.Get("period").(int), "Month")
 		//if err != nil {
@@ -2860,7 +2882,12 @@ func getDifference(a, b map[int]struct{}) []int {
 }
 
 func ConvertMySQLInstanceOptimizedWritesResponse(source string) string {
-	if source == "nil" {
+	// Non-MySQL or not-applicable instances may return the OptimizedWritesInfo
+	// key with a nil value, which fmt.Sprint renders as "<nil>". The schema
+	// ValidateFunc StringInSlice([optimized none]) rejects anything else, so any
+	// value that is not a recognized API payload must map to "" and be skipped by
+	// the caller; persisting it would break terraform refresh on exported state.
+	if source == "" || source == "nil" || source == "<nil>" {
 		return ""
 	}
 
@@ -2872,6 +2899,8 @@ func ConvertMySQLInstanceOptimizedWritesResponse(source string) string {
 	case "{\"optimized_writes\":false,\"init_optimized_writes\":false}":
 		return ""
 	default:
-		return source
+		// Unrecognized payloads must not be persisted to state; returning "" lets
+		// the caller skip writing and avoids schema validation failures on refresh.
+		return ""
 	}
 }

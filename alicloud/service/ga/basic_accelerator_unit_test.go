@@ -1,15 +1,22 @@
 package ga
 
 import (
+	"encoding/json"
 	"log"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"reflect"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
@@ -280,4 +287,96 @@ func TestUnitAliCloudGaBasicAccelerator(t *testing.T) {
 			assert.Nil(t, err)
 		}
 	}
+}
+
+// TestUnitAliCloudGaBasicAcceleratorPaymentMapping pins payment/coupon mappings at a local RPC boundary.
+func TestUnitAliCloudGaBasicAcceleratorPaymentMapping(t *testing.T) {
+	p := unitTestProviderResources()
+	d, _ := schema.InternalMap(p["alicloud_ga_basic_accelerator"].Schema).Data(nil, nil)
+	d.MarkNewResource()
+	assert.Nil(t, d.Set("duration", 1))
+	assert.Nil(t, d.Set("pricing_cycle", "Month"))
+	assert.Nil(t, d.Set("basic_accelerator_name", "tf-example-value"))
+	assert.Nil(t, d.Set("description", "tf-example-value"))
+	assert.Nil(t, d.Set("bandwidth_billing_type", "BandwidthPackage"))
+	assert.Nil(t, d.Set("auto_pay", true))
+	assert.Nil(t, d.Set("auto_use_coupon", "true"))
+	assert.Nil(t, d.Set("payment_type", "PayAsYouGo"))
+
+	readResponse := map[string]interface{}{
+		"Name":                 "tf-example-value",
+		"Description":          "tf-example-value",
+		"BandwidthBillingType": "BandwidthPackage",
+		"InstanceChargeType":   "PREPAY",
+		"State":                "active",
+	}
+	var requestMutex sync.Mutex
+	var createQuery, createBody url.Values
+	createCaptured := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		var response map[string]interface{}
+		switch r.Form.Get("Action") {
+		case "CreateBasicAccelerator":
+			requestMutex.Lock()
+			createQuery = r.URL.Query()
+			createBody = r.PostForm
+			createCaptured = true
+			requestMutex.Unlock()
+			response = map[string]interface{}{"AcceleratorId": "ga-basic-accelerator-id"}
+		case "GetBasicAccelerator":
+			response = readResponse
+		case "ListTagResources":
+			response = map[string]interface{}{"TagResources": map[string]interface{}{"TagResource": []interface{}{}}}
+		default:
+			t.Errorf("unexpected action: %s", r.Form.Get("Action"))
+			w.WriteHeader(http.StatusBadRequest)
+			response = map[string]interface{}{"Code": "UnexpectedAction"}
+		}
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			t.Error(err)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	clientConfig := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	rawClient, err := clientConfig.Client()
+	if err != nil {
+		t.Fatalf("building the local client failed: %s", err)
+	}
+	endpoints.Store("ga", endpoint)
+
+	assert.Nil(t, resourceAliCloudGaBasicAcceleratorCreate(d, rawClient))
+	requestMutex.Lock()
+	captured := createCaptured
+	query := createQuery
+	body := createBody
+	requestMutex.Unlock()
+	assert.True(t, captured, "CreateBasicAccelerator request was not captured")
+	assert.Equal(t, "POSTPAY", body.Get("ChargeType"))
+	assert.Equal(t, "true", body.Get("AutoUseCoupon"))
+	assert.Equal(t, "true", body.Get("AutoPay"))
+	for _, key := range []string{"ChargeType", "AutoUseCoupon", "AutoPay"} {
+		assert.NotContains(t, query, key)
+	}
+
+	assert.Nil(t, resourceAliCloudGaBasicAcceleratorRead(d, rawClient))
+	assert.Equal(t, "Subscription", d.Get("payment_type"))
 }

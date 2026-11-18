@@ -2625,7 +2625,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaid(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"auto_renew":        "false",
-						"auto_renew_period": "0",
+						"auto_renew_period": "1", // not 0: Read skips Duration=0 when auto-renew disabled (IntBetween 1-12)
 					}),
 				),
 			},
@@ -4845,6 +4845,45 @@ func TestUnitParseDBInstanceParamGroupId(t *testing.T) {
 			}
 			if id != c.wantID {
 				t.Fatalf("parseDBInstanceParamGroupId(%v) id = %q, want %q", c.response, id, c.wantID)
+			}
+		})
+	}
+}
+
+// TestUnitConvertMySQLInstanceOptimizedWritesResponse is a regression test for
+// the terraform refresh failures reported when exporting existing RDS instances:
+//
+//	expected optimized_writes to be one of [optimized none], got <nil>
+//
+// DescribeDBInstanceAttribute returns the OptimizedWritesInfo key with a nil value
+// for non-MySQL / not-applicable instances, and the Read path ran
+// ConvertMySQLInstanceOptimizedWritesResponse(fmt.Sprint(nil)) -> "<nil>". The
+// converter only matched the literal "nil", so "<nil>" fell through to the default
+// case which returned the raw source string, which was then written to state and
+// rejected by the schema ValidateFunc StringInSlice([optimized none]) on refresh.
+//
+// The converter must now map every non-recognized value (nil, "<nil>", empty,
+// unknown JSON shapes) to "" so the caller skips writing the field, while still
+// translating the documented API payloads to optimized/none.
+func TestUnitConvertMySQLInstanceOptimizedWritesResponse(t *testing.T) {
+	cases := []struct {
+		name   string
+		source string
+		want   string
+	}{
+		{name: "optimized enabled", source: `{"optimized_writes":true,"init_optimized_writes":true}`, want: "optimized"},
+		{name: "optimized disabled already initialized", source: `{"optimized_writes":false,"init_optimized_writes":true}`, want: "none"},
+		{name: "optimized disabled not initialized", source: `{"optimized_writes":false,"init_optimized_writes":false}`, want: ""},
+		{name: "literal nil", source: "nil", want: ""},
+		{name: "fmt.Sprint(nil) produces <nil>", source: "<nil>", want: ""},
+		{name: "empty string", source: "", want: ""},
+		{name: "unrecognized payload", source: `{"unexpected":true}`, want: ""},
+		{name: "arbitrary garbage", source: "optimized", want: ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := rds.ConvertMySQLInstanceOptimizedWritesResponse(c.source); got != c.want {
+				t.Fatalf("ConvertMySQLInstanceOptimizedWritesResponse(%q) = %q, want %q", c.source, got, c.want)
 			}
 		})
 	}

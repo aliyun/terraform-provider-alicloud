@@ -26,7 +26,7 @@ var isRouteEntryWaitTimeout = vpc.IsRouteEntryWaitTimeout
 // was migrated verbatim to alicloud/acctest.NewInstanceDiff (see the
 // "Migrated to alicloud/acctest.NewInstanceDiff" note in common.go and the
 // reciprocal "Migrated from alicloud.newInstanceDiff" note in
-// acctest/common.go). acctest.Provider is alicloud.Provider() (acctest.go),
+// acctest/common.go). acctest.Provider is sdkv2.Provider() (acctest.go),
 // the same provider instance the vpc_test Provider() shim returns, so
 // ResourcesMap lookups for the migrated VPC resource names resolve identically.
 // The SDKv2 terraform InstanceState/InstanceDiff parameter types match the

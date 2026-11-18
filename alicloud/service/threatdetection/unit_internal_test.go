@@ -27,7 +27,7 @@ import (
 )
 
 // Provider builds a partial *schema.Provider from the threatdetection
-// ServicePackage factories, mirroring the root alicloud.Provider() test entrypoint
+// ServicePackage factories, mirroring the root sdkv2.Provider() test entrypoint
 // for the mock-based TestUnit tests. Defined in the internal test package so the
 // tests can reach the unexported CRUD functions directly.
 func Provider() *schema.Provider {
