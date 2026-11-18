@@ -1024,59 +1024,79 @@ func TestUnitVpcAssociationCreateSendsModeOnlyWithPrefixes(t *testing.T) {
 }
 
 func TestUnitVpcAssociationPrefixOrderSuppress(t *testing.T) {
+	suppressVpcAssociationPrefixReorder := expressconnectrouter.ResourceVpcAssociation().Schema["allowed_prefixes"].DiffSuppressFunc
 	t.Run("NilResourceData", func(t *testing.T) {
-		suppress := expressconnectrouter.ResourceVpcAssociation().Schema["allowed_prefixes"].DiffSuppressFunc
-		if suppress("allowed_prefixes.#", "1", "1", nil) {
+		if suppressVpcAssociationPrefixReorder("allowed_prefixes.#", "1", "1", nil) {
 			t.Fatal("a nil ResourceData carries no old/new pair and must not suppress")
 		}
 	})
 
 	for _, tc := range []struct {
-		name       string
-		oldValue   []string
-		newValue   []string
-		suppressed bool
+		name     string
+		oldValue string
+		newValue string
+		expected bool
 	}{
-		{name: "ReorderOnly", oldValue: []string{"172.16.1.0/24", "172.16.2.0/24"}, newValue: []string{"172.16.2.0/24", "172.16.1.0/24"}, suppressed: true},
-		{name: "LongerReorder", oldValue: []string{"172.16.1.0/24", "172.16.2.0/24", "172.16.3.0/24"}, newValue: []string{"172.16.3.0/24", "172.16.1.0/24", "172.16.2.0/24"}, suppressed: true},
-		{name: "MemberAdded", oldValue: []string{"172.16.1.0/24", "172.16.2.0/24"}, newValue: []string{"172.16.1.0/24", "172.16.2.0/24", "172.16.3.0/24"}},
-		{name: "MemberRemoved", oldValue: []string{"172.16.1.0/24", "172.16.2.0/24"}, newValue: []string{"172.16.1.0/24"}},
-		{name: "MemberReplaced", oldValue: []string{"172.16.1.0/24", "172.16.2.0/24"}, newValue: []string{"172.16.1.0/24", "172.16.9.0/24"}},
-		{name: "MultiplicityChanged", oldValue: []string{"172.16.1.0/24", "172.16.1.0/24", "172.16.2.0/24"}, newValue: []string{"172.16.1.0/24", "172.16.2.0/24", "172.16.2.0/24"}},
-		{name: "OldEmpty", newValue: []string{"172.16.1.0/24"}},
+		{name: "ReorderOnly", oldValue: "172.16.1.0/24,172.16.2.0/24", newValue: "172.16.2.0/24,172.16.1.0/24", expected: true},
+		{name: "LongerReorder", oldValue: "172.16.1.0/24,172.16.2.0/24,172.16.3.0/24", newValue: "172.16.3.0/24,172.16.1.0/24,172.16.2.0/24", expected: true},
+		{name: "MemberAdded", oldValue: "172.16.1.0/24,172.16.2.0/24", newValue: "172.16.1.0/24,172.16.2.0/24,172.16.3.0/24"},
+		{name: "MemberRemoved", oldValue: "172.16.1.0/24,172.16.2.0/24", newValue: "172.16.1.0/24"},
+		{name: "MemberReplaced", oldValue: "172.16.1.0/24,172.16.2.0/24", newValue: "172.16.1.0/24,172.16.9.0/24"},
+		{name: "MultiplicityChanged", oldValue: "172.16.1.0/24,172.16.1.0/24,172.16.2.0/24", newValue: "172.16.1.0/24,172.16.2.0/24,172.16.2.0/24"},
+		{name: "OldEmpty", newValue: "172.16.1.0/24"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			oldPrefixes := []string{}
+			if tc.oldValue != "" {
+				oldPrefixes = strings.Split(tc.oldValue, ",")
+			}
+			newPrefixes := []string{}
+			if tc.newValue != "" {
+				newPrefixes = strings.Split(tc.newValue, ",")
+			}
 			attributes := map[string]string{
 				"id":                    "ecr-1:assoc-1:vpc-1",
 				"ecr_id":                "ecr-1",
 				"vpc_id":                "vpc-1",
 				"association_id":        "assoc-1",
 				"association_region_id": "cn-hangzhou",
-				"allowed_prefixes.#":    strconv.Itoa(len(tc.oldValue)),
+				"allowed_prefixes.#":    strconv.Itoa(len(oldPrefixes)),
 				"allowed_prefixes_mode": "MatchMode",
 			}
-			for i, prefix := range tc.oldValue {
+			for i, prefix := range oldPrefixes {
 				attributes[fmt.Sprintf("allowed_prefixes.%d", i)] = prefix
 			}
 			state := &terraform.InstanceState{ID: "ecr-1:assoc-1:vpc-1", Attributes: attributes}
-			newPrefixes := make([]interface{}, 0, len(tc.newValue))
-			for _, prefix := range tc.newValue {
-				newPrefixes = append(newPrefixes, prefix)
+			newValues := make([]interface{}, 0, len(newPrefixes))
+			for _, prefix := range newPrefixes {
+				newValues = append(newValues, prefix)
 			}
 			config := map[string]interface{}{
 				"ecr_id":                "ecr-1",
 				"vpc_id":                "vpc-1",
 				"association_region_id": "cn-hangzhou",
-				"allowed_prefixes":      newPrefixes,
+				"allowed_prefixes":      newValues,
 			}
 			state.RawConfig = vpcAssociationRawConfig(config)
-			diff, err := expressconnectrouter.ResourceVpcAssociation().Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), nil)
+			resource := expressconnectrouter.ResourceVpcAssociation()
+			var data *schema.ResourceData
+			resource.Schema["allowed_prefixes"].DiffSuppressFunc = func(key, old, new string, d *schema.ResourceData) bool {
+				data = d
+				return suppressVpcAssociationPrefixReorder(key, old, new, d)
+			}
+			diff, err := resource.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatalf("build prefix diff: %v", err)
 			}
+			if data == nil {
+				t.Fatal("prefix diff did not invoke the suppressor")
+			}
 			changed := diff != nil && !diff.Empty()
-			if changed == tc.suppressed {
-				t.Fatalf("changed = %t, want %t for old=%v new=%v", changed, !tc.suppressed, tc.oldValue, tc.newValue)
+			if changed == tc.expected {
+				t.Fatalf("changed = %t, want %t for old=%v new=%v", changed, !tc.expected, tc.oldValue, tc.newValue)
+			}
+			if got := suppressVpcAssociationPrefixReorder("allowed_prefixes", tc.oldValue, tc.newValue, data); got != tc.expected {
+				t.Fatalf("case %s: suppressor = %v, want %v", tc.name, got, tc.expected)
 			}
 		})
 	}
