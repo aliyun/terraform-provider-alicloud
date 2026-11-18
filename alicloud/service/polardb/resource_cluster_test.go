@@ -2633,6 +2633,111 @@ func TestAccAliCloudPolarDBCluster_3AZ(t *testing.T) {
 		},
 	})
 }
+func TestAccAliCloudPolarDBCluster_hotStandbyClusterInPlaceUpgrade(t *testing.T) {
+	var v *sdkpolardb.DescribeDBClusterAttributeResponse
+	name := "tf-testAccPolarDBCluster-hotstandby-upgrade"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":   CHECKSET,
+		"db_node_class": CHECKSET,
+		"vswitch_id":    CHECKSET,
+		"db_type":       CHECKSET,
+		"db_version":    CHECKSET,
+	}
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return polardb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourcePolarDBCluster3ZAConfigDependence)
+
+	// capture the cluster id after create to prove the OFF->ON upgrade is in-place.
+	var clusterId string
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.Cluster3AZPolarDBSupportRegions)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":             "MySQL",
+					"db_version":          "8.0",
+					"pay_type":            "PostPaid",
+					"db_node_class":       "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"vswitch_id":          "${local.vswitch_id}",
+					"description":         "${var.name}",
+					"creation_category":   "Normal",
+					"hot_standby_cluster": "OFF",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pay_type":            "PostPaid",
+						"creation_category":   "Normal",
+						"hot_standby_cluster": "OFF",
+					}),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceId]
+						if !ok {
+							return fmt.Errorf("not found: %s", resourceId)
+						}
+						clusterId = rs.Primary.ID
+						return nil
+					},
+				),
+			},
+			{
+				// Verify the import consistency right after the OFF creation, while
+				// the cluster is still single-AZ, and not only after the upgrade.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "gdn_id", "source_resource_id", "clone_data_point"},
+			},
+			{
+				// upgrade hot standby OFF -> ON in place; the cluster id must not change.
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":             "MySQL",
+					"db_version":          "8.0",
+					"pay_type":            "PostPaid",
+					"db_node_class":       "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"vswitch_id":          "${local.vswitch_id}",
+					"description":         "${var.name}",
+					"creation_category":   "Normal",
+					"hot_standby_cluster": "ON",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pay_type":            "PostPaid",
+						"creation_category":   "Normal",
+						"hot_standby_cluster": "ON",
+					}),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceId]
+						if !ok {
+							return fmt.Errorf("not found: %s", resourceId)
+						}
+						if rs.Primary.ID != clusterId {
+							return fmt.Errorf("cluster id changed after hot standby upgrade: expected %s, got %s (expected in-place update)", clusterId, rs.Primary.ID)
+						}
+						return nil
+					},
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "gdn_id", "source_resource_id", "clone_data_point"},
+			},
+		},
+	})
+}
 func testAccCheckKeyValueInMapsForPolarDB(ps []map[string]interface{}, propName, key, value string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		for _, policy := range ps {
@@ -2665,11 +2770,18 @@ func resourcePolarDBCluster3ZAConfigDependence(name string) string {
 		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
 	}
 
+	// Pin the node class so the cluster spec and the vswitch zone come from
+	// the same availability record. The first class of the unfiltered list
+	// (the g2an series, e.g. in cn-beijing) is returned with category Normal
+	// but is not orderable with this create configuration
+	// (COMMODITY.INVALID_COMPONENT), while polar.mysql.x4.large is listed
+	// and orderable in every Normal zone of the supported regions.
 	data "alicloud_polardb_node_classes" "this" {
 	  db_type    = "MySQL"
 	  db_version = "8.0"
       pay_type   = "PostPaid"
 	  category   = "Normal"
+	  db_node_class = "polar.mysql.x4.large"
 	}
 
 	data "alicloud_resource_manager_resource_groups" "default" {

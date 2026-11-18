@@ -1,6 +1,7 @@
 package polardb
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -361,7 +362,6 @@ func ResourceCluster() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validators.StringInSlice([]string{"ON", "OFF", "EQUAL"}, false),
 				Computed:     true,
-				ForceNew:     true,
 			},
 			"strict_consistency": {
 				Type:         schema.TypeString,
@@ -613,6 +613,24 @@ func ResourceCluster() *schema.Resource {
 				Computed: true,
 			},
 		},
+
+		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
+			if diff.HasChange("hot_standby_cluster") {
+				old, new := diff.GetChange("hot_standby_cluster")
+				oldVal, newVal := old.(string), new.(string)
+				// ModifyDBClusterArch only supports switching the storage hot standby
+				// from off to on for MySQL clusters: "equal" is retired, clusters with
+				// the hot standby already on cannot switch via this API, and non-MySQL
+				// clusters are out of its scope. Every other transition keeps the
+				// historical replacement behavior instead of an unsupported in-place call.
+				if oldVal != "" && !(oldVal == "OFF" && newVal == "ON" && diff.Get("db_type").(string) == "MySQL") {
+					if err := diff.ForceNew("hot_standby_cluster"); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		},
 	}
 }
 
@@ -701,6 +719,11 @@ func resourceClusterCreate(d *schema.ResourceData, meta interface{}) error {
 
 	return resourceClusterUpdate(d, meta)
 }
+
+// hotStandbyArchWaitDelay is the lead time the in-place hot standby upgrade
+// waits before its first StandbyTransing -> Running status check. It is a
+// package variable so unit tests can shorten it.
+var hotStandbyArchWaitDelay = 4 * time.Minute
 
 func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
@@ -1078,32 +1101,35 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if d.HasChange("deletion_lock") {
-		if v, ok := d.GetOk("pay_type"); ok && v.(string) == string(PrePaid) {
-			return nil
-		}
-		action := "ModifyDBClusterDeletion"
-		protection := d.Get("deletion_lock").(int)
-		request := map[string]interface{}{
-			"DBClusterId": d.Id(),
-			"Protection":  protection == 1,
-		}
-		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
-		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
-			if err != nil {
-				if helper.NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
+		// The cluster protection lock only applies to PostPaid clusters; a PrePaid cluster
+		// skips the lock modification itself, while the remaining in-place updates (such as
+		// hot_standby_cluster) and the final Read still run instead of ending the update.
+		if v, ok := d.GetOk("pay_type"); !ok || v.(string) != string(PrePaid) {
+			action := "ModifyDBClusterDeletion"
+			protection := d.Get("deletion_lock").(int)
+			request := map[string]interface{}{
+				"DBClusterId": d.Id(),
+				"Protection":  protection == 1,
+			}
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+			err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+				response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+				if err != nil {
+					if helper.NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
 				}
 				logs.AddDebug(action, response, request)
-			}
-			return nil
-		})
-		if err != nil {
-			if errs.IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) {
 				return nil
+			})
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) {
+					return nil
+				}
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.ProviderERROR)
 			}
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.ProviderERROR)
 		}
 	}
 
@@ -1599,7 +1625,74 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	if d.HasChange("standby_az") {
+	// Set once the arch upgrade below has already applied the standby_az change.
+	standbyAzConsumedByArchUpgrade := false
+
+	if d.HasChange("hot_standby_cluster") {
+		action := "ModifyDBClusterArch"
+		oldMode, newMode := d.GetChange("hot_standby_cluster")
+		// The API contract only supports enabling the storage hot standby (off -> on):
+		// "equal" is retired and clusters with the hot standby already on cannot
+		// switch via this API. CustomizeDiff forces replacement for every other
+		// transition, so a different pair here is a bug and must fail loudly.
+		if oldMode.(string) != "OFF" || newMode.(string) != "ON" {
+			return fmt.Errorf("ModifyDBClusterArch only supports switching hot_standby_cluster from OFF to ON (got %q -> %q); other transitions must recreate the cluster", oldMode.(string), newMode.(string))
+		}
+		// The same contract limits the call to MySQL (DeployUnit=Advanced) clusters.
+		// Verify the live attributes first so unsupported combinations fail with the
+		// real limitation instead of a server-side rejection. DeployUnit is not part
+		// of the public response schema, so only a concrete contradicting value rejects.
+		attribute, attrErr := polarDBService.DescribeDBClusterAttribute(d.Id())
+		if attrErr != nil {
+			return attrErr
+		}
+		if dbType, _ := attribute["DBType"].(string); dbType != "MySQL" {
+			return fmt.Errorf("ModifyDBClusterArch only supports MySQL clusters, but cluster %s DBType is %q; change hot_standby_cluster by recreating the cluster", d.Id(), dbType)
+		}
+		if deployUnit, _ := attribute["DeployUnit"].(string); deployUnit != "" && deployUnit != "Advanced" {
+			return fmt.Errorf("ModifyDBClusterArch only supports DeployUnit=Advanced clusters, but cluster %s DeployUnit is %q; change hot_standby_cluster by recreating the cluster", d.Id(), deployUnit)
+		}
+		if liveMode, _ := attribute["HotStandbyCluster"].(string); liveMode == "StandbyClusterON" || liveMode == "equal" {
+			return fmt.Errorf("cluster %s already has the storage hot standby enabled (HotStandbyCluster=%q) and cannot switch via ModifyDBClusterArch; refresh the state to re-read the current mode", d.Id(), liveMode)
+		}
+		request := map[string]interface{}{
+			"DBClusterId":       d.Id(),
+			"HotStandbyCluster": "on",
+		}
+		// on allows the API default standby AZ (auto); a concrete zone is forwarded as-is.
+		if standbyAz := d.Get("standby_az").(string); standbyAz != "" && standbyAz != "auto" {
+			request["StandbyAZ"] = standbyAz
+		}
+		// The arch call establishes the standby zone placement (the StandbyAZ
+		// parameter above), so it consumes the whole standby_az change. Repeating
+		// the change via ModifyDBClusterPrimaryZone would only trigger the same
+		// zone migration again and surface InvalidZoneId.Same.
+		standbyAzConsumedByArchUpgrade = true
+
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			logs.AddDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		// wait cluster status change from StandbyTransing to running
+		stateConf := helper.BuildStateConf([]string{"StandbyTransing"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), hotStandbyArchWaitDelay, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	if d.HasChange("standby_az") && !standbyAzConsumedByArchUpgrade {
 		action := "ModifyDBClusterPrimaryZone"
 		standbyAz := d.Get("standby_az").(string)
 		request := map[string]interface{}{
@@ -1616,8 +1709,9 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 					wait()
 					return retry.RetryableError(err)
 				}
-				logs.AddDebug(action, response, request)
+				return retry.NonRetryableError(err)
 			}
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
