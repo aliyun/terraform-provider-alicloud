@@ -52,6 +52,9 @@ type inboundEndpointResourceModel struct {
 	SpecVersion     types.String   `tfsdk:"spec_version"`
 	Status          types.String   `tfsdk:"status"`
 	EndpointType    types.String   `tfsdk:"endpoint_type"`
+	VpcName         types.String   `tfsdk:"vpc_name"`
+	CreateTime      types.String   `tfsdk:"create_time"`
+	UpdateTime      types.String   `tfsdk:"update_time"`
 }
 
 type inboundEndpointIpConfigModel struct {
@@ -178,6 +181,15 @@ func (r *inboundEndpointResource) Schema(ctx context.Context, req resource.Schem
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"vpc_name": schema.StringAttribute{
+				Computed: true,
+			},
+			"create_time": schema.StringAttribute{
+				Computed: true,
+			},
+			"update_time": schema.StringAttribute{
+				Computed: true,
 			},
 		},
 	}
@@ -683,6 +695,9 @@ func inboundEndpointState(ctx context.Context, object map[string]interface{}) (i
 		SpecVersion:     inboundEndpointString(object["SpecVersion"]),
 		Status:          inboundEndpointString(object["Status"]),
 		EndpointType:    inboundEndpointString(object["EndpointType"]),
+		VpcName:         inboundEndpointString(object["VpcName"]),
+		CreateTime:      inboundEndpointString(object["CreateTime"]),
+		UpdateTime:      inboundEndpointString(object["UpdateTime"]),
 	}
 
 	raw, ok := object["IpConfigs"]

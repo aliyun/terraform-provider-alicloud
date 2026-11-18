@@ -101,6 +101,9 @@ The following attributes are exported:
 * `id` - (String) The resource ID in terraform of Inbound Endpoint.
 * `status` - (String) The status of the resource. Valid values: `CHANGE_FAILED`, `CHANGE_INIT`, `EXCEPTION`, `FAILED`, `INIT`, `SUCCESS`.
 * `endpoint_type` - (String) The type of the inbound endpoint reported by the service.
+* `vpc_name` - (String) The name of the VPC to which the inbound endpoint belongs.
+* `create_time` - (String) The time when the inbound endpoint was created.
+* `update_time` - (String) The time when the inbound endpoint was last updated.
 
 ## Timeouts
 

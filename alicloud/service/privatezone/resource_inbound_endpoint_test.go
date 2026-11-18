@@ -586,6 +586,9 @@ func TestAccAliCloudPvtzInboundEndpoint_basic0(t *testing.T) {
 					testAccCheckPvtzInboundEndpointIpConfig(resourceId, 1),
 					resource.TestCheckResourceAttrSet(resourceId, "status"),
 					resource.TestCheckResourceAttrSet(resourceId, "endpoint_type"),
+					resource.TestCheckResourceAttrSet(resourceId, "vpc_name"),
+					resource.TestCheckResourceAttrSet(resourceId, "create_time"),
+					resource.TestCheckResourceAttrSet(resourceId, "update_time"),
 				),
 			},
 			{
@@ -701,6 +704,9 @@ func TestAccAliCloudPvtzInboundEndpoint_complete(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceId, "ip_configs.#", "2"),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "ip_configs.*", map[string]string{"ip": firstIp}),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "ip_configs.*", map[string]string{"ip": secondIp}),
+					resource.TestCheckResourceAttrSet(resourceId, "vpc_name"),
+					resource.TestCheckResourceAttrSet(resourceId, "create_time"),
+					resource.TestCheckResourceAttrSet(resourceId, "update_time"),
 				),
 			},
 			{
@@ -1409,6 +1415,9 @@ func inboundEndpointUnitDescribeBody(id, name, status string) map[string]interfa
 		"VpcRegionId":     "cn-hangzhou",
 		"SpecVersion":     "standard",
 		"EndpointType":    "inbound",
+		"VpcName":         "vpc-unit",
+		"CreateTime":      "2026-11-18T06:00:00Z",
+		"UpdateTime":      "2026-11-18T06:05:00Z",
 		"IpConfigs": []interface{}{
 			map[string]interface{}{"AzId": "cn-hangzhou-a", "CidrBlock": "172.16.0.0/20", "VSwitchId": "vsw-explicit", "Ip": "172.16.0.10"},
 			map[string]interface{}{"AzId": "cn-hangzhou-b", "CidrBlock": "172.16.16.0/20", "VSwitchId": "vsw-auto", "Ip": "172.16.0.11"},
@@ -1989,6 +1998,25 @@ func TestUnitInboundEndpointDeleteWaiterFailsOnNonNotFoundReadError(t *testing.T
 	}
 	if !strings.Contains(text.String(), "endpoint busy") {
 		t.Fatalf("expected the original API error to surface, got %s", text.String())
+	}
+}
+
+func TestUnitInboundEndpointStateMapsComputedAttributes(t *testing.T) {
+	model, diags := inboundEndpointState(context.Background(), inboundEndpointUnitDescribeBody("ep-1", "tf-testAcc-unit", "SUCCESS"))
+	if diags.HasError() {
+		t.Fatalf("inboundEndpointState returned diagnostics: %v", diags)
+	}
+	for attribute, tc := range map[string]struct {
+		got  types.String
+		want string
+	}{
+		"vpc_name":    {model.VpcName, "vpc-unit"},
+		"create_time": {model.CreateTime, "2026-11-18T06:00:00Z"},
+		"update_time": {model.UpdateTime, "2026-11-18T06:05:00Z"},
+	} {
+		if tc.got.ValueString() != tc.want {
+			t.Fatalf("%s = %q, want %q", attribute, tc.got.ValueString(), tc.want)
+		}
 	}
 }
 
