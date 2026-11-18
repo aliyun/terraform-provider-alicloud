@@ -7,9 +7,8 @@ ACube continues to provide the review service. Generate templates with
 
 ## Behavior and trust boundary
 
-- Formal review preserves the deployed bridge from ACube commit
-  `14da0fb400ff4b25b3656d0269dfd5e1ce2706fc` without source changes: exact MR/head
-  binding, content reuse, non-service-change skips, P0 blocking, P1/P2 nonblocking,
+- Formal review retains exact MR/head
+  binding, content reuse, non-service-change skips, P0/P1 blocking, P2 nonblocking,
   report links and finding actions, HTTP retries and seven-hour polling deadline.
 - AI review exits successfully with `status=skipped`, `reason=ai-review-disabled`.
   It does not request credentials or submit a remote task; success is not an AI verdict.
@@ -49,3 +48,16 @@ same pipeline IDs, never adds duplicate checks.
 The CLI currently exposes pipeline template-version updates but not template
 publication/source registration. Cutover requires the supported platform template
 management interface; source merge and live activation must be reported separately.
+
+## P0/P1 gate update
+
+The Provider bridge evaluates raw findings for both new and reused completed
+reports. Any P0 or P1 blocks CI even if the ACube service returns success under
+its earlier P0-only policy. Service failures remain failures; malformed reports
+fail closed. Annotations do not waive findings. The summary shows the effective
+CI conclusion, original ACube conclusion and repair guidance.
+
+After merging this update, pin existing formal pipeline 344309 (Provider
+template 5246) to the approved merged SHA. Preserve its triggers and strategy;
+do not change AI pipeline 344310. Source merge alone does not activate the gate.
+A rerun can retain the old YAML snapshot: verify a new run's template version.

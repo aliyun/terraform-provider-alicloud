@@ -67,16 +67,47 @@ jobs:
               return re.sub(r'([\\`*{}\[\]()#+.!_|>~-])', r'\\\1', value)
 
 
+          def apply_ci_gate(report):
+              """Apply Provider policy to raw findings, including reused reports.
+
+              Keep the service conclusion intact for diagnostics; never turn a service
+              failure into a pass. Annotation/acceptance fields do not waive findings.
+              """
+              result = dict(report)
+              result['ciConclusion'] = report.get('conclusion', 'pending')
+              if report.get('status') != 'completed':
+                  if report.get('conclusion') == 'success':
+                      raise RuntimeError('评审报告未完成，不能通过；请重跑形式化评审并检查 ACube 任务状态。')
+                  return result
+              findings = report.get('findings')
+              if not isinstance(findings, list) or any(
+                      not isinstance(f, dict) or not isinstance(f.get('severity'), str)
+                      or f['severity'].strip().lower() not in ('p0', 'p1', 'p2', 'p3') for f in findings):
+                  raise RuntimeError('评审报告缺少有效 findings/severity，无法判断 P0/P1；请检查 ACube 原始报告并重跑。')
+              counts = {p: sum(f['severity'].strip().lower() == p for f in findings) for p in ('p0', 'p1')}
+              if counts['p0'] or counts['p1']:
+                  result['ciConclusion'] = 'failure'
+                  result['gateMessage'] = (
+                      '形式化评审阻断：发现 P0 {p0} 项、P1 {p1} 项。请打开下方报告逐项修复，'
+                      '提交代码后在新提交上重新运行形式化评审。历史报告复用也执行相同门槛；'
+                      '仅在报告中采纳或拒绝问题不会解除阻断。').format(**counts)
+              return result
+
+
           def render(report, url, label, head):
               if report.get('taskId'):
                   url += '&' + urllib.parse.urlencode({'taskId': report['taskId']})
               parts = ['# ' + label, '## <a href="' + html.escape(url, quote=True) + '" target="_blank" rel="noopener noreferrer">打开 ACube 评审报告并打标 ↗</a>',
-                       '**通过条件：评审完成且原始报告中没有 P0；P1/P2 不阻断。**',
+                       '**通过条件：评审完成且原始报告中没有 P0 或 P1；P2 不阻断。**',
                        '- 提交：`' + head + '`', '- 任务：' + text(report.get('taskId', '待创建')),
                        '- 状态：' + text(report.get('status', 'pending')),
-                       '- CI 结论：' + text(report.get('conclusion', 'pending'))]
+                       '- CI 结论：' + text(report.get('ciConclusion', report.get('conclusion', 'pending')))]
+              if report.get('gateMessage'):
+                  parts += ['## 修复指引', text(report['gateMessage'])]
+              if 'ciConclusion' in report:
+                  parts += ['- ACube 原始结论：' + text(report.get('conclusion', 'pending'))]
               if report.get('reused'):
-                  parts += ['**复用历史报告：未重新运行评审。原报告及规则版本保持不变。**',
+                  parts += ['**复用历史报告：未重新运行评审。原报告保持不变，CI 按当前 P0/P1 阻断规则重新判定。**',
                             '- 原始 Base：' + text(report.get('baseSha', '')),
                             '- 原始 Head：' + text(report.get('headSha', '')),
                             '- 复用依据：' + text(report.get('reusePolicy', ''))]
@@ -85,7 +116,8 @@ jobs:
                       parts += ['## ' + {'summary': '报告摘要', 'error': '执行错误', 'errorMessage': '执行错误'}[key], text(report[key])]
               findings = report.get('findings')
               if isinstance(findings, list):
-                  counts = {p: sum(str(f.get('severity', '')).lower() == p for f in findings) for p in ('p0', 'p1', 'p2')}
+                  findings = [f for f in findings if isinstance(f, dict)]
+                  counts = {p: sum(str(f.get('severity', '')).strip().lower() == p for f in findings) for p in ('p0', 'p1', 'p2')}
                   parts += ['## 评审发现 · P0 {p0} / P1 {p1} / P2 {p2}'.format(**counts)]
                   for index, f in enumerate(findings, 1):
                       fid = f.get('findingId') or f.get('id') or ('F-%02d' % index)
@@ -147,9 +179,11 @@ jobs:
                               or not isinstance(receipt.get('findings'), list)
                               or receipt.get('conclusion') not in ('success', 'failure')):
                           raise RuntimeError('Invalid content reuse receipt')
+                      receipt = apply_ci_gate(receipt)
                       publish(receipt, url, label, head)
+                      print(receipt.get('gateMessage', ''), flush=True)
                       print('Reused review task=' + receipt['taskId'] + ' originalHead=' + receipt['headSha'], flush=True)
-                      return 0 if receipt['conclusion'] == 'success' else 1
+                      return 0 if receipt['ciConclusion'] == 'success' else 1
                   task_id = receipt.get('taskId', '')
                   if not re.fullmatch(r'review_[0-9a-f]{32}', task_id):
                       raise RuntimeError('Invalid task receipt')
@@ -159,8 +193,11 @@ jobs:
                       report = request(path + '/' + task_id + '?' + urllib.parse.urlencode({'mr': mr, 'headSha': head}), token)
                       if report.get('taskId') != task_id or report.get('headSha') != head:
                           raise RuntimeError('Report identity mismatch')
+                      report = apply_ci_gate(report)
                       publish(report, url, label, head)
-                      conclusion = report.get('conclusion')
+                      if report.get('gateMessage'):
+                          print(report['gateMessage'], flush=True)
+                      conclusion = report.get('ciConclusion')
                       print('Review status=' + str(report.get('status')) + ' conclusion=' + str(conclusion), flush=True)
                       if conclusion in ('success', 'failure'):
                           return 0 if conclusion == 'success' else 1
@@ -169,7 +206,7 @@ jobs:
                       time.sleep(30)
                   raise RuntimeError('Review deadline exceeded')
               except Exception as exc:
-                  report.update(status='failed', conclusion='failure', errorMessage=str(exc))
+                  report.update(status='failed', conclusion='failure', ciConclusion='failure', errorMessage=str(exc))
                   publish(report, url, label, head)
                   print(str(exc), file=sys.stderr)
                   return 1

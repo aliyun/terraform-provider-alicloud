@@ -23,13 +23,42 @@ class ReviewCiTest(unittest.TestCase):
     def test_pass_completed_report(self):
         self.run_case('success', 0)
 
-    def run_case(self, conclusion, exit_code):
+    def test_new_reports_apply_p0_p1_gate_even_when_backend_passes(self):
+        for severity in ('p0', 'p1', ' P1 '):
+            with self.subTest(severity=severity):
+                self.run_case('success', 1, [{'severity': severity}])
+        self.run_case('success', 0, [{'severity': 'p2'}])
+        self.run_case('failure', 1, [{'severity': 'p2'}])
+
+    def test_gate_keeps_raw_report_and_explains_fix(self):
+        report = {'status': 'completed', 'conclusion': 'success',
+                  'findings': [{'severity': 'p1', 'accepted': False}]}
+        gated = ci.apply_ci_gate(report)
+        self.assertNotIn('ciConclusion', report)
+        self.assertEqual('success', gated['conclusion'])
+        self.assertEqual('failure', gated['ciConclusion'])
+        md = ci.render(gated, 'https://example.com', 'Formal', 'a'*40)
+        for expected in ('P0 或 P1', 'P1 1 项', '修复指引', '新提交', '不会解除阻断', 'ACube 原始结论'):
+            self.assertIn(expected, md)
+
+    def test_invalid_completed_report_cannot_pass(self):
+        for findings in (None, {}, [{}], [None], [{'severity': 'unknown'}]):
+            with self.subTest(findings=findings), self.assertRaises(RuntimeError):
+                ci.apply_ci_gate({'status': 'completed', 'conclusion': 'success', 'findings': findings})
+        md = ci.render({'status': 'failed', 'conclusion': 'failure', 'findings': [None],
+                        'errorMessage': 'invalid findings'}, 'https://example.com', 'Formal', 'a'*40)
+        self.assertIn('invalid findings', md)
+        with self.assertRaises(RuntimeError):
+            ci.apply_ci_gate({'status': 'running', 'conclusion': 'success', 'findings': []})
+        self.assertEqual('pending', ci.apply_ci_gate({'status': 'running', 'conclusion': 'pending'})['ciConclusion'])
+
+    def run_case(self, conclusion, exit_code, findings=None):
         tid, head = 'review_'+'b'*32, 'a'*40
         with tempfile.TemporaryDirectory() as d:
             env = {'ACUBE_REVIEW_KIND':'formal','ACUBE_MR':'31074341','ACUBE_HEAD':head,'ACUBE_CI_RUN':'123',
                    'ACUBE_PROVIDER_RUN_TOKEN':'x'*32,'AONE_CI_SUMMARY_MD':d+'/summary.md','AONE_CI_SUMMARY':d+'/summary'}
             with patch.dict(ci.os.environ, env), patch.object(ci, 'request', side_effect=[{'taskId':tid},
-                {'taskId':tid,'headSha':head,'status':'completed','conclusion':conclusion,'findings':[]}]) as request, patch.object(ci, 'publish'):
+                {'taskId':tid,'headSha':head,'status':'completed','conclusion':conclusion,'findings':findings or []}]) as request, patch.object(ci, 'publish'):
                 self.assertEqual(exit_code, ci.main())
                 self.assertIn(tid, request.call_args[0][0])
                 self.assertIn(head, request.call_args[0][0])
@@ -50,6 +79,10 @@ class ReviewCiTest(unittest.TestCase):
         with patch.dict(ci.os.environ, env), patch.object(ci,'request',return_value=receipt) as request, patch.object(ci,'publish'):
             self.assertEqual(1,ci.main())
             self.assertEqual(1,request.call_count)
+            receipt.update(conclusion='success',findings=[{'severity':'P1'}])
+            self.assertEqual(1,ci.main())
+            receipt.update(findings=[{'severity':'p2'}])
+            self.assertEqual(0,ci.main())
             receipt.update(conclusion='success',findings=[])
             self.assertEqual(0,ci.main())
             receipt['ciHeadSha']='d'*40
