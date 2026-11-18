@@ -191,9 +191,10 @@ func (r *inboundEndpointResource) Schema(ctx context.Context, req resource.Schem
 // and accepts whatever IP the API assigns; without this the prior IP carried by
 // UseStateForUnknown would no longer match the API result and produce an inconsistent result
 // after apply. When ip_configs is unchanged and the resource is updated in place, the prior IPs
-// are preserved and nothing is modified. A planned replacement counts as a create: the plan then
-// carries the prior state for Optional+Computed values, so an omitted ip would otherwise be
-// replayed onto the new endpoint instead of being assigned by the service.
+// are preserved and nothing is modified. An entirely unknown collection is preserved until its
+// dynamic blocks can be enumerated. A planned replacement counts as a create: the plan then carries
+// the prior state for Optional+Computed values, so an omitted ip would otherwise be replayed onto
+// the new endpoint instead of being assigned by the service.
 func (r *inboundEndpointResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	// On create there is no prior state; a configured ip is planned as-is and an omitted ip is
 	// unknown, and Create sends only the configured value.
@@ -222,6 +223,9 @@ func (r *inboundEndpointResource) ModifyPlan(ctx context.Context, req resource.M
 		plan.VpcRegionId != state.VpcRegionId ||
 		plan.SpecVersion != state.SpecVersion
 	if plan.IpConfigs.Equal(state.IpConfigs) && !replacement {
+		return
+	}
+	if plan.IpConfigs.IsUnknown() || config.IpConfigs.IsUnknown() {
 		return
 	}
 

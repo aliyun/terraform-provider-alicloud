@@ -738,6 +738,27 @@ func TestAccAliCloudPvtzInboundEndpoint_complete(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionUpdate),
+					},
+				},
+				// New security group IDs make the dynamic collection wholly unknown during planning.
+				// Apply makes it enumerable, updates the endpoint and retains both explicit addresses.
+				Config: testAccPvtzInboundEndpointConfigWithUnknownDynamicIPs(name+"2", updatedFirstIp, secondIp),
+				Check: resource.ComposeTestCheckFunc(
+					deps.capture,
+					resource.TestCheckResourceAttr(resourceId, "endpoint_name", name+"2"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "ip_configs.*", map[string]string{"ip": updatedFirstIp}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "ip_configs.*", map[string]string{"ip": secondIp}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				// Removing ip from the configuration is a no-op for this Optional+Computed
 				// attribute: the framework keeps the state value and the API assigns an IP
 				// only when Ip is absent from the request. The prior value must remain.
@@ -999,6 +1020,25 @@ func testAccPvtzInboundEndpointConfigWithoutIpConfigs(name string) string {
 
 func testAccPvtzInboundEndpointConfigWithIPs(name string, ipConfigsIndices []int, ips map[int]string) string {
 	return testAccPvtzInboundEndpointConfigWithHCL(name, testAccPvtzInboundEndpointIpConfigsHCLWithIPs(ipConfigsIndices, ips))
+}
+
+func testAccPvtzInboundEndpointConfigWithUnknownDynamicIPs(name, firstIp, secondIp string) string {
+	ipConfigsHCL := fmt.Sprintf(`  dynamic "ip_configs" {
+    for_each = { for index, group in alicloud_security_group.listener_input : group.id => index }
+    content {
+      az_id      = alicloud_vswitch.default[ip_configs.value].zone_id
+      cidr_block = alicloud_vswitch.default[ip_configs.value].cidr_block
+      vswitch_id = alicloud_vswitch.default[ip_configs.value].id
+      ip         = [%q, %q][ip_configs.value]
+    }
+  }`, firstIp, secondIp)
+	return testAccPvtzInboundEndpointConfigWithHCL(name, ipConfigsHCL) + `
+resource "alicloud_security_group" "listener_input" {
+  count               = 2
+  vpc_id              = alicloud_vpc.default.id
+  security_group_name = "${var.name}-listener-${count.index}"
+}
+`
 }
 
 func testAccPvtzInboundEndpointConfigWithIPsAndTimeouts(name string, ipConfigsIndices []int, ips map[int]string) string {
@@ -1409,6 +1449,51 @@ func inboundEndpointUnitStateValue(t *testing.T, resourceSchema fwschema.Schema,
 	overrides := inboundEndpointUnitOverrides(name, ipConfigs)
 	overrides["id"] = inboundEndpointUnitString("ep-1")
 	return resourceSchema, inboundEndpointUnitValue(objType, overrides)
+}
+
+func TestUnitInboundEndpointModifyPlanPreservesUnknownIpConfigs(t *testing.T) {
+	ctx := context.Background()
+	r := inboundEndpointUnitResource(t, &connectivity.AliyunClient{})
+	resourceSchema, objType := inboundEndpointUnitSchema(t, r)
+	modifyPlan, ok := r.(fwresource.ResourceWithModifyPlan)
+	if !ok {
+		t.Fatalf("%T does not implement resource.ResourceWithModifyPlan", r)
+	}
+
+	stateIpConfigs := inboundEndpointUnitIpConfigs(t, objType, []map[string]tftypes.Value{
+		{
+			"az_id":      inboundEndpointUnitString("cn-hangzhou-a"),
+			"cidr_block": inboundEndpointUnitString("172.16.0.0/20"),
+			"vswitch_id": inboundEndpointUnitString("vsw-1"),
+			"ip":         inboundEndpointUnitString("172.16.0.10"),
+		},
+		{
+			"az_id":      inboundEndpointUnitString("cn-hangzhou-b"),
+			"cidr_block": inboundEndpointUnitString("172.16.16.0/20"),
+			"vswitch_id": inboundEndpointUnitString("vsw-2"),
+			"ip":         inboundEndpointUnitString("172.16.16.10"),
+		},
+	})
+	_, stateValue := inboundEndpointUnitStateValue(t, resourceSchema, objType, "tf-testAcc-old", stateIpConfigs)
+	unknownIpConfigs := tftypes.NewValue(objType.AttributeTypes["ip_configs"], tftypes.UnknownValue)
+	configValue := inboundEndpointUnitValue(objType, inboundEndpointUnitOverrides("tf-testAcc-new", unknownIpConfigs))
+	planOverrides := inboundEndpointUnitOverrides("tf-testAcc-new", unknownIpConfigs)
+	planOverrides["id"] = inboundEndpointUnitString("ep-1")
+	planValue := inboundEndpointUnitValue(objType, planOverrides)
+	plan := tfsdk.Plan{Schema: resourceSchema, Raw: planValue}
+	resp := fwresource.ModifyPlanResponse{Plan: plan}
+
+	modifyPlan.ModifyPlan(ctx, fwresource.ModifyPlanRequest{
+		State:  tfsdk.State{Schema: resourceSchema, Raw: stateValue},
+		Config: tfsdk.Config{Schema: resourceSchema, Raw: configValue},
+		Plan:   plan,
+	}, &resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("ModifyPlan returned diagnostics: %v", resp.Diagnostics)
+	}
+	if !resp.Plan.Raw.Equal(planValue) {
+		t.Fatalf("ModifyPlan changed an entirely unknown ip_configs collection: got %s, want %s", resp.Plan.Raw, planValue)
+	}
 }
 
 // TestUnitInboundEndpointCreateSendsOnlyConfiguredIps proves on the wire that a configured
