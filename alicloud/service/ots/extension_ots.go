@@ -148,6 +148,17 @@ const (
 	StreamTunnel        = TunnelTypeString("Stream")
 )
 
+// StartOffsetFlagString maps to the StreamTunnelConfig.StartOffsetFlag enum of the
+// tablestore tunnel SDK: LATEST (consume from the latest stream offset) and
+// EARLIEST (consume from the earliest available stream offset). It only takes
+// effect for Stream tunnels and only when start_offset is not specified.
+type StartOffsetFlagString string
+
+const (
+	StartOffsetFlagLatest   = StartOffsetFlagString("LATEST")
+	StartOffsetFlagEarliest = StartOffsetFlagString("EARLIEST")
+)
+
 type SseKeyTypeString string
 
 const (
