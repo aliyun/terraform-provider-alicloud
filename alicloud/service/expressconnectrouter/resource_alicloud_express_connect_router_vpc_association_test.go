@@ -1039,11 +1039,11 @@ func TestUnitVpcAssociationPrefixOrderSuppress(t *testing.T) {
 	}{
 		{name: "ReorderOnly", oldValue: "172.16.1.0/24,172.16.2.0/24", newValue: "172.16.2.0/24,172.16.1.0/24", expected: true},
 		{name: "LongerReorder", oldValue: "172.16.1.0/24,172.16.2.0/24,172.16.3.0/24", newValue: "172.16.3.0/24,172.16.1.0/24,172.16.2.0/24", expected: true},
-		{name: "MemberAdded", oldValue: "172.16.1.0/24,172.16.2.0/24", newValue: "172.16.1.0/24,172.16.2.0/24,172.16.3.0/24"},
-		{name: "MemberRemoved", oldValue: "172.16.1.0/24,172.16.2.0/24", newValue: "172.16.1.0/24"},
-		{name: "MemberReplaced", oldValue: "172.16.1.0/24,172.16.2.0/24", newValue: "172.16.1.0/24,172.16.9.0/24"},
-		{name: "MultiplicityChanged", oldValue: "172.16.1.0/24,172.16.1.0/24,172.16.2.0/24", newValue: "172.16.1.0/24,172.16.2.0/24,172.16.2.0/24"},
-		{name: "OldEmpty", newValue: "172.16.1.0/24"},
+		{name: "MemberAdded", oldValue: "172.16.1.0/24,172.16.2.0/24", newValue: "172.16.1.0/24,172.16.2.0/24,172.16.3.0/24", expected: false},
+		{name: "MemberRemoved", oldValue: "172.16.1.0/24,172.16.2.0/24", newValue: "172.16.1.0/24", expected: false},
+		{name: "MemberReplaced", oldValue: "172.16.1.0/24,172.16.2.0/24", newValue: "172.16.1.0/24,172.16.9.0/24", expected: false},
+		{name: "MultiplicityChanged", oldValue: "172.16.1.0/24,172.16.1.0/24,172.16.2.0/24", newValue: "172.16.1.0/24,172.16.2.0/24,172.16.2.0/24", expected: false},
+		{name: "OldEmpty", newValue: "172.16.1.0/24", expected: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			oldPrefixes := []string{}
