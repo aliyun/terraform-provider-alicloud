@@ -1024,6 +1024,13 @@ func TestUnitVpcAssociationCreateSendsModeOnlyWithPrefixes(t *testing.T) {
 }
 
 func TestUnitVpcAssociationPrefixOrderSuppress(t *testing.T) {
+	t.Run("NilResourceData", func(t *testing.T) {
+		suppress := expressconnectrouter.ResourceVpcAssociation().Schema["allowed_prefixes"].DiffSuppressFunc
+		if suppress("allowed_prefixes.#", "1", "1", nil) {
+			t.Fatal("a nil ResourceData carries no old/new pair and must not suppress")
+		}
+	})
+
 	for _, tc := range []struct {
 		name       string
 		oldValue   []string
