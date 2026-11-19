@@ -1,6 +1,7 @@
 package hbase
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -157,6 +158,33 @@ func ResourceHBaseInstance() *schema.Resource {
 				Optional:         true,
 				Computed:         true,
 				DiffSuppressFunc: whiteIpListDiffSuppressFunc,
+			},
+			"ip_whitelist": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"group_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.All(
+								validation.StringLenBetween(1, 128),
+								validation.StringNotInSlice([]string{"default"}, true),
+							),
+						},
+						"ip_list": {
+							Type:             schema.TypeString,
+							Optional:         true,
+							ValidateFunc:     validation.StringIsNotEmpty,
+							DiffSuppressFunc: whiteIpListDiffSuppressFunc,
+						},
+						"ip_version": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"4", "6"}, false),
+						},
+					},
+				},
 			},
 			"security_groups": {
 				Type:     schema.TypeSet,
@@ -396,12 +424,23 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 		return errs.WrapError(err)
 	}
 	ipWhite := localHostIp
+	iPWhitelistMaps := make([]map[string]interface{}, 0)
+
 	for _, value := range ipWhitelist.Groups.Group {
 		if value.GroupName == "default" {
 			ipWhite = strings.Join(value.IpList.Ip, ",")
 		}
+
+		iPWhitelistMap := map[string]interface{}{}
+		iPWhitelistMap["group_name"] = value.GroupName
+		iPWhitelistMap["ip_list"] = convert.ConvertListToCommaSeparate(convert.ConvertToInterfaceArray(value.IpList.Ip))
+		iPWhitelistMap["ip_version"] = fmt.Sprint(value.IpVersion)
+
+		iPWhitelistMaps = append(iPWhitelistMaps, iPWhitelistMap)
 	}
 	d.Set("ip_white", ipWhite)
+	iPWhitelistMaps = normalizeHbaseIPWhitelistOrder(d.Get("ip_whitelist"), iPWhitelistMaps)
+	d.Set("ip_whitelist", iPWhitelistMaps)
 
 	securityGroups, err := hbaseService.DescribeSecurityGroups(d.Id())
 	if err != nil {
@@ -495,6 +534,51 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChange("ip_whitelist") {
+		oraw, nraw := d.GetChange("ip_whitelist")
+		os := oraw.(*schema.Set)
+		ns := nraw.(*schema.Set)
+		for _, v := range ns.List() {
+			entry := v.(map[string]interface{})
+			if entry["group_name"].(string) == "" {
+				return errs.WrapError(errs.Error("`ip_whitelist.group_name` is required in each declared ip_whitelist group"))
+			}
+			if entry["ip_list"].(string) == "" {
+				return errs.WrapError(errs.Error("`ip_whitelist.ip_list` is required in each declared ip_whitelist group"))
+			}
+		}
+		for _, v := range ns.List() {
+			entry := v.(map[string]interface{})
+			groupName := entry["group_name"].(string)
+			ipVersion := entry["ip_version"].(string)
+			ipList := entry["ip_list"].(string)
+
+			unchanged := false
+			for _, ov := range os.List() {
+				oe := ov.(map[string]interface{})
+				if oe["group_name"].(string) == groupName && oe["ip_version"].(string) == ipVersion {
+					unchanged = whiteIpListDiffSuppressFunc("ip_list", oe["ip_list"].(string), ipList, d)
+					break
+				}
+			}
+			if unchanged {
+				continue
+			}
+			request := hbase.CreateModifyIpWhitelistRequest()
+			request.ClusterId = d.Id()
+			request.GroupName = groupName
+			request.IpVersion = ipVersion
+			request.IpList = ipList
+			raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
+				return hbaseClient.ModifyIpWhitelist(request)
+			})
+			logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			if err != nil {
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+			}
 		}
 	}
 
@@ -763,4 +847,49 @@ func whiteIpListDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 		}
 	}
 	return true
+}
+
+func normalizeHbaseIPWhitelistOrder(reference interface{}, remote []map[string]interface{}) []map[string]interface{} {
+	referenceList, ok := reference.([]interface{})
+	if !ok || len(referenceList) == 0 {
+		return remote
+	}
+	used := make([]bool, len(remote))
+	normalized := make([]map[string]interface{}, 0, len(remote))
+	for _, referenceItem := range referenceList {
+		referenceMember, ok := referenceItem.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		for i, remoteMember := range remote {
+			if used[i] || !hbaseIpWhitelistMemberMatches(referenceMember, remoteMember) {
+				continue
+			}
+			used[i] = true
+			normalized = append(normalized, remoteMember)
+			break
+		}
+	}
+	for i, remoteMember := range remote {
+		if !used[i] {
+			normalized = append(normalized, remoteMember)
+		}
+	}
+	return normalized
+}
+
+func hbaseIpWhitelistMemberMatches(reference, remote map[string]interface{}) bool {
+	referenceName := strings.TrimSpace(fmt.Sprint(reference["group_name"]))
+	remoteName := strings.TrimSpace(fmt.Sprint(remote["group_name"]))
+	if referenceName != "" && remoteName != "" {
+		return referenceName == remoteName
+	}
+
+	referenceIPList := strings.Split(fmt.Sprint(reference["ip_list"]), ",")
+	sort.Strings(referenceIPList)
+
+	remoteIPList := strings.Split(fmt.Sprint(remote["ip_list"]), ",")
+	sort.Strings(remoteIPList)
+
+	return strings.Join(referenceIPList, ",") == strings.Join(remoteIPList, ",")
 }
