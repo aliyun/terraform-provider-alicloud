@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -10,6 +11,60 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 )
+
+func TestUnitVerifiedReleaseSync(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	git := func(args ...string) string {
+		t.Helper()
+		out, err := exec.Command("git", args...).CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v: %s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	git("init", "--quiet", "--template=")
+	const file = "alicloud/client/config/version.go"
+	if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+		t.Fatal(err)
+	}
+	const title = "Release sync: v2.3.0"
+	const version = "package config\nvar providerVersion = \"2.3.0\"\n"
+	const notes = "## 2.4.0 (Unreleased)\n\n## 2.3.0 (November 19, 2026)\n"
+	for _, tc := range []struct {
+		name, title, version, notes string
+		permit                      bool
+	}{
+		{"matching candidate", title, version, notes, true},
+		{"wrong compiled version", title, strings.Replace(version, "2.3.0", "2.2.0", 1), notes, false},
+		{"comment only", title, "package config\n/*\nvar providerVersion = \"2.3.0\"\n*/", notes, false},
+		{"version still unreleased", title, version, "## 2.3.0 (Unreleased)\n", false},
+		{"historic entry", title, version, "## 2.4.0 (November 20, 2026)\n" + notes, false},
+		{"invalid release date", title, version, strings.Replace(notes, "November 19", "November 99", 1), false},
+		{"malformed title", "Release sync: v2.03.0", version, notes, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := os.WriteFile(file, []byte(tc.version), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile("CHANGELOG-v2.md", []byte(tc.notes), 0644); err != nil {
+				t.Fatal(err)
+			}
+			git("add", "--", file, "CHANGELOG-v2.md")
+			tree := git("write-tree")
+			head := git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.test", "commit-tree", tree, "-m", tc.name)
+			if err := checkReleaseSync(tc.title, head, head); (err == nil) != tc.permit {
+				t.Fatalf("checkReleaseSync: %v, permit = %v", err, tc.permit)
+			}
+			for _, unapproved := range []string{"", strings.Repeat("0", 40), "HEAD"} {
+				if err := checkReleaseSync(tc.title, head, unapproved); err == nil {
+					t.Fatalf("accepted unapproved candidate %q", unapproved)
+				}
+			}
+		})
+	}
+}
 
 // flatFile builds a flat titleFile with explicit entities, the way
 // resolveEntities produces them from the filename derivation.

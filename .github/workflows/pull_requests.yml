@@ -83,5 +83,15 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
           DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+          BASE_REPOSITORY: https://github.com/${{ github.repository }}.git
         run: |
+          set -euo pipefail
+          # The base repository publishes the precise commit approved for this release.
+          # ls-remote reads only its ref; the checker reads the candidate blobs locally.
+          unset TITLE_RELEASE_CANDIDATE
+          if [[ "$PR_TITLE" =~ ^Release\ sync:\ (v2\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$ ]]; then
+            ref="refs/heads/release-sync/${BASH_REMATCH[1]}"
+            record=$(git ls-remote --refs --exit-code "$BASE_REPOSITORY" "$ref")
+            export TITLE_RELEASE_CANDIDATE="${record%%$'\t'*}"
+          fi
           GOWORK=off GOTOOLCHAIN=local GOPROXY=off go run scripts/title/title_check.go -title="$PR_TITLE" -base="$DIFF_BASE" -head="$DIFF_HEAD"
