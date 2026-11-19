@@ -43,3 +43,31 @@ python3 -m unittest discover -s scripts/release -p 'test_*.py'
 ```
 
 公开 master/tag 原子确认后才补内部正式 tag；外部并发合并拒绝本次推送时，不提前占用内部正式版本。公开 tag 已确认而内部 tag 未确认时，沿相同 SHA/版本补齐；后续 GitHub 提交不被覆盖。
+
+### Verified GitHub-to-Code returns
+
+For a release prepared using public-only Git history, use the merged GitHub
+PR as the file baseline. Preserve the internal history on the Code return
+branch. On a trusted operator checkout with Git, Go, gh and an authenticated
+a1, verify the actual merge including changes made on Code master since the
+cut. The following prints one receipt to stdout and the audited SHAs to stderr.
+
+```sh
+python3 scripts/release/verify_return.py --version vX.Y.Z --mr CODE_MR \
+  --github-pr MERGED_PUBLIC_PR --internal-cut FROZEN_CODE_SHA --head CODE_RETURN_SHA
+```
+
+Register the receipt as the Code project's AoneCI secret
+`PROVIDER_RELEASE_RETURN` using `a1 ci secret create` (or `update`) with
+`--value-stdin` after verifying the command exited successfully. The slot
+holds one active return at a time. Only the same-project MR into master with
+that exact title, source branch and head is eligible. A new commit requires
+verification and a new receipt. Clear the slot after merge. Before merging
+the return, repeat verification against the current target master.
+
+The run records a policy skip for ProviderLayout, MarkdownQuality,
+TestingCoverageRate, ACube formal review and both integration jobs on MR
+acceptance. AI review uses its existing disabled receipt. Pushes to master
+follow their normal rules. The formal review uses a separately pinned AoneCI
+template. Roll the approved guard onto the active template and verify its pin
+before refreshing the return MR.
