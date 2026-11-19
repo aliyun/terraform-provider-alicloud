@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 
 from reconcile import EXTERNAL, INTERNAL, MASTER, ReconcileError, ancestor, git, refs, valid_sha
 
@@ -31,8 +32,28 @@ def verify_snapshot(cut, target, public, head):
         raise ReconcileError('return tree differs from the GitHub merge')
     # Preserve independent Code changes since the release cut, including changes
     # to files that are absent from the frozen release snapshot.
-    expected = git('merge-tree', '--write-tree', '--merge-base=' + cut, target, public).stdout.strip()
-    actual = git('merge-tree', '--write-tree', target, head).stdout.strip()
+    # The CI image predates merge-tree --write-tree. Use real merges in an
+    # isolated local clone, with the operator's worktree and refs untouched.
+    with tempfile.TemporaryDirectory(prefix='provider-release-merge-') as temp:
+        root = git('rev-parse', '--show-toplevel').stdout.strip()
+        git('clone', '--quiet', '--shared', '--no-checkout', '--', root, temp)
+
+        def local(*args):
+            return git('-c', 'user.name=Release verification', '-c', 'user.email=ci@example.invalid',
+                       '-c', 'rerere.enabled=false', *args, cwd=temp).stdout.strip()
+
+        def merge_tree(left, right):
+            local('reset', '--hard', left)
+            local('merge', '--no-commit', '--no-ff', right)
+            return local('write-tree')
+
+        # Give both snapshots the independently frozen cut as their direct
+        # parent to compute the expected three-way merge from that exact base.
+        def from_cut(commit):
+            return local('commit-tree', commit + '^{tree}', '-p', cut, '-m', 'Release merge verification')
+
+        expected = merge_tree(from_cut(target), from_cut(public))
+        actual = merge_tree(target, head)
     if expected != actual:
         raise ReconcileError('return would alter the expected merge into Code master')
     return tree
