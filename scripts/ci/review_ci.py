@@ -12,6 +12,28 @@ import urllib.request
 from pathlib import Path
 
 ORIGIN = 'https://pre-acube.aliyun-inc.com'
+# Only Jarvis task pages are rendered as evidence links; anything else stays escaped text.
+EVIDENCE = re.compile(r'https://jarivs\.alibaba\.net/[A-Za-z0-9_-]+/tasks/[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/')
+DISMISSED = ('rejected', 'ignored')
+STATES = {'rejected': '已拒绝', 'ignored': '已忽略', 'adopted': '已采纳', 'verifying': 'Agent 实测中',
+          'needs_human': '待真人处置'}
+VERDICTS = {'NOT_REPRODUCED': '实测未复现', 'REPRODUCED': '实测已复现', 'BLOCKED': '实测受阻'}
+POLL_SECONDS = 30
+REUSE_POLL_SECONDS = 60
+
+
+class ReviewError(RuntimeError):
+    """A failure whose kind is reported on the ACUBE_REVIEW_RESULT line."""
+    kind = 'SERVICE_ERROR'
+
+
+class MalformedReport(ReviewError):
+    kind = 'MALFORMED_REPORT'
+
+
+class ReviewTimeout(ReviewError):
+    kind = 'TIMEOUT'
+
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
@@ -46,47 +68,108 @@ def text(value):
     return re.sub(r'([\\`*{}\[\]()#+.!_|>~-])', r'\\\1', value)
 
 
+def finding_id(finding, index):
+    return str(finding.get('findingId') or finding.get('id') or ('F-%02d' % index))
+
+
+def disposition(report, finding, index):
+    """ACube's disposition of one finding; anything malformed counts as undecided."""
+    marks = report.get('dispositions')
+    mark = marks.get(finding_id(finding, index)) if isinstance(marks, dict) else None
+    return mark if isinstance(mark, dict) else {}
+
+
+def blocking_findings(report):
+    for index, f in enumerate(report.get('findings') or [], 1):
+        if isinstance(f, dict) and str(f.get('severity', '')).strip().lower() in ('p0', 'p1'):
+            yield index, f
+
+
 def apply_ci_gate(report):
     """Apply Provider policy to raw findings, including reused reports.
 
-    Keep the service conclusion intact for diagnostics; never turn a service
-    failure into a pass. Annotation/acceptance fields do not waive findings.
+    P0/P1 block unless ACube reports them rejected or ignored, either by a person
+    or because an Agent verification did not reproduce them. A running Agent
+    verification keeps the check pending. Annotation fields inside a finding never
+    waive it, and a service failure never turns into a pass: the check passes only
+    when ACube's own conclusion agrees.
     """
     result = dict(report)
     result['ciConclusion'] = report.get('conclusion', 'pending')
     if report.get('status') != 'completed':
         if report.get('conclusion') == 'success':
-            raise RuntimeError('评审报告未完成，不能通过；请重跑形式化评审并检查 ACube 任务状态。')
+            raise ReviewError('评审报告未完成，不能通过；请重跑形式化评审并检查 ACube 任务状态。')
         return result
     findings = report.get('findings')
     if not isinstance(findings, list) or any(
             not isinstance(f, dict) or not isinstance(f.get('severity'), str)
             or f['severity'].strip().lower() not in ('p0', 'p1', 'p2', 'p3') for f in findings):
-        raise RuntimeError('评审报告缺少有效 findings/severity，无法判断 P0/P1；请检查 ACube 原始报告并重跑。')
+        raise MalformedReport('评审报告缺少有效 findings/severity，无法判断 P0/P1；请检查 ACube 原始报告并重跑。')
+    blocking, waiting, dismissed = [], [], []
+    for index, f in blocking_findings(report):
+        state = disposition(report, f, index).get('state')
+        (dismissed if state in DISMISSED else waiting if state == 'verifying' else blocking).append(finding_id(f, index))
     counts = {p: sum(f['severity'].strip().lower() == p for f in findings) for p in ('p0', 'p1')}
-    if counts['p0'] or counts['p1']:
-        result['ciConclusion'] = 'failure'
+    service = report.get('conclusion')
+    if blocking:
+        result['ciConclusion'], result['resultKind'] = 'failure', 'FINDINGS_BLOCKED'
         result['gateMessage'] = (
-            '形式化评审阻断：发现 P0 {p0} 项、P1 {p1} 项。请打开下方报告逐项修复，'
-            '提交代码后在新提交上重新运行形式化评审。历史报告复用也执行相同门槛；'
-            '仅在报告中采纳或拒绝问题不会解除阻断。').format(**counts)
+            '形式化评审阻断：P0 {p0} 项、P1 {p1} 项中有 {n} 项未被驳回（{ids}）。'
+            '已采纳的问题会作为 MR 评论发出，请修复后在新提交上重新运行；'
+            '判断为误报时在 ACube 拒绝或忽略该问题，再重跑本检查即可放行。').format(
+                n=len(blocking), ids='、'.join(blocking), **counts)
+    elif service == 'failure':
+        result['ciConclusion'], result['resultKind'] = 'failure', 'SERVICE_ERROR'
+        result['gateMessage'] = 'ACube 结论为失败，与门禁判定不一致，不能放行；请重跑本检查，仍失败请联系 ACube 维护者。'
+    elif waiting or service == 'pending':
+        result['ciConclusion'], result['resultKind'] = 'pending', 'VERIFYING'
+        result['gateMessage'] = ('等待 Agent 实测结论：{ids}。未复现会自动拒绝，已复现会自动采纳并发到 MR 评论。').format(
+            ids='、'.join(waiting) or '处置同步中')
+    elif service != 'success':
+        result['ciConclusion'], result['resultKind'] = 'failure', 'SERVICE_ERROR'
+        result['gateMessage'] = 'ACube 未给出有效结论，不能放行；请重跑本检查。'
+    else:
+        result['ciConclusion'], result['resultKind'] = 'success', 'PASSED'
+        if dismissed:
+            result['gateMessage'] = '通过：{n} 项 P0/P1 均已被驳回（{ids}），合入前请复核下方处置人与理由。'.format(
+                n=len(dismissed), ids='、'.join(dismissed))
     return result
+
+
+def describe(mark):
+    state = mark.get('state')
+    if not isinstance(state, str) or not state:
+        return None
+    parts = [STATES.get(state, state)]
+    actor = 'Agent 实测' if mark.get('actorType') == 'AGENT' else mark.get('actor')
+    if isinstance(actor, str) and actor:
+        parts.append(actor)
+    if mark.get('verdict') in VERDICTS:
+        parts.append(VERDICTS[mark['verdict']])
+    if mark.get('commentId'):
+        parts.append('已发到 MR 评论')
+    return ' · '.join(parts)
+
+
+def evidence(mark):
+    url = mark.get('evidenceUrl')
+    return url if isinstance(url, str) and EVIDENCE.fullmatch(url) else None
 
 
 def render(report, url, label, head):
     if report.get('taskId'):
         url += '&' + urllib.parse.urlencode({'taskId': report['taskId']})
-    parts = ['# ' + label, '## <a href="' + html.escape(url, quote=True) + '" target="_blank" rel="noopener noreferrer">打开 ACube 评审报告并打标 ↗</a>',
-             '**通过条件：评审完成且原始报告中没有 P0 或 P1；P2 不阻断。**',
+    parts = ['# ' + label, '## <a href="' + html.escape(url, quote=True) + '" target="_blank" rel="noopener noreferrer">打开 ACube 评审报告并处置 ↗</a>',
+             '**通过条件：评审完成，且每个 P0/P1 都已被驳回（真人拒绝或忽略，或 Agent 实测未复现后自动拒绝）；P2 不阻断。**',
              '- 提交：`' + head + '`', '- 任务：' + text(report.get('taskId', '待创建')),
              '- 状态：' + text(report.get('status', 'pending')),
              '- CI 结论：' + text(report.get('ciConclusion', report.get('conclusion', 'pending')))]
     if report.get('gateMessage'):
-        parts += ['## 修复指引', text(report['gateMessage'])]
+        parts += ['## 处理指引', text(report['gateMessage'])]
     if 'ciConclusion' in report:
         parts += ['- ACube 原始结论：' + text(report.get('conclusion', 'pending'))]
     if report.get('reused'):
-        parts += ['**复用历史报告：未重新运行评审。原报告保持不变，CI 按当前 P0/P1 阻断规则重新判定。**',
+        parts += ['**复用历史报告：未重新运行评审。原报告保持不变，CI 按该报告当前的处置重新判定。**',
                   '- 原始 Base：' + text(report.get('baseSha', '')),
                   '- 原始 Head：' + text(report.get('headSha', '')),
                   '- 复用依据：' + text(report.get('reusePolicy', ''))]
@@ -99,16 +182,25 @@ def render(report, url, label, head):
         counts = {p: sum(str(f.get('severity', '')).strip().lower() == p for f in findings) for p in ('p0', 'p1', 'p2')}
         parts += ['## 评审发现 · P0 {p0} / P1 {p1} / P2 {p2}'.format(**counts)]
         for index, f in enumerate(findings, 1):
-            fid = f.get('findingId') or f.get('id') or ('F-%02d' % index)
+            fid = finding_id(f, index)
             target = url + '&' + urllib.parse.urlencode({'finding': fid})
             link = html.escape(target, quote=True)
             parts += ['---', '### ' + text(str(f.get('severity', '?')).upper()) + ' · ' + text(fid) + ' · ' + text(f.get('title', '未命名问题'))]
+            mark = disposition(report, f, index)
+            state = describe(mark)
+            if state:
+                line = '**处置**：' + text(state)
+                if evidence(mark):
+                    line += ' · <a href="' + html.escape(evidence(mark), quote=True) + '" target="_blank" rel="noopener noreferrer">实测记录 ↗</a>'
+                parts += [line]
+                if mark.get('reason'):
+                    parts += ['<details><summary>处置理由</summary>\n\n' + text(mark['reason']) + '\n\n</details>']
             for key in ('difference', 'description'):
                 if f.get(key):
                     parts += ['**关键差异**', text(f[key])]
                     break
             parts += [' · '.join('<a href="' + link + '&amp;section=' + ('agent' if action == '发起 Agent 实测' else 'actions') + '" target="_blank" rel="noopener noreferrer"><strong>' + action + ' ↗</strong></a>' for action in ('采纳', '拒绝', '发起 Agent 实测')),
-                      '在 ACube 打开本条问题后操作；此报告不会自动修改标注。']
+                      '在 ACube 打开本条问题后操作；拒绝或忽略后重跑本检查即可放行。']
             for key, name in [('description', '问题与影响'), ('rule', '规则'), ('preconditions', '触发条件'),
                               ('expectedResult', '预期'), ('actualResult', '实际'),
                               ('reasoning', '证据与论证'), ('reproduceSteps', '复现步骤'), ('reproduceResult', '复现结果')]:
@@ -124,9 +216,51 @@ def publish(report, url, label, head):
     Path(os.environ.get('AONE_CI_SUMMARY_MD', 'review-summary.md')).write_text(md, encoding='utf-8')
     summary = os.environ.get('AONE_CI_SUMMARY')
     if summary:
-        record = {'name': '打开 ACube 评审报告并打标 →', 'value': label, 'url': url}
+        record = {'name': '打开 ACube 评审报告并处置 →', 'value': label, 'url': url}
         Path(summary).write_text('CUSTOM=' + json.dumps(record, ensure_ascii=False) + '\n', encoding='utf-8')
     Path('review-report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+
+
+def token(value):
+    return re.sub(r'[^A-Za-z0-9_.:/-]', '_', str(value))[:200] or '_'
+
+
+def print_result(report, kind):
+    """Stable log lines so digital humans can act on the check without the BUC-only report page."""
+    print('ACUBE_REVIEW_RESULT kind=' + kind, flush=True)
+    for index, f in blocking_findings(report):
+        mark = disposition(report, f, index)
+        fields = ['id=' + token(finding_id(f, index)), 'severity=' + token(str(f.get('severity')).strip().upper()),
+                  'state=' + token(mark.get('state') or 'undecided')]
+        for key, name in (('actorType', 'actor'), ('verdict', 'verdict'), ('commentId', 'comment')):
+            if mark.get(key):
+                fields.append(name + '=' + token(mark[key]))
+        if evidence(mark):
+            fields.append('evidence=' + evidence(mark))
+        print('ACUBE_FINDING ' + ' '.join(fields), flush=True)
+
+
+def announce(report, previous):
+    """Print the gate message once per change instead of on every poll."""
+    message = report.get('gateMessage')
+    if message and message != previous:
+        print(message, flush=True)
+    return message or previous
+
+
+def wait(deadline, seconds):
+    if time.monotonic() + seconds > deadline:
+        raise ReviewTimeout('Review deadline exceeded')
+    time.sleep(seconds)
+
+
+def valid_reuse(receipt, head, mr):
+    return (receipt.get('status') == 'completed' and receipt.get('ciHeadSha') == head
+            and receipt.get('mr') == int(mr) and receipt.get('reusePolicy') == 'review-content-v1'
+            and re.fullmatch(r'review_[0-9a-f]{32}', receipt.get('taskId', ''))
+            and re.fullmatch(r'[0-9a-f]{40}', receipt.get('headSha', ''))
+            and isinstance(receipt.get('findings'), list)
+            and receipt.get('conclusion') in ('success', 'failure', 'pending'))
 
 
 def main():
@@ -139,55 +273,61 @@ def main():
     report = {'status': 'pending'}
     publish(report, url, label, head)
     try:
-        token = os.environ['ACUBE_PROVIDER_RUN_TOKEN']
-        if len(token) < 32:
+        token_value = os.environ['ACUBE_PROVIDER_RUN_TOKEN']
+        if len(token_value) < 32:
             raise RuntimeError('ACube CI credential missing')
         path = '/api/v1/provider_runs/ci-reviews/' + kind
-        receipt = request(path, token, {'mr': int(mr), 'headSha': head, 'runId': run, 'contentReuseVersion': 'review-content-v1'})
+        body = {'mr': int(mr), 'headSha': head, 'runId': run, 'contentReuseVersion': 'review-content-v1'}
+        deadline = time.monotonic() + 7 * 3600
+        receipt = request(path, token_value, body)
         if receipt.get('status') == 'skipped':
             if receipt.get('conclusion') != 'success' or receipt.get('headSha') != head or receipt.get('mr') != int(mr):
                 raise RuntimeError('Invalid skipped review receipt')
             publish(receipt, url, label, head)
             print('Review skipped: no service implementation changes', flush=True)
+            print('ACUBE_REVIEW_RESULT kind=SKIPPED', flush=True)
             return 0
-        if receipt.get('reused') is True:
-            if (receipt.get('status') != 'completed' or receipt.get('ciHeadSha') != head
-                    or receipt.get('mr') != int(mr) or receipt.get('reusePolicy') != 'review-content-v1'
-                    or not re.fullmatch(r'review_[0-9a-f]{32}', receipt.get('taskId', ''))
-                    or not re.fullmatch(r'[0-9a-f]{40}', receipt.get('headSha', ''))
-                    or not isinstance(receipt.get('findings'), list)
-                    or receipt.get('conclusion') not in ('success', 'failure')):
+        message = None
+        while receipt.get('reused') is True:
+            if not valid_reuse(receipt, head, mr):
                 raise RuntimeError('Invalid content reuse receipt')
-            receipt = apply_ci_gate(receipt)
-            publish(receipt, url, label, head)
-            print(receipt.get('gateMessage', ''), flush=True)
-            print('Reused review task=' + receipt['taskId'] + ' originalHead=' + receipt['headSha'], flush=True)
-            return 0 if receipt['ciConclusion'] == 'success' else 1
+            report = apply_ci_gate(receipt)
+            publish(report, url, label, head)
+            message = announce(report, message)
+            print('Reused review task=' + receipt['taskId'] + ' originalHead=' + receipt['headSha']
+                  + ' conclusion=' + str(report['ciConclusion']), flush=True)
+            if report['ciConclusion'] in ('success', 'failure'):
+                print_result(report, report.get('resultKind', 'SERVICE_ERROR'))
+                return 0 if report['ciConclusion'] == 'success' else 1
+            # Agent verification of the reused report is still running. The same run asks again;
+            # ACube re-validates reuse and returns the latest dispositions.
+            wait(deadline, REUSE_POLL_SECONDS)
+            receipt = request(path, token_value, body)
         task_id = receipt.get('taskId', '')
         if not re.fullmatch(r'review_[0-9a-f]{32}', task_id):
             raise RuntimeError('Invalid task receipt')
         print(label + ' task=' + task_id + ' head=' + head, flush=True)
-        deadline = time.monotonic() + 7 * 3600
-        while time.monotonic() < deadline:
-            report = request(path + '/' + task_id + '?' + urllib.parse.urlencode({'mr': mr, 'headSha': head}), token)
+        while True:
+            report = request(path + '/' + task_id + '?' + urllib.parse.urlencode({'mr': mr, 'headSha': head}), token_value)
             if report.get('taskId') != task_id or report.get('headSha') != head:
                 raise RuntimeError('Report identity mismatch')
             report = apply_ci_gate(report)
             publish(report, url, label, head)
-            if report.get('gateMessage'):
-                print(report['gateMessage'], flush=True)
+            message = announce(report, message)
             conclusion = report.get('ciConclusion')
             print('Review status=' + str(report.get('status')) + ' conclusion=' + str(conclusion), flush=True)
             if conclusion in ('success', 'failure'):
+                print_result(report, report.get('resultKind', 'SERVICE_ERROR'))
                 return 0 if conclusion == 'success' else 1
             if conclusion != 'pending':
                 raise RuntimeError('Unknown review conclusion')
-            time.sleep(30)
-        raise RuntimeError('Review deadline exceeded')
+            wait(deadline, POLL_SECONDS)
     except Exception as exc:
-        report.update(status='failed', conclusion='failure', ciConclusion='failure', errorMessage=str(exc))
+        failure = exc.kind if isinstance(exc, ReviewError) else 'SERVICE_ERROR'
+        report.update(status='failed', conclusion='failure', ciConclusion='failure', errorMessage=str(exc), resultKind=failure)
         publish(report, url, label, head)
         print(str(exc), file=sys.stderr)
+        print('ACUBE_REVIEW_RESULT kind=' + failure, flush=True)
         return 1
 
 if __name__ == '__main__':

@@ -61,3 +61,48 @@ After merging this update, pin existing formal pipeline 344309 (Provider
 template 5246) to the approved merged SHA. Preserve its triggers and strategy;
 do not change AI pipeline 344310. Source merge alone does not activate the gate.
 A rerun can retain the old YAML snapshot: verify a new run's template version.
+
+## Dispositions: rejected or ignored findings pass
+
+ACube returns `dispositions` keyed by finding ID with the formal report. Each
+P0/P1 finding passes only when its disposition `state` is `rejected` or
+`ignored`; `verifying` keeps the check pending; anything else, including a
+missing or malformed disposition, blocks. Fields inside a finding never waive it.
+A pass also requires ACube's own `conclusion` to be `success`; a disagreement
+fails closed. P2 still never blocks.
+
+ACube decides the disposition. A person's reject, ignore or adopt in the ACube
+workbench always wins. Without one, the Agent verification verdict decides:
+not reproduced rejects the finding, reproduced adopts it and posts it to the MR
+as an ordinary review comment (so PR followers deliver it to RD), and a blocked
+or failed verification waits for a person. ACube starts the verification for
+undecided P0/P1 findings by itself while CI polls, so the check stays pending,
+normally for under an hour, instead of failing early.
+
+When a person changes a decision, or starts or retries an Agent verification in
+the ACube workbench, ACube reruns this check by itself about 15 seconds later,
+using its dedicated review identity (Terraform 质量数字人) against AoneCI. It
+reruns only the latest check of the current MR head, and only if that check had
+already finished before the change. A check that is still running or queued is
+left alone: it re-reads the dispositions while it waits. Completed reports are
+reused for the same content, so the rerun reapplies the current dispositions
+without a new review. While the reused report is still being verified, the same
+run asks ACube again every minute. If the automatic rerun fails, ACube only logs
+it; rerun the check by hand.
+
+A rerun keeps the YAML of the run it repeats. Runs created before pipeline 344309
+is pinned to this version still execute the old bridge when rerun; start a fresh
+run for those MRs (a new commit, or closing and reopening the MR).
+
+The summary shows each finding's disposition, who made it, the reason and a link
+to the Jarvis verification task. The log ends with stable lines for digital
+humans that cannot open the BUC-only ACube page:
+
+```text
+ACUBE_REVIEW_RESULT kind=PASSED|FINDINGS_BLOCKED|SERVICE_ERROR|TIMEOUT|MALFORMED_REPORT|SKIPPED
+ACUBE_FINDING id=F-01 severity=P1 state=rejected actor=AGENT verdict=NOT_REPRODUCED evidence=<Jarvis task URL>
+ACUBE_FINDING id=F-02 severity=P1 state=adopted actor=AGENT verdict=REPRODUCED comment=<MR comment ID>
+```
+
+Deploy the ACube change first. Until it is live, ACube returns no dispositions
+and every P0/P1 keeps blocking, exactly as before.
