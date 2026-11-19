@@ -1,11 +1,24 @@
 import importlib.util
+import io
+import re
 import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 spec = importlib.util.spec_from_file_location('review_ci', Path(__file__).with_name('review_ci.py'))
 ci = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ci)
+
+# Same line filter as the Jarvis SCM tool read_ci_failure (components/runtime/src/resident-code.ts).
+JARVIS_ERROR_LINE = re.compile(r'(?:HIGHLIGHT__\[ERROR\]|(?:^|\s)(?:ERROR:|Error:|fatal:|panic:)|^\S+\.\w+:\d+(?::\d+)?:)')
+
+
+def jarvis_failure_view(log):
+    """What a digital human sees: error lines only, the last 8 per step, 360 characters each."""
+    log += '\nHIGHLIGHT__[ERROR] exec script failed, error: exit status 1'
+    return [line[:360] for line in log.split('\n') if JARVIS_ERROR_LINE.search(line)][-8:]
+
 
 class ReviewCiTest(unittest.TestCase):
     def test_report_contains_findings_and_annotation_link(self):
@@ -38,8 +51,129 @@ class ReviewCiTest(unittest.TestCase):
         self.assertEqual('success', gated['conclusion'])
         self.assertEqual('failure', gated['ciConclusion'])
         md = ci.render(gated, 'https://example.com', 'Formal', 'a'*40)
-        for expected in ('P0 或 P1', 'P1 1 项', '修复指引', '新提交', '不会解除阻断', 'ACube 原始结论'):
+        for expected in ('每个 P0/P1', 'P1 1 项', '处理指引', '新提交', '拒绝或忽略', 'ACube 原始结论'):
             self.assertIn(expected, md)
+
+    def test_only_rejected_or_ignored_findings_stop_blocking(self):
+        def gate(state, conclusion='success', severity='p1'):
+            report = {'status': 'completed', 'conclusion': conclusion,
+                      'findings': [{'findingId': 'F-01', 'severity': severity}, {'findingId': 'F-02', 'severity': 'p2'}]}
+            if state is not None:
+                report['dispositions'] = {'F-01': {'state': state}}
+            return ci.apply_ci_gate(report)['ciConclusion']
+        for state in ('rejected', 'ignored'):
+            with self.subTest(state=state):
+                self.assertEqual('success', gate(state))
+                self.assertEqual('success', gate(state, severity='P0'))
+        for state in (None, 'adopted', 'needs_human', 'unknown', ''):
+            with self.subTest(state=state):
+                self.assertEqual('failure', gate(state))
+        self.assertEqual('pending', gate('verifying', 'pending'))
+        self.assertEqual('failure', gate('rejected', 'failure'), 'a pass needs ACube to agree')
+        self.assertEqual('pending', gate('rejected', 'pending'), 'ACube still syncing dispositions')
+        self.assertEqual('failure', gate('rejected', None))
+        self.assertEqual('failure', ci.apply_ci_gate({'status': 'completed', 'conclusion': 'success',
+            'findings': [{'findingId': 'F-01', 'severity': 'p1', 'accepted': True, 'annotation': 'rejected'}]})['ciConclusion'],
+            'fields inside the finding never waive it')
+        malformed = {'status': 'completed', 'conclusion': 'success', 'dispositions': {'F-01': 'rejected'},
+                     'findings': [{'findingId': 'F-01', 'severity': 'p1'}]}
+        self.assertEqual('failure', ci.apply_ci_gate(malformed)['ciConclusion'])
+
+    def test_running_verification_keeps_the_check_pending_until_disposed(self):
+        tid, head = 'review_'+'b'*32, 'a'*40
+        base = {'taskId': tid, 'headSha': head, 'status': 'completed', 'findings': [{'findingId': 'F-01', 'severity': 'p1'}]}
+        polls = [dict(base, conclusion='pending', dispositions={'F-01': {'state': 'verifying'}}),
+                 dict(base, conclusion='pending', dispositions={'F-01': {'state': 'verifying'}}),
+                 dict(base, conclusion='success', dispositions={'F-01': {'state': 'rejected', 'actorType': 'AGENT',
+                      'verdict': 'NOT_REPRODUCED', 'evidenceUrl': 'https://jarivs.alibaba.net/Jarvis/tasks/' + '2'*8 + '-2222-2222-2222-' + '2'*12 + '/'}})]
+        env = {'ACUBE_REVIEW_KIND': 'formal', 'ACUBE_MR': '7', 'ACUBE_HEAD': head, 'ACUBE_CI_RUN': '123', 'ACUBE_PROVIDER_RUN_TOKEN': 'x'*32}
+        out = io.StringIO()
+        with patch.dict(ci.os.environ, env), patch.object(ci, 'request', side_effect=[{'taskId': tid}] + polls) as request, \
+                patch.object(ci, 'publish'), patch.object(ci.time, 'sleep'), redirect_stdout(out):
+            self.assertEqual(0, ci.main())
+        self.assertEqual(4, request.call_count)
+        log = out.getvalue()
+        self.assertEqual(1, log.count('等待 Agent 实测结论：F-01'), 'unchanged messages are printed once')
+        self.assertIn('ACUBE_REVIEW_RESULT kind=PASSED', log)
+        self.assertIn('ACUBE_FINDING id=F-01 severity=P1 state=rejected actor=AGENT verdict=NOT_REPRODUCED evidence=https://jarivs.alibaba.net/Jarvis/tasks/', log)
+
+    def test_reused_report_asks_again_with_the_same_run_while_verifying(self):
+        head = 'a'*40
+        receipt = {'reused': True, 'status': 'completed', 'mr': 7, 'ciHeadSha': head, 'headSha': 'b'*40,
+                   'taskId': 'review_'+'c'*32, 'reusePolicy': 'review-content-v1',
+                   'findings': [{'findingId': 'F-01', 'severity': 'p1'}, {'findingId': 'F-02', 'severity': 'p1'}]}
+        waiting = dict(receipt, conclusion='pending', dispositions={'F-01': {'state': 'verifying'}, 'F-02': {'state': 'verifying'}})
+        decided = dict(receipt, conclusion='failure', dispositions={'F-01': {'state': 'rejected', 'actorType': 'AGENT'},
+                       'F-02': {'state': 'adopted', 'actorType': 'AGENT', 'verdict': 'REPRODUCED', 'commentId': 99}})
+        env = {'ACUBE_REVIEW_KIND': 'formal', 'ACUBE_MR': '7', 'ACUBE_HEAD': head, 'ACUBE_CI_RUN': '123', 'ACUBE_PROVIDER_RUN_TOKEN': 'x'*32}
+        out = io.StringIO()
+        with patch.dict(ci.os.environ, env), patch.object(ci, 'request', side_effect=[waiting, decided]) as request, \
+                patch.object(ci, 'publish'), patch.object(ci.time, 'sleep'), redirect_stdout(out):
+            self.assertEqual(1, ci.main())
+        self.assertEqual(request.call_args_list[0], request.call_args_list[1], 'same path and body, same run')
+        log = out.getvalue()
+        self.assertIn('ACUBE_REVIEW_RESULT kind=FINDINGS_BLOCKED', log)
+        self.assertIn('id=F-02 severity=P1 state=adopted actor=AGENT verdict=REPRODUCED comment=99', log)
+        self.assertIn('（F-02）', log)
+
+    def test_failure_lines_survive_the_jarvis_ci_failure_reader(self):
+        jarvis = 'https://jarivs.alibaba.net/Jarvis/tasks/' + '2'*8 + '-2222-2222-2222-' + '2'*12 + '/'
+        report = ci.apply_ci_gate({'status': 'completed', 'conclusion': 'failure',
+            'findings': [{'findingId': 'F-01', 'severity': 'p1'}, {'findingId': 'F-02', 'severity': 'p1'},
+                         {'findingId': 'F-03', 'severity': 'p2'}],
+            'dispositions': {'F-01': {'state': 'rejected', 'actorType': 'AGENT', 'evidenceUrl': jarvis},
+                             'F-02': {'state': 'adopted', 'actorType': 'AGENT', 'verdict': 'REPRODUCED', 'commentId': 99,
+                                      'evidenceUrl': jarvis}}})
+        noise = '\n'.join('Error: unrelated line %d' % i for i in range(12))
+        seen = jarvis_failure_view(noise + '\n' + '\n'.join(ci.result_lines(report, report['resultKind'])))
+        self.assertEqual('HIGHLIGHT__[ERROR] ACUBE_REVIEW_RESULT kind=FINDINGS_BLOCKED', seen[-2])
+        self.assertTrue(any('id=F-02 severity=P1 state=adopted actor=AGENT verdict=REPRODUCED comment=99' in line for line in seen))
+        self.assertFalse(any('F-01' in line or 'F-03' in line for line in seen), 'dismissed and P2 findings stay out of failures')
+
+        many = {'status': 'completed', 'conclusion': 'failure',
+                'findings': [{'findingId': 'F-%02d' % i, 'severity': 'p0'} for i in range(1, 10)],
+                'dispositions': {'F-%02d' % i: {'state': 'needs_human', 'evidenceUrl': jarvis} for i in range(1, 10)}}
+        lines = ci.result_lines(ci.apply_ci_gate(many), 'FINDINGS_BLOCKED')
+        seen = jarvis_failure_view(noise + '\n' + '\n'.join(lines))
+        self.assertEqual(lines, seen[-len(lines) - 1:-1], 'every result line is kept, in order')
+        self.assertIn('ACUBE_FINDING more=5', seen[-3])
+        self.assertTrue(all(len(line) <= 360 for line in lines))
+
+        error = ci.result_lines({}, 'SERVICE_ERROR', 'ACube HTTP 503; check task in ACube')
+        self.assertEqual(['HIGHLIGHT__[ERROR] ACUBE_REVIEW_RESULT kind=SERVICE_ERROR reason=ACube_HTTP_503__check_task_in_ACube'], error)
+        passed = ci.result_lines({'findings': [{'findingId': 'F-01', 'severity': 'p1'}],
+                                  'dispositions': {'F-01': {'state': 'rejected', 'actorType': 'AGENT'}}}, 'PASSED')
+        self.assertEqual(['ACUBE_FINDING id=F-01 severity=P1 state=rejected actor=AGENT', 'ACUBE_REVIEW_RESULT kind=PASSED'], passed)
+
+    def test_waiting_past_the_deadline_reports_timeout(self):
+        tid, head = 'review_'+'b'*32, 'a'*40
+        verifying = {'taskId': tid, 'headSha': head, 'status': 'completed', 'conclusion': 'pending',
+                     'findings': [{'findingId': 'F-01', 'severity': 'p0'}], 'dispositions': {'F-01': {'state': 'verifying'}}}
+        env = {'ACUBE_REVIEW_KIND': 'formal', 'ACUBE_MR': '7', 'ACUBE_HEAD': head, 'ACUBE_CI_RUN': '123', 'ACUBE_PROVIDER_RUN_TOKEN': 'x'*32}
+        out = io.StringIO()
+        clock = iter([0, 7 * 3600])
+        with patch.dict(ci.os.environ, env), patch.object(ci, 'request', side_effect=[{'taskId': tid}, verifying]), \
+                patch.object(ci, 'publish'), patch.object(ci.time, 'monotonic', side_effect=lambda: next(clock)), \
+                redirect_stdout(out), redirect_stderr(io.StringIO()):
+            self.assertEqual(1, ci.main())
+        self.assertIn('ACUBE_REVIEW_RESULT kind=TIMEOUT', out.getvalue())
+
+    def test_summary_shows_disposition_and_only_trusted_evidence_links(self):
+        jarvis = 'https://jarivs.alibaba.net/Jarvis/tasks/' + '2'*8 + '-2222-2222-2222-' + '2'*12 + '/'
+        report = ci.apply_ci_gate({'status': 'completed', 'conclusion': 'success',
+            'findings': [{'findingId': 'F-01', 'severity': 'p1', 'title': 'apply 失败'},
+                         {'findingId': 'F-02', 'severity': 'p1', 'title': '强制重建'}],
+            'dispositions': {'F-01': {'state': 'rejected', 'actorType': 'AGENT', 'verdict': 'NOT_REPRODUCED',
+                                      'reason': 'Agent 实测本次未复现：退出码 0', 'evidenceUrl': jarvis},
+                             'F-02': {'state': 'ignored', 'actorType': 'HUMAN', 'actor': '辰羿', 'reason': '接受风险',
+                                      'evidenceUrl': 'https://evil.example/x'}}})
+        md = ci.render(report, 'https://example.com', 'Formal', 'a'*40)
+        self.assertEqual('success', report['ciConclusion'])
+        self.assertIn('已拒绝 · Agent 实测 · 实测未复现', md)
+        self.assertIn('href="' + jarvis + '"', md)
+        self.assertIn('已忽略 · 辰羿', md)
+        self.assertNotIn('evil.example', md)
+        self.assertIn('复核', md)
 
     def test_invalid_completed_report_cannot_pass(self):
         for findings in (None, {}, [{}], [None], [{'severity': 'unknown'}]):

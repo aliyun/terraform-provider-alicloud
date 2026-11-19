@@ -338,6 +338,48 @@ class DocumentExamplesTest(unittest.TestCase):
         self.assertTrue(all(row['taskId'] == '42' and row['result'] == 'PASS' for row in proof['assertions']))
         self.assertNotIn('mainTf', proof)
 
+    def test_datasource_document_runs_lifecycle_without_claiming_import_pass(self):
+        doc = 'website/docs/d/reserved_instances.html.markdown'
+        config = PROVIDER + 'data "alicloud_reserved_instances" "test" {}\n'
+        scene = Repository({}, {doc: page(config)}).plan()['examples'][0]
+
+        class Client:
+            def call(self, method, path, body=None):
+                if path == '/capabilities':
+                    return dict(submissionIdempotency='oss-admission-v1', hclActions=['lifecycle'])
+                if path == '/sources/import':
+                    return dict(sourceId='a'*64)
+                if path == '':
+                    self.request = body
+                    return dict(taskId=42)
+                if path == '/42/logs':
+                    return {}
+                if path == '/42':
+                    return dict(status='success', result={**self.request, 'exitCode': 0,
+                        'hcl': dict(action='lifecycle', mainTfSha256=docs.sha(self.request['mainTf']),
+                            provider={'sourceId': 'a'*64, 'binarySha256': 'b'*64},
+                            phases=[dict(name=name, status='passed', exitCode=0) for name in docs.LIFECYCLE_PHASES],
+                            cleanup={'status': 'success', 'stateEmpty': True, 'attempted': True})})
+                raise AssertionError(path)
+
+        client = Client()
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()):
+            integration.execute(client, dict(head='c'*40, base='d'*40, packages={}, examples=[scene]),
+                                'examples', 'run-123', Path(root))
+            self.assertEqual(client.request['hclAction'], 'lifecycle')
+            report = next(json.loads(file.read_text()) for file in (Path(root)/'diagnostics').glob('*.json')
+                          if file.name != 'document-review.json')
+        evidence = report['example']
+        self.assertEqual(evidence['importStatus'], 'SKIPPED_NOT_APPLICABLE')
+        self.assertEqual({row['check']: row['result'] for row in evidence['assertions']},
+                         {'lifecycle': 'PASS', 'import': 'SKIP', 'cleanup': 'PASS'})
+        status = client.call('GET', '/42')
+        status['result']['hcl']['cleanup']['stateEmpty'] = False
+        with self.assertRaisesRegex(ValueError, 'cleanup proof missing'):
+            integration.validate_result(status, client.request)
+        with self.assertRaisesRegex(ValueError, 'identity mismatch'):
+            integration.validate_result(client.call('GET', '/42'), {**client.request, 'hclAction': 'example'})
+
     def test_successful_scene_publishes_assertion_evidence_without_hcl_or_fake_prose_pass(self):
         scene = Repository({}, self.prepared()).plan()['examples'][0]
         class Client:
