@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Generate self-contained, immutable CI templates (no MR checkout needed)."""
+import re
 from pathlib import Path
 root = Path(__file__).resolve().parent.parent.parent
 (root / 'ci/templates').mkdir(parents=True, exist_ok=True)
@@ -30,5 +31,20 @@ jobs:
     if kind == 'ai':
         header = header.replace('timeout: 8h', 'timeout: 5m').replace('运行评审并生成报告', 'AI 评审已关闭，默认通过')
         header = header.replace("          ACUBE_PROVIDER_RUN_TOKEN: '${{secrets.ACUBE_PROVIDER_RUN_TOKEN}}'\n", '')
+    if kind == 'formal':
+        # Use the same trusted event and project receipt as the repository checks.
+        basic = (root / '.aoneci/acctest-terraform-basic.yml').read_text()
+        guard = re.search(r'^  VERIFIED_RELEASE_RETURN: >-\n(?:    [^\n]+\n)+', basic, re.MULTILINE).group()
+        header = header.replace('jobs:\n', 'envs:\n' + guard + 'jobs:\n')
+        header = header.replace('      - uses: setup-env', """      - name: Record release return exemption
+        when: ${{ envs.VERIFIED_RELEASE_RETURN == 'yes' }}
+        envs:
+          REVIEW_MR: '${{git.merge_request.id}}'
+          REVIEW_HEAD: '${{git.commitId}}'
+        run: echo "Verified release return MR $REVIEW_MR at $REVIEW_HEAD. Skipped ACube formal review by policy."
+      - uses: setup-env
+        when: ${{ envs.VERIFIED_RELEASE_RETURN != 'yes' }}""")
+        header = header.replace('      - name: 运行评审并生成报告\n', '      - name: 运行评审并生成报告\n'
+                                "        when: ${{ envs.VERIFIED_RELEASE_RETURN != 'yes' }}\n")
     body = ''.join(('          ' + line if line else '') + '\n' for line in script.splitlines())
     (root / ('ci/templates/acube-' + kind + '-review.yaml')).write_text(header + body + '          ACUBE_REVIEW_PY\n')

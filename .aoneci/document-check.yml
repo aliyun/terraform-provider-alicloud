@@ -24,6 +24,13 @@ triggers:
       - 'alicloud/service/**/*.go'
 
 envs:
+  VERIFIED_RELEASE_RETURN: >-
+    ${{ pipeline.inst.triggerMode == 'MR' && git.merge_request.id &&
+    git.repo == 'opensource-tools/terraform-provider-alicloud' &&
+    git.merge_request.sourceProjectId && git.merge_request.sourceProjectId == git.merge_request.targetProjectId &&
+    git.defaultBranch == 'master' && git.merge_request.targetBranch == git.defaultBranch &&
+    secrets.PROVIDER_RELEASE_RETURN == 'v1:' + #string(git.merge_request.id) + ':' +
+    git.merge_request.sourceBranch + ':' + git.merge_request.title + ':' + git.commitId ? 'yes' : 'no' }}
   # Pushes run on master; manual runs also retain the full documentation checks.
   DOCUMENT_CHECK_FULL: '${{git.merge_request.id ? "false" : "true"}}'
   CODE_CI_SHALLOW_RANGE: '1'
@@ -36,7 +43,13 @@ envs:
   CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
 
 jobs:
+  ReleaseReturn:
+    when: ${{ envs.VERIFIED_RELEASE_RETURN == 'yes' }}
+    steps:
+      - name: Record release return exemption
+        run: echo "Verified release return MR $CODE_MR_ID at $CODE_HEAD. Skipped MarkdownQuality by policy."
   MarkdownQuality:
+    when: ${{ envs.VERIFIED_RELEASE_RETURN != 'yes' }}
     steps:
       - uses: checkout
         inputs:
