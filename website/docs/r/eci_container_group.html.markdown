@@ -172,6 +172,10 @@ The acr_registry_info supports the following:
 * `region_id` - (Optional, ForceNew) The ACR enterprise edition instance belongs to the region.
 * `instance_name` - (Optional) The name of the ACR enterprise edition instance.
 * `domains` - (Optional, List) The domain name of the ACR Enterprise Edition instance. Defaults to all domain names of the corresponding instance. Support specifying individual domain names, multiple separated by half comma.
+* `arn_service` - (Optional, ForceNew, Available since v2.3.0) The ARN of a RAM role in the account that owns the container group. ECI assumes this role to obtain the image pull credential. On its own, it restricts which role ECI uses to pull images from an ACR Personal Edition instance, or from an ACR Enterprise Edition instance through its default domain, in the same account. To pull from an ACR Enterprise Edition instance in another account, set it together with `arn_user`. The role must trust `eci.aliyuncs.com` and be granted `AliyunSTSAssumeRoleAccess`. The value can be built with the provider-defined function [`arn_build`](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/functions/arn_build), for example `provider::alicloud::arn_build("ram", "", "<account-id>", "role/<role-name>")`.
+* `arn_user` - (Optional, ForceNew, Available since v2.3.0) The ARN of a RAM role in the account that owns the ACR Enterprise Edition instance, used for cross-account image pulling. It must be set together with `arn_service`. The role must trust the role specified by `arn_service` and be granted image pull permissions on the instance, for example `cr:GetAuthorizationToken` and `cr:PullRepository` (the official example grants `AliyunContainerRegistryFullAccess`). When the instance is accessed through a custom domain, `instance_id` is required.
+
+-> **NOTE:** `arn_service` and `arn_user` are create-time inputs. They are retained in Terraform state after creation, but cannot be retrieved from an existing container group during import. Configuring them after import requires replacement of the container group. Review the plan before applying configuration to an imported group.
 
 ### `image_registry_credential`
 
@@ -278,6 +282,7 @@ The environment_vars supports the following:
 * `field_ref` - (Optional) The reference of the environment variable. See [`field_ref`](#init_containers-environment_vars-field_ref) below.
 
 ### `init_containers-environment_vars-field_ref`
+
 * `field_path` - (Optional) The path of the reference.
 
 ### `init_containers-volume_mounts`
@@ -340,6 +345,7 @@ The environment_vars supports the following:
 * `field_ref` - (Optional) The reference of the environment variable. See [`field_ref`](#containers-environment_vars-field_ref) below.
 
 ### `containers-environment_vars-field_ref`
+
 * `field_path` - (Optional) The path of the reference.
 
 ### `containers-volume_mounts`
@@ -457,3 +463,5 @@ ECI Container Group can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_eci_container_group.example <container_group_id>
 ```
+
+-> **NOTE:** `acr_registry_info` (including `arn_service` and `arn_user`) cannot be read back from the API, so it is not reconstructed on import. Configuring these role ARNs after import requires replacement of the container group; review the plan before applying.

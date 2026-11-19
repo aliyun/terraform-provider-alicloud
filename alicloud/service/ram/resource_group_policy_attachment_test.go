@@ -55,6 +55,50 @@ func TestAccAliCloudRAMGroupPolicyAttachment_basic(t *testing.T) {
 	})
 }
 
+// Case GroupPolicyAttachment_LowercaseSystemPolicyName
+func TestAccAliCloudRAMGroupPolicyAttachment_lowercaseSystemPolicyName(t *testing.T) {
+	resourceId := "alicloud_ram_group_policy_attachment.default"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceRamGroupPolicyAttachmentConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy_name": "aliyunecsfullaccess",
+					"group_name":  "${alicloud_ram_group.default.name}",
+					"policy_type": "System",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "policy_name", "aliyunecsfullaccess"),
+					resource.TestCheckResourceAttr(resourceId, "policy_type", "System"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Import IDs written with a non-canonical policy name/type casing must resolve too.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateId:     fmt.Sprintf("group:aliyunecsfullaccess:system:%s", name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "policy_name", "aliyunecsfullaccess"),
+					resource.TestCheckResourceAttr(resourceId, "policy_type", "System"),
+					resource.TestCheckResourceAttr(resourceId, "group_name", name),
+				),
+			},
+		},
+	})
+}
+
 var ramGroupMap = map[string]string{
 	"group_name":  acctest.CHECKSET,
 	"policy_name": acctest.CHECKSET,

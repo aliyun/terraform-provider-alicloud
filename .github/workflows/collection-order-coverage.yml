@@ -16,8 +16,6 @@ on:
       - scripts/ci/run-provider-check.py
       - scripts/ci/test_check_scope.py
       - scripts/internal/**
-      - go.mod
-      - go.sum
       - .github/workflows/collection-order-coverage.yml
       - scripts/collection-order/**
       - scripts/ci/resolve-change-range.sh

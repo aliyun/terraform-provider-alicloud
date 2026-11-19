@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/search"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -531,7 +532,12 @@ func resourceAliyunOtsSearchIndexRead(d *schema.ResourceData, meta interface{}) 
 	if err := d.Set("index_id", d.Id()); err != nil {
 		return errs.WrapError(err)
 	}
+
 	if err := d.Set("create_time", idx.CreateTime); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("time_to_live", int(idx.TimeToLive)); err != nil {
 		return errs.WrapError(err)
 	}
 
@@ -544,6 +550,23 @@ func resourceAliyunOtsSearchIndexRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if err := d.Set("current_sync_timestamp", idx.SyncStat.CurrentSyncTimestamp); err != nil {
+		return errs.WrapError(err)
+	}
+
+	parts, err := helper.ParseResourceId(d.Id(), 4)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("instance_name", parts[0]); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("table_name", parts[1]); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("index_name", parts[2]); err != nil {
 		return errs.WrapError(err)
 	}
 

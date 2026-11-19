@@ -15,8 +15,6 @@ name: Documentation Checks
       - .github/markdownlint/**
       - .github/workflows/document-check.yml
       - .go-version
-      - go.mod
-      - go.sum
       - .markdown-link-check.json
       - scripts/ci/check_scope.py
       - scripts/ci/test_check_scope.py

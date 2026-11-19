@@ -77,6 +77,12 @@ func ResourceDesktop() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"subnet_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 			"end_user_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -291,6 +297,9 @@ func resourceDesktopCreate(d *schema.ResourceData, meta interface{}) error {
 		request["DesktopName"] = v
 	}
 	request["OfficeSiteId"] = d.Get("office_site_id")
+	if v, ok := d.GetOk("subnet_id"); ok {
+		request["SubnetId"] = v
+	}
 
 	if m, ok := d.GetOk("end_user_ids"); ok {
 		for k, v := range m.([]interface{}) {
@@ -366,6 +375,9 @@ func resourceDesktopRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("desktop_type", object["DesktopType"])
 	d.Set("host_name", object["HostName"])
 	d.Set("office_site_id", object["OfficeSiteId"])
+	if v, ok := object["SubnetId"].(string); ok && v != "" {
+		d.Set("subnet_id", v)
+	}
 	d.Set("end_user_ids", object["EndUserIds"])
 	d.Set("payment_type", convertEcdDesktopPaymentTypeResponse(object["ChargeType"]))
 	d.Set("policy_group_id", object["PolicyGroupId"])

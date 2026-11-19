@@ -10,7 +10,7 @@ description: |-
 
 Provides a Realtime Compute Vvp Instance resource.
 
-For information about Realtime Compute Vvp Instance and how to use it, see [What is Vvp Instance](https://next.api.alibabacloud.com/api/foasconsole/2019-06-01/CreateInstance).
+For information about Realtime Compute Vvp Instance and how to use it, see [What is Vvp Instance](https://api.aliyun.com/api/foasconsole/2021-10-28/CreateInstance?RegionId=cn-hangzhou).
 
 -> **NOTE:** Available since v1.214.0.
 
@@ -74,7 +74,6 @@ resource "alicloud_realtime_compute_vvp_instance" "default" {
 
   vvp_instance_name = "${var.name}-${random_integer.default.result}"
   vpc_id            = data.alicloud_vpcs.default.ids.0
-  zone_id           = var.zone_id
   vswitch_ids = [
     "${data.alicloud_vswitches.default.ids.0}"
   ]
@@ -106,8 +105,8 @@ The following arguments are supported:
 * `vswitch_ids` - (Required, ForceNew) Virtual Switch ID.
 * `vpc_id` - (Required, ForceNew) The VPC ID of the user.
 * `vvp_instance_name` - (Required, ForceNew) The name of the workspace.
-* `zone_id` - (Required, ForceNew) The zone ID of the resource.
 * `tags` - (Optional) The tags of the resource.
+* `zone_id` - (Optional, ForceNew, Deprecated since v2.3.0) The zone ID of the resource. Field `zone_id` has been deprecated from version 2.3.0.
 
 ### `resource_spec`
 

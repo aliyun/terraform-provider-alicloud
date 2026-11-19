@@ -395,10 +395,10 @@ func (s *RamServiceV2) DescribeRamRolePolicyAttachment(id string) (object map[st
 	result, _ := v.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
-		if fmt.Sprint(item["PolicyName"]) != parts[1] {
+		if !strings.EqualFold(fmt.Sprint(item["PolicyName"]), parts[1]) {
 			continue
 		}
-		if fmt.Sprint(item["PolicyType"]) != parts[2] {
+		if !strings.EqualFold(fmt.Sprint(item["PolicyType"]), parts[2]) {
 			continue
 		}
 		return item, nil
@@ -862,10 +862,10 @@ func (s *RamServiceV2) DescribeRamUserPolicyAttachment(id string) (object map[st
 	result, _ := v.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
-		if fmt.Sprint(item["PolicyName"]) != parts[1] {
+		if !strings.EqualFold(fmt.Sprint(item["PolicyName"]), parts[1]) {
 			continue
 		}
-		if fmt.Sprint(item["PolicyType"]) != parts[2] {
+		if !strings.EqualFold(fmt.Sprint(item["PolicyType"]), parts[2]) {
 			continue
 		}
 		return item, nil
@@ -953,10 +953,10 @@ func (s *RamServiceV2) DescribeRamGroupPolicyAttachment(id string) (object map[s
 	result, _ := v.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
-		if fmt.Sprint(item["PolicyName"]) != parts[1] {
+		if !strings.EqualFold(fmt.Sprint(item["PolicyName"]), parts[1]) {
 			continue
 		}
-		if fmt.Sprint(item["PolicyType"]) != parts[2] {
+		if !strings.EqualFold(fmt.Sprint(item["PolicyType"]), parts[2]) {
 			continue
 		}
 		return item, nil
