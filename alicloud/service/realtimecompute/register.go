@@ -50,5 +50,11 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  ResourceRealtimeComputeVvpInstance,
 			},
 		},
+		DataSources: []conns.DataSource{
+			{
+				TypeName: "alicloud_realtime_compute_vvp_instances",
+				Factory:  NewVvpInstancesDataSource,
+			},
+		},
 	}
 }
