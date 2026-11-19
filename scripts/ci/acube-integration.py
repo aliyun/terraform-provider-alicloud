@@ -94,7 +94,8 @@ def planning_diagnostic(reason):
                'AccTest just to satisfy discovery; real coverage is required.')
     elif 'test helper consumers' in reason:
         code = 'ACC002'
-        fix = ('Inspect the named mock/helper receiver and all callers. Keep private test helpers with the owning '
+        fix = ('Find references to the named helper in both the base and head commits. For methods, inspect the '
+               'receiver and interface dispatch. Keep private test helpers with the owning '
                'TestUnit/TestAcc functions; use explicit receiver/interface types where possible. If valid interface '
                'dispatch is still unresolved, provide the caller chain for maintainer review and a scope regression; '
                'do not rename the method or remove the test to bypass impact analysis.')

@@ -56,6 +56,40 @@ func TestUnitDemo(t *testing.T) { unrelated() }
 	}
 }
 
+func TestAccScopeUnusedPrivateTestFunction(t *testing.T) {
+	const dir = "alicloud/service/demo"
+	const file = dir + "/data_source_demo_test.go"
+	const helper = "\nfunc privateHelper() { use(\"old\") }"
+	const base = "package demo\nfunc TestAccDemo(t *testing.T) {}"
+	for _, tc := range []struct {
+		name, before, after string
+		wantTest, blocked   bool
+	}{
+		{"added alongside new AccTest", "package demo", base + helper, true, false},
+		{"edited", base + helper, base + strings.Replace(helper, "old", "new", 1), false, false},
+		{"removed", base + helper, base, false, false},
+		{"old caller", strings.Replace(base, "{}", "{ privateHelper() }", 1) + helper, base, true, false},
+		{"function value caller", base + helper, strings.Replace(base, "{}", "{ use(privateHelper) }", 1) + helper, true, false},
+		{"reference without a test", base, base + helper + "\nvar callback = privateHelper", false, true},
+		{"method", base, base + "\ntype mock struct{}\nfunc (mock) privateHelper() {}", false, true},
+		{"initializer", base, base + "\nvar config = loadConfig()", false, true},
+		{"directive", base, base + "\n  //go:noinline" + helper, true, true},
+		{"unresolved receiver", base, base + "\ntype mock struct{}\nfunc (mock) call() {}\nfunc TestAccMock(t *testing.T) { makeMock().call() }", false, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result := selectScope(fixture(t, map[string]string{file: tc.before}),
+				fixture(t, map[string]string{file: tc.after}), []string{file})
+			gotTest := false
+			for _, name := range result.Packages[dir] {
+				gotTest = gotTest || name == "TestAccDemo"
+			}
+			if gotTest != tc.wantTest || (len(result.Blocked) != 0) != tc.blocked {
+				t.Fatalf("unexpected scope: %+v", result)
+			}
+		})
+	}
+}
+
 func TestAccScopeServiceAndImplementation(t *testing.T) {
 	files := map[string]string{
 		"alicloud/service/demo/service_demo.go": `package demo
@@ -196,7 +230,7 @@ func TestAccDemo(t *testing.T) { shared := func(){}; shared() }
 func TestAccOther(t *testing.T) {}`
 	before := fixture(t, map[string]string{file: old})
 	result := selectScope(before, fixture(t, map[string]string{file: strings.Replace(old, `"old"`, `"new"`, 1)}), []string{file})
-	if len(result.Packages) != 0 || len(result.Blocked) != 1 {
+	if len(result.Packages) != 0 || len(result.Blocked) != 0 {
 		t.Fatalf("local variable mistaken for shared helper: %+v", result)
 	}
 	result = selectScope(before, fixture(t, map[string]string{file: strings.Replace(old, "setup()", "newSetup()", 1)}), []string{file})

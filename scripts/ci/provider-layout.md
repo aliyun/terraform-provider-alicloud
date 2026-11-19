@@ -104,3 +104,9 @@ GO111MODULE=off GOWORK=off go test ./scripts/ci/accscope
 GO111MODULE=off GOWORK=off go test scripts/ci/changed-unit-tests.go scripts/ci/changed-unit-tests_test.go
 python3 -m unittest discover -s scripts/ci -p 'test_acube_*.py'
 ```
+
+An ordinary private function in a *_test.go file with no references in either
+snapshot does not affect AccTest selection. Go lint and file layout still apply.
+This exemption does not cover methods, initializers, files with build or Go
+directives, or snapshots using go:linkname. References with no traceable test
+still require review.

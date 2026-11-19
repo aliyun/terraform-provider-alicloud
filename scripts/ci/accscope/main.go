@@ -40,6 +40,7 @@ type declaration struct {
 	assets                              []string
 	test                                bool
 	acc, unit                           bool
+	privateTestFunc                     bool
 }
 
 type snapshot struct {
@@ -263,6 +264,7 @@ func parseSource(s *snapshot, file string, data []byte) error {
 	}
 	directives := ""
 	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimLeft(line, " \t")
 		if strings.HasPrefix(line, "//go:") || strings.HasPrefix(line, "// +build ") {
 			directives += line + "\n"
 		}
@@ -299,6 +301,8 @@ func parseSource(s *snapshot, file string, data []byte) error {
 			file: file, test: strings.HasSuffix(file, "_test.go")}
 		switch decl := node.(type) {
 		case *ast.FuncDecl:
+			d.privateTestFunc = d.test && decl.Recv == nil && decl.Body != nil &&
+				!ast.IsExported(name) && name != "init" && name != "_"
 			if receiver != "" {
 				d.signature = methodSignature(fset, decl.Type)
 			}
@@ -846,6 +850,31 @@ func selectScope(before, after *snapshot, files []string) accScope {
 		}
 	}
 	graphs := []map[string][]edge{reverseGraph(before), reverseGraph(after)}
+	hasLinkname := false
+	for _, snap := range []*snapshot{before, after} {
+		for _, directives := range snap.hazards {
+			hasLinkname = hasLinkname || strings.Contains(directives, "//go:linkname")
+		}
+	}
+	unusedTestFunc := func(old, current *declaration) bool {
+		// Methods may be called through interfaces, and package-level values can run at init.
+		if hasLinkname {
+			return false
+		}
+		for i, d := range []*declaration{old, current} {
+			if d == nil {
+				continue
+			}
+			snap := before
+			if i == 1 {
+				snap = after
+			}
+			if !d.privateTestFunc || snap.hazards[d.file] != "" || len(graphs[i][d.id]) != 0 {
+				return false
+			}
+		}
+		return true
+	}
 	impact := func(seed, reason string, requireResolved bool) (bool, bool) {
 		seen := map[string]bool{}
 		queue := []string{seed}
@@ -921,7 +950,7 @@ func selectScope(before, after *snapshot, files []string) accScope {
 						selectTest(test, reason)
 					}
 				}
-			} else {
+			} else if !unusedTestFunc(old, current) {
 				acc, unit := impact(id, reason, true)
 				if !acc && !unit && !strings.HasPrefix(d.name, "Test") && !strings.HasPrefix(d.name, "Benchmark") && !strings.HasPrefix(d.name, "Fuzz") {
 					blocked["cannot resolve test helper consumers for "+reason+"; manual impact review required"] = true
