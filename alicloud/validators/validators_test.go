@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -84,7 +85,7 @@ func TestValidateAllowedStringSplitValue(t *testing.T) {
 func TestValidateStringConvertInt64(t *testing.T) {
 	_, errors := ValidateStringConvertInt64()(math.MaxInt64, "name")
 	if len(errors) == 0 {
-		t.Fatalf("%q cannot convert to int64", 110)
+		t.Fatalf("%d cannot convert to int64", 110)
 	}
 
 	_, errors = ValidateStringConvertInt64()("abcd", "name")
@@ -99,7 +100,7 @@ func TestValidateStringConvertInt64(t *testing.T) {
 
 	_, errors = ValidateStringConvertInt64()(strconv.FormatInt(math.MaxInt64, 10), "name")
 	if len(errors) != 0 {
-		t.Fatalf("%q can convert to int64", math.MaxInt64)
+		t.Fatalf("%d can convert to int64", math.MaxInt64)
 	}
 
 }
@@ -902,4 +903,249 @@ func TestUnitCommonStringLenAtLeast(t *testing.T) {
 		assert.NotEmpty(t, ws, "In skip mode, violation should produce a warning")
 		assert.Contains(t, ws[0], "expected length of")
 	})
+}
+
+func TestUnitCommonStringLenBetweenRune(t *testing.T) {
+	t.Run("Error_Mode", func(t *testing.T) {
+		resourceSchemaValidationSkipped = false
+		validate := StringLenBetweenRune(0, 4)
+
+		testCases := []struct {
+			name        string
+			value       interface{}
+			expectError bool
+			description string
+		}{
+			{
+				name:        "Valid_Empty",
+				value:       "",
+				expectError: false,
+				description: "empty string is within the 0-4 rune range",
+			},
+			{
+				name:        "Valid_ASCII_Max",
+				value:       "abcd",
+				expectError: false,
+				description: "4 ASCII runes equal the max",
+			},
+			{
+				name:        "Valid_CJK_Max",
+				value:       "中文名称",
+				expectError: false,
+				description: "4 CJK runes equal the max although they occupy 12 bytes",
+			},
+			{
+				name:        "Invalid_ASCII_Too_Long",
+				value:       "abcde",
+				expectError: true,
+				description: "5 ASCII runes exceed the max",
+			},
+			{
+				name:        "Invalid_CJK_Too_Long",
+				value:       "中文名称超",
+				expectError: true,
+				description: "5 CJK runes exceed the max",
+			},
+			{
+				name:        "Invalid_Wrong_Type",
+				value:       12345,
+				expectError: true,
+				description: "non-string type should produce an error",
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				ws, es := validate(tc.value, "field")
+				if tc.expectError {
+					assert.NotEmpty(t, es, tc.description)
+				} else {
+					assert.Empty(t, es, tc.description)
+					assert.Empty(t, ws)
+				}
+			})
+		}
+	})
+
+	t.Run("Warn_Mode", func(t *testing.T) {
+		resourceSchemaValidationSkipped = true
+		defer func() { resourceSchemaValidationSkipped = false }()
+		validate := StringLenBetweenRune(0, 4)
+
+		ws, es := validate("中文名称超", "field")
+		assert.Empty(t, es, "In skip mode, errors should be downgraded to warnings")
+		assert.NotEmpty(t, ws, "In skip mode, violation should produce a warning")
+		assert.Contains(t, ws[0], "expected length of")
+	})
+}
+
+func TestUnitCommonValidateDBConnectionPort(t *testing.T) {
+	testCases := []struct {
+		name        string
+		value       string
+		expectError bool
+		description string
+	}{
+		{
+			name:        "Empty_String",
+			value:       "",
+			expectError: false,
+			description: "empty string is allowed (no validation)",
+		},
+		{
+			name:        "Valid_Boundary_Low",
+			value:       "1000",
+			expectError: false,
+			description: "port 1000 is the minimum valid value",
+		},
+		{
+			name:        "Valid_Boundary_High",
+			value:       "5999",
+			expectError: false,
+			description: "port 5999 is the maximum valid value",
+		},
+		{
+			name:        "Valid_Middle",
+			value:       "3306",
+			expectError: false,
+			description: "port 3306 (MySQL default) should be valid",
+		},
+		{
+			name:        "Invalid_Below_Min",
+			value:       "999",
+			expectError: true,
+			description: "port 999 is below minimum (1000)",
+		},
+		{
+			name:        "Invalid_Above_Max",
+			value:       "6000",
+			expectError: true,
+			description: "port 6000 is above maximum (5999)",
+		},
+		{
+			name:        "Invalid_Zero",
+			value:       "0",
+			expectError: true,
+			description: "port 0 is below minimum",
+		},
+		{
+			name:        "Invalid_Non_Numeric",
+			value:       "abc",
+			expectError: true,
+			description: "non-numeric string should produce parse error",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ws, errors := ValidateDBConnectionPort(tc.value, "port")
+			assert.Empty(t, ws)
+			if tc.expectError {
+				assertHasErrors(t, ws, errors, tc.description)
+			} else {
+				assertNoErrors(t, ws, errors, tc.description)
+			}
+		})
+	}
+}
+
+func TestUnitCommonIntBetween(t *testing.T) {
+	validate := IntBetween(10, 100)
+
+	testCases := []struct {
+		name        string
+		value       interface{}
+		expectError bool
+		description string
+	}{
+		{
+			name:        "Valid_Min",
+			value:       10,
+			expectError: false,
+			description: "minimum value should be valid",
+		},
+		{
+			name:        "Valid_Max",
+			value:       100,
+			expectError: false,
+			description: "maximum value should be valid",
+		},
+		{
+			name:        "Valid_Middle",
+			value:       55,
+			expectError: false,
+			description: "value in middle of range should be valid",
+		},
+		{
+			name:        "Invalid_Below_Min",
+			value:       9,
+			expectError: true,
+			description: "value below minimum should be invalid",
+		},
+		{
+			name:        "Invalid_Above_Max",
+			value:       101,
+			expectError: true,
+			description: "value above maximum should be invalid",
+		},
+		{
+			name:        "Invalid_Wrong_Type",
+			value:       "50",
+			expectError: true,
+			description: "string instead of int should be invalid",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ws, errors := validate(tc.value, "count")
+			assert.Empty(t, ws)
+			if tc.expectError {
+				assert.NotEmpty(t, errors, tc.description)
+			} else {
+				assert.Empty(t, errors, tc.description)
+			}
+		})
+	}
+}
+
+func TestUnitCommonUpperLowerCaseDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name        string
+		oldValue    string
+		newValue    string
+		expected    bool
+		description string
+	}{
+		{
+			name:        "Same_Case_Insensitive",
+			oldValue:    "MySQL",
+			newValue:    "mysql",
+			expected:    true,
+			description: "Same string different case should suppress diff",
+		},
+		{
+			name:        "Different_String",
+			oldValue:    "MySQL",
+			newValue:    "PostgreSQL",
+			expected:    false,
+			description: "Different strings should not suppress diff",
+		},
+		{
+			name:        "Same_String_Same_Case",
+			oldValue:    "MySQL",
+			newValue:    "MySQL",
+			expected:    true,
+			description: "Same string same case should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{}, map[string]interface{}{})
+
+			result := UpperLowerCaseDiffSuppressFunc("key", tc.oldValue, tc.newValue, d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
 }

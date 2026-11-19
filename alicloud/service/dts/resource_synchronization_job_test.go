@@ -1103,7 +1103,7 @@ func dtsJobImportTestClient(t *testing.T, handler http.HandlerFunc) *connectivit
 	endpoint := strings.TrimPrefix(server.URL, "http://")
 	t.Setenv("NO_PROXY", endpoint)
 	config := &connectivity.Config{AccessKey: "test-key", SecretKey: "test-secret", Credential: credential, RegionId: "eu-west-1", AccountType: "test", Protocol: "http", Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true}
-	client, err := config.Client()
+	client, err := connectivity.NewClient(config)
 	if err != nil {
 		t.Fatal(err)
 	}

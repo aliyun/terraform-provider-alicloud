@@ -3,6 +3,7 @@ package ecs
 import (
 	"fmt"
 	"log"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -61,6 +62,7 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
+				ValidateFunc: validateSecurityGroupRuleCidrIp,
 				AtLeastOneOf: []string{"cidr_ip", "ipv6_cidr_ip", "source_security_group_id", "prefix_list_id"},
 			},
 			"ipv6_cidr_ip": {
@@ -596,4 +598,35 @@ func parseSecurityRuleId(d *schema.ResourceData, meta interface{}, index int) (r
 		return ""
 	}
 	return parts[index]
+}
+
+// validateSecurityGroupRuleCidrIp rejects values AuthorizeSecurityGroup and
+// AuthorizeSecurityGroupEgress would accept but later fail to read back, such
+// as comma separated CIDR lists.
+//
+// An empty string is accepted so that a configuration which sets the optional
+// attribute to "" keeps working: d.GetOk already treats "" as unset, so such a
+// rule takes another source attribute or fails at apply time exactly as it did
+// before this validation existed.
+func validateSecurityGroupRuleCidrIp(v interface{}, k string) (ws []string, errors []error) {
+	value, _ := v.(string)
+	if value == "" {
+		return nil, nil
+	}
+	if len(strings.Fields(strings.ReplaceAll(value, ",", " "))) > 1 {
+		return nil, []error{fmt.Errorf("%q must be a single IPv4 address or CIDR block, but got %q; multiple CIDRs are not supported in one security group rule, define one alicloud_security_group_rule resource per CIDR", k, value)}
+	}
+	if ip := net.ParseIP(value); ip != nil {
+		if ip.To4() != nil && !strings.Contains(value, ":") {
+			return nil, nil
+		}
+		return nil, []error{fmt.Errorf("%q must be an IPv4 address or CIDR block, got IPv6 address %q; use \"ipv6_cidr_ip\" for IPv6 rules", k, value)}
+	}
+	if _, _, err := net.ParseCIDR(value); err == nil {
+		if !strings.Contains(value, ":") {
+			return nil, nil
+		}
+		return nil, []error{fmt.Errorf("%q must be an IPv4 address or CIDR block, got IPv6 CIDR block %q; use \"ipv6_cidr_ip\" for IPv6 rules", k, value)}
+	}
+	return nil, []error{fmt.Errorf("%q must be a valid IPv4 address or CIDR block (for example \"0.0.0.0/0\"), got %q", k, value)}
 }

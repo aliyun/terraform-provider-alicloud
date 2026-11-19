@@ -3,98 +3,185 @@ triggers:
   merge_request:
     target-branches:
       - master
-    paths:
-      - '.aoneci/acctest-terraform-basic.yml'
-      - 'alicloud/*.go'
-      - 'alicloud/service/**/*.go'
-  push:
-    paths:
-      - '.aoneci/acctest-terraform-basic.yml'
-      - 'alicloud/*.go'
-      - 'alicloud/service/**/*.go'
+envs:
+  CODE_CI_SHALLOW_RANGE: '1'
+  CODE_HEAD: '${{git.commitId}}'
+  CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
+  CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
+  CODE_PUSH_BEFORE: '${{git.push.beforeSha256 ?: ""}}'
+  CODE_TARGET: '${{git.merge_request.targetBranch ?: ""}}'
+  CODE_DEFAULT_BRANCH: '${{git.defaultBranch}}'
+  CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
+
 jobs:
+  CheckScope:
+    outputs:
+      applicable: ${{ steps.scope.outputs.applicable }}
+    steps:
+      - uses: checkout
+        inputs:
+          fetch-depth: '32'
+      - id: scope
+        name: Check whether this pipeline applies
+        run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          result=0
+          git diff --quiet --no-ext-diff "$DIFF_BASE" "$DIFF_HEAD" -- \
+            ':(glob)scripts/ci/**' \
+            ':(glob)scripts/local-ci-check.sh' \
+            ':(glob)scripts/vetcheck.sh' \
+            ':(glob)scripts/gofmtcheck.sh' \
+            ':(glob)scripts/goimportscheck.sh' \
+            ':(glob)scripts/errcheck.sh' \
+            ':(glob)scripts/compatibility/**' \
+            ':(glob)scripts/title/**' \
+            ':(glob)scripts/release/**' \
+            ':(glob)scripts/internal/**' \
+            ':(glob)GNUmakefile' \
+            ':(glob)scripts/collection-order/**' \
+            ':(glob)go.mod' \
+            ':(glob)go.sum' \
+            ':(glob).go-version' \
+            ':(glob)**/*.go' \
+            ':(glob).aoneci/**' || result=$?
+          case "$result" in
+            0)
+              echo 'No files in scope; this check passes without running Go jobs.'
+              printf '%s' no > "$AONE_CI_OUTPUTS/applicable"
+              ;;
+            1) printf '%s' yes > "$AONE_CI_OUTPUTS/applicable" ;;
+            *) exit "$result" ;;
+          esac
+  PipelineSafety:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
+    steps:
+      - uses: checkout
+      - uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - name: Range and release reconciliation regression
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts/ci -p test_aone_range.py
+          python3 -m unittest discover -s scripts/ci -p test_acube_integration.py
+          python3 -m unittest discover -s scripts/ci -p test_review_ci.py
+          python3 -m unittest discover -s scripts/ci -p test_acube_layout.py
+          python3 -m unittest discover -s scripts/ci -p test_aone_go_checks.py
+          python3 -m unittest discover -s scripts/release -p 'test_*.py'
+          bash scripts/ci/resolve-change-range_test.sh
+          python3 -m unittest discover -s scripts/ci -p test_multi_commit_pr.py
+          python3 -m unittest discover -s scripts/ci -p test_check_scope.py
+          python3 -m unittest discover -s scripts/ci -p test_document_checks.py
+          go test ./scripts/compatibility ./scripts/title
+  ProviderLayout:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
+    steps:
+      - uses: checkout
+        inputs:
+          fetch-depth: '32'
+      - uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - name: Check new service file layout
+        run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          GO111MODULE=off GOWORK=off go run scripts/ci/accscope/main.go scripts/ci/accscope/layout.go \
+            -base "$DIFF_BASE" -head "$DIFF_HEAD" -layout-only
   BreakingChange:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
     steps:
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - uses: checkout
         inputs:
-          # Checkout as many commits as needed for the diff
-          fetch-depth: '2'
+          fetch-depth: '32'
       - name: Attribute Breaking Change Check
         run: |
-          git diff HEAD^ HEAD > diff.out
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
           go run scripts/compatibility/breaking_change_check.go -fileNames="diff.out"
-  Consistency:
-    steps:
-      - name: Setup Go
-        uses: setup-env
-        inputs:
-          go-version: '1.24.0'
-      - uses: checkout
-        inputs:
-          # Checkout as many commits as needed for the diff
-          fetch-depth: '2'
-      - name: Attribute Consistency Check
-        run: |
-          git diff HEAD^ HEAD > diff.out
-          go run scripts/consistency/consistency_check.go -fileNames="diff.out"
   Formatter:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
     steps:
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - uses: checkout
         inputs:
           # Checkout as many commits as needed for the diff
-          fetch-depth: '2'
-      - name: Get dependencies
+          fetch-depth: '0'
+      - name: Format changed Go files
         run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
           go install golang.org/x/tools/cmd/goimports@v0.24.0
-          go mod tidy
-      - name: Golang Formatter Check
-        run: |
-          if [[ $(git diff --name-only HEAD^ HEAD | grep -c "^alicloud/") -lt 1 ]]; then
-            echo -e "\033[33m[WARNING]\033[0m there are no go files were changed, skipped."
-            exit 0
-          fi
-          exitCode=0
-          echo "==> Checking that code complies with gofmt and goimports requirements..."
-          diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/")
-          for fileName in ${diffFiles[@]};
-          do
-              if [[ ! -f ${filename} ]]; then
-                  continue
-              fi
-              goimpFile=$(goimports -l ${fileName})
-              if [[ -n ${goimpFile} ]]; then
-                goimports -d ${fileName}
-                exitCode=1
-              fi
-              gofmtFile=$(gofmt -l ${fileName})
-              if [[ -n ${gofmtFile} ]]; then
-                gofmt -d ${fileName}
-                exitCode=1
-              fi
-          done
-          if [[ ${exitCode} -gt 0 ]]; then
-              echo -e "\n\033[31m[Error]\033[0m==> gofmt or goimports needs running on the above files. You can use the command: \`make fmt\` to reformat code. \033[0m"
-              exit 1
-          fi
-          echo -e "==> PASS"
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          python3 scripts/ci/run-format-check.py
   Compile:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
     steps:
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - uses: checkout
         inputs:
-          # Checkout as many commits as needed for the diff
-          fetch-depth: '2'
-      - name: vet
+          fetch-depth: '32'
+      - name: Vet changed Go packages
         run: |
-          make vet
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          python3 scripts/ci/run-vet-check.py
+
+  ProductionBuild:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
+    steps:
+      - uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - uses: checkout
+        inputs:
+          fetch-depth: '1'
+      - name: Build root provider main
+        run: |
+          set -euo pipefail
+          make provider-build
+      - name: Check production dependency graph
+        run: |
+          set -euo pipefail
+          make check-production-deps
+
+  # Isolated CLI Verify Import steps preserve the prior apply for reorder checks.
+  TypeListOrderCoverage:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
+    steps:
+      - uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - uses: checkout
+        inputs:
+          fetch-depth: '0'
+      - run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          go test ./scripts/collection-order/internal/coverage
+          python3 scripts/ci/run-provider-check.py collection

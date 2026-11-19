@@ -278,9 +278,11 @@ The following arguments are supported:
 
   -> **NOTE:**  Valid values for PolarDB for MySQL Enterprise Edition: 50 to 100000.It is valid when pay_type is `PrePaid`.
 * `storage_pay_type` - (Optional, ForceNew, Computed, Available since v1.210.0) The billing method of the storage. Valid values `PostPaid`, `PrePaid`.
-* `hot_standby_cluster` - (Optional, Computed, ForceNew, Available since v1.203.0) Whether to enable the hot standby cluster. Valid values are `ON`, `OFF`, `EQUAL`.
+* `hot_standby_cluster` - (Optional, Computed, Type: String, Available since v1.203.0) Whether to enable the hot standby cluster. Valid values are `ON`, `OFF`, `EQUAL`.
 
   -> **NOTE:** From version 1.249.0, `hot_standby_cluster` can be set to `EQUAL`, and this value is only valid for MySQL.
+
+  -> **NOTE:** Available since v2.3.0, switching `hot_standby_cluster` from `OFF` to `ON` is performed in place via `ModifyDBClusterArch` and keeps the cluster ID unchanged. The in-place upgrade applies only to PolarDB MySQL clusters (`DBType=MySQL` and `DeployUnit=Advanced`), and clusters that already have the hot standby enabled cannot switch via this API. Before the call, the provider verifies the live `DBType` and rejects any cluster that is not MySQL; for `DeployUnit`, only a returned value other than `Advanced` is rejected — the attribute is not documented in the cluster attribute response, so a missing, empty, or non-string `DeployUnit` is not verified client-side and is left to the server-side validation of `ModifyDBClusterArch`. Any other transition — turning the hot standby `OFF`, any change involving `EQUAL` (the `equal` mode has been retired by `ModifyDBClusterArch`), or a non-MySQL cluster — is not supported in place and forces cluster recreation. On provider versions earlier than v2.3.0, every `hot_standby_cluster` change forces cluster recreation.
 * `standby_az` - (Optional, Computed, Available since 1.249.0) The availability zone where the hot standby cluster is stored, takes effect when `hot_standby_cluster` is `ON` or `EQUAL`.
 
   -> **NOTE:** `standby_az` is required when `hot_standby_cluster` is `EQUAL`.

@@ -82,6 +82,10 @@ func DataSourceVpcAssociations() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"status": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -205,6 +209,7 @@ func dataSourceVpcAssociationsRead(d *schema.ResourceData, meta interface{}) err
 			"association_node_type": object["AssociationNodeType"],
 			"vpc_owner_id":          fmt.Sprint(object["VpcOwnerId"]),
 			"allowed_prefixes_mode": object["AllowedPrefixesMode"],
+			"description":           object["Description"],
 			"status":                object["Status"],
 			"create_time":           object["GmtCreate"],
 			"modify_time":           object["GmtModified"],

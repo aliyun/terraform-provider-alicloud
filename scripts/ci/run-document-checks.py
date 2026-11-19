@@ -4,6 +4,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
+import re
 import subprocess
 import shlex
 from check_scope import changed_paths
@@ -12,6 +13,8 @@ import time
 
 GROUPS = {
     "node": ("markdown-link", "markdown-lint"),
+    "spelling": ("misspell",),
+    "format": ("terrafmt",),
     "go": ("basic-check", "Content", "misspell", "terrafmt"),
 }
 
@@ -39,10 +42,7 @@ COMMANDS = {'markdown-link': "find website/docs -type f -name '*.md' -print0 |\n
                   '  echo "No Markdown files changed."\n'
                   '  exit 0\n'
                   'fi\n'
-                  'npx --yes markdownlint-cli@0.47.0 \\\n'
-                  '  --config .github/markdownlint/website-docs.json \\\n'
-                  '  --rules .github/markdownlint/rules/note-attachment.js \\\n'
-                  '  -- "${markdown_files[@]}"\n',
+                  'python3 scripts/ci/markdown-lint.py "${markdown_files[@]}"\n',
  'basic-check': 'bash scripts/basic-check.sh',
  'misspell': '"${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}/misspell" \\\n'
              '  -error \\\n'
@@ -71,7 +71,8 @@ def scoped_commands(paths, full=False):
     full = full or any(p in {'.go-version', '.markdown-link-check.json'}
                        or p.startswith(('.github/markdownlint/', 'scripts/ci/',
                                         'scripts/document/', 'scripts/basic-check.sh',
-                                        '.github/workflows/document-check.yml')) for p in paths)
+                                        '.github/workflows/document-check.yml',
+                                        '.aoneci/document-check.yml')) for p in paths)
     # Content and Markdown lint were already diff-based; do not newly enforce
     # historical findings in unchanged pages when global checks fall back.
     docs = [p for p in paths if p.startswith('website/docs/') and Path(p).is_file()]
@@ -84,8 +85,7 @@ def scoped_commands(paths, full=False):
         [p for p in paths if p.startswith('website/docs/') and p.endswith('.markdown') and Path(p).is_file()],
         'npx --yes markdown-link-check@3.14.2 --quiet --verbose --config .markdown-link-check.json "$doc"') + '\n'
     commands['markdown-lint'] = ('git diff --check "$DIFF_BASE" "$DIFF_HEAD" -- website/docs\n' +
-        file_loop(markdown, 'npx --yes markdownlint-cli@0.47.0 --config .github/markdownlint/website-docs.json '
-                  '--rules .github/markdownlint/rules/note-attachment.js -- "$doc"'))
+        file_loop(markdown, 'python3 scripts/ci/markdown-lint.py "$doc"'))
     commands['Content'] = content_command([p for p in docs if p != PROVIDER_INDEX_DOC])
     if not full:
         commands['misspell'] = file_loop(docs,
@@ -103,11 +103,25 @@ def run_checks(checks, summary_path=None):
             name, command = item
             log = Path(directory) / (name + ".log")
             started = time.monotonic()
-            with log.open("w") as stream:
-                process = subprocess.run(
-                    ["bash", "-e", "-o", "pipefail", "-c", command],
-                    stdout=stream, stderr=subprocess.STDOUT, check=False,
-                )
+            for attempt in range(3):
+                with log.open("a") as stream:
+                    offset = stream.tell()
+                    process = subprocess.run(
+                        ["bash", "-e", "-o", "pipefail", "-c", command],
+                        stdout=stream, stderr=subprocess.STDOUT, check=False,
+                    )
+                with log.open(errors="replace") as stream:
+                    stream.seek(offset)
+                    output = stream.read()
+                statuses = re.findall(r'^\s*\[[^\]]+\].*?Status:\s*(\d+)', output, re.MULTILINE)
+                transient = (statuses and all(status == '0' for status in statuses)
+                             and re.search(r'\b(ETIMEDOUT|ECONNRESET|EAI_AGAIN)\b', output))
+                if process.returncode == 0 or name != 'markdown-link' or not transient or attempt == 2:
+                    break
+                delay = (2, 5)[attempt]
+                with log.open("a") as stream:
+                    stream.write(f'Network failure: retrying markdown-link ({attempt + 2}/3) in {delay}s.\n')
+                time.sleep(delay)
             return name, process.returncode, time.monotonic() - started, log
 
         with ThreadPoolExecutor(max_workers=len(checks)) as pool:

@@ -2,6 +2,7 @@
 package expressconnectrouter
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
@@ -47,10 +48,50 @@ func ResourceExpressConnectRouter() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validators.StringMatch(regexp.MustCompile("^.{0,256}$"), "Represents the description of the leased line gateway."),
 			},
+			"disabled_route_entries": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"destination_cidr_block": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"nexthop_instance_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 			"ecr_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validators.StringMatch(regexp.MustCompile("^.{0,128}$"), "Name of the Gateway representing the leased line"),
+			},
+			"granted_instances": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"node_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"node_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"node_region_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"node_owner_uid": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
 			},
 			"regions": {
 				Type:     schema.TypeList,
@@ -184,6 +225,106 @@ func resourceExpressConnectRouterRead(d *schema.ResourceData, meta interface{}) 
 		return errs.WrapError(err)
 	}
 
+	// disabled_route_entries is a read-only view of the route entries that are
+	// currently disabled on the ECR, listed via DescribeDisabledExpressConnectRouterRouteEntries.
+	// It is a supplementary collection added after the resource shipped. Per R5.3
+	// the only legitimate error swallowed in Read is NotFound (R4.18); a 403
+	// permission error from this supplementary call must propagate so the caller
+	// learns the RAM role lacks
+	// expressconnectrouter:DescribeDisabledExpressConnectRouterRouteEntries,
+	// rather than silently leaving the computed field unset and reporting success.
+	disabledRouteEntriesMaps := make([]map[string]interface{}, 0)
+	nextToken := ""
+	seenRouteTokens := make(map[string]struct{})
+	for {
+		routeResp, err := expressConnectRouterServiceV2.DescribeDescribeDisabledExpressConnectRouterRouteEntries(d.Id(), nextToken)
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		if list, ok := routeResp["DisabledRouteEntryList"].([]interface{}); ok {
+			for _, raw := range list {
+				item, ok := raw.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				disabledRouteEntriesMaps = append(disabledRouteEntriesMaps, map[string]interface{}{
+					"destination_cidr_block": item["DestinationCidrBlock"],
+					"nexthop_instance_id":    item["NexthopInstanceId"],
+				})
+			}
+		}
+		if nt, ok := routeResp["NextToken"].(string); ok && nt != "" {
+			if _, seen := seenRouteTokens[nt]; seen {
+				return errs.WrapErrorf(fmt.Errorf("the server repeated NextToken %q", nt), errs.DefaultErrorMsg, d.Id(), "DescribeDisabledExpressConnectRouterRouteEntries", errs.AlibabaCloudSdkGoERROR)
+			}
+			seenRouteTokens[nt] = struct{}{}
+			nextToken = nt
+		} else {
+			break
+		}
+	}
+	d.Set("disabled_route_entries", disabledRouteEntriesMaps)
+
+	// granted_instances is a read-only view of the network instances granted to
+	// the ECR, listed via DescribeInstanceGrantedToExpressConnectRouter. As with
+	// disabled_route_entries, this is a supplementary collection added after the
+	// resource shipped. Per R5.3 the only legitimate error swallowed in Read is
+	// NotFound (R4.18); a 403 permission error from this call must propagate so
+	// the caller learns the RAM role lacks
+	// expressconnectrouter:DescribeInstanceGrantedToExpressConnectRouter, rather
+	// than silently leaving the computed field unset and reporting success.
+	grantedInstancesMaps := make([]map[string]interface{}, 0)
+	nextToken = ""
+	seenGrantedTokens := make(map[string]struct{})
+	for {
+		grantResp, err := expressConnectRouterServiceV2.DescribeDescribeInstanceGrantedToExpressConnectRouter(d.Id(), nextToken)
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		if list, ok := grantResp["EcrGrantedInstanceList"].([]interface{}); ok {
+			for _, raw := range list {
+				item, ok := raw.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				grantedInstance := map[string]interface{}{
+					"node_id":        item["NodeId"],
+					"node_type":      item["NodeType"],
+					"node_region_id": item["NodeRegionId"],
+				}
+				if ownerUID, ok := item["NodeOwnerUid"]; ok && ownerUID != nil {
+					// NodeOwnerUid is an account ID returned as a JSON number. The
+					// tea-rpc client decodes response bodies with json.Decoder.UseNumber,
+					// so numbers arrive as json.Number (a string-backed type) rather
+					// than float64; that preserves the full precision of UIDs which
+					// exceed 2^53 (e.g. 9007199254740993) and would otherwise be
+					// rendered in scientific notation or truncated. Handle the type
+					// explicitly so the guarantee does not depend on fmt's implicit
+					// String conversion, and pass a string response through unchanged.
+					switch val := ownerUID.(type) {
+					case json.Number:
+						grantedInstance["node_owner_uid"] = val.String()
+					case string:
+						grantedInstance["node_owner_uid"] = val
+					default:
+						grantedInstance["node_owner_uid"] = fmt.Sprint(val)
+					}
+				}
+				grantedInstancesMaps = append(grantedInstancesMaps, grantedInstance)
+			}
+		}
+		if nt, ok := grantResp["NextToken"].(string); ok && nt != "" {
+			if _, seen := seenGrantedTokens[nt]; seen {
+				return errs.WrapErrorf(fmt.Errorf("the server repeated NextToken %q", nt), errs.DefaultErrorMsg, d.Id(), "DescribeInstanceGrantedToExpressConnectRouter", errs.AlibabaCloudSdkGoERROR)
+			}
+			seenGrantedTokens[nt] = struct{}{}
+			nextToken = nt
+		} else {
+			break
+		}
+	}
+	d.Set("granted_instances", grantedInstancesMaps)
+
 	return nil
 }
 
@@ -208,86 +349,6 @@ func resourceExpressConnectRouterUpdate(d *schema.ResourceData, meta interface{}
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
-	}
-
-	if update {
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
-			if err != nil {
-				if helper.NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			logs.AddDebug(action, response, request)
-			return nil
-		})
-		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
-		}
-	}
-	update = false
-	action = "EnableExpressConnectRouterRouteEntries"
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["EcrId"] = d.Id()
-	request["ClientToken"] = helper.BuildClientToken(action)
-	if d.HasChange("disabled_route_entries") {
-		update = true
-		jsonPathResult, err := jsonpath.Get("$.destination_cidr_block", d.Get("disabled_route_entries"))
-		if err == nil {
-			request["DestinationCidrBlock"] = jsonPathResult
-		}
-	}
-
-	if d.HasChange("disabled_route_entries") {
-		update = true
-		jsonPathResult1, err := jsonpath.Get("$.nexthop_instance_id", d.Get("disabled_route_entries"))
-		if err == nil {
-			request["NexthopInstanceId"] = jsonPathResult1
-		}
-	}
-
-	if update {
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
-			if err != nil {
-				if helper.NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			logs.AddDebug(action, response, request)
-			return nil
-		})
-		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
-		}
-	}
-	update = false
-	action = "DisableExpressConnectRouterRouteEntries"
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["EcrId"] = d.Id()
-	request["ClientToken"] = helper.BuildClientToken(action)
-	if d.HasChange("disabled_route_entries") {
-		update = true
-		jsonPathResult, err := jsonpath.Get("$.destination_cidr_block", d.Get("disabled_route_entries"))
-		if err == nil {
-			request["DestinationCidrBlock"] = jsonPathResult
-		}
-	}
-
-	if d.HasChange("disabled_route_entries") {
-		update = true
-		jsonPathResult1, err := jsonpath.Get("$.nexthop_instance_id", d.Get("disabled_route_entries"))
-		if err == nil {
-			request["NexthopInstanceId"] = jsonPathResult1
-		}
 	}
 
 	if update {

@@ -1,4 +1,54 @@
-## 2.3.0 (Unreleased)
+## 2.4.0 (Unreleased)
+
+## 2.3.0 (November 19, 2026)
+
+NOTES:
+
+- resource/alicloud_rocketmq_instance: destroying a Subscription instance now requests an immediate refund and waits for release. Terraform retains the instance in state if it cannot confirm the refund. Review prepaid instances in destroy plans before applying.
+- resource/alicloud_security_group_rule: `cidr_ip` accepts a single IPv4 address or CIDR. Split configurations containing multiple CIDRs into one rule per CIDR.
+- resource/alicloud_slb_domain_extension: use `listener_port` for new configurations. The existing `frontend_port` argument is deprecated. Specify exactly one of the two.
+- resource/alicloud_realtime_compute_vvp_instance: the provider now uses the October 2021 API. The `zone_id` argument is deprecated. ([#11598](https://github.com/aliyun/terraform-provider-alicloud/pull/11598))
+
+FEATURES:
+
+- **New Resource:** `alicloud_cs_auto_repair_policy` ([#11593](https://github.com/aliyun/terraform-provider-alicloud/pull/11593))
+- **New Resource:** `alicloud_slb_listener_acl_attachment`
+- **New Data Source:** `alicloud_cs_auto_repair_policies` ([#11593](https://github.com/aliyun/terraform-provider-alicloud/pull/11593))
+- **New Data Source:** `alicloud_esa_site_environments` ([#11592](https://github.com/aliyun/terraform-provider-alicloud/pull/11592))
+- **New Data Source:** `alicloud_threat_detection_sca_details` ([#11443](https://github.com/aliyun/terraform-provider-alicloud/pull/11443))
+
+ENHANCEMENTS:
+
+- resource/alicloud_cs_kubernetes_node_pool: bind an auto repair policy with `auto_repair_policy_id` and configure concurrent repair and unhealthy node thresholds. The legacy `restart_node` setting is deprecated. ([#11593](https://github.com/aliyun/terraform-provider-alicloud/pull/11593))
+- resource/alicloud_cs_managed_kubernetes and data-source/alicloud_cs_kubernetes_version: configure and query the Kubernetes version support policy. ([#11509](https://github.com/aliyun/terraform-provider-alicloud/pull/11509))
+- data-source/alicloud_cs_clusters: expose cluster `connections` when `enable_details` is enabled.
+- data-source/alicloud_cs_kubernetes_addons: fetch installed add-ons in batches and apply ID and name filters earlier. ([#11599](https://github.com/aliyun/terraform-provider-alicloud/pull/11599))
+- resource/alicloud_disk, resource/alicloud_ecs_disk and their data sources: support Regional ESSD disks (`cloud_regional_disk_auto`). ([#11583](https://github.com/aliyun/terraform-provider-alicloud/pull/11583))
+- resource/alicloud_ecd_desktop: support `subnet_id`. Data-source/alicloud_ecd_desktops now returns disk details. ([#11600](https://github.com/aliyun/terraform-provider-alicloud/pull/11600), [#11602](https://github.com/aliyun/terraform-provider-alicloud/pull/11602))
+- resource/alicloud_eci_container_group: support `acr_registry_info.arn_service` and `arn_user` for pulling images across accounts. ([#11601](https://github.com/aliyun/terraform-provider-alicloud/pull/11601))
+- resource/alicloud_express_connect_router_express_connect_router: expose `disabled_route_entries` and `granted_instances`.
+- resource/alicloud_express_connect_router_vpc_association: manage the association description and allowed-prefix mode. The VPC associations data source also returns the description.
+- resource/alicloud_ots_table: support auto-increment primary keys and local transactions. Resource/alicloud_ots_tunnel now supports `start_offset`, `end_offset` and `start_offset_flag` for Stream tunnels.
+- resource/alicloud_polardb_cluster: upgrade `hot_standby_cluster` from `OFF` to `ON` in place on eligible PolarDB for MySQL clusters. Other transitions still require replacement.
+- resource/alicloud_polardb_endpoint: support `scc_mode`. Resource/alicloud_polardb_parameter_group now supports `resource_group_id`.
+- resource/alicloud_rocketmq_instance: accept international commodity codes.
+- data-source/alicloud_slb_listeners: expose each listener's ID in the format accepted by `alicloud_slb_listener` import.
+- resource/alicloud_ssl_certificates_service_certificate and resource/alicloud_cas_certificate: expose `cert_identifier`.
+- resource/alicloud_threat_detection_instance: support `ai_digital`, `image_scan` and `cspm_instance`. ([#11596](https://github.com/aliyun/terraform-provider-alicloud/pull/11596))
+- resource/alicloud_vpn_pbr_route_entry: support `description` and `priority`.
+
+BUG FIXES:
+
+- resource/alicloud_cr_ee_instance: prevent an empty instance list on the international site from causing Terraform to plan a replacement.
+- resource/alicloud_db_instance: skip invalid `auto_renew_period` and `optimized_writes` values when refreshing state.
+- resource/alicloud_ecs_launch_template and resource/alicloud_launch_template: preserve system disk encryption during updates.
+- resource/alicloud_ots_search_index: correctly restore the instance name, table name, index name and TTL on import. ([#11586](https://github.com/aliyun/terraform-provider-alicloud/pull/11586))
+- resource/alicloud_polardb_cluster and resource/alicloud_polardb_zonal_db_cluster: return non-retryable update errors to Terraform, including errors from zonal cluster storage updates. ([#11590](https://github.com/aliyun/terraform-provider-alicloud/pull/11590), [#11591](https://github.com/aliyun/terraform-provider-alicloud/pull/11591))
+- resource/alicloud_ram_user_policy_attachment, resource/alicloud_ram_role_policy_attachment and resource/alicloud_ram_group_policy_attachment: match policy names case-insensitively. ([#11595](https://github.com/aliyun/terraform-provider-alicloud/pull/11595))
+- resource/alicloud_sls_collection_policy: detect removal of `resource_directory`.
+- resource/alicloud_tag_created_by and resource/alicloud_governance_service_activation: use the Terraform Plugin Framework's built-in timeout handling. ([#11587](https://github.com/aliyun/terraform-provider-alicloud/pull/11587))
+- resource/alicloud_vpc_ipv6_gateway: match the service's length and URL-prefix restrictions for the gateway name and description.
+- provider: build with Go 1.26.10, which includes a security fix for `crypto/x509`.
 
 ## 2.2.0 (November 6, 2026)
 

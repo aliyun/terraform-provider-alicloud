@@ -2,6 +2,9 @@
 // changed files: every registered entity a changed provider source file
 // implements must be announced in the title, docs-only and testcase-only
 // changes must say so, and no title may truncate with an ellipsis.
+// New-entity names may share a prefix using one explicit suffix group,
+// e.g. alicloud_sandbox_template{,_cache}. Every expanded name is checked
+// separately and Resource/Data Source declarations remain kind-specific.
 //
 // The changed files and their statuses come from `git diff --name-status`
 // between the -base and -head commits, so the gate needs no diff file
@@ -19,7 +22,7 @@
 // move with the `resource/<name>:` form, the way PR #10817 and #10831
 // did. Ephemeral, action and list registrations have no house title form
 // yet; they only clear the docs-only and testcase-only states, and so do
-// register.go and shared helper files that implement no registration.
+// register.go and shared provider Go files that implement no registration.
 //
 // A whole-product migration can name too many entities for one title —
 // the per-entity fragments ran the largest packages (RAM, ResourceManager,
@@ -31,16 +34,16 @@
 // never a new entity), and the marker's product must match. New entities,
 // flat entities and a cross-product mix keep demanding their declarations,
 // so the marker is a scoped shortcut, not a "migrate" bypass. The base
-// index also reads the root alicloud/provider.go so a public alias
-// registered there (Quotas #11288) is announced as modified when it moves
-// into a service register, not as new.
+// index also reads the SDKv2 provider (or the historical root provider) so a
+// public alias registered there (Quotas #11288) is announced as modified when
+// it moves into a service register, not as new.
 //
 // The base index is kind-aware: a Resource and a Data Source may share a
 // type name — it is legal and common in the Provider — so the index keeps
 // the two kinds apart. A migration that moves a root DataSource alias into
 // a service Resource register, or vice versa, must announce the new kind,
-// not waive it behind migrate/<product>:. The root alicloud/provider.go
-// DataSourcesMap yields data sources and ResourcesMap yields resources, so
+// not waive it behind migrate/<product>:. The SDKv2 provider DataSourcesMap
+// yields data sources and ResourcesMap yields resources, so
 // ProviderRegisteredNames returns the kind each map belongs to.
 //
 // The gate runs as the base-restored copy of itself in CI — the workflows
@@ -297,8 +300,8 @@ func resolveLines(path string) []string {
 
 // baseIndex is the set of provider entities that existed at the base
 // commit, in either layout: the flat source files directly, the
-// registrations of every product register.go, and the root
-// alicloud/provider.go public aliases. It decides whether a service entity
+// registrations of every product register.go, and the SDKv2 provider's
+// public aliases. It decides whether a service entity
 // is announced as new or as existing. The index is kind-aware: resources
 // and data sources are kept in separate maps, because a Resource and a
 // Data Source may share a type name, and a same-name collision must not
@@ -328,11 +331,10 @@ func (b *baseIndex) has(typeName string, dataSource bool) bool {
 
 // loadBaseIndex builds the entity index of one base commit from git: the
 // flat sources directly under alicloud/, every register.go under
-// alicloud/service/ and alicloud/provider/core, and the root
-// alicloud/provider.go whose DataSourcesMap and ResourcesMap register the
-// public aliases the flat layout keeps at the provider root. A base without
-// the split layout lists no products and simply carries the flat and root
-// names.
+// alicloud/service/ and alicloud/provider/core, and the SDKv2 provider whose
+// DataSourcesMap and ResourcesMap register public aliases. Historical bases
+// fall back to the root provider path. A base without the split layout lists
+// no products and simply carries the flat and provider-registered names.
 func loadBaseIndex(base string) (*baseIndex, error) {
 	flat, err := gitLines("ls-tree", "--name-only", base, "--", "alicloud/")
 	if err != nil {
@@ -353,11 +355,13 @@ func loadBaseIndex(base string) (*baseIndex, error) {
 			sources[path] = src
 		}
 	}
-	// The root provider.go registers aliases (Quotas #11288) that no flat
+	// The SDKv2 provider registers aliases (Quotas #11288) that no flat
 	// filename stem and no service register.go carries; without them a
 	// migration that moves such an alias into a service register is
-	// misannounced as new. A base predating provider.go simply has none.
-	providerSrc, err := exec.Command("git", "show", base+":alicloud/provider.go").Output()
+	// misannounced as new. Older base commits keep them at the root path.
+	providerSrc, err := splitlayout.ReadProviderSourceFrom(func(path string) ([]byte, error) {
+		return exec.Command("git", "show", base+":"+path).Output()
+	})
 	if err != nil {
 		providerSrc = nil
 	}
@@ -365,9 +369,9 @@ func loadBaseIndex(base string) (*baseIndex, error) {
 }
 
 // baseIndexFromSources builds the entity index from the flat source paths,
-// the register.go sources of one tree and the root provider.go source; the
+// the register.go sources of one tree and the SDKv2 provider source; the
 // git plumbing in loadBaseIndex only gathers those. Flat stems, register
-// entries and root aliases are all filed by kind, so a same-name
+// entries and provider aliases are all filed by kind, so a same-name
 // Resource/DataSource collision never lets one kind satisfy the other.
 func baseIndexFromSources(flatFiles []string, registers map[string][]byte, providerSrc []byte) *baseIndex {
 	index := &baseIndex{resources: make(map[string]bool), dataSources: make(map[string]bool), others: make(map[string]bool)}
@@ -512,6 +516,52 @@ func aggregateMarker(prTitle string) string {
 	return m[1]
 }
 
+var newDeclarationRe = regexp.MustCompile(`New (Resource|Data Source): `)
+var newDeclarationTokenRe = regexp.MustCompile(`^[^\s;]+`)
+var newNamePrefixRe = regexp.MustCompile(`^alicloud_[a-z0-9_]+`)
+var compactNewNameRe = regexp.MustCompile(`^(alicloud_[a-z0-9_]+)\{([a-z0-9_,]*)\}$`)
+
+// newDeclarations parses exact, kind-aware entity names. One suffix group
+// is a lossless spelling shortcut, not a wildcard or product-wide waiver.
+// The empty suffix explicitly includes the prefix itself. Nested groups,
+// ranges, wildcards, duplicate choices and incomplete groups are rejected.
+func newDeclarations(prTitle string) (map[string]bool, bool) {
+	declared := make(map[string]bool)
+	matches := newDeclarationRe.FindAllStringSubmatchIndex(prTitle, -1)
+	for i, match := range matches {
+		end := len(prTitle)
+		if i+1 < len(matches) {
+			end = matches[i+1][0]
+		}
+		kind := prTitle[match[2]:match[3]]
+		token := strings.TrimSuffix(newDeclarationTokenRe.FindString(prTitle[match[1]:end]), ",")
+		key := "New " + kind + ": "
+		if !strings.ContainsAny(token, "{}") {
+			if name := newNamePrefixRe.FindString(token); name != "" {
+				declared[key+name] = true
+			}
+			continue
+		}
+		group := compactNewNameRe.FindStringSubmatch(token)
+		if group == nil {
+			return nil, false
+		}
+		suffixes := strings.Split(group[2], ",")
+		if len(suffixes) < 2 {
+			return nil, false
+		}
+		seen := make(map[string]bool)
+		for _, suffix := range suffixes {
+			if seen[suffix] {
+				return nil, false
+			}
+			seen[suffix] = true
+			declared[key+group[1]+suffix] = true
+		}
+	}
+	return declared, true
+}
+
 // checkTitle enforces the title conventions: every registered entity a
 // changed source file implements must be announced in the title — the
 // new-entity form for entities the base did not know, the modified form
@@ -532,6 +582,10 @@ func checkTitle(prTitle string, files []titleFile) bool {
 	}
 
 	agg := parseAggregate(prTitle, files)
+	declared, validDeclarations := newDeclarations(prTitle)
+	if !validDeclarations {
+		reportError("Invalid compact new-entity declaration; use one explicit suffix group, for example New Resource: alicloud_name{,_cache}.")
+	}
 
 	docsOnly, testcaseOnly := true, true
 	docsChanged, testcaseChanged := false, false
@@ -542,18 +596,18 @@ func checkTitle(prTitle string, files []titleFile) bool {
 		case file.docs:
 			docsChanged = true
 			testcaseOnly = false
-		case file.service, file.flat:
+		case strings.HasPrefix(file.name, "alicloud/") && strings.HasSuffix(file.name, ".go"), file.service, file.flat:
 			docsOnly = false
 			testcaseOnly = false
 		}
 		for _, e := range file.entities {
 			if !e.existing {
 				if e.dataSource {
-					if !strings.Contains(prTitle, "New Data Source: "+e.typeName) {
-						reportError("The PR title should contains new datasource info New Data Source: %s", e.typeName)
+					if !declared["New Data Source: "+e.typeName] {
+						reportError("The PR title should contains new datasource info New Data Source: %s; compact example: alicloud_name{,_cache} (scripts/title/README.md).", e.typeName)
 					}
-				} else if !strings.Contains(prTitle, "New Resource: "+e.typeName) {
-					reportError("The PR title should contains new resource info New Resource: %s", e.typeName)
+				} else if !declared["New Resource: "+e.typeName] {
+					reportError("The PR title should contains new resource info New Resource: %s; compact example: alicloud_name{,_cache} (scripts/title/README.md).", e.typeName)
 				}
 				continue
 			}

@@ -73,7 +73,7 @@ func vpngatewayTestClientForRegion(region string) (interface{}, error) {
 	}
 	conf.Credential = credential
 
-	client, err := conf.Client()
+	client, err := connectivity.NewClient(&conf)
 	if err != nil {
 		return nil, err
 	}

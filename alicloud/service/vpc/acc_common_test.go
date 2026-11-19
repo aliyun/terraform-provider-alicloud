@@ -51,16 +51,16 @@ import (
 	"time"
 
 	"github.com/aliyun/credentials-go/credentials"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // ---------------------------------------------------------------------------
 // Provider wiring (mirrors alicloud/provider_test.go init()). acctest.Provider
-// is alicloud.Provider(); the SDKv2 *schema.Provider shape is preserved so the
+// is sdkv2.Provider(); the SDKv2 *schema.Provider shape is preserved so the
 // resourceCheck reflection machinery can still read ResourcesMap/Schema.
 // Acceptance TestCases in the migrated suite supply providers via the legacy
 // SDKv2-shaped ProviderFactories: testAccProviderFactory field (the baseline
@@ -81,14 +81,14 @@ var testAccProviderFactory = map[string]func() (*schema.Provider, error){
 	},
 }
 
-// Provider is a test-only shim for the root alicloud.Provider() symbol the
+// Provider is a test-only shim for the root sdkv2.Provider() symbol the
 // migrated VPC tests call directly (e.g. Provider().ResourcesMap). package vpc
 // cannot import root alicloud, so it returns the cached acctest.Provider
-// instance (= alicloud.Provider()); the schema is static, which is all the
+// instance (= sdkv2.Provider()); the schema is static, which is all the
 // moved tests read from it. It must not be used to instantiate fresh
 // per-test providers.
 func Provider() *schema.Provider {
-	return alicloud.Provider()
+	return sdkv2.Provider()
 }
 
 // defaultRegionToTest snapshots ALICLOUD_REGION at package init, falling back
@@ -297,7 +297,7 @@ func sharedClientForRegion(region string) (interface{}, error) {
 	conf.Credential = credential
 
 	// configures a default client for the region, using the above env vars
-	client, err := conf.Client()
+	client, err := connectivity.NewClient(&conf)
 	if err != nil {
 		return nil, err
 	}

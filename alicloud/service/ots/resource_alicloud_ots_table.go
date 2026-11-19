@@ -1,6 +1,7 @@
 package ots
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -25,6 +27,7 @@ func ResourceOtsTable() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		CustomizeDiff: resourceAliyunTableCustomizeDiff,
 
 		Schema: map[string]*schema.Schema{
 			"instance_name": {
@@ -57,9 +60,19 @@ func ResourceOtsTable() *schema.Resource {
 							ValidateFunc: validation.StringInSlice([]string{
 								string(IntegerType), string(BinaryType), string(StringType)}, false),
 						},
+						"auto_increment": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
+						},
 					},
 				},
 				MaxItems: 4,
+				ForceNew: true,
+			},
+			"enable_local_txn": {
+				Type:     schema.TypeBool,
+				Optional: true,
 				ForceNew: true,
 			},
 			"defined_column": {
@@ -130,29 +143,48 @@ func ResourceOtsTable() *schema.Resource {
 	}
 }
 
-func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) error {
-	tableMeta := new(tablestore.TableMeta)
-	instanceName := d.Get("instance_name").(string)
-	tableName := d.Get("table_name").(string)
-	tableMeta.TableName = tableName
-	client := meta.(*connectivity.AliyunClient)
-	otsService := NewService(client)
-	if err := retry.Retry(1*time.Minute, func() *retry.RetryError {
-		_, e := otsService.DescribeOtsInstance(instanceName)
-		if e != nil {
-			if errs.NotFoundError(e) {
-				return retry.RetryableError(e)
-			}
-			return retry.NonRetryableError(e)
+func resourceAliyunTableCustomizeDiff(_ context.Context, diff *schema.ResourceDiff, _ interface{}) error {
+	primaryKeys, _ := diff.Get("primary_key").([]interface{})
+	autoIncrementCount := 0
+	for index, item := range primaryKeys {
+		pk, ok := item.(map[string]interface{})
+		if !ok {
+			continue
 		}
-		return nil
-	}); err != nil {
-		return errs.WrapError(err)
+		autoIncrement, _ := pk["auto_increment"].(bool)
+		if !autoIncrement {
+			continue
+		}
+		autoIncrementCount++
+		if index == 0 {
+			return fmt.Errorf("`auto_increment` cannot be enabled for the first primary key %v, because the first primary key is the partition key of the table", pk["name"])
+		}
+		if pkType, _ := pk["type"].(string); pkType != string(IntegerType) {
+			return fmt.Errorf("`auto_increment` can only be enabled for a primary key of type %q, but primary key %v is of type %q", IntegerType, pk["name"], pkType)
+		}
 	}
+	if autoIncrementCount > 1 {
+		return fmt.Errorf("only one primary key can enable `auto_increment`")
+	}
+	if autoIncrementCount > 0 {
+		if enableLocalTxn, _ := diff.Get("enable_local_txn").(bool); enableLocalTxn {
+			return fmt.Errorf("`enable_local_txn` cannot be enabled when a primary key enables `auto_increment`")
+		}
+	}
+	return nil
+}
+
+func buildTableCreateRequest(d *schema.ResourceData, otsService *Service) (*tablestore.CreateTableRequest, error) {
+	tableMeta := new(tablestore.TableMeta)
+	tableMeta.TableName = d.Get("table_name").(string)
 	for _, primaryKey := range d.Get("primary_key").([]interface{}) {
 		pk := primaryKey.(map[string]interface{})
 		pkValue := otsService.getPrimaryKeyType(pk["type"].(string))
-		tableMeta.AddPrimaryKeyColumn(pk["name"].(string), pkValue)
+		if autoIncrement, _ := pk["auto_increment"].(bool); autoIncrement {
+			tableMeta.AddPrimaryKeyColumnOption(pk["name"].(string), pkValue, tablestore.AUTO_INCREMENT)
+		} else {
+			tableMeta.AddPrimaryKeyColumn(pk["name"].(string), pkValue)
+		}
 	}
 
 	if v, ok := d.GetOk("defined_column"); ok {
@@ -161,7 +193,7 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 			columnArgs := definedColumn.(map[string]interface{})
 			columnType, err := ParseDefinedColumnType(columnArgs["type"].(string))
 			if err != nil {
-				return errs.WrapError(err)
+				return nil, errs.WrapError(err)
 			}
 			tableMeta.AddDefinedColumn(columnArgs["name"].(string), columnType)
 		}
@@ -181,6 +213,12 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	request.TableMeta = tableMeta
 	request.TableOption = tableOption
 	request.ReservedThroughput = reservedThroughput
+	// enable_local_txn is create-only and write-only for the API, so send it only
+	// when the user configured it and keep the service default otherwise.
+	if rawValue, diags := d.GetRawConfigAt(cty.GetAttrPath("enable_local_txn")); !diags.HasError() && rawValue.IsKnown() && !rawValue.IsNull() {
+		enableLocalTxn := rawValue.True()
+		request.EnableLocalTxn = &enableLocalTxn
+	}
 
 	if enableSSE, ok := d.GetOkExists("enable_sse"); ok {
 		sseSpec := new(tablestore.SSESpecification)
@@ -194,7 +232,7 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 			case string(SseByOk):
 				typ = tablestore.SSE_BYOK
 			default:
-				return errs.WrapError(errs.Error("unknown sse key type: %s", sseKeyType.(string)))
+				return nil, errs.WrapError(errs.Error("unknown sse key type: %s", sseKeyType.(string)))
 			}
 			sseSpec.KeyType = &typ
 		}
@@ -208,6 +246,32 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 			sseSpec.RoleArn = &roleArn
 		}
 		request.SSESpecification = sseSpec
+	}
+
+	return request, nil
+}
+
+func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) error {
+	instanceName := d.Get("instance_name").(string)
+	tableName := d.Get("table_name").(string)
+	client := meta.(*connectivity.AliyunClient)
+	otsService := NewService(client)
+	if err := retry.Retry(1*time.Minute, func() *retry.RetryError {
+		_, e := otsService.DescribeOtsInstance(instanceName)
+		if e != nil {
+			if errs.NotFoundError(e) {
+				return retry.RetryableError(e)
+			}
+			return retry.NonRetryableError(e)
+		}
+		return nil
+	}); err != nil {
+		return errs.WrapError(err)
+	}
+
+	request, err := buildTableCreateRequest(d, otsService)
+	if err != nil {
+		return err
 	}
 
 	var requestinfo *tablestore.TableStoreClient
@@ -261,6 +325,7 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 		item := make(map[string]interface{})
 		item["name"] = *v.Name
 		item["type"] = otsService.convertPrimaryKeyType(*v.Type)
+		item["auto_increment"] = v.Option != nil && *v.Option == tablestore.AUTO_INCREMENT
 		pks = append(pks, item)
 	}
 	d.Set("primary_key", pks)

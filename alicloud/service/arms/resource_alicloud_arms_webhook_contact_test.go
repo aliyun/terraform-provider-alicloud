@@ -223,7 +223,7 @@ func armsWebhookContactTestClient(t *testing.T, handler func(action string, form
 		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
 		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
 	}
-	client, err := config.Client()
+	client, err := connectivity.NewClient(config)
 	if err != nil {
 		t.Fatal(err)
 	}

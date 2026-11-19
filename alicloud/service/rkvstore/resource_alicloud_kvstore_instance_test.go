@@ -3393,7 +3393,7 @@ func TestUnitKvstoreCreateLockRetry(t *testing.T) {
 				AccountType: "test", SkipRegionValidation: true,
 				MaxRetryTimeout: 15, ClientReadTimeout: 1000, ClientConnectTimeout: 1000,
 			}
-			client, err := config.Client()
+			client, err := connectivity.NewClient(config)
 			if err != nil {
 				t.Fatal(err)
 			}

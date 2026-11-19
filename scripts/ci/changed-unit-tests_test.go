@@ -33,6 +33,40 @@ func unitFixture(t *testing.T, files map[string]string) {
 
 const unitSample = "package p\nimport \"testing\"\nfunc TestUnitA(t *testing.T) {}\nfunc TestAccCloud(t *testing.T) {}\n// func TestUnitComment(t *testing.T) {}\nvar text = `func TestUnitString(t *testing.T) {}`\n"
 
+func TestUnitHistoricalSplitCompanionsRemainSelected(t *testing.T) {
+	unitFixture(t, map[string]string{
+		"p/resource_demo_test.go":       unitSample,
+		"p/resource_demo_unit_test.go":  "package p; import \"testing\"; func TestUnitSplit(t *testing.T) {}",
+		"p/resource_demo_other.go":      "package p",
+		"p/resource_demo_other_test.go": "package p; import \"testing\"; func TestUnitOther(t *testing.T) {}",
+	})
+	cases, _, err := selectCases([]string{"p/resource_demo.go"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cases) != 2 {
+		t.Fatalf("split unit missing or unrelated resource selected: %+v", cases)
+	}
+}
+
+func TestUnitEntryShapedHelperBroadensRegisteredPackage(t *testing.T) {
+	const dir = "alicloud/service/p/"
+	unitFixture(t, map[string]string{
+		dir + "register.go":                   "package p; var registration = []Entry{{Factory: NewDemo}}",
+		dir + "resource_demo.go":              "package p; func NewDemo() Resource { return Resource{} }",
+		dir + "resource_demo_helpers.go":      "package p; func decode() {}",
+		dir + "resource_demo_helpers_test.go": unitSample,
+		dir + "resource_other_test.go":        "package p; import \"testing\"; func TestUnitOther(t *testing.T) {}",
+	})
+	cases, broad, err := selectCases([]string{dir + "resource_demo_helpers.go"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cases) != 2 || len(broad) != 1 {
+		t.Fatalf("helper silently narrowed: %+v %v", cases, broad)
+	}
+}
+
 func TestUnitChangedSelectorCompanionAndEditedTests(t *testing.T) {
 	unitFixture(t, map[string]string{"p/resource_alicloud_foo_test.go": unitSample, "p/other_test.go": "package p\nfunc TestUnitB(t *testing.T) {}"})
 	cases, broad, err := selectCases([]string{"p/resource_alicloud_foo.go", "p/resource_alicloud_foo_test.go"})
@@ -295,12 +329,49 @@ func TestUnitChangedRegistrationSelection(t *testing.T) {
 	}
 }
 
+func TestUnitChangedSDKv2RegistrationSelection(t *testing.T) {
+	const provider = "alicloud/provider/sdkv2/provider.go"
+	const dir = "alicloud/provider/sdkv2/"
+	unitFixture(t, map[string]string{
+		provider:                              registrationSource(`"alicloud_old": resourceOld(),`, ""),
+		dir + "resource_alicloud_old.go":      "package sdkv2\nfunc resourceOld() {}",
+		dir + "resource_alicloud_old_test.go": "package sdkv2\nfunc TestUnitOld(t *testing.T) {}",
+		dir + "resource_alicloud_new.go":      "package sdkv2\nfunc resourceNew() {}",
+		dir + "resource_alicloud_new_test.go": "package sdkv2\nfunc TestUnitNew(t *testing.T) {}",
+	})
+	base := registrationGitBase(t)
+	after := registrationSource(`"alicloud_old": resourceOld(), "alicloud_new": resourceNew(),`, "")
+	if err := os.WriteFile(provider, []byte(after), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cases, broad, err := selectCases([]string{provider}, base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(broad) != 0 || len(cases) != 1 || cases[0].Name != "TestUnitNew" || cases[0].Package != "./alicloud/provider/sdkv2" {
+		t.Fatalf("cases=%+v broad=%v", cases, broad)
+	}
+}
+
 func TestUnitChangedRegistrationMissingBaseBroadens(t *testing.T) {
-	unitFixture(t, map[string]string{"alicloud/provider.go": registrationSource("", ""), "alicloud/common_test.go": unitSample})
-	for _, base := range []string{"", "nonexistent"} {
-		cases, broad, err := selectCases([]string{"alicloud/provider.go"}, base)
-		if err != nil || len(cases) != 1 || len(broad) != 1 {
-			t.Fatalf("%v %v %v", cases, broad, err)
-		}
+	for _, tc := range []struct {
+		name, provider, dir string
+	}{
+		{name: "historical root", provider: "alicloud/provider.go", dir: "alicloud"},
+		{name: "SDKv2", provider: "alicloud/provider/sdkv2/provider.go", dir: "alicloud/provider/sdkv2"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			unitFixture(t, map[string]string{
+				tc.provider:                             registrationSource("", ""),
+				filepath.Join(tc.dir, "common_test.go"): unitSample,
+			})
+			for _, base := range []string{"", "nonexistent"} {
+				cases, broad, err := selectCases([]string{tc.provider}, base)
+				wantBroad := []string{"./" + filepath.ToSlash(tc.dir)}
+				if err != nil || len(cases) != 1 || !reflect.DeepEqual(broad, wantBroad) {
+					t.Fatalf("cases=%v broad=%v, want %v; err=%v", cases, broad, wantBroad, err)
+				}
+			}
+		})
 	}
 }

@@ -582,7 +582,7 @@ func runAutoPayUnitUpdate(t *testing.T, d *schema.ResourceData, payType, renewSt
 		Endpoints:            endpoints,
 		Credential:           testCredential,
 	}
-	aliyunClient, err := providerConfig.Client()
+	aliyunClient, err := connectivity.NewClient(&providerConfig)
 	assert.Nil(t, err)
 
 	setRenewalCalls := 0

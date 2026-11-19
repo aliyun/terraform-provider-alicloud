@@ -31,7 +31,7 @@ func agentloopDeleteTestClient(t *testing.T, handler http.HandlerFunc) *connecti
 	t.Setenv("NO_PROXY", endpoint)
 	endpoints := new(sync.Map)
 	config := &connectivity.Config{AccessKey: "test-key", SecretKey: "test-secret", Credential: credential, RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http", Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true}
-	client, err := config.Client()
+	client, err := connectivity.NewClient(config)
 	if err != nil {
 		t.Fatal(err)
 	}

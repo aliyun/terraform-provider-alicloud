@@ -15,6 +15,8 @@ For information about OTS tunnel and how to use it, see [Tunnel overview](https:
 
 -> **NOTE:** Available since v1.172.0.
 
+-> **NOTE:** `start_offset`, `end_offset` and `start_offset_flag` are only supported for `Stream` tunnels; configuring any of them for a `BaseData` or `BaseAndStream` tunnel is rejected during planning. The OTS stream expiration (maximum 7 days) determines the valid time window for `start_offset`/`end_offset`. Changing any of these arguments replaces the tunnel. `start_offset` and `start_offset_flag` are mutually exclusive. When importing a `Stream` tunnel, configure the same offsets or the same flag that the tunnel reports; an omitted `start_offset_flag` and `LATEST` are equivalent, while an imported tunnel that reports `EARLIEST` must be configured with `EARLIEST`. Otherwise the next plan proposes a replacement.
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -24,17 +26,20 @@ For information about OTS tunnel and how to use it, see [Tunnel overview](https:
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example"
 }
 
-resource "random_integer" "default" {
-  min = 10000
-  max = 99999
-}
-
 resource "alicloud_ots_instance" "default" {
-  name        = "${var.name}-${random_integer.default.result}"
+  name        = var.name
   description = var.name
   accessed_by = "Any"
   tags = {
@@ -72,6 +77,47 @@ resource "alicloud_ots_tunnel" "default" {
 }
 ```
 
+Stream tunnel with incremental data consumption from the earliest available offset:
+
+```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
+variable "name" {
+  default = "tf-example-demo"
+}
+
+resource "alicloud_ots_instance" "default" {
+  name        = var.name
+  description = var.name
+  accessed_by = "Any"
+}
+
+resource "alicloud_ots_table" "default" {
+  instance_name = alicloud_ots_instance.default.name
+  table_name    = "terraform_example_stream"
+  time_to_live  = -1
+  max_version   = 1
+  primary_key {
+    name = "pk1"
+    type = "Integer"
+  }
+}
+
+resource "alicloud_ots_tunnel" "default" {
+  instance_name     = alicloud_ots_instance.default.name
+  table_name        = alicloud_ots_table.default.table_name
+  tunnel_name       = "terraform_example_stream"
+  tunnel_type       = "Stream"
+  start_offset_flag = "EARLIEST"
+}
+```
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ots_tunnel&spm=docs.r.ots_tunnel.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -79,8 +125,11 @@ resource "alicloud_ots_tunnel" "default" {
 The following arguments are supported:
 * `instance_name` - (Required, ForceNew) The name of the OTS instance in which table will located.
 * `table_name` - (Required, ForceNew) The name of the OTS table. If changed, a new table would be created.
-* `tunnel_name` - (Required, ForceNew) The name of the OTS tunnel. If changed, a new tunnel would be created. 
+* `tunnel_name` - (Required, ForceNew) The name of the OTS tunnel. If changed, a new tunnel would be created.
 * `tunnel_type` - (Required, ForceNew) The type of the OTS tunnel. Only `BaseAndStream`, `BaseData` or `Stream` is allowed.
+* `start_offset` - (Optional, ForceNew, String) The start timestamp, in milliseconds, of the incremental data consumed by a `Stream` tunnel. It must be a positive integer without leading zeros. Valid range: `[current system time - stream expiration + 5 minutes, current system time]`. This argument conflicts with `start_offset_flag`. Available since v2.3.0. This argument is only supported when `tunnel_type` is `Stream`; configuring it for a `BaseData` or `BaseAndStream` tunnel is rejected during planning.
+* `end_offset` - (Optional, ForceNew, String) The end timestamp, in milliseconds, of the incremental data consumed by a `Stream` tunnel. It must be a positive integer without leading zeros and greater than `start_offset` when both are set. If not set, the tunnel keeps consuming incremental data. Available since v2.3.0. This argument is only supported when `tunnel_type` is `Stream`; configuring it for a `BaseData` or `BaseAndStream` tunnel is rejected during planning.
+* `start_offset_flag` - (Optional, ForceNew, String) The start offset flag of a `Stream` tunnel, used as the consumption start point. Valid values: `LATEST` and `EARLIEST`. `LATEST` consumes incremental data from the tunnel creation time; `EARLIEST` consumes from the earliest available incremental log. Defaults to `LATEST`, which is also the server default. This argument conflicts with `start_offset`. Available since v2.3.0. This argument is only supported when `tunnel_type` is `Stream`; configuring it for a `BaseData` or `BaseAndStream` tunnel is rejected during planning.
 
 ## Attributes Reference
 

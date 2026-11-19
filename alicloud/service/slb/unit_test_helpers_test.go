@@ -86,7 +86,7 @@ func unitTestSharedClientForRegion(region string) (interface{}, error) {
 	}
 	conf.Credential = credential
 
-	client, err := conf.Client()
+	client, err := connectivity.NewClient(&conf)
 	if err != nil {
 		return nil, err
 	}
@@ -197,5 +197,5 @@ func unitTestMockClient() (*connectivity.AliyunClient, error) {
 		AccountType:          "Domestic",
 		Credential:           credential,
 	}
-	return conf.Client()
+	return connectivity.NewClient(&conf)
 }

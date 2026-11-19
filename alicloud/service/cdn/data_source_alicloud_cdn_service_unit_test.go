@@ -27,7 +27,7 @@ func testUnitCdnServiceMockMeta(t *testing.T) *connectivity.AliyunClient {
 		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
 		Endpoints: new(sync.Map), SignVersion: new(sync.Map), SkipRegionValidation: true,
 	}
-	meta, err := config.Client()
+	meta, err := connectivity.NewClient(config)
 	if err != nil {
 		t.Fatal(err)
 	}

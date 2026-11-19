@@ -57,3 +57,6 @@ coverage.out
 .mux/
 .pi/
 skills-lock.json
+
+# Private CI receipts, signed log links and execution plans
+.acube-ci/

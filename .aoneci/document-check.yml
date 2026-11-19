@@ -1,94 +1,152 @@
 name: Documentation Checks
 triggers:
   push:
-    paths:
-      - 'website/docs/**'
-      - 'alicloud/*.go'
-      - 'alicloud/service/**/*.go'
+    branches:
+      - master
   merge_request:
-    types:
-      - opened
     paths:
-      - '.github/workflows/document-check.yml'
+      - 'scripts/ci/**'
+      - 'scripts/release/**'
+      - 'scripts/collection-order/**'
+      - 'GNUmakefile'
+      - 'scripts/internal/**'
+      - '.aoneci/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.go-version'
+      - '.aoneci/document-check.yml'
       - 'website/docs/**'
+      - 'scripts/document/**'
+      - 'scripts/basic-check.sh'
+      - '.markdown-link-check.json'
+      - '.github/markdownlint/**'
       - 'alicloud/*.go'
       - 'alicloud/service/**/*.go'
 
+envs:
+  # Pushes run on master; manual runs also retain the full documentation checks.
+  DOCUMENT_CHECK_FULL: '${{git.merge_request.id ? "false" : "true"}}'
+  CODE_CI_SHALLOW_RANGE: '1'
+  CODE_HEAD: '${{git.commitId}}'
+  CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
+  CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
+  CODE_PUSH_BEFORE: '${{git.push.beforeSha256 ?: ""}}'
+  CODE_TARGET: '${{git.merge_request.targetBranch ?: ""}}'
+  CODE_DEFAULT_BRANCH: '${{git.defaultBranch}}'
+  CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
+
 jobs:
+  MarkdownQuality:
+    steps:
+      - uses: checkout
+        inputs:
+          fetch-depth: '32'
+      - uses: setup-env
+        inputs:
+          node-version: '20'
+      - name: Check Markdown links and lint
+        envs:
+          CODE_CI_SHALLOW_RANGE: '1'
+        run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          python3 -m unittest discover -s scripts/ci -p test_note_diagnostics.py
+          python3 scripts/ci/run-document-checks.py --group node
+
   terrafmt:
     steps:
       - uses: checkout
+        inputs:
+          fetch-depth: '32'
       - uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - name: terrafmt
         run: |
-          export PATH=$PATH:$(go env GOPATH)/bin
-          go install github.com/katbyte/terrafmt@latest
-          terrafmt diff ./website --check --pattern '*.markdown'
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          export TF_DOC_TOOLS_DIR
+          TF_DOC_TOOLS_DIR=$(mktemp -d)
+          trap 'rm -rf "$TF_DOC_TOOLS_DIR"' EXIT
+          GOBIN="$TF_DOC_TOOLS_DIR" go install github.com/katbyte/terrafmt@v0.5.7
+          python3 scripts/ci/run-document-checks.py --group format
 
   basic-check:
     steps:
       - uses: checkout
         inputs:
-          fetch-depth: '3'
-      - uses: setup-env
-        inputs:
-          go-version: '1.24.0'
-      - run: BASIC_CHECK_AUTO_RANGE=true bash scripts/basic-check.sh
+          fetch-depth: '32'
+      - run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          bash scripts/basic-check.sh
 
   TestFrameworkGuard:
     steps:
       - uses: checkout
+        inputs:
+          fetch-depth: '32'
       - name: Reject new SDK v2 helper/resource imports
         run: |
-          targetBranch='${{git.merge_request.targetBranch ?: ""}}'
-          if [[ "$targetBranch" != "master" ]]; then
-            echo "target branch is ${targetBranch:-<empty>}, skipping the test framework guard"
-            exit 0
-          fi
-          git fetch --no-tags origin master:refs/remotes/origin/master
-          DIFF_BASE="$(git merge-base origin/master HEAD)" \
-          DIFF_HEAD="$(git rev-parse HEAD)" \
-            bash scripts/ci/test-framework-guard.sh
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          bash scripts/ci/test-framework-guard.sh
 
   Content:
     steps:
       - uses: checkout
         inputs:
-          fetch-depth: '2'
+          fetch-depth: '32'
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - name: Checking the docs content
         run: |
-          diffFiles=$(git diff --name-only HEAD^ HEAD)
-          noNeedRun=true
-          exampleCount=0
-          if [[ ${#diffFiles[@]} -eq 0 ]]; then
-            echo -e "\033[33m[WARNING]\033[0m the pr ${prNum} does not change provider code and there is no need to check."
-            exit 0
-          fi
-          
-          for fileName in ${diffFiles[@]};
-          do
-            if [[ ${fileName} == "website/docs/"* ]]; then
-                go run scripts/document/document_check.go ${fileName}
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          checker_dir=$(mktemp -d)
+          trap 'rm -rf "$checker_dir"' EXIT
+          while IFS= read -r -d '' doc; do
+            if [[ -f "$doc" && "$doc" != website/docs/index.html.markdown ]]; then
+              if [[ ! -x "$checker_dir/document-check" ]]; then
+                go build -o "$checker_dir/document-check" scripts/document/document_check.go
+              fi
+              "$checker_dir/document-check" "$doc"
             fi
-          done
+          done < <(git diff --name-only -z --diff-filter=ACMR "$DIFF_BASE" "$DIFF_HEAD" -- website/docs)
 
+      - name: Test document checker and check spelling
+        run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          go test ./scripts/document/
+          export TF_DOC_TOOLS_DIR
+          TF_DOC_TOOLS_DIR=$(mktemp -d)
+          trap 'rm -rf "$TF_DOC_TOOLS_DIR"' EXIT
+          GOBIN="$TF_DOC_TOOLS_DIR" go install github.com/client9/misspell/cmd/misspell@v0.3.4
+          python3 scripts/ci/run-document-checks.py --group spelling
+
+  # Single owner of the attribute consistency gate, including Basic-only paths.
   Consistency:
     steps:
-      - uses: checkout
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - uses: checkout
         inputs:
-          fetch-depth: '2'
-      - name: Integration Test Check
+          fetch-depth: '32'
+      - name: Attribute Consistency Check
         run: |
-          git diff HEAD^ HEAD > diff.out
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
           go run scripts/consistency/consistency_check.go -fileNames="diff.out"
