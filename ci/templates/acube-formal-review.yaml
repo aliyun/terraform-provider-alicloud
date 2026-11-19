@@ -2,9 +2,9 @@
 name: ACube 形式化评审
 envs:
   VERIFIED_RELEASE_RETURN: >-
-    ${{ pipeline.inst.triggerMode == 'MR' && git.merge_request.id &&
+    ${{ pipeline.inst.triggerMode == 'MR' && git.merge_request.id != null &&
     git.repo == 'opensource-tools/terraform-provider-alicloud' &&
-    git.merge_request.sourceProjectId && git.merge_request.sourceProjectId == git.merge_request.targetProjectId &&
+    git.merge_request.sourceProjectId != null && git.merge_request.sourceProjectId == git.merge_request.targetProjectId &&
     git.defaultBranch == 'master' && git.merge_request.targetBranch == git.defaultBranch &&
     secrets.PROVIDER_RELEASE_RETURN == 'v1:' + #string(git.merge_request.id) + ':' +
     git.merge_request.sourceBranch + ':' + git.merge_request.title + ':' + git.commitId ? 'yes' : 'no' }}

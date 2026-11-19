@@ -85,6 +85,10 @@ class PipelinePolicyTests(unittest.TestCase):
         guards.add(self.guard(formal))
         self.assertEqual(len(guards), 1)
         guard = guards.pop()
+        # AoneCI supplies numeric IDs. An integer operand of && evaluates to
+        # null in this context, even for a valid same-project merge request.
+        self.assertIn("git.merge_request.id != null &&", guard)
+        self.assertIn("git.merge_request.sourceProjectId != null &&", guard)
         for condition in ("pipeline.inst.triggerMode == 'MR'", "git.repo == 'opensource-tools/terraform-provider-alicloud'",
                           'git.merge_request.sourceProjectId == git.merge_request.targetProjectId',
                           "git.defaultBranch == 'master'", 'git.merge_request.targetBranch == git.defaultBranch',
