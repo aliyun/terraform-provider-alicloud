@@ -1,15 +1,21 @@
 package slb_test
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	slbsdk "github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/slb"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	sdkterraform "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccAliCloudSLBDomainExtensionBasic(t *testing.T) {
@@ -44,7 +50,8 @@ func TestAccAliCloudSLBDomainExtensionBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_id":      CHECKSET,
-						"frontend_port":         CHECKSET,
+						"listener_port":         "443",
+						"frontend_port":         "443",
 						"domain":                "www.test.com",
 						"server_certificate_id": CHECKSET,
 					}),
@@ -66,13 +73,206 @@ func TestAccAliCloudSLBDomainExtensionBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_id":      CHECKSET,
-						"frontend_port":         CHECKSET,
+						"listener_port":         "443",
+						"frontend_port":         "443",
 						"domain":                "www.test.com",
 						"server_certificate_id": CHECKSET,
 					}),
 				),
 			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
 		},
+	})
+}
+
+func TestAccAliCloudSLBDomainExtensionListenerPort(t *testing.T) {
+	var v *slbsdk.DescribeDomainExtensionAttributeResponse
+	resourceId := "alicloud_slb_domain_extension.default"
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return slb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDomainExtensionAttribute")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccDomainExtensionListenerPort%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceSlbDomainExtensionConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		// module name
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		// module name
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id":             "${alicloud_slb_load_balancer.instance.id}",
+					"listener_port":                "${alicloud_slb_listener.https.frontend_port}",
+					"domain":                       "www.test.com",
+					"server_certificate_id":        "${alicloud_slb_server_certificate.foo.id}",
+					"delete_protection_validation": false,
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_id":      CHECKSET,
+						"listener_port":         "443",
+						"frontend_port":         "443",
+						"domain":                "www.test.com",
+						"server_certificate_id": CHECKSET,
+					}),
+					func(state *terraform.State) error {
+						resourceState, ok := state.RootModule().Resources[resourceId]
+						if !ok || resourceState.Primary == nil || resourceState.Primary.ID == "" {
+							return fmt.Errorf("G1 evidence: %s has no primary ID", resourceId)
+						}
+						client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+						if client.RegionId != "cn-beijing" {
+							return fmt.Errorf("G1 evidence: expected cn-beijing, got %q", client.RegionId)
+						}
+						accountId, err := client.AccountId()
+						if err != nil {
+							return fmt.Errorf("G1 evidence: resolve account ID: %w", err)
+						}
+						request := slbsdk.CreateDescribeDomainExtensionAttributeRequest()
+						request.DomainExtensionId = resourceState.Primary.ID
+						requestStartedAt := time.Now().UTC()
+						raw, err := client.WithSlbClient(func(slbClient *slbsdk.Client) (interface{}, error) {
+							return slbClient.DescribeDomainExtensionAttribute(request)
+						})
+						responseReceivedAt := time.Now().UTC()
+						if err != nil {
+							return fmt.Errorf("G1 evidence: DescribeDomainExtensionAttribute: %w", err)
+						}
+						response, ok := raw.(*slbsdk.DescribeDomainExtensionAttributeResponse)
+						if !ok || response == nil || response.BaseResponse == nil {
+							return fmt.Errorf("G1 evidence: unexpected SDK response %T", raw)
+						}
+						if response.GetHttpStatus() < 200 || response.GetHttpStatus() >= 300 {
+							return fmt.Errorf("G1 evidence: unexpected HTTP status %d", response.GetHttpStatus())
+						}
+						rawBody := response.GetHttpContentBytes()
+						var wireResponse struct {
+							DomainExtensionId string `json:"DomainExtensionId"`
+							ListenerPort      int    `json:"ListenerPort"`
+							RequestId         string `json:"RequestId"`
+						}
+						if err := json.Unmarshal(rawBody, &wireResponse); err != nil {
+							return fmt.Errorf("G1 evidence: decode raw HTTP response: %w", err)
+						}
+						if wireResponse.DomainExtensionId != resourceState.Primary.ID || wireResponse.ListenerPort != 443 || wireResponse.RequestId == "" {
+							return fmt.Errorf("G1 evidence: raw HTTP response does not contain the target identity, ListenerPort=443 and RequestId")
+						}
+						if response.DomainExtensionId != resourceState.Primary.ID || response.ListenerPort != 443 || response.RequestId == "" {
+							return fmt.Errorf("G1 evidence: SDK response does not contain the target identity, ListenerPort=443 and RequestId")
+						}
+						if response.RequestId != wireResponse.RequestId {
+							return fmt.Errorf("G1 evidence: raw HTTP and SDK RequestId values differ")
+						}
+						contextJson, err := json.Marshal(struct {
+							AccountId          string `json:"accountId"`
+							Action             string `json:"action"`
+							DomainExtensionId  string `json:"domainExtensionId"`
+							HttpStatus         int    `json:"httpStatus"`
+							Region             string `json:"region"`
+							RequestId          string `json:"requestId"`
+							RequestStartedAt   string `json:"requestStartedAt"`
+							ResponseReceivedAt string `json:"responseReceivedAt"`
+						}{
+							AccountId:          accountId,
+							Action:             request.GetActionName(),
+							DomainExtensionId:  resourceState.Primary.ID,
+							HttpStatus:         response.GetHttpStatus(),
+							Region:             client.RegionId,
+							RequestId:          response.RequestId,
+							RequestStartedAt:   requestStartedAt.Format(time.RFC3339Nano),
+							ResponseReceivedAt: responseReceivedAt.Format(time.RFC3339Nano),
+						})
+						if err != nil {
+							return fmt.Errorf("G1 evidence: encode request context: %w", err)
+						}
+						decodedJson, err := json.Marshal(response)
+						if err != nil {
+							return fmt.Errorf("G1 evidence: encode SDK response: %w", err)
+						}
+						fmt.Printf("G1_DESCRIBE_REQUEST_CONTEXT=%s\n", contextJson)
+						fmt.Printf("G1_DESCRIBE_RAW_HTTP_RESPONSE=%s\n", rawBody)
+						fmt.Printf("G1_DESCRIBE_SDK_DECODED_RESPONSE=%s\n", decodedJson)
+						return nil
+					},
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
+		},
+	})
+}
+
+// listener_port and frontend_port are mutually exclusive and at least one is
+// required; both rules are enforced by schema ExactlyOneOf at plan time, so a
+// config-level unit test locks them without creating cloud resources.
+func TestUnitAlicloudSLBDomainExtensionPortExactlyOneOf(t *testing.T) {
+	baseConfig := map[string]interface{}{
+		"load_balancer_id":      "lb-bp1unitcheck",
+		"domain":                "www.test.com",
+		"server_certificate_id": "cert-bp1unitcheck",
+	}
+
+	configWith := func(ports map[string]interface{}) map[string]interface{} {
+		config := make(map[string]interface{}, len(baseConfig)+len(ports))
+		for key, value := range baseConfig {
+			config[key] = value
+		}
+		for key, value := range ports {
+			config[key] = value
+		}
+		return config
+	}
+
+	errorDetails := func(config map[string]interface{}) []string {
+		var details []string
+		for _, diagnostic := range slb.ResourceDomainExtension().Validate(sdkterraform.NewResourceConfigRaw(config)) {
+			if diagnostic.Severity == diag.Error {
+				details = append(details, diagnostic.Detail)
+			}
+		}
+		return details
+	}
+
+	t.Run("both ports configured", func(t *testing.T) {
+		details := errorDetails(configWith(map[string]interface{}{
+			"listener_port": 443,
+			"frontend_port": 443,
+		}))
+		want := "only one of `frontend_port,listener_port` can be specified, but `frontend_port,listener_port` were specified."
+		if !strings.Contains(strings.Join(details, "\n"), want) {
+			t.Fatalf("want rejection reason %q, got %v", want, details)
+		}
+	})
+
+	t.Run("neither port configured", func(t *testing.T) {
+		details := errorDetails(configWith(nil))
+		want := "one of `frontend_port,listener_port` must be specified"
+		if !strings.Contains(strings.Join(details, "\n"), want) {
+			t.Fatalf("want rejection reason %q, got %v", want, details)
+		}
+	})
+
+	t.Run("single port configured", func(t *testing.T) {
+		if details := errorDetails(configWith(map[string]interface{}{"listener_port": 443})); len(details) != 0 {
+			t.Fatalf("want no errors, got %v", details)
+		}
 	})
 }
 

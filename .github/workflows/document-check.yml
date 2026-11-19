@@ -91,7 +91,9 @@ jobs:
           DOCUMENT_CHECK_FULL: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
           DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
-        run: python3 scripts/ci/run-document-checks.py --group node
+        run: |
+          python3 -m unittest discover -s scripts/ci -p test_note_diagnostics.py
+          python3 scripts/ci/run-document-checks.py --group node
     name: docs-node
     timeout-minutes: 20
   docs-go:

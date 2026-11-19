@@ -29,12 +29,21 @@ variable "name" {
   default = "terraform-example"
 }
 
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 provider "alicloud" {
   region = "cn-hangzhou"
 }
 
 resource "alicloud_vpc" "default8qAtD6" {
   cidr_block = "172.16.0.0/16"
+  vpc_name   = var.name
 }
 
 resource "alicloud_express_connect_router_express_connect_router" "defaultM9YxGW" {
@@ -52,9 +61,11 @@ resource "alicloud_express_connect_router_vpc_association" "default" {
     "172.16.2.0/24",
     "172.16.1.0/24"
   ]
+  allowed_prefixes_mode = "MatchMode"
   vpc_owner_id          = data.alicloud_account.current.id
   association_region_id = "cn-hangzhou"
   vpc_id                = alicloud_vpc.default8qAtD6.id
+  description           = "test"
 }
 ```
 
@@ -63,8 +74,10 @@ resource "alicloud_express_connect_router_vpc_association" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `allowed_prefixes` - (Optional) The list of allowed route prefixes.
+* `allowed_prefixes` - (Optional, Computed, List) The list of allowed route prefixes. The provider compares prefix members without regard to their order, so reordering the same prefixes produces no diff; membership and multiplicity changes still produce a diff. An explicitly configured empty list is accepted for backward compatibility. Without a non-empty `allowed_prefixes_mode`, the RPC form encoding omits `AllowedPrefixes` for both an empty list and an omitted argument; neither form is guaranteed to clear remote prefixes. For an existing association whose state contains non-empty prefixes, omitting this argument or configuring an empty list preserves the stored prefixes only when the current configuration also contains a known, non-empty `allowed_prefixes_mode`, including when only the mode changes. If the mode is also omitted or empty, the legacy request behavior applies and the stored prefixes are not guaranteed to be preserved or cleared.
+* `allowed_prefixes_mode` - (Optional, Computed, String) The prefix route mode. Valid values: `MatchMode`, `IncrementalMode`. `MatchMode` publishes only the configured route prefixes and withdraws all detail routes published before. `IncrementalMode` publishes the configured route prefixes and withdraws only the detail routes published before that fall within the configured prefixes, while the other published detail routes are kept. When it is omitted, the mode returned by the service is stored in state, and that stored mode is sent again with any later non-empty `allowed_prefixes` update so the applied mode is preserved without relying on a server-side default. The provider always sends the mode together with a non-empty prefix list. Creating an association with a non-empty mode but without a non-empty `allowed_prefixes` list is rejected at plan time. For an existing association with stored non-empty prefixes and a known, non-empty configured mode, omitting `allowed_prefixes` or configuring an empty list makes the provider echo those stored prefixes with the mode; this supports a mode-only update without clearing prefix membership. If the configured mode is unknown during planning, the planned prefixes remain unknown until apply, when the resolved mode determines whether this echo path applies. An empty string is treated as unset. Available since v2.3.0.
 * `association_region_id` - (Required, ForceNew) The region ID of the resource to be associated.
+* `description` - (Optional, String) The description of the association. The length is 0 to 128 characters. An explicit empty string clears the description. Omitting the argument at creation leaves the description unset; removing it after it has been set also clears it, because the provider then sends an empty description. Available since v2.3.0.
 * `ecr_id` - (Required, ForceNew) The ECR ID.
 * `vpc_id` - (Required, ForceNew) The VPC ID.
 * `vpc_owner_id` - (Optional, ForceNew) The ID of the Alibaba Cloud account that owns the VPC.

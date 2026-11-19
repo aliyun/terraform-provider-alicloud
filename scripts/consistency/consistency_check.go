@@ -11,8 +11,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	providerregistry "github.com/aliyun/terraform-provider-alicloud/alicloud/provider/registry"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 	set "github.com/deckarep/golang-set"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -110,12 +110,12 @@ func main() {
 		}
 
 		log.Infof("==> Checking resource or data-source %s attributes consistency...", resourceName)
-		resource, ok := alicloud.Provider().ResourcesMap[resourceName]
+		resource, ok := sdkv2.Provider().ResourcesMap[resourceName]
 		isResource := true
 		docsPath := "website/docs/r/"
 		if !ok || resource == nil {
 			name := strings.TrimPrefix(resourceName, "data_source_")
-			resource, ok = alicloud.Provider().DataSourcesMap[name]
+			resource, ok = sdkv2.Provider().DataSourcesMap[name]
 			if !ok || resource == nil {
 				log.Errorf("resource %s is not found in the provider ResourceMap\n\n", resourceName)
 				exitCode = 1

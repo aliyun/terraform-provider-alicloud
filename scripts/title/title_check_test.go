@@ -115,6 +115,71 @@ func TestCheckTitleRequiresAddedEntityInTitle(t *testing.T) {
 	}
 }
 
+func TestCheckTitleCompactNewEntitiesFitCodeLimit(t *testing.T) {
+	files := []titleFile{svcEntities("sandbox",
+		ent("alicloud_sandbox_template", false, false, "sandbox"),
+		ent("alicloud_sandbox_template_cache", false, false, "sandbox"),
+		ent("alicloud_sandbox_templates", true, false, "sandbox"),
+		ent("alicloud_sandbox_template_caches", true, false, "sandbox"))}
+	title := "New Resource: alicloud_sandbox_template{,_cache}; New Data Source: alicloud_sandbox_template{s,_caches}"
+	if len(title) > 128 {
+		t.Fatalf("compact ASCII title exceeds Code limit: %d", len(title))
+	}
+	if !checkTitle(title, files) {
+		t.Error("compact title did not announce all four entities")
+	}
+	for _, invalid := range []string{
+		"New Resource: alicloud_sandbox_template{,_other}; New Data Source: alicloud_sandbox_template{s,_caches}",
+		"New Resource: alicloud_sandbox_template{_cache,_other}; New Data Source: alicloud_sandbox_template{s,_caches}",
+		"New Resource: alicloud_sandbox_template{,_cache}; New Data Source: alicloud_sandbox_template{s,_other}",
+		"New Data Source: alicloud_sandbox_template{,_cache}; New Resource: alicloud_sandbox_template{s,_caches}",
+	} {
+		if checkTitle(invalid, files) {
+			t.Errorf("incomplete or wrong-kind declaration passed: %q", invalid)
+		}
+	}
+	files[0].entities = append(files[0].entities, ent("alicloud_other_thing", false, false, "other"))
+	if checkTitle(title, files) {
+		t.Error("compact declaration hid an additional entity from another product")
+	}
+}
+
+func TestNewDeclarationsRejectMalformedGroups(t *testing.T) {
+	for _, token := range []string{
+		"alicloud_demo{,_cache", "alicloud_demo,_cache}", "alicloud_demo{,_cache}{,_extra}",
+		"alicloud_demo{,_cache{,_extra}}", "alicloud_demo{,_cache*}", "alicloud_demo{1..3}",
+		"alicloud_demo{,_cache,_cache}", "alicloud_demo{,}", "alicloud_demo{_cache}",
+		"alicloud_demo{,_cache}_extra", "alicloud_demo{,_cache }", "alicloud_demo{,_cache/other}",
+	} {
+		if _, valid := newDeclarations("New Resource: " + token); valid {
+			t.Errorf("malformed compact declaration accepted: %q", token)
+		}
+	}
+}
+
+func TestNewDeclarationsKeepFullNamesAndKinds(t *testing.T) {
+	for _, title := range []string{
+		"New Resource: alicloud_demo_cache, New Data Source: alicloud_demo{,s}",
+		"New Resource: alicloud_demo_cache,New Data Source: alicloud_demo{,s}",
+		"New Data Source: alicloud_demo{,s},New Resource: alicloud_demo_cache",
+		"New Resource: alicloud_demo_cache; New Data Source: alicloud_demo; New Data Source: alicloud_demos",
+	} {
+		declared, valid := newDeclarations(title)
+		if !valid || !reflect.DeepEqual(declared, map[string]bool{
+			"New Resource: alicloud_demo_cache": true,
+			"New Data Source: alicloud_demo":    true,
+			"New Data Source: alicloud_demos":   true,
+		}) {
+			t.Fatalf("wrong exact declarations for %q: %v, valid=%v", title, declared, valid)
+		}
+	}
+	if checkTitle("New Resource: alicloud_demo_cache", []titleFile{
+		flatFile("alicloud/resource_alicloud_demo.go", true, entity{typeName: "alicloud_demo"}),
+	}) {
+		t.Error("a longer name incorrectly announced its prefix entity")
+	}
+}
+
 func TestCheckTitleFlatFilenameDrivesTheDemand(t *testing.T) {
 	// The flat side stayed filename-derived after the #10839 revert, so a
 	// shared plumbing file still demands its filename stem — including
@@ -173,6 +238,43 @@ func TestCheckTitleServiceSourcesWithoutEntitiesImposeNoRequirement(t *testing.T
 	}
 	if !checkTitle("refactor: reorganize the ims registrations", files) {
 		t.Error("checkTitle(service sources without entities) failed, want pass")
+	}
+}
+
+func TestCheckTitleWithSharedProviderSource(t *testing.T) {
+	const docs = "M\twebsite/docs/index.html.markdown\n"
+	const tests = "M\talicloud/connectivity/client_test.go\n"
+
+	for _, tc := range []struct {
+		name, diff, title string
+		want              bool
+	}{
+		{"connectivity and docs", "M\talicloud/connectivity/client.go\n" + docs + tests, "ots endpoints: use configured overrides", true},
+		{"provider and docs", "M\talicloud/provider.go\n" + docs, "provider: update endpoint configuration", true},
+		{"connectivity and tests", "M\talicloud/connectivity/client.go\n" + tests, "ots endpoints: use configured overrides", true},
+		{"docs and tests", docs + tests, "update endpoint documentation", false},
+		{"docs prefix", docs + tests, "docs: update endpoint documentation", true},
+		{"tests only", tests, "update endpoint tests", false},
+		{"testcase prefix", tests, "testcase: update endpoint tests", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := checkTitle(tc.title, parseNameStatus(tc.diff)); got != tc.want {
+				t.Errorf("checkTitle(%q) = %t, want %t", tc.title, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSharedProviderSourceKeepsEntityTitleRequirement(t *testing.T) {
+	files := parseNameStatus("M\talicloud/connectivity/client.go\nM\talicloud/resource_alicloud_ots_instance.go\n")
+	if err := resolveEntities(files, ""); err != nil {
+		t.Fatal(err)
+	}
+	if checkTitle("ots endpoints: use configured overrides", files) {
+		t.Error("shared source change hid a modified resource")
+	}
+	if !checkTitle("resource/alicloud_ots_instance: use configured overrides", files) {
+		t.Error("title announcing the modified resource failed")
 	}
 }
 

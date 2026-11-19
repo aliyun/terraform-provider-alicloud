@@ -6,15 +6,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/echoprovider"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-var Provider = alicloud.Provider()
+var Provider = sdkv2.Provider()
 
 // ProtoV5ProviderFactories serves the real muxed provider — the SDK v2 half and the
 // framework half behind one server — under the name given, defaulting to "alicloud".
@@ -23,7 +23,7 @@ var Provider = alicloud.Provider()
 // monolith tests included since the framework flip — and none may link
 // terraform-plugin-sdk/v2/helper/resource again: both register a -sweep flag in their
 // init, and a test binary linking both dies at startup with "flag redefined: sweep"
-// before any test runs. This package imports package alicloud for Provider(), so a
+// before any test runs. This package imports the SDKv2 provider implementation, so a
 // single file — test or non-test — going back to SDKv2 helper/resource resurrects that
 // panic for every test that reaches this factory. Non-test code retries with
 // helper/retry instead.

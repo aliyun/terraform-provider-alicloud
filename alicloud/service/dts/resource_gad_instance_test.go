@@ -29,7 +29,7 @@ const dtsGadInstanceResourceId = "alicloud_dts_gad_instance.default"
 // is accepted and exercises the same Create/Read/Update/Delete/Import paths a cross-region pair would.
 // A cross-region fixture was attempted first (mirroring dtsCheckJobDependence with a cn-beijing
 // provider alias), but the framework half of the muxed provider reads its region back out of the
-// single shared alicloud.Provider() instance (see acctest.ProtoV5ProviderFactories and
+// single shared sdkv2.Provider() instance (see acctest.ProtoV5ProviderFactories and
 // provider/factory.go), so ConfigureProvider for the default and the alias instances overwrite one
 // shared meta and strand the alias's VPC/vswitch in the wrong region (Forbidden.VpcNotFound). No
 // framework service-subpackage test uses a provider alias today; cross-region alias support under

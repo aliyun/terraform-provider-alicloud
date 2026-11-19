@@ -53,6 +53,15 @@ func changedFiles(base string) ([]string, error) {
 	if len(files) == 1 && files[0] == "" {
 		files = []string{}
 	}
+	untracked, err := exec.Command("git", "ls-files", "-z", "--others", "--exclude-standard", "--", "alicloud/").Output()
+	if err != nil {
+		return nil, err
+	}
+	for _, file := range strings.Split(string(untracked), "\x00") {
+		if file != "" {
+			files = append(files, file)
+		}
+	}
 	return files, nil
 }
 
@@ -273,6 +282,53 @@ func registrationTests(base, file string) ([]string, bool) {
 	return tests, true
 }
 
+// Registration, not a filename prefix, distinguishes a service entrypoint from
+// a private/shared helper. Unresolved registrations safely broaden unit scope.
+func serviceEntrypoint(file string) (bool, error) {
+	if !strings.HasPrefix(filepath.ToSlash(file), "alicloud/service/") {
+		return true, nil
+	}
+	register := filepath.Join(filepath.Dir(file), "register.go")
+	r, err := parser.ParseFile(token.NewFileSet(), register, nil, 0)
+	if os.IsNotExist(err) {
+		return true, nil
+	} // legacy package
+	if err != nil {
+		return false, err
+	}
+	factories := map[string]bool{}
+	ast.Inspect(r, func(n ast.Node) bool {
+		if kv, ok := n.(*ast.KeyValueExpr); ok {
+			if key, ok := kv.Key.(*ast.Ident); ok && key.Name == "Factory" {
+				if value, ok := kv.Value.(*ast.Ident); ok {
+					factories[value.Name] = true
+				}
+			}
+		}
+		return true
+	})
+	f, err := parser.ParseFile(token.NewFileSet(), file, nil, 0)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	for _, decl := range f.Decls {
+		if fn, ok := decl.(*ast.FuncDecl); ok && fn.Recv == nil && factories[fn.Name.Name] {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// Keep this standalone file runnable with GO111MODULE=off. These paths mirror
+// splitlayout.ProviderSourcePaths without adding a module dependency.
+func isProviderSource(file string) bool {
+	file = filepath.ToSlash(file)
+	return file == "alicloud/provider/sdkv2/provider.go" || file == "alicloud/provider.go"
+}
+
 // Resource/data-source implementations have companion tests. Every other source
 // file is shared helper/service code and broadens to all TestUnit* in its package.
 func selectCases(files []string, bases ...string) ([]unitCase, []string, error) {
@@ -290,7 +346,7 @@ func selectCases(files []string, bases ...string) ([]unitCase, []string, error) 
 		if selected[dir] == nil {
 			selected[dir] = map[string]bool{}
 		}
-		if file == "alicloud/provider.go" && len(bases) == 1 {
+		if isProviderSource(file) && len(bases) == 1 {
 			if tests, ok := registrationTests(bases[0], file); ok {
 				for _, test := range tests {
 					selected[dir][test] = true
@@ -306,11 +362,39 @@ func selectCases(files []string, bases ...string) ([]unitCase, []string, error) 
 				selected[dir][file] = true
 			}
 		} else if strings.HasPrefix(name, "resource_") || strings.HasPrefix(name, "data_source_") {
+			entry, err := serviceEntrypoint(file)
+			if err != nil {
+				return nil, nil, err
+			}
+			if !entry {
+				broad[dir] = true
+				continue
+			}
 			companion := strings.TrimSuffix(file, ".go") + "_test.go"
+			found := false
 			if _, err := os.Stat(companion); err == nil {
 				selected[dir][companion] = true
+				found = true
 			} else if !os.IsNotExist(err) {
 				return nil, nil, err
+			}
+			// Historical split unit/supplemental tests remain executable. Do not
+			// include the companion of a separately implemented resource.
+			supplements, err := filepath.Glob(strings.TrimSuffix(file, ".go") + "_*_test.go")
+			if err != nil {
+				return nil, nil, err
+			}
+			for _, test := range supplements {
+				_, err := os.Stat(strings.TrimSuffix(test, "_test.go") + ".go")
+				if os.IsNotExist(err) {
+					selected[dir][test] = true
+					found = true
+				} else if err != nil {
+					return nil, nil, err
+				}
+			}
+			if !found {
+				broad[dir] = true
 			}
 		} else {
 			broad[dir] = true

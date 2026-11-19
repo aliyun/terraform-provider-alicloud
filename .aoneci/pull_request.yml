@@ -1,25 +1,28 @@
 name: Pull Request Checks
 
 triggers:
-  push:
-    paths:
-      - 'website/docs/**'
-      - 'alicloud/*.go'
-      - 'alicloud/service/**/*.go'
   merge_request:
-    types:
-      - opened
     paths:
+      - 'scripts/ci/**'
+      - 'scripts/internal/**'
+      - '.aoneci/**'
+      - 'go.mod'
+      - 'go.sum'
       - 'website/docs/**'
       - 'alicloud/*.go'
-      - 'alicloud/service/**/*.go'
+      - 'alicloud/**/*.go'
 
 envs:
-  CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
+  CODE_CI_SHALLOW_RANGE: '1'
+  CODE_HEAD: '${{git.commitId}}'
+  CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
+  CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
+  CODE_PUSH_BEFORE: '${{git.push.beforeSha256 ?: ""}}'
+  CODE_TARGET: '${{git.merge_request.targetBranch ?: ""}}'
+  CODE_DEFAULT_BRANCH: '${{git.defaultBranch}}'
   CODE_MR_SOURCE_PROJECT: '${{git.merge_request.sourceProjectId ?: ""}}'
   CODE_MR_TARGET_PROJECT: '${{git.merge_request.targetProjectId ?: ""}}'
-  CODE_MR_TARGET: '${{git.merge_request.targetBranch ?: ""}}'
-  CODE_DEFAULT_BRANCH: '${{git.defaultBranch}}'
+  CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
 
 jobs:
   title:
@@ -27,10 +30,10 @@ jobs:
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.24.0'
+          go-version: '1.25.8'
       - uses: checkout
         inputs:
-          fetch-depth: '2'
+          fetch-depth: '32'
       - name: Checking the title info
         # The title entries are derived from the register.go registration
         # join (scripts/title/title_check.go), not from filenames: a service
@@ -40,8 +43,10 @@ jobs:
         # code judges the merge request data.
         run: |
           set -euo pipefail
-          baseSha=$(git rev-parse --verify 'HEAD^')
-          headSha=$(git rev-parse --verify 'HEAD')
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          baseSha="$DIFF_BASE"
+          headSha="$DIFF_HEAD"
           if git cat-file -e "${baseSha}:scripts/title/title_check.go" 2>/dev/null; then
             git checkout "${baseSha}" -- scripts/title scripts/internal/splitlayout
           fi
@@ -53,20 +58,8 @@ jobs:
             ref="refs/heads/release-sync/${BASH_REMATCH[1]}"
             # A same-project MR into the default branch has the target repository as origin.
             test -n "$CODE_MR_TARGET_PROJECT" && test "$CODE_MR_TARGET_PROJECT" = "$CODE_MR_SOURCE_PROJECT" || exit 1
-            test "$CODE_MR_TARGET" = "$CODE_DEFAULT_BRANCH"
+            test "$CODE_TARGET" = "$CODE_DEFAULT_BRANCH"
             record=$(git ls-remote --refs --exit-code origin "$ref")
             export TITLE_RELEASE_CANDIDATE="${record%%$'\t'*}"
           fi
           go run scripts/title/title_check.go -title="${CODE_MR_TITLE}" -base="${baseSha}" -head="${headSha}"
-
-# 没有github.event.pull_request.commits语法的平替，用来获取commits数量
-#  commits:
-#    name: Pull Request Max Commits
-#    steps:
-#      - name: Checking the max commits number
-#        run: |
-#          commitNum=${{git.merge_request.commits }}
-#          if [[ ${commitNum} -gt 1 ]]; then
-#            echo -e "\nERROR: The PR has ${commitNum} commits, and please rebase it to 1.\n"
-#            exit 1
-#          fi

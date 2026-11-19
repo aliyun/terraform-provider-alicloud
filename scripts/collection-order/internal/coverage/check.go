@@ -305,6 +305,30 @@ func invalidateBuilderUses(node ast.Node, builders map[string]*builder) {
 	})
 }
 
+// An isolated CLI import verifies a separate state without replacing the applied snapshot.
+func verifiesIsolatedImport(attrs map[string]ast.Expr, sdk string) bool {
+	if ident(attrs["ImportState"]) != "true" || ident(attrs["ImportStateVerify"]) != "true" {
+		return false
+	}
+	for name, expr := range attrs {
+		switch name {
+		case "ImportState", "ImportStateVerify", "ResourceName", "ImportStateId",
+			"ImportStateIdPrefix", "ImportStateVerifyIgnore", "ImportStateVerifyIdentifierAttribute":
+		case "ImportStatePersist":
+			if !falseOrAbsent(expr) {
+				return false
+			}
+		case "ImportStateKind":
+			if !selector(expr, sdk, "ImportCommandWithID") {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return true
+}
+
 func inspectSteps(expr ast.Expr, sdk string, builders map[string]*builder, candidates map[string]bool, suppressed map[string]string, covered map[string]bool, suppressedCovered map[string]bool) {
 	steps, ok := expr.(*ast.CompositeLit)
 	if !ok {
@@ -322,6 +346,9 @@ func inspectSteps(expr ast.Expr, sdk string, builders map[string]*builder, candi
 			if name != "Config" {
 				invalidateBuilderUses(expr, builders)
 			}
+		}
+		if verifiesIsolatedImport(attrs, sdk) {
+			continue
 		}
 		config, ok := attrs["Config"].(*ast.CallExpr)
 		if !ok || len(config.Args) != 1 {

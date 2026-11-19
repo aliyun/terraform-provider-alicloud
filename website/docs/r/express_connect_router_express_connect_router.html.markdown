@@ -14,6 +14,8 @@ For information about Express Connect Router Express Connect Router and how to u
 
 -> **NOTE:** Available since v1.224.0.
 
+-> **NOTE:** If you maintain a narrow custom RAM policy that predates v2.3.0, `refresh` and `plan` will surface a `403 NoPermission` error from whichever supplementary action your role lacks, rather than silently leaving the computed field empty. Grant the two actions listed in [RAM Permissions](#ram-permissions) below — at resource level (`acs:expressconnectrouter::<accountId>:expressconnectrouter/<EcrId>`) or service level (`*`) — so refresh and plan stay green.
+
 ## Example Usage
 
 Basic Usage
@@ -25,6 +27,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -69,6 +79,31 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - Represents the creation time of the resource.
 * `status` - The status of the resource.
+* `disabled_route_entries` - (Computed, List, Available since v2.3.0) The route entries that are currently disabled on the Express Connect Router. See [`disabled_route_entries`](#disabled_route_entries) below.
+* `granted_instances` - (Computed, List, Available since v2.3.0) The network instances granted to the Express Connect Router. See [`granted_instances`](#granted_instances) below.
+
+### `disabled_route_entries`
+
+The disabled_route_entries supports the following:
+* `destination_cidr_block` - (Computed, String, Available since v2.3.0) The destination CIDR block of the disabled route entry.
+* `nexthop_instance_id` - (Computed, String, Available since v2.3.0) The ID of the next hop instance of the disabled route entry.
+
+### `granted_instances`
+
+The granted_instances supports the following:
+* `node_id` - (Computed, String, Available since v2.3.0) The ID of the granted network instance, for example `vpc-xxx` or `vbr-xxx`.
+* `node_type` - (Computed, String, Available since v2.3.0) The type of the granted network instance. Valid values: `VPC`, `VBR`.
+* `node_region_id` - (Computed, String, Available since v2.3.0) The region ID of the granted network instance.
+* `node_owner_uid` - (Computed, String, Available since v2.3.0) The ID of the Alibaba Cloud account that owns the granted network instance.
+
+## RAM Permissions
+
+The two read-only attributes [`disabled_route_entries`](#disabled_route_entries) and [`granted_instances`](#granted_instances) (available since v2.3.0) are populated by the following supplementary Describe actions. Each is an independent RAM permission on the `expressconnectrouter` service and is queried on every `read`/`refresh`/`plan`:
+
+* `expressconnectrouter:DescribeDisabledExpressConnectRouterRouteEntries` — lists the route entries currently disabled on the ECR.
+* `expressconnectrouter:DescribeInstanceGrantedToExpressConnectRouter` — lists the network instances granted to the ECR.
+
+These actions are in addition to the base resource actions (`expressconnectrouter:CreateExpressConnectRouter`, `expressconnectrouter:ModifyExpressConnectRouter`, `expressconnectrouter:DeleteExpressConnectRouter`, `expressconnectrouter:DescribeExpressConnectRouter`, etc.).
 
 ## Timeouts
 

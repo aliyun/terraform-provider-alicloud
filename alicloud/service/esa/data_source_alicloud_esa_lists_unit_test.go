@@ -116,7 +116,7 @@ func TestUnitEsaListsPagination(t *testing.T) {
 				RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
 				Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
 			}
-			client, err := config.Client()
+			client, err := connectivity.NewClient(config)
 			if err != nil {
 				t.Fatal(err)
 			}

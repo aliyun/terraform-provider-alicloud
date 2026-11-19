@@ -61,7 +61,7 @@ func databasegatewayTestClientForRegion(region string) (*connectivity.AliyunClie
 	}
 	conf.Credential = credential
 
-	return conf.Client()
+	return connectivity.NewClient(&conf)
 }
 
 func init() {

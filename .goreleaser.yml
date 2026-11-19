@@ -15,7 +15,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - '-s -w -X github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity.providerVersion={{.Version}}'
+      - '-s -w -X github.com/aliyun/terraform-provider-alicloud/alicloud/client/config.providerVersion={{.Version}}'
     goos:
       - freebsd
       - windows

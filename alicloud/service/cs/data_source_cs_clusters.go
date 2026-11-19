@@ -1,7 +1,10 @@
 package cs
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/url"
 	"regexp"
 	"strconv"
 	"time"
@@ -93,6 +96,30 @@ func DataSourceAckClusters() *schema.Resource {
 						"cluster_type": {
 							Type:     schema.TypeString,
 							Computed: true,
+						},
+						"connections": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"api_server_internet": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"api_server_intranet": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"master_public_ip": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"service_domain": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
 						},
 						"current_version": {
 							Type:     schema.TypeString,
@@ -491,6 +518,34 @@ func dataSourceAckClusterReadDescription(d *schema.ResourceData, id string, obje
 	}
 
 	mapping["vswitch_ids"] = vswitch_idsRaw
+
+	// Parse master_url (DescribeClusterDetail response) to fill connections,
+	// aligned with the legacy alicloud_cs_kubernetes_clusters data source and
+	// the resource_cs_managed_kubernetes connections semantics.
+	connection := make(map[string]string)
+	endPoint := make(map[string]string)
+	if masterURL, ok := objectRaw["master_url"].(string); ok && masterURL != "" {
+		// This data source iterates every cluster type (managed/serverless/
+		// edge/registered) under the account, so a master_url whose JSON does
+		// not match map[string]string must not be swallowed silently; surface
+		// the error instead of leaving empty endpoints unexplained.
+		if err := json.Unmarshal([]byte(masterURL), &endPoint); err != nil {
+			log.Printf("[WARN] failed to parse master_url of cluster %s: %s", id, err)
+		}
+	}
+	connection["api_server_internet"] = endPoint["api_server_endpoint"]
+	connection["api_server_intranet"] = endPoint["intranet_api_server_endpoint"]
+	if apiServer := endPoint["api_server_endpoint"]; apiServer != "" {
+		// Parse with net/url instead of hardcoded string splits: some clusters
+		// return an api_server_endpoint without a scheme or as an IPv6 literal,
+		// where string indexing panics the plugin. Parse failures or empty hosts
+		// leave master_public_ip empty rather than crashing.
+		if u, err := url.Parse(apiServer); err == nil && u.Host != "" {
+			connection["master_public_ip"] = u.Hostname()
+		}
+	}
+	connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", id, fmt.Sprint(objectRaw["region_id"]))
+	mapping["connections"] = []interface{}{connection}
 
 	return mapping, nil
 }

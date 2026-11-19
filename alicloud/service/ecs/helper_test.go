@@ -4,11 +4,11 @@ package ecs_test
 // migrated ECS tests reference bare. The ECS sub-package external tests
 // (package ecs_test) may import the root alicloud package directly: they already
 // depend on alicloud transitively via alicloud/acctest (acctest.Provider =
-// alicloud.Provider()), and importing root here forms no production import
+// sdkv2.Provider()), and importing root here forms no production import
 // cycle (only the internal package ecs cannot import root alicloud, because
 // alicloud -> service/ecs). These helpers mirror root's alicloud_sweeper_test.go
 // and provider_test.go verbatim, delegating to the shared alicloud/acctest
-// package for precheck and to alicloud.Provider() for the provider factory.
+// package for precheck and to sdkv2.Provider() for the provider factory.
 
 import (
 	"fmt"
@@ -18,9 +18,9 @@ import (
 	"testing"
 
 	"github.com/aliyun/credentials-go/credentials"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -28,7 +28,7 @@ import (
 // registered through service/ecs.ServicePackage delegation, so ResourcesMap
 // lookups (p := Provider().ResourcesMap) resolve the migrated ECS types.
 //
-// This is the thinnest possible delegation to the real root alicloud.Provider()
+// This is the thinnest possible delegation to the real root sdkv2.Provider()
 // factory, mirroring root's provider_test.go Provider(): each call returns a
 // freshly-built *schema.Provider so per-call factories (e.g. the image_copy
 // Basic factory's p := Provider() that captures the providers list, and the
@@ -39,7 +39,7 @@ import (
 // The intentionally-shared testAccProvider is still constructed once in init()
 // below, matching root provider_test.go's init().
 func Provider() *schema.Provider {
-	return alicloud.Provider()
+	return sdkv2.Provider()
 }
 
 var endpoints sync.Map
@@ -104,7 +104,7 @@ func sharedClientForRegion(region string) (interface{}, error) {
 	conf.Credential = credential
 
 	// configures a default client for the region, using the above env vars
-	client, err := conf.Client()
+	client, err := connectivity.NewClient(&conf)
 	if err != nil {
 		return nil, err
 	}

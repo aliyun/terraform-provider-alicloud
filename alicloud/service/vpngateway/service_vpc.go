@@ -136,13 +136,12 @@ func (s *VpcService) DescribeVpnIpsecServer(id string) (object map[string]interf
 	return object, nil
 }
 
-func (s *VpcService) DescribeVpnPbrRouteEntry(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
+func (s *VpcService) listVpnPbrRouteEntries(id string) (entries []map[string]interface{}, response map[string]interface{}, err error) {
 	client := s.client
 	action := "DescribeVpnPbrRouteEntries"
 	parts, err := helper.ParseResourceId(id, 4)
 	if err != nil {
-		return object, errs.WrapError(err)
+		return nil, response, errs.WrapError(err)
 	}
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -150,7 +149,6 @@ func (s *VpcService) DescribeVpnPbrRouteEntry(id string) (object map[string]inte
 		"PageNumber":   1,
 		"PageSize":     helper.PageSizeMedium,
 	}
-	idExist := false
 	for {
 		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
@@ -166,19 +164,16 @@ func (s *VpcService) DescribeVpnPbrRouteEntry(id string) (object map[string]inte
 		})
 		logs.AddDebug(action, response, request)
 		if err != nil {
-			return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+			return nil, response, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		}
 		v, err := jsonpath.Get("$.VpnPbrRouteEntries.VpnPbrRouteEntry", response)
 		if err != nil {
-			return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.VpnPbrRouteEntries.VpnPbrRouteEntry", response)
+			return nil, response, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.VpnPbrRouteEntries.VpnPbrRouteEntry", response)
 		}
-		if len(v.([]interface{})) < 1 {
-			return object, errs.WrapErrorf(errs.NotFoundErr("VPC", id), errs.NotFoundWithResponse, response)
-		}
-		for _, v := range v.([]interface{}) {
-			if fmt.Sprint(v.(map[string]interface{})["NextHop"]) == parts[1] && fmt.Sprint(v.(map[string]interface{})["RouteSource"]) == parts[2] && fmt.Sprint(v.(map[string]interface{})["RouteDest"]) == parts[3] {
-				idExist = true
-				return v.(map[string]interface{}), nil
+		for _, item := range v.([]interface{}) {
+			entry := item.(map[string]interface{})
+			if fmt.Sprint(entry["NextHop"]) == parts[1] && fmt.Sprint(entry["RouteSource"]) == parts[2] && fmt.Sprint(entry["RouteDest"]) == parts[3] {
+				entries = append(entries, entry)
 			}
 		}
 		if len(v.([]interface{})) < request["PageSize"].(int) {
@@ -186,15 +181,75 @@ func (s *VpcService) DescribeVpnPbrRouteEntry(id string) (object map[string]inte
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	if !idExist {
-		return object, errs.WrapErrorf(errs.NotFoundErr("VPC", id), errs.NotFoundWithResponse, response)
-	}
-	return
+	return entries, response, nil
 }
 
-func (s *VpcService) VpnPbrRouteEntryStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+func vpnPbrRouteEntryIdentityMatches(entry map[string]interface{}, weight int64, priority int64) bool {
+	return fmt.Sprint(entry["Weight"]) == fmt.Sprint(weight) && (priority == 0 || fmt.Sprint(entry["Priority"]) == fmt.Sprint(priority))
+}
+
+// DescribeVpnPbrRouteEntry requires an exact identity match so deletion cannot succeed against another route entry.
+func (s *VpcService) DescribeVpnPbrRouteEntry(id string, identity ...int64) (object map[string]interface{}, err error) {
+	if len(identity) == 0 || len(identity) > 2 {
+		return object, errs.WrapError(fmt.Errorf("weight and optional priority are required to identify policy route entry %s", id))
+	}
+	weight := identity[0]
+	var priority int64
+	if len(identity) == 2 {
+		priority = identity[1]
+	}
+	entries, response, err := s.listVpnPbrRouteEntries(id)
+	if err != nil {
+		return object, err
+	}
+	for _, entry := range entries {
+		if vpnPbrRouteEntryIdentityMatches(entry, weight, priority) {
+			return entry, nil
+		}
+	}
+	return object, errs.WrapErrorf(errs.NotFoundErr("VPC", id), errs.NotFoundWithResponse, response)
+}
+
+// DiscoverVpnPbrRouteEntry recovers a unique or exact identity for Read and Import without selecting an ambiguous first match.
+func (s *VpcService) DiscoverVpnPbrRouteEntry(id string, identity ...int64) (object map[string]interface{}, err error) {
+	if len(identity) > 2 {
+		return object, errs.WrapError(fmt.Errorf("weight and optional priority are required to identify policy route entry %s", id))
+	}
+	weight := int64(0)
+	priority := int64(0)
+	if len(identity) > 0 {
+		weight = identity[0]
+	}
+	if len(identity) == 2 {
+		priority = identity[1]
+	}
+	entries, response, err := s.listVpnPbrRouteEntries(id)
+	if err != nil {
+		return object, err
+	}
+	if len(entries) == 0 {
+		return object, errs.WrapErrorf(errs.NotFoundErr("VPC", id), errs.NotFoundWithResponse, response)
+	}
+	if len(identity) > 0 {
+		for _, entry := range entries {
+			if vpnPbrRouteEntryIdentityMatches(entry, weight, priority) {
+				return entry, nil
+			}
+		}
+		if len(entries) == 1 {
+			return entries[0], nil
+		}
+		return object, errs.WrapError(fmt.Errorf("policy route entry %s does not match weight/priority and multiple candidates exist", id))
+	}
+	if len(entries) == 1 {
+		return entries[0], nil
+	}
+	return object, errs.WrapError(fmt.Errorf("multiple policy route entries match %s; weight and priority are required to disambiguate", id))
+}
+
+func (s *VpcService) VpnPbrRouteEntryStateRefreshFunc(id string, failStates []string, identity ...int64) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeVpnPbrRouteEntry(id)
+		object, err := s.DescribeVpnPbrRouteEntry(id, identity...)
 		if err != nil {
 			if errs.NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
