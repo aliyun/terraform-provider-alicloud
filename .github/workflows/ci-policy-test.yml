@@ -1,10 +1,6 @@
 name: CI Policy Test
 on:
-  # Standalone unit tests for the route policy action. This workflow runs
-  # independently of the Basic Policy route job (it tests the routing logic
-  # itself, so depending on routing would be circular). It runs on
-  # ubuntu-latest with no secrets, the same sandbox used for external PR
-  # consumer jobs, so PR-controlled JavaScript cannot reach credentials.
+  # PR code tests the runner routing policy itself. Use an isolated hosted runner.
   pull_request:
     types:
       - opened
@@ -13,7 +9,7 @@ on:
       - ready_for_review
     branches:
       - master
-    paths:
+    paths: &policy_paths
       - .github/actions/terraform-ci-select-policy/**
       - .github/workflows/ci-policy-test.yml
       - .github/workflows/pull_requests.yml
@@ -22,48 +18,34 @@ on:
       - scripts/ci/test_multi_commit_pr.py
       - scripts/ci/resolve-change-range*
       - scripts/basic-check.sh
+      - scripts/ci/test*go_cache.py
       - scripts/ci/restore-local-go-cache.py
-      - scripts/ci/test_local_go_cache.py
-      - scripts/ci/test_workload_go_cache.py
       - scripts/ci/run-ci-fixtures.py
       - scripts/ci/test_fixture_compat.py
-      - scripts/ci/test_go_cache.py
       - scripts/ci/ensure-writable-go-cache.sh
-      - scripts/ci/test_ensure_writable_go_cache.py
-      - scripts/ci/test_bootstrap_go_cache.py
       - .github/workflows/acctest-terraform-basic.yml
       - .github/workflows/document-check.yml
       - .github/workflows/consistency-check.yml
       - .github/workflows/acctest-terraform-lint.yml
       - .github/workflows/testing-coverage-rate.yml
       - .github/workflows/collection-order-coverage.yml
+      - scripts/title/**
+      - scripts/internal/splitlayout/**
+      - scripts/ci/policy_test_groups.py
+      - scripts/ci/test_policy_test_groups.py
+      - scripts/ci/check_scope.py
+      - scripts/ci/test_check_scope.py
+      - scripts/ci/run-document-checks.py
+      - scripts/ci/run-format-check.py
+      - scripts/ci/run-vet-check.py
+      - scripts/ci/run-provider-check.py
+      - go.mod
+      - go.sum
+      - .go-version
+      - .github/workflows/acctest-terraform-basic-policy.yml
   push:
-    branches:
-      - master
-    paths:
-      - .github/actions/terraform-ci-select-policy/**
-      - .github/workflows/ci-policy-test.yml
-      - .github/workflows/pull_requests.yml
-      - scripts/compatibility/**
-      - scripts/field_check.sh
-      - scripts/ci/test_multi_commit_pr.py
-      - scripts/ci/resolve-change-range*
-      - scripts/basic-check.sh
-      - scripts/ci/restore-local-go-cache.py
-      - scripts/ci/test_local_go_cache.py
-      - scripts/ci/test_workload_go_cache.py
-      - scripts/ci/run-ci-fixtures.py
-      - scripts/ci/test_fixture_compat.py
-      - scripts/ci/test_go_cache.py
-      - scripts/ci/ensure-writable-go-cache.sh
-      - scripts/ci/test_ensure_writable_go_cache.py
-      - scripts/ci/test_bootstrap_go_cache.py
-      - .github/workflows/acctest-terraform-basic.yml
-      - .github/workflows/document-check.yml
-      - .github/workflows/consistency-check.yml
-      - .github/workflows/acctest-terraform-lint.yml
-      - .github/workflows/testing-coverage-rate.yml
-      - .github/workflows/collection-order-coverage.yml
+    branches: [master]
+    paths: *policy_paths
 
 permissions: {}
 
@@ -72,66 +54,62 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  route-policy-test:
+  policy-tests:
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
     steps:
       - name: Checkout event head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
-          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+          fetch-depth: 0
+          filter: blob:none
+      - name: Select policy tests for the complete change
+        id: scope
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          CI_BASE_REF: ${{ github.ref_name }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          set -euo pipefail
+          # Legacy PR heads can predate the selector. Only narrow a proven range.
+          if [[ -f scripts/ci/policy_test_groups.py && "$PUSH_BASE_SHA" != 0000000000000000000000000000000000000000 ]] &&
+             range=$(bash scripts/ci/resolve-change-range.sh); then
+            DIFF_BASE=$(sed -n 's/^diff_base=//p' <<< "$range")
+            DIFF_HEAD=$(sed -n 's/^diff_head=//p' <<< "$range")
+            export DIFF_BASE DIFF_HEAD
+            python3 scripts/ci/policy_test_groups.py >> "$GITHUB_OUTPUT"
+          else
+            echo 'Running all policy tests without path selection.'
+            printf '%s\n' route=true cache=true multi=true >> "$GITHUB_OUTPUT"
+          fi
       - name: Run route policy unit tests
+        if: steps.scope.outputs.route == 'true'
         run: node --test .github/actions/terraform-ci-select-policy/route.test.js
-
-  go-cache-test:
-    permissions:
-      contents: read
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout event head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
-          ref: ${{ github.event.pull_request.head.sha || github.ref }}
-          persist-credentials: false
       - name: Setup Go
+        id: go
+        if: ${{ !cancelled() && (steps.scope.outputs.cache == 'true' || steps.scope.outputs.multi == 'true') }}
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
           go-version-file: .go-version
           cache: false
       - name: Test cache reuse and publication boundaries
-        env:
-          PYTHONDONTWRITEBYTECODE: '1'
+        if: ${{ !cancelled() && steps.go.outcome == 'success' && steps.scope.outputs.cache == 'true' }}
         run: |
           python3 -m unittest discover -s scripts/ci -p 'test*go_cache.py'
           python3 -m unittest discover -s scripts/ci -p test_fixture_compat.py
-
-  multi-commit-pr-test:
-    permissions:
-      contents: read
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout event head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
-          ref: ${{ github.event.pull_request.head.sha || github.ref }}
-          persist-credentials: false
-      - name: Setup Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
-        with:
-          go-version-file: .go-version
-          cache: false
       - name: Verify complete PR ranges and compatibility
-        env:
-          PYTHONDONTWRITEBYTECODE: '1'
+        if: ${{ !cancelled() && steps.go.outcome == 'success' && steps.scope.outputs.multi == 'true' }}
         run: |
+          python3 -m unittest discover -s scripts/ci -p test_policy_test_groups.py
           bash scripts/ci/resolve-change-range_test.sh
           python3 -m unittest discover -s scripts/ci -p test_multi_commit_pr.py
           python3 -m unittest discover -s scripts/ci -p test_check_scope.py
