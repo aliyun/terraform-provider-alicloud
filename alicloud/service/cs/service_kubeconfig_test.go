@@ -89,6 +89,13 @@ func csKubeconfigTestClient(t *testing.T, handler http.HandlerFunc) *connectivit
 	return client
 }
 
+// CsKubeconfigTestClient lets external resource tests reuse the same server and
+// fallback root pool instead of initializing a second process-wide TLS fixture.
+func CsKubeconfigTestClient(t *testing.T, handler http.HandlerFunc) *connectivity.AliyunClient {
+	t.Helper()
+	return csKubeconfigTestClient(t, handler)
+}
+
 func kubeConfigJSONResponse(t *testing.T, config string) []byte {
 	t.Helper()
 	body, err := json.Marshal(map[string]string{"config": config, "expiration": "2099-01-01T00:00:00Z"})

@@ -21,7 +21,12 @@ This resource will help you configure auto scaling for the kubernetes cluster, s
 
 -> **NOTE:** From version 1.256.0, support for setting the priority of scaling groups by parameter `priorities`.
 
+-> **NOTE:** Import reads the `cluster-autoscaler` configuration of the cluster. After importing, also declare `cluster_id` in your configuration: it is `ForceNew`, and an omitted `cluster_id` would plan a replacement. If you use a different `scaler_type` or configure `priorities`, declare them again as well.
+
+-> **NOTE:** Removing `skip_nodes_with_system_pods`, `skip_nodes_with_local_storage`, `daemonset_eviction_for_nodes`, `recycle_node_deletion_enabled` or `scale_up_from_zero` from the configuration makes the provider stop sending that argument; the provider does not send the server default instead. Removing an argument whose cluster value is `true` is not supported: the plan uses the zero value and the configuration does not converge. Set the argument to `false` explicitly instead of removing it.
+
 ## Example Usage
+
 If you do not have an existing cluster, you need to create an ACK cluster through [alicloud_cs_managed_kubernetes](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_managed_kubernetes) first, and then configure automatic scaling.
 
 Basic Usage
@@ -33,6 +38,13 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
 variable "name" {
   default = "terraform-example"
 }
@@ -140,6 +152,14 @@ The following arguments are supported.
 
 The following attributes are exported:
 * `id` - Resource id.
+
+## Import
+
+The auto scaling configuration of an ACK cluster can be imported using the cluster ID, e.g.
+
+```shell
+$ terraform import alicloud_cs_autoscaling_config.example <cluster_id>
+```
 
 ## Timeouts
 
