@@ -4830,3 +4830,56 @@ func (s *EsaServiceV2) DescribeEsaSiteEnvironment(id string) (object map[string]
 
 	return nil, errs.WrapErrorf(errs.NotFoundErr("SiteEnvironment", id), errs.NotFoundWithResponse, response)
 }
+
+func (s *EsaServiceV2) DescribeEsaErrorPagesRedirectRule(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+
+	request = make(map[string]interface{})
+	request["SiteId"] = parts[0]
+	request["ConfigId"] = parts[1]
+
+	action := "GetErrorPagesRedirectRule"
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcGet("ESA", "2024-09-10", action, request, nil)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"InvalidConfigId", "ConfigNotFound", "SiteNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("ErrorPagesRedirectRule", id), errs.NotFoundWithResponse, response)
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+
+	if object["ConfigId"] == nil {
+		return object, errs.WrapErrorf(errs.NotFoundErr("ErrorPagesRedirectRule", id), errs.NotFoundWithResponse, response)
+	}
+
+	return object, nil
+}
