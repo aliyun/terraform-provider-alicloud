@@ -157,7 +157,7 @@ jobs:
           tool_name: errcheck
           level: info
           reviewdog_version: 'v0.21.0'
-          golangci_lint_version: 'v2.7.2'
+          golangci_lint_version: 'v2.12.2'
 
   tflint:
     needs: route
