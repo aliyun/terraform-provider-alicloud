@@ -23,6 +23,14 @@ Note that because this resource conflicts with the `resources` attribute of `ali
 Basic Usage
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "NatGatewayConfigSpec"
 }

@@ -1,6 +1,7 @@
 package vpc
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -580,32 +581,65 @@ func (s *VpcService) DescribeNetworkAcl(id string) (object map[string]interface{
 	return object, nil
 }
 
-func (s *VpcService) DescribeNetworkAclAttachment(id string, vpcResources []vpc.Resource) (err error) {
-	invoker := NewInvoker()
-	return invoker.Run(func() error {
-		object, err := s.DescribeNetworkAcl(id)
+func (s *VpcService) DescribeNetworkAclWithContext(ctx context.Context, id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeNetworkAclAttributes"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"NetworkAclId": id,
+	}
+	timeout := 5 * time.Minute
+	if deadline, ok := ctx.Deadline(); ok {
+		timeout = time.Until(deadline)
+	}
+	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		response, err = s.client.RpcPostWithContext(ctx, "Vpc", "2016-04-28", action, nil, request)
 		if err != nil {
-			return WrapError(err)
-		}
-		resources, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
-		if len(resources) < 1 {
-			return WrapErrorf(NotFoundErr("Network Acl Attachment", id), NotFoundMsg, ProviderERROR)
-		}
-		success := true
-		for _, source := range resources {
-			success = false
-			for _, res := range vpcResources {
-				item := source.(map[string]interface{})
-				if fmt.Sprint(item["ResourceId"]) == res.ResourceId {
-					success = true
-				}
+			if NeedRetry(err) {
+				return retry.RetryableError(err)
 			}
-			if success == false {
-				return WrapErrorf(NotFoundErr("Network Acl Attachment", id), NotFoundMsg, ProviderERROR)
-			}
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidNetworkAcl.NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("VPC:NetworkAcl", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.NetworkAclAttribute", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.NetworkAclAttribute", response)
+	}
+	object, ok := v.(map[string]interface{})
+	if !ok {
+		return nil, WrapErrorf(fmt.Errorf("unexpected network acl attribute shape"), FailedGetAttributeMsg, id, "$.NetworkAclAttribute", response)
+	}
+	return object, nil
+}
+
+func (s *VpcService) DescribeNetworkAclAttachment(ctx context.Context, id string, vpcResources []vpc.Resource) (present []vpc.Resource, err error) {
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		object, err := s.DescribeNetworkAclWithContext(ctx, id)
+		if err != nil {
+			return WrapError(err)
+		}
+		if len(vpcResources) < 1 {
+			return WrapErrorf(NotFoundErr("Network Acl Attachment", id), NotFoundMsg, ProviderERROR)
+		}
+		present, err = networkAclAttachmentPresentResources(object, vpcResources)
+		if err != nil {
+			return WrapError(err)
+		}
+		if len(present) < 1 {
+			return WrapErrorf(NotFoundErr("Network Acl Attachment", id), NotFoundMsg, ProviderERROR)
+		}
+		return nil
+	})
+	return present, err
 }
 
 func (s *VpcService) WaitForNetworkAcl(networkAclId string, status Status, timeout int) error {
@@ -640,36 +674,182 @@ func (s *VpcService) WaitForNetworkAcl(networkAclId string, status Status, timeo
 	}
 }
 
-func (s *VpcService) WaitForNetworkAclAttachment(id string, resource []vpc.Resource, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+type networkAclAttachmentRecord struct {
+	resourceId   string
+	resourceType string
+	status       string
+}
+
+func networkAclAttachmentRecords(object map[string]interface{}) ([]networkAclAttachmentRecord, error) {
+	records := make([]networkAclAttachmentRecord, 0)
+	resourceMap, ok := object["Resources"].(map[string]interface{})
+	if !ok {
+		if object["Resources"] == nil {
+			return records, nil
+		}
+		return nil, fmt.Errorf("unexpected network acl attachment Resources shape")
+	}
+	sources, ok := resourceMap["Resource"].([]interface{})
+	if !ok {
+		if resourceMap["Resource"] == nil {
+			return records, nil
+		}
+		return nil, fmt.Errorf("unexpected network acl attachment Resource shape")
+	}
+	records = make([]networkAclAttachmentRecord, 0, len(sources))
+	for i, source := range sources {
+		item, ok := source.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("unexpected network acl attachment record at index %d", i)
+		}
+		resourceId, idOk := item["ResourceId"].(string)
+		resourceType, typeOk := item["ResourceType"].(string)
+		status, statusOk := item["Status"].(string)
+		if !idOk || !typeOk || !statusOk || resourceId == "" || resourceType == "" || status == "" {
+			return nil, fmt.Errorf("unexpected network acl attachment record fields at index %d", i)
+		}
+		records = append(records, networkAclAttachmentRecord{
+			resourceId:   resourceId,
+			resourceType: resourceType,
+			status:       status,
+		})
+	}
+	return records, nil
+}
+
+func networkAclAttachmentPresentResources(object map[string]interface{}, expected []vpc.Resource) ([]vpc.Resource, error) {
+	records, err := networkAclAttachmentRecords(object)
+	if err != nil {
+		return nil, err
+	}
+	present := make([]vpc.Resource, 0, len(expected))
+	for _, res := range expected {
+		for _, record := range records {
+			if record.resourceId == res.ResourceId && record.resourceType == res.ResourceType {
+				present = append(present, res)
+				break
+			}
+		}
+	}
+	return present, nil
+}
+
+func networkAclAttachmentAllBound(object map[string]interface{}, expected []vpc.Resource, status Status) (bool, error) {
+	records, err := networkAclAttachmentRecords(object)
+	if err != nil {
+		return false, err
+	}
+	if len(expected) < 1 || fmt.Sprint(object["Status"]) != string(status) {
+		return false, nil
+	}
+	for _, res := range expected {
+		bound := false
+		for _, record := range records {
+			if record.resourceId == res.ResourceId && record.resourceType == res.ResourceType && record.status == string(BINDED) {
+				bound = true
+				break
+			}
+		}
+		if !bound {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func networkAclAttachmentHasNoBinding(object map[string]interface{}, expected []vpc.Resource) (bool, error) {
+	if len(expected) < 1 {
+		return true, nil
+	}
+	present, err := networkAclAttachmentPresentResources(object, expected)
+	if err != nil {
+		return false, err
+	}
+	return len(present) == 0, nil
+}
+
+func networkAclAttachmentResourcesToUnbind(object map[string]interface{}, expected []vpc.Resource) ([]vpc.UnassociateNetworkAclResource, error) {
+	resources := make([]vpc.UnassociateNetworkAclResource, 0)
+	if len(expected) < 1 || object == nil {
+		return resources, nil
+	}
+	present, err := networkAclAttachmentPresentResources(object, expected)
+	if err != nil {
+		return nil, err
+	}
+	for _, res := range present {
+		resources = append(resources, vpc.UnassociateNetworkAclResource{
+			ResourceId:   res.ResourceId,
+			ResourceType: res.ResourceType,
+		})
+	}
+	return resources, nil
+}
+
+func (s *VpcService) networkAclAttachmentBound(ctx context.Context, id string, resource []vpc.Resource, status Status) (bool, error) {
+	object, err := s.DescribeNetworkAclWithContext(ctx, id)
+	if err != nil {
+		if NotFoundError(err) {
+			return false, nil
+		}
+		return false, WrapError(err)
+	}
+	ready, err := networkAclAttachmentAllBound(object, resource, status)
+	if err != nil {
+		return false, WrapError(err)
+	}
+	return ready, nil
+}
+
+func (s *VpcService) networkAclAttachmentUnbound(ctx context.Context, id string, resource []vpc.Resource) (bool, error) {
+	object, err := s.DescribeNetworkAclWithContext(ctx, id)
+	if err != nil {
+		if NotFoundError(err) {
+			return true, nil
+		}
+		return false, WrapError(err)
+	}
+	ready, err := networkAclAttachmentHasNoBinding(object, resource)
+	if err != nil {
+		return false, WrapError(err)
+	}
+	return ready, nil
+}
+
+func (s *VpcService) WaitForNetworkAclAttachment(ctx context.Context, id string, resource []vpc.Resource, status Status, deadline time.Time) error {
+	timeout := int(time.Until(deadline).Seconds())
 	for {
-		err := s.DescribeNetworkAclAttachment(id, resource)
+		if err := ctx.Err(); err != nil {
+			return WrapError(err)
+		}
+		var ready bool
+		var err error
+		if status == Deleted {
+			// Unassociation is asynchronous: UNBINDING still carries a binding record, and with
+			// several resources some records can disappear before others. Only the absence of every
+			// expected record proves the unbind finished.
+			ready, err = s.networkAclAttachmentUnbound(ctx, id, resource)
+		} else {
+			ready, err = s.networkAclAttachmentBound(ctx, id, resource, status)
+		}
 		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
+			return WrapError(err)
 		}
-		object, err := s.DescribeNetworkAcl(id)
-		success := true
-		resources, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
-		// Check Acl's binding resources
-		for _, res := range resources {
-			item := res.(map[string]interface{})
-			if fmt.Sprint(item["Status"]) != string(BINDED) {
-				success = false
-			}
-		}
-		if fmt.Sprint(object["Status"]) == string(status) && success == true {
+		if ready {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, fmt.Sprint(object["Status"]), string(status), ProviderERROR)
+			actual := "attachment not bound yet"
+			if status == Deleted {
+				actual = "binding records still present"
+			}
+			return WrapErrorf(nil, WaitTimeoutMsg, id, GetFunc(1), timeout, actual, string(status), ProviderERROR)
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+		select {
+		case <-ctx.Done():
+			return WrapError(ctx.Err())
+		case <-time.After(DefaultIntervalShort * time.Second):
+		}
 	}
 }
 

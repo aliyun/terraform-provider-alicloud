@@ -15,3 +15,22 @@ package vpc
 // the production var and its Lock/Unlock call sites in
 // resourceAliyunRouteEntryCreate/DeleteRouteEntry are untouched.
 var RouteEntryTaskLockForTest = &routeEntryTaskLock
+
+// NetworkAclAttachmentHasNoBindingForTest exposes the Deleted-wait predicate so the external test
+// package can prove the UNBINDING / partial-disappearance / all-gone distinctions without cloud
+// side effects.
+var NetworkAclAttachmentHasNoBindingForTest = networkAclAttachmentHasNoBinding
+
+// NetworkAclAttachmentResourcesToUnbindForTest exposes the delete-side binding subset so the
+// external test package can prove that one attachment only unbinds its own resources.
+var NetworkAclAttachmentResourcesToUnbindForTest = networkAclAttachmentResourcesToUnbind
+
+var NetworkAclAttachmentPresentResourcesForTest = networkAclAttachmentPresentResources
+
+var NetworkAclAttachmentAllBoundForTest = networkAclAttachmentAllBound
+
+var NetworkAclAttachmentRemainingForTest = networkAclAttachmentRemaining
+
+var NetworkAclAttachmentRetryForTest = networkAclAttachmentRetry
+
+var NetworkAclAttachmentDeleteIdempotentForTest = networkAclAttachmentDeleteIdempotent
