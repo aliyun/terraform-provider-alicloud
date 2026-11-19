@@ -76,6 +76,12 @@ func ServicePackage() conns.ServicePackage {
 			{TypeName: "alicloud_esa_sites", Factory: dataSourceAliCloudEsaSites},
 			{TypeName: "alicloud_esa_waf_rulesets", Factory: dataSourceAliCloudEsaWafRuleSets},
 		},
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_esa_error_pages_redirect_rule",
+				Factory:  NewErrorPagesRedirectRuleResource,
+			},
+		},
 		DataSources: []conns.DataSource{
 			{
 				TypeName: "alicloud_esa_site_environments",
