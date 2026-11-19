@@ -20,6 +20,8 @@ envs:
   CODE_PUSH_BEFORE: '${{git.push.beforeSha256 ?: ""}}'
   CODE_TARGET: '${{git.merge_request.targetBranch ?: ""}}'
   CODE_DEFAULT_BRANCH: '${{git.defaultBranch}}'
+  CODE_MR_SOURCE_PROJECT: '${{git.merge_request.sourceProjectId ?: ""}}'
+  CODE_MR_TARGET_PROJECT: '${{git.merge_request.targetProjectId ?: ""}}'
   CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
 
 jobs:
@@ -51,4 +53,13 @@ jobs:
           # Without that path at the base, only the merge request that
           # introduces the checker can be here: it runs the copy it adds,
           # under review.
+          unset TITLE_RELEASE_CANDIDATE
+          if [[ "$CODE_MR_TITLE" =~ ^Release\ sync:\ (v2\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$ ]]; then
+            ref="refs/heads/release-sync/${BASH_REMATCH[1]}"
+            # A same-project MR into the default branch has the target repository as origin.
+            test -n "$CODE_MR_TARGET_PROJECT" && test "$CODE_MR_TARGET_PROJECT" = "$CODE_MR_SOURCE_PROJECT" || exit 1
+            test "$CODE_TARGET" = "$CODE_DEFAULT_BRANCH"
+            record=$(git ls-remote --refs --exit-code origin "$ref")
+            export TITLE_RELEASE_CANDIDATE="${record%%$'\t'*}"
+          fi
           go run scripts/title/title_check.go -title="${CODE_MR_TITLE}" -base="${baseSha}" -head="${headSha}"

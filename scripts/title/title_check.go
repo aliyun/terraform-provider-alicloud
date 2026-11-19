@@ -59,10 +59,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 )
@@ -117,6 +121,15 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("==> PR Title: %s\n", *title)
+	if strings.HasPrefix(*title, "Release sync:") {
+		err := checkReleaseSync(*title, *head, os.Getenv("TITLE_RELEASE_CANDIDATE"))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("==> verified release sync")
+		return
+	}
 	files, err := changedFiles(*base, *head)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
@@ -134,6 +147,75 @@ func main() {
 		fmt.Fprintln(os.Stderr, "ERROR: Pull request title validation failed.")
 		os.Exit(1)
 	}
+}
+
+var releaseTitle = regexp.MustCompile(`^Release sync: v(2\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$`)
+var commitID = regexp.MustCompile(`^[0-9a-f]{40}$`)
+var releaseHeading = regexp.MustCompile(`^## ([0-9]+\.[0-9]+\.[0-9]+) \(([^)]+)\)$`)
+
+// approved is resolved by CI from refs/heads/release-sync/v<version> in the
+// target repository. A contributor's fork ref or release-like title alone
+// cannot select this path. All release evidence is read from the approved SHA.
+func checkReleaseSync(title, head, approved string) error {
+	match := releaseTitle.FindStringSubmatch(title)
+	if match == nil {
+		return fmt.Errorf("expected Release sync: v2.MINOR.PATCH")
+	}
+	if !commitID.MatchString(approved) || approved != head {
+		return fmt.Errorf("the PR head must be the official release-sync/v%s candidate", match[1])
+	}
+	version, err := exec.Command("git", "show", head+":alicloud/client/config/version.go").Output()
+	if err != nil {
+		return fmt.Errorf("read the candidate Provider version: %w", err)
+	}
+	if !declaresProviderVersion(version, match[1]) {
+		return fmt.Errorf("the candidate Provider version must be %s", match[1])
+	}
+	log, err := exec.Command("git", "show", head+":CHANGELOG-v2.md").Output()
+	if err != nil {
+		return fmt.Errorf("read the candidate changelog: %w", err)
+	}
+	for _, line := range strings.Split(string(log), "\n") {
+		if !strings.HasPrefix(line, "## ") {
+			continue
+		}
+		entry := releaseHeading.FindStringSubmatch(strings.TrimSpace(line))
+		if entry == nil {
+			break
+		}
+		if entry[2] == "Unreleased" {
+			if entry[1] == match[1] {
+				break
+			}
+			continue
+		}
+		if _, err := time.Parse("January 2, 2006", entry[2]); err == nil && entry[1] == match[1] {
+			return nil
+		}
+		break
+	}
+	return fmt.Errorf("the first dated changelog entry must be %s", match[1])
+}
+
+func declaresProviderVersion(src []byte, want string) bool {
+	file, err := parser.ParseFile(token.NewFileSet(), "version.go", src, 0)
+	if err != nil || file.Name.Name != "config" {
+		return false
+	}
+	for _, decl := range file.Decls {
+		group, ok := decl.(*ast.GenDecl)
+		if !ok || group.Tok != token.VAR {
+			continue
+		}
+		for _, spec := range group.Specs {
+			v := spec.(*ast.ValueSpec)
+			if len(v.Names) == 1 && v.Names[0].Name == "providerVersion" && len(v.Values) == 1 {
+				value, ok := v.Values[0].(*ast.BasicLit)
+				return ok && value.Kind == token.STRING && value.Value == `"`+want+`"`
+			}
+		}
+	}
+	return false
 }
 
 // changedFiles lists the added, modified and renamed files of the change
