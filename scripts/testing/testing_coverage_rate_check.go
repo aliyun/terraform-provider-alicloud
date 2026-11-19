@@ -14,6 +14,7 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
 	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
+	"github.com/aliyun/terraform-provider-alicloud/scripts/testing/internal/clientmigration"
 	mapset "github.com/deckarep/golang-set"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	log "github.com/sirupsen/logrus"
@@ -61,7 +62,7 @@ func hasCoverageRelevantTestChanges(file *diffparser.DiffFile) bool {
 	}
 	for _, hunk := range file.Hunks {
 		if hunkHasCoverageRelevantChange(hunk) {
-			return true
+			return !clientmigration.OnlyChange(file)
 		}
 	}
 	return false
