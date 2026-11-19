@@ -32,7 +32,7 @@ by this PR.
 
 ## Regression validation
 
-`CI Policy Test / multi-commit-pr-test` runs on relevant PR and master changes:
+`CI Policy Test / policy-tests` runs the multi-commit suite on relevant PR and master changes.
 
 - Real diverged/multi-commit Git histories verify merge-base selection, inclusion
   of earlier commits, exclusion of base-only changes, blobless forks and rejection
