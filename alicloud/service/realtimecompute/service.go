@@ -754,3 +754,91 @@ func (s *Service) QueryAvailableInstances(id, instanceRegion, productCode, produ
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
+
+func (s *Service) DescribeRealtimeComputeNamespace(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["InstanceId"] = parts[0]
+	query["Namespace"] = parts[1]
+	query["Region"] = client.RegionId
+	action := "DescribeNamespaces"
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcGet("foasconsole", "2021-10-28", action, query, request)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.Namespaces", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Namespaces", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, errs.WrapErrorf(errs.NotFoundErr("Namespace", id), errs.NotFoundMsg, response)
+	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["Namespace"]) == parts[1] {
+			return v.(map[string]interface{}), nil
+		}
+	}
+
+	return nil, errs.WrapErrorf(errs.NotFoundErr("Namespace", id), errs.NotFoundWithResponse, response)
+}
+
+func (s *Service) RealtimeComputeNamespaceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+	return s.RealtimeComputeNamespaceStateRefreshFuncWithApi(id, field, failStates, s.DescribeRealtimeComputeNamespace)
+}
+
+func (s *Service) RealtimeComputeNamespaceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
+			}
+		}
+
+		return object, currentStatus, nil
+	}
+}
