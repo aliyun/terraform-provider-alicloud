@@ -20,6 +20,9 @@ STATES = {'rejected': '已拒绝', 'ignored': '已忽略', 'adopted': '已采纳
 VERDICTS = {'NOT_REPRODUCED': '实测未复现', 'REPRODUCED': '实测已复现', 'BLOCKED': '实测受阻'}
 POLL_SECONDS = 30
 REUSE_POLL_SECONDS = 60
+# AoneCI's own failure marker; CI failure readers (Jarvis read_ci_failure) keep only lines like these.
+FAILURE_MARKER = 'HIGHLIGHT__[ERROR] '
+MAX_FAILURE_FINDINGS = 5
 
 
 class ReviewError(RuntimeError):
@@ -225,11 +228,20 @@ def token(value):
     return re.sub(r'[^A-Za-z0-9_.:/-]', '_', str(value))[:200] or '_'
 
 
-def print_result(report, kind):
-    """Stable log lines so digital humans can act on the check without the BUC-only report page."""
-    print('ACUBE_REVIEW_RESULT kind=' + kind, flush=True)
+def result_lines(report, kind, reason=None):
+    """Stable result lines so digital humans can act on the check without the BUC-only report page.
+
+    Digital humans read a failed check through the Jarvis SCM tool read_ci_failure, which keeps only
+    error-formatted lines, the last 8 per step, each up to 360 characters, and AoneCI appends one
+    failure line after this script. A failure therefore prints at most 6 lines, all carrying AoneCI's
+    error marker: the findings that still block, then the result line last.
+    """
+    failed = kind not in ('PASSED', 'SKIPPED')
+    findings = []
     for index, f in blocking_findings(report):
         mark = disposition(report, f, index)
+        if failed and mark.get('state') in DISMISSED:
+            continue
         fields = ['id=' + token(finding_id(f, index)), 'severity=' + token(str(f.get('severity')).strip().upper()),
                   'state=' + token(mark.get('state') or 'undecided')]
         for key, name in (('actorType', 'actor'), ('verdict', 'verdict'), ('commentId', 'comment')):
@@ -237,7 +249,18 @@ def print_result(report, kind):
                 fields.append(name + '=' + token(mark[key]))
         if evidence(mark):
             fields.append('evidence=' + evidence(mark))
-        print('ACUBE_FINDING ' + ' '.join(fields), flush=True)
+        findings.append('ACUBE_FINDING ' + ' '.join(fields))
+    if failed and len(findings) > MAX_FAILURE_FINDINGS:
+        more = len(findings) - MAX_FAILURE_FINDINGS + 1
+        findings = findings[:MAX_FAILURE_FINDINGS - 1] + ['ACUBE_FINDING more=%d see=summary' % more]
+    summary = 'ACUBE_REVIEW_RESULT kind=' + kind + (' reason=' + token(reason)[:120] if reason else '')
+    prefix = FAILURE_MARKER if failed else ''
+    return [prefix + line[:340] for line in findings + [summary]]
+
+
+def print_result(report, kind, reason=None):
+    for line in result_lines(report, kind, reason):
+        print(line, flush=True)
 
 
 def announce(report, previous):
@@ -285,7 +308,7 @@ def main():
                 raise RuntimeError('Invalid skipped review receipt')
             publish(receipt, url, label, head)
             print('Review skipped: no service implementation changes', flush=True)
-            print('ACUBE_REVIEW_RESULT kind=SKIPPED', flush=True)
+            print_result(receipt, 'SKIPPED')
             return 0
         message = None
         while receipt.get('reused') is True:
@@ -327,7 +350,7 @@ def main():
         report.update(status='failed', conclusion='failure', ciConclusion='failure', errorMessage=str(exc), resultKind=failure)
         publish(report, url, label, head)
         print(str(exc), file=sys.stderr)
-        print('ACUBE_REVIEW_RESULT kind=' + failure, flush=True)
+        print_result(report, failure, str(exc))
         return 1
 
 if __name__ == '__main__':

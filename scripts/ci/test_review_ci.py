@@ -1,5 +1,6 @@
 import importlib.util
 import io
+import re
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -8,6 +9,16 @@ from unittest.mock import patch
 spec = importlib.util.spec_from_file_location('review_ci', Path(__file__).with_name('review_ci.py'))
 ci = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ci)
+
+# Same line filter as the Jarvis SCM tool read_ci_failure (components/runtime/src/resident-code.ts).
+JARVIS_ERROR_LINE = re.compile(r'(?:HIGHLIGHT__\[ERROR\]|(?:^|\s)(?:ERROR:|Error:|fatal:|panic:)|^\S+\.\w+:\d+(?::\d+)?:)')
+
+
+def jarvis_failure_view(log):
+    """What a digital human sees: error lines only, the last 8 per step, 360 characters each."""
+    log += '\nHIGHLIGHT__[ERROR] exec script failed, error: exit status 1'
+    return [line[:360] for line in log.split('\n') if JARVIS_ERROR_LINE.search(line)][-8:]
+
 
 class ReviewCiTest(unittest.TestCase):
     def test_report_contains_findings_and_annotation_link(self):
@@ -104,6 +115,35 @@ class ReviewCiTest(unittest.TestCase):
         self.assertIn('ACUBE_REVIEW_RESULT kind=FINDINGS_BLOCKED', log)
         self.assertIn('id=F-02 severity=P1 state=adopted actor=AGENT verdict=REPRODUCED comment=99', log)
         self.assertIn('（F-02）', log)
+
+    def test_failure_lines_survive_the_jarvis_ci_failure_reader(self):
+        jarvis = 'https://jarivs.alibaba.net/Jarvis/tasks/' + '2'*8 + '-2222-2222-2222-' + '2'*12 + '/'
+        report = ci.apply_ci_gate({'status': 'completed', 'conclusion': 'failure',
+            'findings': [{'findingId': 'F-01', 'severity': 'p1'}, {'findingId': 'F-02', 'severity': 'p1'},
+                         {'findingId': 'F-03', 'severity': 'p2'}],
+            'dispositions': {'F-01': {'state': 'rejected', 'actorType': 'AGENT', 'evidenceUrl': jarvis},
+                             'F-02': {'state': 'adopted', 'actorType': 'AGENT', 'verdict': 'REPRODUCED', 'commentId': 99,
+                                      'evidenceUrl': jarvis}}})
+        noise = '\n'.join('Error: unrelated line %d' % i for i in range(12))
+        seen = jarvis_failure_view(noise + '\n' + '\n'.join(ci.result_lines(report, report['resultKind'])))
+        self.assertEqual('HIGHLIGHT__[ERROR] ACUBE_REVIEW_RESULT kind=FINDINGS_BLOCKED', seen[-2])
+        self.assertTrue(any('id=F-02 severity=P1 state=adopted actor=AGENT verdict=REPRODUCED comment=99' in line for line in seen))
+        self.assertFalse(any('F-01' in line or 'F-03' in line for line in seen), 'dismissed and P2 findings stay out of failures')
+
+        many = {'status': 'completed', 'conclusion': 'failure',
+                'findings': [{'findingId': 'F-%02d' % i, 'severity': 'p0'} for i in range(1, 10)],
+                'dispositions': {'F-%02d' % i: {'state': 'needs_human', 'evidenceUrl': jarvis} for i in range(1, 10)}}
+        lines = ci.result_lines(ci.apply_ci_gate(many), 'FINDINGS_BLOCKED')
+        seen = jarvis_failure_view(noise + '\n' + '\n'.join(lines))
+        self.assertEqual(lines, seen[-len(lines) - 1:-1], 'every result line is kept, in order')
+        self.assertIn('ACUBE_FINDING more=5', seen[-3])
+        self.assertTrue(all(len(line) <= 360 for line in lines))
+
+        error = ci.result_lines({}, 'SERVICE_ERROR', 'ACube HTTP 503; check task in ACube')
+        self.assertEqual(['HIGHLIGHT__[ERROR] ACUBE_REVIEW_RESULT kind=SERVICE_ERROR reason=ACube_HTTP_503__check_task_in_ACube'], error)
+        passed = ci.result_lines({'findings': [{'findingId': 'F-01', 'severity': 'p1'}],
+                                  'dispositions': {'F-01': {'state': 'rejected', 'actorType': 'AGENT'}}}, 'PASSED')
+        self.assertEqual(['ACUBE_FINDING id=F-01 severity=P1 state=rejected actor=AGENT', 'ACUBE_REVIEW_RESULT kind=PASSED'], passed)
 
     def test_waiting_past_the_deadline_reports_timeout(self):
         tid, head = 'review_'+'b'*32, 'a'*40

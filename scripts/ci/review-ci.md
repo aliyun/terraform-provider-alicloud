@@ -96,12 +96,22 @@ run for those MRs (a new commit, or closing and reopening the MR).
 
 The summary shows each finding's disposition, who made it, the reason and a link
 to the Jarvis verification task. The log ends with stable lines for digital
-humans that cannot open the BUC-only ACube page:
+humans that cannot open the BUC-only ACube page. A passed check lists every P0/P1:
 
 ```text
-ACUBE_REVIEW_RESULT kind=PASSED|FINDINGS_BLOCKED|SERVICE_ERROR|TIMEOUT|MALFORMED_REPORT|SKIPPED
 ACUBE_FINDING id=F-01 severity=P1 state=rejected actor=AGENT verdict=NOT_REPRODUCED evidence=<Jarvis task URL>
-ACUBE_FINDING id=F-02 severity=P1 state=adopted actor=AGENT verdict=REPRODUCED comment=<MR comment ID>
+ACUBE_REVIEW_RESULT kind=PASSED
+```
+
+Digital humans read a failed check with the Jarvis SCM tool `read_ci_failure`,
+which keeps only error-formatted lines (the last 8 per step, 360 characters
+each). A failed check therefore prints only the findings that still block, at
+most 5 lines with an overflow count, then the result line last, all prefixed with
+AoneCI's failure marker:
+
+```text
+HIGHLIGHT__[ERROR] ACUBE_FINDING id=F-02 severity=P1 state=adopted actor=AGENT verdict=REPRODUCED comment=<MR comment ID>
+HIGHLIGHT__[ERROR] ACUBE_REVIEW_RESULT kind=FINDINGS_BLOCKED|SERVICE_ERROR|TIMEOUT|MALFORMED_REPORT [reason=...]
 ```
 
 Deploy the ACube change first. Until it is live, ACube returns no dispositions
