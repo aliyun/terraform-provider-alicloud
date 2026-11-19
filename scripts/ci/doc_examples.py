@@ -199,9 +199,16 @@ def check_provider_source(main_tf, *, snapshot=True, allow_random=False):
 MANIFEST_ROOT = 'ci/assets/document-examples/'
 DOC_ROOTS = ('website/docs/r/', 'website/docs/d/')
 NATIVE_CHECKS = ('lifecycle', 'import', 'cleanup')
-EXAMPLE_PHASES = ('build', 'init', 'validate', 'plan', 'apply', 'plan-after-apply',
-                  'import-generate', 'import-init', 'import-plan', 'import-verify',
-                  'import-apply', 'destroy', 'state-list', 'plan-after-destroy')
+APPLY_PHASES = ('build', 'init', 'validate', 'plan', 'apply', 'plan-after-apply')
+LIFECYCLE_PHASES = APPLY_PHASES + ('destroy', 'state-list')
+EXAMPLE_PHASES = APPLY_PHASES + ('import-generate', 'import-init', 'import-plan',
+                                 'import-verify', 'import-apply', 'destroy',
+                                 'state-list', 'plan-after-destroy')
+
+
+def example_action(document):
+    # Data sources are read through Terraform lifecycle operations and cannot be imported.
+    return 'lifecycle' if document.startswith('website/docs/d/') else 'example'
 
 
 def sha(text):
@@ -534,35 +541,46 @@ def validate_result(result, request):
     hcl = result.get('hcl') or {}
     if not isinstance(hcl, dict) or not isinstance(hcl.get('provider'), dict):
         raise ValueError('Missing Example Provider evidence')
-    if hcl.get('action') != 'example' or hcl.get('mainTfSha256') != sha(request['mainTf']):
+    action = request.get('hclAction', 'example')
+    if action not in ('example', 'lifecycle') or hcl.get('action') != action or hcl.get('mainTfSha256') != sha(request['mainTf']):
         raise ValueError('Example identity mismatch')
     provider = hcl['provider']
     binary = provider.get('binarySha256')
     if provider.get('sourceId') != request['sourceId'] or not isinstance(binary, str) or not re.fullmatch('[a-f0-9]{64}', binary):
         raise ValueError('Example Provider source/binary evidence mismatch')
     phases = hcl.get('phases')
+    required_phases = EXAMPLE_PHASES if action == 'example' else LIFECYCLE_PHASES
     if (not isinstance(phases, list) or any(not isinstance(row, dict) for row in phases)
-            or [row.get('name') for row in phases] != list(EXAMPLE_PHASES)):
-        raise ValueError('Missing or reordered Example lifecycle/Import evidence')
+            or [row.get('name') for row in phases] != list(required_phases)):
+        raise ValueError(f'Missing or reordered phase evidence for {action} mode')
     for row in phases:
         if (row.get('status') != 'passed' or row.get('timedOut') is True
                 or type(row.get('exitCode')) not in (int, float)
                 or row['exitCode'] not in ((0, 2) if row['name'] == 'plan' else (0,))):
             raise ValueError('Example phase did not pass: ' + str(row.get('name')))
     imported, cleanup = hcl.get('importCheck'), hcl.get('cleanup')
-    if (not isinstance(imported, dict) or type(imported.get('mutations')) not in (int, float)
-            or imported['mutations'] != 0 or imported.get('policy') != 'provider-docs-v1'):
+    if action == 'example' and (not isinstance(imported, dict)
+                                or type(imported.get('mutations')) not in (int, float)
+                                or imported['mutations'] != 0 or imported.get('policy') != 'provider-docs-v1'):
         raise ValueError('Example Import verification missing')
     if (not isinstance(cleanup, dict) or cleanup.get('attempted') is not True
             or cleanup.get('stateEmpty') is not True or cleanup.get('status') != 'success'):
-        raise ValueError('Example Import mutation/cleanup proof missing')
+        raise ValueError('Example cleanup proof missing: require successful destroy and empty state')
 
 
 def proof(case, task_id):
+    skip_import = example_action(case['document']) == 'lifecycle'
+    assertions = []
+    for row in case['assertions']:
+        skipped = skip_import and row['check'] == 'import'
+        assertions.append(dict(id=row['id'], check=row['check'],
+                               result='SKIP' if skipped else 'PASS', taskId=str(task_id),
+                               **({'reason': 'Import is not applicable to data-source documentation'}
+                                  if skipped else {'evidence': 'result.hcl'})))
     return dict(document=case['document'], scenario=case['id'],
                 originalSha256=case['originalSha256'], mainTfSha256=case['mainTfSha256'],
                 sourceSpans=case['sourceSpans'], fixtures=case['fixtures'], sources=case['sources'],
                 adaptationSha256=sha(case['adaptationDiff']),
-                assertions=[dict(id=row['id'], check=row['check'], result='PASS',
-                                 taskId=str(task_id), evidence='result.hcl') for row in case['assertions']],
+                importStatus='SKIPPED_NOT_APPLICABLE' if skip_import else 'PASS',
+                assertions=assertions,
                 proseAssertions='NOT_VERIFIED')

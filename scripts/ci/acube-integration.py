@@ -302,7 +302,8 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
     capabilities = client.call('GET', '/capabilities')
     if (capabilities.get('submissionIdempotency') != 'oss-admission-v1'
             or kind == 'acctest' and capabilities.get('accTestReuseQuery') != 'complete-v1'
-            or kind == 'examples' and 'example' not in capabilities.get('hclActions', [])):
+            or kind == 'examples' and not {doc_examples.example_action(value['document'])
+                                           for _, value in items} <= set(capabilities.get('hclActions', []))):
         raise ValueError('ACube CI capability is not deployed; no cloud task submission authorized')
     sources = [client.call('POST', '/sources/import', {'repository': REPOSITORY, 'commitSha': frozen[key]}) for key in ('head','base')]
     if any(not re.fullmatch('[a-f0-9]{64}', s.get('sourceId', '')) for s in sources): raise ValueError('Invalid source import')
@@ -319,7 +320,7 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                    'authorizationRef': 'code-ci:' + run_id + '/mr/' + str(frozen.get('mergeRequestId') or 'none')}
         if kind == 'acctest': request.update(testCases=value, variables={'TEST':name},
                                            testConcurrency=2)
-        else: request.update(mainTf=value['mainTf'], hclAction='example')
+        else: request.update(mainTf=value['mainTf'], hclAction=doc_examples.example_action(value['document']))
         # A documentation inventory/contract cannot change an identical ACC submission key.
         request['idempotencyKey'] = 'ci-v1-' + digest({'run':run_id, 'kind':kind, 'name':name, 'request':request})
         item_file = output / (digest(name) + '.json')
@@ -432,7 +433,7 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                 publish_report(output, report)
                 if validation_error:
                     failures.append({'name': record['name'], 'taskId': task_id,
-                                     'error': report.get('error') or validation_error})
+                                     'error': report.get('failureSummary') or report.get('error') or validation_error})
             except ValueError as error:
                 failures.append({'name': record['name'], 'taskId': task_id, 'error': redact(error)})
         pending = running

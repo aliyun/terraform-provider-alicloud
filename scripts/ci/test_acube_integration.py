@@ -302,7 +302,9 @@ class IntegrationTest(unittest.TestCase):
             with patch.dict(os.environ, {'ACUBE_PROVIDER_RUN_TOKEN': token, 'AONE_CI_SUMMARY_MD': str(summary)}), \
                     patch.object(diagnostics, 'read_stdout', return_value=stdout), self.assertRaisesRegex(ValueError, 'HCL destroy failed'):
                 m.execute(Client(), {'head': 'a' * 40, 'base': 'b' * 40, 'packages': {},
-                                     'examples': [{'name': 'website/docs/r/demo.html.markdown#0', 'mainTf': 'private HCL'}]},
+                                     'examples': [{'name': 'website/docs/r/demo.html.markdown#0',
+                                                   'document': 'website/docs/r/demo.html.markdown',
+                                                   'mainTf': 'private HCL'}]},
                           'examples', 'run-123', Path(root))
             reports = [p for p in (Path(root) / 'diagnostics').glob('*.json') if p.name != 'document-review.json']
             self.assertEqual(len(reports), 1)
@@ -310,10 +312,23 @@ class IntegrationTest(unittest.TestCase):
             self.assertEqual(report['phases'][-1]['name'], 'destroy')
             self.assertEqual(report['cleanup']['status'], 'failed')
             public = console.getvalue() + summary.read_text() + reports[0].read_text()
-            for expected in ['InternalError', 'QueryAvailableInstances', '01A1BE4B-B86C-33C7-B545-56DAD40E98C6']:
+            for expected in ['InternalError', 'QueryAvailableInstances', '01A1BE4B-B86C-33C7-B545-56DAD40E98C6',
+                             'DocsExampleTest failed at destroy', 'Check the cleanup log']:
                 self.assertIn(expected, public)
             for secret in [token, url, 'private-signature', 'private-password', 'private HCL', '1234567890123456']:
                 self.assertNotIn(secret, public)
+
+    def test_datasource_import_failure_points_to_ci_update(self):
+        result = {'status': 'failed', 'result': {
+            'error': 'Missing import plan evidence',
+            'hcl': {'phases': [{'name': 'import-verify', 'status': 'failed', 'exitCode': 0}],
+                    'cleanup': {'status': 'success', 'stateEmpty': True}}}}
+        report = diagnostics.terminal_report('website/docs/d/reserved_instances.html.markdown#example-1',
+                                             33948, result, {'mode': 'hcl'}, 'ACube task did not succeed')
+        self.assertEqual(report['failedPhase'], 'import-verify')
+        self.assertIn('Missing import plan evidence', report['failureSummary'])
+        self.assertIn('33948', report['failureSummary'])
+        self.assertIn('lifecycle mode without import', report['nextStep'])
 
     def test_log_index_failure_does_not_replace_remote_failure(self):
         class Client:

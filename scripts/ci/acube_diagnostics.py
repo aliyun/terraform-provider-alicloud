@@ -119,6 +119,28 @@ def terminal_report(name, task_id, status, request, validation_error=None, logs=
         report['unsuccessfulCases'] = [
             {'name': redact(c.get('name', 'unknown')), 'result': redact(c.get('result', 'missing'))}
             for c in tests.get('cases', []) if c.get('result') != 'PASS'][:100]
+    if request.get('mode') == 'hcl' and validation_error:
+        failed = [phase for phase in report.get('phases', [])
+                  if phase.get('status') == 'failed' or phase.get('timedOut') is True]
+        phase = failed[0].get('name', 'unknown') if failed else None
+        if phase:
+            report['failedPhase'] = phase
+        reason = report.get('error') or report['validationError']
+        location = f" at {phase}" if phase else ""
+        report['failureSummary'] = f"DocsExampleTest failed{location} for {report['name']} (ACube task {report['taskId']}). {reason}"
+        if phase and phase.startswith('import-'):
+            if report['name'].startswith('website/docs/d/'):
+                report['nextStep'] = ('Data-source docs must use lifecycle mode without import. '
+                                      'Sync the Provider CI fix and rerun DocsExampleTest.')
+            else:
+                report['nextStep'] = ('Inspect this task’s import plan and verify the example has importable '
+                                      'managed resources and produces no mutations after import.')
+        elif phase in ('destroy', 'state-list', 'plan-after-destroy'):
+            report['nextStep'] = 'Check the cleanup log and task state before retrying this example.'
+        elif phase in ('init', 'validate', 'plan', 'apply', 'plan-after-apply'):
+            report['nextStep'] = f"Inspect the {phase} log and the named HCL example before retrying."
+        else:
+            report['nextStep'] = 'Inspect the ACube task result and its phase evidence before retrying.'
     if validation_error and isinstance(logs, dict) and logs.get('stdout.log'):
         try:
             report['logExcerpt'] = error_excerpt(read_stdout(logs['stdout.log'], task_id))
@@ -195,6 +217,9 @@ def publish_report(output, report):
     name = hashlib.sha256((report['name'] + ':' + report['taskId']).encode()).hexdigest()
     (report_directory(output) / (name + '.json')).write_text(text + '\n')
     print('ACube result: ' + json.dumps(report, ensure_ascii=False), flush=True)
+    if report.get('failureSummary'):
+        print(report['failureSummary'], flush=True)
+        print('Next step: ' + report['nextStep'], flush=True)
     if report.get('logExcerpt'):
         print('ACube failure detail (redacted):\n' + report['logExcerpt'], flush=True)
     summary = os.environ.get('AONE_CI_SUMMARY_MD')
@@ -203,6 +228,8 @@ def publish_report(output, report):
                  + '- Check: `' + report['name'] + '`\n'
                  + '- Commit: `' + str(report.get('commitSha')) + '`\n'
                  + '- Exit code: `' + str(report.get('exitCode')) + '`\n')
+        if report.get('failureSummary'):
+            block += '\n**' + report['failureSummary'] + '**\n\n' + report['nextStep'] + '\n\n'
         for field in ('error', 'taskError', 'validationError', 'diagnosticWarning'):
             if report.get(field):
                 block += '- ' + field + ': ' + report[field] + '\n'
