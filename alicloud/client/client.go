@@ -80,7 +80,9 @@ import (
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/client/config"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
+	tfhelper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awscredentials "github.com/aws/aws-sdk-go-v2/credentials"
 	awsdynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -90,7 +92,7 @@ import (
 )
 
 type AliyunClient struct {
-	Region               Region
+	Region               config.Region
 	RegionId             string
 	SourceIp             string
 	SecureTransport      string
@@ -101,7 +103,7 @@ type AliyunClient struct {
 	SecurityToken                string
 	OtsInstanceName              string
 	accountIdMutex               sync.RWMutex
-	config                       *Config
+	config                       *config.Config
 	teaSdkConfig                 rpc.Config
 	teaRoaSdkConfig              roa.Config
 	teaRpcOpenapiConfig          openapi.Config
@@ -651,7 +653,7 @@ func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, 
 		return nil, err
 	}
 	if endpoint != "" {
-		_ = endpoints.AddEndpointMapping(client.config.RegionId, string(DNSCode), endpoint)
+		_ = endpoints.AddEndpointMapping(client.config.RegionId, string(config.DNSCode), endpoint)
 	}
 
 	dnsconn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.AuthCredential(true))
@@ -799,7 +801,7 @@ func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error
 		return nil, err
 	}
 	if endpoint != "" {
-		_ = endpoints.AddEndpointMapping(client.config.RegionId, string(CRCode), endpoint)
+		_ = endpoints.AddEndpointMapping(client.config.RegionId, string(config.CRCode), endpoint)
 	}
 	crconn, err := cr.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.AuthCredential(true))
 	if err != nil {
@@ -841,7 +843,7 @@ func (client *AliyunClient) WithCrEEClient(do func(*cr_ee.Client) (interface{}, 
 		return nil, err
 	}
 	if endpoint != "" {
-		_ = endpoints.AddEndpointMapping(client.config.RegionId, string(CRCode), endpoint)
+		_ = endpoints.AddEndpointMapping(client.config.RegionId, string(config.CRCode), endpoint)
 	}
 	creeconn, err := cr_ee.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.AuthCredential(true))
 	if err != nil {
@@ -885,7 +887,7 @@ func (client *AliyunClient) WithCdnClient(do func(*cdn.CdnClient) (interface{}, 
 		cdnconn.SetSecurityToken(client.config.SecurityToken)
 		endpoint := client.config.CdnEndpoint
 		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, CDNCode)
+			endpoint = config.LoadEndpoint(client.config.RegionId, config.CDNCode)
 		}
 		if endpoint != "" && !strings.HasPrefix(endpoint, "http") {
 			cdnconn.SetEndpoint(fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://")))
@@ -905,7 +907,7 @@ func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interfac
 		return nil, err
 	}
 	if endpoint != "" {
-		_ = endpoints.AddEndpointMapping(client.config.RegionId, string(CDNCode), endpoint)
+		_ = endpoints.AddEndpointMapping(client.config.RegionId, string(config.CDNCode), endpoint)
 	}
 	cdnconn, err := cdn_new.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.AuthCredential(true))
 	if err != nil {
@@ -985,7 +987,7 @@ func (client *AliyunClient) NewOtsRoaClient(productCode string) (*roa.Client, er
 	// first, load endpoint by user setting
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		// second,  load endpoint by serverside rule
-		if err := client.loadEndpoint(productCode); err != nil {
+		if err := client.config.LoadEndpoint(productCode, client.RegionId); err != nil {
 			return nil, err
 		}
 	}
@@ -1284,12 +1286,12 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 		endpoint = strings.TrimPrefix(strings.TrimPrefix(endpoint, "http://"), "https://")
 	}
 
-	config := client.getSdkConfig()
-	transport := config.HttpTransport
+	cfg := client.getSdkConfig()
+	transport := cfg.HttpTransport
 	// Receiving proxy config from environment
 	transport.Proxy = http.ProxyFromEnvironment
 	clientOptions := []fc.ClientOption{fc.WithSecurityToken(client.config.SecurityToken), fc.WithTransport(transport),
-		fc.WithRetryCount(DefaultClientRetryCountSmall)}
+		fc.WithRetryCount(config.DefaultClientRetryCountSmall)}
 	// The FC SDK takes the whole-request timeout in seconds and treats 0 as
 	// "no timeout": keep its default when the provider value is unset, and
 	// round a positive sub-second value up instead of dropping it to 0.
@@ -1298,7 +1300,7 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 	}
 
 	accessKey, secretKey, secretToken := client.config.GetRefreshCredential()
-	fcconn, err := fc.NewClient(fmt.Sprintf("https://%s", endpoint), string(ApiVersion20160815), accessKey, secretKey, clientOptions...)
+	fcconn, err := fc.NewClient(fmt.Sprintf("https://%s", endpoint), string(config.ApiVersion20160815), accessKey, secretKey, clientOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the FC client: %#v", err)
 	}
@@ -1402,10 +1404,10 @@ func (client *AliyunClient) WithDataHubClient(do func(api datahub.DataHubApi) (i
 	if client.dhconn == nil {
 		endpoint := client.config.DatahubEndpoint
 		if endpoint == "" {
-			endpoint = loadEndpoint(client.RegionId, DATAHUBCode)
+			endpoint = config.LoadEndpoint(client.RegionId, config.DATAHUBCode)
 		}
 		if endpoint == "" {
-			if client.RegionId == string(APSouthEast1) {
+			if client.RegionId == string(config.APSouthEast1) {
 				endpoint = "dh-singapore.aliyuncs.com"
 			} else {
 				endpoint = fmt.Sprintf("dh-%s.aliyuncs.com", client.RegionId)
@@ -1416,11 +1418,11 @@ func (client *AliyunClient) WithDataHubClient(do func(api datahub.DataHubApi) (i
 		}
 
 		account := datahub.NewStsCredential(client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
-		config := &datahub.Config{
+		cfg := &datahub.Config{
 			UserAgent: client.getUserAgent(),
 		}
 
-		client.dhconn = datahub.NewClientWithConfig(endpoint, config, account)
+		client.dhconn = datahub.NewClientWithConfig(endpoint, cfg, account)
 	}
 
 	return do(client.dhconn)
@@ -1476,7 +1478,7 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 	if client.mnsconn == nil {
 		endpoint := client.config.MnsEndpoint
 		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, MNSCode)
+			endpoint = config.LoadEndpoint(client.config.RegionId, config.MNSCode)
 			if endpoint == "" {
 				endpoint = fmt.Sprintf("%s.aliyuncs.com", client.config.RegionId)
 			}
@@ -1539,7 +1541,7 @@ func (client *AliyunClient) WithTableStoreClient(instanceName string, do func(*t
 	}
 	endpoint := client.config.OtsEndpoint
 	if endpoint == "" {
-		endpoint = loadEndpoint(client.RegionId, OTSCode)
+		endpoint = config.LoadEndpoint(client.RegionId, config.OTSCode)
 	}
 	if endpoint == "" {
 		endpoint = fmt.Sprintf("%s.%s.ots.aliyuncs.com", instanceName, client.RegionId)
@@ -1579,7 +1581,7 @@ func (client *AliyunClient) WithTableStoreTunnelClient(instanceName string, do f
 	}
 	endpoint := client.config.OtsEndpoint
 	if endpoint == "" {
-		endpoint = loadEndpoint(client.RegionId, OTSCode)
+		endpoint = config.LoadEndpoint(client.RegionId, config.OTSCode)
 	}
 	if endpoint == "" {
 		endpoint = fmt.Sprintf("%s.%s.ots.aliyuncs.com", instanceName, client.RegionId)
@@ -1623,11 +1625,11 @@ func (client *AliyunClient) WithCsProjectClient(clusterId, endpoint string, clus
 	return do(csProjectClient)
 }
 
-func (client *AliyunClient) NewCommonRequest(product, serviceCode, schema string, apiVersion ApiVersion) (*requests.CommonRequest, error) {
+func (client *AliyunClient) NewCommonRequest(product, serviceCode, schema string, apiVersion config.ApiVersion) (*requests.CommonRequest, error) {
 	endpoint := ""
 	product = strings.ToLower(product)
 	if _, exist := client.config.Endpoints.Load(product); !exist {
-		if err := client.loadEndpoint(product); err != nil {
+		if err := client.config.LoadEndpoint(product, client.RegionId); err != nil {
 			return nil, err
 		}
 	}
@@ -1648,10 +1650,10 @@ func (client *AliyunClient) NewCommonRequest(product, serviceCode, schema string
 	request.Scheme = schema
 	request.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	request.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	request.AppendUserAgent(Terraform, client.config.TerraformVersion)
-	request.AppendUserAgent(Provider, config.ProviderVersion())
-	request.AppendUserAgent(Module, client.config.ConfigurationSource)
-	request.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
+	request.AppendUserAgent(config.Terraform, client.config.TerraformVersion)
+	request.AppendUserAgent(config.Provider, config.ProviderVersion())
+	request.AppendUserAgent(config.Module, client.config.ConfigurationSource)
+	request.AppendUserAgent(config.TerraformTraceId, client.config.TerraformTraceId)
 	return request, nil
 }
 
@@ -1697,27 +1699,27 @@ func (client *AliyunClient) getAccountType() string {
 	endpoint, err := client.loadApiEndpoint(productCode)
 	if err != nil {
 		log.Printf("[WARN] getting BssOpenApi endpoint failed. Error: %v", err)
-	} else if endpoint == BssOpenAPIEndpointInternational {
+	} else if endpoint == config.BssOpenAPIEndpointInternational {
 		request["ProductCode"] = "cfw"
 		request["ProductType"] = "cfw_pre_intl"
 		accountType = "International"
 	}
-	wait := incrementalWait(1*time.Second, 0*time.Second)
+	wait := tfhelper.IncrementalWait(1*time.Second, 0*time.Second)
 	_ = retry.Retry(30*time.Second, func() *retry.RetryError {
 		_, err := client.RpcPost("BssOpenApi", "2017-12-14", "QueryAvailableInstances", nil, request, true)
 		log.Printf("[WARN] checking caller identity's account type by invoking BssOpenApi QueryAvailableInstances failed. Error: %v", err)
 		if err != nil {
-			if needRetry(err) {
+			if config.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
-			if isExpectedErrors(err, []string{"NotApplicable", "not found article by given param"}) {
+			if errs.IsExpectedErrors(err, []string{"NotApplicable", "not found article by given param"}) {
 				if request["ProductType"] == "vipcloudfw" {
 					accountType = "International"
-					client.config.Endpoints.Store(productCode, BssOpenAPIEndpointInternational)
+					client.config.Endpoints.Store(productCode, config.BssOpenAPIEndpointInternational)
 				} else {
 					accountType = "Domestic"
-					client.config.Endpoints.Store(productCode, BssOpenAPIEndpointDomestic)
+					client.config.Endpoints.Store(productCode, config.BssOpenAPIEndpointDomestic)
 				}
 			} else {
 				accountType = ""
@@ -1743,7 +1745,7 @@ func (client *AliyunClient) getSdkConfig() *sdk.Config {
 }
 
 func (client *AliyunClient) getUserAgent() string {
-	return fmt.Sprintf("%s/%s %s/%s %s/%s", Terraform, client.config.TerraformVersion, Provider, config.ProviderVersion(), Module, client.config.ConfigurationSource)
+	return fmt.Sprintf("%s/%s %s/%s %s/%s", config.Terraform, client.config.TerraformVersion, config.Provider, config.ProviderVersion(), config.Module, client.config.ConfigurationSource)
 }
 
 func (client *AliyunClient) getHttpProxy() (proxy *url.URL, err error) {
@@ -1834,18 +1836,8 @@ func (client *AliyunClient) resolveTeaProxy(endpoint string) (useProxy bool, pro
 	return true, proxy.String(), "", nil
 }
 
-// applyTeaProxyConfig translates the provider's proxy decision onto the
-// tea-roa client returned by roa.NewClient. It must be called AFTER
-// roa.NewClient: tea-roa's Client.Init copies HttpProxy/HttpsProxy from the
-// roa.Config but does NOT copy NoProxy (pinned tea-roa v1.3.4), so writing
-// NoProxy on the Config is lost and tea falls back to reading the NO_PROXY
-// environment variable, whose suffix/wildcard entries its exact host
-// comparison never matches. Setting the exported fields on the *roa.Client
-// directly reaches the values DoRequest places into the _runtime map
-// ("httpProxy"/"httpsProxy"/"noProxy" = DefaultString(runtime.X, client.X)).
-// tea checks noProxy before the proxy URL, so a matching bypass entry
-// suppresses the proxy even when HttpsProxy is set; an empty HttpsProxy alone
-// would leave tea reading HTTPS_PROXY from the environment and proxying anyway.
+// applyTeaProxyConfig must be called after roa.NewClient.
+// tea-roa v1.3.4 Init does not copy NoProxy, so set it on the returned client.
 func (client *AliyunClient) applyTeaProxyConfig(roaClient *roa.Client, endpoint string) error {
 	useProxy, proxyURL, noProxyHost, err := client.resolveTeaProxy(endpoint)
 	if err != nil {
@@ -1869,10 +1861,10 @@ func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse,
 
 	endpoint := client.config.StsEndpoint
 	if endpoint == "" {
-		endpoint = loadEndpoint(client.config.RegionId, STSCode)
+		endpoint = config.LoadEndpoint(client.config.RegionId, config.STSCode)
 	}
 	if endpoint != "" {
-		_ = endpoints.AddEndpointMapping(client.config.RegionId, string(STSCode), endpoint)
+		_ = endpoints.AddEndpointMapping(client.config.RegionId, string(config.STSCode), endpoint)
 	}
 	stsClient, err := sts.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.AuthCredential(true))
 	if err != nil {
@@ -2407,7 +2399,7 @@ func (client *AliyunClient) WithEciClient(do func(*eci.Client) (interface{}, err
 	}
 
 	if endpoint != "" {
-		_ = endpoints.AddEndpointMapping(client.config.RegionId, string(EciCode), endpoint)
+		_ = endpoints.AddEndpointMapping(client.config.RegionId, string(config.EciCode), endpoint)
 	}
 
 	eciConn, err := eci.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.AuthCredential(true))
@@ -2484,7 +2476,7 @@ func (client *AliyunClient) NewQuotasClientV2() (*openapi.Client, error) {
 	productCode := "quotas"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
+		if err := client.config.LoadEndpoint(productCode, client.RegionId); err != nil {
 			endpoint = "quotas.aliyuncs.com"
 			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)

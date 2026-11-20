@@ -20,6 +20,7 @@ import (
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/credentials-go/credentials"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/client/config"
 )
 
 // newLocalRpcClient points the SLB endpoint of a client at a local test server
@@ -38,7 +39,7 @@ func newLocalRpcClient(t *testing.T, endpoint string) *AliyunClient {
 	endpoints.Store("slb", endpoint)
 	return &AliyunClient{
 		RegionId: "cn-beijing",
-		config: &Config{
+		config: &config.Config{
 			RegionId:    "cn-beijing",
 			Protocol:    "HTTP",
 			Credential:  credential,
@@ -453,7 +454,7 @@ func newLocalHttpsRpcClient(t *testing.T, endpoint string) *AliyunClient {
 	endpoints.Store("slb", endpoint)
 	return &AliyunClient{
 		RegionId: "cn-beijing",
-		config: &Config{
+		config: &config.Config{
 			RegionId:    "cn-beijing",
 			Protocol:    "HTTPS",
 			Credential:  credential,

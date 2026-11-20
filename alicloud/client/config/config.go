@@ -482,33 +482,6 @@ func NeedRetry(err error) bool {
 	return needRetry(err)
 }
 
-func isExpectedErrors(err error, expectCodes []string) bool {
-	if err == nil {
-		return false
-	}
-
-	if e, ok := err.(*tea.SDKError); ok {
-		for _, code := range expectCodes {
-			// The second statement aims to match the tea sdk history bug
-			if *e.Code == code || strings.HasPrefix(code, *e.Code) || strings.Contains(*e.Data, code) {
-				return true
-			}
-		}
-		return false
-	}
-
-	for _, code := range expectCodes {
-		if strings.Contains(err.Error(), code) {
-			return true
-		}
-	}
-	return false
-}
-
-func IsExpectedErrors(err error, expectCodes []string) bool {
-	return isExpectedErrors(err, expectCodes)
-}
-
 func (c *Config) RefreshAuthCredential() error {
 	if err := c.setAuthCredentialByEcsRoleName(); err != nil {
 		return err
