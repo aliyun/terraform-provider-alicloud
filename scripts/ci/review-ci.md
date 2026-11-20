@@ -9,7 +9,8 @@ ACube continues to provide the review service. Generate templates with
 
 - Formal review retains exact MR/head
   binding, content reuse, non-service-change skips, P0/P1 blocking, P2 nonblocking,
-  report links and finding actions, HTTP retries and seven-hour polling deadline.
+  report links and finding actions, a five-minute ACube unavailability window
+  and seven-hour polling deadline.
 - AI review exits successfully with `status=skipped`, `reason=ai-review-disabled`.
   It does not request credentials or submit a remote task; success is not an AI verdict.
 - Templates embed their scripts and perform no MR checkout. Publish only an
@@ -116,3 +117,29 @@ HIGHLIGHT__[ERROR] ACUBE_REVIEW_RESULT kind=FINDINGS_BLOCKED|SERVICE_ERROR|TIMEO
 
 Deploy the ACube change first. Until it is live, ACube returns no dispositions
 and every P0/P1 keeps blocking, exactly as before.
+
+## Waiting out ACube unavailability
+
+ACube preproduction is redeployed often, and each redeploy makes it unavailable
+for a few minutes. Every call the bridge makes to ACube therefore retries
+temporary failures until ACube has been unavailable for five minutes in a row
+(`UNAVAILABLE_WINDOW_SECONDS`). Temporary failures are HTTP 429, 500, 502, 503
+and 504, refused or dropped connections, timeouts, invalid HTTP status lines,
+and truncated response bodies. Delays grow from 5 to 20 seconds and each retry
+is logged. A successful answer ends the outage: polling continues as usual and
+a later outage gets a full window again. Waiting never extends past the
+seven-hour review deadline.
+
+Other HTTP statuses, redirects, oversized or unreadable answers and receipt or
+report identity mismatches still fail at once. When the window runs out, the
+check fails with the usual result line, for example:
+
+```text
+HIGHLIGHT__[ERROR] ACUBE_REVIEW_RESULT kind=SERVICE_ERROR reason=ACube_HTTP_502__check_task_in_ACube
+```
+
+The IntegrationTest and DocsExampleTest jobs apply the same five-minute window
+to their safe ACube calls; see [README-scopes.md](README-scopes.md). They run the
+script from the checked-out commit, so they pick it up once merged. The formal
+review runs the YAML embedded in template 5246: its runs keep the old bridge
+until pipeline 344309 is pinned to a Provider commit that contains this change.

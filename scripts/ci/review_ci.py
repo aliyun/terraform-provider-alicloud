@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Trusted CI bridge: no checkout/execution of MR code; token only in HTTP header."""
 import html
+import http.client
+import itertools
 import json
 import os
 import re
+import socket
 import sys
 import time
 import urllib.error
@@ -20,6 +23,10 @@ STATES = {'rejected': '已拒绝', 'ignored': '已忽略', 'adopted': '已采纳
 VERDICTS = {'NOT_REPRODUCED': '实测未复现', 'REPRODUCED': '实测已复现', 'BLOCKED': '实测受阻'}
 POLL_SECONDS = 30
 REUSE_POLL_SECONDS = 60
+# How long ACube may stay unavailable in a row, e.g. while preproduction redeploys, before the check fails.
+UNAVAILABLE_WINDOW_SECONDS = 5 * 60
+MAX_RETRY_DELAY_SECONDS = 20
+RETRY_STATUSES = (429, 500, 502, 503, 504)
 # AoneCI's own failure marker; CI failure readers (Jarvis read_ci_failure) keep only lines like these.
 FAILURE_MARKER = 'HIGHLIGHT__[ERROR] '
 MAX_FAILURE_FINDINGS = 5
@@ -43,24 +50,47 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise RuntimeError('Unexpected ACube redirect')
 
 
-def request(path, token, body=None):
+def request(path, token, body=None, deadline=None):
+    """Call ACube, waiting out a temporary outage such as a preproduction redeploy.
+
+    RETRY_STATUSES answers, refused or dropped connections, timeouts, invalid HTTP status
+    lines and truncated response bodies are retried with growing delays until ACube has
+    been unavailable for UNAVAILABLE_WINDOW_SECONDS in a row, never past the review deadline.
+    Each call starts a new window, so a later outage gets the full window again.
+    Other HTTP statuses, redirects and invalid JSON fail at once.
+    """
     data = None if body is None else json.dumps(body).encode()
     req = urllib.request.Request(ORIGIN + path, data=data, headers={
         'X-Provider-Run-Token': token, 'Content-Type': 'application/json'})
-    for attempt in range(5):
+    give_up = time.monotonic() + UNAVAILABLE_WINDOW_SECONDS
+    if deadline is not None:
+        give_up = min(give_up, deadline)
+    for attempt in itertools.count(1):
         try:
-            with urllib.request.build_opener(NoRedirect()).open(req, timeout=70) as response:
+            timeout = max(1, min(70, give_up - time.monotonic()))
+            with urllib.request.build_opener(NoRedirect()).open(req, timeout=timeout) as response:
                 raw = response.read(1024 * 1024 + 1)
                 if len(raw) > 1024 * 1024:
                     raise RuntimeError('ACube response exceeds size limit')
+                # A bounded HTTPResponse.read can return early without raising IncompleteRead.
+                missing = getattr(response, 'length', None)
+                if missing:
+                    raise http.client.IncompleteRead(raw, missing)
                 return json.loads(raw)
         except urllib.error.HTTPError as exc:
-            if exc.code not in (429, 500, 502, 503, 504) or attempt == 4:
-                raise RuntimeError('ACube HTTP %s; check task in ACube' % exc.code) from None
-        except (urllib.error.URLError, TimeoutError):
-            if attempt == 4:
-                raise RuntimeError('ACube request timed out or unavailable') from None
-        time.sleep(5 * (attempt + 1))
+            failure, status = 'ACube HTTP %s; check task in ACube' % exc.code, 'HTTP %s' % exc.code
+            if exc.code not in RETRY_STATUSES:
+                raise RuntimeError(failure) from None
+        except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError,
+                http.client.BadStatusLine, http.client.IncompleteRead):
+            failure, status = 'ACube request timed out or unavailable', 'no response'
+        remaining = give_up - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError(failure)
+        delay = min(5 * attempt, MAX_RETRY_DELAY_SECONDS, remaining)
+        print('ACube unavailable (%s), attempt %d; retrying in %ds, giving up in %ds'
+              % (status, attempt, delay, remaining), flush=True)
+        time.sleep(delay)
 
 
 def text(value):
@@ -302,7 +332,7 @@ def main():
         path = '/api/v1/provider_runs/ci-reviews/' + kind
         body = {'mr': int(mr), 'headSha': head, 'runId': run, 'contentReuseVersion': 'review-content-v1'}
         deadline = time.monotonic() + 7 * 3600
-        receipt = request(path, token_value, body)
+        receipt = request(path, token_value, body, deadline=deadline)
         if receipt.get('status') == 'skipped':
             if receipt.get('conclusion') != 'success' or receipt.get('headSha') != head or receipt.get('mr') != int(mr):
                 raise RuntimeError('Invalid skipped review receipt')
@@ -325,13 +355,14 @@ def main():
             # Agent verification of the reused report is still running. The same run asks again;
             # ACube re-validates reuse and returns the latest dispositions.
             wait(deadline, REUSE_POLL_SECONDS)
-            receipt = request(path, token_value, body)
+            receipt = request(path, token_value, body, deadline=deadline)
         task_id = receipt.get('taskId', '')
         if not re.fullmatch(r'review_[0-9a-f]{32}', task_id):
             raise RuntimeError('Invalid task receipt')
         print(label + ' task=' + task_id + ' head=' + head, flush=True)
         while True:
-            report = request(path + '/' + task_id + '?' + urllib.parse.urlencode({'mr': mr, 'headSha': head}), token_value)
+            report = request(path + '/' + task_id + '?' + urllib.parse.urlencode({'mr': mr, 'headSha': head}), token_value,
+                             deadline=deadline)
             if report.get('taskId') != task_id or report.get('headSha') != head:
                 raise RuntimeError('Report identity mismatch')
             report = apply_ci_gate(report)

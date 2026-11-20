@@ -82,9 +82,13 @@ and appears as “超限不复用” in the CI Summary. It is not full-history c
 The 12-second query budget and storage/runner failures still fail closed.
 An existing plan with reused receipts must retain them; a skipped completion
 recheck cannot validate those receipts or silently submit replacement tasks.
-Safe lookups and fenced submissions retry transient 429/502/503/504 failures for
-up to 180 seconds (at most ten attempts), covering preproduction's single-instance
-restart window while retaining the original submission key and task receipt.
+Safe lookups and fenced submissions retry transient 429/502/503/504 failures,
+refused or dropped connections, timeouts, invalid HTTP status lines, and truncated
+response bodies until ACube has been unavailable for five minutes in a row
+(`UNAVAILABLE_WINDOW_SECONDS`), with delays growing to 20 seconds. This covers
+preproduction redeploys while retaining the original
+submission key and task receipt. Each call gets a new window; other HTTP
+statuses and unfenced submissions fail at once.
 
 Every terminal task prints a redacted result to the job log and appends the same
 evidence to the Aone Markdown summary. Failures include the remote error, HCL

@@ -4,7 +4,9 @@ import argparse
 import copy
 from decimal import Decimal, InvalidOperation
 import hashlib
+import http.client
 import importlib.util
+import itertools
 import json
 import os
 from pathlib import Path
@@ -24,6 +26,8 @@ REPOSITORY = 'code.alibaba-inc.com/opensource-tools/terraform-provider-alicloud'
 BASE_URL = 'https://pre-acube.aliyun-inc.com'
 TERMINAL = {'success', 'failed', 'cancelled'}
 REUSE_SCAN_SKIP_REASON = f'scan-limit-{REUSE_SCAN_LIMIT}'
+# How long ACube may stay unavailable in a row, e.g. while preproduction redeploys, before a safe call fails.
+UNAVAILABLE_WINDOW_SECONDS = 5 * 60
 
 
 def digest(value):
@@ -169,8 +173,9 @@ class Client:
             headers={'X-Provider-Run-Token': self.token, 'Content-Type': 'application/json'})
         # POST replay is safe only for source import or a server-fenced submission.
         safe = method == 'GET' or path in ('/sources/import', '/acctest/reusable-cases') or body and body.get('idempotencyKey')
-        deadline = time.monotonic() + 180
-        for attempt in range(10):
+        # Each call starts a new window, so a later outage gets the full window again.
+        deadline = time.monotonic() + UNAVAILABLE_WINDOW_SECONDS
+        for attempt in itertools.count():
             try:
                 with self.opener.open(request, timeout=max(1, min(90, deadline - time.monotonic()))) as response:
                     reuse_proof = response.headers.get('X-AccTest-Reuse-Query')
@@ -188,10 +193,11 @@ class Client:
                 return value['data']
             except urllib.error.HTTPError as error:
                 error.close()
-                if not safe or error.code not in (429, 502, 503, 504) or attempt == 9 or time.monotonic() >= deadline:
+                if not safe or error.code not in (429, 502, 503, 504) or time.monotonic() >= deadline:
                     raise ValueError('ACube HTTP ' + str(error.code)) from None
-            except (urllib.error.URLError, TimeoutError, socket.timeout):
-                if not safe or attempt == 9 or time.monotonic() >= deadline:
+            except (urllib.error.URLError, TimeoutError, socket.timeout, ConnectionError,
+                    http.client.BadStatusLine, http.client.IncompleteRead):
+                if not safe or time.monotonic() >= deadline:
                     raise ValueError('ACube unavailable; rerun the same CI run to recover the original receipt') from None
             print(json.dumps({'acubeRetry': attempt + 1, 'method': method, 'path': path}), flush=True)
             time.sleep(max(0, min(2 ** attempt, 20, deadline - time.monotonic())))

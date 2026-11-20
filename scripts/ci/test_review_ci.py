@@ -1,11 +1,14 @@
+import http.client
 import importlib.util
 import io
+import itertools
+import json
 import re
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 spec = importlib.util.spec_from_file_location('review_ci', Path(__file__).with_name('review_ci.py'))
 ci = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ci)
@@ -18,6 +21,122 @@ def jarvis_failure_view(log):
     """What a digital human sees: error lines only, the last 8 per step, 360 characters each."""
     log += '\nHIGHLIGHT__[ERROR] exec script failed, error: exit status 1'
     return [line[:360] for line in log.split('\n') if JARVIS_ERROR_LINE.search(line)][-8:]
+
+
+class FakeClock:
+    """Monotonic time that moves only while the check sleeps."""
+
+    def __init__(self):
+        self.now, self.sleeps = 0, []
+
+    def monotonic(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+def answer(value):
+    return io.BytesIO(json.dumps(value).encode())
+
+
+def unavailable(code):
+    return ci.urllib.error.HTTPError(ci.ORIGIN, code, 'unavailable', {}, io.BytesIO())
+
+
+class AcubeUnavailableTest(unittest.TestCase):
+    TID, HEAD = 'review_' + 'b' * 32, 'a' * 40
+    REPORT = {'taskId': TID, 'headSha': HEAD, 'status': 'completed', 'findings': [{'findingId': 'F-01', 'severity': 'p1'}]}
+
+    def run_check(self, acube, clock):
+        """Run the whole check against a fake ACube transport and return its exit code and log lines."""
+        env = {'ACUBE_REVIEW_KIND': 'formal', 'ACUBE_MR': '7', 'ACUBE_HEAD': self.HEAD, 'ACUBE_CI_RUN': '123',
+               'ACUBE_PROVIDER_RUN_TOKEN': 'x' * 32}
+        opener, out = MagicMock(), io.StringIO()
+        opener.open.side_effect = acube
+        with patch.dict(ci.os.environ, env), patch.object(ci.urllib.request, 'build_opener', return_value=opener), \
+                patch.object(ci.time, 'monotonic', clock.monotonic), patch.object(ci.time, 'sleep', clock.sleep), \
+                patch.object(ci, 'publish'), redirect_stdout(out), redirect_stderr(io.StringIO()):
+            code = ci.main()
+        return code, out.getvalue().splitlines(), opener.open.call_count
+
+    def test_outages_shorter_than_the_window_are_waited_out(self):
+        answers = [{'taskId': self.TID}, dict(self.REPORT, conclusion='pending', dispositions={'F-01': {'state': 'verifying'}}),
+                   dict(self.REPORT, conclusion='pending', dispositions={'F-01': {'state': 'verifying'}}),
+                   dict(self.REPORT, conclusion='success', dispositions={'F-01': {'state': 'rejected', 'actorType': 'AGENT'}})]
+        # Two redeploys of about four minutes: one while submitting, one between polls. Together they
+        # exceed the window, but each recovers inside its own window, so the check keeps polling.
+        outages = [(0, 240), (300, 540)]
+        failures = itertools.cycle([lambda: http.client.BadStatusLine('invalid status line'),
+                                    lambda: unavailable(502), lambda: unavailable(503),
+                                    lambda: ci.urllib.error.URLError(ConnectionRefusedError()),
+                                    lambda: ci.socket.timeout('timed out'), lambda: ConnectionResetError()])
+        clock = FakeClock()
+
+        def acube(request, timeout):
+            if clock.now == 0:
+                # Bounded reads can return a valid JSON prefix before the advertised body ends.
+                stream = b'HTTP/1.1 200 OK\r\nContent-Length: 1024\r\n\r\n' + json.dumps(answers[0]).encode()
+                connection = MagicMock()
+                connection.makefile.return_value = io.BytesIO(stream)
+                response = http.client.HTTPResponse(connection)
+                response.begin()
+                return response
+            if any(start <= clock.now < end for start, end in outages):
+                raise next(failures)()
+            return answer(answers.pop(0))
+        code, lines, calls = self.run_check(acube, clock)
+        self.assertEqual(0, code)
+        self.assertEqual('ACUBE_REVIEW_RESULT kind=PASSED', lines[-1])
+        self.assertEqual([], answers, 'polling continued after each outage until ACube concluded')
+        self.assertEqual(540, clock.now)
+        retries = [line for line in lines if line.startswith('ACube unavailable (')]
+        self.assertEqual(calls - 4, len(retries), 'every failure was retried')
+        self.assertFalse(any(line.startswith(ci.FAILURE_MARKER) for line in lines))
+
+    def test_unavailable_for_the_whole_window_fails_as_service_error(self):
+        clock, polls = FakeClock(), []
+
+        def acube(request, timeout):
+            if self.TID not in request.full_url:
+                return answer({'taskId': self.TID})
+            polls.append(clock.now)
+            raise unavailable(502)
+        code, lines, _ = self.run_check(acube, clock)
+        self.assertEqual(1, code)
+        self.assertEqual('HIGHLIGHT__[ERROR] ACUBE_REVIEW_RESULT kind=SERVICE_ERROR reason=ACube_HTTP_502__check_task_in_ACube',
+                         lines[-1])
+        self.assertEqual(5 * 60, ci.UNAVAILABLE_WINDOW_SECONDS)
+        self.assertEqual(ci.UNAVAILABLE_WINDOW_SECONDS, polls[-1] - polls[0], 'gives up exactly when the window ends')
+        self.assertGreater(len(polls), 10)
+        self.assertEqual(ci.MAX_RETRY_DELAY_SECONDS, max(clock.sleeps))
+        self.assertEqual(sorted(clock.sleeps[:4]), clock.sleeps[:4], 'delays grow before reaching the cap')
+
+        # The window never extends a wait past the seven-hour review deadline.
+        clock, opener = FakeClock(), MagicMock()
+        opener.open.side_effect = unavailable(503)
+        with patch.object(ci.urllib.request, 'build_opener', return_value=opener), \
+                patch.object(ci.time, 'monotonic', clock.monotonic), patch.object(ci.time, 'sleep', clock.sleep), \
+                redirect_stdout(io.StringIO()), self.assertRaisesRegex(RuntimeError, '^ACube HTTP 503; check task in ACube$'):
+            ci.request('/api/v1/provider_runs/ci-reviews/formal', 'x' * 32, deadline=60)
+        self.assertEqual(60, clock.now)
+
+    def test_other_failures_are_not_retried(self):
+        for name, failure, reason in [
+                ('HTTP 400', unavailable(400), 'reason=ACube_HTTP_400__check_task_in_ACube'),
+                ('HTTP 403', unavailable(403), 'reason=ACube_HTTP_403__check_task_in_ACube'),
+                ('HTTP 404', unavailable(404), 'reason=ACube_HTTP_404__check_task_in_ACube'),
+                ('redirect', RuntimeError('Unexpected ACube redirect'), 'reason=Unexpected_ACube_redirect'),
+                ('not JSON', io.BytesIO(b'<html>maintenance</html>'), 'reason=Expecting_value')]:
+            with self.subTest(name):
+                clock = FakeClock()
+                code, lines, calls = self.run_check([answer({'taskId': self.TID}), failure], clock)
+                self.assertEqual(1, code)
+                self.assertTrue(lines[-1].startswith(
+                    'HIGHLIGHT__[ERROR] ACUBE_REVIEW_RESULT kind=SERVICE_ERROR ' + reason), lines[-1])
+                self.assertEqual(2, calls)
+                self.assertEqual([], clock.sleeps)
 
 
 class ReviewCiTest(unittest.TestCase):
