@@ -27,44 +27,49 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 provider "alicloud" {
   region = "cn-shanghai"
 }
 
 variable "name" {
-  default = "terraform-example"
+  type        = string
+  description = "Use a distinct lowercase prefix for each deployment in the same account."
+  default     = "tf-fcv3-provision"
 }
 
-resource "random_integer" "default" {
-  min = 10000
-  max = 99999
+data "alicloud_account" "current" {}
+
+locals {
+  example_name = "${var.name}-${data.alicloud_account.current.id}"
 }
 
 resource "alicloud_log_project" "default" {
-  project_name = "${var.name}-${random_integer.default.result}"
+  project_name = local.example_name
   description  = var.name
 }
 
 resource "alicloud_log_store" "default" {
-  project_name          = alicloud_log_project.default.name
-  logstore_name         = "${var.name}-${random_integer.default.result}"
+  project_name          = alicloud_log_project.default.project_name
+  logstore_name         = local.example_name
   shard_count           = 3
   auto_split            = true
   max_split_shard_count = 60
   append_meta           = true
 }
 
-resource "time_sleep" "wait_10_minutes" {
-  depends_on = [alicloud_log_store.default]
-
-  create_duration = "10m"
-}
-
 resource "alicloud_fcv3_function" "function" {
   memory_size   = "512"
   cpu           = 0.5
   handler       = "index.handler"
-  function_name = "${var.name}-${random_integer.default.result}"
+  function_name = local.example_name
   runtime       = "python3.10"
   disk_size     = "512"
   code {
@@ -77,8 +82,6 @@ resource "alicloud_fcv3_function" "function" {
     logstore                = alicloud_log_store.default.logstore_name
     log_begin_rule          = "None"
   }
-
-  depends_on = [time_sleep.wait_10_minutes]
 }
 
 resource "alicloud_fcv3_provision_config" "default" {
@@ -147,12 +150,12 @@ resource "alicloud_fcv3_provision_config" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `always_allocate_cpu` - (Optional) Whether the CPU is always allocated. The default value is true.
-* `always_allocate_gpu` - (Optional) Whether to always assign GPU to function instance
+* `always_allocate_cpu` - (Optional, Computed, Bool) Whether the CPU is always allocated. Defaults to `true`. If you omit the argument, the value returned by the service is stored and no diff is generated; removing the argument does not trigger an update.
+* `always_allocate_gpu` - (Optional, Computed, Bool) Whether to always assign GPU to function instance. Defaults to `true`. For a function without GPU, the service keeps this value consistent with `always_allocate_cpu`, so configure both arguments with the same value in that case; different values produce a persistent diff. If you omit the argument, the value returned by the service is stored and no diff is generated; removing the argument does not trigger an update.
 * `function_name` - (Required, ForceNew) The name of the function. If this parameter is not specified, the provisioned configurations of all functions are listed.
-* `qualifier` - (Optional) The function alias or LATEST.
+* `qualifier` - (Optional, String) The function alias or `LATEST`. Defaults to `LATEST`. Omitting it is equivalent to setting it explicitly, and switching between those forms does not replace the resource. Changing between different qualifiers plans a replacement: Terraform deletes the old qualifier's configuration and creates the new one. Replacement requires `function_name` and `qualifier` to be known during planning. Planning rejects the switch if the target qualifier already has an independent provision configuration. Replacement checks again before deleting the old configuration, including for tainted state, and creation checks once more before calling the upsert API so an existing target is not overwritten. Changing `target` or other mutable arguments within the same qualifier remains an in-place update. The resource ID remains the function name for state and import compatibility, so do not manage multiple qualifiers of the same function as separate resources.
 * `scheduled_actions` - (Optional, List) Timing policy configuration See [`scheduled_actions`](#scheduled_actions) below.
-* `target` - (Optional, Int) Number of reserved target resources. The value range is [0,10000].
+* `target` - (Optional, Computed, Int) Default number of reserved instances. Valid values: `0-10000`. The API requires `target` on every write, so set it when you create the resource; creating the resource without `target` fails. This argument maps to the API `defaultTarget` and is written through both the required `target` field and `defaultTarget`. While a target tracking policy or a scheduled action is active, the service reports the policy-computed runtime target separately and Read does not map that runtime value into `target`, so an update triggered by another argument keeps the configured default instead of turning the temporary policy target into the new default. If an older Provider version already stored a runtime value in state, that legacy value can remain until an authoritative default is available; the next update recovers the default from the same qualifier instead of trusting the legacy value. Omitting the argument is supported only for an existing resource (for example after an import, or after you remove the argument from the configuration), where the next update reads the current default from the same qualifier instead of `0`. If the service response omits `defaultTarget` and no safe fallback is available, the update fails instead of writing `0` as the new default; set `target` explicitly in that case.
 * `target_tracking_policies` - (Optional, List) Metric tracking scaling policy configuration See [`target_tracking_policies`](#target_tracking_policies) below.
 
 ### `scheduled_actions`
@@ -194,8 +197,10 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-FCV3 Provision Config can be imported using the id, e.g.
+FCV3 Provision Config can be imported using the function name, e.g.
 
 ```shell
-$ terraform import alicloud_fcv3_provision_config.example <id>
+$ terraform import alicloud_fcv3_provision_config.example <function_name>
 ```
+
+A function-name import reads the `LATEST` provision configuration and stores `qualifier = "LATEST"`. Existing state with an omitted qualifier remains compatible and is not replaced. A function name alone does not identify or import a named alias's configuration.
