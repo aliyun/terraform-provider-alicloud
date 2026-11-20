@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -291,8 +290,7 @@ func (d *reservedInstancesDataSource) Read(ctx context.Context, req datasource.R
 
 // load performs the whole read: it builds the request, follows every page,
 // decodes the records and returns the state model. Read only adds the deadline,
-// diagnostics and the state write, so the same request-to-state path can be
-// exercised directly in unit tests.
+// diagnostics and the state write.
 func (d *reservedInstancesDataSource) load(ctx context.Context, client *connectivity.AliyunClient, regionId, scope string, pageNumber, pageSize int64, model reservedInstancesModel) (reservedInstancesModel, error) {
 	request := reservedInstancesRequest(model, regionId, scope, pageNumber, pageSize)
 
@@ -312,8 +310,7 @@ func (d *reservedInstancesDataSource) load(ctx context.Context, client *connecti
 // reservedInstancesResultModel turns the collected records into the state model.
 // Records are ordered by identity, so the same result always produces the same
 // lists and the same data source ID. The mapping is a pure function of the
-// records and the server total, which lets the non-empty request-to-state path be
-// asserted in unit tests without a live account.
+// records and the server total.
 func reservedInstancesResultModel(objects []map[string]interface{}, totalCount int64, model reservedInstancesModel) (reservedInstancesModel, error) {
 	type matchedInstance struct {
 		id     string
@@ -322,11 +319,11 @@ func reservedInstancesResultModel(objects []map[string]interface{}, totalCount i
 	}
 	sorted := make([]matchedInstance, 0, len(objects))
 	for _, object := range objects {
-		id, err := reservedInstancesRecordIdentity(object)
+		id, err := ecsRecordIdentity(object, reservedInstancesAction, "ReservedInstanceId")
 		if err != nil {
 			return model, err
 		}
-		name, err := reservedInstancesDecodeStringMember(object, "ReservedInstanceName")
+		name, err := ecsDecodeStringMember(object, "ReservedInstanceName")
 		if err != nil {
 			return model, fmt.Errorf("%s: %w", id, err)
 		}
@@ -350,61 +347,60 @@ func reservedInstancesResultModel(objects []map[string]interface{}, totalCount i
 	}
 
 	model.Id = types.StringValue(helper.DataResourceIdHash(ids))
-	model.Ids = reservedInstancesStringListValue(ids)
-	model.Names = reservedInstancesStringListValue(names)
+	model.Ids = ecsStringListValue(ids)
+	model.Names = ecsStringListValue(names)
 	model.TotalCount = types.Int64Value(totalCount)
 	model.Instances = types.ListValueMust(reservedInstanceObjectType, elements)
 	return model, nil
 }
 
 // reservedInstancesRequest builds the full DescribeReservedInstances request
-// from the configuration. It is kept separate from Read so the request-to-state
-// mapping can be asserted directly.
+// from the configuration, separate from the read loop that sends it.
 func reservedInstancesRequest(model reservedInstancesModel, regionId, scope string, pageNumber, pageSize int64) map[string]interface{} {
 	request := map[string]interface{}{
 		"RegionId":   regionId,
 		"PageNumber": int(pageNumber),
 		"PageSize":   int(pageSize),
 	}
-	reservedInstancesSetRequestString(request, "ReservedInstanceName", model.ReservedInstanceName)
-	reservedInstancesSetRequestString(request, "ZoneId", model.ZoneId)
-	reservedInstancesSetRequestString(request, "LockReason", model.LockReason)
-	reservedInstancesSetRequestString(request, "InstanceType", model.InstanceType)
-	reservedInstancesSetRequestString(request, "InstanceTypeFamily", model.InstanceTypeFamily)
-	reservedInstancesSetRequestString(request, "Scope", types.StringValue(scope))
-	reservedInstancesSetRequestString(request, "OfferingType", model.OfferingType)
-	reservedInstancesSetRequestString(request, "AllocationType", model.AllocationType)
-	reservedInstancesApplyRepeatList(request, "ReservedInstanceId", reservedInstancesElementsAsStrings(model.Ids))
-	reservedInstancesApplyRepeatList(request, "Status", reservedInstancesElementsAsStrings(model.Status))
-	reservedInstancesApplyTags(request, model.Tags)
+	ecsSetRequestString(request, "ReservedInstanceName", model.ReservedInstanceName)
+	ecsSetRequestString(request, "ZoneId", model.ZoneId)
+	ecsSetRequestString(request, "LockReason", model.LockReason)
+	ecsSetRequestString(request, "InstanceType", model.InstanceType)
+	ecsSetRequestString(request, "InstanceTypeFamily", model.InstanceTypeFamily)
+	ecsSetRequestString(request, "Scope", types.StringValue(scope))
+	ecsSetRequestString(request, "OfferingType", model.OfferingType)
+	ecsSetRequestString(request, "AllocationType", model.AllocationType)
+	ecsApplyRepeatList(request, "ReservedInstanceId", ecsElementsAsStrings(model.Ids))
+	ecsApplyRepeatList(request, "Status", ecsElementsAsStrings(model.Status))
+	ecsApplyTags(request, model.Tags)
 	return request
 }
 
 func (d *reservedInstancesDataSource) reservedInstancesDescribeAll(ctx context.Context, client *connectivity.AliyunClient, request map[string]interface{}, startPage, pageSize int64) ([]map[string]interface{}, int64, error) {
-	return reservedInstancesCollectNumberedPages(ctx, reservedInstancesMaxPages, startPage, pageSize, func(pageNumber int64) (reservedInstancesNumberedPage, error) {
+	return ecsCollectNumberedPages(ctx, reservedInstancesAction, "ReservedInstanceId", reservedInstancesMaxPages, startPage, pageSize, func(pageNumber int64) (ecsNumberedPage, error) {
 		request["PageNumber"] = int(pageNumber)
 		request["PageSize"] = int(pageSize)
 		response, err := reservedInstancesRpcPost(ctx, client, request)
 		if err != nil {
-			return reservedInstancesNumberedPage{}, err
+			return ecsNumberedPage{}, err
 		}
-		if err := reservedInstancesValidateQueryEnvelope(response, pageNumber == 1); err != nil {
-			return reservedInstancesNumberedPage{}, err
+		if err := ecsValidateQueryEnvelope(response, reservedInstancesAction, "ReservedInstances", "TotalCount", pageNumber == 1); err != nil {
+			return ecsNumberedPage{}, err
 		}
-		items, err := reservedInstancesDecodeRecordList(response)
+		items, err := ecsDecodeRecordList(response, reservedInstancesAction, "ReservedInstances", "ReservedInstance")
 		if err != nil {
-			return reservedInstancesNumberedPage{}, err
+			return ecsNumberedPage{}, err
 		}
-		totalCount, totalKnown, err := reservedInstancesDecodeCount(response)
+		totalCount, totalKnown, err := ecsDecodeCount(response, reservedInstancesAction, "TotalCount")
 		if err != nil {
-			return reservedInstancesNumberedPage{}, err
+			return ecsNumberedPage{}, err
 		}
-		return reservedInstancesNumberedPage{items: items, total: totalCount, totalKnown: totalKnown}, nil
+		return ecsNumberedPage{items: items, total: totalCount, totalKnown: totalKnown}, nil
 	})
 }
 
 func reservedInstanceObject(object map[string]interface{}) (types.Object, error) {
-	identity, err := reservedInstancesRecordIdentity(object)
+	identity, err := ecsRecordIdentity(object, reservedInstancesAction, "ReservedInstanceId")
 	if err != nil {
 		return types.ObjectNull(reservedInstanceAttrTypes), err
 	}
@@ -420,39 +416,45 @@ func reservedInstanceObject(object map[string]interface{}) (types.Object, error)
 // fails the record with its path instead of being written to state.
 func reservedInstanceAttributes(object map[string]interface{}) (map[string]attr.Value, error) {
 	attributes := make(map[string]attr.Value, 19)
-	if err := reservedInstancesDecodeStringFields(object, []reservedInstancesStringField{
-		{"reserved_instance_id", "ReservedInstanceId"},
-		{"reserved_instance_name", "ReservedInstanceName"},
-		{"status", "Status"},
-		{"creation_time", "CreationTime"},
-		{"start_time", "StartTime"},
-		{"expired_time", "ExpiredTime"},
-		{"instance_type", "InstanceType"},
-		{"region_id", "RegionId"},
-		{"zone_id", "ZoneId"},
-		{"scope", "Scope"},
-		{"platform", "Platform"},
-		{"offering_type", "OfferingType"},
-		{"allocation_status", "AllocationStatus"},
-		{"description", "Description"},
-		{"resource_group_id", "ResourceGroupId"},
+	if err := ecsDecodeStringFields(object, []ecsStringField{
+		{"reserved_instance_id", "ReservedInstanceId", false},
+		{"reserved_instance_name", "ReservedInstanceName", false},
+		{"status", "Status", false},
+		{"creation_time", "CreationTime", false},
+		{"start_time", "StartTime", false},
+		{"expired_time", "ExpiredTime", false},
+		{"instance_type", "InstanceType", false},
+		{"region_id", "RegionId", false},
+		{"zone_id", "ZoneId", false},
+		{"scope", "Scope", false},
+		{"platform", "Platform", false},
+		{"offering_type", "OfferingType", false},
+		{"allocation_status", "AllocationStatus", false},
+		{"description", "Description", false},
+		{"resource_group_id", "ResourceGroupId", false},
 	}, attributes); err != nil {
 		return nil, err
 	}
 
-	tags, err := reservedInstancesDecodeTags(object)
+	tags, err := ecsDecodeTags(object, ecsTagDecodeOptions{reservedKey: ecsReservedInstancesTagKey})
 	if err != nil {
 		return nil, err
 	}
 	attributes["tags"] = tags
 
-	operationLocks, err := reservedInstancesDecodeOperationLocks(object)
+	operationLocks, err := ecsOptionalObjectListMember(object, "OperationLocks", "OperationLock", reservedInstanceOperationLockObjectType, func(item map[string]interface{}) (attr.Value, error) {
+		lockReason, err := ecsDecodeStringMember(item, "LockReason")
+		if err != nil {
+			return nil, err
+		}
+		return types.ObjectValueMust(reservedInstanceOperationLockAttrTypes, map[string]attr.Value{"lock_reason": lockReason}), nil
+	})
 	if err != nil {
 		return nil, err
 	}
 	attributes["operation_locks"] = operationLocks
 
-	instanceAmount, err := reservedInstancesDecodeInt64Member(object, "InstanceAmount")
+	instanceAmount, err := ecsDecodeInt64Member(object, "InstanceAmount", "InstanceAmount")
 	if err != nil {
 		return nil, err
 	}
@@ -466,194 +468,6 @@ const reservedInstancesRetryTimeout = 5 * time.Minute
 // reservedInstancesRetryBackoff is the first wait between two attempts of one
 // read; it grows by the same step up to 30 seconds.
 var reservedInstancesRetryBackoff = 3 * time.Second
-
-const reservedInstancesTagMaxLength = 128
-
-// Conversions, request helpers and remote-call plumbing used by
-// alicloud_reserved_instances. They keep response decoding tolerant of the two
-// shapes the ECS RPC returns for the same field (JSON number or decimal string)
-// without panicking on a missing key, and keep the query, pagination and retry
-// behavior of the data source in one place.
-//
-// The names are private and carry this data source's prefix so they cannot
-// collide with helpers of other data sources in this package.
-
-// reservedInstancesDecodeStringMember reads a string member of a record. The ECS
-// RPC omits an optional string member that carries no value, so an absent member
-// stays an empty string. A member that is present but is null, an object or an
-// array is not a string this contract can return: it is a malformed record, and
-// the member is reported by name instead of being formatted into state.
-func reservedInstancesDecodeStringMember(object map[string]interface{}, key string) (types.String, error) {
-	raw, ok := object[key]
-	if !ok {
-		return types.StringValue(""), nil
-	}
-	if text, ok := raw.(string); ok {
-		return types.StringValue(text), nil
-	}
-	if raw == nil {
-		return types.StringNull(), fmt.Errorf("%s is null instead of a string", key)
-	}
-	return types.StringNull(), fmt.Errorf("%s is %T instead of a string", key, raw)
-}
-
-// reservedInstancesParseInt64 converts the numeric shapes the RPC decoder can
-// produce: a JSON number arrives as float64, while a decimal string remains a
-// string. The boolean reports whether the value really was a whole number: a
-// fractional value would otherwise be truncated silently, and a value of another
-// type is not a number at all, so both are left to the caller to report.
-func reservedInstancesParseInt64(value interface{}) (int64, bool) {
-	switch v := value.(type) {
-	case float64:
-		if v != math.Trunc(v) || v < math.MinInt64 || v >= math.MaxInt64 {
-			return 0, false
-		}
-		return int64(v), true
-	case string:
-		if n, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64); err == nil {
-			return n, true
-		}
-	}
-	return 0, false
-}
-
-// reservedInstancesDecodeInt64Member reads a whole-number member of a record. A
-// member the server did not report stays null, so state records that no value
-// came back instead of a made-up zero; a member that is present but is not a
-// whole number is a malformed record and is reported rather than truncated.
-func reservedInstancesDecodeInt64Member(object map[string]interface{}, key string) (types.Int64, error) {
-	raw, ok := object[key]
-	if !ok || raw == nil {
-		return types.Int64Null(), nil
-	}
-	value, ok := reservedInstancesParseInt64(raw)
-	if !ok {
-		return types.Int64Null(), fmt.Errorf("%s is %T (%v) instead of a whole number", key, raw, raw)
-	}
-	return types.Int64Value(value), nil
-}
-
-// reservedInstancesStringField declares one string member of a record and the
-// attribute it populates.
-type reservedInstancesStringField struct {
-	attribute string
-	member    string
-}
-
-// reservedInstancesDecodeStringFields decodes the declared members into target.
-// The first malformed member stops the record with its own path, so a partial
-// attribute set is never returned.
-func reservedInstancesDecodeStringFields(object map[string]interface{}, fields []reservedInstancesStringField, target map[string]attr.Value) error {
-	for _, field := range fields {
-		value, err := reservedInstancesDecodeStringMember(object, field.member)
-		if err != nil {
-			return err
-		}
-		target[field.attribute] = value
-	}
-	return nil
-}
-
-// reservedInstancesStringMapValue builds a string map attribute from decoded
-// values.
-func reservedInstancesStringMapValue(values map[string]string) types.Map {
-	elements := make(map[string]attr.Value, len(values))
-	for k, v := range values {
-		elements[k] = types.StringValue(v)
-	}
-	return types.MapValueMust(types.StringType, elements)
-}
-
-// reservedInstancesDecodeTags decodes the `Tags` member of an ECS record. A
-// missing member is a valid empty map, because the RPC omits it when the record
-// has no tags; an explicit null member or list is a malformed record, because
-// the service never sends one. A member of the wrong shape, or an entry without
-// a string key, is reported for the same reason instead of being dropped or
-// panicking on a bare type assertion. The record itself is the argument so that
-// a missing member stays distinguishable from an explicit null one.
-func reservedInstancesDecodeTags(object map[string]interface{}) (types.Map, error) {
-	values := map[string]string{}
-	rawTags, ok := object["Tags"]
-	if !ok {
-		return reservedInstancesStringMapValue(values), nil
-	}
-	if rawTags == nil {
-		return types.MapNull(types.StringType), fmt.Errorf("Tags is null instead of an object")
-	}
-	tagsMap, ok := rawTags.(map[string]interface{})
-	if !ok {
-		return types.MapNull(types.StringType), fmt.Errorf("Tags is %T instead of an object", rawTags)
-	}
-	rawList, ok := tagsMap["Tag"]
-	if !ok {
-		return reservedInstancesStringMapValue(values), nil
-	}
-	if rawList == nil {
-		return types.MapNull(types.StringType), fmt.Errorf("Tags.Tag is null instead of a list")
-	}
-	list, ok := rawList.([]interface{})
-	if !ok {
-		return types.MapNull(types.StringType), fmt.Errorf("Tags.Tag is %T instead of a list", rawList)
-	}
-	for index, entry := range list {
-		item, ok := entry.(map[string]interface{})
-		if !ok {
-			return types.MapNull(types.StringType), fmt.Errorf("Tags.Tag[%d] is %T instead of an object", index, entry)
-		}
-		rawKey, ok := item["TagKey"]
-		key, ok := rawKey.(string)
-		if !ok || key == "" {
-			return types.MapNull(types.StringType), fmt.Errorf("Tags.Tag[%d] has no string key", index)
-		}
-		rawValue, hasValue := item["TagValue"]
-		value := ""
-		if hasValue {
-			if rawValue == nil {
-				return types.MapNull(types.StringType), fmt.Errorf("Tags.Tag[%d].TagValue is null instead of a string", index)
-			}
-			text, ok := rawValue.(string)
-			if !ok {
-				return types.MapNull(types.StringType), fmt.Errorf("Tags.Tag[%d].TagValue is %T instead of a string", index, rawValue)
-			}
-			value = text
-		}
-		if strings.HasPrefix(key, "sae.do.not.delete") || (!strings.HasPrefix(key, "sae") && tagIgnored(key, value)) {
-			continue
-		}
-		values[key] = value
-	}
-	return reservedInstancesStringMapValue(values), nil
-}
-
-func reservedInstancesStringListValue(values []string) types.List {
-	elements := make([]attr.Value, 0, len(values))
-	for _, v := range values {
-		elements = append(elements, types.StringValue(v))
-	}
-	return types.ListValueMust(types.StringType, elements)
-}
-
-func reservedInstancesElementsAsStrings(value types.List) []string {
-	if value.IsNull() || value.IsUnknown() {
-		return nil
-	}
-	out := make([]string, 0, len(value.Elements()))
-	for _, element := range value.Elements() {
-		s, ok := element.(types.String)
-		if !ok {
-			continue
-		}
-		out = append(out, s.ValueString())
-	}
-	return out
-}
-
-func reservedInstancesSetRequestString(request map[string]interface{}, key string, value types.String) {
-	if value.IsNull() || value.IsUnknown() || value.ValueString() == "" {
-		return
-	}
-	request[key] = value.ValueString()
-}
 
 // reservedInstancesResolveScope applies the documented rules of the `scope` and
 // `zone_id` pair and returns the scope that is sent to the API. `Zone` and
@@ -673,41 +487,6 @@ func reservedInstancesResolveScope(scope, zoneId string) (string, error) {
 		return "Zone", nil
 	}
 	return scope, nil
-}
-
-// reservedInstancesApplyRepeatList writes a repeat-list filter in the 1-based
-// `Parameter.N` form using the shared convert helper. Blank and repeated values
-// are sent once, so a duplicated input does not change the request or make the
-// result count depend on the server's duplicate handling.
-func reservedInstancesApplyRepeatList(request map[string]interface{}, parameter string, values []string) {
-	unique := reservedInstancesUniqueStrings(values)
-	raw := make([]interface{}, 0, len(unique))
-	for _, value := range unique {
-		raw = append(raw, value)
-	}
-	expandArrayToMap(request, raw, parameter)
-}
-
-// reservedInstancesApplyTags maps the Terraform tag map onto the
-// `Tag.N.Key/Value` filter using the shared tags helper. A null or unknown value
-// is left out: an empty string is a value the caller asked to send, while a null
-// is not.
-func reservedInstancesApplyTags(request map[string]interface{}, tags types.Map) {
-	if tags.IsNull() || tags.IsUnknown() {
-		return
-	}
-	list := make([]map[string]interface{}, 0, len(tags.Elements()))
-	for key, value := range tags.Elements() {
-		stringValue, ok := value.(types.String)
-		if !ok || stringValue.IsNull() || stringValue.IsUnknown() {
-			continue
-		}
-		list = append(list, map[string]interface{}{
-			"Key":   key,
-			"Value": stringValue.ValueString(),
-		})
-	}
-	expandTagsToMap(request, list)
 }
 
 // reservedInstancesTagMapValidator enforces the key and value limits that the
@@ -736,7 +515,7 @@ func (v reservedInstancesTagMapValidator) ValidateMap(ctx context.Context, req v
 	}
 	for key, element := range req.ConfigValue.Elements() {
 		path := req.Path.AtMapKey(key)
-		if message := validateReservedInstancesTagKey(key); message != "" {
+		if message := ecsValidateTagKey(key); message != "" {
 			resp.Diagnostics.AddAttributeError(path, "Invalid Tag Key", message)
 			continue
 		}
@@ -760,30 +539,12 @@ func (v reservedInstancesTagMapValidator) ValidateMap(ctx context.Context, req v
 	}
 }
 
-func validateReservedInstancesTagKey(key string) string {
-	if key == "" {
-		return "A tag key must not be empty."
-	}
-	if utf8.RuneCountInString(key) > reservedInstancesTagMaxLength {
-		return fmt.Sprintf("A tag key must be at most %d characters.", reservedInstancesTagMaxLength)
-	}
-	for _, prefix := range []string{"aliyun", "acs:"} {
-		if strings.HasPrefix(key, prefix) {
-			return fmt.Sprintf("A tag key must not start with %q.", prefix)
-		}
-	}
-	if strings.Contains(key, "http://") || strings.Contains(key, "https://") {
-		return "A tag key must not contain a URL."
-	}
-	return ""
-}
-
 func validateReservedInstancesTagValue(value string) string {
 	if value == "" {
 		return "A tag value must not be empty."
 	}
-	if utf8.RuneCountInString(value) > reservedInstancesTagMaxLength {
-		return fmt.Sprintf("A tag value must be at most %d characters.", reservedInstancesTagMaxLength)
+	if utf8.RuneCountInString(value) > ecsTagMaxLength {
+		return fmt.Sprintf("A tag value must be at most %d characters.", ecsTagMaxLength)
 	}
 	if strings.HasPrefix(value, "acs:") {
 		return "A tag value must not start with \"acs:\"."
@@ -808,30 +569,9 @@ func reservedInstancesSleepBackoff(ctx context.Context, duration time.Duration) 
 	}
 }
 
-// reservedInstancesNeedRetry reports whether a failed read is worth retrying
-// inside the read budget. The context bound SDK path reports throttling and 5xx
-// as tea SDK errors, a transport failure as a URL error, and a 5xx whose body
-// cannot be decoded as UnreadableResponseError; the shared helper classifies the
-// first two, and the status of the third is checked here because the helper does
-// not know that type. A cancelled or expired read is never retried: its budget
-// is gone.
-func reservedInstancesNeedRetry(err error) bool {
-	if err == nil {
-		return false
-	}
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-		return false
-	}
-	var unreadable *connectivity.UnreadableResponseError
-	if errors.As(err, &unreadable) && unreadable.StatusCode >= 500 {
-		return true
-	}
-	return helper.NeedRetry(err)
-}
-
 // reservedInstancesRpcClient is the context-bound RPC capability used by the
-// read loop. Keeping the boundary explicit lets its error classification be
-// regression-tested without real credentials or timing-dependent transport.
+// read loop. The interface names exactly the one call the loop needs, so the
+// loop owns every retry and each attempt issues one transport call.
 type reservedInstancesRpcClient interface {
 	RpcPostWithContext(ctx context.Context, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}) (map[string]interface{}, error)
 }
@@ -856,13 +596,29 @@ func reservedInstancesRpcPost(ctx context.Context, client reservedInstancesRpcCl
 			logs.AddDebug(reservedInstancesAction, response, request)
 			return response, nil
 		}
+		// The transport timeouts are derived from this read context's deadline, so
+		// the transport can expire a moment before ctx.Err() is set. When the
+		// deadline is that close, let the context report it first so the failure
+		// always names the read deadline instead of whichever timer won.
+		if errors.Is(rpcErr, context.DeadlineExceeded) && ctx.Err() == nil {
+			if deadline, ok := ctx.Deadline(); ok {
+				if remaining := time.Until(deadline); remaining < 250*time.Millisecond {
+					timer := time.NewTimer(remaining + 100*time.Millisecond)
+					select {
+					case <-ctx.Done():
+					case <-timer.C:
+					}
+					timer.Stop()
+				}
+			}
+		}
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return nil, fmt.Errorf("%s was cancelled while the request was in flight: %w", reservedInstancesAction, ctxErr)
 		}
 		if errors.Is(rpcErr, context.Canceled) || errors.Is(rpcErr, context.DeadlineExceeded) {
 			return nil, fmt.Errorf("%s reached its own cancellation or request deadline before the read context ended: %w", reservedInstancesAction, rpcErr)
 		}
-		if !reservedInstancesNeedRetry(rpcErr) || !time.Now().Add(backoff).Before(retryDeadline) {
+		if !ecsNeedRetry(rpcErr) || !time.Now().Add(backoff).Before(retryDeadline) {
 			return nil, errs.WrapErrorf(rpcErr, errs.DataDefaultErrorMsg, reservedInstancesTypeName, reservedInstancesAction, errs.AlibabaCloudSdkGoERROR)
 		}
 		if waitErr := reservedInstancesSleepBackoff(ctx, backoff); waitErr != nil {
@@ -872,320 +628,4 @@ func reservedInstancesRpcPost(ctx context.Context, client reservedInstancesRpcCl
 			backoff += 3 * time.Second
 		}
 	}
-}
-
-// reservedInstancesValidateQueryEnvelope rejects a 2xx response that is not the
-// success envelope of the query that was sent. Decoding such a document would
-// produce no records and overwrite the state with a zero result even though the
-// service never answered the question.
-//
-// Every ECS success response carries the RequestId of the request it answered,
-// so it is validated first, including for a response that carries the container:
-// a document that merely happens to contain that key is not an answer to this
-// query. The ECS RPC omits the container when nothing matched, and only that
-// documented empty envelope is accepted without it: it still carries the total
-// count the action documents. An explicit null container is not an empty result
-// either. A present container is decoded by reservedInstancesDecodeRecordList,
-// which reports a member or entry of the wrong shape.
-//
-// Whether a missing container may carry a positive count depends on the page the
-// read asked for. At the first page a positive count without the container means
-// the records of a non-empty result were dropped, so it is reported. A later page
-// of a data source that accepts an arbitrary page_number may legitimately come
-// back without the container once the page lies past the end of the result: the
-// service total still describes the whole result, so the paginator, not this
-// envelope check, decides whether every record was read.
-func reservedInstancesValidateQueryEnvelope(response map[string]interface{}, fromFirstPage bool) error {
-	if response == nil {
-		return fmt.Errorf("%s returned an empty response body", reservedInstancesAction)
-	}
-	if _, hasCode := response["Code"]; hasCode {
-		// An error document is not an empty result of the query, even when it
-		// carries a RequestId.
-		return fmt.Errorf("%s returned an error document instead of the ReservedInstances member of its success envelope", reservedInstancesAction)
-	}
-	raw, ok := response["RequestId"]
-	if !ok {
-		return fmt.Errorf("%s returned a document without a RequestId; it is not this action's success envelope and is not treated as an empty result", reservedInstancesAction)
-	}
-	requestId, isString := raw.(string)
-	if !isString || strings.TrimSpace(requestId) == "" {
-		return fmt.Errorf("%s returned a document with %T as its RequestId instead of a non-empty string; it is not this action's success envelope and is not treated as an empty result", reservedInstancesAction, raw)
-	}
-	rawContainer, hasContainer := response["ReservedInstances"]
-	if hasContainer {
-		if rawContainer == nil {
-			return fmt.Errorf("%s returned ReservedInstances as null instead of the documented object of its success envelope; the response is not treated as an empty result", reservedInstancesAction)
-		}
-		return nil
-	}
-	// The container is omitted when nothing matched, and the count member is
-	// part of the documented success envelope of this action. Requiring a zero
-	// count keeps a response whose records were dropped from being read as an
-	// empty result at the first page.
-	rawCount, ok := response["TotalCount"]
-	if !ok || rawCount == nil {
-		return fmt.Errorf("%s returned neither the ReservedInstances member nor TotalCount, which its empty success envelope still carries; it is not this action's success envelope and is not treated as an empty result", reservedInstancesAction)
-	}
-	count, valid := reservedInstancesParseCount(rawCount)
-	if !valid {
-		return fmt.Errorf("%s returned TotalCount as %T instead of a non-negative integer; it is not this action's success envelope and is not treated as an empty result", reservedInstancesAction, rawCount)
-	}
-	if count != 0 && fromFirstPage {
-		return fmt.Errorf("%s returned TotalCount %d without the ReservedInstances member, so the records of a non-empty result were dropped; it is not treated as an empty result", reservedInstancesAction, count)
-	}
-	return nil
-}
-
-// reservedInstancesDecodeRecordList decodes a list of records nested under
-// `container.member`. The service omits the container or the member when nothing
-// matched, so an absent container or member is a valid empty result. An explicit
-// null container or member is a malformed response and is reported instead of
-// being read as an empty result. A member of the wrong shape, or an entry that is
-// not an object, is reported as well, so a partial or empty result is never
-// returned for a response that carried records.
-func reservedInstancesDecodeRecordList(response map[string]interface{}) ([]map[string]interface{}, error) {
-	items := make([]map[string]interface{}, 0)
-	if response == nil {
-		return nil, fmt.Errorf("%s returned an empty response body", reservedInstancesAction)
-	}
-	rawContainer, ok := response["ReservedInstances"]
-	if !ok {
-		return items, nil
-	}
-	if rawContainer == nil {
-		return nil, fmt.Errorf("%s returned ReservedInstances as null instead of an object; the response is not treated as an empty result", reservedInstancesAction)
-	}
-	containerMap, ok := rawContainer.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("%s returned ReservedInstances as %T instead of an object", reservedInstancesAction, rawContainer)
-	}
-	rawList, ok := containerMap["ReservedInstance"]
-	if !ok {
-		return items, nil
-	}
-	if rawList == nil {
-		return nil, fmt.Errorf("%s returned ReservedInstances.ReservedInstance as null instead of a list; the response is not treated as an empty result", reservedInstancesAction)
-	}
-	list, ok := rawList.([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("%s returned ReservedInstances.ReservedInstance as %T instead of a list", reservedInstancesAction, rawList)
-	}
-	for index, entry := range list {
-		item, ok := entry.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("%s returned ReservedInstances.ReservedInstance[%d] as %T instead of an object", reservedInstancesAction, index, entry)
-		}
-		items = append(items, item)
-	}
-	return items, nil
-}
-
-// reservedInstancesParseCount parses a response count. Only a non-negative whole
-// number is a valid count: a fractional value would be silently truncated, and a
-// negative value is never a count.
-func reservedInstancesParseCount(value interface{}) (int64, bool) {
-	count, ok := reservedInstancesParseInt64(value)
-	if !ok || count < 0 {
-		return 0, false
-	}
-	return count, true
-}
-
-// reservedInstancesDecodeCount reads an integer response member. A missing
-// member is reported as unknown so the caller can fall back; a member that is
-// present but is not a non-negative whole number is a malformed response, not a
-// count of 0.
-func reservedInstancesDecodeCount(response map[string]interface{}) (int64, bool, error) {
-	raw, ok := response["TotalCount"]
-	if !ok || raw == nil {
-		return 0, false, nil
-	}
-	value, ok := reservedInstancesParseCount(raw)
-	if !ok {
-		return 0, false, fmt.Errorf("%s returned TotalCount as %T instead of a non-negative integer", reservedInstancesAction, raw)
-	}
-	return value, true, nil
-}
-
-// reservedInstancesDecodeOperationLocks preserves the nested-list response
-// contract while decoding the only nested object used by this data source.
-func reservedInstancesDecodeOperationLocks(object map[string]interface{}) (types.List, error) {
-	value, ok := object["OperationLocks"]
-	if !ok {
-		return types.ListValueMust(reservedInstanceOperationLockObjectType, []attr.Value{}), nil
-	}
-	if value == nil {
-		return types.ListNull(reservedInstanceOperationLockObjectType), fmt.Errorf("OperationLocks is null instead of an object")
-	}
-	container, ok := value.(map[string]interface{})
-	if !ok {
-		return types.ListNull(reservedInstanceOperationLockObjectType), fmt.Errorf("OperationLocks is %T instead of an object", value)
-	}
-	raw, ok := container["OperationLock"]
-	if !ok {
-		return types.ListValueMust(reservedInstanceOperationLockObjectType, []attr.Value{}), nil
-	}
-	if raw == nil {
-		return types.ListNull(reservedInstanceOperationLockObjectType), fmt.Errorf("OperationLocks.OperationLock is null instead of a list")
-	}
-	list, ok := raw.([]interface{})
-	if !ok {
-		return types.ListNull(reservedInstanceOperationLockObjectType), fmt.Errorf("OperationLocks.OperationLock is %T instead of a list", raw)
-	}
-	elements := make([]attr.Value, 0, len(list))
-	for index, entry := range list {
-		item, ok := entry.(map[string]interface{})
-		if !ok {
-			return types.ListNull(reservedInstanceOperationLockObjectType), fmt.Errorf("OperationLocks.OperationLock[%d] is %T instead of an object", index, entry)
-		}
-		lockReason, err := reservedInstancesDecodeStringMember(item, "LockReason")
-		if err != nil {
-			return types.ListNull(reservedInstanceOperationLockObjectType), fmt.Errorf("OperationLocks.OperationLock[%d]: %w", index, err)
-		}
-		elements = append(elements, types.ObjectValueMust(reservedInstanceOperationLockAttrTypes, map[string]attr.Value{
-			"lock_reason": lockReason,
-		}))
-	}
-	return types.ListValueMust(reservedInstanceOperationLockObjectType, elements), nil
-}
-
-// reservedInstancesRecordIdentity returns the stable identity of a record. The
-// identity must be a non-empty string: a value of another type cannot be
-// deduplicated or addressed, so it is reported as a malformed result instead of
-// being turned into an identity by formatting whatever the server sent.
-func reservedInstancesRecordIdentity(object map[string]interface{}) (string, error) {
-	raw, ok := object["ReservedInstanceId"]
-	if !ok || raw == nil {
-		return "", fmt.Errorf("%s returned a record without ReservedInstanceId; the result was not returned because the record cannot be identified", reservedInstancesAction)
-	}
-	identity, ok := raw.(string)
-	if !ok {
-		return "", fmt.Errorf("%s returned ReservedInstanceId as %T instead of a string; the result was not returned because the record cannot be identified", reservedInstancesAction, raw)
-	}
-	identity = strings.TrimSpace(identity)
-	if identity == "" {
-		return "", fmt.Errorf("%s returned an empty ReservedInstanceId; the result was not returned because the record cannot be identified", reservedInstancesAction)
-	}
-	return identity, nil
-}
-
-// reservedInstancesUniqueStrings drops blank and repeated values while
-// preserving order, so a repeated filter value is sent once.
-func reservedInstancesUniqueStrings(values []string) []string {
-	seen := make(map[string]struct{}, len(values))
-	unique := make([]string, 0, len(values))
-	for _, value := range values {
-		value = strings.TrimSpace(value)
-		if value == "" {
-			continue
-		}
-		if _, ok := seen[value]; ok {
-			continue
-		}
-		seen[value] = struct{}{}
-		unique = append(unique, value)
-	}
-	return unique
-}
-
-// reservedInstancesNumberedPage is one page of a numbered query. totalKnown
-// distinguishes an explicit TotalCount of 0 from a response that does not report
-// the total.
-type reservedInstancesNumberedPage struct {
-	items      []map[string]interface{}
-	total      int64
-	totalKnown bool
-}
-
-// reservedInstancesCollectNumberedPages reads numbered pages until a short or
-// empty page, the server total is reached, or the page budget is exhausted. The
-// context carries the read deadline and cancellation signal, so the loop stops
-// at the same point as the requests it issues. Integrity is enforced before
-// anything is returned: every record must carry a unique, non-empty string
-// identity, the server total must stay consistent, a short or empty page is only
-// accepted when it accounts for every row that is readable from the start page,
-// and a full page for the whole budget means the endpoint ignored the page
-// parameters.
-//
-// A read that starts after the first page cannot see the rows of the earlier
-// pages, so completeness is measured against the readable suffix of the total
-// (TotalCount minus the rows the start page skips), not against the whole total.
-func reservedInstancesCollectNumberedPages(ctx context.Context, maxPages int, startPage, pageSize int64, fetch func(pageNumber int64) (reservedInstancesNumberedPage, error)) ([]map[string]interface{}, int64, error) {
-	// PageNumber and PageSize are int32 on the wire. Bounding the two inputs to
-	// that range keeps `skipped` inside int64 and keeps every page number this
-	// loop sends representable, instead of wrapping around after it is cast:
-	// (MaxInt32-1)*MaxInt32 is still far below MaxInt64.
-	if startPage < 1 || startPage > math.MaxInt32 {
-		return nil, 0, fmt.Errorf("%s cannot start at page %d: the start page must be between 1 and %d", reservedInstancesAction, startPage, math.MaxInt32)
-	}
-	if pageSize < 1 || pageSize > math.MaxInt32 {
-		return nil, 0, fmt.Errorf("%s cannot use PageSize %d: the page size must be between 1 and %d", reservedInstancesAction, pageSize, math.MaxInt32)
-	}
-	objects := make([]map[string]interface{}, 0)
-	totalCount := int64(0)
-	totalKnown := false
-	skipped := (startPage - 1) * pageSize
-	pageNumber := startPage
-	seen := make(map[string]struct{})
-	for page := 0; page < maxPages; page++ {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return nil, 0, fmt.Errorf("%s read stopped before page %d was requested: %w; the result was not returned because it would be incomplete", reservedInstancesAction, pageNumber, ctxErr)
-		}
-		result, err := fetch(pageNumber)
-		if err != nil {
-			return nil, 0, err
-		}
-		if result.totalKnown {
-			if totalKnown && result.total != totalCount {
-				return nil, 0, fmt.Errorf("%s reported TotalCount %d on page %d after %d on an earlier page; the result was not returned because the server total is inconsistent", reservedInstancesAction, result.total, pageNumber, totalCount)
-			}
-			totalCount = result.total
-			totalKnown = true
-		}
-		readableTotal := int64(0)
-		if totalKnown && totalCount > skipped {
-			readableTotal = totalCount - skipped
-		}
-		for _, item := range result.items {
-			identity, err := reservedInstancesRecordIdentity(item)
-			if err != nil {
-				return nil, 0, err
-			}
-			if _, duplicate := seen[identity]; duplicate {
-				return nil, 0, fmt.Errorf("%s returned ReservedInstanceId %q more than once; the result was not returned because it would contain duplicate rows", reservedInstancesAction, identity)
-			}
-			seen[identity] = struct{}{}
-		}
-		objects = append(objects, result.items...)
-		if totalKnown && int64(len(objects)) > readableTotal {
-			return nil, 0, fmt.Errorf("%s returned %d rows from page %d while TotalCount %d leaves %d readable rows; the result was not returned because the response is inconsistent", reservedInstancesAction, len(objects), startPage, totalCount, readableTotal)
-		}
-		if len(result.items) == 0 {
-			if totalKnown && int64(len(objects)) < readableTotal {
-				return nil, 0, fmt.Errorf("%s returned an empty page at page %d while TotalCount %d still expects %d more readable rows; the result was not returned because it would be incomplete", reservedInstancesAction, pageNumber, totalCount, readableTotal-int64(len(objects)))
-			}
-			break
-		}
-		if int64(len(result.items)) < pageSize {
-			if totalKnown && int64(len(objects)) < readableTotal {
-				return nil, 0, fmt.Errorf("%s returned a short page at page %d while TotalCount %d still expects %d more readable rows; the result was not returned because it would be incomplete", reservedInstancesAction, pageNumber, totalCount, readableTotal-int64(len(objects)))
-			}
-			break
-		}
-		if totalKnown && int64(len(objects)) >= readableTotal {
-			break
-		}
-		if pageNumber >= math.MaxInt32 {
-			return nil, 0, fmt.Errorf("%s cannot continue past page %d, which is the largest page number the API accepts; the result was not returned because it would be incomplete", reservedInstancesAction, pageNumber)
-		}
-		pageNumber++
-		if page == maxPages-1 {
-			return nil, 0, fmt.Errorf("%s returned a full page for %d consecutive requests (PageSize=%d), so pagination did not terminate; the result was not returned because it would be incomplete", reservedInstancesAction, maxPages, pageSize)
-		}
-	}
-	if !totalKnown && len(objects) > 0 {
-		totalCount = int64(len(objects))
-	}
-	return objects, totalCount, nil
 }
