@@ -10,8 +10,6 @@ description: |-
 
 Provides a GWLB Listener resource.
 
-
-
 For information about GWLB Listener and how to use it, see [What is Listener](https://www.alibabacloud.com/help/en/slb/gateway-based-load-balancing-gwlb/developer-reference/api-gwlb-2024-04-15-createlistener).
 
 -> **NOTE:** Available since v1.234.0.
@@ -123,6 +121,7 @@ resource "alicloud_gwlb_listener" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dry_run` - (Optional) Specifies whether to perform a dry run, without performing the actual request. Valid values:
 
   - `true`: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error code is returned. If the request passes the dry run, the `DryRunOperation` error code is returned.
@@ -138,14 +137,15 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `region_id` - The region ID.
-* `status` - The status of the listener. 
-
+* `status` - The status of the listener.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Listener.
 * `delete` - (Defaults to 5 mins) Used when delete the Listener.
 * `update` - (Defaults to 5 mins) Used when update the Listener.

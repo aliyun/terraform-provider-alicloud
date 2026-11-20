@@ -7,7 +7,7 @@ description: |-
   Provides a collection of AnalyticDB for PostgreSQL instances according to the specified filters.
 ---
 
-# alicloud\_gpdb\_instances
+# alicloud_gpdb_instances
 
 This data source provides the AnalyticDB for PostgreSQL instances of the current Alibaba Cloud user.
 

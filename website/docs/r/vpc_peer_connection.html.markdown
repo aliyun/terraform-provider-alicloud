@@ -70,10 +70,11 @@ resource "alicloud_vpc_peer_connection" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `accepting_ali_uid` - (Optional, ForceNew, Int) The ID of the Alibaba Cloud account to which the accepter VPC belongs.
 
-*   To create a VPC peering connection within your Alibaba Cloud account, enter the ID of your Alibaba Cloud account.
-*   To create a VPC peering connection between your Alibaba Cloud account and another Alibaba Cloud account, enter the ID of the peer Alibaba Cloud account.
+* To create a VPC peering connection within your Alibaba Cloud account, enter the ID of your Alibaba Cloud account.
+* To create a VPC peering connection between your Alibaba Cloud account and another Alibaba Cloud account, enter the ID of the peer Alibaba Cloud account.
 
   -> **NOTE:**   If the accepter is a RAM user, set `AcceptingAliUid` to the ID of the Alibaba Cloud account that created the RAM user.
 
@@ -114,6 +115,7 @@ The name must be 2 to 128 characters in length, and can contain digits, undersco
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the VPC peer connection. Use UTC time in the format' YYYY-MM-DDThh:mm:ssZ '.
 * `region_id` - The region ID of the resource to which you want to create and add tags.
@@ -121,6 +123,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Peer Connection.
 * `delete` - (Defaults to 5 mins) Used when delete the Peer Connection.
 * `update` - (Defaults to 5 mins) Used when update the Peer Connection.

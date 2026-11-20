@@ -59,17 +59,20 @@ Terraform cannot destroy resource `alicloud_oss_bucket_request_payment`. Terrafo
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the bucket.
 * `payer` - (Optional, Computed) The payer of the request and traffic fees.Valid values: BucketOwner: request and traffic fees are paid by the bucket owner. Requester: request and traffic fees are paid by the requester.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Request Payment.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Request Payment.
 

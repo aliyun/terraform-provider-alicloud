@@ -7,11 +7,11 @@ description: |-
   Provides a list of Alidns Gtm Instances to the user.
 ---
 
-# alicloud\_alidns\_gtm\_instances
+# alicloud_alidns_gtm_instances
 
 This data source provides the Alidns Gtm Instances of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.151.0+.
+-> **NOTE:** Available since v1.151.0+.
 
 ## Example Usage
 
@@ -33,7 +33,7 @@ The following arguments are supported:
 * `lang` - (Optional, ForceNew) The lang.
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -42,7 +42,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `alert_config` - The alert notification methods.
       * `dingtalk_notice` - Whether to configure DingTalk notifications.
       * `email_notice` -  Whether to configure mail notification.
-      * `notice_type` - The Alarm Event Type. 
+      * `notice_type` - The Alarm Event Type.
       * `sms_notice` - Whether to configure SMS notification.
     * `cname_type` - The access type of the CNAME domain name.
     * `create_time` - The CreateTime of the Gtm Instance.

@@ -10,8 +10,6 @@ description: |-
 
 Provides a Mongodb Account resource.
 
-
-
 For information about Mongodb Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/en/doc-detail/62154.html).
 
 -> **NOTE:** Available since v1.148.0.
@@ -77,6 +75,7 @@ Terraform cannot destroy resource `alicloud_mongodb_account`. Terraform will rem
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_description` - (Optional) Set the comment information of the account.
   - Cannot start with http:// or https.
   - Start with Chinese and English letters.
@@ -94,12 +93,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<account_name>`.
 * `status` - Account Status
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Account.
 * `update` - (Defaults to 5 mins) Used when update the Account.
 

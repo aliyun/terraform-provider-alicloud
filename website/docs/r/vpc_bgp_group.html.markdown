@@ -10,8 +10,6 @@ description: |-
 
 Provides a Express Connect Bgp Group resource.
 
-
-
 For information about Express Connect Bgp Group and how to use it, see [What is Bgp Group](https://www.alibabacloud.com/help/en/doc-detail/91267.html).
 
 -> **NOTE:** Available since v1.152.0.
@@ -68,10 +66,11 @@ resource "alicloud_vpc_bgp_group" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `auth_key` - (Optional) The authentication key of the BGP group. 
-* `bgp_group_name` - (Optional) The name of the BGP group. The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (\_), and hyphens (-). The name must start with a letter. 
+
+* `auth_key` - (Optional) The authentication key of the BGP group.
+* `bgp_group_name` - (Optional) The name of the BGP group. The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (\_), and hyphens (-). The name must start with a letter.
 * `clear_auth_key` - (Optional, Available since v1.261.0) Specifies whether to clear the secret key. Valid values: `true`, `false`.
-* `description` - (Optional) The description of the BGP group. The description must be 2 to 256 characters in length. It must start with a letter and cannot start with `http://` or `https://`. 
+* `description` - (Optional) The description of the BGP group. The description must be 2 to 256 characters in length. It must start with a letter and cannot start with `http://` or `https://`.
 * `ip_version` - (Optional, ForceNew, Computed, Available since v1.261.0) The IP version. Valid values:
   - `IPv4`: This is the default value.
   - `IPv6`: IPv6 is supported only if the VBR for which you want to create the BGP group has IPv6 enabled.
@@ -81,18 +80,19 @@ The following arguments are supported:
 
 * `local_asn` - (Optional, Computed) The custom ASN on the Alibaba Cloud side. Valid values:
   - `45104`
-  - **64512~65534** 
+  - **64512~65534**
   - **4200000000~4294967294**.
 
   -> **NOTE:**  `65025` is reserved by Alibaba Cloud. By default, Alibaba Cloud uses `45104` as `LocalAsn`. If you use custom `LocalAsn` in multi-line access scenarios, loops in BGP may occur.
 
-* `peer_asn` - (Required) The ASN of the gateway device in the data center. 
+* `peer_asn` - (Required) The ASN of the gateway device in the data center.
 * `route_limit` - (Optional, Computed, Int, Available since v1.261.0) The maximum number of routes supported by a BGP peer. Default value: 110.
-* `router_id` - (Required, ForceNew) The ID of the virtual border router (VBR) that is associated with the BGP group. 
+* `router_id` - (Required, ForceNew) The ID of the virtual border router (VBR) that is associated with the BGP group.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `region_id` - The Region ID of the BGP group.
 * `status` - The status of the resource
@@ -100,6 +100,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bgp Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Bgp Group.
 * `update` - (Defaults to 5 mins) Used when update the Bgp Group.

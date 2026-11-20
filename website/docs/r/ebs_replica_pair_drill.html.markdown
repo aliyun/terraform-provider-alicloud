@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_ebs_replica_pair_drill
 
-Provides a EBS Replica Pair Drill resource. 
+Provides a EBS Replica Pair Drill resource.
 
 For information about Elastic Block Storage(EBS) Replica Pair Drill and how to use it, see [What is Replica Pair Drill](https://next.api.alibabacloud.com/document/ebs/2021-07-30/StartPairDrill).
 
@@ -43,11 +43,13 @@ resource "alicloud_ebs_replica_pair_drill" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `pair_id` - (Required, ForceNew) Copy the ID of the pair. You can call [DescribeDiskReplicaPairs](~~ 354206 ~~) to query the list of asynchronous replication pairs to obtain the replication pair ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<pair_id>:<replica_pair_drill_id>`.
 * `replica_pair_drill_id` - The first ID of the resource.
 * `status` - Walkthrough status. _failed: Execution failed._failed: Cleanup failed.
@@ -55,6 +57,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Replica Pair Drill.
 * `delete` - (Defaults to 5 mins) Used when delete the Replica Pair Drill.
 

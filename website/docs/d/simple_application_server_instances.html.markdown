@@ -7,7 +7,7 @@ description: |-
   Provides a list of Simple Application Server Instances to the user.
 ---
 
-# alicloud\_simple\_application\_server\_instances
+# alicloud_simple_application_server_instances
 
 This data source provides the Simple Application Server Instances of the current Alibaba Cloud user.
 

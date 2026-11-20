@@ -357,7 +357,7 @@ The data_disks supports the following:
 
 ### `network_interfaces`
 
-The network_interfaces supports the following. 
+The network_interfaces supports the following.
 
 * `network_interface_id` - (Optional, ForceNew) The ID of the Secondary ENI.
 * `vswitch_id` - (Optional, ForceNew, Available since v1.223.2) The ID of the vSwitch to which to connect Secondary ENI N.

@@ -70,14 +70,14 @@ The following arguments are supported:
 
 ### `labels`
 
-The labels supports the following: 
+The labels supports the following:
 
 * `name` - (Optional) The name of the label.
 * `value` - (Optional) The value of the label.
 
 ### `annotations`
 
-The annotations supports the following: 
+The annotations supports the following:
 
 * `name` - (Optional) The name of the annotation.
 * `value` - (Optional) The value of the annotation.
@@ -89,7 +89,6 @@ The following attributes are exported:
 * `id` - The resource ID of Prometheus Alert Rule. The value formats as `<cluster_id>:<prometheus_alert_rule_id>`.
 * `prometheus_alert_rule_id` - The first ID of the resource.
 * `status` -  The status of the resource. Valid values: `0`, `1`.
-
 
 ## Import
 

@@ -36,6 +36,7 @@ output "alicloud_gpdb_logbackup_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_instance_id` - (Required, ForceNew) The ID of the Master node of the instance.
 * `end_time` - (ForceNew, Optional) The query end time, which must be greater than the query start time. Format: yyyy-MM-ddTHH:mmZ(UTC time).
 * `page_number` - (ForceNew, Optional) Current page number.
@@ -44,10 +45,10 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed) A list of Logbackup IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Logbackup IDs.
 * `logbackups` - A list of Logbackup Entries. Each element contains the following attributes:
   * `db_instance_id` - The ID of the Master node of the instance.

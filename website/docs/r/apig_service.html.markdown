@@ -91,13 +91,12 @@ resource "alicloud_apig_service" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_apig_service&spm=docs.r.apig_service.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `addresses` - (Optional, List) A list of domain names or fixed addresses.
 * `dns_servers` - (Optional, List) The list of DNS server addresses. Used when `source_type` is `DNS`.
 * `express_type` - (Optional, ForceNew) The service express type, which identifies a special type or mode of the service. Example value: `Standard`.
@@ -121,6 +120,7 @@ The following arguments are supported:
 ### `health_check_config`
 
 The health_check_config supports the following:
+
 * `enable` - (Optional) Whether to enable health check
 * `expected_statuses` - (Optional, List) Expected HTTP status codes
 * `healthy_threshold` - (Optional, Int) Healthy threshold
@@ -134,6 +134,7 @@ The health_check_config supports the following:
 ### `outlier_detection_config`
 
 The outlier_detection_config supports the following:
+
 * `base_ejection_time` - (Optional, Int) Base ejection time
 * `enable` - (Optional) Whether to enable outlier detection
 * `failure_percentage_minimum_hosts` - (Optional, Int) Failure percentage minimum hosts
@@ -143,6 +144,7 @@ The outlier_detection_config supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_timestamp` - Creation timestamp.
 * `health_status` - Health status.
@@ -159,6 +161,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Service.
 * `delete` - (Defaults to 5 mins) Used when delete the Service.
 * `update` - (Defaults to 6 mins) Used when update the Service.

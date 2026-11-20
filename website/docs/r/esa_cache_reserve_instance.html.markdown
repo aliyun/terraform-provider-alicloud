@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Cache Reserve Instance resource.
 
-
-
 For information about ESA Cache Reserve Instance and how to use it, see [What is Cache Reserve Instance](https://next.api.alibabacloud.com/document/ESA/2024-09-10/PurchaseCacheReserve).
 
 -> **NOTE:** Available since v1.247.0.
@@ -50,6 +48,7 @@ resource "alicloud_esa_cache_reserve_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_pay` - (Optional) Automatic payment.
 * `auto_renew` - (Optional) Whether to auto-renew:
   - `true`: Auto-renew.
@@ -64,6 +63,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Instance purchase time.
 * `status` - The status of the cache reserve instance. , it is unavailable.
@@ -71,6 +71,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Cache Reserve Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Cache Reserve Instance.
 * `update` - (Defaults to 5 mins) Used when update the Cache Reserve Instance.

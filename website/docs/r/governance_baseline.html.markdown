@@ -76,6 +76,7 @@ resource "alicloud_governance_baseline" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `baseline_items` - (Optional) List of baseline items.
 
   You can invoke [ListAccountFactoryBaselineItems](https://next.api.aliyun.com/document/governance/2021-01-20/ListAccountFactoryBaselineItems) to get a list of account factory baseline items supported by the Cloud Governance Center. See [`baseline_items`](#baseline_items) below.
@@ -85,6 +86,7 @@ The following arguments are supported:
 ### `baseline_items`
 
 The baseline_items supports the following:
+
 * `config` - (Optional) Baseline item configuration. The format is a JSON string.
 * `name` - (Optional) The baseline item name.
 * `version` - (Optional, Computed) The baseline item version.
@@ -92,11 +94,13 @@ The baseline_items supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Baseline.
 * `delete` - (Defaults to 5 mins) Used when delete the Baseline.
 * `update` - (Defaults to 5 mins) Used when update the Baseline.

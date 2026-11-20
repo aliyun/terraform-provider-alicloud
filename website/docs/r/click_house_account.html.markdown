@@ -90,7 +90,6 @@ The following arguments are supported:
 * `allow_dictionaries` - (Optional, Available since v1.163.0) The list of dictionaries to which you want to grant permissions. Separate dictionaries with commas (,).
 * `total_dictionaries` - (Optional, Deprecated since v1.223.1) The list of all dictionaries. Separate dictionaries with commas (,). Field 'total_dictionaries' has been deprecated from provider version 1.223.1.
 
-
 ## Attributes Reference
 
 The following attributes are exported:

@@ -95,6 +95,7 @@ output "alicloud_sls_logtail_config_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `logstore_name` - (Required, ForceNew) Logstore name.
 * `logtail_config_name` - (ForceNew, Optional) The name of the resource
 * `offset` - (Required, ForceNew) Query start row. The default value is 0.
@@ -104,10 +105,10 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Logtail Config IDs.
 * `names` - A list of name of Logtail Configs.
 * `configs` - A list of Logtail Config Entries. Each element contains the following attributes:

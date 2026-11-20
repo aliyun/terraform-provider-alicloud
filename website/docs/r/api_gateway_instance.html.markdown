@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_api_gateway_instance
 
-Provides a Api Gateway Instance resource. 
+Provides a Api Gateway Instance resource.
 
 For information about Api Gateway Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/api-gateway/product-overview/dedicated-instances).
 
@@ -112,11 +112,13 @@ resource "alicloud_api_gateway_instance" "vpc_integration_instance" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `duration` - (Optional) The time of the instance package. Valid values:
   - PricingCycle is **Month**, indicating monthly payment. The value range is **1** to **9**.
   - PricingCycle is **Year**, indicating annual payment. The value range is **1** to **3**.
 
 When the value of> ChargeType is **PrePaid**, this parameter is available and must be passed in.
+
 * `egress_ipv6_enable` - (Optional) Specifies whether IPv6 egress capability is enabled.
 * `https_policy` - (Required) Https policy.
 * `instance_name` - (Required) Instance name.
@@ -146,6 +148,7 @@ When the value of> ChargeType is **PrePaid**, this parameter is available and mu
 ### `zone_vswitch_security_group`
 
 The zone_vswitch_security_group supports the following:
+
 * `zone_id` - (Required) The zone ID.
 * `vswitch_id` - (Required) The VSwitch ID.
 * `cidr_block` - (Required) The CIDR block of the VSwitch.
@@ -163,6 +166,7 @@ The to_connect_vpc_ip_block supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Creation time.
 * `status` - The status of the resource.
@@ -172,6 +176,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 25 mins) Used when create the Instance.
 * `delete` - (Defaults to 25 mins) Used when delete the Instance.
 * `update` - (Defaults to 25 mins) Used when update the Instance.

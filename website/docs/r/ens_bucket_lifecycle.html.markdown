@@ -6,7 +6,7 @@ description: |-
   Provides a Alicloud ENS Bucket Lifecycle resource.
 ---
 
-# alicloud\_ens\_bucket\_lifecycle
+# alicloud_ens_bucket_lifecycle
 
 Provides a ENS Bucket Lifecycle resource.
 
@@ -37,9 +37,7 @@ resource "alicloud_ens_bucket_lifecycle" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ens_bucket_lifecycle&spm=docs.r.ens_bucket_lifecycle.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

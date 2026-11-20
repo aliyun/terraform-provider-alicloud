@@ -34,9 +34,7 @@ resource "alicloud_polardb_polar_fs" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_polar_fs&spm=docs.r.polardb_polar_fs.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

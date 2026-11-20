@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_quotas_quota_alarm
 
-Provides a Quotas Quota Alarm resource. 
+Provides a Quotas Quota Alarm resource.
 
 For information about Quotas Quota Alarm and how to use it, see [What is Quota Alarm](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-createquotaalarm).
 
@@ -56,6 +56,7 @@ resource "alicloud_quotas_quota_alarm" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `product_code` - (Required, ForceNew) The Product Code.
 * `quota_action_code` - (Required, ForceNew) The Quota Action Code.
 * `quota_alarm_name` - (Required) The name of Quota Alarm.
@@ -67,23 +68,24 @@ The following arguments are supported:
   - usable: alarm for the remaining available quota.
 * `web_hook` - (Optional) The WebHook of Quota Alarm.
 
-
 ### `quota_dimensions`
 
 The quota_dimensions supports the following:
+
 * `key` - (Optional, ForceNew) The Key of quota_dimensions.
 * `value` - (Optional, ForceNew) The Value of quota_dimensions.
-
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Quota Alarm.
 * `delete` - (Defaults to 5 mins) Used when delete the Quota Alarm.
 * `update` - (Defaults to 5 mins) Used when update the Quota Alarm.

@@ -61,7 +61,6 @@ The following arguments are supported:
 * `internal_ip` - (Required, ForceNew) The destination private IP address.
 * `internal_port` - (Required, ForceNew) The destination private port.Value range: 1 to 65535 or "any".
 
-
 ## Attributes Reference
 
 The following attributes are exported:

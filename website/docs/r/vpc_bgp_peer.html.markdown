@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_vpc_bgp_peer
 
-Provides a Express Connect Bgp Peer resource. 
+Provides a Express Connect Bgp Peer resource.
 
 For information about VPC Bgp Peer and how to use it, see [What is Bgp Peer](https://www.alibabacloud.com/help/en/doc-detail/91267.html).
 
@@ -84,6 +84,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `bgp_peer_name` - The name of the BGP neighbor.
 * `status` - Status of BGP neighbors.
@@ -91,6 +92,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bgp Peer.
 * `delete` - (Defaults to 5 mins) Used when delete the Bgp Peer.
 * `update` - (Defaults to 5 mins) Used when update the Bgp Peer.

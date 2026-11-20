@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Routine Related Record resource.
 
-
-
 For information about ESA Routine Related Record and how to use it, see [What is Routine Related Record](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateRoutineRelatedRecord).
 
 -> **NOTE:** Available since v1.265.0.
@@ -71,6 +69,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Routine Related Record.
 * `delete` - (Defaults to 5 mins) Used when delete the Routine Related Record.
 

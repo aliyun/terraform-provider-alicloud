@@ -10,8 +10,6 @@ description: |-
 
 Provides a ENS Image resource.
 
-
-
 For information about ENS Image and how to use it, see [What is Image](https://www.alibabacloud.com/help/en/ens/developer-reference/api-ens-2017-11-10-createimage).
 
 -> **NOTE:** Available since v1.216.0.
@@ -64,6 +62,7 @@ resource "alicloud_ens_image" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `delete_after_image_upload` - (Optional) Specifies whether to automatically release the instance after the image is packaged and uploaded. Only image builders are supported. Default value: `false`. Valid values:
   - `true`: When the instance is released, the image is released together with the instance.
   - `false`: When the instance is released, the image is retained and is not released together with the instance.
@@ -75,6 +74,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Image.
 * `create_time` - The image creation time.
 * `status` - The state of the image.
@@ -82,6 +82,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 120 mins) Used when create the Image.
 * `delete` - (Defaults to 5 mins) Used when delete the Image.
 * `update` - (Defaults to 5 mins) Used when update the Image.

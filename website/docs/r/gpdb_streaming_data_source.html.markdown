@@ -113,27 +113,30 @@ resource "alicloud_gpdb_streaming_data_source" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_instance_id` - (Required, ForceNew) The instance ID.
 
   -> **NOTE:**   You can call the [DescribeDBInstances](https://www.alibabacloud.com/help/en/doc-detail/196830.html) operation to query the information about all AnalyticDB for PostgreSQL instances within a region, including instance IDs.
 
-* `data_source_config` - (Required) The configurations of the data source. 
-* `data_source_description` - (Optional) The description of the data source. 
+* `data_source_config` - (Required) The configurations of the data source.
+* `data_source_description` - (Optional) The description of the data source.
 * `data_source_name` - (Required, ForceNew) Data Source Name
 * `data_source_type` - (Required, ForceNew) Data Source Type
-* `service_id` - (Required, ForceNew) The real-time data service ID. 
+* `service_id` - (Required, ForceNew) The real-time data service ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<data_source_id>`.
 * `create_time` - Creation time
-* `data_source_id` - The data source ID. 
+* `data_source_id` - The data source ID.
 * `status` - Service Status:
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Streaming Data Source.
 * `delete` - (Defaults to 5 mins) Used when delete the Streaming Data Source.
 * `update` - (Defaults to 5 mins) Used when update the Streaming Data Source.

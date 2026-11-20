@@ -10,8 +10,6 @@ description: |-
 
 Provides a Private Link Vpc Endpoint resource.
 
-
-
 For information about Private Link Vpc Endpoint and how to use it, see [What is Vpc Endpoint](https://www.alibabacloud.com/help/en/privatelink/latest/api-privatelink-2020-04-15-createvpcendpoint).
 
 -> **NOTE:** Available since v1.109.0.
@@ -130,6 +128,7 @@ resource "alicloud_privatelink_vpc_endpoint_zone" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `address_ip_version` - (Optional, Computed, Available since v1.239.0) The IP address version. Valid values:
   - `IPv4` (default): IPv4.
   - `DualStack`: dual-stack.
@@ -161,20 +160,22 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `bandwidth` - The bandwidth of the endpoint connection.  1024 to 10240. Unit: Mbit/s.
 
   Note: The bandwidth of an endpoint connection is in the range of 100 to 10,240 Mbit/s. The default bandwidth is 1,024 Mbit/s. When the endpoint is connected to the endpoint service, the default bandwidth is the minimum bandwidth. In this case, the connection bandwidth range is 1,024 to 10,240 Mbit/s.
-* `connection_status` - The state of the endpoint connection. 
+* `connection_status` - The state of the endpoint connection.
 * `create_time` - The time when the endpoint was created.
-* `endpoint_business_status` - The service state of the endpoint. 
+* `endpoint_business_status` - The service state of the endpoint.
 * `endpoint_domain` - The domain name of the endpoint.
 * `region_id` - (Available since v1.239.0) The region ID of the endpoint.
-* `status` - The state of the endpoint. 
+* `status` - The state of the endpoint.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vpc Endpoint.
 * `delete` - (Defaults to 5 mins) Used when delete the Vpc Endpoint.
 * `update` - (Defaults to 5 mins) Used when update the Vpc Endpoint.

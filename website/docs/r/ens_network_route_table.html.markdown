@@ -54,13 +54,12 @@ resource "alicloud_ens_network_route_table" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ens_network_route_table&spm=docs.r.ens_network_route_table.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `network_id` - (Required, ForceNew) The network ID.
 * `associate_type` - (Required, ForceNew) The binding type of the created routing table. Value: `Gateway`.
 * `route_table_name` - (Optional) The name of the routing table. The length is 1 to 128 characters, but it cannot start with `http://` or `https://`.
@@ -70,6 +69,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. Same as `route_table_id`.
 * `route_table_id` - The ID of the routing table.
 * `route_table_type` - The type of the routing table. Value: `Custom`, `System`.
@@ -79,6 +79,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Network Route Table.
 * `delete` - (Defaults to 5 mins) Used when delete the Network Route Table.
 * `update` - (Defaults to 5 mins) Used when update the Network Route Table.

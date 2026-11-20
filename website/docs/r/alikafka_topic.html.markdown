@@ -95,6 +95,7 @@ resource "alicloud_alikafka_topic" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `compact_topic` - (Optional, ForceNew, Bool) The cleanup policy for the topic. This parameter is available only if you set the storage engine of the topic to Local storage. Valid values:
   - false: The delete cleanup policy is used.
   - true: The compact cleanup policy is used.
@@ -121,6 +122,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<topic>`.
 * `create_time` - (Available since v1.262.1) The time when the topic was created.
 * `region_id` - (Available since v1.262.1) The ID of the region where the instance resides.
@@ -131,6 +133,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.119.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Topic.
 * `delete` - (Defaults to 16 mins) Used when delete the Topic.
 * `update` - (Defaults to 5 mins) Used when update the Topic.

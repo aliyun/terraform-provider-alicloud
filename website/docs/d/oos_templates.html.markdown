@@ -7,10 +7,10 @@ description: |-
     Provides a list of OOS Templates.
 ---
 
-# alicloud\_oos\_templates
+# alicloud_oos_templates
 
 This data source provides a list of OOS Templates in an Alibaba Cloud account according to the specified filters.
- 
+
 -> **NOTE:** Available since v1.92.0.
 
 ## Example Usage
@@ -75,4 +75,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `tags` - The tag of the resource.
   * `template_format` - The format of the template.
   * `template_type` - The type of the OOS Template.
-

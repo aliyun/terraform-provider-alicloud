@@ -61,18 +61,21 @@ resource "alicloud_fcv3_concurrency_config" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `function_name` - (Required, ForceNew) Function Name
 * `reserved_concurrency` - (Optional, Int) Reserved Concurrency. Functions reserve a part of account concurrency. Other functions cannot use this part of concurrency. Reserved concurrency includes the total concurrency of Reserved Instances and As-You-go instances.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `function_arn` - (Available since v1.234.0) Resource identity of the function
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Concurrency Config.
 * `delete` - (Defaults to 5 mins) Used when delete the Concurrency Config.
 * `update` - (Defaults to 5 mins) Used when update the Concurrency Config.

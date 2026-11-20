@@ -73,6 +73,7 @@ output "first_cen_flowlog_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cen_id` - (ForceNew, Optional) The ID of Cen instance.
 * `description` - (ForceNew, Optional) The description of the flowlog.
 * `flow_log_id` - (ForceNew, Optional) The ID of FlowLog.
@@ -90,10 +91,10 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Flow Log IDs.
 * `names` - A list of name of Flow Logs.
 * `flowlogs` - A list of Flow Log Entries. Each element contains the following attributes:

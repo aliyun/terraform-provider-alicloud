@@ -7,9 +7,9 @@ description: |-
     Provides a list of VPN Pbr Route Entries which owned by an Alicloud account.
 ---
 
--> **NOTE:** Available in v1.162.0+.
+-> **NOTE:** Available since v1.162.0+.
 
-# alicloud\_vpn\_pbr\_route\_entries
+# alicloud_vpn_pbr_route_entries
 
 The data source lists a number of VPN Pbr Route Entries resource information owned by an Alicloud account.
 
@@ -38,7 +38,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `entries` - A list of VPN Pbr Route Entries. Each element contains the following attributes:
-  * `create_time` - The creation time of the VPN Pbr Route Entry. 
+  * `create_time` - The creation time of the VPN Pbr Route Entry.
   * `id` - The id of the vpn pbr route entry. The value formats as `<vpn_gateway_id>:<next_hop>:<route_source>:<route_dest>`.
   * `vpn_gateway_id` - The ID of the vpn gateway.
   * `next_hop` - The next hop of the policy-based route.

@@ -43,12 +43,12 @@ resource "alicloud_max_compute_tenant_role_user_attachment" "default0" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_max_compute_tenant_role_user_attachment&spm=docs.r.max_compute_tenant_role_user_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_id` - (Optional, ForceNew, Computed) Account UID
 
 1. If the user is a primary account, the AccountId format is UID.  
@@ -65,11 +65,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<account_id>:<tenant_role>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Tenant Role User Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Tenant Role User Attachment.
 

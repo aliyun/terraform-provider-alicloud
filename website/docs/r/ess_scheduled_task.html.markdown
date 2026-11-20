@@ -129,7 +129,7 @@ resource "alicloud_ess_scheduled_task" "default" {
 
 ## Module Support
 
-You can use to the existing [autoscaling-rule module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling-rule/alicloud) 
+You can use to the existing [autoscaling-rule module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling-rule/alicloud)
 to create scheduled task, different type rules and alarm task one-click.
 
 ## Argument Reference
@@ -143,9 +143,9 @@ The following arguments are supported:
 * `max_value` - (Optional, Available in 1.90.0+) The maximum number of instances in a scaling group when the scaling method of the scheduled task is to specify the number of instances in a scaling group.
 * `desired_capacity` - (Optional, Available in 1.90.0+) The expected number of instances in a scaling group when the scaling method of the scheduled task is to specify the number of instances in a scaling group. **NOTE:** You must specify the `DesiredCapacity` parameter when you create the scaling group.
 * `description` - (Optional) Description of the scheduled task, which is 2-200 characters (English or Chinese) long.
-* `launch_time` - (Optional) The time at which the scheduled task is triggered. Specify the time in the ISO 8601 standard in the YYYY-MM-DDThh:mmZ format. 
-The time must be in UTC. You cannot enter a time point later than 90 days from the date of scheduled task creation. 
-If the `recurrence_type` parameter is specified, the task is executed repeatedly at the time specified by LaunchTime. 
+* `launch_time` - (Optional) The time at which the scheduled task is triggered. Specify the time in the ISO 8601 standard in the YYYY-MM-DDThh:mmZ format.
+The time must be in UTC. You cannot enter a time point later than 90 days from the date of scheduled task creation.
+If the `recurrence_type` parameter is specified, the task is executed repeatedly at the time specified by LaunchTime.
 Otherwise, the task is only executed once at the date and time specified by LaunchTime.
 * `launch_expiration_time` - (Optional) The time period during which a failed scheduled task is retried. Unit: seconds. Valid values: 0 to 1800, Available since v1.240.0. Default value: 600
 * `recurrence_type` - (Optional) Specifies the recurrence type of the scheduled task. **NOTE:** You must specify `RecurrenceType`, `RecurrenceValue`, and `RecurrenceEndTime` at the same time. Valid values:
@@ -159,10 +159,9 @@ Otherwise, the task is only executed once at the date and time specified by Laun
   - `Monthly`: You can enter two values in `A-B` format. Valid values of `A` and `B`: `1-31`. The value of `B` must be greater than or equal to the value of `A`.
   - `Cron`: You can enter a cron expression which is written in UTC and consists of five fields: minute, hour, day of month (date), month, and day of week. The expression can contain wildcard characters including commas (,), question marks (?), hyphens (-), asterisks (*), number signs (#), forward slashes (/), and the L and W letters.
 * `recurrence_end_time` - (Optional, String) Specifies the end time after which the scheduled task is no longer repeated. Specify the time in the ISO 8601 standard in the YYYY-MM-DDThh:mmZ format.
-The time must be in UTC. You cannot enter a time point later than 365 days from the date of scheduled task creation. **NOTE:** You must specify `RecurrenceType`, `RecurrenceValue`, and `RecurrenceEndTime` at the same time.                                
+The time must be in UTC. You cannot enter a time point later than 365 days from the date of scheduled task creation. **NOTE:** You must specify `RecurrenceType`, `RecurrenceValue`, and `RecurrenceEndTime` at the same time.
 * `task_enabled` - (Optional) Specifies whether to start the scheduled task. Default to true.
-                                  
-                                 
+
 ## Attributes Reference
 
 The following attributes are exported:
@@ -176,4 +175,3 @@ ESS schedule task can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_ess_scheduled_task.example abc123456
 ```
-

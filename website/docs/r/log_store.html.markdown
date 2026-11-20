@@ -10,8 +10,6 @@ description: |-
 
 Provides a SLS Log Store resource.
 
-
-
 For information about SLS Log Store and how to use it, see [What is Log Store](https://www.alibabacloud.com/help/doc-detail/48874.htm).
 
 -> **NOTE:** Available since v1.0.0.
@@ -134,12 +132,13 @@ resource "alicloud_log_store" "example" {
 
 ## Module Support
 
-You can use the existing [sls module](https://registry.terraform.io/modules/terraform-alicloud-modules/sls/alicloud) 
+You can use the existing [sls module](https://registry.terraform.io/modules/terraform-alicloud-modules/sls/alicloud)
 to create SLS project, store and store index one-click, like ECS instances.
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `append_meta` - (Optional, Computed) Determines whether to append log meta automatically. The meta includes log receive time and client IP address. Default to `true`.
 * `auto_split` - (Optional) Determines whether to automatically split a shard. Default to `false`.
 * `enable_web_tracking` - (Optional) Whether open webtracking. webtracking network tracing, support the collection of HTML log, H5, Ios and android platforms.
@@ -156,12 +155,14 @@ The following arguments are supported:
 * `telemetry_type` - (Optional, ForceNew, Available since 1.179.0) Determines whether store type is metric. `Metrics` means metric store, empty means log store.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `project` - (Deprecated since v1.215.0). Field 'project' has been deprecated from provider version 1.215.0. New field 'project_name' instead.
 * `name` - (Deprecated since v1.215.0). Field 'name' has been deprecated from provider version 1.215.0. New field 'logstore_name' instead.
 
 ### `encrypt_conf`
 
 The encrypt_conf supports the following:
+
 * `enable` - (Optional, Computed) Enable encryption. Default false.
 * `encrypt_type` - (Optional, ForceNew, Computed) Supported encryption type, only supports `default`(AES), `m4`.
 * `user_cmk_info` - (Optional, ForceNew, Computed, List) User bring your own key (BYOK) encryption Refer to details, the format is as follows. See user_cmk_info below. `{ "cmk_key_id": "your_cmk_key_id", "arn": "your_role_arn", "region_id": "you_cmk_region_id" }`. See [`user_cmk_info`](#encrypt_conf-user_cmk_info) below.
@@ -169,6 +170,7 @@ The encrypt_conf supports the following:
 ### `encrypt_conf-user_cmk_info`
 
 The encrypt_conf-user_cmk_info supports the following:
+
 * `arn` - (Optional, ForceNew, Computed) Role arn.
 * `cmk_key_id` - (Optional, ForceNew, Computed) User master key id.
 * `region_id` - (Optional, ForceNew, Computed) Region id where the user master key id is located.
@@ -176,6 +178,7 @@ The encrypt_conf-user_cmk_info supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<project_name>:<logstore_name>`.
 * `shards` - The shard attribute.
   * `id` - The ID of the shard.
@@ -187,6 +190,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Log Store.
 * `delete` - (Defaults to 5 mins) Used when delete the Log Store.
 * `update` - (Defaults to 5 mins) Used when update the Log Store.

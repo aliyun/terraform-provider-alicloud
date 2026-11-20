@@ -7,7 +7,7 @@ description: |-
   Provides a list of Mhub Apps to the user.
 ---
 
-# alicloud\_mhub\_apps
+# alicloud_mhub_apps
 
 This data source provides the Mhub Apps of the current Alibaba Cloud user.
 

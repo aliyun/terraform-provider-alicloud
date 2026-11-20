@@ -14,7 +14,7 @@ For information about Eipanycast Anycast Eip Address Attachment and how to use i
 
 -> **NOTE:** Available since v1.113.0.
 
--> **NOTE:** The following regions support currently while Slb instance support bound. 
+-> **NOTE:** The following regions support currently while Slb instance support bound.
 [eu-west-1-gb33-a01,cn-hongkong-am4-c04,ap-southeast-os30-a01,us-west-ot7-a01,ap-south-in73-a01,ap-southeast-my88-a01]
 
 ## Example Usage
@@ -228,6 +228,7 @@ resource "alicloud_eipanycast_anycast_eip_address_attachment" "normal" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `anycast_id` - (Required, ForceNew, Available since v1.113.0) The ID of the Anycast EIP instance.
 * `association_mode` - (Optional) Binding mode, value:
   - **Default**: The Default mode. The cloud resource instance to be bound is set as the Default origin.
@@ -243,11 +244,13 @@ The following arguments are supported:
 ### `pop_locations`
 
 The pop_locations supports the following:
+
 * `pop_location` - (Optional) The access point information of the associated access area when the cloud resource instance is bound.If you are binding for the first time, this parameter does not need to be configured, and the system automatically associates all access areas.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<anycast_id>:<bind_instance_id>:<bind_instance_region_id>:<bind_instance_type>`.
 * `bind_time` - Binding time.Time is expressed according to ISO8601 standard and UTC time is used. The format is: 'YYYY-MM-DDThh:mm:ssZ'.
 * `status` - The status of the bound cloud resource instance. Value:BINDING: BINDING.Bound: Bound.UNBINDING: UNBINDING.DELETED: DELETED.MODIFYING: being modified.
@@ -255,6 +258,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Anycast Eip Address Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Anycast Eip Address Attachment.
 * `update` - (Defaults to 5 mins) Used when update the Anycast Eip Address Attachment.

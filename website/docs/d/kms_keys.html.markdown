@@ -36,7 +36,7 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew) A list of KMS key IDs.
 * `description_regex` - (Optional, ForceNew) A regex string to filter the results by the KMS key description.
 * `status` - (Optional, ForceNew) Filter the results by status of the KMS keys. Valid values: `Enabled`, `Disabled`, `PendingDeletion`.
-* `filters` - (Optional, ForceNew) The CMK filter. The filter consists of one or more key-value pairs. 
+* `filters` - (Optional, ForceNew) The CMK filter. The filter consists of one or more key-value pairs.
   You can specify a maximum of 10 key-value pairs. More details see API [ListKeys](https://www.alibabacloud.com/help/en/key-management-service/latest/listkeys).
 * `enable_details` - (Optional, ForceNew) Default to `true`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -60,9 +60,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `key_usage` -(Available in 1.123.1+)  The usage of CMK.
   * `last_rotation_date` -(Available in 1.123.1+)  The date and time the last rotation was performed.
   * `material_expire_time` -(Available in 1.123.1+)  The time and date the key material for the CMK expires.
-  * `next_rotation_date` -(Available in 1.123.1+)  The time the next rotation is scheduled for execution. 
+  * `next_rotation_date` -(Available in 1.123.1+)  The time the next rotation is scheduled for execution.
   * `origin` -(Available in 1.123.1+)  The source of the key material for the CMK.
   * `protection_level` -(Available in 1.123.1+)  The protection level of the CMK.
   * `rotation_interval` -(Available in 1.123.1+)  The period of automatic key rotation.
-  * `primary_key_version` -(Available in 1.123.1+)  The ID of the current primary key version of the symmetric CMK. 
-  
+  * `primary_key_version` -(Available in 1.123.1+)  The ID of the current primary key version of the symmetric CMK.

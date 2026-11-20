@@ -10,8 +10,6 @@ description: |-
 
 Provides a Realtime Compute Member resource.
 
-
-
 For information about Realtime Compute Member and how to use it, see [What is Member](https://next.api.alibabacloud.com/document/ververica/2022-07-18/CreateMember).
 
 -> **NOTE:** Available since v1.292.0.
@@ -85,9 +83,7 @@ resource "alicloud_realtime_compute_member" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_realtime_compute_member&spm=docs.r.realtime_compute_member.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

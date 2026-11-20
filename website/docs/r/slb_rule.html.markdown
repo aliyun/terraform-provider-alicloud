@@ -180,7 +180,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `create` - (Defaults to 1 mins) Used when create the forwarding rule.
 * `update` - (Defaults to 1 mins) Used when update the forwarding rule.
 * `delete` - (Defaults to 1 mins) Used when delete the forwarding rule.
-                                                                                             
+
 ## Import
 
 Load balancer forwarding rule can be imported using the id, e.g.

@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Origin Pool resource.
 
-
-
 For information about ESA Origin Pool and how to use it, see [What is Origin Pool](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateOriginPool).
 
 -> **NOTE:** Available since v1.244.0.
@@ -103,6 +101,7 @@ resource "alicloud_esa_origin_pool" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `enabled` - (Optional) Whether the source address pool is enabled:
   - `true`: Enabled;
   - `false`: Not enabled.
@@ -113,6 +112,7 @@ The following arguments are supported:
 ### `origins`
 
 The origins supports the following:
+
 * `address` - (Optional) Origin Address.
 * `auth_conf` - (Optional, List) The authentication information. When the source Station is an OSS or S3 and other source stations need to be authenticated, the authentication-related configuration information needs to be transmitted. See [`auth_conf`](#origins-auth_conf) below.
 * `enabled` - (Optional) Whether the source station is enabled:
@@ -134,6 +134,7 @@ The origins supports the following:
 ### `origins-auth_conf`
 
 The origins-auth_conf supports the following:
+
 * `access_key` - (Optional) The AccessKey to be passed when AuthType is set to private_cross_account or private.
 * `auth_type` - (Optional) Authentication type.
   - `public`: public read/write, which is used when the source station is OSS or S3 and is public read/write;
@@ -147,6 +148,7 @@ The origins-auth_conf supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<origin_pool_id>`.
 * `origin_pool_id` - OriginPool Id
 * `origins` - The Source station information added to the source address pool. Multiple Source stations use arrays to transfer values.
@@ -155,6 +157,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Origin Pool.
 * `delete` - (Defaults to 5 mins) Used when delete the Origin Pool.
 * `update` - (Defaults to 5 mins) Used when update the Origin Pool.

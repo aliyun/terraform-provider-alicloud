@@ -96,13 +96,13 @@ resource "alicloud_instance" "instance" {
 The Alicloud provider accepts several ways to enter credentials for authentication.
 The following methods are supported, in this order, and explained below:
 
-- Static credentials
-- Environment variables
-- Shared credentials/configuration file  
-- ECS Instance Role
-- Assuming A RAM Role
-- Assuming A RAM Role With OIDC
-- Sidecar Credentials
+* Static credentials
+* Environment variables
+* Shared credentials/configuration file
+* ECS Instance Role
+* Assuming A RAM Role
+* Assuming A RAM Role With OIDC
+* Sidecar Credentials
 
 ### Static credentials
 
@@ -139,10 +139,10 @@ $ terraform plan
 
 ### Shared Credentials File
 
-You can use an [Alibaba Cloud credentials or configuration file](https://www.alibabacloud.com/help/doc-detail/110341.htm) to specify your credentials. 
-The default location is `$HOME/.aliyun/config.json` on Linux and macOS, or `"%USERPROFILE%\.aliyun/config.json"` on Windows. 
-You can optionally specify a different location in the Terraform configuration by providing the `shared_credentials_file` argument 
-or using the `ALIBABA_CLOUD_CREDENTIALS_FILE` environment variable. 
+You can use an [Alibaba Cloud credentials or configuration file](https://www.alibabacloud.com/help/doc-detail/110341.htm) to specify your credentials.
+The default location is `$HOME/.aliyun/config.json` on Linux and macOS, or `"%USERPROFILE%\.aliyun/config.json"` on Windows.
+You can optionally specify a different location in the Terraform configuration by providing the `shared_credentials_file` argument
+or using the `ALIBABA_CLOUD_CREDENTIALS_FILE` environment variable.
 This method also supports a `profile` configuration and matching `ALIBABA_CLOUD_PROFILE` environment variable:
 
 Usage:
@@ -180,8 +180,8 @@ provider "alicloud" {
 
 ### Assuming A RAM Role
 
-If provided with a role ARN, Terraform will attempt to assume this role using the supplied credentials. 
-The role arn can be set using the `ALIBABA_CLOUD_ROLE_ARN` environment variables, 
+If provided with a role ARN, Terraform will attempt to assume this role using the supplied credentials.
+The role arn can be set using the `ALIBABA_CLOUD_ROLE_ARN` environment variables,
 and the role session name using the `ALIBABA_CLOUD_ROLE_SESSION_NAME` environment variables.
 
 Usage:
@@ -221,9 +221,9 @@ provider "alicloud" {
 
 ### Sidecar Credentials
 
-You can deploy a sidecar to storage alibaba cloud credentials. 
-Then, you can optionally specify a credentials URI in the Terraform configuration by providing the `credentials_uri` argument 
-or using the `ALIBABA_CLOUD_CREDENTIALS_URI` environment variable to get the credentials automatically. 
+You can deploy a sidecar to storage alibaba cloud credentials.
+Then, you can optionally specify a credentials URI in the Terraform configuration by providing the `credentials_uri` argument
+or using the `ALIBABA_CLOUD_CREDENTIALS_URI` environment variable to get the credentials automatically.
 The Sidecar Credentials is available since v1.141.0.
 
 Usage:
@@ -237,7 +237,7 @@ provider "alicloud" {
 
 ### Using an External Credentials Process
 
-To use an external process to source credentials, the process must be configured in a named profile, including the default profile. 
+To use an external process to source credentials, the process must be configured in a named profile, including the default profile.
 The profile is configured in a shared configuration file. For information on how to configure external access credentials, please refer to the [Alibaba Cloud CLI documentation](https://www.alibabacloud.com/help/en/cli/configure-credentials).
 
 Usage:
@@ -252,7 +252,7 @@ provider "alicloud" {
 
 ### Custom User-Agent Information
 
-By default, the underlying AlibabaCloud client used by the Terraform AliCloud Provider creates requests with User-Agent headers including information about Terraform and AlibabaCloud Go SDK versions. 
+By default, the underlying AlibabaCloud client used by the Terraform AliCloud Provider creates requests with User-Agent headers including information about Terraform and AlibabaCloud Go SDK versions.
 To provide additional information in the User-Agent headers, the provider variable `configuration_source` or `TF_APPEND_USER_AGENT` environment variable can be set and its value will be directly added to HTTP requests.
 
 Usage:
@@ -311,8 +311,8 @@ In addition to [generic `provider` arguments](https://developer.hashicorp.com/te
  `provider` block:
 
 * `access_key` - Alibaba Cloud access key. Required when using static credentials.
-  Can also be set with the `ALIBABA_CLOUD_ACCESS_KEY_ID` environment variable since v1.228.0, 
-  or via a shared credentials file if profile is specified. See also `secret_key`. 
+  Can also be set with the `ALIBABA_CLOUD_ACCESS_KEY_ID` environment variable since v1.228.0,
+  or via a shared credentials file if profile is specified. See also `secret_key`.
   Environment variable `ALICLOUD_ACCESS_KEY` and `ALIBABACLOUD_ACCESS_KEY_ID` have been deprecated since v1.228.0.
 
 * `secret_key` - Alibaba Cloud secret key. Required when using static credentials.
@@ -404,7 +404,7 @@ The length should not more than 1024(Before 1.283.0, it should not more than 128
 * `session_expiration` - (Optional) The time after which the established session for assuming role expires. Valid value range: [900-43200] seconds. Default to 3600 (in this case Alicloud use own default value). It supports environment variable `ALICLOUD_ASSUME_ROLE_SESSION_EXPIRATION`.
 
 * `external_id` - (Optional, Available since v1.207.1) The external ID of the RAM role.
-  This parameter is provided by an external party and is used to prevent the confused deputy problem. 
+  This parameter is provided by an external party and is used to prevent the confused deputy problem.
   The value must be 2 to 1,224 characters in length and can contain letters, digits, and the following special characters:`= , . @ : / - _`.
 
 ### `assume_role_with_oidc`

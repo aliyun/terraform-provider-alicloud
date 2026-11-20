@@ -85,6 +85,7 @@ resource "alicloud_cs_kubernetes_addon" "logtail-ds" {
 ```
 **Installing of addon**
 When a cluster is created, some system addons and those specified at the time of cluster creation will be installed, so when an addon resource is applied:
+
 * If the addon already exists in the cluster and its version is the same as the specified version, it will be skipped and will not be reinstalled.
 * If the addon already exists in the cluster and its version is different from the specified version, the addon will be upgraded.
 * If the addon does not exist in the cluster, it will be installed.
@@ -104,6 +105,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The id of addon, which consists of the cluster id and the addon name, with the structure <cluster_ud>:<addon_name>.
 * `next_version` - (Deprecated since v1.273.0) The version which addon can be upgraded to.
 * `can_upgrade` - (Deprecated since v1.273.0) Is the addon ready for upgrade.
@@ -113,9 +115,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 10 mins) Used when installing addon in the kubernetes cluster. 
+* `create` - (Defaults to 10 mins) Used when installing addon in the kubernetes cluster.
 * `update` - (Defaults to 10 mins) Used when upgrading addon in the kubernetes cluster.
-* `delete` - (Defaults to 10 mins) Used when deleting addon in kubernetes cluster. 
+* `delete` - (Defaults to 10 mins) Used when deleting addon in kubernetes cluster.
 
 ## Import
 

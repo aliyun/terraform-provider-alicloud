@@ -50,13 +50,12 @@ resource "alicloud_cloud_firewall_nat_firewall_control_policy_order" "default" {
 
 Terraform cannot destroy resource `alicloud_cloud_firewall_nat_firewall_control_policy_order`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_nat_firewall_control_policy_order&spm=docs.r.cloud_firewall_nat_firewall_control_policy_order.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `acl_uuid` - (Required, ForceNew) The unique identifier ID of the security access control policy.
 * `current_page` - (Optional) The page number of the current page for paginated queries.
 
@@ -71,11 +70,13 @@ Priority numbers start from 1 and increment sequentially. A smaller priority num
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<acl_uuid>:<nat_gateway_id>:<direction>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Nat Firewall Control Policy Order.
 * `update` - (Defaults to 5 mins) Used when update the Nat Firewall Control Policy Order.
 

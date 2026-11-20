@@ -10,8 +10,6 @@ description: |-
 
 Provides a NAT Gateway Snat Entry resource.
 
-
-
 For information about NAT Gateway Snat Entry and how to use it, see [What is Snat Entry](https://www.alibabacloud.com/help/en/nat-gateway/developer-reference/api-vpc-2016-04-28-createsnatentry-natgws).
 
 -> **NOTE:** Available since v1.119.0.
@@ -76,6 +74,7 @@ resource "alicloud_snat_entry" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `eip_affinity` - (Optional, Int, Available since v1.241.0) Specifies whether to enable EIP affinity. Default value: `0`. Valid values:
   - `0`: Disable.
   - `1`: Enable.
@@ -88,6 +87,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Snat Entry. It formats as `<snat_table_id>:<snat_entry_id>`.
 
   -> **NOTE:** Before provider version 1.37.0, it formats as `<snat_entry_id>`
@@ -99,6 +99,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.119.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Snat Entry.
 * `delete` - (Defaults to 5 mins) Used when delete the Snat Entry.
 * `update` - (Defaults to 5 mins) Used when update the Snat Entry.

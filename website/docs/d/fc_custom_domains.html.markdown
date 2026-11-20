@@ -49,11 +49,10 @@ The following attributes are exported in addition to the arguments listed above:
   * `last_modified_time` - The last modified time of the custom domain.
   * `route_config` - The configuration of domain route, mapping the path and Function Compute function.
     * `path` - The path that requests are routed from.
-    * `service_name` - The name of the Function Compute service that requests are routed to. 
+    * `service_name` - The name of the Function Compute service that requests are routed to.
     * `function_name` - The name of the Function Compute function that requests are routed to.
     * `qualifier` - The version or alias of the Function Compute service that requests are routed to. For example, qualifier v1 indicates that the requests are routed to the version 1 Function Compute service.
     * `methods` - The requests of the specified HTTP methos are routed from. Valid method: GET, POST, DELETE, HEAD, PUT and PATCH. For example, "GET, HEAD" methods indicate that only requests from GET and HEAD methods are routed.
   * `cert_config` - The configuration of HTTPS certificate.
     * `cert_name` - The name of the certificate.
     * `certificate` - Certificate data of the HTTPS certificates, follow the 'pem'.
-      

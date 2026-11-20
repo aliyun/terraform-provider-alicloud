@@ -93,4 +93,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `http_api_inter_url` - (Available since v1.214.0) The public URL for the HTTP API. **Note:** `http_api_inter_url` takes effect only if `enable_details` is set to `true`.
   * `auth_token` - (Available since v1.214.0) The authorization token. **Note:** `auth_token` takes effect only if `enable_details` is set to `true`.
   * `tags` - The tag of the Prometheus.
-  
+

@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Kv Account resource.
 
-
-
 For information about ESA Kv Account and how to use it, see [What is Kv Account](https://next.api.alibabacloud.com/document/ESA/2024-09-10/OpenErService).
 
 -> **NOTE:** Available since v1.259.0.
@@ -44,12 +42,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as account id.
 * `status` - The status of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Kv Account.
 
 ## Import

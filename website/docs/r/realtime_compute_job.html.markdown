@@ -10,8 +10,6 @@ description: |-
 
 Provides a Realtime Compute Job resource.
 
-
-
 For information about Realtime Compute Job and how to use it, see [What is Job](https://next.api.alibabacloud.com/document/ververica/2022-07-18/StartJobWithParams).
 
 -> **NOTE:** Available since v1.265.0.
@@ -115,6 +113,7 @@ resource "alicloud_realtime_compute_job" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `deployment_id` - (Optional, ForceNew) deploymentId
 * `local_variables` - (Optional, ForceNew, List) Local variables See [`local_variables`](#local_variables) below.
 * `namespace` - (Required, ForceNew) namespace
@@ -129,16 +128,17 @@ The following arguments are supported:
 
   -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
-
 ### `local_variables`
 
 The local_variables supports the following:
+
 * `name` - (Optional, ForceNew) Local variables name
 * `value` - (Optional, ForceNew) Local variables value
 
 ### `restore_strategy`
 
 The restore_strategy supports the following:
+
 * `allow_non_restored_state` - (Optional, ForceNew) Stateless startup
 * `job_start_time_in_ms` - (Optional, ForceNew, Int) Stateless start time. When stateless start is selected, you can set this parameter to enable all source tables that support startTime to read data from this time.
 * `kind` - (Optional, ForceNew) Restore type
@@ -147,11 +147,13 @@ The restore_strategy supports the following:
 ### `status`
 
 The status supports the following:
+
 * `current_job_status` - (Optional, Computed) Job current status
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<resource_id>:<namespace>:<job_id>`.
 * `job_id` - The first ID of the resource
 * `status` - job status
@@ -168,6 +170,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Job.
 * `delete` - (Defaults to 5 mins) Used when delete the Job.
 * `update` - (Defaults to 5 mins) Used when update the Job.

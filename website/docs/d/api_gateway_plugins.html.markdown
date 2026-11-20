@@ -7,7 +7,7 @@ description: |-
   Provides a list of Api Gateway Plugins to the user.
 ---
 
-# alicloud\_api\_gateway\_plugins
+# alicloud_api_gateway_plugins
 
 This data source provides the Api Gateway Plugins of the current Alibaba Cloud user.
 

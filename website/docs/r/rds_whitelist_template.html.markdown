@@ -10,7 +10,6 @@ description: |-
 
 Provide a whitelist template resource.
 
-
 For information about Resource AliCloudWhitelistTemplate and how to use it, see [What is Whitelist Template](https://www.alibabacloud.com/help/en/rds/developer-reference/api-rds-2014-08-15-modifywhitelisttemplate?).
 
 -> **NOTE:** Available since v1.254.0.
@@ -37,6 +36,7 @@ resource "alicloud_rds_whitelist_template" "example" {
 The following arguments are supported:
 
 -> **NOTE:** Each instance can add up to 1000 IPs or IP segments, meaning that the total number of IPs or IP segments in all IP whitelist groups cannot exceed 1000. When there are many IPs, it is recommended to merge them into IP segments and fill them in, such as 10.23.XX.XX/24.
+
 * `ip_white_list` - (Required) IP whitelist, multiple IP addresses should be separated by commas (,) and cannot be duplicated.Supports the following two formats:
   - IP address format, for example: 10.23.XX.XX.
   - CIDR format, for example: 10.23.XX.XX/24 (no inter domain routing, 24 represents the length of the prefix in the address, ranging from 1 to 32).
@@ -45,11 +45,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 60 mins) Used when creating whitelist templates.
 * `delete` - (Defaults to 20 mins) Used when delete whitelist templates.
 * `update` - (Defaults to 30 mins) Used when update whitelist templates.

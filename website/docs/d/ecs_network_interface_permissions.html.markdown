@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ecs Network Interface Permissions to the user.
 ---
 
-# alicloud\_ecs\_network\_interface\_permissions
+# alicloud_ecs_network_interface_permissions
 
 This data source provides the Ecs Network Interface Permissions of the current Alibaba Cloud user.
 

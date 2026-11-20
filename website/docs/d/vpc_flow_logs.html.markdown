@@ -7,11 +7,11 @@ description: |-
   Provides a list of Vpc Flow Logs to the user.
 ---
 
-# alicloud\_vpc\_flow\_logs
+# alicloud_vpc_flow_logs
 
 This data source provides the Vpc Flow Logs of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.122.0+.
+-> **NOTE:** Available since v1.122.0+.
 
 ## Example Usage
 
@@ -44,7 +44,7 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The status of  flow log. Valid values: `Active`, `Inactive`.
 * `traffic_type` - (Optional, ForceNew) The traffic type. Valid values: `All`, `Allow`, `Drop`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

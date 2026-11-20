@@ -10,8 +10,6 @@ description: |-
 
 Provides a Polar Db Parameter Group resource.
 
-
-
 For information about Polar Db Parameter Group and how to use it, see [What is Parameter Group](https://www.alibabacloud.com/help/en/polardb/polardb-for-mysql/user-guide/apply-a-parameter-template).
 
 -> **NOTE:** Available since v1.183.0.
@@ -52,10 +50,11 @@ resource "alicloud_polardb_parameter_group" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_type` - (Required, ForceNew) The type of the database engine. Only `MySQL` is supported.
-* `db_version` - (Required, ForceNew) The version of the database engine. Valid values: 
-  - **5.6** 
-  - **5.7** 
+* `db_version` - (Required, ForceNew) The version of the database engine. Valid values:
+  - **5.6**
+  - **5.7**
   - **8.0**
 * `description` - (Optional, ForceNew) The description of the parameter template.
 * `parameter_group_name` - (Optional, ForceNew, Available since v1.263.0) The name of the parameter template. The name must meet the following requirements:
@@ -69,25 +68,28 @@ The following arguments are supported:
 
 * `resource_group_id` - (Optional, ForceNew, String, Available since v2.3.0) The ID of the resource group in which to create the parameter template. You can use the ID of an `alicloud_resource_manager_resource_group` resource, for example, `alicloud_resource_manager_resource_group.example.id`. This argument is only used when creating the parameter template. The PolarDB API does not return it, so it cannot be read back or used to detect drift, and importing an existing parameter template does not restore it. Configuring it for an imported parameter template forces a replacement.
 
-
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `name` - (Deprecated since v1.263.0). Field 'name' has been deprecated from provider version 1.263.0. New field 'parameter_group_name' instead.
 
 ### `parameters`
 
 The parameters supports the following, you can view all parameter details for the target database engine version database cluster through the [DescribeParameterTemplates](https://next.api.alibabacloud.com/document/polardb/2017-08-01/DescribeParameterTemplates), including parameter name, value.
+
 * `param_value` - (Optional, ForceNew) The value of the parameter.
 * `param_name` - (Optional, ForceNew) The name of the parameter.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the parameter template was created. The time is in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Parameter Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Parameter Group.
 

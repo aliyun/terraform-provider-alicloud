@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_ess_scheduled_tasks
 
-This data source provides available scheduled task resources. 
+This data source provides available scheduled task resources.
 
 -> **NOTE:** Available since v1.72.0.
 
@@ -54,6 +54,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `max_value` - The maximum number of instances in a scaling group when the scaling method of the scheduled task is to specify the number of instances in a scaling group.
   * `min_value` - The minimum number of instances in a scaling group when the scaling method of the scheduled task is to specify the number of instances in a scaling group.
   * `task_enabled` - Whether to start the scheduled task.
-  * `recurrence_type` - Specifies the recurrence type of the scheduled task. 
-  * `recurrence_value` - Specifies how often a scheduled task recurs. 
+  * `recurrence_type` - Specifies the recurrence type of the scheduled task.
+  * `recurrence_value` - Specifies how often a scheduled task recurs.
   * `recurrence_end_time` - Specifies the end time after which the scheduled task is no longer repeated.

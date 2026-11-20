@@ -72,13 +72,12 @@ resource "alicloud_cr_artifact_lifecycle_rule" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cr_artifact_lifecycle_rule&spm=docs.r.cr_artifact_lifecycle_rule.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto` - (Required) Whether to execute automatically
 * `instance_id` - (Required, ForceNew) Instance ID
 * `namespace_name` - (Optional) Namespace name
@@ -91,6 +90,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<instance_id>:<artifact_lifecycle_rule_id>`.
 * `artifact_lifecycle_rule_id` - The first ID of the resource.
 * `create_time` - Creation time.
@@ -99,6 +99,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Artifact Lifecycle Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Artifact Lifecycle Rule.
 * `update` - (Defaults to 5 mins) Used when update the Artifact Lifecycle Rule.

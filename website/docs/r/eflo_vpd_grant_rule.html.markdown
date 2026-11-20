@@ -60,6 +60,7 @@ resource "alicloud_eflo_vpd_grant_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `er_id` - (Required, ForceNew) The ID of the ER instance under the cross-account tenant.
 * `grant_tenant_id` - (Required, ForceNew) Cross-account authorized tenant ID.
 * `instance_id` - (Required, ForceNew) Instance ID of VPD.
@@ -67,6 +68,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The Creation time.
 * `region_id` - The Region ID.
@@ -74,6 +76,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vpd Grant Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Vpd Grant Rule.
 

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Rds Parameter Groups to the user.
 ---
 
-# alicloud\_rds\_parameter\_groups
+# alicloud_rds_parameter_groups
 
 This data source provides the Rds Parameter Groups of the current Alibaba Cloud user.
 

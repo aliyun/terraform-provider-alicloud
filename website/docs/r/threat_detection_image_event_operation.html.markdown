@@ -63,6 +63,7 @@ EOF
 ## Argument Reference
 
 The following arguments are supported:
+
 * `conditions` - (Required) The rule conditions. The value is in the JSON format. For more information, see [How to use it](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-addimageeventoperation). **NOTE:** From version 1.255.0, `conditions` can be modified.
 * `event_key` - (Optional, ForceNew) The keyword of the alert item.
 * `event_name` - (Optional, ForceNew) The name of the alert item.
@@ -78,11 +79,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Image Event Operation.
 * `delete` - (Defaults to 5 mins) Used when delete the Image Event Operation.
 * `update` - (Defaults to 5 mins) Used when update the Image Event Operation.

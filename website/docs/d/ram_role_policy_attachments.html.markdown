@@ -93,14 +93,15 @@ output "alicloud_ram_role_policy_attachment_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `role_name` - (Required, ForceNew) The RAM role name.
 * `ids` - (Optional, ForceNew, Computed) A list of Role Policy Attachment IDs. The value is formulated as `role:<policy_name>:<policy_type>:<role_name>`.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Role Policy Attachment IDs.
 * `attachments` - A list of Role Policy Attachment Entries. Each element contains the following attributes:
   * `attach_date` - The time when the role was attached to the policy.

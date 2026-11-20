@@ -119,6 +119,7 @@ resource "alicloud_fcv3_function" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `code` - (Optional, List) Function code ZIP package. code and customContainerConfig. See [`code`](#code) below.
 
   -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
@@ -156,6 +157,7 @@ The following arguments are supported:
 ### `code`
 
 The code supports the following:
+
 * `checksum` - (Optional) The CRC-64 value of the function code package.
 * `oss_bucket_name` - (Optional) The name of the OSS Bucket that stores the function code ZIP package.
 * `oss_object_name` - (Optional) The name of the OSS Object that stores the function code ZIP package.
@@ -164,6 +166,7 @@ The code supports the following:
 ### `custom_container_config`
 
 The custom_container_config supports the following:
+
 * `acceleration_type` - (Optional, Deprecated since v1.228.0) Whether to enable Image acceleration. Default: The Default value, indicating that image acceleration is enabled. None: indicates that image acceleration is disabled. (Obsolete)
 * `acr_instance_id` - (Optional, Deprecated since v1.228.0) ACR Enterprise version Image Repository ID, which must be entered when using ACR Enterprise version image. (Obsolete)
 * `command` - (Optional, List) Container startup parameters.
@@ -176,6 +179,7 @@ The custom_container_config supports the following:
 ### `custom_container_config-health_check_config`
 
 The custom_container_config-health_check_config supports the following:
+
 * `failure_threshold` - (Optional, Int) The health check failure threshold. The system considers the health check failure when the health check fails. The value range is 1~120. The default value is 3.
 * `http_get_url` - (Optional) The URL of the container's custom health check.
 * `initial_delay_seconds` - (Optional, Int) The delay between the start of the container and the initiation of the health check. Value range 0~120. The default value is 0.
@@ -186,6 +190,7 @@ The custom_container_config-health_check_config supports the following:
 ### `custom_container_config-registry_config`
 
 The custom_container_config-registry_config supports the following:
+
 * `auth_config` - (Optional, List, Sensitive) The authentication configuration of the image registry. See [`auth_config`](#custom_container_config-registry_config-auth_config) below.
 * `cert_config` - (Optional, List) The certificate configuration of the image registry. See [`cert_config`](#custom_container_config-registry_config-cert_config) below.
 * `network_config` - (Optional, List) The network configuration used to connect to the image registry. See [`network_config`](#custom_container_config-registry_config-network_config) below.
@@ -193,18 +198,21 @@ The custom_container_config-registry_config supports the following:
 ### `custom_container_config-registry_config-auth_config`
 
 The custom_container_config-registry_config-auth_config supports the following:
+
 * `password` - (Optional, Sensitive) The password of the image registry.
 * `user_name` - (Optional, Sensitive) The username of the image registry.
 
 ### `custom_container_config-registry_config-cert_config`
 
 The custom_container_config-registry_config-cert_config supports the following:
+
 * `insecure` - (Optional, Bool) Specifies whether to skip certificate verification.
 * `root_ca_cert_base64` - (Optional) The Base64-encoded root CA certificate of the image registry.
 
 ### `custom_container_config-registry_config-network_config`
 
 The custom_container_config-registry_config-network_config supports the following:
+
 * `security_group_id` - (Optional) The ID of the security group that can connect to the image registry.
 * `vswitch_id` - (Optional) The ID of the vSwitch that can connect to the image registry.
 * `vpc_id` - (Optional) The ID of the VPC that can connect to the image registry.
@@ -212,6 +220,7 @@ The custom_container_config-registry_config-network_config supports the followin
 ### `custom_dns`
 
 The custom_dns supports the following:
+
 * `dns_options` - (Optional, List) List of configuration items in the resolv.conf file. Each item corresponds to a key-value pair in the format of key:value, where the key is required. See [`dns_options`](#custom_dns-dns_options) below.
 * `name_servers` - (Optional, List) IP Address List of DNS servers
 * `searches` - (Optional, List) DNS search domain list
@@ -219,12 +228,14 @@ The custom_dns supports the following:
 ### `custom_dns-dns_options`
 
 The custom_dns-dns_options supports the following:
+
 * `name` - (Optional) Configuration Item Name
 * `value` - (Optional) Configuration Item Value
 
 ### `custom_runtime_config`
 
 The custom_runtime_config supports the following:
+
 * `args` - (Optional, List) Instance startup parameters.
 * `command` - (Optional, List) Instance start command.
 * `health_check_config` - (Optional, List) Function custom health check configuration. See [`health_check_config`](#custom_runtime_config-health_check_config) below.
@@ -233,6 +244,7 @@ The custom_runtime_config supports the following:
 ### `custom_runtime_config-health_check_config`
 
 The custom_runtime_config-health_check_config supports the following:
+
 * `failure_threshold` - (Optional, Computed, Int) The health check failure threshold. The system considers the health check failure when the health check fails. The value range is 1~120. The default value is 3.
 * `http_get_url` - (Optional) The URL of the container's custom health check. No more than 2048 characters in length.
 * `initial_delay_seconds` - (Optional, Int) The delay between the start of the container and the initiation of the health check. Value range 0~120. The default value is 0.
@@ -243,6 +255,7 @@ The custom_runtime_config-health_check_config supports the following:
 ### `gpu_config`
 
 The gpu_config supports the following:
+
 * `gpu_memory_size` - (Optional, Int) GPU memory specification, unit: MB, multiple of 1024MB
 * `gpu_type` - (Optional) GPU card architecture.
   - fc.gpu.tesla.1 indicates the type of the Tesla Architecture Series card of the GPU instance (the same as the NVIDIA T4 card type).
@@ -252,12 +265,14 @@ The gpu_config supports the following:
 ### `instance_lifecycle_config`
 
 The instance_lifecycle_config supports the following:
+
 * `initializer` - (Optional, List) Initializer handler method configuration See [`initializer`](#instance_lifecycle_config-initializer) below.
 * `pre_stop` - (Optional, List) PreStop handler method configuration See [`pre_stop`](#instance_lifecycle_config-pre_stop) below.
 
 ### `instance_lifecycle_config-initializer`
 
 The instance_lifecycle_config-initializer supports the following:
+
 * `command` - (Optional, List, Available since v1.260.0) Lifecycle Initialization Phase Callback Instructions
 * `handler` - (Optional) The execution entry of the callback method, which is similar to the request handler.
 * `timeout` - (Optional, Int) The timeout time of the callback method, in seconds.
@@ -265,18 +280,21 @@ The instance_lifecycle_config-initializer supports the following:
 ### `instance_lifecycle_config-pre_stop`
 
 The instance_lifecycle_config-pre_stop supports the following:
+
 * `handler` - (Optional) The execution entry of the callback method, which is similar to the request handler.
 * `timeout` - (Optional, Int) The timeout time of the callback method, in seconds.
 
 ### `invocation_restriction`
 
 The invocation_restriction supports the following:
+
 * `disable` - (Optional, Available since v1.255.0) Whether invocation is disabled
 * `reason` - (Optional, Available since v1.255.0) Disable Reason
 
 ### `log_config`
 
 The log_config supports the following:
+
 * `enable_instance_metrics` - (Optional, Computed) After this feature is enabled, you can view core metrics such as instance-level CPU usage, memory usage, instance network status, and the number of requests within an instance. false: The default value, which means that instance-level metrics are turned off. true: indicates that instance-level metrics are enabled.
 * `enable_request_metrics` - (Optional, Computed) After this function is enabled, you can view the time and memory consumed by a call to all functions under this service. false: indicates that request-level metrics are turned off. true: The default value, indicating that request-level metrics are enabled.
 * `log_begin_rule` - (Optional, Computed) Log Line First Matching Rules
@@ -286,6 +304,7 @@ The log_config supports the following:
 ### `nas_config`
 
 The nas_config supports the following:
+
 * `group_id` - (Optional, Computed, Int) Group ID
 * `mount_points` - (Optional, List) Mount point list See [`mount_points`](#nas_config-mount_points) below.
 * `user_id` - (Optional, Computed, Int) Account ID
@@ -293,6 +312,7 @@ The nas_config supports the following:
 ### `nas_config-mount_points`
 
 The nas_config-mount_points supports the following:
+
 * `enable_tls` - (Optional) Use transport encryption to mount. Note: only general-purpose NAS supports transmission encryption.
 * `mount_dir` - (Optional) Local Mount Directory
 * `server_addr` - (Optional) NAS server address
@@ -300,11 +320,13 @@ The nas_config-mount_points supports the following:
 ### `oss_mount_config`
 
 The oss_mount_config supports the following:
+
 * `mount_points` - (Optional, List) OSS mount point list See [`mount_points`](#oss_mount_config-mount_points) below.
 
 ### `oss_mount_config-mount_points`
 
 The oss_mount_config-mount_points supports the following:
+
 * `bucket_name` - (Optional) OSS Bucket name
 * `bucket_path` - (Optional) Path of the mounted OSS Bucket
 * `endpoint` - (Optional) OSS access endpoint
@@ -314,6 +336,7 @@ The oss_mount_config-mount_points supports the following:
 ### `vpc_config`
 
 The vpc_config supports the following:
+
 * `security_group_id` - (Optional) Security group ID
 * `vswitch_ids` - (Optional, List) Switch List
 * `vpc_id` - (Optional) VPC network ID
@@ -321,6 +344,7 @@ The vpc_config supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `code_size` - The code package size of the function returned by the system, in byte Example : 1024
 * `create_time` - The creation time of the function.
@@ -346,6 +370,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Function.
 * `delete` - (Defaults to 5 mins) Used when delete the Function.
 * `update` - (Defaults to 5 mins) Used when update the Function.

@@ -96,6 +96,7 @@ Terraform cannot destroy resource `alicloud_gpdb_backup_policy`. Terraform will 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `backup_retention_period` - (Optional) Data backup retention days.
 * `db_instance_id` - (Required, ForceNew) The instance ID.
 
@@ -121,11 +122,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Backup Policy.
 * `update` - (Defaults to 5 mins) Used when update the Backup Policy.
 

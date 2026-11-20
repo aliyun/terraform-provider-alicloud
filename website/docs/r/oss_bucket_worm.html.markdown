@@ -58,6 +58,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the bucket
 * `retention_period_in_days` - (Optional, Int) The specified number of days to retain the Object.
 * `status` - (Optional) The status of the compliance retention policy. Optional values:
@@ -67,6 +68,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<bucket>:<worm_id>`.
 * `create_time` - The creation time of the resource
 * `worm_id` - The ID of the retention policy.
@@ -74,6 +76,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Worm.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Worm.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Worm.

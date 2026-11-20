@@ -75,6 +75,7 @@ resource "alicloud_oss_bucket_server_side_encryption" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the bucket.
 * `kms_data_encryption` - (Optional) The algorithm used to encrypt objects. If this element is not specified, objects are encrypted by using AES256. This element is valid only when the value of SSEAlgorithm is set to KMS.
 * `kms_master_key_id` - (Optional) The CMK ID that must be specified when SSEAlgorithm is set to KMS and a specified CMK is used for encryption. In other cases, this element must be set to null.
@@ -83,11 +84,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Server Side Encryption.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Server Side Encryption.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Server Side Encryption.

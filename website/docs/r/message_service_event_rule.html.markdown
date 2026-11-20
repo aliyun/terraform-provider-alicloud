@@ -10,8 +10,6 @@ description: |-
 
 Provides a Message Service Event Rule resource.
 
-
-
 For information about Message Service Event Rule and how to use it, see [What is Event Rule](https://next.api.alibabacloud.com/document/Mns-open/2022-01-19/CreateEventRule).
 
 -> **NOTE:** Available since v1.255.0.
@@ -101,6 +99,7 @@ resource "alicloud_message_service_event_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `delivery_mode` - (Optional, ForceNew) -DIRECT: directly delivers to a single queue (1:1) without creating a Topic;
   - BROADCAST: BROADCAST to all subscription queues (1:N). You need to create a Topic;
 * `endpoint` - (Optional, ForceNew, List) Message Receiving Terminal Endpoint Object. See [`endpoint`](#endpoint) below.
@@ -111,6 +110,7 @@ The following arguments are supported:
 ### `endpoint`
 
 The endpoint supports the following:
+
 * `endpoint_type` - (Optional, ForceNew) Message receiving terminal endpoint type
 * `endpoint_value` - (Optional, ForceNew) Message Receiving Terminal Endpoint
 
@@ -128,11 +128,13 @@ Prefix match and suffix match: either of these two items can be filled in. If bo
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Event Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Event Rule.
 

@@ -62,9 +62,7 @@ resource "alicloud_alidns_cloud_gtm_monitor_template" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_cloud_gtm_monitor_template&spm=docs.r.alidns_cloud_gtm_monitor_template.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

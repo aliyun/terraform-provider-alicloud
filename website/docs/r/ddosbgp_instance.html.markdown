@@ -10,8 +10,6 @@ description: |-
 
 Provides a Anti-DDoS Pro (DdosBgp) Instance resource.
 
-
-
 For information about Anti-DDoS Pro (DdosBgp) Instance and how to use it, see [What is Instance](https://next.api.alibabacloud.com/document/BssOpenApi/2017-12-14/CreateInstance).
 
 -> **NOTE:** Available since v1.183.0.
@@ -55,6 +53,7 @@ Terraform cannot destroy resource `alicloud_ddosbgp_instance`. Terraform will re
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bandwidth` - (Required, ForceNew, Int) The bandwidth of the package configuration.
 * `base_bandwidth` - (Optional, ForceNew) The basic protection bandwidth of the Anti-DDoS Origin Enterprise instance. Default value: `20`. Valid values: `20`.
 * `instance_name` - (Optional, Available since v1.259.0) The name of the instance.
@@ -72,6 +71,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `status` - (Available since v1.259.0) The status of the Instance.
 
@@ -80,6 +80,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.259.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 26 mins) Used when create the Instance.
 * `update` - (Defaults to 5 mins) Used when update the Instance.
 

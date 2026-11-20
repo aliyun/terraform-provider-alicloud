@@ -37,6 +37,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `names` - A list of deploy group names.
 * `groups` - A list of consumer group ids.
   * `group_id` - The ID of the instance group.
@@ -48,4 +49,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `cluster_id` - The ID of the cluster that you want to create the application.
   * `package_version_id` - The version of the deployment package for the instance group that was created.
   * `app_version_id` - The version of the deployment package for the application.
-  

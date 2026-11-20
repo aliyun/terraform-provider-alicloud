@@ -15,7 +15,6 @@ For information about Private Zone Inbound Endpoint and how to use it, see [AddI
 
 -> **NOTE:** Available since v2.3.0.
 
-
 ## Example Usage
 
 ```terraform

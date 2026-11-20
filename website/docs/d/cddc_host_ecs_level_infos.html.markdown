@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cddc Dedicated Hosts to the user.
 ---
 
-# alicloud\_cddc\_host_\ecs_\level_\infos
+# alicloud_cddc_host_ecs_level_infos
 
 This data source provides the Cddc Host Ecs Level Infos of the current Alibaba Cloud user.
 
@@ -35,10 +35,10 @@ The following arguments are supported:
 
 * `db_type` - (Required, ForceNew) The database engine of the host. Valid values: `mysql`, `mssql`, `pgsql`, `redis`.
 * `zone_id` - (Required, ForceNew, Computed) The ID of the zone in the region.
-* `storage_type` - (Required, ForceNew) The storage type of the host ecs level info. Valid values: `local_ssd`, `cloud_essd`, `cloud_essd2`, `cloud_essd3`. 
-  * `local_ssd`: specifies that the host uses local SSDs. 
-  * `cloud_essd`: specifies that the host uses enhanced SSDs (ESSDs) of performance level (PL) 1. 
-  * `cloud_essd2`: specifies that the host uses ESSDs of PL2. 
+* `storage_type` - (Required, ForceNew) The storage type of the host ecs level info. Valid values: `local_ssd`, `cloud_essd`, `cloud_essd2`, `cloud_essd3`.
+  * `local_ssd`: specifies that the host uses local SSDs.
+  * `cloud_essd`: specifies that the host uses enhanced SSDs (ESSDs) of performance level (PL) 1.
+  * `cloud_essd2`: specifies that the host uses ESSDs of PL2.
   * `cloud_essd3`: specifies that the host uses ESSDs of PL3.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `image_category` - (Optional, ForceNew) Host image. Valid values: `WindowsWithMssqlEntAlwaysonLicense`, `WindowsWithMssqlStdLicense`, `WindowsWithMssqlEntLicense`, `WindowsWithMssqlWebLicense`, `AliLinux`.

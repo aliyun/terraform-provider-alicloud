@@ -54,7 +54,6 @@ The following arguments are supported:
   - `7`: Failed to disable cache.
   - `8`: System error.
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:

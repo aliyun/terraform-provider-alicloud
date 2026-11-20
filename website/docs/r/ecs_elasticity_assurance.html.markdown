@@ -10,8 +10,6 @@ description: |-
 
 Provides a ECS Elasticity Assurance resource.
 
-
-
 For information about ECS Elasticity Assurance and how to use it, see [What is Elasticity Assurance](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/createelasticityassurance).
 
 -> **NOTE:** Available since v1.196.0.
@@ -62,12 +60,14 @@ resource "alicloud_ecs_elasticity_assurance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `assurance_times` - (Optional, ForceNew) The total number of times that the elasticity assurance can be applied. Set the value to Unlimited. This value indicates that the elasticity assurance can be applied an unlimited number of times within its effective duration. Default value: Unlimited.
 * `auto_renew` - (Optional, Bool, Available since v1.261.0) Specifies whether to enable auto-renewal for the elasticity assurance. Valid values:
   - true
   - false
 
 Default value: `false`.
+
 * `auto_renew_period` - (Optional, Int, Available since v1.261.0) The auto-renewal period. Unit: month. Valid values: 1, 2, 3, 6, 12, 24, and 36.
   - Default value when `PeriodUnit` is set to Month: 1.
   - Default value when `PeriodUnit` is set to Year: 12.
@@ -78,6 +78,7 @@ Default value: `false`.
   - Year: Year
 
 Default value: Year
+
 * `description` - (Optional) Description of flexible guarantee service.
 * `instance_amount` - (Required, Int) The total number of instances for which to reserve the capacity of an instance type. Valid values: 1 to 1000. **NOTE:** From version 1.261.0, `instance_amount` can be modified.
 * `instance_type` - (Required, ForceNew) Instance type. Currently, only one instance type is supported.
@@ -95,6 +96,7 @@ Default value: Year
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.
 * `elasticity_assurance_id` - The first ID of the resource
 * `end_time` - Flexible guarantee service failure time.
@@ -107,6 +109,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Elasticity Assurance.
 * `delete` - (Defaults to 5 mins) Used when delete the Elasticity Assurance.
 * `update` - (Defaults to 5 mins) Used when update the Elasticity Assurance.

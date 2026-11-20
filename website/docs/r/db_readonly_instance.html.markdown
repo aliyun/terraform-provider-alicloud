@@ -156,7 +156,7 @@ The following arguments are supported:
   - Cover: Use the value of the SecurityIps parameter to overwrite the existing entries in the IP address whitelist.
   - Append: Add the IP addresses and CIDR blocks that are specified in the SecurityIps parameter to the IP address whitelist.
   - Delete: Delete IP addresses and CIDR blocks that are specified in the SecurityIps parameter from the IP address whitelist. You must retain at least one IP address or CIDR block.
-* `instance_charge_type` - (Optional, Available since v1.201.0) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`. The interval between the two conversion operations must be greater than 15 minutes. Only when this parameter is `Postpaid`, the instance can be released. 
+* `instance_charge_type` - (Optional, Available since v1.201.0) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`. The interval between the two conversion operations must be greater than 15 minutes. Only when this parameter is `Postpaid`, the instance can be released.
 * `period` - (Optional, Available since v1.201.0) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36.
 * `auto_renew` - (Optional, Available since v1.201.0) Whether to renewal a DB instance automatically or not. It is valid when instance_charge_type is `PrePaid`. Default to `false`.
 * `auto_renew_period` - (Optional, Available since v1.201.0) Auto-renewal period of an instance, in the unit of the month. It is valid when instance_charge_type is `PrePaid`. Valid value:[1~12], Default to 1.
@@ -196,9 +196,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 60 mins) Used when creating the db instance (until it reaches the initial `Running` status). 
-* `update` - (Defaults to 30 mins) Used when updating the db instance (until it reaches the initial `Running` status). 
-* `delete` - (Defaults to 20 mins) Used when terminating the db instance. 
+* `create` - (Defaults to 60 mins) Used when creating the db instance (until it reaches the initial `Running` status).
+* `update` - (Defaults to 30 mins) Used when updating the db instance (until it reaches the initial `Running` status).
+* `delete` - (Defaults to 20 mins) Used when terminating the db instance.
 
 ## Import
 

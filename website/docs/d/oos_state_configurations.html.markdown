@@ -7,7 +7,7 @@ description: |-
   Provides a list of Oos State Configurations to the user.
 ---
 
-# alicloud\_oos\_state\_configurations
+# alicloud_oos_state_configurations
 
 This data source provides the Oos State Configurations of the current Alibaba Cloud user.
 

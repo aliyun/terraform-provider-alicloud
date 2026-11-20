@@ -10,8 +10,6 @@ description: |-
 
 Provides a Application Real-Time Monitoring Service (ARMS) Grafana Workspace resource.
 
-
-
 For information about Application Real-Time Monitoring Service (ARMS) Grafana Workspace and how to use it, see [What is Grafana Workspace](https://next.api.alibabacloud.com/document/ARMS/2019-08-08/ListGrafanaWorkspace).
 
 -> **NOTE:** Available since v1.215.0.
@@ -56,6 +54,7 @@ resource "alicloud_arms_grafana_workspace" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_number` - (Optional, Available since v1.247.0) Value Description:
 GrafanaWorkspaceEdition is standard, this parameter is invalid.
 GrafanaWorkspaceEdition is personal_edition. This parameter is invalid. Default value: 1.
@@ -91,6 +90,7 @@ The value of GrafanaWorkspaceEdition is advanced_edition. This parameter is inva
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `region_id` - The region ID of the resource
@@ -99,6 +99,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Grafana Workspace.
 * `delete` - (Defaults to 10 mins) Used when delete the Grafana Workspace.
 * `update` - (Defaults to 5 mins) Used when update the Grafana Workspace.

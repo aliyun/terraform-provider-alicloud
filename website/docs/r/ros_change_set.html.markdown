@@ -83,7 +83,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 11 mins) Used when creating the ROS ChangeSet (until it reaches the initial `CREATE_COMPLETE` status). 
+* `create` - (Defaults to 11 mins) Used when creating the ROS ChangeSet (until it reaches the initial `CREATE_COMPLETE` status).
 
 ## Import
 

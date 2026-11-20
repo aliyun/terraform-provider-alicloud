@@ -10,8 +10,6 @@ description: |-
 
 Provides a RDS Account resource.
 
-
-
 For information about RDS Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-rds-2014-08-15-createaccount).
 
 -> **NOTE:** Available since v1.120.0.
@@ -86,6 +84,7 @@ resource "alicloud_rds_account" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_instance_id` - (Optional, ForceNew) The ID of the instance.
 * `account_description` - (Optional) The description of the account. The value must be 2 to 256 characters in length. The value can contain letters, digits, underscores (_), and hyphens (-), and must start with a letter.
 
@@ -134,7 +133,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID of Account. The value is formatted `<db_instance_id>:<account_name>`.
-
 
 ## Timeouts
 

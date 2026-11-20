@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ecs Deployment Sets to the user.
 ---
 
-# alicloud\_ecs\_deployment\_sets
+# alicloud_ecs_deployment_sets
 
 This data source provides the Ecs Deployment Sets of the current Alibaba Cloud user.
 

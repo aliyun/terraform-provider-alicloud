@@ -41,6 +41,7 @@ resource "alicloud_threat_detection_anti_brute_force_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `anti_brute_force_rule_name` - (Required) The name of the defense rule.
 * `default_rule` - (Optional) Specifies whether to set the defense rule as the default rule. Valid values:
 
@@ -78,6 +79,7 @@ The following arguments are supported:
 ### `protocol_type`
 
 The protocol_type supports the following:
+
 * `rdp` - (Optional) Whether to enable RDP interception. Default value: `on`. Valid values: `on`, `off`.
 * `sql_server` - (Optional) Whether to enable the SqlServer interception method. Default value: `off`. Valid values: `on`, `off`.
 * `ssh` - (Optional) Whether to enable SSH interception. Default value: `on`. Valid values: `on`, `off`.
@@ -85,11 +87,13 @@ The protocol_type supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Anti Brute Force Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Anti Brute Force Rule.
 * `update` - (Defaults to 5 mins) Used when update the Anti Brute Force Rule.

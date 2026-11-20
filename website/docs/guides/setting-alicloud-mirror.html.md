@@ -8,8 +8,8 @@ description: |-
 
 # Setting a Network Mirror
 
-Alibaba Cloud Provider has two source: `source = hashicorp/alicloud` and `source = aliyun/alicloud`. 
-Sometimes, running `terraform init` command to download and install provider will be too slow, 
+Alibaba Cloud Provider has two source: `source = hashicorp/alicloud` and `source = aliyun/alicloud`.
+Sometimes, running `terraform init` command to download and install provider will be too slow,
 or even though failed as following:
 
 ```text
@@ -33,7 +33,7 @@ or even though failed as following:
 ```
 
 Since Terraform CLI v0.13.2, it provides to set the [network_mirror](https://developer.hashicorp.com/terraform/cli/config/config-file#network_mirror) feature.
-In order to fix above downloading `alicloud` provider failed issue, Alibaba Cloud provides mirror service, and you can set 
+In order to fix above downloading `alicloud` provider failed issue, Alibaba Cloud provides mirror service, and you can set
 the following configuration in the [CLI Configuration File](https://developer.hashicorp.com/terraform/cli/config/config-file):
 ```terraform
 provider_installation {

@@ -79,6 +79,7 @@ resource "alicloud_network_acl" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The description of the network ACL. The description must be 1 to 256 characters in length, and cannot start with `http://` or `https://`. Currently, the description is only returned by the API and is not displayed in the console. To configure the name displayed in the console, use `network_acl_name`.
 * `egress_acl_entries` - (Optional, Computed, List) Out direction rule information. See [`egress_acl_entries`](#egress_acl_entries) below.
 * `ingress_acl_entries` - (Optional, Computed, List) Inward direction rule information. See [`ingress_acl_entries`](#ingress_acl_entries) below.
@@ -90,14 +91,16 @@ The name must be 1 to 128 characters in length and cannot start with http:// or 
 * `vpc_id` - (Required, ForceNew) The ID of the associated VPC.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `name` - (Deprecated since v1.122.0). Field 'name' has been deprecated from provider version 1.122.0. New field 'network_acl_name' instead.
 
 ### `egress_acl_entries`
 
 The egress_acl_entries supports the following:
+
 * `description` - (Optional) The description of the outbound rule. Currently, the description is only returned by the API and is not displayed in the console. To configure the name displayed in the console, use `network_acl_entry_name`.
 The description must be 1 to 256 characters in length and cannot start with http:// or https.
-* `destination_cidr_ip` - (Optional) The destination CIDR block, or the prefix list instance ID. 
+* `destination_cidr_ip` - (Optional) The destination CIDR block, or the prefix list instance ID.
 * `entry_type` - (Optional, Computed, Available since v1.220.0) The route entry type. Value
 custom custom rule
 system system rules
@@ -121,6 +124,7 @@ When the Protocol type of the outbound rule is tcp or udp, the port range is 1 t
 ### `ingress_acl_entries`
 
 The ingress_acl_entries supports the following:
+
 * `description` - (Optional) Description of the inbound rule. Currently, the description is only returned by the API and is not displayed in the console. To configure the name displayed in the console, use `network_acl_entry_name`.
 The description must be 1 to 256 characters in length and cannot start with http:// or https.
 * `entry_type` - (Optional, Computed, Available since v1.220.0) The route entry type. Value
@@ -142,17 +146,19 @@ When the Protocol type of the inbound rule is tcp or udp, the port range is 1 to
   - tcp: Transmission Control Protocol.
   - udp: User Datagram Protocol.
   - all: Supports all protocols.
-* `source_cidr_ip` - (Optional) The source CIDR block, or the prefix list instance ID. 
+* `source_cidr_ip` - (Optional) The source CIDR block, or the prefix list instance ID.
 
 ### `resources`
 
 The resources supports the following:
+
 * `resource_id` - (Required) The ID of the associated resource.
 * `resource_type` - (Required) The type of the associated resource.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `resources` - The associated resource.
@@ -162,6 +168,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Network Acl.
 * `delete` - (Defaults to 10 mins) Used when delete the Network Acl.
 * `update` - (Defaults to 10 mins) Used when update the Network Acl.

@@ -140,6 +140,7 @@ EOF
 ## Argument Reference
 
 The following arguments are supported:
+
 * `aliyun_lang` - (Optional) Language environment, default is Chinese zh | en.
 * `config_yaml` - (Required) Yaml configuration string.
 * `environment_id` - (Required, ForceNew) Environment id.
@@ -147,6 +148,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<environment_id>:<namespace>:<env_service_monitor_name>`.
 * `env_service_monitor_name` - The name of the resource.
 * `namespace` - The namespace where the resource is located.
@@ -155,6 +157,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Env Service Monitor.
 * `delete` - (Defaults to 5 mins) Used when delete the Env Service Monitor.
 * `update` - (Defaults to 5 mins) Used when update the Env Service Monitor.

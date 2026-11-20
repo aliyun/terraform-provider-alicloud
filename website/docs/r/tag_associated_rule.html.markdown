@@ -10,8 +10,6 @@ description: |-
 
 Provides a TAG Associated Rule resource.
 
-
-
 For information about TAG Associated Rule and how to use it, see [What is Associated Rule](https://www.alibabacloud.com/help/en/resource-management/tag/developer-reference/api-tag-2018-08-28-createassociatedresourcerules).
 
 -> **NOTE:** Available since v1.244.0.
@@ -48,6 +46,7 @@ resource "alicloud_tag_associated_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `associated_setting_name` - (Required, ForceNew) The setting name of the associated resource tag rule. For specific values, see the Rule Setting Name column in [Resources that Support Associated Resource Tag Settings](https://www.alibabacloud.com/help/en/resource-management/tag/user-guide/associated-resource-label-settings)
 * `status` - (Required) Whether to enable the associated resource tag rule. Valid values: `Enable`, `Disable`.
 * `tag_keys` - (Optional, List) List of tag keys for the associated resource tag rule.
@@ -55,11 +54,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Associated Rule.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Associated Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Associated Rule.
 * `update` - (Defaults to 5 mins) Used when update the Associated Rule.

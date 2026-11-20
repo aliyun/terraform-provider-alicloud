@@ -60,6 +60,7 @@ Terraform cannot destroy resource `alicloud_ram_password_policy`. Terraform will
 ## Argument Reference
 
 The following arguments are supported:
+
 * `hard_expiry` - (Optional) Whether to restrict logon after the password expires. Value:
   - true: After the password expires, you cannot log in to the console. You must reset the password of the RAM user through the main account or a RAM user with administrator permissions to log on normally.
   - false (default): After the password expires, the RAM user can change the password and log on normally.
@@ -96,11 +97,13 @@ Default value: 0, indicating that the historical password check policy is not en
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. This field is set to your Alibaba Cloud Account ID.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Password Policy.
 * `update` - (Defaults to 5 mins) Used when update the Password Policy.
 

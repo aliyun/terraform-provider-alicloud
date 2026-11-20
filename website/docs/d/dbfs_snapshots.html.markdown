@@ -7,7 +7,7 @@ description: |-
   Provides a list of Dbfs Snapshots to the user.
 ---
 
-# alicloud\_dbfs\_snapshots
+# alicloud_dbfs_snapshots
 
 ~> **NOTE:** This data source has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://www.alibabacloud.com/help/en/dbfs/).
 

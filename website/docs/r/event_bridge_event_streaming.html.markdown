@@ -74,9 +74,7 @@ resource "alicloud_event_bridge_event_streaming" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_event_bridge_event_streaming&spm=docs.r.event_bridge_event_streaming.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

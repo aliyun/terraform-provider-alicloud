@@ -10,8 +10,6 @@ description: |-
 
 Provides a Resource Manager Shared Resource resource.
 
-
-
 For information about Resource Manager Shared Resource and how to use it, see [What is Shared Resource](https://www.alibabacloud.com/help/en/resource-management/latest/api-resourcesharing-2020-01-10-associateresourceshare).
 
 -> **NOTE:** Available since v1.111.0.
@@ -63,12 +61,12 @@ resource "alicloud_resource_manager_shared_resource" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_shared_resource&spm=docs.r.resource_manager_shared_resource.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `permission_name` - (Optional, Available since v1.268.0) The name of a permission. If you do not configure this parameter, the system automatically associates the default permission for the specified resource type with the resource share.
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
@@ -87,6 +85,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<resource_share_id>:<resource_id>:<resource_type>`.
 * `create_time` - The time when the shared resource was associated with the resource share.
 * `status` - The association status.
@@ -94,6 +93,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Shared Resource.
 * `delete` - (Defaults to 10 mins) Used when delete the Shared Resource.
 

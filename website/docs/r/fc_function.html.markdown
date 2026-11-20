@@ -124,7 +124,7 @@ resource "alicloud_fc_function" "foo" {
 
 ## Module Support
 
-You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud) 
+You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud)
 to create a function quickly and set several triggers for it.
 
 ## Argument Reference
@@ -153,7 +153,6 @@ The following arguments are supported:
 * `ca_port` - (Optional, available in 1.96.0+) The port that the function listen to, only valid for [custom runtime](https://www.alibabacloud.com/help/doc-detail/132044.htm) and [custom container runtime](https://www.alibabacloud.com/help/doc-detail/179368.htm).
 * `custom_container_config` - (Optional, available in 1.96.0+) The configuration for custom container runtime.See [`custom_container_config`](#custom_container_config) below.
 * `layers` - (Optional, available in 1.187.0+) The configuration for layers.
-
 
 ### `custom_container_config`
 

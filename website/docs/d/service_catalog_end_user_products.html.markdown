@@ -28,16 +28,17 @@ output "alicloud_service_catalog_end_user_product_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Optional, ForceNew, Computed) A list of End User Product IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by product name.
 * `sort_by` - (Optional, ForceNew) The field that is used to sort the queried data. The value is fixed as CreateTime, which specifies the creation time of products.
 * `sort_order` - (Optional, ForceNew) The order in which you want to sort the queried data. Valid values: `Asc`, `Desc`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of End User Product IDs.
 * `end_user_products` - A list of End User Product Entries. Each element contains the following attributes:
   * `id` - ID of product, Its value is the same as `product_id`.

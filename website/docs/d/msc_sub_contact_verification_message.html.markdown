@@ -9,7 +9,6 @@ description: |-
 
 # alicloud_msc_sub_contact_verification_message
 
-
 -> **NOTE:** Available since v1.156.0.
 
 ## Example Usage
@@ -39,10 +38,8 @@ The following arguments are supported:
   * `1`: Send a verification message through the user's mobile.
   * `2`: Send a verification message through the user's mail.
 
-  
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `status` - The sending status of the message. Valid values : `Success`, `Failed`.
-

@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_ram_group_membership
 
-Provides a RAM Group membership resource. 
+Provides a RAM Group membership resource.
 
 -> **NOTE:** Available since v1.0.0.
 

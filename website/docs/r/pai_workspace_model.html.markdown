@@ -10,8 +10,6 @@ description: |-
 
 Provides a PAI Workspace Model resource.
 
-
-
 For information about PAI Workspace Model and how to use it, see [What is Model](https://www.alibabacloud.com/help/en/pai/developer-reference/api-aiworkspace-2021-02-04-createmodel).
 
 -> **NOTE:** Available since v1.249.0.
@@ -73,6 +71,7 @@ resource "alicloud_pai_workspace_model" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `accessibility` - (Optional) The visibility of the model in the workspace. Default value: `PRIVATE`. Valid values:
   - `PRIVATE`: In this workspace, it is only visible to you and the administrator.
   - `PUBLIC`: In this workspace, it is visible to everyone.
@@ -91,17 +90,20 @@ The following arguments are supported:
 ### `labels`
 
 The labels supports the following:
+
 * `key` - (Optional) label key
 * `value` - (Optional) label value
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Model.
 * `delete` - (Defaults to 5 mins) Used when delete the Model.
 * `update` - (Defaults to 5 mins) Used when update the Model.

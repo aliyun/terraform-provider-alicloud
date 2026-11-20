@@ -51,6 +51,7 @@ The following arguments are supported:
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `ip_addresses` - (Deprecated since v1.126.0) Field `ip_addresses` has been deprecated. Please use `ip_address` instead.
 
 ## Attributes Reference

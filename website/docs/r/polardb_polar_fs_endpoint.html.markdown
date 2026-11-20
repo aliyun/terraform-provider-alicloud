@@ -31,9 +31,7 @@ resource "alicloud_polardb_polar_fs_endpoint" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_polar_fs_endpoint&spm=docs.r.polardb_polar_fs_endpoint.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

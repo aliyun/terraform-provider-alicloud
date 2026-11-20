@@ -10,8 +10,6 @@ description: |-
 
 Provides a WAFV3 Defense Template resource.
 
-
-
 For information about WAFV3 Defense Template and how to use it, see [What is Defense Template](https://www.alibabacloud.com/help/en/web-application-firewall/latest/api-waf-openapi-2021-10-01-createdefensetemplate).
 
 -> **NOTE:** Available since v1.218.0.
@@ -52,6 +50,7 @@ resource "alicloud_wafv3_defense_template" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `defense_scene` - (Required, ForceNew) The WAF protection scenario to be created. Valid values:
   - `waf_base`: (Available since v1.269.0) indicates new web core protection.
   - `ip_blacklist`: indicates the IP address blacklist.
@@ -83,12 +82,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<defense_template_id>`.
 * `defense_template_id` - Template ID
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Defense Template.
 * `delete` - (Defaults to 5 mins) Used when delete the Defense Template.
 * `update` - (Defaults to 5 mins) Used when update the Defense Template.

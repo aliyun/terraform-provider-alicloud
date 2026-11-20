@@ -109,4 +109,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `architecture_type` - The architecture type of the instance.
   * `search_key` - The keyword used for fuzzy search. The keyword can be based on an instance name or an instance ID.
   * `tags` - A mapping of tags to assign to the resource.
-  

@@ -70,18 +70,21 @@ resource "alicloud_cloud_phone_image" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `image_name` - (Required) The image name.
 * `instance_id` - (Required) The instance ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `status` - The status of the mirror.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Image.
 * `delete` - (Defaults to 5 mins) Used when delete the Image.
 * `update` - (Defaults to 5 mins) Used when update the Image.

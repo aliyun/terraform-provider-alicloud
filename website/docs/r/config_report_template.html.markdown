@@ -51,12 +51,12 @@ resource "alicloud_config_report_template" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_config_report_template&spm=docs.r.config_report_template.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `report_file_formats` - (Optional) Report Format
 * `report_granularity` - (Optional) Report Aggregation Granularity
 * `report_language` - (Optional) This property does not have a description in the spec, please add it before generating code.
@@ -66,12 +66,14 @@ The following arguments are supported:
 * `subscription_frequency` - (Optional) Report subscription frequency. If this field is not empty, it is a Cron expression in Quartz format triggered by the subscription notification.
 
 The format is: Seconds, time, day, month, week. The following are examples of commonly used Cron expressions:
+
   - Execute at 0 o'clock every day: 0 0 0 * *?
   - Every Monday at 15: 30: 0 30 15? * MON
   - Execute at 2 o'clock on the 1st of each month: 0 0 2 1 *?
 
 Among them:
   -"*" Indicates any value
+
   - What-? Used for day and week fields, indicating that no specific value is specified
   - MON means Monday
 
@@ -79,10 +81,10 @@ Among them:
 
 -> **NOTE:**  It can only be triggered according to the cron expression time as much as possible. The cron expression limits the same template to trigger at most one notification per day.
 
-
 ### `report_scope`
 
 The report_scope supports the following:
+
 * `key` - (Optional) Key for reporting scope, currently supported:
   - AggregatorId
   - CompliancePackId
@@ -93,11 +95,13 @@ The report_scope supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Report Template.
 * `delete` - (Defaults to 5 mins) Used when delete the Report Template.
 * `update` - (Defaults to 5 mins) Used when update the Report Template.

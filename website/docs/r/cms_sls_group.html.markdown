@@ -67,13 +67,13 @@ resource "alicloud_cms_sls_group" "default" {
 
 The following arguments are supported:
 
-* `sls_group_config` - (Required) The Config of the Sls Group. You can specify up to 25 Config. See [`sls_group_config`](#sls_group_config) below. 
+* `sls_group_config` - (Required) The Config of the Sls Group. You can specify up to 25 Config. See [`sls_group_config`](#sls_group_config) below.
 * `sls_group_description` - (Optional) The Description of the Sls Group.
 * `sls_group_name` - (Required, ForceNew) The name of the resource. The name must be `2` to `32` characters in length, and can contain letters, digits and underscores (_). It must start with a letter.
 
 ### `sls_group_config`
 
-The sls_group_config supports the following: 
+The sls_group_config supports the following:
 
 * `sls_logstore` - (Required) The name of the Log Store.
 * `sls_project` - (Required) The name of the Project.

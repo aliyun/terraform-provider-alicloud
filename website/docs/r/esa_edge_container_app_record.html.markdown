@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Edge Container App Record resource.
 
-
-
 For information about ESA Edge Container App Record and how to use it, see [What is Edge Container App Record](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateEdgeContainerAppRecord).
 
 -> **NOTE:** Available since v1.247.0.
@@ -76,6 +74,7 @@ resource "alicloud_esa_edge_container_app_record" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `app_id` - (Required, ForceNew) The application ID
 * `record_name` - (Required, ForceNew) The associated domain name.
 * `site_id` - (Optional, ForceNew, Computed) The website ID.
@@ -83,12 +82,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<app_id>:<record_name>`.
 * `create_time` - The time when the domain name was added. The time follows the ISO 8601 standard in the YYYY-MM-DDThh:mm:ss format. The time is displayed in UTC.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Edge Container App Record.
 * `delete` - (Defaults to 5 mins) Used when delete the Edge Container App Record.
 

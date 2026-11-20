@@ -10,8 +10,6 @@ description: |-
 
 Provides a RAM Role resource.
 
-
-
 For information about RAM Role and how to use it, see [What is Role](https://www.alibabacloud.com/help/en/ram/developer-reference/api-ram-2015-05-01-createrole).
 
 -> **NOTE:** Available since v1.0.0.
@@ -81,6 +79,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `arn` - The Alibaba Cloud Resource Name (ARN) of the RAM role.
 * `create_time` - (Available since v1.252.0) The time when the RAM role was created.
@@ -91,6 +90,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.159.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Role.
 * `delete` - (Defaults to 5 mins) Used when delete the Role.
 * `update` - (Defaults to 5 mins) Used when update the Role.

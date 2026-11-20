@@ -73,6 +73,7 @@ resource "alicloud_express_connect_grant_rule_to_cen" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cen_id` - (Required, ForceNew) The ID of the CEN instance to which you want to grant permissions.
 * `cen_owner_id` - (Required, ForceNew) The user ID (UID) of the Alibaba Cloud account to which the CEN instance belongs.
 * `instance_id` - (Required, ForceNew) The ID of the VBR.
@@ -80,12 +81,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<cen_id>:<cen_owner_id>:<instance_id>`.
 * `create_time` - (Available since v1.263.0) The time when the instance was created.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Grant Rule To Cen.
 * `delete` - (Defaults to 5 mins) Used when delete the Grant Rule To Cen.
 

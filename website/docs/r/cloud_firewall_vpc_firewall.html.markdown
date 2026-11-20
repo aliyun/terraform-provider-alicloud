@@ -122,6 +122,7 @@ The peer_route_entry_list supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID of the Vpc Firewall. The value formats as `vpc_firewall_id`.
 * `vpc_firewall_id` - The ID of the VPC firewall instance.
 * `connect_type` - The communication type of the VPC firewall.

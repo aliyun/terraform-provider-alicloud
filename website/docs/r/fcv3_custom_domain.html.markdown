@@ -216,7 +216,6 @@ resource "alicloud_fcv3_custom_domain" "default" {
 }
 ```
 
-
 Bind an HTTPS certificate managed by SSL Certificates Service (CAS) by id, instead of pasting the PEM material:
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -261,6 +260,7 @@ resource "alicloud_fcv3_custom_domain" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auth_config` - (Optional, Set) Permission authentication configuration See [`auth_config`](#auth_config) below.
 * `cert_config` - (Optional, Computed, Set) HTTPS certificate information See [`cert_config`](#cert_config) below.
 * `certificate_id` - (Optional, Computed, Available since v1.290.0) The ID of an SSL certificate managed by SSL Certificates Service (CAS). When set, the provider resolves the certificate and private key from the referenced SSL certificate and binds them as the HTTPS certificate for the custom domain, so that a certificate managed in SSL Certificates Service can be referenced without pasting the PEM material. It conflicts with `cert_config.0.certificate` and `cert_config.0.private_key`. The resolved private key is never persisted to state.
@@ -274,12 +274,14 @@ The following arguments are supported:
 ### `auth_config`
 
 The auth_config supports the following:
+
 * `auth_info` - (Optional) Authentication Information
 * `auth_type` - (Optional) Authentication type. anonymous, function, or jwt.
 
 ### `cert_config`
 
 The cert_config supports the following:
+
 * `cert_name` - (Optional) Certificate Name
 * `certificate` - (Optional) PEM format certificate
 * `private_key` - (Optional) Private Key in PEM format
@@ -287,6 +289,7 @@ The cert_config supports the following:
 ### `cors_config`
 
 The cors_config supports the following:
+
 * `allow_credentials` - (Optional, Available since v1.270.0) Whether to allow credentials (such as Cookies, Authorization headers, etc.). When AllowCredentials is true, AllowOrigins cannot use the wildcard '*'.
 * `allow_headers` - (Optional, List, Available since v1.270.0) List of allowed request headers, such as Content-Type, Authorization, etc.
 * `allow_methods` - (Optional, List, Available since v1.270.0) List of allowed HTTP methods, such as GET, POST, PUT, DELETE, etc.
@@ -297,11 +300,13 @@ The cors_config supports the following:
 ### `route_config`
 
 The route_config supports the following:
+
 * `routes` - (Optional, List) Routing Configuration List See [`routes`](#route_config-routes) below.
 
 ### `route_config-routes`
 
 The route_config-routes supports the following:
+
 * `function_name` - (Optional) Function name
 * `methods` - (Optional, List) List of supported HTTP methods
 * `path` - (Optional) Route matching rule
@@ -311,6 +316,7 @@ The route_config-routes supports the following:
 ### `route_config-routes-rewrite_config`
 
 The route_config-routes-rewrite_config supports the following:
+
 * `equal_rules` - (Optional, List) Exact Match Rule List See [`equal_rules`](#route_config-routes-rewrite_config-equal_rules) below.
 * `regex_rules` - (Optional, List) Regular match rule list See [`regex_rules`](#route_config-routes-rewrite_config-regex_rules) below.
 * `wildcard_rules` - (Optional, List) List of wildcard matching rules See [`wildcard_rules`](#route_config-routes-rewrite_config-wildcard_rules) below.
@@ -318,24 +324,28 @@ The route_config-routes-rewrite_config supports the following:
 ### `route_config-routes-rewrite_config-equal_rules`
 
 The route_config-routes-rewrite_config-equal_rules supports the following:
+
 * `match` - (Optional) Matching Rules
 * `replacement` - (Optional) Replace Rules
 
 ### `route_config-routes-rewrite_config-regex_rules`
 
 The route_config-routes-rewrite_config-regex_rules supports the following:
+
 * `match` - (Optional) Matching Rules
 * `replacement` - (Optional) Replace Rules
 
 ### `route_config-routes-rewrite_config-wildcard_rules`
 
 The route_config-routes-rewrite_config-wildcard_rules supports the following:
+
 * `match` - (Optional) Matching Rules
 * `replacement` - (Optional) Replace Rules
 
 ### `tls_config`
 
 The tls_config supports the following:
+
 * `cipher_suites` - (Optional, List) List of TLS cipher suites
 * `max_version` - (Optional) The maximum version of TLS. Enumeration values: TLSv1.3, TLSv1.2, TLSv1.1, TLSv1.0
 * `min_version` - (Optional) TLS minimum version number. Enumeration values: TLSv1.3, TLSv1.2, TLSv1.1, TLSv1.0
@@ -343,12 +353,14 @@ The tls_config supports the following:
 ### `waf_config`
 
 The waf_config supports the following:
+
 * `enable_waf` - (Optional) Enable WAF protection
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `account_id` - The ID of your Alibaba Cloud account (primary account).
 * `api_version` - API version of Function Compute.
 * `create_time` - The creation time of the resource.
@@ -358,6 +370,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Custom Domain.
 * `delete` - (Defaults to 5 mins) Used when delete the Custom Domain.
 * `update` - (Defaults to 5 mins) Used when update the Custom Domain.

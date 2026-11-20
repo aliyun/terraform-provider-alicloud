@@ -50,7 +50,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of instance types type IDs. 
+* `ids` - A list of instance types type IDs.
 * `types` - (Deprecated) A list of instance types. Each element contains the following attributes:
   * `value` - Name of the instance type.
   * `cpu_size` - Cpu size of the instance type.

@@ -10,8 +10,6 @@ description: |-
 
 Provides a Data Works Project Member resource.
 
-
-
 For information about Data Works Project Member and how to use it, see [What is Project Member](https://www.alibabacloud.com/help/en/dataworks/developer-reference/api-dataworks-public-2024-05-18-createprojectmember).
 
 -> **NOTE:** Available since v1.237.0.
@@ -76,6 +74,7 @@ resource "alicloud_data_works_project_member" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `project_id` - (Required, ForceNew, Int) Project ID
 * `roles` - (Optional, List) List of roles owned by members. See [`roles`](#roles) below.
 * `user_id` - (Required, ForceNew) The user ID of the member.
@@ -83,11 +82,13 @@ The following arguments are supported:
 ### `roles`
 
 The roles supports the following:
+
 * `code` - (Optional) Project Role Code.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<project_id>:<user_id>`.
 * `roles` - List of roles owned by members.
   * `name` - project role name
@@ -97,6 +98,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Project Member.
 * `delete` - (Defaults to 5 mins) Used when delete the Project Member.
 * `update` - (Defaults to 5 mins) Used when update the Project Member.

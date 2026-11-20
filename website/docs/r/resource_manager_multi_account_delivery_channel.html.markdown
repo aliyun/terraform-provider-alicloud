@@ -86,6 +86,7 @@ resource "alicloud_resource_manager_multi_account_delivery_channel" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `delivery_channel_description` - (Required) The description of the delivery channel.
 * `delivery_channel_filter` - (Required, List) The effective scope of the delivery channel. See [`delivery_channel_filter`](#delivery_channel_filter) below.
 * `multi_account_delivery_channel_name` - (Required) The name of the delivery channel.
@@ -95,6 +96,7 @@ The following arguments are supported:
 ### `delivery_channel_filter`
 
 The delivery_channel_filter supports the following:
+
 * `account_scopes` - (Required, List) The account scopes of the delivery channel.
 * `resource_types` - (Optional, List) An array of effective resource types for the delivery channel.
   - Example: ["ACS::VPC::VPC", "ACS::ECS::Instance"].
@@ -103,6 +105,7 @@ The delivery_channel_filter supports the following:
 ### `resource_change_delivery`
 
 The resource_change_delivery supports the following:
+
 * `enabled` - (Optional, Computed) Specifies whether to enable delivery of resource configuration change events. Valid values:
   - true
   - false
@@ -113,11 +116,13 @@ The resource_change_delivery supports the following:
 * `target_type` - (Optional, ForceNew, Computed) The type of the delivery destination.
 
 Valid values:
+
   - SLS
 
 ### `resource_change_delivery-sls_properties`
 
 The resource_change_delivery-sls_properties supports the following:
+
 * `oversized_data_oss_target_arn` - (Optional) The ARN of the destination to which large files are delivered.
   - If the size of a resource configuration change event exceeds 1 MB, the event is delivered as an OSS object.
   - You need to set this parameter to the ARN of a bucket whose name is prefixed with resourcecenter-.
@@ -125,6 +130,7 @@ The resource_change_delivery-sls_properties supports the following:
 ### `resource_snapshot_delivery`
 
 The resource_snapshot_delivery supports the following:
+
 * `custom_expression` - (Optional) The custom expression.
 * `delivery_time` - (Optional) The delivery time.
 * `enabled` - (Optional, Computed) Specifies whether to enable delivery of scheduled resource snapshots. Valid values:
@@ -137,12 +143,14 @@ The resource_snapshot_delivery supports the following:
 * `target_type` - (Optional) The type of the delivery destination.
 
 Valid values:
+
   - `OSS` for standard delivery
   - `OSS` or `SLS` for custom delivery
 
 ### `resource_snapshot_delivery-sls_properties`
 
 The resource_snapshot_delivery-sls_properties supports the following:
+
 * `oversized_data_oss_target_arn` - (Optional) exceeds 1 MB, the event is delivered as an OSS object.
   - You need to set this parameter to the ARN of a bucket whose name is prefixed with resourcecenter-.
   - This parameter takes effect only if you use custom delivery for scheduled resource snapshots. You do not need to configure this parameter if you use standard delivery for scheduled resource snapshots.
@@ -150,11 +158,13 @@ The resource_snapshot_delivery-sls_properties supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Multi Account Delivery Channel.
 * `delete` - (Defaults to 5 mins) Used when delete the Multi Account Delivery Channel.
 * `update` - (Defaults to 5 mins) Used when update the Multi Account Delivery Channel.

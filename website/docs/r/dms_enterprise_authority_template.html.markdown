@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_dms_enterprise_authority_template
 
-Provides a DMS Enterprise Authority Template resource. 
+Provides a DMS Enterprise Authority Template resource.
 
 For information about DMS Enterprise Authority Template and how to use it, see [What is Authority Template](https://www.alibabacloud.com/help/en/dms/developer-reference/api-dms-enterprise-2018-11-01-createauthoritytemplate).
 
@@ -49,6 +49,7 @@ resource "alicloud_dms_enterprise_authority_template" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `authority_template_name` - (Required) Permission Template name.
 * `description` - (Optional) Permission template description information.
 * `tid` - (Required, ForceNew) Tenant ID.
@@ -56,6 +57,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<tid>:<authority_template_id>`.
 * `authority_template_id` - Permission template ID.
 * `create_time` - The creation time of the resource.
@@ -63,6 +65,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Authority Template.
 * `delete` - (Defaults to 5 mins) Used when delete the Authority Template.
 * `update` - (Defaults to 5 mins) Used when update the Authority Template.

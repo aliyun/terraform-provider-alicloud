@@ -42,24 +42,26 @@ resource "alicloud_nlb_hd_monitor_region_config" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nlb_hd_monitor_region_config&spm=docs.r.nlb_hd_monitor_region_config.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `log_project` - (Required) The name of the LogProject.
 * `metric_store` - (Required) The name of the MetricStore.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `region_id` - The ID of the region in which the resource resides.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Hd Monitor Region Config.
 * `delete` - (Defaults to 5 mins) Used when delete the Hd Monitor Region Config.
 * `update` - (Defaults to 5 mins) Used when update the Hd Monitor Region Config.

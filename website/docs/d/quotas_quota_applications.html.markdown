@@ -44,6 +44,7 @@ data "alicloud_quotas_quota_applications" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dimensions` - (Optional) The quota dimensions. See [`dimensions`](#dimensions) below.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `ids` - (Optional, Computed) A list of Application Info IDs.
@@ -57,17 +58,20 @@ The following arguments are supported:
 ### `dimensions`
 
 The dimensions supports the following:
+
 * `key` - (Optional) The key of dimensions.
 * `value` - (Optional) The value of dimensions.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `applications` - A list of Quotas Quota Applications. Each element contains the following attributes:
 
 ### `applications`
 
 The applications supports the following attributes:
+
 * `application_id` - The first ID of the resource.
 * `approve_value` - The approve value.
 * `audit_reason` - The audit reason.
@@ -88,5 +92,6 @@ The applications supports the following attributes:
 ### `applications.dimensions`
 
 The dimensions supports the following:
+
 * `key` - The key of dimensions.
 * `value` - The value of dimensions.

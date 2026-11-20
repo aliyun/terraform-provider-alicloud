@@ -200,12 +200,14 @@ The following arguments are supported:
 ### `defined_column`
 
 The defined_column supports the following:
+
 * `name` - (Required, Available since v1.187.0) Name for defined column.
 * `type` - (Required, Available since v1.187.0) Type for defined column. `Integer`, `String`, `Binary`, `Double`, `Boolean` is allowed.
 
 ### `primary_key`
 
 The primary_key supports the following:
+
 * `name` - (Required, ForceNew) Name for primary key.
 * `type` - (Required, ForceNew) Type for primary key. Only `Integer`, `String` or `Binary` is allowed.
 * `auto_increment` - (Optional, ForceNew, Bool, Available since v2.3.0) Specifies whether the primary key column is auto-incremented. Defaults to `false`. The primary key column must be of type `Integer`, cannot be the first primary key (the partition key) of the table, and only one primary key column in a table can enable `auto_increment`. Changing this field forces a new resource.
@@ -223,4 +225,3 @@ OTS table can be imported using id, e.g.
 ```shell
 $ terraform import alicloud_ots_table.table my-ots:ots_table
 ```
-

@@ -47,6 +47,7 @@ resource "alicloud_live_caster" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_switch_urgent_config` - (Optional) Automatic standby broadcast configuration. eofThres: indicates that the broadcast is automatically cut and prepared after the flow interruption time, in seconds.
 * `auto_switch_urgent_on` - (Optional) Turn on the cut-off automatic switch for broadcast preparation.
 
@@ -98,12 +99,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Creation time.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Caster.
 * `delete` - (Defaults to 5 mins) Used when delete the Caster.
 * `update` - (Defaults to 5 mins) Used when update the Caster.

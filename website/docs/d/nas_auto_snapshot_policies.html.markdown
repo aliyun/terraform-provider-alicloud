@@ -7,11 +7,11 @@ description: |-
   Provides a list of Auto Snapshot Policies owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_nas_file_systems
+# alicloud_nas_auto_snapshot_policies
 
 This data source provides Auto Snapshot Policies available to the user.
 
--> **NOTE**: Available in v1.153.0+.
+-> **NOTE:** Available since v1.153.0+.
 
 ## Example Usage
 

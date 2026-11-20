@@ -110,13 +110,13 @@ The following arguments are supported:
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `update` - (Defaults to 10 mins) Used when activating the cen bandwidth limit when necessary during update - when changing bandwidth limit.
-* `delete` - (Defaults to 10 mins) Used when terminating the cen bandwidth limit. 
+* `delete` - (Defaults to 10 mins) Used when terminating the cen bandwidth limit.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-- `id` - ID of the resource, formatted as `<instance_id>:<region_id_1>:<region_id_2>`.
+* `id` - ID of the resource, formatted as `<instance_id>:<region_id_1>:<region_id_2>`.
 
 ->**NOTE:** The region_id_1 and region_id_2 are sorted lexicographically.
 

@@ -34,9 +34,9 @@ The following arguments are supported:
 
 * `access_group_name` - (Required ForceNew) Filter results by a specific AccessGroupName.
 * `ids` - (Optional, Available in 1.53.0+) A list of rule IDs.
-* `source_cidr_ip` - (Optional) Filter results by a specific SourceCidrIp. 
-* `user_access` - (Optional) Filter results by a specific UserAccess. 
-* `rw_access` - (Optional) Filter results by a specific RWAccess. 
+* `source_cidr_ip` - (Optional) Filter results by a specific SourceCidrIp.
+* `user_access` - (Optional) Filter results by a specific UserAccess.
+* `rw_access` - (Optional) Filter results by a specific RWAccess.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

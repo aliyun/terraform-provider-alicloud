@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ebs Disk Replica Groups to the user.
 ---
 
-# alicloud\_ebs\_disk\_replica\_groups
+# alicloud_ebs_disk_replica_groups
 
 This data source provides the Ebs Disk Replica Groups of the current Alibaba Cloud user.
 

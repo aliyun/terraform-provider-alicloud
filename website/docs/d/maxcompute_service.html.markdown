@@ -41,4 +41,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

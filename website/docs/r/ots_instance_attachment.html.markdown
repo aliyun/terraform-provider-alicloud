@@ -78,5 +78,3 @@ The following attributes are exported:
 
 * `id` - The resource ID. The value is same as "instance_name".
 * `vpc_id` - The ID of attaching VPC to instance.
-
-

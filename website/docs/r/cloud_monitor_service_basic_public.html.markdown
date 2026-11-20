@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_cloud_monitor_service_basic_public
 
-Provides a Cloud Monitor Service Basic Public resource. 
+Provides a Cloud Monitor Service Basic Public resource.
 
 For information about Cloud Monitor Service Basic Public and how to use it, see [What is Basic Public](https://www.alibabacloud.com/help/en/cms/product-overview/what-is-cloudmonitor).
 
@@ -43,12 +43,14 @@ resource "alicloud_cloud_monitor_service_basic_public" "default" {
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Basic Public.
 * `delete` - (Defaults to 5 mins) Used when delete the Basic Public.
 

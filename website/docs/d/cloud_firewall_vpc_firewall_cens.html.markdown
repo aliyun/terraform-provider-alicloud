@@ -32,6 +32,7 @@ output "alicloud_cloud_firewall_vpc_firewall_cen_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cen_id` - (ForceNew, Optional) The ID of the CEN instance.
 * `lang` - (ForceNew, Optional) The language type of the requested and received messages. Value:-**zh** (default): Chinese.-**en**: English.
 * `member_uid` - (ForceNew, Optional) The UID of the member account (other Alibaba Cloud account) of the current Alibaba cloud account.
@@ -39,7 +40,7 @@ The following arguments are supported:
 * `status` - (ForceNew, Optional) Firewall switch status
   - `opened`: Enabled.
   - `closed`: closed.
-  - `notconfigured`: indicates that the VPC boundary firewall is not configured. 
+  - `notconfigured`: indicates that the VPC boundary firewall is not configured.
   - `configured`: indicates that the VPC boundary firewall is configured but not enabled.
 * `vpc_firewall_id` - (ForceNew, Optional) VPC firewall ID
 * `vpc_firewall_name` - (ForceNew, Optional) The name of the VPC firewall instance.
@@ -49,6 +50,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Vpc Firewall Cen IDs.
 * `cens` - A list of Vpc Firewall Cen Entries. Each element contains the following attributes:
   * `id` - The ID of the CEN instance.

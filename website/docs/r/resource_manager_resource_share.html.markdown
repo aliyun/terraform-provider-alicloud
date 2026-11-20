@@ -36,12 +36,12 @@ resource "alicloud_resource_manager_resource_share" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_resource_share&spm=docs.r.resource_manager_resource_share.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `allow_external_targets` - (Optional, Available since v1.261.0) Whether to allow sharing to accounts outside the resource directory. Value:
   - false (default): Only sharing within the resource directory is allowed.
   - true: Allow sharing to any account.
@@ -69,12 +69,14 @@ The following arguments are supported:
 ### `resource_properties`
 
 The resource_properties supports the following:
+
 * `property` - (Optional, Available since v1.274.0) The resource property.
 * `resource_arn` - (Optional, Available since v1.274.0) The ARN of the resource.
 
 ### `resources`
 
 The resources supports the following:
+
 * `resource_id` - (Optional, Available since v1.261.0) The ID of the shared resource.
 
 The value range of N: 1 to 5, that is, a maximum of 5 shared resources are added at a time.
@@ -89,10 +91,10 @@ For the types of resources that support sharing, see [Cloud services that suppor
 
 -> **NOTE:**  'Resources.N.ResourceId' and'resources. N.ResourceType' appear in pairs and need to be set at the same time.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The create time of resource share.
 * `resource_share_owner` - The owner of resource share,  `Self` and `OtherAccounts`.
@@ -101,6 +103,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Resource Share.
 * `delete` - (Defaults to 10 mins) Used when delete the Resource Share.
 * `update` - (Defaults to 5 mins) Used when update the Resource Share.

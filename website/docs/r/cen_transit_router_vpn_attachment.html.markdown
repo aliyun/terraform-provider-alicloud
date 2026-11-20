@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cloud Enterprise Network (CEN) Transit Router Vpn Attachment resource.
 
-
-
 For information about Cloud Enterprise Network (CEN) Transit Router Vpn Attachment and how to use it, see [What is Transit Router Vpn Attachment](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createtransitroutervpnattachment).
 
 -> **NOTE:** Available since v1.183.0.
@@ -122,13 +120,12 @@ resource "alicloud_cen_transit_router_vpn_attachment" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_vpn_attachment&spm=docs.r.cen_transit_router_vpn_attachment.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_publish_route_enabled` - (Optional) Specifies whether to allow the transit router to automatically advertise routes to the IPsec-VPN attachment. Valid values:
 
   - `true` (default): yes
@@ -156,18 +153,21 @@ System will create resources under the Zone that you specify.
 Left blank if associated IPSec connection is in dual-tunnel mode. See [`zone`](#zone) below.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `transit_router_attachment_name` - (Deprecated since v1.274.0). Field 'transit_router_attachment_name' has been deprecated from provider version 1.274.0. New field 'transit_router_vpn_attachment_name' instead.
 
 ### `zone`
 
 The zone supports the following:
+
 * `zone_id` - (Required, ForceNew) The zone ID of the read-only instance.
 You can call the [ListTransitRouterAvailableResource](https://www.alibabacloud.com/help/en/doc-detail/261356.html) operation to query the most recent zone list.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `region_id` - The ID of the region where the transit router is deployed.
 * `status` - Status.
@@ -175,6 +175,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 17 mins) Used when create the Transit Router Vpn Attachment.
 * `delete` - (Defaults to 8 mins) Used when delete the Transit Router Vpn Attachment.
 * `update` - (Defaults to 5 mins) Used when update the Transit Router Vpn Attachment.

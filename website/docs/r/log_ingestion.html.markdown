@@ -100,7 +100,6 @@ The following arguments are supported:
 * `time_zone` - (Optional) Which time zone is the log time imported in, e.g. `+0800`.
 * `source` - (Required) Data source and data format details. [Refer to details](https://www.alibabacloud.com/help/en/doc-detail/147819.html).
 
-
 ## Attributes Reference
 
 The following attributes are exported:

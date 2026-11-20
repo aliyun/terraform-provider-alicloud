@@ -10,8 +10,6 @@ description: |-
 
 Provides a Schedulerx Namespace resource.
 
-
-
 For information about Schedulerx Namespace and how to use it, see [What is Namespace](https://www.alibabacloud.com/help/en/schedulerx/schedulerx-serverless/developer-reference/api-schedulerx2-2019-04-30-listnamespaces).
 
 -> **NOTE:** Available since v1.173.0.
@@ -47,6 +45,7 @@ resource "alicloud_schedulerx_namespace" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) Namespace description.
 * `namespace_name` - (Required) Namespace name.
 * `namespace_uid` - (Optional, ForceNew, Computed, Available since v1.240.0) namespace uid
@@ -54,11 +53,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Namespace.
 * `delete` - (Defaults to 5 mins) Used when delete the Namespace.
 * `update` - (Defaults to 5 mins) Used when update the Namespace.

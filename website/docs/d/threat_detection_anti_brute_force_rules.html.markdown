@@ -42,15 +42,16 @@ output "alicloud_threat_detection_anti_brute_force_rule_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Optional, ForceNew, Computed) A list of Anti-Brute Force Rule IDs.
 * `names` - (Optional, ForceNew) The name of the Anti-Brute Force Rule. You can specify at most 10 names.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by the name of the defense rule.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Anti Brute Force Rule IDs.
 * `names` - A list of name of Anti Brute Force Rules.
 * `rules` - A list of Anti Brute Force Rule Entries. Each element contains the following attributes:

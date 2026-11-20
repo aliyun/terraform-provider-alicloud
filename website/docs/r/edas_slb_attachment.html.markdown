@@ -125,5 +125,3 @@ The following attributes are exported:
 * `id` - The `key` of the resource supplied above. The value is formulated as `<app_id>:<slb_id>`.
 * `slb_status` - Running Status of SLB instance. Inactive：The instance is stopped, and listener will not monitor and forward traffic. Active：The instance is running. After the instance is created, the default state is active. Locked：The instance is locked, the instance has been owed or locked by Alibaba Cloud. Expired: The instance has expired.
 * `vswitch_id` - VPC related vswitch ID.
-
-

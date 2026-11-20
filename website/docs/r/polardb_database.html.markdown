@@ -66,6 +66,7 @@ resource "alicloud_polardb_database" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_name` - (Optional) The name of the account that is authorized to access the database. **NOTE:** From version 1.265.0, `account_name` can be modified. However, only PolarDB for PostgreSQL (Compatible with Oracle) and PolarDB for PostgreSQL cluster can be modified.
 * `character_set_name` - (Optional, ForceNew) The character set that is used by the cluster. For more information, see [Character set tables](https://www.alibabacloud.com/help/en/doc-detail/99716.html).
 * `collate` - (Optional, Available since v1.265.0) The language that defines the collation rules in the database.
@@ -83,6 +84,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_cluster_id>:<db_name>`.
 * `status` - (Available since v1.265.0) The state of the database.
 
@@ -91,6 +93,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.265.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Database.
 * `delete` - (Defaults to 30 mins) Used when delete the Database.
 * `update` - (Defaults to 5 mins) Used when update the Database.

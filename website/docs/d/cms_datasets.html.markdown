@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cms Datasets to the user.
 ---
 
-# alicloud\_cms\_datasets
+# alicloud_cms_datasets
 
 This data source provides the Cms Datasets of the current Alibaba Cloud user.
 

@@ -7,11 +7,11 @@ description: |-
   Provides a list of Network Acls to the user.
 ---
 
-# alicloud\_network\_acls
+# alicloud_network_acls
 
 This data source provides the Network Acls of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.122.0+.
+-> **NOTE:** Available since v1.122.0+.
 
 ## Example Usage
 
@@ -41,7 +41,7 @@ The following arguments are supported:
 * `resource_type` - (Optional, ForceNew) The type of the associated resource. Valid values `VSwitch`. `resource_type` and `resource_id` need to be specified at the same time to take effect.
 * `resource_id` - (Optional, ForceNew) The ID of the associated resource.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

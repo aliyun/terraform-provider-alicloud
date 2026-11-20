@@ -7,7 +7,7 @@ description: |-
     Provides a list of RDS instacne classes detailed info.
 ---
 
-# alicloud\_db\_instance\_class\_infos
+# alicloud_db_instance_class_infos
 
 This data source operation to query the instance types that are available to specific instances of Alibaba Cloud.
 
@@ -63,7 +63,6 @@ The following arguments are supported:
 * `reference_price` - (Optional) The fee that you must pay for the instance type. Unit: cent (USD).
 * `instruction_set_arch` - (Optional) The architecture of the instance type.
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
@@ -84,4 +83,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `instruction_set_arch` - The architecture of the instance type.
 
     -> **NOTE**: If the architecture of the instance type is x86, an empty string is returned by default. If the architecture of the instance type is ARM, arm is returned.
-    

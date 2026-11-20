@@ -65,13 +65,12 @@ resource "alicloud_direct_mail_config_set" "with_pool" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_direct_mail_config_set&spm=docs.r.direct_mail_config_set.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional, String, Available since v2.2.0) The description of the configuration set. The description can be up to 50 characters long.
 * `ip_pool_id` - (Optional, String, Available since v2.2.0) The ID of the associated IP pool.
 * `is_force` - (Optional, Bool, Available since v2.2.0) Whether to force deletion of the sender address associations.
@@ -85,6 +84,7 @@ The following arguments are supported:
 ### `validation_option`
 
 The validation_option supports the following:
+
 * `enabled` - (Optional, Bool, Available since v2.2.0) Whether the address validation feature is enabled. true: enabled (the BASIC_ONLY mode of the ValidateEmail API). false: disabled.
 * `forbidden_status_list` - (Optional, List, Available since v2.2.0) The list of address validation main statuses to block. Before sending, the system pre-validates the recipient address; messages whose validation main status matches this list are rejected. Valid values: `INVALID`, `CATCH_ALL`, `DO_NOT_MAIL`, `UNKNOWN`.
 * `forbidden_sub_status_list` - (Optional, List, Available since v2.2.0) The list of address validation sub-statuses to block, providing finer-grained interception control than the main statuses. Takes effect as a union with ForbiddenStatusList (a hit in either list blocks the message). Valid values: `NO_DNS_ENTRIES`, `MISSPELLED`, `DOES_NOT_ACCEPT_MAIL`, `MAILBOX_NOT_EXISTS`, `SYSTEM_ERROR`, `MX_FORWARD`, `SYNTAX_INVALID`, `ROLE_ACCOUNT`, `SMTP_CONNECT_FAILED`, `DISABLED`, `UNSPECIFIED`, `IP_UNROUTABLE`, `GRAY_LIST`, `MAILBOX_FULL`, `DISPOSABLE`, `TIMEOUT_EXCEEDED`.
@@ -92,12 +92,14 @@ The validation_option supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - (Computed, String, Available since v2.2.0) The ID of the resource supplied above.
 * `ip_pool_name` - (Computed, String, Available since v2.2.0) The name of the associated IP pool.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Config Set.
 * `delete` - (Defaults to 5 mins) Used when delete the Config Set.
 * `update` - (Defaults to 5 mins) Used when update the Config Set.

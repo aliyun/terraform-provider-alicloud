@@ -47,6 +47,7 @@ resource "alicloud_ens_eip" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bandwidth` - (Optional, Computed) The maximum bandwidth of the EIP. Default value: `5`. Valid values: `5` to `10000`. Unit: Mbit/s.
 * `description` - (Optional) The description of the EIP.
 * `eip_name` - (Optional) The name of the EIP.
@@ -58,6 +59,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the EIP instance.
 * `status` - The status of the EIP.
@@ -65,6 +67,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Eip.
 * `delete` - (Defaults to 5 mins) Used when delete the Eip.
 * `update` - (Defaults to 5 mins) Used when update the Eip.

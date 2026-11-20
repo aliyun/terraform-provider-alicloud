@@ -147,6 +147,7 @@ output "alicloud_wafv3_defense_rule_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `defense_type` - (Optional) The protection rule type. Value:
   - `template` (default): indicates the template protection rule.
   - `resource`: indicates the rule of the protected object dimension.
@@ -162,10 +163,10 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional) Default to `false`. Set it to `true` to call the per-rule `DescribeDefenseRule` API and fetch the full `config` block for each rule.
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Defense Rule IDs.
 * `rules` - A list of Defense Rule Entries. Each element contains the following attributes:
     * `config` - Rule configuration content, in JSON format, constructed with a series of parameters.

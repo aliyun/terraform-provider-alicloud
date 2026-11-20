@@ -10,8 +10,6 @@ description: |-
 
 Provides a Resource Manager Resource Directory resource.
 
-
-
 For information about Resource Manager Resource Directory and how to use it, see [What is Resource Directory](https://www.alibabacloud.com/help/en/doc-detail/94475.htm).
 
 -> **NOTE:** Available since v1.84.0.
@@ -41,6 +39,7 @@ resource "alicloud_resource_manager_resource_directory" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `member_account_display_name_sync_status` - (Optional, Computed, Available since v1.259.0) The status of the Member Display Name Synchronization feature. Valid values:
   - Enabled
   - Disabled
@@ -52,6 +51,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the resource directory was created
 * `master_account_id` - The ID of the master account
@@ -61,6 +61,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Resource Directory.
 * `delete` - (Defaults to 5 mins) Used when delete the Resource Directory.
 * `update` - (Defaults to 5 mins) Used when update the Resource Directory.

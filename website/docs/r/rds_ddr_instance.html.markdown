@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_rds_ddr_instance
 
-Provide RDS remote disaster recovery instance resources. 
+Provide RDS remote disaster recovery instance resources.
 
 For information about RDS remote disaster recovery instance and how to use it, see [What is ApsaraDB for RDS Remote Disaster Recovery](https://www.alibabacloud.com/help/en/rds/developer-reference/api-rds-2014-08-15-createddrinstance).
 
@@ -224,18 +224,18 @@ This value must be a multiple of 5 GB. For more information, see Primary ApsaraD
   -> **NOTE:** You can specify the time zone when you create a primary instance. You cannot specify the time zone when you create a read-only instance. Read-only instances inherit the time zone of their primary instance. If you do not specify this parameter, the system assigns the default time zone of the region where the instance resides.
 * `sql_collector_status` - (Optional) The sql collector status of the instance. Valid values are `Enabled`, `Disabled`, Default to `Disabled`.
 * `sql_collector_config_value` - (Optional) The sql collector keep time of the instance. Valid values are `30`, `180`, `365`, `1095`, `1825`, Default to `30`.
-    
+
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
-* `connection_string_prefix` - (Optional) The private connection string prefix. If you want to update public connection string prefix, please use resource alicloud_db_connection [connection_prefix](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/db_connection#connection_prefix). 
+* `connection_string_prefix` - (Optional) The private connection string prefix. If you want to update public connection string prefix, please use resource alicloud_db_connection [connection_prefix](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/db_connection#connection_prefix).
 
   -> **NOTE:** The prefix must be 8 to 64 characters in length and can contain letters, digits, and hyphens (-). It cannot contain Chinese characters and special characters ~!#%^&*=+\|{};:'",<>/?
 * `port` - (Optional) The private port of the database service. If you want to update public port, please use resource alicloud_db_connection [port](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/db_connection#port).
-* `payment_type` - (Required) Valid values are `Subscription`, `PayAsYouGo`, Default to `PayAsYouGo`. 
+* `payment_type` - (Required) Valid values are `Subscription`, `PayAsYouGo`, Default to `PayAsYouGo`.
 * `resource_group_id` (Optional) The ID of resource group which the DB instance belongs.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when payment_type is `Subscription`. Valid values: [1~9], 12, 24, 36.
 
   -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
-* `monitoring_period` - (Optional) The monitoring frequency in seconds. Valid values are 5, 60, 300. Defaults to 300. 
+* `monitoring_period` - (Optional) The monitoring frequency in seconds. Valid values are 5, 60, 300. Defaults to 300.
 * `auto_renew` - (Optional) Whether to renewal a DB instance automatically or not. It is valid when payment_type is `Subscription`. Default to `false`.
 * `auto_renew_period` - (Optional) Auto-renewal period of an instance, in the unit of the month. It is valid when payment_type is `Subscription`. Valid value:[1~12], Default to 1.
 * `zone_id` - (ForceNew, Optional) The Zone to launch the DB instance. It supports multiple zone.
@@ -275,7 +275,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `auto_upgrade_minor_version` - (Optional) The upgrade method to use. Valid values:
    - Auto: Instances are automatically upgraded to a higher minor version.
    - Manual: Instances are forcibly upgraded to a higher minor version when the current version is unpublished.
- 
+
    See more [details and limitation](https://www.alibabacloud.com/help/doc-detail/123605.htm).
 * `upgrade_db_instance_kernel_version` - (Optional) Whether to upgrade a minor version of the kernel. Valid values:
     - true: upgrade
@@ -352,7 +352,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `storage_upper_bound` - (Optional) The upper limit of the total storage space for automatic expansion of the storage space, that is, automatic expansion will not cause the total storage space of the instance to exceed this value. Unit: GB. The value must be ≥0.
 
   -> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
-* `deletion_protection` - (Optional) The switch of delete protection. Valid values: 
+* `deletion_protection` - (Optional) The switch of delete protection. Valid values:
   - true: delete protect.
   - false: no delete protect.
 
@@ -401,6 +401,7 @@ The pg_hba_conf mapping supports the following:
 * `user` - (Required) The user that is allowed to access the instance. If you specify multiple users, separate the usernames with commas (,).
 * `method` - (Required) The authentication method of Lightweight Directory Access Protocol (LDAP). Valid values: `trust`, `reject`, `scram-sha-256`, `md5`, `password`, `gss`, `sspi`, `ldap`, `radius`, `cert`, `pam`.
 * `option` - (Optional) Optional. The value of this parameter is based on the value of the HbaItem.N.Method parameter. In this topic, LDAP is used as an example. You must configure this parameter. For more information, see [Authentication Methods](https://www.postgresql.org/docs/11/auth-methods.html).
+
 ## Attributes Reference
 
 The following attributes are exported:
@@ -408,17 +409,17 @@ The following attributes are exported:
 * `id` - The RDS instance ID.
 * `connection_string` - RDS database connection string.
 * `ssl_status` - Status of the SSL feature. `Yes`: SSL is turned on; `No`: SSL is turned off.
-* `zone_id_slave_a` - The region ID of the secondary instance if you create a secondary instance. 
-* `zone_id_slave_b`- The region ID of the log instance if you create a log instance. 
+* `zone_id_slave_a` - The region ID of the secondary instance if you create a secondary instance.
+* `zone_id_slave_b`- The region ID of the log instance if you create a log instance.
 * `category` - The RDS edition of the instance.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 90 mins) Used when creating the db instance (until it reaches the initial `Running` status). 
-* `update` - (Defaults to 30 mins) Used when updating the db instance (until it reaches the initial `Running` status). 
-* `delete` - (Defaults to 20 mins) Used when terminating the db instance. 
+* `create` - (Defaults to 90 mins) Used when creating the db instance (until it reaches the initial `Running` status).
+* `update` - (Defaults to 30 mins) Used when updating the db instance (until it reaches the initial `Running` status).
+* `delete` - (Defaults to 20 mins) Used when terminating the db instance.
 
 ## Import
 

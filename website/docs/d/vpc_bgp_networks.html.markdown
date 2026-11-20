@@ -7,7 +7,7 @@ description: |-
   Provides a list of Vpc Bgp Networks to the user.
 ---
 
-# alicloud\_vpc\_bgp\_networks
+# alicloud_vpc_bgp_networks
 
 This data source provides the Vpc Bgp Networks of the current Alibaba Cloud user.
 

@@ -122,24 +122,24 @@ The following arguments are supported:
 * `delete_auto_snapshot` - (Optional) Not the public attribute and it used to automatically delete dependence snapshots while deleting the image.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `name` - (Optional, Deprecated) Attribute 'name' has been deprecated, please use `image_name` instead.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 10 mins) Used when copying the image (until it reaches the initial `Available` status). 
+* `create` - (Defaults to 10 mins) Used when copying the image (until it reaches the initial `Available` status).
 * `delete` - (Defaults to 10 mins) Used when terminating the image.
-   
-   
+
 ## Attributes Reference
- 
+
  The following attributes are exported:
- 
+
 * `id` - ID of the image.
 
 ## Import
- 
+
 image can be imported using the id, e.g.
 
 ```shell

@@ -44,6 +44,7 @@ resource "alicloud_ens_disk" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `category` - (Required, ForceNew) The category of the disk. Valid values: `cloud_efficiency` (high-efficiency cloud disk), `cloud_ssd` (full Flash cloud disk), `local_hdd` (local HDD), `local_ssd` (local ssd).
 * `disk_name` - (Optional) The name of the disk.
 * `encrypted` - (Optional, ForceNew) Specifies whether to encrypt the new system disk. Valid values: `true`, `false`(default).
@@ -54,13 +55,16 @@ The following arguments are supported:
 * `snapshot_id` - (Optional, ForceNew) The ID of the snapshot used to create the cloud disk.
 
 The SnapshotId and Size parameters have the following limitations:
+
   - If the snapshot capacity corresponding to the `snapshot_id` parameter is greater than the specified `size` parameter, the Size of the cloud disk created is the Size of the specified snapshot.
   - If the snapshot capacity corresponding to the `snapshot_id` parameter is less than the set `size` parameter value, the Size of the cloud disk created is the specified `size` parameter value.
+
 * `tags` - (Optional, Map, Available since v1.248.0) The label to which the instance is bound.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the disk was created.
 * `status` - The status of the disk.
@@ -68,6 +72,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 7 mins) Used when create the Disk.
 * `delete` - (Defaults to 5 mins) Used when delete the Disk.
 * `update` - (Defaults to 5 mins) Used when update the Disk.

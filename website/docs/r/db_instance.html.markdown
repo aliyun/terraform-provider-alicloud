@@ -690,10 +690,10 @@ The following arguments are supported:
   -> **NOTE:** For more information about minor engine versions, see Release notes of minor AliPG versions, Release notes of minor AliSQL versions, and Release notes of minor engine versions of ApsaraDB RDS for SQL Server.
 * `zone_id_slave_a` - (Optional, ForceNew, Available since v1.101.0) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
 * `zone_id_slave_b` - (Optional, ForceNew, Available since v1.232.0) RDS MySQL Cluster series instances support creating 1 to 2 secondary nodes at the same time when establishing a new instance. If you have this requirement, you can use this parameter to specify the availability zone for the second secondary node.
-* `ssl_action` - (Optional, Available since v1.90.0) Actions performed on SSL functions. Valid values: 
-  `Open`: turn on SSL encryption; 
-  `Close`: turn off SSL encryption; 
-  `Update`: update SSL certificate. 
+* `ssl_action` - (Optional, Available since v1.90.0) Actions performed on SSL functions. Valid values:
+  `Open`: turn on SSL encryption;
+  `Close`: turn off SSL encryption;
+  `Update`: update SSL certificate.
   See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26254.htm).
   
   -> **NOTE:** The attribute `ssl_action` will be ignored when setting `instance_charge_type = "Serverless"` for SQLServer, PostgreSQL or MariaDB.
@@ -831,7 +831,6 @@ The following arguments are supported:
   -> **NOTE:** This parameter takes effect only when you create an ApsaraDB RDS for PostgreSQL instance. For more information, see [Introduction to Babelfish](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/babelfish-for-pg).
 * `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The VPC ID of the instance.
 
-
   -> **NOTE:** This parameter applies only to ApsaraDB RDS for MySQL instances. For more information about Upgrade the major engine version of an ApsaraDB RDS for MySQL instance, see [Upgrade the major engine version of an RDS instance in the ApsaraDB RDS console](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/upgrade-the-major-engine-version-of-an-apsaradb-rds-for-mysql-instance-1).
 * `effective_time` - (Optional, Available since v1.191.0) The method to update the engine version and change.  Default value: Immediate. Valid values:
   - Immediate: The change immediately takes effect.
@@ -905,7 +904,7 @@ The serverless_config mapping supports the following:
 * `auto_pause` - (Optional, Available since v1.200.0) Specifies whether to enable the smart startup and stop feature for the serverless instance. Valid values:
   - true: enables the feature.
   - false: disables the feature. This is the default value.
-  > - Only MySQL Serverless instances need to set this parameter. If there is no connection within 10 minutes, it will enter a paused state and automatically wake up when the connection enters. 
+  > - Only MySQL Serverless instances need to set this parameter. If there is no connection within 10 minutes, it will enter a paused state and automatically wake up when the connection enters.
   > - Terraform does not support automatic start and stop when creating serverless instances, because the instances will automatically become STOPPED after 10 minutes. As a result, the state of the instances will be checked when the apply and other operations are executed. So pass FALSE for the current argument.
 
 * `switch_force` - (Optional, Available since v1.200.0) Specifies whether to enable the forced scaling feature for the serverless instance. Valid values:

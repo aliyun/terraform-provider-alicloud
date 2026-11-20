@@ -63,14 +63,15 @@ output "alicloud_oss_bucket_inventory_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the bucket.
 * `ids` - (Optional, ForceNew, Computed) A list of Bucket Inventory IDs. The value is formulated as `<bucket>:<inventory_id>`.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Bucket Inventory IDs.
 * `inventories` - A list of Bucket Inventory Entries. Each element contains the following attributes:
     * `destination` - Holds the container that holds the location of the inventory results.

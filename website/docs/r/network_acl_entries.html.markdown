@@ -112,11 +112,8 @@ The resources mapping supports the following:
 * `port` - (Optional) The port of the egress entry.
 * `protocol` - (Optional) The protocol of the egress entry.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The ID of the network acl entries. It is formatted as `<network_acl_id>:<a unique id>`.
-
-

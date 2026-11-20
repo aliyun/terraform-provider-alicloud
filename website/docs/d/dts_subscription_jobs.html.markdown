@@ -7,7 +7,7 @@ description: |-
   Provides a list of Dts Subscription Jobs to the user.
 ---
 
-# alicloud\_dts\_subscription\_jobs
+# alicloud_dts_subscription_jobs
 
 This data source provides the Dts Subscription Jobs of the current Alibaba Cloud user.
 

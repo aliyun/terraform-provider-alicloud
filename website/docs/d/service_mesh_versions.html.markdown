@@ -34,7 +34,7 @@ The following arguments are supported:
 * `edition` - (Optional, ForceNew) The edition of the ASM instance. Valid values:
   - Default: Standard Edition
   - Pro: Professional Edition
-    
+
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

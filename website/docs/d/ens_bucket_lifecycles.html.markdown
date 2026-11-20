@@ -6,7 +6,7 @@ description: |-
   Provides a list of ENS Bucket Lifecycle rules to the user.
 ---
 
-# alicloud\_ens\_bucket\_lifecycles
+# alicloud_ens_bucket_lifecycles
 
 This data source provides the ENS Bucket Lifecycle rules of the current Alibaba Cloud user.
 

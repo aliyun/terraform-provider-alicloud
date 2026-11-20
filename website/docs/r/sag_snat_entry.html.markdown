@@ -66,4 +66,3 @@ The Sag SnatEntry can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_sag_snat_entry.example sag-abc123456:snat-abc123456
 ```
-

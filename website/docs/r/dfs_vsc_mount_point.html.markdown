@@ -60,6 +60,7 @@ resource "alicloud_dfs_vsc_mount_point" "DefaultFsForRMCVscMp" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `alias_prefix` - (Optional) Mount point alias prefix, which is used as the prefix for generating VSC mount point aliases.
 * `description` - (Optional) The description of the Mount point.  The length is 0 to 100 characters.
 * `file_system_id` - (Required, ForceNew) The ID of the HDFS file system resource associated with the VSC mount point.
@@ -67,6 +68,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<file_system_id>:<mount_point_id>`.
 * `mount_point_id` - VSC mount point ID, which is the unique identifier of the vsc mount point and is used to access the associated HDFS file system.
 * `instances` - The collection of ECS instances on which the HDFS file system is mounted. **The current property is not available**.
@@ -80,6 +82,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vsc Mount Point.
 * `delete` - (Defaults to 5 mins) Used when delete the Vsc Mount Point.
 * `update` - (Defaults to 5 mins) Used when update the Vsc Mount Point.

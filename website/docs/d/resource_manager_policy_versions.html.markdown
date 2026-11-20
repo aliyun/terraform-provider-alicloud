@@ -7,7 +7,7 @@ description: |-
     Provides a list of Resource Manager Policy Versions to the user.
 ---
 
-# alicloud\_resource\_manager\_policy\_versions
+# alicloud_resource_manager_policy_versions
 
 This data source provides the Resource Manager Policy Versions of the current Alibaba Cloud user.
 
@@ -46,5 +46,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `version_id`- The ID of the policy version.
   * `is_default_version`- Indicates whether the policy version is the default version.
   * `policy_document`- (Available in v1.114.0+) The policy document of the policy version.
-    
-    

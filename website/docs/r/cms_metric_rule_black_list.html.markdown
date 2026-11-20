@@ -87,6 +87,7 @@ resource "alicloud_cms_metric_rule_black_list" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `category` - (Required) Cloud service classification. For example, Redis includes kvstore_standard, kvstore_sharding, and kvstore_splitrw.
 * `effective_time` - (Optional) The effective time range of the alert blacklist policy.
 * `enable_end_time` - (Optional) The start timestamp of the alert blacklist policy.Unit: milliseconds.
@@ -94,7 +95,7 @@ The following arguments are supported:
 * `instances` - (Required) The list of instances of cloud services specified in the alert blacklist policy.
 * `is_enable` - (Optional) The status of the alert blacklist policy. Value:-true: enabled.-false: disabled.
 * `metric_rule_black_list_name` - (Required, ForceNew) The name of the alert blacklist policy.
-* `metrics` - (Optional) Monitoring metrics in the instance. See [`metrics`](#metrics) below. 
+* `metrics` - (Optional) Monitoring metrics in the instance. See [`metrics`](#metrics) below.
 * `namespace` - (Required, ForceNew) The data namespace of the cloud service.
 * `scope_type` - (Optional) The effective range of the alert blacklist policy. Value:-USER: The alert blacklist policy only takes effect in the current Alibaba cloud account.-GROUP: The alert blacklist policy takes effect in the specified application GROUP.
 * `scope_value` - (Optional) Application Group ID list. The format is JSON Array.> This parameter is displayed only when 'ScopeType' is 'GROUP.
@@ -102,10 +103,9 @@ The following arguments are supported:
 ### `metrics`
 
 The metrics supports the following:
+
 * `metric_name` - (Required) The name of the monitoring indicator.
 * `resource` - (Optional) The extended dimension information of the instance. For example, '{"device":"C:"}' indicates that the blacklist policy is applied to all C disks under the ECS instance.
-
-
 
 ## Attributes Reference
 
@@ -119,6 +119,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Metric Rule Black List.
 * `delete` - (Defaults to 1 mins) Used when delete the Metric Rule Black List.
 * `update` - (Defaults to 5 mins) Used when update the Metric Rule Black List.

@@ -103,6 +103,7 @@ output "alicloud_apig_route_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Optional, Computed) A list of Route IDs. The value is formulated as `<http_api_id>:<route_id>`.
 * `name_regex` - (Optional) A regex string to filter results by Route name.
 * `environment_info` - (Optional) The environment information of the route. See [`environment_info`](#environment_info) below.
@@ -114,6 +115,7 @@ The following arguments are supported:
 ### `environment_info`
 
 The environment_info supports the following:
+
 * `environment_id` - (Optional) The environment ID.
 * `alias` - (Computed) The alias of the environment name.
 * `name` - (Computed) The environment name.
@@ -123,6 +125,7 @@ The environment_info supports the following:
 ### `environment_info-gateway_info`
 
 The environment_info-gateway_info supports the following:
+
 * `gateway_edition` - (Computed) The edition of the gateway instance.
 * `gateway_id` - (Computed) The ID of the Cloud-native API Gateway.
 * `name` - (Computed) The name of the gateway.
@@ -130,6 +133,7 @@ The environment_info-gateway_info supports the following:
 ### `environment_info-sub_domains`
 
 The environment_info-sub_domains supports the following:
+
 * `domain_id` - (Computed) The ID of the second-level domain name.
 * `network_type` - (Computed) The domain access type, such as Intranet or Internet.
 * `protocol` - (Computed) The domain protocol, such as HTTP or HTTPS.
@@ -138,6 +142,7 @@ The environment_info-sub_domains supports the following:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Route IDs.
 * `names` - A list of name of Routes.
 * `routes` - A list of Route Entries. Each element contains the following attributes:

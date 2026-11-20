@@ -7,11 +7,11 @@ description: |-
   Provides a list of Arms Integration Exporters to the user.
 ---
 
-# alicloud\_arms\_integration\_exporters
+# alicloud_arms_integration_exporters
 
 This data source provides the Arms Integration Exporters of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.203.0+.
+-> **NOTE:** Available since v1.203.0+.
 
 ## Example Usage
 

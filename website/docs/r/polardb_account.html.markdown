@@ -70,6 +70,7 @@ resource "alicloud_polardb_account" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_description` - (Optional) The description of the database account.
 * `account_lock_state` - (Optional, Available since v1.265.0) The lock status of the account. Valid values:
   - `UnLock`: The account is not locked.
@@ -94,6 +95,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_cluster_id>:<account_name>`.
 * `status` - (Available since v1.265.0) The status of the database account.
 * `dynamodb_auth_password` - (Sensitive, Available since v1.285.0) The DynamoDB authentication password. Only available for DynamoDB account type.
@@ -103,6 +105,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.265.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 8 mins) Used when create the Account.
 * `delete` - (Defaults to 8 mins) Used when delete the Account.
 * `update` - (Defaults to 5 mins) Used when update the Account.

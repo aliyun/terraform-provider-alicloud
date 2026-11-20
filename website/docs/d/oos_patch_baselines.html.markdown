@@ -7,7 +7,7 @@ description: |-
   Provides a list of Oos Patch Baselines to the user.
 ---
 
-# alicloud\_oos\_patch\_baselines
+# alicloud_oos_patch_baselines
 
 This data source provides the Oos Patch Baselines of the current Alibaba Cloud user.
 

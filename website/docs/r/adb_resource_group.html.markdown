@@ -81,6 +81,7 @@ resource "alicloud_adb_resource_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cluster_mode` - (Optional, Available since v1.261.0) The working mode of the resource group. Default value: `Disable`. Valid values: `Disable`, `AutoScale`.
 * `cluster_size_resource` - (Optional, Available since v1.261.0) The resource specifications of a single compute cluster. Unit: ACU.
 * `db_cluster_id` - (Required, ForceNew) The ID of the DBCluster.
@@ -110,6 +111,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 31 mins) Used when create the Resource Group.
 * `delete` - (Defaults to 31 mins) Used when delete the Resource Group.
 * `update` - (Defaults to 31 mins) Used when update the Resource Group.

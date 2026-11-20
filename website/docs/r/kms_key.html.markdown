@@ -10,8 +10,6 @@ description: |-
 
 Provides a KMS Key resource.
 
-
-
 For information about KMS Key and how to use it, see [What is Key](https://www.alibabacloud.com/help/en/kms/developer-reference/api-createkey).
 
 -> **NOTE:** Available since v1.85.0.
@@ -39,6 +37,7 @@ resource "alicloud_kms_key" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `automatic_rotation` - (Optional) Specifies whether to enable automatic key rotation. Default value: `Disabled`. Valid values: `Enabled`, `Disabled`.
 * `deletion_protection` - (Optional, Available since v1.240.0) Specifies whether to enable deletion protection. Default value: `Disabled`. Valid values: `Enabled`, `Disabled`.
 * `deletion_protection_description` - (Optional, Available since v1.240.0) The description of deletion protection. **NOTE:** `deletion_protection_description` takes effect only if `deletion_protection` is set to `Enabled`.
@@ -92,6 +91,7 @@ The following arguments are supported:
 -> **NOTE:** Available since v1.224.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Key.
 * `update` - (Defaults to 5 mins) Used when update the Key.
 * `delete` - (Defaults to 5 mins) Used when delete the Key.

@@ -100,13 +100,12 @@ resource "alicloud_amqp_open_source_account" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_amqp_open_source_account&spm=docs.r.amqp_open_source_account.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) Description  
 * `instance_id` - (Required, ForceNew) Instance ID  
 * `password` - (Required) User password  
@@ -115,11 +114,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<user_name>:<instance_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Open Source Account.
 * `delete` - (Defaults to 5 mins) Used when delete the Open Source Account.
 * `update` - (Defaults to 5 mins) Used when update the Open Source Account.

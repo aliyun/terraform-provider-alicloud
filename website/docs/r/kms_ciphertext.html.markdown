@@ -50,7 +50,6 @@ The following arguments are supported:
 * `key_id` - (Required, ForceNew) The globally unique ID of the CMK.
 * `encryption_context` - (Optional, ForceNew) The Encryption context. If you specify this parameter here, it is also required when you call the Decrypt API operation. For more information, see [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:

@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_ess_scaling_configurations
 
-This data source provides available scaling configuration resources. 
+This data source provides available scaling configuration resources.
 
 -> **NOTE:** Available since v1.240.0
 
@@ -147,7 +147,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `spot_price_limit` - (Optional, Available since v1.151.0) The maximum price hourly for instance types.
     * `instance_type` - Resource type of an ECS instance.
     * `price_limit` - Price limit hourly of instance type.
-  * `instance_pattern_info` - (Optional, Available since v1.240.0) intelligent configuration mode. In this mode, you only need to specify the number of vCPUs, memory size, instance family, and maximum price. The system selects an instance type that is provided at the lowest price based on your configurations to create ECS instances. This mode is available only for scaling groups that reside in virtual private clouds (VPCs). This mode helps reduce the failures of scale-out activities caused by insufficient inventory of instance types. 
+  * `instance_pattern_info` - (Optional, Available since v1.240.0) intelligent configuration mode. In this mode, you only need to specify the number of vCPUs, memory size, instance family, and maximum price. The system selects an instance type that is provided at the lowest price based on your configurations to create ECS instances. This mode is available only for scaling groups that reside in virtual private clouds (VPCs). This mode helps reduce the failures of scale-out activities caused by insufficient inventory of instance types.
     * `cores` - The number of vCPUs that are specified for an instance type in instancePatternInfo.
     * `instance_family_level` - The instance family level in instancePatternInfo.
     * `max_price` - The maximum hourly price for a pay-as-you-go instance or a preemptible instance in instancePatternInfo.

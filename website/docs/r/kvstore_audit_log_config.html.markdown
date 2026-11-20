@@ -77,14 +77,14 @@ resource "alicloud_kvstore_audit_log_config" "example" {
 
 The following arguments are supported:
 
-* `db_audit` - (Optional) Indicates Whether to Enable the Audit Log.  Valid value: 
-  * true: Default Value, Open. 
-  * false: Closed. 
-    
+* `db_audit` - (Optional) Indicates Whether to Enable the Audit Log.  Valid value:
+  * true: Default Value, Open.
+  * false: Closed.
+
   Note: When the Instance for the Cluster Architecture Or Read/Write Split Architecture, at the Same Time to Open Or Close the Data Node and the Proxy Node of the Audit Log Doesn't Support Separate Open.
   
 * `instance_id` - (Required, ForceNew) Instance ID, Call the Describeinstances Get.
-* `retention` - (Optional) Audit Log Retention Period Value: 1~365. 
+* `retention` - (Optional) Audit Log Retention Period Value: 1~365.
   
   -> **NOTE:** When the Instance dbaudit Value Is Set to True, This Parameter Entry into Force. The Parameter Setting of the Current Region of All a Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance for a Data Entry into Force.
 

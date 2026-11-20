@@ -10,8 +10,6 @@ description: |-
 
 Provides a Data Works Dw Resource Group resource.
 
-
-
 For information about Data Works Dw Resource Group and how to use it, see [What is Dw Resource Group](https://www.alibabacloud.com/help/en/dataworks/developer-reference/api-dataworks-public-2024-05-18-createresourcegroup).
 
 -> **NOTE:** Available since v1.241.0.
@@ -74,6 +72,7 @@ resource "alicloud_data_works_dw_resource_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_renew` - (Optional) Whether to automatically renew. The default value is false.
 * `default_vpc_id` - (Required, ForceNew) The VPC ID of the default network resource.
 * `default_vswitch_id` - (Required, ForceNew) The ID of the vswitch bound to the network resource by default.
@@ -89,6 +88,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Resource group creation time
 * `status` - Resource group status:
@@ -116,6 +116,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Dw Resource Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Dw Resource Group.
 * `update` - (Defaults to 5 mins) Used when update the Dw Resource Group.

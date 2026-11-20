@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Event Bridge Service Linked Role resource.
 ---
 
-# alicloud\_event\_bridge\_slr
+# alicloud_event_bridge_slr
 
 Provides a Event Bridge Service Linked Role resource.
 
@@ -33,9 +33,7 @@ resource "alicloud_event_bridge_slr" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_event_bridge_slr&spm=docs.r.event_bridge_slr.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

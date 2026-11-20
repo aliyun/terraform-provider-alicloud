@@ -26,7 +26,6 @@ For information about Global Accelerator (GA) Endpoint Group and how to use it, 
 
 ## Example Usage
 
-
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -261,7 +260,7 @@ The endpoint_configurations supports the following:
 
 ### `port_overrides`
 
-The port_overrides supports the following: 
+The port_overrides supports the following:
 
 * `endpoint_port` - (Optional, Int) Forwarding port.
 * `listener_port` - (Optional, Int) Listener port.

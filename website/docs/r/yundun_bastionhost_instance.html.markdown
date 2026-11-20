@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Bastion Host Instance Resource.
 ---
 
-# alicloud\_yundun\_bastionhost\_instance
+# alicloud_yundun_bastionhost_instance
 
 -> **NOTE:** `alicloud_yundun_bastionhost_instance` has been deprecated since v1.132.0 and renamed to `alicloud_bastionhost_instance`. Use `alicloud_bastionhost_instance` instead.
 
@@ -141,9 +141,7 @@ Deleting the subscription resource or removing it from your configuration
 will remove it from your state file and management, but will not destroy the bastionhost instance.
 You can resume managing the subscription bastionhost instance via the AlibabaCloud Console.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_yundun_bastionhost_instance&spm=docs.r.yundun_bastionhost_instance.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

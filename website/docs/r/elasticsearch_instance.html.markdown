@@ -10,8 +10,6 @@ description: |-
 
 Provides a Elasticsearch Instance resource.
 
-
-
 For information about Elasticsearch Instance and how to use it, see [What is Instance](https://next.api.alibabacloud.com/document/elasticsearch/2017-06-13/createInstance).
 
 -> **NOTE:** Available since v1.30.0.
@@ -62,12 +60,12 @@ resource "alicloud_elasticsearch_instance" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_elasticsearch_instance&spm=docs.r.elasticsearch_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `vswitch_id` - (Required, ForceNew) The ID of VSwitch.
 * `kms_encrypted_password` - (Optional, Available since v1.57.1) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored, but you have to specify one of `password` and `kms_encrypted_password` fields.
 * `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
@@ -178,6 +176,7 @@ The following arguments will be discarded. Please use new fields as soon as poss
 ### `client_node_configuration`
 
 The client_node_configuration supports the following:
+
 * `amount` - (Optional, Int, Available since v1.267.0) Number of nodes.  
 * `disk` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) Node storage capacity, in GB.
 * `disk_type` - (Optional, ForceNew, Available since v1.267.0) Storage type of the node. Only ultra disk (cloud_efficiency) is supported.  
@@ -186,6 +185,7 @@ The client_node_configuration supports the following:
 ### `data_node_configuration`
 
 The data_node_configuration supports the following:
+
 * `amount` - (Optional, Computed, Int, Available since v1.267.0) Number of data nodes. Valid values: 2 to 50.
 * `disk` - (Optional, Int, Available since v1.267.0) Storage capacity per node, in GB.
 * `disk_encryption` - (Optional, ForceNew, Computed, Available since v1.267.0) Whether to enable cloud disk encryption:
@@ -200,6 +200,7 @@ The data_node_configuration supports the following:
 ### `index_node_configuration`
 
 The index_node_configuration supports the following:
+
 * `amount` - (Optional, Computed, Int, Available since v1.295.0) Number of index nodes.
 * `disk` - (Optional, Computed, Int, Available since v1.295.0) Storage capacity per node, in GB.
 * `disk_type` - (Optional, ForceNew, Computed, Available since v1.295.0) Storage type of the node. ESSD (`cloud_essd`) is supported. Changing this forces recreation.
@@ -209,6 +210,7 @@ The index_node_configuration supports the following:
 ### `kibana_configuration`
 
 The kibana_configuration supports the following:
+
 * `amount` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) The number of nodes.
 * `disk` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) Storage capacity per node, in GB.
 * `spec` - (Required, Available since v1.267.0) Node specification. For specification details, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
@@ -216,6 +218,7 @@ The kibana_configuration supports the following:
 ### `master_configuration`
 
 The master_configuration supports the following:
+
 * `amount` - (Optional, ForceNew, Int, Available since v1.267.0) Number of nodes.
 * `disk` - (Optional, ForceNew, Int, Available since v1.267.0) Node storage capacity, in GB.
 * `disk_type` - (Optional, ForceNew, Available since v1.267.0) Node storage type. Only cloud_ssd (SSD cloud disk) is supported.
@@ -224,6 +227,7 @@ The master_configuration supports the following:
 ### `search_node_configuration`
 
 The search_node_configuration supports the following:
+
 * `amount` - (Optional, Computed, Int, Available since v1.295.0) Number of search (query) nodes.
 * `disk` - (Optional, Computed, Int, Available since v1.295.0) Storage capacity per node, in GB.
 * `disk_type` - (Optional, ForceNew, Computed, Available since v1.295.0) Storage type of the node. ESSD (`cloud_essd`) is supported. Changing this forces recreation.
@@ -233,6 +237,7 @@ The search_node_configuration supports the following:
 ### `warm_node_configuration`
 
 The warm_node_configuration supports the following:
+
 * `amount` - (Optional, Int, Available since v1.267.0) Number of nodes.
 * `disk` - (Optional, Int, Available since v1.267.0) Storage capacity per node, in GB.
 * `disk_encryption` - (Optional, ForceNew, Available since v1.267.0) Whether to enable disk encryption. The values are as follows:
@@ -244,7 +249,8 @@ The warm_node_configuration supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `arch_type` - The deployment mode or architecture type:.
 * `create_time` - The time when the instance was created.
 * `domain` - The internal network address of the instance.
@@ -259,6 +265,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 61 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.
 * `update` - (Defaults to 360 mins) Used when update the Instance.

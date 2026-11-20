@@ -7,7 +7,7 @@ description: |-
   Provides a list of Oos Application Groups to the user.
 ---
 
-# alicloud\_oos\_application\_groups
+# alicloud_oos_application_groups
 
 This data source provides the Oos Application Groups of the current Alibaba Cloud user.
 

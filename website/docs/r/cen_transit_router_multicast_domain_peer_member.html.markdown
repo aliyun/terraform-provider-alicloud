@@ -106,6 +106,7 @@ resource "alicloud_cen_transit_router_multicast_domain_peer_member" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `group_ip_address` - (Required, ForceNew) The IP address of the multicast group to which the multicast member belongs. Value range: **224.0.0.1** to **239.255.255.254**.If the multicast group you specified does not exist in the current multicast domain, the system will automatically create a new multicast group for you in the current multicast domain.
 * `transit_router_multicast_domain_id` - (Required, ForceNew) The ID of the multicast domain to which the multicast member belongs.
 * `peer_transit_router_multicast_domain_id` - (Required, ForceNew) The IDs of the inter-region multicast domains.
@@ -114,6 +115,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.The value is formulated as `<transit_router_multicast_domain_id>:<group_ip_address>:<peer_transit_router_multicast_domain_id>`.
 * `status` - The status of the multicast resource. Valid values:
   - Registering: being created
@@ -123,6 +125,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Transit Router Multicast Domain Peer Member.
 * `delete` - (Defaults to 10 mins) Used when delete the Transit Router Multicast Domain Peer Member.
 

@@ -60,7 +60,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `names` - A list of instances names. 
+* `names` - A list of instances names.
 * `instances` - A list of instances. Each element contains the following attributes:
   * `id` - ID of the instance.
   * `region_id` - Region ID the instance belongs to.

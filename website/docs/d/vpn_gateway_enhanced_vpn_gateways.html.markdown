@@ -79,6 +79,7 @@ output "alicloud_vpn_gateway_enhanced_vpn_gateway_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `status` - (ForceNew, Optional) The status of the resource
 * `vpc_id` - (ForceNew, Optional) The ID of the VPC to which the VPN gateway belongs.
 * `vpn_instance_id` - (ForceNew, Optional) The ID of the VPN gateway.
@@ -86,10 +87,10 @@ The following arguments are supported:
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional) Default to `false`. Set it to `true` to query detailed attributes.
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Enhanced Vpn Gateway IDs.
 * `gateways` - A list of Enhanced Vpn Gateway Entries. Each element contains the following attributes:
     * `auto_propagate` - Specifies whether to automatically propagate BGP routes to the VPC.

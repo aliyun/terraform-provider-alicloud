@@ -65,4 +65,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `custom_routing_endpoint_group_name` - The name of the endpoint group.
   * `description` - The description of the endpoint group.
   * `status` - The status of the endpoint group.
-  
+

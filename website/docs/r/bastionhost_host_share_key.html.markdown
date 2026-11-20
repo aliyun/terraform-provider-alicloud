@@ -106,7 +106,6 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `update` - (Defaults to 1 mins) Used when update the Bastion Host Share Key.
 * `delete` - (Defaults to 1 mins) Used when delete the Bastion Host Share Key.
 
-
 ## Import
 
 Bastion Host Share Key can be imported using the id, which consists of instance_id and host_share_key_id, e.g.

@@ -50,6 +50,7 @@ resource "alicloud_ddos_basic_defense_threshold" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_type` - (Required, ForceNew) The instance type of the public IP address asset. Value: `ecs`,`slb`,`eip`.
 * `instance_id` - (Required, ForceNew) The ID of the instance.
 * `ddos_type` - (Required, ForceNew) The type of the threshold to query. Valid values: `defense`,`blackhole`.
@@ -61,7 +62,6 @@ The following arguments are supported:
   - `true`: indicates yes, that is, the DDoS protection service dynamically adjusts the cleaning threshold according to the traffic load of the cloud server.
   - `false`: indicates no, that is, you manually set the cleaning threshold.
 * `internet_ip` - (Optional) The Internet IP address.
-
 
 ## Attributes Reference
 

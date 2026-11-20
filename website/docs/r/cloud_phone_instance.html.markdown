@@ -69,17 +69,20 @@ Terraform cannot destroy resource `alicloud_cloud_phone_instance`. Terraform wil
 ## Argument Reference
 
 The following arguments are supported:
+
 * `android_instance_group_id` - (Optional, ForceNew) The ID of the instance group to which the instance belongs
 * `android_instance_name` - (Optional) The instance name
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Instance.
 * `update` - (Defaults to 5 mins) Used when update the Instance.
 

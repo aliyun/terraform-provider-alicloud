@@ -10,8 +10,6 @@ description: |-
 
 Provides a Simple Application Server Disk resource.
 
-
-
 For information about Simple Application Server Disk and how to use it, see [What is Disk](https://next.api.alibabacloud.com/document/SWAS-OPEN/2020-06-01/CreateDisk).
 
 -> **NOTE:** Available since v1.273.0.
@@ -60,12 +58,12 @@ resource "alicloud_simple_application_server_disk" "default" {
 
 Terraform cannot destroy resource `alicloud_simple_application_server_disk`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_simple_application_server_disk&spm=docs.r.simple_application_server_disk.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `disk_size` - (Required, ForceNew, Int) disk size
 * `instance_id` - (Required, ForceNew) instance id
 * `remark` - (Optional) Note information.
@@ -73,7 +71,8 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `disk_name` - The name of the resource.
 * `region_id` - The region ID of the resource.
@@ -81,6 +80,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Disk.
 * `update` - (Defaults to 5 mins) Used when update the Disk.
 

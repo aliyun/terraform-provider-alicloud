@@ -7,7 +7,7 @@ description: |-
   Provides a list of mns topics available to the user.
 ---
 
-# alicloud\_mns\_topics
+# alicloud_mns_topics
 
 This data source provides a list of MNS topics in an Alibaba Cloud account according to the specified parameters.
 

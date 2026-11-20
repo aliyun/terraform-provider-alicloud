@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Site Environment resource.
 
-
-
 For information about ESA Site Environment and how to use it, see [What is Site Environment](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateEnvironment).
 
 -> **NOTE:** Available since v2.2.0.
@@ -43,9 +41,7 @@ resource "alicloud_esa_site_environment" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_site_environment&spm=docs.r.esa_site_environment.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

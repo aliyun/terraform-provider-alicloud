@@ -76,6 +76,7 @@ resource "alicloud_data_works_data_source_shared_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `data_source_id` - (Required, ForceNew, Int) The ID of the data source, that is, the unique identifier of the data source.
 * `env_type` - (Required, ForceNew) The environment type of the data source shared to the target project, such as Dev (Development Environment) and Prod (production environment).
 * `shared_user` - (Optional, ForceNew) The target user of the data source permission policy, which is null to share to the project.
@@ -84,6 +85,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<data_source_id>:<data_source_shared_rule_id>`.
 * `create_time` - The creation time of the data source sharing rule.
 * `data_source_shared_rule_id` - The data source sharing rule ID, that is, the unique identifier of the data source sharing rule.
@@ -91,6 +93,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Data Source Shared Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Data Source Shared Rule.
 

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Emr Clusters to the user.
 ---
 
-# alicloud\_emr\_clusters
+# alicloud_emr_clusters
 
 This data source provides the Emr Clusters of the current Alibaba Cloud user.
 

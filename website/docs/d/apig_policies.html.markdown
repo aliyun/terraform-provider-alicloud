@@ -33,6 +33,7 @@ output "first_policy_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `attach_resource_ids` - (Optional) The ID of the attach point resource to filter policies by.
 * `attach_resource_type` - (Optional) Policies support mount point types. Valid values: `HttpApi`, `Operation`, `GatewayRoute`, `GatewayService`, `GatewayServicePort`, `Domain`, `Gateway`.
 * `environment_id` - (Optional) Environment id.
@@ -45,6 +46,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `names` - A list of Policy names.
 * `policies` - A list of Policy Entries. Each element contains the following attributes:
   * `id` - The ID of the Policy.

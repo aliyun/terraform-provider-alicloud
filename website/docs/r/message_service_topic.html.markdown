@@ -10,8 +10,6 @@ description: |-
 
 Provides a Message Service Topic resource.
 
-
-
 For information about Message Service Topic and how to use it, see [What is Topic](https://www.alibabacloud.com/help/en/message-service/latest/createtopic).
 
 -> **NOTE:** Available since v1.188.0.
@@ -43,6 +41,7 @@ resource "alicloud_message_service_topic" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `enable_logging` - (Optional, Bool, Available since v1.241.0) Specifies whether to enable the logging feature. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
@@ -70,12 +69,14 @@ The following arguments will be discarded. Please use new fields as soon as poss
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Topic.
 * `create_time` - (Available since v1.241.0) The time when the topic was created.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Topic.
 * `delete` - (Defaults to 5 mins) Used when delete the Topic.
 * `update` - (Defaults to 5 mins) Used when update the Topic.

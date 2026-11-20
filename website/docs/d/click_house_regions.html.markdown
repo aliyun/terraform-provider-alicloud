@@ -35,7 +35,6 @@ The following arguments are supported:
 * `current` - (Optional) Set to true to match only the region configured in the provider. Default value: `true`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:

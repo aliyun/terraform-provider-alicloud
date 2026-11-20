@@ -7,7 +7,7 @@ description: |-
   Provides a list of Mhub Products to the user.
 ---
 
-# alicloud\_mhub\_products
+# alicloud_mhub_products
 
 This data source provides the Mhub Products of the current Alibaba Cloud user.
 

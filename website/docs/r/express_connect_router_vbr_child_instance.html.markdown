@@ -66,6 +66,7 @@ resource "alicloud_express_connect_router_vbr_child_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `child_instance_id` - (Required, ForceNew) The ID of the leased line gateway subinstance.
 * `child_instance_owner_id` - (Optional, ForceNew, Computed, Int) The ID of the Alibaba Cloud account (primary account) to which the VBR instance belongs.
 
@@ -79,6 +80,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<ecr_id>:<child_instance_id>:<child_instance_type>`.
 * `create_time` - The creation time of the resource.
 * `status` - Binding relationship status of leased line gateway subinstances.
@@ -86,6 +88,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Express Connect Router Vbr Child Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Express Connect Router Vbr Child Instance.
 * `update` - (Defaults to 5 mins) Used when update the Express Connect Router Vbr Child Instance.

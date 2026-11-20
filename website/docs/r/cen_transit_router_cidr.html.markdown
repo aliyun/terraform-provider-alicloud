@@ -51,6 +51,7 @@ resource "alicloud_cen_transit_router_cidr" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cidr` - (Required) The new CIDR block of the transit router.
 * `description` - (Optional) The new description of the transit router CIDR block.
 The description must be 1 to 256 characters in length, and cannot start with http:// or https://. You can also leave this parameter empty.
@@ -70,12 +71,14 @@ The name must be 1 to 128 characters in length, and cannot start with http:// or
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<transit_router_id>:<transit_router_cidr_id>`.
 * `transit_router_cidr_id` - The ID of the CIDR block.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Transit Router Cidr.
 * `delete` - (Defaults to 20 mins) Used when delete the Transit Router Cidr.
 * `update` - (Defaults to 5 mins) Used when update the Transit Router Cidr.

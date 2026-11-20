@@ -51,7 +51,7 @@ The following arguments are supported:
 
 ### `property_values`
 
-The property_values supports the following: 
+The property_values supports the following:
 
 * `property_value` - (Optional) The value of an attribute.
 * `property_value_id` - (Computed) The value of an attribute id.
@@ -69,8 +69,6 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `create` - (Defaults to 1 mins) Used when create the Custom Property.
 * `delete` - (Defaults to 1 mins) Used when delete the Custom Property.
 * `update` - (Defaults to 1 mins) Used when update the Custom Property.
-
-
 
 ## Import
 

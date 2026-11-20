@@ -10,8 +10,6 @@ description: |-
 
 Provides a File Storage (NAS) Protocol Mount Target resource.
 
-
-
 For information about File Storage (NAS) Protocol Mount Target and how to use it, see [What is Protocol Mount Target](https://next.api.alibabacloud.com/document/NAS/2017-06-26/CreateProtocolMountTarget).
 
 -> **NOTE:** Available since v1.267.0.
@@ -89,20 +87,22 @@ resource "alicloud_nas_protocol_mount_target" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_protocol_mount_target&spm=docs.r.nas_protocol_mount_target.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_group_name` - (Optional, ForceNew, Computed) The permission group name.
 Default value: DEFAULT_VPC_GROUP_NAME
 * `description` - (Optional) Description of the protocol service mount target. Display as the export directory name in the console.
 
 Limitations:
+
   - Length is 2~128 English or Chinese characters.
   - It must start with an uppercase or lowercase letter or a Chinese character. It cannot start with http:// or https.
   - Can contain numbers, colons (:), underscores (_), or dashes (-).
+
 * `dry_run` - (Optional) DryRun
 
   -> **NOTE:** This parameter only applies during resource creation, update or deletion. If modified in isolation without other property changes, Terraform will not trigger any action.
@@ -111,20 +111,25 @@ Limitations:
 * `fset_id` - (Optional, ForceNew) The ID of the Fileset to be mounted.
 
 Limitations:
+
   - The Fileset must already exist.
   - A Fileset allows only one export directory to be created.
   - Fileset and Path can and must specify only one.
+
 * `path` - (Optional, ForceNew) The path of the CPFS directory to be mounted.
 
 Limitations:
+
   - The directory must be an existing directory on the CPFS.
   - Only one export is allowed for the same directory.
   - Fileset and Path can and must specify only one.
 
 Format:
+
   - 1~1024 characters in length.
   - Use UTF-8 encoding.
   - Must start and end with a forward slash (/) and root directory is/.
+
 * `protocol_service_id` - (Required, ForceNew) Protocol Service ID
 * `vswitch_id` - (Optional, ForceNew) The vSwitch ID of the protocol service mount target.
 * `vswitch_ids` - (Optional, ForceNew, List) The vSwitch IDs of the protocol service mount target.
@@ -134,6 +139,7 @@ When the storage redundancy type of the file system is ZRS, if VpcId is set, the
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<file_system_id>:<protocol_service_id>:<export_id>`.
 * `create_time` - The creation time of the resource
 * `export_id` - Protocol Service Mount Target ID
@@ -142,6 +148,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Protocol Mount Target.
 * `delete` - (Defaults to 5 mins) Used when delete the Protocol Mount Target.
 * `update` - (Defaults to 5 mins) Used when update the Protocol Mount Target.

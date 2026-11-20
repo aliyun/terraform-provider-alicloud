@@ -62,7 +62,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - This ID of this resource. The value is same as `instance_id`. 
+* `id` - This ID of this resource. The value is same as `instance_id`.
 
 ## Import
 

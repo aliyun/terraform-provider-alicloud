@@ -7,7 +7,7 @@ description: |-
   Provides a list of Resource Manager Control Policy Attachments to the user.
 ---
 
-# alicloud\_resource\_manager\_control\_policy\_attachments
+# alicloud_resource_manager_control_policy_attachments
 
 This data source provides the Resource Manager Control Policy Attachments of the current Alibaba Cloud user.
 

@@ -83,13 +83,12 @@ resource "alicloud_ecd_desktop_group" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecd_desktop_group&spm=docs.r.ecd_desktop_group.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bundle_id` - (Required) The ID of the desktop template.
 * `office_site_id` - (Required, ForceNew) The ID of the office network to which the desktop group belongs.
 * `policy_group_id` - (Required) The ID of the policy group associated with the desktop group.
@@ -108,6 +107,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `cpu` - The number of vCPUs.
 * `create_time` - The time when the desktop group was created. The time follows the ISO 8601 standard in UTC.
@@ -130,6 +130,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Desktop Group.
 * `delete` - (Defaults to 10 mins) Used when delete the Desktop Group.
 * `update` - (Defaults to 5 mins) Used when update the Desktop Group.

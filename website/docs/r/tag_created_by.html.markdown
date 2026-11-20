@@ -33,9 +33,7 @@ Basic Usage
 resource "alicloud_tag_created_by" "example" {}
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_tag_created_by&spm=docs.r.tag_created_by.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
@@ -46,12 +44,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - (Computed, String) The CreatedBy control region, which is `cn-shanghai`.
 * `open_status` - (Computed, Bool) Indicates whether the createdby tag is enabled.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions. Each timeout is a [Go duration](https://pkg.go.dev/time#ParseDuration) string, such as `30m` or `1h`:
+
 * `create` - (Defaults to 5 mins) Used when create the Created By.
 * `delete` - (Defaults to 5 mins) Used when delete the Created By.
 * `update` - (Defaults to 5 mins) Used when update the Created By.

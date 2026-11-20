@@ -95,28 +95,28 @@ resource "alicloud_vpc_ipv6_internet_bandwidth" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_ipv6_internet_bandwidth&spm=docs.r.vpc_ipv6_internet_bandwidth.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bandwidth` - (Required) The amount of Internet bandwidth resources of the IPv6 address, Unit: `Mbit/s`. Valid values: `1` to `5000`. **NOTE:** If `internet_charge_type` is set to `PayByTraffic`, the amount of Internet bandwidth resources of the IPv6 address is limited by the specification of the IPv6 gateway. `Small` (default): specifies the Free edition and the Internet bandwidth is from `1` to `500` Mbit/s. `Medium`: specifies the Medium edition and the Internet bandwidth is from `1` to `1000` Mbit/s. `Large`: specifies the Large edition and the Internet bandwidth is from `1` to `2000` Mbit/s.
 * `internet_charge_type` - (Optional, ForceNew, Computed) The metering method of the Internet bandwidth resources of the IPv6 gateway. Valid values: `PayByBandwidth`, `PayByTraffic`.
 * `ipv6_address_id` - (Required) The ID of the IPv6 address instance.
 * `ipv6_gateway_id` - (Required, ForceNew) The ID of the IPv6 gateway to which the IPv6 address belongs.
 
-
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `status` - The status of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ipv6 Internet Bandwidth.
 * `delete` - (Defaults to 5 mins) Used when delete the Ipv6 Internet Bandwidth.
 * `update` - (Defaults to 5 mins) Used when update the Ipv6 Internet Bandwidth.

@@ -50,6 +50,7 @@ resource "alicloud_rds_custom_deployment_set" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `custom_deployment_set_name` - (Optional, ForceNew) The name of the resource
 * `description` - (Optional, ForceNew) Deployment set description information. It must be 2 to 256 characters in length and cannot start with http:// or https.
 * `group_count` - (Optional, Int) Set the number of groups for the deployment set group high availability policy. Value range: 1~7.
@@ -73,12 +74,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `status` - The status of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Custom Deployment Set.
 * `delete` - (Defaults to 5 mins) Used when delete the Custom Deployment Set.
 

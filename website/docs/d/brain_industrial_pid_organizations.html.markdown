@@ -7,7 +7,7 @@ description: |-
   Provides a list of Brain Industrial Pid Organizations to the user.
 ---
 
-# alicloud\_brain\_industrial\_pid\_organizations
+# alicloud_brain_industrial_pid_organizations
 
 This data source provides the Brain Industrial Pid Organizations of the current Alibaba Cloud user.
 

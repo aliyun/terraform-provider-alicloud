@@ -49,6 +49,7 @@ output "alicloud_wafv3_address_book_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required) The ID of the WAF instance.
 
   -> **NOTE:**  You can call [DescribeInstance](https://next.api.alibabacloud.com/document/waf-openapi/2021-10-01/DescribeInstance) to view the ID of the current WAF instance.
@@ -58,10 +59,10 @@ The following arguments are supported:
 * `enable_details` - (Optional) Default to `false`. Set it to `true` to fetch the `address_list` of each Address Book.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Address Book IDs.
 * `names` - A list of name of Address Books.
 * `books` - A list of Address Book Entries. Each element contains the following attributes:

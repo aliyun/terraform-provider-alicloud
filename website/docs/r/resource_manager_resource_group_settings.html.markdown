@@ -37,24 +37,25 @@ resource "alicloud_resource_manager_resource_group_settings" "default" {
 
 Terraform cannot destroy resource `alicloud_resource_manager_resource_group_settings`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_resource_group_settings&spm=docs.r.resource_manager_resource_group_settings.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `resource_group_admin_setting_status` - (Required) Specifies whether to designate the resource creator as the administrator of the resource group. When enabled, the user who creates a resource is automatically set as the administrator of the resource group that the resource belongs to. This maps to the `CreatorAsAdmin` parameter of the UpdateResourceGroupAdminSetting API.
 * `resource_group_notification_setting_status` - (Optional) Specifies whether to enable notifications when resources are automatically transferred to the default resource group. When enabled, a notification is sent upon automatic transfer of resources to the default resource group. This maps to the `ResourceGroupNotificationEnableStatus` field returned by GetResourceGroupNotificationSetting, and is toggled through the EnableResourceGroupNotification and DisableResourceGroupNotification APIs.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<Alibaba Cloud Account ID>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Resource Group Settings.
 * `update` - (Defaults to 5 mins) Used when update the Resource Group Settings.
 

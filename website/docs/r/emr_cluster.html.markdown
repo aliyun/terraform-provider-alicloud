@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_emr_cluster
 
-Provides a EMR Cluster resource. With this you can create, read, and release  EMR Cluster. 
+Provides a EMR Cluster resource. With this you can create, read, and release  EMR Cluster.
 
 -> **DEPRECATED:**  This resource has been deprecated from version `1.204.0`. Please use new resource [emrv2_cluster](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/emrv2_cluster).
 
@@ -153,9 +153,9 @@ resource "alicloud_emr_cluster" "default" {
 
 The hosts of EMR Cluster are orginized as host group. Scaling up/down is operating host group.
 
-In the case of scaling up cluster, we should add the node_count of some host group. 
+In the case of scaling up cluster, we should add the node_count of some host group.
 
--> **NOTE:** Scaling up is only applicable to CORE and TASK group. Cost time of scaling up will vary with the number of scaling-up nodes. 
+-> **NOTE:** Scaling up is only applicable to CORE and TASK group. Cost time of scaling up will vary with the number of scaling-up nodes.
 Scaling down is only applicable to TASK group. If you want to scale down CORE group, please submit tickets or contact EMR support team.
 
 As the following case, we scale up the TASK group 2 nodes by increasing host_group.node_count by 2.
@@ -292,7 +292,7 @@ resource "alicloud_emr_cluster" "default" {
 
 ### 3. Scale Down
 
-In the case of scaling down a cluster, we need to specified the host group and the instance list. 
+In the case of scaling down a cluster, we need to specified the host group and the instance list.
 
 -> **NOTE:** Graceful decommission of hadoop cluster has been supported Available since v1.168.0.
 
@@ -540,7 +540,6 @@ resource "alicloud_emr_cluster" "gateway" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_emr_cluster&spm=docs.r.emr_cluster.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -642,7 +641,7 @@ The configs mapping supports the following:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 20 mins) Used when creating the cluster (until it reaches the initial `IDLE` status). 
+* `create` - (Defaults to 20 mins) Used when creating the cluster (until it reaches the initial `IDLE` status).
 * `delete` - (Defaults to 10 mins) Used when terminating the instance.
 
 ## Attribute Reference
@@ -658,4 +657,3 @@ Aliclioud E-MapReduce cluster can be imported using the id e.g.
 ```shell
 $ terraform import alicloud_emr_cluster.default C-B47FB8FE96C67XXXX
 ```
-

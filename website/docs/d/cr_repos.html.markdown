@@ -7,17 +7,17 @@ description: |-
   Provides a list of Container Registry repositories.
 ---
 
-# alicloud\_cr\_repos
+# alicloud_cr_repos
 
 -> **DEPRECATION NOTICE:** This data source is deprecated and will be removed in a future release.
 
 This data source provides a list Container Registry repositories on Alibaba Cloud.
 
--> **NOTE:** Available in v1.35.0+
+-> **NOTE:** Available since v1.35.0+
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_cr_repos" "my_repos" {
   name_regex  = "my-repos"
@@ -64,4 +64,3 @@ The following attributes are exported in addition to the arguments listed above:
 * `image_size` - Status of this image, in bytes.
 * `image_update` - Last update time of this image, unix time in nanoseconds.
 * `image_create` - Create time of this image, unix time in nanoseconds.
-

@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_event_bridge_api_destination
 
-Provides a Event Bridge Api Destination resource. 
+Provides a Event Bridge Api Destination resource.
 
 For information about Event Bridge Api Destination and how to use it, see [What is Api Destination](https://www.alibabacloud.com/help/en/eventbridge/latest/api-eventbridge-2020-04-01-createapidestination).
 

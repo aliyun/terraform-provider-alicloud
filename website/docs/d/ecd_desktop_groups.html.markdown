@@ -81,6 +81,7 @@ output "alicloud_ecd_desktop_group_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `desktop_group_id` - (Optional) The ID of the desktop group.
 * `desktop_group_name` - (Optional) The name of the desktop group. Fuzzy search is supported.
 * `office_site_id` - (Optional) The ID of the office network to which the desktop groups belong.
@@ -93,6 +94,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Desktop Group IDs.
 * `names` - A list of name of Desktop Groups.
 * `groups` - A list of Desktop Group Entries. Each element contains the following attributes:

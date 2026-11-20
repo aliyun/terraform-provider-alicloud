@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cassandra Backup Plans to the user.
 ---
 
-# alicloud\_cassandra\_backup\_plans
+# alicloud_cassandra_backup_plans
 
 This data source provides the Cassandra Backup Plans of the current Alibaba Cloud user.
 

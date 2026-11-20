@@ -34,6 +34,7 @@ output "alicloud_threat_detection_check_structure_example_standard_type" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `lang` - (Optional) The language of the content within the request and response. Default value: `zh`. Valid values: `zh` (Chinese), `en` (English).
 * `current_page` - (Optional) The page number. Must be greater than 0.
 * `page_size` - (Optional) Number of records per page. Must be greater than 0.
@@ -41,10 +42,10 @@ The following arguments are supported:
 * `ids` - (Optional, Computed) A list of standard IDs (matches `structures.*.standards.*.id`). When set, only structures containing at least one matching standard are returned.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Check Structure IDs.
 * `structures` - A list of Check Structure Entries. Each element contains the following attributes:
   * `standard_type` - The type of the check item. Valid values: `RISK` (security risk), `IDENTITY_PERMISSION` (Cloud Infrastructure Entitlement Management, CIEM), `COMPLIANCE` (security compliance).

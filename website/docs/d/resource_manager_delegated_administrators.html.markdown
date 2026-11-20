@@ -7,7 +7,7 @@ description: |-
   Provides a list of Resource Manager Delegated Administrators to the user.
 ---
 
-# alicloud\_resource\_manager\_delegated\_administrators
+# alicloud_resource_manager_delegated_administrators
 
 This data source provides the Resource Manager Delegated Administrators of the current Alibaba Cloud user.
 

@@ -7,7 +7,7 @@ description: |-
     Provides a collection of Cassandra clusters according to the specified filters.
 ---
 
-# alicloud\_cassandra\_clusters
+# alicloud_cassandra_clusters
 
 The `alicloud_cassandra_clusters` data source provides a collection of Cassandra clusters available in Alicloud account.
 Filters support regular expression for the cluster name, ids or tags.
@@ -36,6 +36,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - The list of Cassandra cluster ids.
 * `names` - The name list of Cassandra clusters.
 * `clusters` - A list of Cassandra clusters. Its every element contains the following attributes:

@@ -45,16 +45,17 @@ output "alicloud_apig_domain_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `resource_group_id` - (ForceNew, Optional) The ID of the resource group
-* `ids` - (Optional, ForceNew, Computed) A list of Domain IDs. 
+* `ids` - (Optional, ForceNew, Computed) A list of Domain IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `enable_details` - (Optional, ForceNew) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Domain IDs.
 * `names` - A list of name of Domains.
 * `domains` - A list of Domain Entries. Each element contains the following attributes:

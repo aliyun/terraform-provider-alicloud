@@ -7,11 +7,11 @@ description: |-
   Provides a list of Express Connect Grant Rule To Cens to the user.
 ---
 
-# alicloud\_express\_connect\_grant\_rule\_to\_cens
+# alicloud_express_connect_grant_rule_to_cens
 
 This data source provides the Express Connect Grant Rule To Cens of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.196.0+.
+-> **NOTE:** Available since v1.196.0+.
 
 ## Example Usage
 
@@ -45,4 +45,3 @@ The following attributes are exported in addition to the arguments listed above:
 	* `cen_id` - The ID of the authorized CEN instance.
 	* `cen_owner_id` - The user ID (UID) of the Alibaba Cloud account to which the CEN instance belongs.
 	* `create_time` - The time when the instance was created.
-	

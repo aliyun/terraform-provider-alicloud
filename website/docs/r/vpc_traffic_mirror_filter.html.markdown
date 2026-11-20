@@ -66,12 +66,12 @@ resource "alicloud_vpc_traffic_mirror_filter" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_traffic_mirror_filter&spm=docs.r.vpc_traffic_mirror_filter.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dry_run` - (Optional) Whether to PreCheck only this request. Value:
   - **true**: The check request is sent without creating traffic Image filter conditions. Check items include whether required parameters, request format, and business restrictions are filled in. If the check does not pass, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.
   - **false** (default): Sends a normal request, returns a 2xx HTTP status code after passing the check, and directly creates a filter condition.
@@ -82,10 +82,10 @@ The following arguments are supported:
 * `traffic_mirror_filter_description` - (Optional) The description of the TrafficMirrorFilter.
 * `traffic_mirror_filter_name` - (Optional) The name of the TrafficMirrorFilter.
 
-
 ### `egress_rules`
 
 The egress_rules supports the following:
+
 * `action` - (Required, ForceNew) Collection strategy for outbound rules. Value:
   - accept: collects network traffic.
   - drop: No network traffic is collected.
@@ -108,6 +108,7 @@ The egress_rules supports the following:
 ### `ingress_rules`
 
 The ingress_rules supports the following:
+
 * `action` - (Required, ForceNew) Collection strategy for outbound rules. Value:
   - accept: collects network traffic.
   - drop: No network traffic is collected.
@@ -127,16 +128,17 @@ The ingress_rules supports the following:
   -> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
 * `traffic_mirror_filter_rule_status` - (Computed) The status of the traffic mirror filter rule.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `status` - The status of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Traffic Mirror Filter.
 * `delete` - (Defaults to 5 mins) Used when delete the Traffic Mirror Filter.
 * `update` - (Defaults to 5 mins) Used when update the Traffic Mirror Filter.

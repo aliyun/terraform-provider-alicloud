@@ -7,7 +7,7 @@ description: |-
   Provides a list of Rds Accounts to the user.
 ---
 
-# alicloud\_rds\_accounts
+# alicloud_rds_accounts
 
 This data source provides the Rds Accounts of the current Alibaba Cloud user.
 

@@ -30,7 +30,7 @@ output "first_domain_id" {
 
 The following arguments are supported:
 
-* `domain_name_regex` - (Optional, ForceNew) A regex string to filter results by the domain name. 
+* `domain_name_regex` - (Optional, ForceNew) A regex string to filter results by the domain name.
 * `group_name_regex` - (Optional, ForceNew)  A regex string to filter results by the group name.
 * `ali_domain` - (Optional, Bool, ForceNew) Specifies whether the domain is from Alibaba Cloud or not.
 * `instance_id` - (Optional, ForceNew) Cloud analysis product ID.
@@ -60,7 +60,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `group_name` - Name of group that contains the domain.
   * `instance_id` - Cloud analysis product ID of the domain.
   * `version_code` - Cloud analysis version code of the domain.
-  * `version_name` - Cloud analysis version name of the domain. 
+  * `version_name` - Cloud analysis version name of the domain.
   * `puny_code` - Punycode of the Chinese domain.
   * `dns_servers` - DNS list of the domain in the analysis system.
   * `resource_group_id` - The Id of resource group which the dns belongs.
@@ -82,4 +82,3 @@ The following attributes are exported in addition to the arguments listed above:
     * `line_display_name` - Parent line display name.
     * `line_code` - Sub-line Code.
     * `line_name` - Sub-line display name.
-

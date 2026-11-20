@@ -7,7 +7,7 @@ description: |-
   Provides a list of Arms Alert Contact Groups to the user.
 ---
 
-# alicloud\_arms\_alert\_contact\_groups
+# alicloud_arms_alert_contact_groups
 
 This data source provides the Arms Alert Contact Groups of the current Alibaba Cloud user.
 

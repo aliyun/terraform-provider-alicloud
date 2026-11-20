@@ -7,7 +7,7 @@ description: |-
     Provides a collection of PolarDB endpoints according to the specified filters.
 ---
 
-# alicloud\_polardb\_databases
+# alicloud_polardb_databases
 
 The `alicloud_polardb_databases` data source provides a collection of PolarDB cluster database available in Alibaba Cloud account.
 Filters support regular expression for the database name, searches by clusterId.
@@ -70,7 +70,7 @@ output "database" {
 
 The following arguments are supported:
 
-* `db_cluster_id` - (Required) The polarDB cluster ID. 
+* `db_cluster_id` - (Required) The polarDB cluster ID.
 * `name_regex` - (Optional) A regex string to filter results by database name.
 
 ## Attributes Reference

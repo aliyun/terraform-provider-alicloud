@@ -10,7 +10,6 @@ description: |-
 
 Provides a Message Service Endpoint resource.
 
-
 For information about Message Service Endpoint and how to use it, see [What is Endpoint](https://www.alibabacloud.com/help/en/mns/developer-reference/api-mns-open-2022-01-19-enableendpoint).
 
 -> **NOTE:** Available since v1.243.0.
@@ -45,6 +44,7 @@ Terraform cannot destroy resource `alicloud_message_service_endpoint`. Terraform
 ## Argument Reference
 
 The following arguments are supported:
+
 * `endpoint_enabled` - (Required, Bool) Specifies whether the endpoint is enabled. Valid values:
   - `true`: Enable.
   - `false`: Disable.
@@ -54,11 +54,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Endpoint.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Endpoint.
 * `update` - (Defaults to 5 mins) Used when update the Endpoint.
 

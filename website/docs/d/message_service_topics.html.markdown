@@ -7,11 +7,11 @@ description: |-
   Provides a list of Message Notification Service Topics to the user.
 ---
 
-# alicloud\_message\_service\_topics
+# alicloud_message_service_topics
 
 This data source provides the Message Notification Service Topics of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.188.0+.
+-> **NOTE:** Available since v1.188.0+.
 
 ## Example Usage
 

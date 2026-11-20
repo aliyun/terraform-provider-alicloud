@@ -7,7 +7,7 @@ description: |-
   Provides a list of Mse Znodes to the user.
 ---
 
-# alicloud\_mse\_znodes
+# alicloud_mse_znodes
 
 This data source provides the Mse Znodes of the current Alibaba Cloud user.
 

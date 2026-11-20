@@ -56,6 +56,7 @@ output "alicloud_vpc_ipam_ipam_pool_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ipam_pool_id` - (ForceNew, Optional) The first ID of the resource.
 * `ipam_pool_name` - (ForceNew, Optional) The name of the resource.
 * `ipam_scope_id` - (ForceNew, Optional) Ipam scope id.
@@ -67,10 +68,10 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Ipam Pool IDs.
 * `names` - A list of name of Ipam Pools.
 * `pools` - A list of Ipam Pool Entries. Each element contains the following attributes:

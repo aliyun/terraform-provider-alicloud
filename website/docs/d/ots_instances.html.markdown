@@ -63,4 +63,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `description` - The description of the instance.
   * `table_quota` - (Available since v1.221.0) The instance quota which indicating the maximum number of tables.
   * `tags` - The tags of the instance.
-	

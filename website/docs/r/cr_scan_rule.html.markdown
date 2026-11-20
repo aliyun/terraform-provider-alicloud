@@ -62,6 +62,7 @@ resource "alicloud_cr_scan_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required, ForceNew) Instance ID
 * `namespaces` - (Optional, List) Set of namespaces:  
   - This parameter must not be empty when the scan scope is NAMESPACE.  
@@ -77,11 +78,13 @@ The following arguments are supported:
   - `SBOM`: Artifact content analysis  
 
 The default value of this parameter is `VUL`.
+
 * `trigger_type` - (Required) Trigger type
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<scan_rule_id>`.
 * `create_time` - Creation time
 * `scan_rule_id` - Rule ID
@@ -89,6 +92,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Scan Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Scan Rule.
 * `update` - (Defaults to 5 mins) Used when update the Scan Rule.

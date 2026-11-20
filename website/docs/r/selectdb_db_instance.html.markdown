@@ -91,7 +91,7 @@ The desired_security_ip_lists supports the following:
 
 The following attributes are exported:
 
-* `id` - The resource ID in terraform of DBInstance. 
+* `id` - The resource ID in terraform of DBInstance.
 * `region_id` - The region ID of the instance.
 * `engine` - The engine of DBInstance. Always `selectdb`.
 * `status` - The status of the resource. Valid values: `ACTIVATION`,`STOPPED`,`STARTING`,`RESTART`.
@@ -110,7 +110,7 @@ The following attributes are exported:
 * `lock_mode` - The lock mode of the instance. Set the value to lock, which specifies that the instance is locked when it automatically expires or has an overdue payment.
 * `lock_reason` - The reason why the instance is locked.
 * `instance_net_infos` - The net infos for instances.
-* `security_ip_lists` - The details about each IP address whitelist returned. 
+* `security_ip_lists` - The details about each IP address whitelist returned.
 
 ### `instance_net_infos`
 
@@ -139,7 +139,6 @@ The security_ip_lists supports the following:
 * `security_ip_list` - The IP list of Security group. Each single IP value should be Separated by comma.
 * `group_tag` - The tag of Security group.
 * `list_net_type` - The network type of Security group.
-
 
 ## Timeouts
 

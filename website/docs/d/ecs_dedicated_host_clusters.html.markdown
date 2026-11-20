@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ecs Dedicated Host Clusters to the user.
 ---
 
-# alicloud\_ecs\_dedicated\_host\_clusters
+# alicloud_ecs_dedicated_host_clusters
 
 This data source provides the Ecs Dedicated Host Clusters of the current Alibaba Cloud user.
 

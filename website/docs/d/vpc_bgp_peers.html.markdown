@@ -7,7 +7,7 @@ description: |-
   Provides a list of Vpc Bgp Peers to the user.
 ---
 
-# alicloud\_vpc\_bgp\_peers
+# alicloud_vpc_bgp_peers
 
 This data source provides the Vpc Bgp Peers of the current Alibaba Cloud user.
 

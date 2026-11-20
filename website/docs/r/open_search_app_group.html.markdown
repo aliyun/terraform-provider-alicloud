@@ -72,6 +72,7 @@ The quota supports the following:
 ### `order`
 
 The order supports the following:
+
 * `duration` - (Optional) Order cycle. The minimum value is not less than 0.
 * `pricing_cycle` - (Optional) Order cycle unit. Valid values: `Year` and `Month`.
 * `auto_renew` - (Optional) Whether to renew automatically. It only takes effect when the parameter payment_type takes the value `Subscription`.

@@ -129,13 +129,13 @@ The following arguments are supported:
 * `skip_matching` - (Optional, ForceNew) Indicates whether to skip instances that match the desired configuration.
 * `status` - (Optional) The current status of the instance refresh task. Possible values:
     - Pending: The instance refresh task is created and waiting to be scheduled.
-    - InProgress: The instance refresh task is in progress. 
-    - Paused: The instance refresh task is paused. 
+    - InProgress: The instance refresh task is in progress.
+    - Paused: The instance refresh task is paused.
     - CheckpointPause: The task is paused because it has reached a checkpoint (Checkpoint.Percentage).
     - Failed: The instance refresh task failed.
     - Successful: The instance refresh task was successful.
-    - Cancelling: The instance refresh task is being canceled. 
-    - RollbackInProgress: The instance refresh task is being rolled back. 
+    - Cancelling: The instance refresh task is being canceled.
+    - RollbackInProgress: The instance refresh task is being rolled back.
     - RollbackSuccessful: The instance refresh task was rolled back successfully. Set RollbackSuccessful to rollback the instance refresh task.
     - RollbackFailed: The rollback of the instance refresh task failed.
     - Cancelled:  The instance refresh task is canceled. Set Cancelled to cancel the instance refresh task.
@@ -185,4 +185,3 @@ ESS instance refresh can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_ess_instance_refresh.example ir-abc123456
 ```
-

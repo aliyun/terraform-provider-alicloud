@@ -62,8 +62,7 @@ The following arguments are supported:
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
-->**NOTE:** PrePaid mode will deduct fees from the account directly and the bandwidth package can't be deleted before expired time. 
-
+->**NOTE:** PrePaid mode will deduct fees from the account directly and the bandwidth package can't be deleted before expired time.
 
 ## Attributes Reference
 
@@ -89,4 +88,3 @@ CEN bandwidth package can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_cen_bandwidth_package.example cenbwp-abc123456
 ```
-

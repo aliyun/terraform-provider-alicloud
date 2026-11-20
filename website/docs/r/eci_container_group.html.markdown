@@ -230,7 +230,6 @@ The sysctls supports the following:
 * `name` - (Optional, ForceNew) The name of the security context that the container group runs.
 * `value` - (Optional, ForceNew) The variable value of the security context that the container group runs.
 
-
 ### `dns_config`
 
 The dns_config supports the following:
@@ -303,8 +302,8 @@ The security_context supports the following:
 ### `init_containers-security_context-capability`
 
 The capability supports the following:
-* `add` - (Optional, List, Available since v1.215.0) The permissions that you want to grant to the processes in the containers.
 
+* `add` - (Optional, List, Available since v1.215.0) The permissions that you want to grant to the processes in the containers.
 
 ### `containers`
 
@@ -437,6 +436,7 @@ The security_context supports the following:
 ### `containers-security_context-capability`
 
 The capability supports the following:
+
 * `add` - (Optional, List, Available since v1.215.0) The permissions that you want to grant to the processes in the containers.
 
 ## Attributes Reference

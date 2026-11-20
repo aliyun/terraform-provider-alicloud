@@ -7,11 +7,11 @@ description: |-
   Provides a list of Vpc Ipv4 Gateways to the user.
 ---
 
-# alicloud\_vpc\_ipv4\_gateways
+# alicloud_vpc_ipv4_gateways
 
 This data source provides the Vpc Ipv4 Gateways of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.181.0+.
+-> **NOTE:** Available since v1.181.0+.
 
 ## Example Usage
 
@@ -42,7 +42,7 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `Creating`, `Created`, `Deleting`, `Pending`, `Deleted`.
 * `vpc_id` - (Optional, ForceNew) The ID of the VPC associated with the IPv4 Gateway.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

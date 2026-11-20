@@ -45,6 +45,7 @@ resource "alicloud_threat_detection_malicious_file_whitelist_config" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `event_name` - (Optional) The name of the security alert associated with the representative rule.
 * `field` - (Optional) Represents the alarm associated with the resource and the white field.
 * `field_value` - (Optional) Represents the whiteout target value in effect for the resource.
@@ -57,12 +58,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Malicious File Whitelist Config.
 * `delete` - (Defaults to 5 mins) Used when delete the Malicious File Whitelist Config.
 * `update` - (Defaults to 5 mins) Used when update the Malicious File Whitelist Config.

@@ -61,13 +61,12 @@ resource "alicloud_oss_bucket_object_worm_configuration" "default" {
 
 Terraform cannot destroy resource `alicloud_oss_bucket_object_worm_configuration`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_object_worm_configuration&spm=docs.r.oss_bucket_object_worm_configuration.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket_name` - (Required, ForceNew) Bucket name  
 * `object_worm_enabled` - (Required) Specifies whether to enable the object-level compliance retention policy configuration.  
 * `rule` - (Optional, Set) Container that stores the list of retention policies.   See [`rule`](#rule) below.
@@ -75,11 +74,13 @@ The following arguments are supported:
 ### `rule`
 
 The rule supports the following:
+
 * `default_retention` - (Optional, List) Container for the default retention policy.   See [`default_retention`](#rule-default_retention) below.
 
 ### `rule-default_retention`
 
 The rule-default_retention supports the following:
+
 * `days` - (Optional, Int) The number of days for compliant retention. This parameter is mutually exclusive with the Years parameter; only one of them can be specified.
 * `mode` - (Optional) Compliance retention mode.  
 * `years` - (Optional, Int) Default retention period in years. Valid values: 1 to 100. You can specify either Days or Years, but not both.  
@@ -87,11 +88,13 @@ The rule-default_retention supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Object Worm Configuration.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Object Worm Configuration.
 

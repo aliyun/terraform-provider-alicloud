@@ -7,7 +7,7 @@ description: |-
   Provides a list of Nlb Security Policies to the user.
 ---
 
-# alicloud\_nlb\_security\_policies
+# alicloud_nlb_security_policies
 
 This data source provides the Nlb Security Policies of the current Alibaba Cloud user.
 

@@ -39,6 +39,7 @@ output "alicloud_hbr_udm_snapshot_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `disk_id` - (Optional) Cloud disk ID. This field is valid only when SourceType = UDM_ECS_DISK.
 * `end_time` - (Required) End Time
 * `instance_id` - (Required) ECS instance ID
@@ -48,10 +49,10 @@ The following arguments are supported:
 * `ids` - (Optional, Computed) A list of Udm Snapshot IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Udm Snapshot IDs.
 * `snapshots` - A list of Udm Snapshot Entries. Each element contains the following attributes:
   * `create_time` - The creation time of the resource

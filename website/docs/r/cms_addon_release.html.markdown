@@ -59,9 +59,7 @@ resource "alicloud_cms_addon_release" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cms_addon_release&spm=docs.r.cms_addon_release.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

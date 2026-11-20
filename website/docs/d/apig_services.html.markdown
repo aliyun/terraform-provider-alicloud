@@ -96,17 +96,18 @@ output "alicloud_apig_service_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `gateway_id` - (ForceNew, Optional) The ID of the Cloud Native API Gateway.
 * `resource_group_id` - (ForceNew, Optional) The ID of the resource group
 * `source_type` - (ForceNew, Optional) service source type, optional value is K8S/MSE_NACOS/FC3/SAE_K8S_SERVICE/VIP/DNS/AI
-* `ids` - (Optional, Computed) A list of Service IDs. 
+* `ids` - (Optional, Computed) A list of Service IDs.
 * `name_regex` - (Optional) A regex string to filter results by APIG Service name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Service IDs.
 * `names` - A list of name of Services.
 * `services` - A list of Service Entries. Each element contains the following attributes:

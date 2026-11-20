@@ -52,20 +52,21 @@ resource "alicloud_dcdn_kv" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `key` - (Required, ForceNew) The name of the key to Put, the longest 512, cannot contain spaces.
 * `namespace` - (Required, ForceNew) The name specified when the customer calls PutDcdnKvNamespace.
 * `value` - (Required) The content of key, up to 2M(2*1000*1000).
 
-
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.The value is formulated as `<namespace>:<key>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Kv.
 * `delete` - (Defaults to 5 mins) Used when delete the Kv.
 * `update` - (Defaults to 5 mins) Used when update the Kv.

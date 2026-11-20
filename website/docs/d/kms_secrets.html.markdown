@@ -10,7 +10,7 @@ description: |-
 # alicloud_kms_secrets
 
 This data source provides a list of KMS Secrets in an Alibaba Cloud account according to the specified filters.
- 
+
 -> **NOTE:** Available since v1.86.0.
 
 ## Example Usage
@@ -40,15 +40,15 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter the results by the KMS secret_name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `tags` - (Optional) A mapping of tags to assign to the resource, and can be used to filter secrets.
-* `filters` - (Optional, ForceNew, Available since v1.124.0) The secret filter. The filter consists of one or more key-value pairs. 
-  More details see API [ListSecrets](https://www.alibabacloud.com/help/en/key-management-service/latest/listsecrets). 
+* `filters` - (Optional, ForceNew, Available since v1.124.0) The secret filter. The filter consists of one or more key-value pairs.
+  More details see API [ListSecrets](https://www.alibabacloud.com/help/en/key-management-service/latest/listsecrets).
 * `enable_details` - (Optional, Available since v1.124.0) Default to `false`. Set it to true can output more details.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` -  A list of Kms Secret ids. The value is same as KMS secret_name. 
+* `ids` -  A list of Kms Secret ids. The value is same as KMS secret_name.
 * `names` -  A list of KMS Secret names.
 * `secrets` - A list of KMS Secrets. Each element contains the following attributes:
   * `id` - ID of the Kms Secret. The value is same as KMS secret_name.
@@ -63,4 +63,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `version_id` - (Available since v1.124.0)  The version number of the initial version.
   * `version_stages` - (Available since v1.124.0)  The stage labels that mark the new secret version.
   * `tags` - A mapping of tags to assign to the resource.
-

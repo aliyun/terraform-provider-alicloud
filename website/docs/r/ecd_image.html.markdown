@@ -98,6 +98,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Image.
 * `status` - The status of the image. Valid values: `Creating`, `Available`, `CreateFailed`.
+
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:

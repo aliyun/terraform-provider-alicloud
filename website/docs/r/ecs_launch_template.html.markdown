@@ -165,7 +165,7 @@ The following arguments are supported:
 * `system_disk` - (Optional) The System Disk. See [`system_disk`](#system_disk) below.
 * `template_resource_group_id` - (Optional, ForceNew) The template resource group id.
 * `user_data` - (Optional, Computed) The User Data.
-* `version_description` - (Optional) The description of the launch template version. The description must be 2 to 256 characters in length and cannot start with http:// or https://.                                    
+* `version_description` - (Optional) The description of the launch template version. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `vpc_id` - (Optional) The ID of the VPC.
 * `vswitch_id` - (Optional) When creating a VPC-Connected instance, you must specify its VSwitch ID.
 * `zone_id` - (Optional) The zone ID of the instance.
@@ -183,7 +183,7 @@ The following arguments are supported:
 * `tags` - (Optional) A mapping of tags to assign to instance, block storage, and elastic network.
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
-* `template_tags` - (Optional) A mapping of tags to assign to the launch template. 
+* `template_tags` - (Optional) A mapping of tags to assign to the launch template.
 * `default_version_number` - (Optional, Int, Computed, Available since v1.241.0) The version number of the default launch template version. Default to 1. It is conflict with `update_default_version_number`.
 * `update_default_version_number` - (Optional, Bool, Available since v1.241.0) Whether to update the default version of the launch template to the latest version automatically. It is conflict with `default_version_number`.
 * `image_options` - (Optional, Set, Available since v1.254.0) The options of images. See [`image_options`](#image_options) below.
@@ -196,7 +196,7 @@ The following arguments are supported:
 
 ### `system_disk`
 
-The system_disk supports the following: 
+The system_disk supports the following:
 
 * `category` - (Optional, Computed) The category of the system disk. System disk type. Valid values: `all`, `cloud`, `ephemeral_ssd`, `cloud_essd`, `cloud_efficiency`, `cloud_ssd`, `local_disk`.
 * `delete_with_instance` - (Optional) Specifies whether to release the system disk when the instance is released. Default to `true`.
@@ -210,7 +210,7 @@ The system_disk supports the following:
 
 ### `network_interfaces`
 
-The network_interfaces supports the following: 
+The network_interfaces supports the following:
 
 * `description` - (Optional) The ENI description.
 * `name` - (Optional) The ENI name.
@@ -221,7 +221,7 @@ The network_interfaces supports the following:
 
 ### `data_disks`
 
-The data_disks supports the following: 
+The data_disks supports the following:
 
 * `category` - (Optional) The category of the disk.
 * `delete_with_instance` - (Optional) Indicates whether the data disk is released with the instance.

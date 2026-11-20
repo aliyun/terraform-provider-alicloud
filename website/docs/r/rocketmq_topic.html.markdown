@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_rocketmq_topic
 
-Provides a RocketMQ Topic resource. 
+Provides a RocketMQ Topic resource.
 
 For information about RocketMQ Topic and how to use it, see [What is Topic](https://www.alibabacloud.com/help/en/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/developer-reference/api-rocketmq-2022-08-01-createtopic).
 
@@ -99,6 +99,7 @@ resource "alicloud_rocketmq_topic" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required, ForceNew) Instance ID.
 * `max_send_tps` - (Optional, Int, Available since v1.247.0) The maximum TPS for message sending.
 * `message_type` - (Optional, ForceNew) Message type.
@@ -108,6 +109,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<topic_name>`.
 * `create_time` - The creation time of the resource.
 * `region_id` - (Available since v1.247.0) The region ID to which the instance belongs.
@@ -116,6 +118,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Topic.
 * `delete` - (Defaults to 5 mins) Used when delete the Topic.
 * `update` - (Defaults to 5 mins) Used when update the Topic.

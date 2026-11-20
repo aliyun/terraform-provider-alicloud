@@ -50,6 +50,7 @@ resource "alicloud_aligreen_audit_callback" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `audit_callback_name` - (Required, ForceNew) The AuditCallback name defined by the customer. It can contain no more than 20 characters in Chinese, English, underscore (_), and digits.
 * `callback_suggestions` - (Required, List) List of audit results supported by message notification. Value: block: confirmed violation, review: Suspected violation, review: normal.
 * `callback_types` - (Required, List) A list of Callback types. Value: machineScan: Machine audit result notification, selfAudit: self-service audit notification.
@@ -59,11 +60,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Audit Callback.
 * `delete` - (Defaults to 5 mins) Used when delete the Audit Callback.
 * `update` - (Defaults to 5 mins) Used when update the Audit Callback.

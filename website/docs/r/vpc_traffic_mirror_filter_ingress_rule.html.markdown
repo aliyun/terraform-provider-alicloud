@@ -46,6 +46,7 @@ resource "alicloud_vpc_traffic_mirror_filter_ingress_rule" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `action` - (Optional, Available since v1.211.0) The collection policy of the inbound rule. Valid values: `accept` or `drop`. `accept`: collects network traffic. `drop`: does not collect network traffic.
 * `destination_cidr_block` - (Required) The destination CIDR block of the inbound traffic.
 * `destination_port_range` - (Optional, Computed) The destination CIDR block of the inbound traffic. Valid values: `1` to `65535`. Separate the first port and last port with a forward slash (/), for example, `1/200` or `80/80`. A value of `-1/-1` indicates that all ports are available. Therefore, do not set the value to `-1/-1`. **NOTE:** When `protocol` is `ICMP`, this parameter is invalid.
@@ -59,11 +60,13 @@ The following arguments are supported:
 * `traffic_mirror_filter_id` - (Required, ForceNew) The ID of the filter.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `rule_action` - (Deprecated since v1.211.0). Field 'rule_action' has been deprecated from provider version 1.211.0. New field 'action' instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<traffic_mirror_filter_id>:<traffic_mirror_filter_ingress_rule_id>`.
 * `status` - The state of the inbound rule. `Creating`, `Created`, `Modifying` and `Deleting`.
 * `traffic_mirror_filter_ingress_rule_id` - The ID of the outbound rule.
@@ -71,6 +74,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Traffic Mirror Filter Ingress Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Traffic Mirror Filter Ingress Rule.
 * `update` - (Defaults to 5 mins) Used when update the Traffic Mirror Filter Ingress Rule.

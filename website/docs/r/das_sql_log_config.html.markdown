@@ -48,13 +48,12 @@ resource "alicloud_das_sql_log_config" "default" {
 
 Terraform cannot destroy resource `alicloud_das_sql_log_config`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_das_sql_log_config&spm=docs.r.das_sql_log_config.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required, ForceNew) The ID of the database instance.
 * `enable` - (Optional, Computed) Specifies whether SQL Explorer is enabled.
 * `request_enable` - (Optional, Computed) The requested state of SQL Explorer.
@@ -64,6 +63,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource, formatted as `<instance_id>`.
 * `cold_retention` - The retention period of cold SQL audit logs. Calculated as `retention - hot_retention`.
 * `log_filter` - The configuration of log filters.
@@ -73,6 +73,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when creating the Sql Log Config.
 * `update` - (Defaults to 5 mins) Used when updating the Sql Log Config.
 * `delete` - (Defaults to 5 mins) Used when deleting the Sql Log Config.

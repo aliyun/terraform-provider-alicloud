@@ -105,6 +105,7 @@ output "alicloud_cs_managed_kubernetes_example_api_server_internet" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cluster_id` - (ForceNew, Optional) The cluster ID.
 * `cluster_name` - (ForceNew, Optional) Custom cluster name.
 * `cluster_spec` - (ForceNew, Optional) The specification of the clusters to query. Valid values:
@@ -124,15 +125,15 @@ The following arguments are supported:
   - `Edge`: ACK Edge clusters. ACK Edge clusters include ACK Edge Basic clusters and ACK Edge Pro clusters.
   - `Serverless`: ACK Serverless clusters. ACK Serverless clusters include ACK Serverless Basic clusters and ACK Serverless Pro clusters.
   - `Lingjun`: ACK Lingjun Pro clusters.
-* `ids` - (Optional, ForceNew, Computed) A list of Cluster IDs. 
+* `ids` - (Optional, ForceNew, Computed) A list of Cluster IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by cluster name.
 * `enable_details` - (Optional, ForceNew) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Cluster IDs.
 * `names` - A list of name of Clusters.
 * `clusters` - A list of Cluster Entries. Each element contains the following attributes:

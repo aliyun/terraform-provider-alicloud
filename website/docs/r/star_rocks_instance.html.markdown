@@ -107,6 +107,7 @@ resource "alicloud_star_rocks_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `admin_password` - (Required) Password of admin user.
 * `auto_renew` - (Optional) Whether to enable automatic renewal. This is only meaningful when payType is set to PrePaid. Disabled by default.
 * `backend_node_groups` - (Optional, ForceNew, List) BackendNodeGroups See [`backend_node_groups`](#backend_node_groups) below.
@@ -142,6 +143,7 @@ This is only meaningful when PayType is set to PrePaid.
 ### `backend_node_groups`
 
 The backend_node_groups supports the following:
+
 * `cu` - (Optional, ForceNew, Int) Number of CUs. CU (Compute Unit) is the basic measurement unit of the service, where 1 CU = 1 CPU core + 4 GiB memory.
 * `disk_number` - (Optional, ForceNew, Int) The number of disks.
 * `local_storage_instance_type` - (Optional, ForceNew) Local SSD instance specifications.
@@ -163,6 +165,7 @@ The backend_node_groups supports the following:
 ### `frontend_node_groups`
 
 The frontend_node_groups supports the following:
+
 * `cu` - (Optional, ForceNew, Int) Number of CUs. CU (Compute Unit) is the basic measurement unit of the service, where 1 CU = 1 CPU core + 4 GiB memory.
 * `disk_number` - (Optional, ForceNew, Int) DiskNumber
 * `local_storage_instance_type` - (Optional, ForceNew) Local SSD instance specifications.
@@ -181,6 +184,7 @@ The frontend_node_groups supports the following:
 ### `observer_node_groups`
 
 The observer_node_groups supports the following:
+
 * `cu` - (Optional, ForceNew, Int) Number of CUs. CU (Compute Unit) is the basic measurement unit of the service, where 1 CU = 1 CPU core + 4 GiB memory.
 * `disk_number` - (Optional, ForceNew, Int) DiskNumber
 * `local_storage_instance_type` - (Optional, ForceNew) Local SSD instance specifications.
@@ -198,12 +202,14 @@ The observer_node_groups supports the following:
 ### `vswitches`
 
 The vswitches supports the following:
+
 * `vswitch_id` - (Required, ForceNew) ID of VSwitch.
 * `zone_id` - (Optional, ForceNew) Zone ID of VSwitch.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the instance.
 * `region_id` - The region ID of the instance.
@@ -212,6 +218,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 20 mins) Used when create the Instance.
 * `delete` - (Defaults to 10 mins) Used when delete the Instance.
 * `update` - (Defaults to 5 mins) Used when update the Instance.

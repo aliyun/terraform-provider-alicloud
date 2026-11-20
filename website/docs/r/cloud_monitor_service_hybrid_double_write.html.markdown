@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_cloud_monitor_service_hybrid_double_write
 
-Provides a Cloud Monitor Service Hybrid Double Write resource. 
+Provides a Cloud Monitor Service Hybrid Double Write resource.
 
 For information about Cloud Monitor Service Hybrid Double Write and how to use it, see [What is Hybrid Double Write](https://next.api.alibabacloud.com/document/Cms/2018-03-08/CreateHybridDoubleWrite).
 

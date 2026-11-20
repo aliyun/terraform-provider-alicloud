@@ -41,6 +41,7 @@ resource "alicloud_hbr_vault" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The description of Vault. Defaults to an empty string.
 * `encrypt_type` - (Optional, ForceNew, Available since v1.173.0) Source Encryption Type，It is valid only when vault_type is `STANDARD` or `OTS_BACKUP`. Default value: `HBR_PRIVATE`. Valid values:
   - `HBR_PRIVATE`: HBR is fully hosted, uses the backup service's own encryption method.
@@ -67,6 +68,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vault.
 * `delete` - (Defaults to 10 mins) Used when delete the Vault.
 * `update` - (Defaults to 5 mins) Used when update the Vault.

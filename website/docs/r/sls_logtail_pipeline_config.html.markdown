@@ -88,12 +88,12 @@ resource "alicloud_sls_logtail_pipeline_config" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_logtail_pipeline_config&spm=docs.r.sls_logtail_pipeline_config.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `aggregators` - (Optional, List) This property does not have a description in the spec, please add it before generating code. See [`aggregators`](#aggregators) below.
 * `config_name` - (Required, ForceNew) The name of the resource
 * `flushers` - (Required, List) This property does not have a description in the spec, please add it before generating code. See [`flushers`](#flushers) below.
@@ -123,11 +123,13 @@ The processors supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<project>:<config_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Logtail Pipeline Config.
 * `delete` - (Defaults to 5 mins) Used when delete the Logtail Pipeline Config.
 * `update` - (Defaults to 5 mins) Used when update the Logtail Pipeline Config.

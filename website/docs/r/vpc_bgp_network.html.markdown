@@ -10,8 +10,6 @@ description: |-
 
 Provides a Express Connect Bgp Network resource.
 
-
-
 For information about Express Connect Bgp Network and how to use it, see [What is Bgp Network](https://www.alibabacloud.com/help/en/express-connect/developer-reference/api-vpc-2016-04-28-addbgpnetwork-express-connect).
 
 -> **NOTE:** Available since v1.153.0.
@@ -63,6 +61,7 @@ resource "alicloud_vpc_bgp_network" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dst_cidr_block` - (Required, ForceNew) The CIDR block of the virtual private cloud (VPC) or vSwitch that you want to connect to a data center.
 * `router_id` - (Required, ForceNew) The region ID of the virtual border router (VBR) group.
 * `vpc_id` - (Optional, ForceNew, Available since v1.260.1) The ID of the VPC.
@@ -70,12 +69,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<router_id>:<dst_cidr_block>`.
 * `status` - The state of the advertised BGP network.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bgp Network.
 * `delete` - (Defaults to 5 mins) Used when delete the Bgp Network.
 

@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_ens_network
 
-Provides a ENS Network resource. 
+Provides a ENS Network resource.
 
 For information about ENS Network and how to use it, see [What is Network](https://www.alibabacloud.com/help/en/ens/developer-reference/api-createnetwork-1).
 
@@ -48,6 +48,7 @@ resource "alicloud_ens_network" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cidr_block` - (Required, ForceNew) The network segment of the network. You can use the following network segments or a subset of them as the network segment: `10.0.0.0/8` (default), `172.16.0.0/12`, `192.168.0.0/16`.
 * `description` - (Optional) Description information.Rules:It must be 2 to 256 characters in length and must start with a letter or Chinese, but cannot start with `http://` or `https://`. Example value: this is my first network.
 * `ens_region_id` - (Required, ForceNew) Ens node IDExample value: cn-beijing-telecom.
@@ -56,6 +57,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Creation time, timestamp (MS).
 * `status` - The status of the network instance. Pending: Configuring, Available: Available.
@@ -63,6 +65,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Network.
 * `delete` - (Defaults to 5 mins) Used when delete the Network.
 * `update` - (Defaults to 5 mins) Used when update the Network.

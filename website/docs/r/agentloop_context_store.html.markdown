@@ -58,13 +58,12 @@ resource "alicloud_agentloop_context_store" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_agentloop_context_store&spm=docs.r.agentloop_context_store.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `agent_space` - (Required, ForceNew) The name of the Agent Space to which the Context Store belongs. It must be 2 to 64 characters in length.
 * `config` - (Optional, List) The configuration of the Context Store. It is required when `context_type` is `experience`. `service_names` and `source` are read back from the API, so out-of-band changes are detected as drift. See [`config`](#config) below.
 * `context_store_name` - (Required, ForceNew) The name of the Context Store. It must be 2 to 64 characters in length, can contain only lowercase letters, digits, and underscores (`_`), and must be unique within the Agent Space.
@@ -76,6 +75,7 @@ The following arguments are supported:
 ### `config`
 
 The config supports the following:
+
 * `metadata_field` - (Optional, Map) The mapping between business metadata fields and storage fields. The map key is the business field name and the map value (string) is the field name used in storage, for example `userId = "user_id"`. An update replaces the whole mapping, and removing a key deletes it from the Context Store. The Get API returns the mapping mixed with internal keys, so this field is kept from the prior state and cannot be recovered by `terraform import`; the first apply after importing sends the configured mapping again in place.
 * `service_names` - (Optional, List) The list of service names whose data is imported into the Context Store. It must be a non-empty list when `context_type` is `experience`. An update replaces the whole list and keeps its order.
 * `source` - (Optional, ForceNew, List) The log data source of the Context Store. See [`source`](#config-source) below.
@@ -83,12 +83,14 @@ The config supports the following:
 ### `config-source`
 
 The source supports the following:
+
 * `agent_space` - (Optional, ForceNew) The AgentSpace where the trace data source resides. If not specified, the AgentSpace of the Context Store is used. Cross-AgentSpace access is not supported: when specified, the value must match the AgentSpace of the Context Store.
 * `start_time` - (Optional, ForceNew) The start time for data backfill, in ISO 8601 UTC format (`yyyy-MM-ddTHH:mm:ssZ`). If not specified, the current time is used.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Context Store. It formats as `<agent_space>:<context_store_name>`.
 * `create_time` - The creation time of the Context Store, in ISO 8601 UTC format (`yyyy-MM-ddTHH:mm:ssZ`).
 * `region_id` - The region ID of the Context Store.
@@ -98,6 +100,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Context Store.
 * `delete` - (Defaults to 5 mins) Used when delete the Context Store.
 * `update` - (Defaults to 5 mins) Used when update the Context Store.

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ecs Storage Capacity Units to the user.
 ---
 
-# alicloud\_ecs\_storage\_capacity\_units
+# alicloud_ecs_storage_capacity_units
 
 This data source provides the Ecs Storage Capacity Units of the current Alibaba Cloud user.
 

@@ -40,16 +40,17 @@ output "alicloud_cloud_firewall_tls_inspect_ca_certificate_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ca_cert_id` - (ForceNew, Optional) CA certificate ID
 * `page_number` - (ForceNew, Optional) Current page number.
 * `page_size` - (ForceNew, Optional) Number of records per page.
-* `ids` - (Optional, ForceNew, Computed) A list of Tls Inspect Ca Certificate IDs. 
+* `ids` - (Optional, ForceNew, Computed) A list of Tls Inspect Ca Certificate IDs.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
-
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Tls Inspect Ca Certificate IDs.
 * `certificates` - A list of Tls Inspect Ca Certificate Entries. Each element contains the following attributes:
   * `ca_cert_id` - CA certificate ID

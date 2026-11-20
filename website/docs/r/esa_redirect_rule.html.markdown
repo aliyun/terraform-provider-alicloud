@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Redirect Rule resource.
 
-
-
 For information about ESA Redirect Rule and how to use it, see [What is Redirect Rule](https://www.alibabacloud.com/help/en/edge-security-acceleration/esa/api-esa-2024-09-10-createredirectrule).
 
 -> **NOTE:** Available since v1.243.0.
@@ -75,6 +73,7 @@ resource "alicloud_esa_redirect_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `reserve_query_string` - (Required) Indicates whether the feature of retaining the query string is enabled. Valid values:
 
   - on
@@ -105,12 +104,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<config_id>`.
 * `config_id` - Config Id
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Redirect Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Redirect Rule.
 * `update` - (Defaults to 5 mins) Used when update the Redirect Rule.

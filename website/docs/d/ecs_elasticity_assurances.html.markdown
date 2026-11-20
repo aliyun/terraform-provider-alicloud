@@ -28,6 +28,7 @@ output "alicloud_ecs_elasticity_assurance_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `private_pool_options_ids` - (Optional) The ID of the elastic protection service.
 * `resource_group_id` - (Optional) The ID of the resource group.
 * `status` - (Optional) The status of flexible guarantee services. Possible values: `All`, `Preparing`, `Prepared`, `Active`, `Released`.
@@ -38,6 +39,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Elasticity Assurance IDs.
 * `assurances` - A list of Elasticity Assurance Entries. Each element contains the following attributes:
   * `allocated_resources` - Details of resource allocation.

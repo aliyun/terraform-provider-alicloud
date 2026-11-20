@@ -117,6 +117,7 @@ resource "alicloud_arms_env_feature" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `env_feature_name` - (Required, ForceNew) The name of the resource.
 * `environment_id` - (Required, ForceNew) The first ID of the resource.
 * `feature_version` - (Required) Version information of the Feature. You can query Feature information by using ListEnvironmentFeatures.
@@ -124,6 +125,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<environment_id>:<env_feature_name>`.
 * `namespace` - Namespace.
 * `status` - Status.
@@ -131,6 +133,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Env Feature.
 * `delete` - (Defaults to 5 mins) Used when delete the Env Feature.
 * `update` - (Defaults to 5 mins) Used when update the Env Feature.

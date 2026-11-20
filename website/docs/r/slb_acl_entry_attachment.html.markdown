@@ -19,7 +19,6 @@ description: |-
 
 For information about acl entry attachment and how to use it, see [Configure an acl entry](https://www.alibabacloud.com/help/en/doc-detail/70023.html).
 
-
 ## Example Usage
 
 ### Batch mode
@@ -76,9 +75,7 @@ resource "alicloud_slb_acl_entry_attachment" "attachment" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_acl_entry_attachment&spm=docs.r.slb_acl_entry_attachment.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
@@ -101,7 +98,6 @@ The entries supports the following:
 The following attributes are exported:
 
 * `id` - The ID of the resource. The value formats as `<acl_id>:<entry>` when `entry` is set, or `<acl_id>` when `entries` is set.
-
 
 ## Timeouts
 

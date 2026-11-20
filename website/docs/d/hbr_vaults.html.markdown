@@ -7,7 +7,7 @@ description: |-
   Provides a list of Hybrid Backup Recovery (HBR) Backup vaults to the user.
 ---
 
-# alicloud\_hbr\_vaults
+# alicloud_hbr_vaults
 
 This data source provides the Hbr Vaults of the current Alibaba Cloud user.
 
@@ -70,5 +70,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `index_available` - (Not yet open) Index available.
   * `index_level` - (Not yet open) Index level.
   * `index_update_time` - (Not yet open) Index update time.
-
-

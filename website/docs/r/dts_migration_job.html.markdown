@@ -145,7 +145,7 @@ The following arguments supported:
 
 * `dts_instance_id` - (Required, ForceNew) The Migration instance ID. The ID of `alicloud_dts_migration_instance`.
 * `dts_job_name` - (Optional, ForceNew) The name of migration job.
-* `instance_class` - (Optional) The instance class. Valid values: `large`, `medium`, `micro`, `small`, `xlarge`, `xxlarge`. 
+* `instance_class` - (Optional) The instance class. Valid values: `large`, `medium`, `micro`, `small`, `xlarge`, `xxlarge`.
 * `checkpoint` - (Optional, ForceNew) Start time in Unix timestamp format.
 * `data_initialization` - (Required, ForceNew) Whether to execute DTS supports schema migration.
 * `structure_initialization` - (Required, ForceNew) Whether to perform a database table structure to migrate.

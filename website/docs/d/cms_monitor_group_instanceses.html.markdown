@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cms Monitor Group Instanceses to the user.
 ---
 
-# alicloud\_cms\_monitor\_group\_instanceses
+# alicloud_cms_monitor_group_instanceses
 
 This data source provides the Cms Monitor Group Instanceses of the current Alibaba Cloud user.
 

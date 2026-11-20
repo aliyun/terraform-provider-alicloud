@@ -151,7 +151,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `load_balancer_id` - The first ID of the resource.
   * `load_balancer_name` - The name of the resource.
   * `load_balancer_operation_locks` - The Load Balancing Operations Lock Configuration.
-    * `lock_reason` - The Locking of the Reasons. 
+    * `lock_reason` - The Locking of the Reasons.
     * `lock_type` - The Locking of the Type.
   * `modification_protection_config` - Modify the Protection Configuration.
     * `status` - Specifies whether to enable the configuration read-only mode for the ALB instance.
@@ -159,7 +159,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `resource_group_id` - The ID of the resource group.
   * `status` - The The load balancer status.
   * `tags` - The tag of the resource.
-  * `vpc_id` - The ID of the virtual private cloud (VPC) where the ALB instance is deployed. 
+  * `vpc_id` - The ID of the virtual private cloud (VPC) where the ALB instance is deployed.
   * `zone_mappings` - The zones and vSwitches.
     * `vswitch_id` - The ID of the vSwitch that corresponds to the zone.
     * `zone_id` - The ID of the zone to which the ALB instance belongs.

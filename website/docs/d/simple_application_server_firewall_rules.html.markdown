@@ -7,7 +7,7 @@ description: |-
   Provides a list of Simple Application Server Firewall Rules to the user.
 ---
 
-# alicloud\_simple\_application\_server\_firewall\_rules
+# alicloud_simple_application_server_firewall_rules
 
 This data source provides the Simple Application Server Firewall Rules of the current Alibaba Cloud user.
 

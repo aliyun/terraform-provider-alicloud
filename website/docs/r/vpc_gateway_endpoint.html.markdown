@@ -72,6 +72,7 @@ resource "alicloud_vpc_gateway_endpoint" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `gateway_endpoint_descrption` - (Optional) The description of the VPC gateway endpoint.
 The length of the description information is between 1 and 255 characters.
 * `gateway_endpoint_name` - (Optional) The name of the VPC gateway endpoint.
@@ -85,6 +86,7 @@ The length of the description information is between 1 and 255 characters.
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the VPC gateway endpoint.
 * `status` - The status of VPC gateway endpoint.
@@ -92,6 +94,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 8 mins) Used when create the Gateway Endpoint.
 * `delete` - (Defaults to 10 mins) Used when delete the Gateway Endpoint.
 * `update` - (Defaults to 5 mins) Used when update the Gateway Endpoint.

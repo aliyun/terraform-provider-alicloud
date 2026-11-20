@@ -58,7 +58,7 @@ The following arguments are supported:
 
 ### `match_express`
 
-The match_express supports the following: 
+The match_express supports the following:
 
 * `tag_value` - (Required, ForceNew) The tag values of the cloud resources.
 * `tag_value_match_function` - (Required, ForceNew) The method that is used to match the tag values of the cloud resources. Valid values: `all`, `startWith`, `endWith`, `contains`, `notContains`, `equals`.

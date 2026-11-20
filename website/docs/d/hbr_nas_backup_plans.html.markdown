@@ -7,7 +7,7 @@ description: |-
   Provides a list of Hybrid Backup Recovery (HBR) NasBackupPlans to the user.
 ---
 
-# alicloud\_hbr\_nas\_backup\_plans
+# alicloud_hbr_nas_backup_plans
 
 This data source provides the Hbr NasBackupPlans of the current Alibaba Cloud user.
 
@@ -59,4 +59,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `options` - Options field of Nas backup plan.
   * `created_time` - The creation time of the backup plan. UNIX time in seconds.
   * `updated_time` - The update time of the backup plan. UNIX time in seconds.
-

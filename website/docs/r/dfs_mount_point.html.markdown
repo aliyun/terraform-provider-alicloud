@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_dfs_mount_point
 
-Provides a Apsara File Storage for HDFS (DFS) Mount Point resource. 
+Provides a Apsara File Storage for HDFS (DFS) Mount Point resource.
 
 For information about Apsara File Storage for HDFS (DFS) Mount Point and how to use it, see [What is Mount Point](https://www.alibabacloud.com/help/en/aibaba-cloud-storage-services/latest/apsara-file-storage-for-hdfs).
 
@@ -77,6 +77,7 @@ resource "alicloud_dfs_mount_point" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_group_id` - (Required) The id of the permission group associated with the Mount point, which is used to set the access permissions of the Mount point.
 * `alias_prefix` - (Optional, Available since v1.218.0) The mount point alias prefix, which specifies the mount point alias prefix.
 * `description` - (Optional) The description of the Mount point.  No more than 32 characters in length.
@@ -89,6 +90,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<file_system_id>:<mount_point_id>`.
 * `create_time` - The creation time of the Mount point resource.
 * `mount_point_id` - The unique identifier of the Mount point, which is used to retrieve the specified mount point resources.
@@ -97,6 +99,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Mount Point.
 * `delete` - (Defaults to 5 mins) Used when delete the Mount Point.
 * `update` - (Defaults to 5 mins) Used when update the Mount Point.

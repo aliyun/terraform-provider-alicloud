@@ -87,13 +87,12 @@ resource "alicloud_cms_alert_rule_v2" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cms_alert_rule_v2&spm=docs.r.cms_alert_rule_v2.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `action_integration_config` - (Optional, Set) Action integration configuration. See [`action_integration_config`](#action_integration_config) below.
 * `alert_rule_v2_id` - (Computed) The unique identifier of the alert rule, mapped to a UUID (system-generated).
 * `annotations` - (Optional, Map) Annotations.
@@ -112,17 +111,20 @@ The following arguments are supported:
 ### `action_integration_config`
 
 The action_integration_config supports the following:
+
 * `actions` - (Optional, ForceNew, List) List of actions
 * `enabled` - (Optional, ForceNew) Indicates whether action integration is enabled
 
 ### `arms_integration_config`
 
 The arms_integration_config supports the following:
+
 * `enabled` - (Optional, ForceNew) Specifies whether to enable ARMS integration.
 
 ### `condition_config`
 
 The condition_config supports the following:
+
 * `aggregate` - (Optional, ForceNew) Aggregation function (used when APM_SIMPLE is specified). Valid values include AVG, MAX, MIN, and SUM.
 * `compare_list` - (Optional, ForceNew, List) Multiple comparison list (used when type=APM_COMPOSITE) See [`compare_list`](#condition_config-compare_list) below.
 * `composite_escalation` - (Computed) The multi-metric composite trigger configuration. This parameter is required when type is set to CLOUD_MONITORING and escalationType is set to composite. See [`composite_escalation`](#condition_config-composite_escalation) below.
@@ -146,6 +148,7 @@ The condition_config supports the following:
 ### `condition_config-compare_list`
 
 The condition_config-compare_list supports the following:
+
 * `aggregate` - (Optional, ForceNew) Aggregation Function
 * `operator` - (Optional, ForceNew) Comparison Operator
 * `threshold` - (Optional, ForceNew, Float) Threshold
@@ -155,6 +158,7 @@ The condition_config-compare_list supports the following:
 ### `condition_config-composite_escalation`
 
 The condition_config-composite_escalation supports the following:
+
 * `escalations` - (Computed) List of trigger conditions See [`escalations`](#condition_config-composite_escalation-escalations) below.
 * `relation` - (Computed) The logical relationship between multiple metrics
 * `severity` - (Computed) Severity Level
@@ -163,6 +167,7 @@ The condition_config-composite_escalation supports the following:
 ### `condition_config-express_escalation`
 
 The condition_config-express_escalation supports the following:
+
 * `raw_expression` - (Computed) Raw Expression
 * `severity` - (Computed) Severity Level
 * `times` - (Computed) Consecutive Trigger Count
@@ -170,6 +175,7 @@ The condition_config-express_escalation supports the following:
 ### `condition_config-prometheus`
 
 The condition_config-prometheus supports the following:
+
 * `prom_ql` - (Computed) Prometheus Query Expression
 * `severity` - (Computed) Severity Level
 * `times` - (Computed) Consecutive Trigger Count
@@ -177,6 +183,7 @@ The condition_config-prometheus supports the following:
 ### `condition_config-simple_escalation`
 
 The condition_config-simple_escalation supports the following:
+
 * `escalations` - (Computed) Trigger Condition List See [`escalations`](#condition_config-simple_escalation-escalations) below.
 * `metric_name` - (Computed) Metric Name
 * `period` - (Computed) Collection Period (Seconds)
@@ -184,12 +191,14 @@ The condition_config-simple_escalation supports the following:
 ### `condition_config-threshold_list`
 
 The condition_config-threshold_list supports the following:
+
 * `severity` - (Optional, ForceNew) Severity Level
 * `threshold` - (Optional, ForceNew, Float) Threshold
 
 ### `condition_config-simple_escalation-escalations`
 
 The condition_config-simple_escalation-escalations supports the following:
+
 * `comparison_operator` - (Computed) Comparison Operator
 * `pre_condition` - (Computed) Precondition
 * `severity` - (Computed) Severity level. Valid values: CRITICAL, ERROR, WARNING, and INFO
@@ -200,6 +209,7 @@ The condition_config-simple_escalation-escalations supports the following:
 ### `condition_config-composite_escalation-escalations`
 
 The condition_config-composite_escalation-escalations supports the following:
+
 * `comparison_operator` - (Computed) Comparison operator
 * `metric_name` - (Computed) Metric name
 * `period` - (Computed) Collection period (s)
@@ -210,6 +220,7 @@ The condition_config-composite_escalation-escalations supports the following:
 ### `datasource_config`
 
 The datasource_config supports the following:
+
 * `instance_id` - (Optional, ForceNew) The Prometheus instance ID. This parameter is used when type=PROMETHEUS.
 * `legacy_raw` - (Computed) The original V1 datasource JSON string returned when type=UNKNOWN and parsing fails. The frontend displays this string in read-only mode.
 * `legacy_type` - (Computed) Returned when type=UNKNOWN, indicating that this rule cannot be edited by using the new API.
@@ -220,6 +231,7 @@ The datasource_config supports the following:
 ### `notify_config`
 
 The notify_config supports the following:
+
 * `active_days` - (Optional, ForceNew, List) The days of the week on which notifications are sent, 1-7 (type=DIRECT_NOTIFY). Default: [1,2,3,4,5,6,7]
 * `active_end_time` - (Optional, ForceNew) The daily end time of the effective notification period (HH:mm, type=DIRECT_NOTIFY). Default: 23:59
 * `active_start_time` - (Optional, ForceNew) The daily start time of the effective notification period (HH:mm, type=DIRECT_NOTIFY). Default: 00:00
@@ -232,12 +244,14 @@ The notify_config supports the following:
 ### `notify_config-channels`
 
 The notify_config-channels supports the following:
+
 * `identifiers` - (Optional, ForceNew, List) List of channel identifiers
 * `type` - (Optional, ForceNew) Notification Channel Type
 
 ### `query_config`
 
 The query_config supports the following:
+
 * `dimensions` - (Computed) The dimension list (type=CLOUD_MONITORING_QUERY). Each dimension is a key-value string mapping. See [`dimensions`](#query_config-dimensions) below.
 * `enable_data_complete_check` - (Optional, ForceNew) Whether to Enable Data Completeness Check (type=PROMETHEUS_SINGLE_QUERY)
 * `entity_domain` - (Optional, ForceNew) Domain to which the entity belongs (type=UMODEL_METRICSET_QUERY)
@@ -266,12 +280,14 @@ The query_config-dimensions supports the following:
 ### `query_config-entity_fields`
 
 The query_config-entity_fields supports the following:
+
 * `field` - (Optional, ForceNew) Entity Field Name
 * `value` - (Optional, ForceNew) Entity Field Value
 
 ### `query_config-entity_filters`
 
 The query_config-entity_filters supports the following:
+
 * `field` - (Optional, ForceNew) The entity filter field name.
 * `operator` - (Optional, ForceNew) The entity filter operator. Valid values: = and !=.
 * `value` - (Optional, ForceNew) The entity filter value.
@@ -279,6 +295,7 @@ The query_config-entity_filters supports the following:
 ### `query_config-filter_list`
 
 The query_config-filter_list supports the following:
+
 * `key` - (Optional, ForceNew) APM filter dimension key
 * `type` - (Optional, ForceNew) The APM filter type. Valid values: ALL, EQ, NE, and DISABLED.
 * `value` - (Optional, ForceNew) APM filter value (can be empty when type=ALL/DISABLED)
@@ -286,6 +303,7 @@ The query_config-filter_list supports the following:
 ### `query_config-label_filters`
 
 The query_config-label_filters supports the following:
+
 * `name` - (Optional, ForceNew) Label name
 * `operator` - (Optional, ForceNew) Label filter operator. Valid values: = / !=
 * `value` - (Optional, ForceNew) Label value
@@ -293,6 +311,7 @@ The query_config-label_filters supports the following:
 ### `query_config-measure_list`
 
 The query_config-measure_list supports the following:
+
 * `group_by` - (Optional, ForceNew, List) Grouping dimension list
 * `measure_code` - (Optional, ForceNew) APM metric code
 * `window_secs` - (Optional, ForceNew, Int) Query Time Window (Seconds)
@@ -300,13 +319,15 @@ The query_config-measure_list supports the following:
 ### `schedule_config`
 
 The schedule_config supports the following:
+
 * `interval_secs` - (Optional, ForceNew, Int) The scheduling interval in seconds. This parameter is used when the type is set to FIXED.
 * `type` - (Required, ForceNew) The scheduling type. Valid values: FIXED and CRON.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `created_at` - Creation time (read-only), in ISO 8601 format.
 * `datasource_type` - Data source type (read-only, derived).
 * `notify_strategy_id` - Notification policy ID (read-only, derived).
@@ -320,6 +341,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Alert Rule V2.
 * `delete` - (Defaults to 5 mins) Used when delete the Alert Rule V2.
 * `update` - (Defaults to 5 mins) Used when update the Alert Rule V2.

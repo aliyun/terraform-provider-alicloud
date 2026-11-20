@@ -15,7 +15,7 @@ For information about HBR Ecs Backup Plan and how to use it, see [What is Ecs Ba
 
 -> **NOTE:** Available since v1.132.0.
 
--> **NOTE:** Deprecated since v1.249.0.
+-> **DEPRECATED:** Deprecated since v1.249.0.
 
 -> **DEPRECATED:** This resource has been deprecated from version `1.249.0`. Please use new resource [alicloud_hbr_policy](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/hbr_policy) and [alicloud_hbr_policy_binding](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/hbr_policy_binding).
 
@@ -106,12 +106,12 @@ The following arguments are support:
 * `backup_type` - (Required, ForceNew) Backup type. Valid values: `COMPLETE`.
 * `schedule` - (Required) Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered.
   * `startTime` Backup start time, UNIX time seconds.
-  * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart. 
+  * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
 * `options` - (Optional) Windows operating system with application consistency using VSS, e.g: `{\"UseVSS\":false}`.
 * `speed_limit` - (Optional) Flow control. The format is: `{start}|{end}|{bandwidth}`. Use `|` to separate multiple flow control configurations, multiple flow control configurations not allowed to have overlapping times.
-  * `start` starting hour 
-  * `end` end hour 
+  * `start` starting hour
+  * `end` end hour
   * `bandwidth` limit rate, in KiB
 * `path` - (Optional) List of backup path. e.g. `["/home", "/var"]`. **Note** If `path` is empty, it means that all directories will be backed up.
 * `exclude` - (Optional) Exclude path. String of Json list, up to 255 characters. e.g. `"[\"/home/work\"]"`
@@ -125,15 +125,18 @@ The following arguments are support:
 ## Notice
 
 **About Backup path rules:**
+
 1. If there is no wildcard `*`, you can enter 8 items of path.
 2. When using wildcard `*`, only one item of path can be input, and wildcards like `/*/*` are supported.
 3. Each item of path only supports absolute paths, for example starting with `/`, `\`, `C:\`, `D:\`.
 
 **About Restrictions:**
+
 1. When using `VSS`: multiple paths, UNC paths, wildcards, and excluded files not supported.
 2. When using `UNC`: VSS not supported, wildcards not supported, and files to be excluded are not supported.
 
 **About include/exclude path rules:**
+
 1. Supports up to 8 paths, including paths using wildcards `*`.
 2. If the path does not contain `/`, then `*` matches multiple path names or file names, for example `*abc*` will match `/abc/`, `/d/eabcd/`, `/a/abc`; `*.txt` will match all files with an extension `.txt`.
 3. If the path contains `/`, each `*` only matches a single-level path or file name. For example, `/a/*/*/` share will match `/a/b/c/share`, but not `/a/d/share`.

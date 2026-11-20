@@ -42,23 +42,24 @@ resource "alicloud_ecs_disk_default_kms_key" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_disk_default_kms_key&spm=docs.r.ecs_disk_default_kms_key.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `kms_key_id` - (Required) The ID of the KMS key.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Disk Default Kms Key.
 * `delete` - (Defaults to 5 mins) Used when delete the Disk Default Kms Key.
 * `update` - (Defaults to 5 mins) Used when update the Disk Default Kms Key.

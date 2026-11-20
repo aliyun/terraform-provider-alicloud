@@ -63,13 +63,12 @@ resource "alicloud_vpc_ipv6_cidr_block" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_ipv6_cidr_block&spm=docs.r.vpc_ipv6_cidr_block.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ipv6_cidr_block` - (Optional, ForceNew, Computed) The additional IPv6 CIDR block. Both `ipv6_cidr_block` and `ipv6_cidr_mask` are optional and can be left empty. If neither is specified, the system automatically allocates a `/56` IPv6 CIDR block to the VPC from the Alibaba Cloud GUA address pool.
 
   -> **NOTE:**  If you specify `ipv6_cidr_block`, the CIDR block must be reserved beforehand by calling the AllocateVpcIpv6Cidr operation, or you can specify `ipv6_ipam_pool_id` instead. If you specify `ipv6_cidr_mask`, you must also specify `ipv6_ipam_pool_id`.
@@ -77,7 +76,6 @@ The following arguments are supported:
 * `ipv6_cidr_mask` - (Optional, Int) The IPv6 CIDR mask used to allocate an IPv6 CIDR block from the IPAM address pool to the VPC.
 
   -> **NOTE:**  When assigning an additional IPv6 CIDR block from an IPAM address pool to a VPC, you must specify at least one of the `Ipv6CidrBlock` or `Ipv6CidrMask` properties.
-
 
   -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
@@ -91,11 +89,13 @@ You can specify up to 20 VPC IDs, separated by commas (,).
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<vpc_id>#<ipv6_cidr_block>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ipv6 Cidr Block.
 * `delete` - (Defaults to 5 mins) Used when delete the Ipv6 Cidr Block.
 

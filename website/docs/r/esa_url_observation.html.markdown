@@ -54,6 +54,7 @@ resource "alicloud_esa_url_observation" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `sdk_type` - (Required) SDK integration mode. Value:
   - `automatic`: automatic integration.
   - `manual`: manual integration.
@@ -63,12 +64,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<config_id>`.
 * `config_id` - Config Id
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Url Observation.
 * `delete` - (Defaults to 5 mins) Used when delete the Url Observation.
 * `update` - (Defaults to 5 mins) Used when update the Url Observation.

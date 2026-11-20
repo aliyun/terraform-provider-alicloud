@@ -7,11 +7,11 @@ description: |-
     Provides a list of CEN Route Service owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_cen_\_route\_services
+# alicloud_cen_route_services
 
 This data source provides CEN Route Service available to the user.
 
--> **NOTE:** Available in v1.102.0+
+-> **NOTE:** Available since v1.102.0+
 
 ## Example Usage
 

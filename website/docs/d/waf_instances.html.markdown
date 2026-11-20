@@ -7,7 +7,7 @@ description: |-
   Provides a datasource to retrieve WAF instances.
 ---
 
-# alicloud\_waf\_instances
+# alicloud_waf_instances
 
 Provides a WAF datasource to retrieve instances.
 
@@ -35,7 +35,7 @@ output "the_first_waf_instance_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional) A list of WAF instance IDs. 
+* `ids` - (Optional) A list of WAF instance IDs.
 * `status` - (Optional) The status of WAF instance to filter results. Optional value: `0`: The instance has expired, `1` : The instance has not expired and is working properly.
 * `resource_group_id` - (Optional) The ID of resource group to which WAF instance belongs.
 * `instance_source` - (Optional) The source of the WAF instance.
@@ -45,7 +45,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - (Optional) A list of WAF instance IDs. 
+* `ids` - (Optional) A list of WAF instance IDs.
 * `instances` - A list of WAF instances. Each element contains the following attributes:
   * `id` - The ID of the WAF instance.
   * `instance_id` - The ID of WAF the instance.

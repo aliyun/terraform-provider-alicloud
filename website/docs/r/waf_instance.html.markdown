@@ -66,14 +66,14 @@ The following arguments are supported:
 * `period` - (Optional, ForceNew) Service time of Web Application Firewall.
 * `prefessional_service` - (Required, String) Specify whether professional service is supported. Valid values: ["true", "false"]
 * `renew_period` - (Optional, ForceNew) Renewal period of WAF service. Unit: month
-* `renewal_status` - (Optional, ForceNew) Renewal status of WAF service. Valid values: 
+* `renewal_status` - (Optional, ForceNew) Renewal status of WAF service. Valid values:
     * AutoRenewal: The service time of WAF is renewed automatically.
     * ManualRenewal (default): The service time of WAF is renewed manually.Specifies whether to configure a Layer-7 proxy, such as Anti-DDoS Pro or CDN, to filter the inbound traffic before it is forwarded to WAF. Valid values: "On" and "Off". Default to "Off".
 * `resource_group_id` - (Optional) The resource group ID.
 * `region` - (Optional, Available in 1.139.0+) The instance region ID.
 * `subscription_type` - (Required, String) Subscription of WAF service. Valid values: ["Subscription", "PayAsYouGo"].
-* `waf_log` - (Required, String) Specify whether Log service is supported. Valid values: ["true", "false"]                                           
-			
+* `waf_log` - (Required, String) Specify whether Log service is supported. Valid values: ["true", "false"]
+
 ## Attributes Reference
 
 The following attributes are exported:

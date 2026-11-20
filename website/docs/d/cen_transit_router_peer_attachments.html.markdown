@@ -41,9 +41,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-
 * `ids` - A list of CEN Transit Router peer attachments IDs.
-* `names` - A list of CEN Transit Router peer attachments names. 
+* `names` - A list of CEN Transit Router peer attachments names.
 * `attachments` - A list of CEN Transit Router peer Attachments. Each element contains the following attributes:
   * `auto_publish_route_enabled` - Auto publish route enabled.
   * `id` - The ID of CEN Transit Router peer attachments.

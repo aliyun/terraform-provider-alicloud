@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Https Basic Configuration resource.
 
-
-
 For information about ESA Https Basic Configuration and how to use it, see [What is Https Basic Configuration](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateHttpsBasicConfiguration).
 
 -> **NOTE:** Available since v1.243.0.
@@ -67,6 +65,7 @@ resource "alicloud_esa_https_basic_configuration" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ciphersuite` - (Optional) Custom cipher suite, indicating the specific encryption algorithm selected when CiphersuiteGroup is set to custom.
 * `ciphersuite_group` - (Optional) Cipher suite group. Default is all cipher suites. Possible values:
   - all: All cipher suites.
@@ -76,7 +75,7 @@ The following arguments are supported:
   - on: Enabled.
   - off: Disabled.
 * `http3` - (Optional) Whether to enable HTTP3, which is enabled by default. The value can be:
-  - on: Enabled. 
+  - on: Enabled.
   - off: Disabled.
 * `https` - (Optional) Whether to enable HTTPS. Default is enabled. Possible values:
   - on: Enable.
@@ -85,8 +84,8 @@ The following arguments are supported:
   - on: Enabled.
   - off: Disabled.
 * `rule` - (Optional) Rule content, using conditional expressions to match user requests. When adding global configuration, this parameter does not need to be set. There are two usage scenarios:
-  -  Match all incoming requests: value set to true
-  -  Match specified request: Set the value to a custom expression, for example: (http.host eq \"video.example.com\")
+  - Match all incoming requests: value set to true
+  - Match specified request: Set the value to a custom expression, for example: (http.host eq \"video.example.com\")
 * `rule_enable` - (Optional) Rule switch. When adding global configuration, this parameter does not need to be set. Value range:
   - on: open.
   - off: close.
@@ -109,12 +108,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<config_id>`.
 * `config_id` - ConfigId of the configuration, which can be obtained by calling the [ListHttpsBasicConfigurations](https://www.alibabacloud.com/help/en/doc-detail/2867470.html) interface.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Https Basic Configuration.
 * `delete` - (Defaults to 5 mins) Used when delete the Https Basic Configuration.
 * `update` - (Defaults to 5 mins) Used when update the Https Basic Configuration.

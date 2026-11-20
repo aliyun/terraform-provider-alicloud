@@ -7,7 +7,7 @@ description: |-
   Provides a list of Event Bridge Event Buses to the user.
 ---
 
-# alicloud\_event\_bridge\_event\_buses
+# alicloud_event_bridge_event_buses
 
 This data source provides the Event Bridge Event Buses of the current Alibaba Cloud user.
 

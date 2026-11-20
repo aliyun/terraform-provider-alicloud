@@ -59,17 +59,20 @@ Terraform cannot destroy resource `alicloud_oss_bucket_access_monitor`. Terrafor
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the bucket.
 * `status` - (Required) Specifies whether to enable access tracking for the bucket. Valid values: Enabled: enables access tracking. Disabled: disables access tracking.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Access Monitor.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Access Monitor.
 

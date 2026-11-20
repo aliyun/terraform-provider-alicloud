@@ -7,11 +7,11 @@ description: |-
   Provides a list of Service Mesh Extension Providers to the user.
 ---
 
-# alicloud\_service\_mesh\_extension\_providers
+# alicloud_service_mesh_extension_providers
 
 This data source provides the Service Mesh Extension Providers of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.191.0+.
+-> **NOTE:** Available since v1.191.0+.
 
 ## Example Usage
 

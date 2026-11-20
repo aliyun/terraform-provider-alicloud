@@ -123,6 +123,7 @@ resource "alicloud_ots_tunnel" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_name` - (Required, ForceNew) The name of the OTS instance in which table will located.
 * `table_name` - (Required, ForceNew) The name of the OTS table. If changed, a new table would be created.
 * `tunnel_name` - (Required, ForceNew) The name of the OTS tunnel. If changed, a new tunnel would be created.

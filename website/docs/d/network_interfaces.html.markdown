@@ -7,7 +7,7 @@ description: |-
   Provides a data source to get a list of elastic network interfaces according to the specified filters.
 ---
 
-# alicloud\_network_interfaces
+# alicloud_network_interfaces
 
 -> **DEPRECATED:** This datasource has been renamed to [alicloud_ecs_network_interfaces](https://www.terraform.io/docs/providers/alicloud/d/ecs_network_interfaces) from version 1.123.1.
 

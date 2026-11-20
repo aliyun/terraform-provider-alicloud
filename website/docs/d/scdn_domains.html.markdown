@@ -7,7 +7,7 @@ description: |-
   Provides a list of Scdn Domains to the user.
 ---
 
-# alicloud\_scdn\_domains
+# alicloud_scdn_domains
 
 This data source provides the Scdn Domains of the current Alibaba Cloud user.
 

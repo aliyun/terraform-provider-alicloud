@@ -7,11 +7,11 @@ description: |-
   Provides a list of Cms Monitor Group Instances to the user.
 ---
 
-# alicloud\_cms\_monitor\_group\_instances
+# alicloud_cms_monitor_group_instances
 
 This data source provides the Cms Monitor Group Instances of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.115.0+.
+-> **NOTE:** Available since v1.115.0+.
 
 ## Example Usage
 
@@ -35,7 +35,7 @@ The following arguments are supported:
 * `keyword` - (Optional, ForceNew) The keyword.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

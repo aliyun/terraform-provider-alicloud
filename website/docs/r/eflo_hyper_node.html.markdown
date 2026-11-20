@@ -57,6 +57,7 @@ resource "alicloud_eflo_hyper_node" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cluster_id` - (Optional, Available since v1.267.0) Cluster ID
 * `data_disk` - (Optional, List, Available since v1.267.0) List of disk information of attaching to each sub computing node.  See [`data_disk`](#data_disk) below.
 
@@ -89,6 +90,7 @@ The following arguments are supported:
 ### `data_disk`
 
 The data_disk supports the following:
+
 * `bursting_enabled` - (Optional) Whether to enable Burst (performance Burst).
 * `category` - (Optional) The disk type. Value range:
   - cloud_essd:ESSD cloud disk.
@@ -102,6 +104,7 @@ The data_disk supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `region_id` - The region ID of the resource
@@ -110,6 +113,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Hyper Node.
 * `delete` - (Defaults to 5 mins) Used when delete the Hyper Node.
 * `update` - (Defaults to 38 mins) Used when update the Hyper Node.

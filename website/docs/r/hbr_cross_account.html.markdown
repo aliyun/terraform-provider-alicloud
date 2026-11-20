@@ -48,6 +48,7 @@ resource "alicloud_hbr_cross_account" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `alias` - (Optional, ForceNew) Backup account alias
 * `cross_account_role_name` - (Required, ForceNew) The name of RAM role that the backup account authorizes the management account to manage its resources
 * `cross_account_user_id` - (Required, ForceNew, Int) The uid of the backup account.
@@ -55,12 +56,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<cross_account_user_id>:<cross_account_role_name>`.
 * `create_time` - Timestamp of the creation time
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Cross Account.
 * `delete` - (Defaults to 5 mins) Used when delete the Cross Account.
 

@@ -167,13 +167,12 @@ resource "alicloud_vpc_route_target_group" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_route_target_group&spm=docs.r.vpc_route_target_group.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `config_mode` - (Required, ForceNew) The configuration mode of the route target group. Supported modes include:
   - **Active-Standby**: active-standby mode.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group to which the route target group belongs.
@@ -184,26 +183,31 @@ The name must be 1 to 128 characters in length and cannot start with http:// or 
 * `route_target_member_list` - (Required, List) The member list of the route target group.
 **Note: The parameter is immutable after resource creation. In active-standby mode, member weight and type cannot be changed via UpdateRouteTargetGroup; switching active/standby uses a separate SwitchActiveRouteTarget operation.
 In active/standby mode, the following restrictions apply to route target group members:
+
 1. The route target group must contain exactly two members.
 2. The route target group members must belong to different zones. See [`route_target_member_list`](#route_target_member_list) below.
+
 * `tags` - (Optional, Map) The tags of the route target group.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC to which the route target group belongs.
 
 ### `route_target_member_list`
 
 The route_target_member_list supports the following:
+
 * `member_id` - (Required) The instance ID of the route target member.
 * `member_type` - (Required) The instance type of the route target configuration. The following type is currently supported:
   - GatewayLoadBalancerEndpoint.
 * `weight` - (Required, Int) Sets the weight attribute for the current route target configuration.
 
 In active-standby mode, the weight can only be set to 0 or 100:
-- Only one route target configuration can be set to 100, serving as the active instance.
-- Only one route target configuration can be set to 0, serving as the standby instance.
+
+* Only one route target configuration can be set to 100, serving as the active instance.
+* Only one route target configuration can be set to 0, serving as the standby instance.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the route target group was created.
 * `route_target_member_list` - The member list of the route target group.
@@ -214,6 +218,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Route Target Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Route Target Group.
 * `update` - (Defaults to 5 mins) Used when update the Route Target Group.

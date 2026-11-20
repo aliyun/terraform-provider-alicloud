@@ -7,11 +7,11 @@ description: |-
   Provides a list of Chatbot Agents to the user.
 ---
 
-# alicloud\_chatbot\_agents
+# alicloud_chatbot_agents
 
 This data source provides the Chatbot Agents of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.203.0+.
+-> **NOTE:** Available since v1.203.0+.
 
 ## Example Usage
 
@@ -29,9 +29,9 @@ output "alicloud_chatbot_agents_id_1" {
 The following arguments are supported:
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `agent_name` - (Optional,ForceNew) The name of the agent.
-* `name_regex` - (Optional,ForceNew) A regex string to filter resulting chatbot agents by name.
-* `ids` - (Optional,ForceNew,Computed) A list of chatbot agents IDs.
+* `agent_name` - (Optional, ForceNew) The name of the agent.
+* `name_regex` - (Optional, ForceNew) A regex string to filter resulting chatbot agents by name.
+* `ids` - (Optional, ForceNew, Computed) A list of chatbot agents IDs.
 
 ## Attributes Reference
 
@@ -43,4 +43,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `agent_id` - The agent id.
   * `agent_key` - Service space signature, which is used when PAAS interface specifies the service space.
   * `agent_name` - The agent Name.
-

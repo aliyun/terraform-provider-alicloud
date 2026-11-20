@@ -10,8 +10,6 @@ description: |-
 
 Provides a ECS Security Group resource.
 
-
-
 For information about ECS Security Group and how to use it, see [What is Security Group](https://www.alibabacloud.com/help/en/ecs/developer-reference/api-createsecuritygroup).
 
 -> **NOTE:** Available since v1.0.0.
@@ -60,12 +58,13 @@ resource "alicloud_security_group" "default" {
 
 ## Module Support
 
-You can use the existing [security-group module](https://registry.terraform.io/modules/alibaba/security-group/alicloud) 
+You can use the existing [security-group module](https://registry.terraform.io/modules/alibaba/security-group/alicloud)
 to create a security group and add several rules one-click.
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The description of the security group. The description must be `2` to `256` characters in length. It cannot start with `http://` or `https://`.
 * `inner_access_policy` - (Optional, Available since v1.55.3) The internal access control policy of the security group. Valid values:
   - `Accept`: The internal interconnectivity policy.
@@ -92,6 +91,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.214.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Security Group.
 * `delete` - (Defaults to 10 mins) Used when delete the Security Group.
 * `update` - (Defaults to 5 mins) Used when update the Security Group.

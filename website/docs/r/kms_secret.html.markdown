@@ -344,7 +344,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 * `create` - (Defaults to 5 mins) Used when create the Secret.
 * `update` - (Defaults to 5 mins) Used when update the Secret.
-* `delete` - (Defaults to 5 mins) Used when delete the Secret. 
+* `delete` - (Defaults to 5 mins) Used when delete the Secret.
 
 ## Import
 

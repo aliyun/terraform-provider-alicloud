@@ -101,14 +101,15 @@ output "alicloud_amqp_open_source_account_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required) Instance ID.
 * `ids` - (Optional, Computed) A list of Open Source Account IDs. The value is formulated as `<user_name>:<instance_id>`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Open Source Account IDs.
 * `accounts` - A list of Open Source Account Entries. Each element contains the following attributes:
     * `description` - Description.

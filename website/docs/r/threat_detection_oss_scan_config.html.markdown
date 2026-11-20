@@ -90,12 +90,12 @@ resource "alicloud_threat_detection_oss_scan_config" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_threat_detection_oss_scan_config&spm=docs.r.threat_detection_oss_scan_config.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `all_key_prefix` - (Optional, Computed) Specifies whether to match the prefixes of all objects.
 * `bucket_name_list` - (Required, List) The names of the buckets.
 * `decompress_max_file_count` - (Optional, Int, Available since v1.255.0) The maximum number of objects that can be extracted during decompression. Valid values: 1 to 1000. If the maximum number of objects that can be extracted is reached, the decompression operation immediately ends and the detection of extracted objects is not affected.
@@ -116,11 +116,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Oss Scan Config.
 * `delete` - (Defaults to 5 mins) Used when delete the Oss Scan Config.
 * `update` - (Defaults to 5 mins) Used when update the Oss Scan Config.

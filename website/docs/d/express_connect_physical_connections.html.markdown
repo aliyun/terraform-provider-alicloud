@@ -7,7 +7,7 @@ description: |-
   Provides a list of Express Connect Physical Connections to the user.
 ---
 
-# alicloud\_express\_connect\_physical\_connections
+# alicloud_express_connect_physical_connections
 
 This data source provides the Express Connect Physical Connections of the current Alibaba Cloud user.
 

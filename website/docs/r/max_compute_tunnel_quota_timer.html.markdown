@@ -10,13 +10,11 @@ description: |-
 
 Provides a Max Compute Tunnel Quota Timer resource.
 
-
-
 For information about Max Compute Tunnel Quota Timer and how to use it, see [What is Tunnel Quota Timer](https://www.alibabacloud.com/help/en/).
 
 -> **DEPRECATED:**  This resource has been deprecated from version `1.260.0`.
 
--> **NOTE:** Deprecated since v1.260.0.
+-> **DEPRECATED:** Deprecated since v1.260.0.
 
 ## Example Usage
 
@@ -71,6 +69,7 @@ Terraform cannot destroy resource `alicloud_max_compute_tunnel_quota_timer`. Ter
 ## Argument Reference
 
 The following arguments are supported:
+
 * `nickname` - (Required, ForceNew) The nickname of the exclusive Resource Group (Tunnel Quota) for the level - 1 data transmission service.
 * `quota_timer` - (Optional, Set) Time-Sharing configuration
 
@@ -82,6 +81,7 @@ In general, the system will automatically generate the time zone according to th
 ### `quota_timer`
 
 The quota_timer supports the following:
+
 * `begin_time` - (Required) The time-sharing configuration start time. Reference value: 00:00
 * `end_time` - (Required) The end time of the timesharing configuration. Reference value: 24:00
 * `tunnel_quota_parameter` - (Optional, List) Time-sharing configuration parameters. See [`tunnel_quota_parameter`](#quota_timer-tunnel_quota_parameter) below.
@@ -89,20 +89,22 @@ The quota_timer supports the following:
 ### `quota_timer-tunnel_quota_parameter`
 
 The quota_timer-tunnel_quota_parameter supports the following:
+
 * `elastic_reserved_slot_num` - (Required, Int) The number of elastic reserved concurrency (Slot).
 * `slot_num` - (Required, Int) The number of reserved concurrency (Slot).
 
   -> **NOTE:** The reserved concurrency (Slot) cannot be modified. The number of concurrency slots must be the same as that of the purchased tunnel quota.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Tunnel Quota Timer.
 * `update` - (Defaults to 5 mins) Used when update the Tunnel Quota Timer.
 

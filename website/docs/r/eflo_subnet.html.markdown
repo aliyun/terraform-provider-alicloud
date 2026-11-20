@@ -55,6 +55,7 @@ resource "alicloud_eflo_subnet" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cidr` - (Required, ForceNew) CIDR network segment.
 * `subnet_name` - (Required) The Subnet name.
 * `type` - (Optional, ForceNew) Eflo subnet usage type. optional value:
@@ -64,10 +65,10 @@ The following arguments are supported:
 * `zone_id` - (Required, ForceNew) The zone ID  of the resource.
 * `vpd_id` - (Required, ForceNew) The Eflo VPD ID.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.The value is formulated as `<vpd_id>:<subnet_id>`.
 * `create_time` - The creation time of the resource.
 * `gmt_modified` - Modification time.
@@ -79,6 +80,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Subnet.
 * `delete` - (Defaults to 5 mins) Used when delete the Subnet.
 * `update` - (Defaults to 5 mins) Used when update the Subnet.

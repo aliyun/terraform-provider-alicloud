@@ -41,9 +41,7 @@ resource "alicloud_polardb_aicluster" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_aicluster&spm=docs.r.polardb_aicluster.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

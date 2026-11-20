@@ -7,7 +7,7 @@ description: |-
   Provides a list of Arms Alert Contacts to the user.
 ---
 
-# alicloud\_arms\_alert\_contacts
+# alicloud_arms_alert_contacts
 
 This data source provides the Arms Alert Contacts of the current Alibaba Cloud user.
 
@@ -41,7 +41,7 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Alert Contact IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Alert Contact name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `phone_num` - (Optional, ForceNew) The mobile number of the alert contact. 
+* `phone_num` - (Optional, ForceNew) The mobile number of the alert contact.
 
 ## Attributes Reference
 

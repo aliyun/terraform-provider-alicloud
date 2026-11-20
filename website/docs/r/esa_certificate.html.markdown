@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Certificate resource.
 
-
-
 For information about ESA Certificate and how to use it, see [What is Certificate](https://next.api.alibabacloud.com/document/ESA/2024-09-10/SetCertificate).
 
 -> **NOTE:** Available since v1.244.0.
@@ -46,6 +44,7 @@ resource "alicloud_esa_certificate" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cas_id` - (Optional) Cloud certificate ID.
 * `cert_id` - (Optional, ForceNew, Computed) The certificate Id.
 * `cert_name` - (Optional, Computed) The certificate name.
@@ -74,6 +73,7 @@ For accounts on the international site, this parameter value is: ap-southeast-1
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<cert_id>`.
 * `create_time` - Creation time.
 * `status` - Certificate status.(within 30 days).- issued.- applying.- application failed.- canceled.
@@ -81,6 +81,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Certificate.
 * `delete` - (Defaults to 5 mins) Used when delete the Certificate.
 * `update` - (Defaults to 5 mins) Used when update the Certificate.

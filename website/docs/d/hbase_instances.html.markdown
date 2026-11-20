@@ -36,12 +36,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - The ids list of HBase instances
 * `names` - The names list of HBase instances
 * `instances` - A list of HBase instances. Its every element contains the following attributes:
   * `id` - The ID of the HBase instance.
   * `name` - The name of the HBase instance.
-  * `region_id` - Region ID the instance belongs to. 
+  * `region_id` - Region ID the instance belongs to.
   * `zone_id` - Zone ID the instance belongs to.
   * `engine` - The engine of the instance.
   * `engine_version` - The engine_version of the instance.

@@ -234,6 +234,7 @@ resource "alicloud_ots_search_index" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_name` - (Required, ForceNew) The name of the OTS instance in which table will located.
 * `table_name` - (Required, ForceNew) The name of the OTS table. If changed, a new table would be created.
 * `index_name` - (Required, ForceNew) The index name of the OTS Table. If changed, a new index would be created.
@@ -244,6 +245,7 @@ The following arguments are supported:
 ### `schema`
 
 The schema supports the following:
+
 * `field_schema` - (Required, ForceNew, List) A list of field schemas. The Provider ignores field order when comparing the enclosing `schema` block. See [`field_schema`](#schema-field_schema) below.
 * `index_setting` - (Optional, ForceNew) The settings of the search index, including routingFields. See [`index_setting`](#schema-index_setting) below.
 * `index_sort` - (Optional, ForceNew) The presorting settings of the search index, including sorters. If no value is specified for the indexSort parameter, field values are sorted by primary key by default. See [`index_sort`](#schema-index_sort) below.
@@ -251,6 +253,7 @@ The schema supports the following:
 ### `schema-field_schema`
 
 The field_schema supports the following:
+
 * `field_name` - (Required, ForceNew) Specifies the name of the field in the search index. The value is used as a column name. A field in a search index can be a primary key column or an attribute column.
 * `field_type` - (Required, ForceNew) Specifies the type of the field. Type: String. Valid values: `Text`, `Long`, `Double`, `Boolean`, `Keyword`, `Date`, `GeoPoint`, `FuzzyKeyword`, `Nested`, `Vector`. The Provider supports `Nested` and `Vector` only as top-level fields.
 * `is_array` - (Optional, ForceNew) Specifies whether the value is an array. Type: Boolean. This parameter is not supported for `Nested`, `Vector` or `FuzzyKeyword` fields.
@@ -269,6 +272,7 @@ The field_schema supports the following:
 ### `schema-field_schema-vector_options`
 
 The vector_options supports the following:
+
 * `data_type` - (Optional, ForceNew) The data type of the vector. Type: String. Valid values: `float32`. Required by the service. Available since v2.4.0.
 * `dimension` - (Optional, ForceNew) The number of dimensions of the vector. Type: Int. Valid values: 1 to 4096. Required by the service. Available since v2.4.0.
 * `metric_type` - (Optional, ForceNew) The similarity metric. Type: String. Valid values: `euclidean`, `cosine`, `dot_product`. Required by the service. Available since v2.4.0.
@@ -276,6 +280,7 @@ The vector_options supports the following:
 ### `schema-field_schema-sub_field_schemas`
 
 The sub_field_schemas describes one sub-field of a `Nested` field and supports the following:
+
 * `field_name` - (Required, ForceNew) Specifies the name of the sub-field in the search index. Type: String. Available since v2.4.0.
 * `field_type` - (Required, ForceNew) Specifies the type of the sub-field. Type: String. Valid values: `Text`, `Long`, `Double`, `Boolean`, `Keyword`, `Date`, `GeoPoint`, `FuzzyKeyword`. The Provider does not support `Nested` or `Vector` sub-fields. Available since v2.4.0.
 * `is_array` - (Optional, ForceNew) Specifies whether the value of the sub-field is an array. Type: Boolean. `FuzzyKeyword` sub-fields do not support arrays. Available since v2.4.0.
@@ -290,16 +295,19 @@ The sub_field_schemas describes one sub-field of a `Nested` field and supports t
 ### `schema-index_setting`
 
 The index_setting supports the following:
+
 * `routing_fields` - (Optional, ForceNew) Specifies custom routing fields. You can specify some primary key columns as routing fields. Tablestore distributes data that is written to a search index across different partitions based on the specified routing fields. The data whose routing field values are the same is distributed to the same partition.
 
 ### `schema-index_sort`
 
 The index_sort supports the following:
+
 * `sorter` - (Required, ForceNew)  Specifies the presorting method for the search index. PrimaryKeySort and FieldSort are supported. See [`sorter`](#schema-index_sort-sorter) below.
 
 ### `schema-index_sort-sorter`
 
 The sorter supports the following:
+
 * `sorter_type` - (Optional, ForceNew) Data is sorted by Which fields or keys. valid values: `PrimaryKeySort`, `FieldSort`.
 * `order` - (Optional, ForceNew) The sort order. Data can be sorted in ascending(`Asc`) or descending(`Desc`) order. Default value: `Asc`.
 * `field_name` - (Optional, ForceNew) The name of the field that is used to sort data. only required if sorter_type is FieldSort.
@@ -311,7 +319,7 @@ The following attributes are exported:
 
 * `index_id` - The index id of the search index which could not be changed.
 * `create_time` - The search index create time.
-* `sync_phase` - The search index sync phase. possible values: `Full`, `Incr`. 
+* `sync_phase` - The search index sync phase. possible values: `Full`, `Incr`.
 * `current_sync_timestamp` - The timestamp for sync phase.
 
 ## Timeouts

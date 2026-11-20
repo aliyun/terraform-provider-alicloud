@@ -28,6 +28,7 @@ output "alicloud_dcdn_waf_rule_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `query_args` - (Optional, ForceNew) The query conditions. The value is a string in the JSON format.
 * `ids` - (Optional, ForceNew, Computed) A list of Waf Rule IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -35,6 +36,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `waf_rules` - A list of Waf Rule Entries. Each element contains the following attributes:
   * `defense_scene` - The type of protection policy. The following scenarios are supported:-waf_group:Web basic protection-custom_acl: Custom protection policy-whitelist: whitelist
   * `gmt_modified` - Revised the time. The date format is based on ISO8601 notation and uses UTC +0 time in the format of yyyy-MM-ddTHH:mm:ssZ.
@@ -61,7 +63,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `rate_limit` - The rules of rate limiting.
     * `target` - The statistical field for frequency control.
     * `interval` - The statistical interval. Valid values: 5 to 1800. Unit: seconds.
-    * `sub_key` - The subfield of the target field. 
+    * `sub_key` - The subfield of the target field.
     * `threshold` - The trigger threshold of rate limiting. Valid values: 2 to 500000. Unit: requests.
     * `ttl` - The validity period of the blacklist. Valid values: 60 to 86400. Unit: seconds.
     * `status` - The information about the HTTP status code.

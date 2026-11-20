@@ -10,7 +10,7 @@ description: |-
 # alicloud_kms_aliases
 
 This data source provides a list of KMS aliases in an Alibaba Cloud account according to the specified filters.
- 
+
 -> **NOTE:** Available since v1.79.0.
 
 ## Example Usage
@@ -39,10 +39,9 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` -  A list of kms aliases IDs. The value is same as KMS alias_name. 
+* `ids` -  A list of kms aliases IDs. The value is same as KMS alias_name.
 * `names` -  A list of KMS alias name.
 * `aliases` - A list of KMS User alias. Each element contains the following attributes:
   * `id` - ID of the alias. The value is same as KMS alias_name.
   * `key_id` - ID of the key.
   * `alias_name` - The unique identifier of the alias.
-

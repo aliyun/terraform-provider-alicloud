@@ -54,7 +54,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Receivers.
-* `status` - The status of the resource. `0` means uploading, `1` means upload completed. 
+* `status` - The status of the resource. `0` means uploading, `1` means upload completed.
 
 ## Import
 

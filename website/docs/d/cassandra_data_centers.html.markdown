@@ -7,7 +7,7 @@ description: |-
     Provides a collection of Cassandra Data Centers according to the specified filters.
 ---
 
-# alicloud\_cassandra\_data\_centers
+# alicloud_cassandra_data_centers
 
 The `alicloud_cassandra_data_centers` data source provides a collection of Cassandra Data Centers available in Alicloud account.
 Filters support regular expression for the cluster name or ids.
@@ -38,6 +38,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - The list of Cassandra data center ids.
 * `names` - The name list of Cassandra data centers.
 * `centers` - A list of Cassandra data centers. Its every element contains the following attributes:
@@ -57,4 +58,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `vpc_id` - VPC ID the dataCenter belongs to.
   * `vswitch_id` - VSwitch ID the dataCenter belongs to.
   * `pay_type` - Billing method. Value options are `Subscription` for Pay-As-You-Go and `PayAsYouGo` for yearly or monthly subscription.
-

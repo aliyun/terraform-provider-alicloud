@@ -87,7 +87,7 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The ID of ECS instance.
 * `retention` - (Required) Backup retention days, the minimum is 1.
 * `schedule` - (Required) Backup strategy. Optional format: `I|{startTime}|{interval}`
-  * `startTime` Backup start time, UNIX time, in seconds. 
+  * `startTime` Backup start time, UNIX time, in seconds.
   * `interval` **ISO8601 time interval**. E.g: `PT1H` means one hour apart. `P1D` means one day apart. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task is not completed, the next backup task will not be triggered.
 * `detail` - (Required) ECS server backup plan details. See [`detail`](#detail) below.
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.

@@ -7,11 +7,11 @@ description: |-
   Provides a list of Vpc Dhcp Options Sets to the user.
 ---
 
-# alicloud\_vpc\_dhcp\_options\_sets
+# alicloud_vpc_dhcp_options_sets
 
 This data source provides the Vpc Dhcp Options Sets of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.134.0+.
+-> **NOTE:** Available since v1.134.0+.
 
 ## Example Usage
 
@@ -68,7 +68,7 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The status of the DHCP options set. Valid values: `Available`, `InUse` or `Pending`. `Available`: The DHCP options set is available for use. `InUse`: The DHCP options set is in use. `Pending`: The DHCP options set is being configured.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

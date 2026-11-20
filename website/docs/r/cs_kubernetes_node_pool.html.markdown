@@ -10,7 +10,7 @@ description: |-
 
 Provides a Container Service for Kubernetes (ACK) Nodepool resource.
 
-This resource will help you to manage node pool in Kubernetes Cluster, see [What is kubernetes node pool](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-create-node-pools). 
+This resource will help you to manage node pool in Kubernetes Cluster, see [What is kubernetes node pool](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-create-node-pools).
 
 -> **NOTE:** Available since v1.97.0.
 
@@ -20,17 +20,17 @@ This resource will help you to manage node pool in Kubernetes Cluster, see [What
 
 -> **NOTE:** From version 1.111.0, support auto scaling node pool. For more information on how to use auto scaling node pools, see [Use Terraform to create an elastic node pool](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-create-node-pools). With auto-scaling is enabled, the nodes in the node pool will be labeled with `k8s.aliyun.com=true` to prevent system pods such as coredns, metrics-servers from being scheduled to elastic nodes, and to prevent node shrinkage from causing business abnormalities.
 
--> **NOTE:** ACK adds a new RamRole (AliyunCSManagedAutoScalerRole) for the permission control of the node pool with auto-scaling enabled. If you are using a node pool with auto scaling, please click [AliyunCSManagedAutoScalerRole](https://ram.console.aliyun.com/role/authorization?request=%7B%22Services%22%3A%5B%7B%22Service%22%3A%22CS%22%2C%22Roles%22%3A%5B%7B%22RoleName%22%3A%22AliyunCSManagedAutoScalerRole%22%2C%22TemplateId%22%3A%22AliyunCSManagedAutoScalerRole%22%7D%5D%7D%5D%2C%22ReturnUrl%22%3A%22https%3A%2F%2Fcs.console.aliyun.com%2F%22%7D) to complete the authorization. 
+-> **NOTE:** ACK adds a new RamRole (AliyunCSManagedAutoScalerRole) for the permission control of the node pool with auto-scaling enabled. If you are using a node pool with auto scaling, please click [AliyunCSManagedAutoScalerRole](https://ram.console.aliyun.com/role/authorization?request=%7B%22Services%22%3A%5B%7B%22Service%22%3A%22CS%22%2C%22Roles%22%3A%5B%7B%22RoleName%22%3A%22AliyunCSManagedAutoScalerRole%22%2C%22TemplateId%22%3A%22AliyunCSManagedAutoScalerRole%22%7D%5D%7D%5D%2C%22ReturnUrl%22%3A%22https%3A%2F%2Fcs.console.aliyun.com%2F%22%7D) to complete the authorization.
 
 -> **NOTE:** ACK adds a new RamRole（AliyunCSManagedNlcRole） for the permission control of the management node pool. If you use the management node pool, please click [AliyunCSManagedNlcRole](https://ram.console.aliyun.com/role/authorization?spm=5176.2020520152.0.0.387f16ddEOZxMv&request=%7B%22Services%22%3A%5B%7B%22Service%22%3A%22CS%22%2C%22Roles%22%3A%5B%7B%22RoleName%22%3A%22AliyunCSManagedNlcRole%22%2C%22TemplateId%22%3A%22AliyunCSManagedNlcRole%22%7D%5D%7D%5D%2C%22ReturnUrl%22%3A%22https%3A%2F%2Fcs.console.aliyun.com%2F%22%7D) to complete the authorization.
 
 -> **NOTE:** From version 1.123.1, supports the creation of a node pool of spot instance.
 
--> **NOTE:** It is recommended to create a cluster with zero worker nodes, and then use a node pool to manage the cluster nodes. 
+-> **NOTE:** It is recommended to create a cluster with zero worker nodes, and then use a node pool to manage the cluster nodes.
 
--> **NOTE:** From version 1.127.0, support for adding existing nodes to the node pool. In order to distinguish automatically created nodes, it is recommended that existing nodes be placed separately in a node pool for management. 
+-> **NOTE:** From version 1.127.0, support for adding existing nodes to the node pool. In order to distinguish automatically created nodes, it is recommended that existing nodes be placed separately in a node pool for management.
 
--> **NOTE:** From version 1.149.0, support for specifying deploymentSet for node pools. 
+-> **NOTE:** From version 1.149.0, support for specifying deploymentSet for node pools.
 
 -> **NOTE:** From version 1.158.0, Support for specifying the desired size of nodes for the node pool, for more information, visit [Modify the expected number of nodes in a node pool](https://www.alibabacloud.com/help/en/doc-detail/160490.html#title-mpp-3jj-oo3)
 
@@ -811,15 +811,15 @@ resource "alicloud_cs_kubernetes_node_pool" "upgrade_nodepool" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_node_pool&spm=docs.r.cs_kubernetes_node_pool.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_mode` - (Optional, ForceNew, Computed, Set, Available since v1.266.0) Whether to enable auto mode. When enabled, the system will automatically manage the node pool with optimized default configurations. **Note:** When `auto_mode` is enabled, many parameters will be automatically set to default values and cannot be modified. See `auto_mode.enable` below for details. See [`auto_mode`](#auto_mode) below.
 * `auto_renew` - (Optional) Whether to enable automatic renewal for nodes in the node pool takes effect only when `instance_charge_type` is set to `PrePaid`. Default value: `false`. Valid values:
-  - `true`: Automatic renewal. 
+  - `true`: Automatic renewal.
   - `false`: Do not renew automatically.
 * `auto_renew_period` - (Optional, Int) The automatic renewal period of nodes in the node pool takes effect only when you select Prepaid and Automatic Renewal, and is a required value. When `PeriodUnit = Month`, the value range is {1, 2, 3, 6, 12}. Default value: 1.
 * `cis_enabled` - (Optional, ForceNew, Deprecated since v1.223.1) Whether enable worker node to support cis security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. Use `security_hardening_os` instead.
@@ -865,7 +865,7 @@ The following arguments are supported:
 * `instance_metadata_options` - (Optional, ForceNew, Computed, Set, Available since v1.266.0) ECS instance metadata access configuration. See [`instance_metadata_options`](#instance_metadata_options) below.
 * `instance_patterns` - (Optional, List, Available since v1.266.0) Instance property configuration. See [`instance_patterns`](#instance_patterns) below.
 * `instance_types` - (Optional, List) In the node instance specification list, you can select multiple instance specifications as alternatives. When each node is created, it will try to purchase from the first specification until it is created successfully. The final purchased instance specifications may vary with inventory changes.
-* `internet_charge_type` - (Optional) The billing method for network usage. Valid values `PayByBandwidth` and `PayByTraffic`. Conflict with `eip_internet_charge_type`, EIP and public network IP can only choose one. 
+* `internet_charge_type` - (Optional) The billing method for network usage. Valid values `PayByBandwidth` and `PayByTraffic`. Conflict with `eip_internet_charge_type`, EIP and public network IP can only choose one.
 * `internet_max_bandwidth_out` - (Optional, Int) The maximum bandwidth of the public IP address of the node. The unit is Mbps(Mega bit per second). The value range is:\[1,100\]
 * `key_name` - (Optional) The name of the key pair. When the node pool is a managed node pool, only `key_name` is supported.
 * `kubelet_configuration` - (Optional, Set) Kubelet configuration parameters for worker nodes. See [`kubelet_configuration`](#kubelet_configuration) below. More information in [Kubelet Configuration](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/). See [`kubelet_configuration`](#kubelet_configuration) below.
@@ -887,7 +887,7 @@ The following arguments are supported:
 * `period` - (Optional, Int) Node payment period. Its valid value is one of {1, 2, 3, 6, 12}.
 * `period_unit` - (Optional) Node payment period unit, valid value: `Month`. Default is `Month`.
 * `platform` - (Optional, Computed, Deprecated since v1.145.0) Operating system release, using `image_type` instead.
-* `pre_user_data` - (Optional, Available since v1.232.0) Node pre custom data, base64-encoded, the script executed before the node is initialized. 
+* `pre_user_data` - (Optional, Available since v1.232.0) Node pre custom data, base64-encoded, the script executed before the node is initialized.
 * `private_pool_options` - (Optional, Set) Private node pool configuration. See [`private_pool_options`](#private_pool_options) below.
 * `resource_pool_options` - (Optional, List, Available since v1.292.0) The resource pool and resource pool strategy used when launching instances. See [`resource_pool_options`](#resource_pool_options) below.
 
@@ -971,33 +971,36 @@ The following arguments are supported:
 * `kms_encrypted_password` - (Optional, Available since v1.177.0) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `kms_encryption_context` - (Optional, Available since v1.177.0) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `format_disk` - (Optional, Available since v1.127.0) After you select this check box, if data disks have been attached to the specified ECS instances and the file system of the last data disk is uninitialized, the system automatically formats the last data disk to ext4 and mounts the data disk to /var/lib/docker and /var/lib/kubelet. The original data on the disk will be cleared. Make sure that you back up data in advance. If no data disk is mounted on the ECS instance, no new data disk will be purchased. Default is `false`.
-* `instances` - (Optional, Available since v1.127.0) The instance list. Add existing nodes under the same cluster VPC to the node pool. 
+* `instances` - (Optional, Available since v1.127.0) The instance list. Add existing nodes under the same cluster VPC to the node pool.
 * `node_count` (Optional, Deprecated) The worker node number of the node pool. From version 1.111.0, `node_count` is not required.
 * `keep_instance_name` - (Optional, Available since v1.127.0) Add an existing instance to the node pool, whether to keep the original instance name. It is recommended to set to `true`.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `name` - (Deprecated since v1.219.0). Field 'name' has been deprecated from provider version 1.219.0. New field 'node_pool_name' instead.
 
 ### `auto_mode`
 
 The auto_mode supports the following:
-* `enabled` - (Optional, ForceNew) Whether to enable auto mode. Valid values: 
-  - `true`: enables Smart Managed Configuration. 
+
+* `enabled` - (Optional, ForceNew) Whether to enable auto mode. Valid values:
+  - `true`: enables Smart Managed Configuration.
   - `false`: disables Smart Managed Configuration.
 
   -> **NOTE:** When `auto_mode.enable` is set to `true`, the system will automatically manage the node pool with optimized default configurations. **All parameters except the following can be specified or modified:**
 
 **Parameters That Can Be Specified or Modified:**
-- `scaling_config.max_size`: default `50`, can be specified during creation and modified afterward
-- `scaling_config.min_size`: default `0`, can be specified during creation and modified afterward
-- `instance_types`: can be specified during creation and modified afterward. **Note:** `instance_types` and `instance_patterns` are mutually exclusive - you can only specify one of them.
-- `instance_patterns`: has default instance specification configuration (4-16 CPU cores, 8-32GB memory, etc.), can be specified during creation and modified afterward. **Note:** `instance_patterns` and `instance_types` are mutually exclusive - you can only specify one of them.
-- `data_disks`: can be specified during creation and modified afterward. If not specified during creation, default data disk configuration will be used (120GB size, supports cloud_auto, cloud_essd, cloud_ssd types). When specified, can configure `size`, `category`, `categories`, `performance_level`, `provisioned_iops`, `bursting_enabled`
-- `resource_group_id`: can be specified during creation and modified afterward
-- `vswitch_ids`: can be modified during creation and modified afterward
-- `tags`: can be modified during creation and modified afterward
-- `labels`: can be specified during creation and modified afterward (in Node Kubernetes Config)
-- `taints`: can be specified during creation and modified afterward (in Node Kubernetes Config)
+
+* `scaling_config.max_size`: default `50`, can be specified during creation and modified afterward
+* `scaling_config.min_size`: default `0`, can be specified during creation and modified afterward
+* `instance_types`: can be specified during creation and modified afterward. **Note:** `instance_types` and `instance_patterns` are mutually exclusive - you can only specify one of them.
+* `instance_patterns`: has default instance specification configuration (4-16 CPU cores, 8-32GB memory, etc.), can be specified during creation and modified afterward. **Note:** `instance_patterns` and `instance_types` are mutually exclusive - you can only specify one of them.
+* `data_disks`: can be specified during creation and modified afterward. If not specified during creation, default data disk configuration will be used (120GB size, supports cloud_auto, cloud_essd, cloud_ssd types). When specified, can configure `size`, `category`, `categories`, `performance_level`, `provisioned_iops`, `bursting_enabled`
+* `resource_group_id`: can be specified during creation and modified afterward
+* `vswitch_ids`: can be modified during creation and modified afterward
+* `tags`: can be modified during creation and modified afterward
+* `labels`: can be specified during creation and modified afterward (in Node Kubernetes Config)
+* `taints`: can be specified during creation and modified afterward (in Node Kubernetes Config)
 
 **All Other Parameters:**
 
@@ -1006,6 +1009,7 @@ All other parameters (including but not limited to `management`, `scaling_config
 ### `data_disks`
 
 The data_disks supports the following:
+
 * `auto_format` - (Optional, Available since v1.229.0) Whether to automatically mount the data disk. Valid values: true and false.
 * `auto_snapshot_policy_id` - (Optional) The ID of the automatic snapshot policy that you want to apply to the system disk.
 * `bursting_enabled` - (Optional) Whether the data disk is enabled with Burst (performance Burst). This is configured when the disk type is cloud_auto.
@@ -1032,12 +1036,14 @@ The data_disks supports the following:
 ### `eflo_node_group`
 
 The eflo_node_group supports the following:
+
 * `cluster_id` - (Optional, Available since v1.252.0) The ID of the associated Lingjun cluster is required when creating a Lingjun node pool.
 * `group_id` - (Optional) When creating a Lingjun node pool, you need the Lingjun group ID of the associated Lingjun cluster.
 
 ### `instance_metadata_options`
 
 The instance_metadata_options supports the following:
+
 * `http_tokens` - (Optional, ForceNew, Available since v1.266.0) ECS instance metadata access mode configuration. Value range:
 
   - 'optional': Compatible with both normal mode and reinforced mode.
@@ -1045,11 +1051,12 @@ The instance_metadata_options supports the following:
 
 Default value: 'optional '.
 
- This parameter is only supported for ACK-managed clusters of 1.28 or later versions. 
+ This parameter is only supported for ACK-managed clusters of 1.28 or later versions.
 
 ### `instance_patterns`
 
 The instance_patterns supports the following:
+
 * `cores` - (Optional, Int, Available since v1.266.0) The number of vCPU cores of the instance type. Example value: 8.
 * `cpu_architectures` - (Optional, List, Available since v1.266.0) The CPU architecture of the instance. Value range:
   - X86
@@ -1081,6 +1088,7 @@ The instance_patterns supports the following:
 ### `kubelet_configuration`
 
 The kubelet_configuration supports the following:
+
 * `allowed_unsafe_sysctls` - (Optional, List) Allowed sysctl mode whitelist.
 * `cluster_dns` - (Optional, List, Available since v1.242.0) The list of IP addresses of the cluster DNS servers.
 * `container_log_max_files` - (Optional) The maximum number of log files that can exist in each container.
@@ -1117,12 +1125,14 @@ The kubelet_configuration supports the following:
 ### `kubelet_configuration-reserved_memory`
 
 The kubelet_configuration-reserved_memory supports the following:
+
 * `limits` - (Optional, Map, Available since v1.242.0) Memory resource limit.
 * `numa_node` - (Optional, Int) The NUMA node.
 
 ### `kubelet_configuration-tracing`
 
 The kubelet_configuration-tracing supports the following:
+
 * `endpoint` - (Optional, Available since v1.242.0) The endpoint of the collector.
 * `sampling_rate_per_million` - (Optional) Number of samples to be collected per million span.
 
@@ -1133,6 +1143,7 @@ The kubelet_configuration-tracing supports the following:
 -> **NOTE:** The API uses full-replacement semantics for `containerd_config`: removing the whole `containerd_config` block clears all custom containerd configuration on the cloud side, and an empty block is equivalent to omitting the parameter.
 
 The containerd_config supports the following:
+
 * `max_concurrent_downloads` - (Optional, Int) The maximum number of concurrent downloads for container images. Valid values: `1` to `20`.
 * `ignore_image_defined_volume` - (Optional, String) Whether to ignore volumes defined in the image. Valid values: lowercase `"true"`, `"false"` or `""`. If not set (or set to `""`), this option is not written to the node containerd configuration. Explicitly setting it (including `"false"`) writes the key to the containerd configuration. Removing this field from the configuration removes the key from the cloud-side containerd configuration.
 * `limit_core` - (Optional, String) The coredump size limit. Valid values: `""` or a canonical decimal integer string from `"0"` to `"9007199254740991"` (e.g. `"0"`, `"1024"`; forms like `"+10"` or `"010"` are not accepted). If not set (or set to `""`), this option is not written to the node containerd configuration. Explicitly setting it (including `"0"`) writes the corresponding value. Removing this field from the configuration removes the key from the cloud-side containerd configuration.
@@ -1144,12 +1155,14 @@ The containerd_config supports the following:
 ### `labels`
 
 The labels supports the following:
+
 * `key` - (Required) The label key.
 * `value` - (Optional) The label value.
 
 ### `management`
 
 The management supports the following:
+
 * `auto_repair` - (Optional, Computed) Whether to enable automatic repair. Valid values: `true`: Automatic repair. `false`: not automatically repaired. Setting it to `false` suspends automatic repair without clearing the bound policy: `auto_repair_policy.auto_repair_policy_id` is retained, the policy just stops taking effect, and the policy no longer reports this node pool in `resource_ids` when it is queried. Turning `auto_repair` back on makes the retained policy take effect again. When `auto_repair` is `true`, this feature requires the `node-lifecycle-controller` add-on at version `v2.3.13-b581b592` or later and the `ack-node-problem-detector` add-on at version `1.2.41` or later; the service validates the installed versions and the error message contains the required minimum when an add-on is missing or too old. See [cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) for installation.
 * `auto_repair_policy` - (Optional, Computed, Set) Automatic repair node policy. See [`auto_repair_policy`](#management-auto_repair_policy) below.
 * `auto_upgrade` - (Optional, Computed) Specifies whether to enable auto update. Valid values: `true`: enables auto update. `false`: disables auto update.
@@ -1164,6 +1177,7 @@ The management supports the following:
 ### `management-auto_repair_policy`
 
 The management-auto_repair_policy supports the following:
+
 * `auto_repair_policy_id` - (Optional, Computed, Available since v2.3.0) The ID of the auto repair policy bound to the node pool. It takes precedence over `restart_node`. The value is only sent when it is non-empty: Terraform treats an empty attribute value as unset, so to suspend automatic repair set `auto_repair` to `false` instead of clearing this field. The binding is retained while auto repair is off and takes effect again when `auto_repair` is turned back on. Once a policy ID has been bound explicitly, removing the argument from the configuration does not unbind the policy. You can use `alicloud_cs_auto_repair_policy` to create a custom policy, or reference a builtin policy returned by the `alicloud_cs_auto_repair_policies` data source. The builtin policies are `r-repair-sys-comp-failure` (repair, restarting the node when needed) and `r-repair-sys-comp-failure-without-reboots` (repair without restarting the node). They replace the deprecated `restart_node` switch: `r-repair-sys-comp-failure` is equivalent to `restart_node = true` and `r-repair-sys-comp-failure-without-reboots` to `restart_node = false`. The policy subtype must match the node pool type (`ess` or `lingjun`).
 * `restart_node` - (Optional, Computed, Deprecated since v2.3.0) The legacy switch that selects a builtin policy when `auto_repair_policy_id` is not set. It takes effect only when the managed node pool is enabled and auto repair is on: `true` binds `r-repair-sys-comp-failure`, `false` binds `r-repair-sys-comp-failure-without-reboots`. Use `auto_repair_policy_id = "r-repair-sys-comp-failure"` instead of `restart_node = true`, and `auto_repair_policy_id = "r-repair-sys-comp-failure-without-reboots"` instead of `restart_node = false`. When both are configured, `auto_repair_policy_id` wins and `restart_node` is ignored; the provider reports a warning in that case.
 * `max_parallel_repairing_nodes` - (Optional, Computed, Available since v2.3.0) The maximum number of nodes that can be repaired simultaneously. Valid values: an integer in the range of `1` to `100000`, or a percentage in the range of `(0%, 100%]` (decimals such as `2.5%` are accepted). Defaults to `1`. An empty value is treated as unset by Terraform and is not sent.
@@ -1174,17 +1188,20 @@ The management-auto_repair_policy supports the following:
 ### `management-auto_upgrade_policy`
 
 The management-auto_upgrade_policy supports the following:
+
 * `auto_upgrade_kubelet` - (Optional, Computed) Specifies whether  to automatically update the kubelet. Valid values: `true`: yes; `false`: no.
 
 ### `management-auto_vul_fix_policy`
 
 The management-auto_vul_fix_policy supports the following:
+
 * `restart_node` - (Optional, Computed) Specifies whether to automatically restart nodes after patching CVE vulnerabilities. Valid values: `true`, `false`.
 * `vul_level` - (Optional, Computed) The severity levels of vulnerabilities that is allowed to automatically patch. Multiple severity levels are separated by commas (,).
 
 ### `private_pool_options`
 
 The private_pool_options supports the following:
+
 * `private_pool_options_id` - (Optional) The ID of the private node pool.
 * `private_pool_options_match_criteria` - (Optional) The type of private node pool. This parameter specifies the type of the private pool that you want to use to create instances. A private node pool is generated when an elasticity assurance or a capacity reservation service takes effect. The system selects a private node pool to launch instances. Valid values: `Open`: specifies an open private node pool. The system selects an open private node pool to launch instances. If no matching open private node pool is available, the resources in the public node pool are used. `Target`: specifies a private node pool. The system uses the resources of the specified private node pool to launch instances. If the specified private node pool is unavailable, instances cannot be started. `None`: no private node pool is used. The resources of private node pools are not used to launch the instances.
 
@@ -1195,6 +1212,7 @@ The resource pool and resource pool strategy used when launching instances. A re
 -> **NOTE:** `resource_pool_options` only takes effect when creating PostPaid (pay-as-you-go) instances, and it cannot be set together with `private_pool_options.private_pool_options_match_criteria` and `private_pool_options.private_pool_options_id`. To disable the resource pool strategy, set `strategy = "None"`. This is the only supported way to disable it; removing the whole `resource_pool_options` block is not supported and may cause a permanent diff.
 
 The resource_pool_options supports the following:
+
 * `strategy` - (Optional) The resource pool strategy used when launching instances. Default value: `None`. Valid values:
   * `PrivatePoolFirst`: Private pool first. When this strategy is selected and `resource_pool_options.private_pool_ids` is specified, the specified private pools are used first. If no private pool is specified or the specified private pool does not have enough capacity, an Open type private pool is automatically matched. If no eligible private pool is available, the public pool is used to launch instances.
   * `PrivatePoolOnly`: Private pool only. When this strategy is selected, `resource_pool_options.private_pool_ids` must be specified. If the specified private pool does not have enough capacity, the instances fail to start.
@@ -1204,6 +1222,7 @@ The resource_pool_options supports the following:
 ### `rolling_policy`
 
 The rolling_policy supports the following:
+
 * `batch_interval` - (Optional, Int, Available since v1.269.0) The upgrade interval time between batches, in minutes. This parameter only takes effect when `pause_policy` is set to `NotPause`.
 * `max_parallelism` - (Optional, Int) The maximum number of nodes that can be upgraded in parallel per batch when updating nodes in the node pool.
 * `node_names` - (Optional, List, Available since v1.269.0) Specify the list of nodes to be upgraded.
@@ -1215,6 +1234,7 @@ The rolling_policy supports the following:
 ### `scaling_config`
 
 The scaling_config supports the following:
+
 * `eip_bandwidth` - (Optional, Int) Peak EIP bandwidth. Its valid value range [1~500] in Mbps. It works if `is_bond_eip=true`. Default to `5`.
 * `eip_internet_charge_type` - (Optional) EIP billing type. `PayByBandwidth`: Charged at fixed bandwidth. `PayByTraffic`: Billed as used traffic. Default: `PayByBandwidth`. It works if `is_bond_eip=true`, conflict with `internet_charge_type`. EIP and public network IP can only choose one.
 * `enable` - (Optional) Whether to enable automatic scaling. Value:
@@ -1228,12 +1248,14 @@ The scaling_config supports the following:
 ### `spot_price_limit`
 
 The spot_price_limit supports the following:
+
 * `instance_type` - (Optional) The type of the preemptible instance.
 * `price_limit` - (Optional) The maximum price of a single instance.
 
 ### `taints`
 
 The taints supports the following:
+
 * `effect` - (Optional) The scheduling policy.
 * `key` - (Required) The key of a taint.
 * `value` - (Optional) The value of a taint.
@@ -1241,11 +1263,13 @@ The taints supports the following:
 ### `tee_config`
 
 The tee_config supports the following:
+
 * `tee_enable` - (Optional, ForceNew) Specifies whether to enable confidential computing for the cluster.
 
 ### `upgrade_policy`
 
 The upgrade_policy supports the following:
+
 * `image_id` - (Optional, Available since v1.269.0) Node system Image ID
 * `kubernetes_version` - (Optional, Available since v1.269.0) Node Kubernetes version
 * `runtime` - (Optional, Available since v1.269.0) Node runtime type
@@ -1257,6 +1281,7 @@ The upgrade_policy supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<cluster_id>:<node_pool_id>`.
 * `node_pool_id` - The first ID of the resource.
 * `scaling_group_id` - The ID of the scaling group.
@@ -1264,6 +1289,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 90 mins) Used when create the Nodepool.
 * `delete` - (Defaults to 60 mins) Used when delete the Nodepool.
 * `update` - (Defaults to 60 mins) Used when update the Nodepool.

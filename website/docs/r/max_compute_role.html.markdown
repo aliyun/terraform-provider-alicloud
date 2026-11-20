@@ -10,8 +10,6 @@ description: |-
 
 Provides a Max Compute Role resource.
 
-
-
 For information about Max Compute Role and how to use it, see [What is Role](https://www.alibabacloud.com/help/en/).
 
 -> **NOTE:** Available since v1.242.0.
@@ -55,6 +53,7 @@ resource "alicloud_max_compute_role" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `policy` - (Optional, JsonString) Policy Authorization
 Refer to [Policy-based access control](https://www.alibabacloud.com/help/en/maxcompute/user-guide/policy-based-access-control-1) and [Authorization practices](https://www.alibabacloud.com/help/en/maxcompute/use-cases/authorization-practices)
 * `project_name` - (Required, ForceNew) Project name
@@ -66,15 +65,16 @@ Refer to [Policy-based access control](https://www.alibabacloud.com/help/en/maxc
 
   -> **NOTE:** -- management type (admin) role: You can grant management type permissions through Policy. You cannot grant resource permissions to management type roles. You cannot grant management type permissions to management type roles through ACL. -- resource role: you can authorize resource type permissions through Policy or ACL, but cannot authorize management type permissions. For details, see [role-planning](https://www.alibabacloud.com/help/en/maxcompute/user-guide/role-planning)
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<project_name>:<role_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Role.
 * `delete` - (Defaults to 5 mins) Used when delete the Role.
 * `update` - (Defaults to 5 mins) Used when update the Role.

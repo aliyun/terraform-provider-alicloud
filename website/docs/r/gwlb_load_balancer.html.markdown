@@ -10,8 +10,6 @@ description: |-
 
 Provides a GWLB Load Balancer resource.
 
-
-
 For information about GWLB Load Balancer and how to use it, see [What is Load Balancer](https://www.alibabacloud.com/help/en/slb/gateway-based-load-balancing-gwlb/developer-reference/api-gwlb-2024-04-15-createloadbalancer).
 
 -> **NOTE:** Available since v1.234.0.
@@ -85,6 +83,7 @@ resource "alicloud_gwlb_load_balancer" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `address_ip_version` - (Optional, ForceNew, Computed) The IP version. Valid values:
 
   - `Ipv4`: IPv4 (default)
@@ -103,15 +102,17 @@ The following arguments are supported:
 ### `zone_mappings`
 
 The zone_mappings supports the following:
+
 * `vswitch_id` - (Required) The ID of the vSwitch in the zone. You can specify only one vSwitch (subnet) in each zone of a GWLB instance.
 * `zone_id` - (Required) The zone ID. You can call the DescribeZones operation to query the most recent zone list.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the resource was created. The time follows the ISO 8601 standard in the **yyyy-MM-ddTHH:mm:ssZ** format. The time is displayed in UTC.
-* `status` - The GWLB instance status. 
+* `status` - The GWLB instance status.
 
 * `zone_mappings` - The mappings between zones and vSwitches. You must specify at least one zone. You can specify at most 20 zones. If the region supports two or more zones, we recommend that you select two or more zones.
   * `load_balancer_addresses` - The information about the IP addresses used by the GWLB instance.
@@ -121,6 +122,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Load Balancer.
 * `delete` - (Defaults to 5 mins) Used when delete the Load Balancer.
 * `update` - (Defaults to 5 mins) Used when update the Load Balancer.

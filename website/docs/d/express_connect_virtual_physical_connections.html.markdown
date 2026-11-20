@@ -32,6 +32,7 @@ output "alicloud_express_connect_virtual_physical_connection_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `business_status` - (ForceNew, Optional) The commercial status of the physical line. Value:
   - **Normal**: activated.
   - **Financialized**: Arrears locked.
@@ -49,10 +50,10 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Virtual Physical Connection IDs.
 * `names` - A list of name of Virtual Physical Connections.
 * `connections` - A list of Virtual Physical Connection Entries. Each element contains the following attributes:

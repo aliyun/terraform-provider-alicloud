@@ -165,7 +165,6 @@ The client_parameters supports the following:
 * `client_id` - (Optional) The ID of the client.
 * `client_secret` - (Optional) The AccessKey secret of the client.
 
-
 ### `auth_parameters-oauth_parameters-oauth_http_parameters`
 
 The oauth_http_parameters supports the following:

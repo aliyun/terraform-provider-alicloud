@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_ess_scaling_rules
 
-This data source provides available scaling rule resources. 
+This data source provides available scaling rule resources.
 
 -> **NOTE:** Available since v1.39.0
 
@@ -105,7 +105,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `predictive_value_buffer` - (Available since v1.242.0) The ratio based on which the predicted value is increased if you set predictive_value_behavior to PredictiveValueOverrideMaxWithBuffer. If the predicted value that is increased by this ratio is greater than the initial maximum capacity, the increased value is used as the maximum value for prediction tasks.
   * `predictive_task_buffer_time` - (Available since v1.242.0) The amount of buffer time before the prediction task is executed. By default, all prediction tasks that are automatically created by a predictive scaling rule are executed on the hour. You can set a buffer time to execute prediction tasks and prepare resources in advance.
   * `target_value` - (Available since v1.242.0) The target value of the metric.
-  * `metric_name` - (Available since v1.242.0) The predefined metric of the scaling rule. 
+  * `metric_name` - (Available since v1.242.0) The predefined metric of the scaling rule.
   * `metric_type` - (Available since v1.250.0) The type of the event-triggered task that is associated with the scaling rule.
   * `estimated_instance_warmup` - (Available since v1.250.0) The warm-up period during which a series of preparation measures are taken on new instances. Auto Scaling does not monitor the metric data of instances that are being warmed up.
   * `scale_in_evaluation_count` - (Available since v1.250.0) After you create a target tracking scaling rule, an event-triggered task is automatically created and associated with the scaling rule. This parameter defines the number of consecutive times the alert condition must be satisfied before the event-triggered task initiates a scale-in operation.

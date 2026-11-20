@@ -15,7 +15,6 @@ For information about Private Zone Endpoint and how to use it, see [What is Endp
 
 -> **NOTE:** Available since v1.143.0.
 
-
 ## Example Usage
 
 Basic Usage
@@ -88,13 +87,12 @@ The following arguments are supported:
 
 ### `ip_configs`
 
-The ip_configs supports the following: 
+The ip_configs supports the following:
 
 * `cidr_block` - (Required) The Subnet mask.
 * `ip` - (Optional) The IP address within the parameter range of the subnet mask.  It is recommended to use the IP address assigned by the system.
 * `vswitch_id` - (Required) The Vswitch id.
 * `zone_id` - (Required) The Zone ID.
-
 
 ## Attributes Reference
 

@@ -47,7 +47,7 @@ resource "alicloud_dms_enterprise_user" "default" {
 
 The following arguments are supported:
 
-* `tid` - (Optional) The tenant ID. 
+* `tid` - (Optional) The tenant ID.
 * `uid` - (Required, ForceNew) The Alibaba Cloud unique ID (UID) of the user to add.
 * `status` - (Optional) The state of DMS Enterprise User. Valid values: `NORMAL`, `DISABLE`.
 * `role_names` - (Optional) The roles that the user plays.
@@ -56,7 +56,7 @@ The following arguments are supported:
 * `mobile` - (Optional) The DingTalk number or mobile number of the user.
 * `max_result_count` - (Optional) Query the maximum number of rows on the day.
 * `max_execute_count` - (Optional) Maximum number of inquiries on the day.
-                         
+
 ## Attributes Reference
 
 The following attributes are exported:

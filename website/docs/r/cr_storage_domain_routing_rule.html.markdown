@@ -59,12 +59,14 @@ resource "alicloud_cr_storage_domain_routing_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required, ForceNew) The ID of the Container Registry Instance.
 * `routes` - (Required, List) Domain name routing entry See [`routes`](#routes) below.
 
 ### `routes`
 
 The routes supports the following:
+
 * `endpoint_type` - (Required) Endpoint Type.
 * `instance_domain` - (Required) Instance domain name.
 * `storage_domain` - (Required) Storage domain name. The API returns this value with an `https://` prefix; the prefix is optional in the configuration and is ignored when comparing the configured value with the returned one.
@@ -72,6 +74,7 @@ The routes supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<rule_id>`.
 * `create_time` - The creation time of the resource.
 * `rule_id` - The ID of the Rule.
@@ -79,6 +82,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Storage Domain Routing Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Storage Domain Routing Rule.
 * `update` - (Defaults to 5 mins) Used when update the Storage Domain Routing Rule.

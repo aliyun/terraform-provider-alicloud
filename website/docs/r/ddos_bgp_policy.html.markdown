@@ -67,6 +67,7 @@ resource "alicloud_ddos_bgp_policy" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `content` - (Optional) Configuration Content See [`content`](#content) below.
 * `policy_name` - (Required) The name of the resource
 * `type` - (Required, ForceNew) Type
@@ -74,6 +75,7 @@ The following arguments are supported:
 ### `content`
 
 The content supports the following:
+
 * `black_ip_list_expire_at` - (Optional) Blacklist and whitelist timeout.
 * `enable_defense` - (Optional) Whether to enable L4 protection.
 * `enable_drop_icmp` - (Optional) Switch to discard ICMP.
@@ -92,6 +94,7 @@ The content supports the following:
 ### `content-finger_print_rule_list`
 
 The content-finger_print_rule_list supports the following:
+
 * `dst_port_end` - (Required) End of destination port 0-65535.
 * `dst_port_start` - (Required) Destination Port start 0-65535.
 * `finger_print_rule_id` - (Optional) The UUID of the rule is required to be deleted and modified, and it is not required to be created.
@@ -109,6 +112,7 @@ The content-finger_print_rule_list supports the following:
 ### `content-layer4_rule_list`
 
 The content-layer4_rule_list supports the following:
+
 * `action` - (Required) 1 for observation 2 for blocking.
 * `condition_list` - (Required) Matching Condition. See [`condition_list`](#content-layer4_rule_list-condition_list) below.
 * `limited` - (Required) .
@@ -120,6 +124,7 @@ The content-layer4_rule_list supports the following:
 ### `content-port_rule_list`
 
 The content-port_rule_list supports the following:
+
 * `dst_port_end` - (Required) End of destination port 0-65535.
 * `dst_port_start` - (Required) Destination Port start 0-65535.
 * `match_action` - (Required, ForceNew) Action. Currently, only drop is supported.
@@ -132,6 +137,7 @@ The content-port_rule_list supports the following:
 ### `content-source_block_list`
 
 The content-source_block_list supports the following:
+
 * `block_expire_seconds` - (Required) Statistical cycle range 60-1200.
 * `every_seconds` - (Required) The time (unit second) for automatically releasing the black after triggering the speed limit is 60~2592000.
 * `exceed_limit_times` - (Required) The number of times the speed limit is exceeded in a statistical period ranges from 1 to 1200.
@@ -140,6 +146,7 @@ The content-source_block_list supports the following:
 ### `content-source_limit`
 
 The content-source_limit supports the following:
+
 * `bps` - (Optional) bps range 1024~268435456.
 * `pps` - (Optional) Pps range 32~500000.
 * `syn_bps` - (Optional) SynBps range 1024~268435456.
@@ -148,6 +155,7 @@ The content-source_limit supports the following:
 ### `content-layer4_rule_list-condition_list`
 
 The content-layer4_rule_list-condition_list supports the following:
+
 * `arg` - (Required) Matching target character.
 * `depth` - (Required) Depth of Matching.
 * `position` - (Required) Position to start matching, starting from 0.
@@ -155,11 +163,13 @@ The content-layer4_rule_list-condition_list supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Policy.
 * `update` - (Defaults to 5 mins) Used when update the Policy.

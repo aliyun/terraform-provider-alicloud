@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_log_resource_record
 
-Log resource is a meta store service provided by log service, resource can be used to define meta store's table structure, record can be used for table's row data. 
+Log resource is a meta store service provided by log service, resource can be used to define meta store's table structure, record can be used for table's row data.
 
 For information about SLS Resource and how to use it, see [Resource management](https://www.alibabacloud.com/help/en/doc-detail/207732.html)
 

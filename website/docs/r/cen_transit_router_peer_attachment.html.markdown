@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cloud Enterprise Network (CEN) Transit Router Peer Attachment resource.
 
-
-
 For information about Cloud Enterprise Network (CEN) Transit Router Peer Attachment and how to use it, see [What is Transit Router Peer Attachment](https://next.api.alibabacloud.com/document/Cbn/2017-09-12/CreateTransitRouterPeerAttachment).
 
 -> **NOTE:** Available since v1.128.0.
@@ -93,6 +91,7 @@ resource "alicloud_cen_transit_router_peer_attachment" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_publish_route_enabled` - (Optional) Specifies whether to enable the local Enterprise Edition transit router to automatically advertise the routes of the inter-region connection to the peer transit router. Valid values:
 
   - `false` (default): no
@@ -127,6 +126,7 @@ The name can be empty or 1 to 128 characters in length, and cannot start with ht
 * `resource_type` - (Optional, ForceNew) The resource type to attachment. Only support `VR` and default value is `VR`.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `transit_router_attachment_name` - (Deprecated since v1.247.0). Field 'transit_router_attachment_name' has been deprecated from provider version 1.247.0. New field 'transit_router_peer_attachment_name' instead.
 * `route_table_association_enabled` - (Deprecated since v1.230.0) Field `route_table_association_enabled` has been deprecated from provider version 1.230.0.
 * `route_table_propagation_enabled` - (Deprecated since v1.230.0) Field `route_table_propagation_enabled` has been deprecated from provider version 1.230.0.
@@ -134,6 +134,7 @@ The following arguments will be discarded. Please use new fields as soon as poss
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `region_id` - The ID of the region where the local Enterprise Edition transit router is deployed.
@@ -143,6 +144,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Transit Router Peer Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Transit Router Peer Attachment.
 * `update` - (Defaults to 5 mins) Used when update the Transit Router Peer Attachment.

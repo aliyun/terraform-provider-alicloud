@@ -10,7 +10,6 @@ description: |-
 
 Provides a CR Instance resource.
 
-
 For information about Container Registry Instance and how to use it, see [What is Container Registry](https://www.alibabacloud.com/help/en/acr/product-overview/what-is-container-registry).
 
 For information about CR Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/doc-detail/208144.htm).
@@ -58,6 +57,7 @@ resource "alicloud_cr_ee_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `custom_oss_bucket` - (Optional) Custom OSS Bucket name
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
@@ -95,7 +95,6 @@ The following arguments are supported:
 
   -> **NOTE:**  must be set when creating a prepaid instance.
 
-
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `renew_period` - (Optional, ForceNew, Int) Automatic renewal cycle, in months.
@@ -117,8 +116,8 @@ The following arguments are supported:
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
-
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `created_time` - (Deprecated since v1.235.0). Field 'created_time' has been deprecated from provider version 1.235.0. New field 'create_time' instead.
 * `kms_encrypted_password` - (Optional, Available since v1.132.0) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available since v1.132.0) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
@@ -126,6 +125,7 @@ The following arguments will be discarded. Please use new fields as soon as poss
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `end_time` - Expiration Time
@@ -141,6 +141,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 6 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.
 * `update` - (Defaults to 5 mins) Used when update the Instance.

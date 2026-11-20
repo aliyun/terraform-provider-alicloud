@@ -7,7 +7,7 @@ description: |-
   Provides a list of Container Registry Enterprise Edition instances.
 ---
 
-# alicloud\_cr\_ee\_instances
+# alicloud_cr_ee_instances
 
 This data source provides a list Container Registry Enterprise Edition instances on Alibaba Cloud.
 
@@ -57,4 +57,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `authorization_token` - The password that was used to log on to the registry.
   * `temp_username` - The username that was used to log on to the registry.
   * `tags` - (Available since v1.288.0) A mapping of tags assigned to the instance.
-  

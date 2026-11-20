@@ -66,11 +66,11 @@ The following arguments are supported:
 * `stack_group_name` - (Required, ForceNew) The name of the stack group.
 * `stack_instance_account_id` - (Optional, ForceNew) The account to which the stack instance belongs.
 * `stack_instance_region_id` - (Optional, ForceNew) The region of the stack instance.
-* `status` - (Optional, ForceNew) The status of the stack instance. Valid values: `CURRENT` or `OUTDATED`. 
-  * `CURRENT`: The stack corresponding to the stack instance is up to date with the stack group. 
-  * `OUTDATED`: The stack corresponding to the stack instance is not up to date with the stack group. The `OUTDATED` state has the following possible causes: 
-    * When the CreateStackInstances operation is called to create stack instances, the corresponding stacks fail to be created. 
-    * When the UpdateStackInstances or UpdateStackGroup operation is called to update stack instances, the corresponding stacks fail to be updated, or only some of the stack instances are updated. 
+* `status` - (Optional, ForceNew) The status of the stack instance. Valid values: `CURRENT` or `OUTDATED`.
+  * `CURRENT`: The stack corresponding to the stack instance is up to date with the stack group.
+  * `OUTDATED`: The stack corresponding to the stack instance is not up to date with the stack group. The `OUTDATED` state has the following possible causes:
+    * When the CreateStackInstances operation is called to create stack instances, the corresponding stacks fail to be created.
+    * When the UpdateStackInstances or UpdateStackGroup operation is called to update stack instances, the corresponding stacks fail to be updated, or only some of the stack instances are updated.
     * The create or update operation is not complete.
 
 ## Attributes Reference

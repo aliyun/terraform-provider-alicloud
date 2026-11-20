@@ -97,13 +97,12 @@ resource "alicloud_agentloop_evaluation_task" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_agentloop_evaluation_task&spm=docs.r.agentloop_evaluation_task.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `agent_space` - (Required, ForceNew) The name of the Agent Space to which the Evaluation Task belongs.
 * `channel` - (Optional, Computed, ForceNew) The channel of the Evaluation Task. It cannot be changed after creation (the update API treats it as an internal-only parameter and silently ignores changes). If not specified, the backend defaults it to `default`.
 * `config` - (Optional, Map) The configuration of the Evaluation Task. The update API replaces the whole map. The backend injects derived data source keys (`dataScope`, `project`, `storeName`, `traceFormat`) resolved from the Agent Space; they are not tracked unless configured, and they are dropped by the backend when `config` is changed. All other keys are read back, so out-of-band changes are detected as drift.
@@ -120,10 +119,12 @@ The following arguments are supported:
 ### `evaluators`
 
 An evaluator works in one of the following modes:
-- Reference mode (`evaluator_ref` is set): the registered built-in or custom evaluator is loaded. `evaluator_ref` takes precedence over the inline fields. The API returns `evaluator_ref` as the evaluator name (a configured `name` is kept in the state), `type` defaults to `LLM`, and `result_name` falls back to the metric name of the referenced evaluator.
-- Inline mode (`evaluator_ref` is not set): `name` and `result_type` are required, and `variable_mapping` is required for `LLM` and `AGENT` evaluators. `CODE` evaluators cannot be defined inline and must be referenced via `evaluator_ref`.
+
+* Reference mode (`evaluator_ref` is set): the registered built-in or custom evaluator is loaded. `evaluator_ref` takes precedence over the inline fields. The API returns `evaluator_ref` as the evaluator name (a configured `name` is kept in the state), `type` defaults to `LLM`, and `result_name` falls back to the metric name of the referenced evaluator.
+* Inline mode (`evaluator_ref` is not set): `name` and `result_type` are required, and `variable_mapping` is required for `LLM` and `AGENT` evaluators. `CODE` evaluators cannot be defined inline and must be referenced via `evaluator_ref`.
 
 The evaluators supports the following:
+
 * `config` - (Optional, Map) The configuration of the evaluator. For inline LLM evaluators it carries the evaluation settings such as `prompt`; for referenced evaluators it is usually omitted and only carries run parameters such as `version`. The backend injects the resolved `version`, which is only tracked when configured.
 * `evaluator_ref` - (Optional) The name of the registered (built-in or custom) evaluator to reference. When set, it takes precedence over the inline definition.
 * `filters` - (Optional, Map) The filters of the evaluator. Its `query` takes effect together with the `query` of the task-level `data_filter`.
@@ -138,12 +139,14 @@ The evaluators supports the following:
 A strategy block that is present is enabled unless its `enabled` is explicitly set to `false`.
 
 The run_strategies supports the following:
+
 * `backfill` - (Optional, List) The backfill strategy. See [`backfill`](#run_strategies-backfill) below.
 * `continuous` - (Optional, List) The continuous strategy. See [`continuous`](#run_strategies-continuous) below.
 
 ### `run_strategies-backfill`
 
 The backfill supports the following:
+
 * `enabled` - (Optional) Whether to enable the backfill strategy. Default value: `true` (matching the API, which treats an omitted value as enabled). `false` disables the strategy but keeps its configuration.
 * `end_time` - (Optional, Int) The end time of the backfill range, as a Unix timestamp in milliseconds. To start a backfill manually, provide both `start_time` and `end_time`.
 * `immediate` - (Optional) Whether to run the backfill immediately. Default value: `false`.
@@ -152,6 +155,7 @@ The backfill supports the following:
 ### `run_strategies-continuous`
 
 The continuous supports the following:
+
 * `data_delay_minutes` - (Optional, Int) The data arrival delay, in minutes. Each run is created this many minutes after its window ends, so that the data of the window has fully arrived. Default value: `0`.
 * `enabled` - (Optional) Whether to enable the continuous strategy. Default value: `true` (matching the API, which treats an omitted value as enabled). `false` disables the strategy but keeps its configuration.
 * `interval_unit` - (Required) The unit of the run interval. Valid values: `HOUR`, `MINUTE`, `DAY`.
@@ -160,6 +164,7 @@ The continuous supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Evaluation Task. It formats as `<agent_space>:<task_id>`.
 * `created_at` - The creation time of the Evaluation Task, as a Unix timestamp in seconds.
 * `region_id` - The region ID of the Evaluation Task.
@@ -168,6 +173,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Evaluation Task.
 * `delete` - (Defaults to 5 mins) Used when delete the Evaluation Task.
 * `update` - (Defaults to 5 mins) Used when update the Evaluation Task.

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Quick BI Users to the user.
 ---
 
-# alicloud\_quick\_bi\_users
+# alicloud_quick_bi_users
 
 This data source provides the Quick BI Users of the current Alibaba Cloud user.
 

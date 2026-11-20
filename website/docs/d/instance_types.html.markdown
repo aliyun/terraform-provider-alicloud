@@ -98,7 +98,7 @@ The following arguments are supported:
  and [managed kubernetes cluster](https://www.terraform.io/docs/providers/alicloud/r/cs_managed_kubernetes). Optional Values: `Master` and `Worker`.
 * `is_outdated` - (Optional, type: bool) If true, outdated instance types are included in the results. Default to false.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `system_disk_category` - (Optional, ForceNew, Available since v1.120.0) Filter the results by system disk category. Valid values: `cloud`, `ephemeral_ssd`, `cloud_essd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd_entry`, `cloud_auto`. 
+* `system_disk_category` - (Optional, ForceNew, Available since v1.120.0) Filter the results by system disk category. Valid values: `cloud`, `ephemeral_ssd`, `cloud_essd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd_entry`, `cloud_auto`.
   **NOTE**: Its default value `cloud_efficiency` has been removed from the version v1.150.0.
 * `image_id` - (Optional, ForceNew, Available since v1.163.0) The ID of the image.
 * `minimum_eni_ipv6_address_quantity` (Optional, ForceNew, Available since v1.193.0) The minimum number of IPv6 addresses per ENI. **Note:** If an instance type supports fewer IPv6 addresses per ENI than the specified value, information about the instance type is not queried.
@@ -127,9 +127,9 @@ The following attributes are exported in addition to the arguments listed above:
   * `eni_quantity` - (Available since v1.239.0) The maximum number of ENIs per instance.
   * `primary_eni_queue_number` - (Available since v1.239.0) The default number of queues per primary ENI.
   * `secondary_eni_queue_number` - (Available since v1.239.0) The default number of queues per secondary ENI.
-  * `eni_ipv6_address_quantity` - (Available since v1.239.0) The maximum number of IPv6 addresses per ENI. 
+  * `eni_ipv6_address_quantity` - (Available since v1.239.0) The maximum number of IPv6 addresses per ENI.
   * `maximum_queue_number_per_eni` - (Available since v1.239.0) The maximum number of queues per ENI, including primary and secondary ENIs.
-  * `total_eni_queue_quantity` - (Available since v1.239.0) The maximum number of queues on ENIs that the instance type supports. 
+  * `total_eni_queue_quantity` - (Available since v1.239.0) The maximum number of queues on ENIs that the instance type supports.
   * `eni_private_ip_address_quantity` - (Available since v1.239.0) The maximum number of IPv4 addresses per ENI.
   * `local_storage` - A list of local storage of an instance type.
     * `capacity` - The capacity of a local storage in GB.

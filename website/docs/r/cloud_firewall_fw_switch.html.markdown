@@ -33,13 +33,12 @@ resource "alicloud_cloud_firewall_fw_switch" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_fw_switch&spm=docs.r.cloud_firewall_fw_switch.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dry_run` - (Optional) Specifies whether to precheck the request only. Valid values: `true`, `false`.
 
   -> **NOTE:** This parameter is only evaluated during resource creation and deletion. Modifying it in isolation will not trigger any action.
@@ -57,6 +56,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `ali_uid` - AliUid.
 * `bind_instance_id` - BindInstanceId.
@@ -77,6 +77,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Fw Switch.
 * `delete` - (Defaults to 5 mins) Used when delete the Fw Switch.
 

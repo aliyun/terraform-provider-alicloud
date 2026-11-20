@@ -76,6 +76,7 @@ resource "alicloud_kvstore_connection" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `connection_string_prefix` - (Required) The prefix of the public endpoint. The prefix can be 8 to 64 characters in length, and can contain lowercase letters and digits. It must start with a lowercase letter.
 * `instance_id`- (Required, ForceNew) The ID of the instance.
 * `port` - (Required) The service port number of the instance.
@@ -91,9 +92,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 5 mins) Used when creating the Tair (Redis OSS-Compatible) And Memcache (KVStore) connection (until it reaches the initial `Normal` status). 
-* `update` - (Defaults to 5 mins) Used when updating the Tair (Redis OSS-Compatible) And Memcache (KVStore) connection (until it reaches the initial `Normal` status). 
-* `delete` - (Defaults to 30 mins) Used when deleting the Tair (Redis OSS-Compatible) And Memcache (KVStore) connection (until it reaches the initial `Normal` status). 
+* `create` - (Defaults to 5 mins) Used when creating the Tair (Redis OSS-Compatible) And Memcache (KVStore) connection (until it reaches the initial `Normal` status).
+* `update` - (Defaults to 5 mins) Used when updating the Tair (Redis OSS-Compatible) And Memcache (KVStore) connection (until it reaches the initial `Normal` status).
+* `delete` - (Defaults to 30 mins) Used when deleting the Tair (Redis OSS-Compatible) And Memcache (KVStore) connection (until it reaches the initial `Normal` status).
 
 ## Import
 
@@ -102,4 +103,3 @@ Tair (Redis OSS-Compatible) And Memcache (KVStore) connection can be imported us
 ```shell
 $ terraform import alicloud_kvstore_connection.example r-abc12345678
 ```
-

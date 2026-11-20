@@ -59,7 +59,8 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
-* `activity_id` - (Optional) The promotion code. This parameter is not required. 
+
+* `activity_id` - (Optional) The promotion code. This parameter is not required.
 * `address_name` - (Optional) The EIP name.
 
   The name must be 1 to 128 characters in length and start with a letter, and can contain letters, digits, periods (.), underscores (\_), and hyphens (-).
@@ -119,14 +120,14 @@ The following arguments are supported:
 
   If your services are deployed in China East 1 Finance, this parameter is required and you must set the parameter to `BGP_FinanceCloud`.
 
-* `log_project` - (Optional) The name of the Simple Log Service (SLS) project. 
-* `log_store` - (Optional) The name of the Logstore. 
+* `log_project` - (Optional) The name of the Simple Log Service (SLS) project.
+* `log_store` - (Optional) The name of the Logstore.
 * `mode` - (Optional, Computed, Available since v1.225.1) The association mode. Valid values:
   - `NAT` (default): NAT mode
   - `MULTI_BINDED`: multi-EIP-to-ENI mode
   - `BINDED`: cut-network interface controller mode
 
-* `netmode` - (Optional, ForceNew, Computed) The network type. By default, this value is set to `public`, which specifies the public network type. 
+* `netmode` - (Optional, ForceNew, Computed) The network type. By default, this value is set to `public`, which specifies the public network type.
 * `payment_type` - (Optional, ForceNew, Computed) The billing method of the EIP. Valid values:
   - `Subscription`: subscription
   - `PayAsYouGo` (default): pay-as-you-go
@@ -140,7 +141,7 @@ The following arguments are supported:
 
   If `payment_type` is set to `Subscription`, this parameter is required. If `payment_type` is set to `PayAsYouGo`, this parameter is not required.
 
-* `public_ip_address_pool_id` - (Optional, ForceNew) The ID of the IP address pool. The EIP is allocated from the IP address pool. By default, the IP address pool feature is unavailable. To use the IP address pool, apply for the privilege in the Quota Center console. For more information, see the "Request a quota increase in the Quota Center console" section in [Manage EIP quotas](https://www.alibabacloud.com/help/en/doc-detail/108213.html). 
+* `public_ip_address_pool_id` - (Optional, ForceNew) The ID of the IP address pool. The EIP is allocated from the IP address pool. By default, the IP address pool feature is unavailable. To use the IP address pool, apply for the privilege in the Quota Center console. For more information, see the "Request a quota increase in the Quota Center console" section in [Manage EIP quotas](https://www.alibabacloud.com/help/en/doc-detail/108213.html).
 * `resource_group_id` - (Optional, Computed) The ID of the resource group to which you want to move the resource.
 
   -> **NOTE:**   You can use resource groups to facilitate resource grouping and permission management for an Alibaba Cloud. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
@@ -149,23 +150,25 @@ The following arguments are supported:
   - When the return is empty, the basic DDoS protection is specified.
   - When `antidos_enhanced` is returned, it indicates DDoS protection (enhanced version).
 * `tags` - (Optional, Map) The tag of the resource
-* `zone` - (Optional, ForceNew, Computed) The zone of the EIP. When the service type of the IP address pool specified by `PublicIpAddressPoolId` is CloudBox, the default value is the zone of the IP address pool. For more information, see [ListPublicIpAddressPools](https://www.alibabacloud.com/help/en/doc-detail/429433.html). 
+* `zone` - (Optional, ForceNew, Computed) The zone of the EIP. When the service type of the IP address pool specified by `PublicIpAddressPoolId` is CloudBox, the default value is the zone of the IP address pool. For more information, see [ListPublicIpAddressPools](https://www.alibabacloud.com/help/en/doc-detail/429433.html).
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `name` - (Deprecated since v1.126.0). Field 'name' has been deprecated from provider version 1.126.0. New field 'address_name' instead.
 * `instance_charge_type` - (Deprecated since v1.126.0). Field 'instance_charge_type' has been deprecated from provider version 1.126.0. New field 'payment_type' instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the EIP was created.
-* `status` - The state of the EIP. 
-
+* `status` - The state of the EIP.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 9 mins) Used when create the Address.
 * `delete` - (Defaults to 9 mins) Used when delete the Address.
 * `update` - (Defaults to 9 mins) Used when update the Address.

@@ -49,7 +49,6 @@ The following arguments are supported:
 
   -> **NOTE:** UpdateAlias can be used to update the mapping relationship between alias and master key(CMK).
 
-
 ## Attributes Reference
 
 * `id` - The ID of the alias.

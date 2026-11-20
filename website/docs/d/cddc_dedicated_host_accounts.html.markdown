@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cddc Dedicated Host Accounts to the user.
 ---
 
-# alicloud\_cddc\_dedicated\_host\_accounts
+# alicloud_cddc_dedicated_host_accounts
 
 This data source provides the Cddc Dedicated Host Accounts of the current Alibaba Cloud user.
 

@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_dfs_access_rule
 
-Provides a DFS Access Rule resource. 
+Provides a DFS Access Rule resource.
 
 For information about DFS Access Rule and how to use it, see [What is Access Rule](https://www.alibabacloud.com/help/en/aibaba-cloud-storage-services/latest/apsara-file-storage-for-hdfs).
 
@@ -49,6 +49,7 @@ resource "alicloud_dfs_access_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_group_id` - (Required, ForceNew) Permission group resource ID. You must specify the permission group ID when creating a permission rule.
 * `description` - (Optional) Permission rule description.  No more than 32 characters in length.
 * `network_segment` - (Required, ForceNew) The IP address or network segment of the authorized object.
@@ -58,6 +59,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<access_group_id>:<access_rule_id>`.
 * `access_rule_id` - The unique identity of the permission rule, which is used to retrieve the permission rule for a specific day in the permission group.
 * `create_time` - Permission rule resource creation time.
@@ -65,6 +67,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Access Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Access Rule.
 * `update` - (Defaults to 5 mins) Used when update the Access Rule.

@@ -50,13 +50,12 @@ resource "alicloud_apig_plugin_class" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_apig_plugin_class&spm=docs.r.apig_plugin_class.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `alias` - (Optional, ForceNew) The alias of the plugin class.
 * `description` - (Required, ForceNew) The description of the plugin class, which introduces the main functions of the plugin.
 * `execute_priority` - (Required, ForceNew, Int) The execution priority of the plugin. The larger the value, the higher the priority. The value must be greater than `0`.
@@ -72,10 +71,10 @@ The following arguments are supported:
 * `wasm_language` - (Required, ForceNew) The programming language of the wasm plugin. Valid values: `TinyGo`, `Cpp`, `Rust`, `AssemblyScript`, `Zig`.
 * `wasm_url` - (Required, ForceNew) The URL of the wasm plugin.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. It is the same as `plugin_class_id`.
 * `document` - The document of the plugin class, which describes the functions and usage of the plugin in detail.
 * `status` - The publish status of the plugin class. Only a plugin class in the `Success` status can be installed. Valid values:
@@ -93,6 +92,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Plugin Class.
 * `delete` - (Defaults to 5 mins) Used when delete the Plugin Class.
 

@@ -10,8 +10,6 @@ description: |-
 
 Provides a VPC Ipv6 Address resource.
 
-
-
 For information about VPC Ipv6 Address and how to use it, see [What is Ipv6 Address](https://next.api.alibabacloud.com/document/Vpc/2016-04-28/AllocateIpv6Address).
 
 -> **NOTE:** Available since v1.216.0.
@@ -73,6 +71,7 @@ resource "alicloud_vpc_ipv6_address" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `address_type` - (Optional, ForceNew, Computed, Available since v1.245.0) The type of the IPv6 address. Value:
   - `IPv6Address` (default): indicates that the current instance is a single IPv6 address.
   - `IPv6Prefix`: indicates that the current instance is a contiguous block of IPv6 addresses.
@@ -86,6 +85,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `status` - The status of the resource.  Available, Pending and Deleting.
@@ -93,6 +93,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ipv6 Address.
 * `delete` - (Defaults to 5 mins) Used when delete the Ipv6 Address.
 * `update` - (Defaults to 5 mins) Used when update the Ipv6 Address.

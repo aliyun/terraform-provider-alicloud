@@ -57,9 +57,7 @@ resource "alicloud_ram_access_key_policy" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_access_key_policy&spm=docs.r.ram_access_key_policy.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

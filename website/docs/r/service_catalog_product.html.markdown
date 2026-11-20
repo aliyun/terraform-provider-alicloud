@@ -49,6 +49,7 @@ resource "alicloud_service_catalog_product" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The description of the product
 * `product_name` - (Required) The name of the product
 * `product_type` - (Required, ForceNew) The type of the product
@@ -57,12 +58,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the product
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Product.
 * `delete` - (Defaults to 5 mins) Used when delete the Product.
 * `update` - (Defaults to 5 mins) Used when update the Product.

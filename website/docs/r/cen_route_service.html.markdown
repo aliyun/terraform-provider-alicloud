@@ -84,8 +84,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 6 mins) Used when creating the cen route service (until it reaches the initial `Active` status). 
-* `delete` - (Defaults to 6 mins) Used when delete the cen route service. 
+* `create` - (Defaults to 6 mins) Used when creating the cen route service (until it reaches the initial `Active` status).
+* `delete` - (Defaults to 6 mins) Used when delete the cen route service.
 
 ## Import
 
@@ -94,4 +94,3 @@ CEN Route Service can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_cen_route_service.example cen-ahixm0efqh********:cn-shanghai:100.118.28.52/32:cn-shanghai
 ```
-

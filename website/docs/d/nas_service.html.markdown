@@ -7,19 +7,19 @@ description: |-
     Provides a datasource to open the NAS service automatically.
 ---
 
-# alicloud\_nas\_service
+# alicloud_nas_service
 
 Using this data source can enable NAS service automatically. If the service has been enabled, it will return `Opened`.
 
 For information about NAS and how to use it, see [What is NAS](https://www.alibabacloud.com/help/product/27516.htm).
 
--> **NOTE:** Available in v1.97.0+
+-> **NOTE:** Available since v1.97.0+
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_nas_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 
@@ -35,4 +35,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

@@ -7,13 +7,13 @@ description: |-
     Provides a datasource to open the Cloud Storage Gateway service automatically.
 ---
 
-# alicloud\_cloud\_storage\_gateway\_service
+# alicloud_cloud_storage_gateway_service
 
 Using this data source can open Cloud Storage Gateway service automatically. If the service has been opened, it will return opened.
 
 For information about Cloud Storage Gateway and how to use it, see [What is Cloud Storage Gateway](https://www.alibabacloud.com/help/en/product/53923.htm).
 
--> **NOTE:** Available in v1.117.0+
+-> **NOTE:** Available since v1.117.0+
 
 ## Example Usage
 
@@ -35,4 +35,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

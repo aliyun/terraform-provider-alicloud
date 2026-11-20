@@ -107,4 +107,3 @@ Private Zone Record can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_pvtz_zone_record.example abc123456
 ```
-

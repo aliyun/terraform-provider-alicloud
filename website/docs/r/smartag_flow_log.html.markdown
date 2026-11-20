@@ -53,8 +53,8 @@ The following arguments are supported:
 * `netflow_server_port` - (Optional) The port of the NetFlow collector. Default value: `9995`. If `output_type` is set to `netflow` or `all`, this parameter is required.
 * `netflow_version` - (Optional) The NetFlow version. Default value: `V9`. Valid values: `V10`, `V5`, `V9`. If `output_type` is set to `netflow` or `all`, this parameter is required.
 * `output_type` - (Required) The location where the flow log is stored. Valid values:  
-  - `sls`: The flow log is stored in Log Service. 
-  - `netflow`: The flow log is stored on a NetFlow collector. 
+  - `sls`: The flow log is stored in Log Service.
+  - `netflow`: The flow log is stored on a NetFlow collector.
   - `all`: The flow log is stored both in Log Service and on a NetFlow collector.
 * `project_name` - (Optional) The project in Log Service. If `output_type` is set to `sls` or `all`, this parameter is required.
 * `sls_region_id` - (Optional) The ID of the region where Log Service is deployed. If `output_type` is set to `sls` or `all`, this parameter is required.

@@ -55,6 +55,7 @@ resource "alicloud_express_connect_ec_failover_test_job" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) Job description.
 * `ec_failover_test_job_name` - (Optional) Job name.
 * `job_duration` - (Required) Job duration.
@@ -66,11 +67,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ec Failover Test Job.
 * `delete` - (Defaults to 5 mins) Used when delete the Ec Failover Test Job.
 * `update` - (Defaults to 5 mins) Used when update the Ec Failover Test Job.

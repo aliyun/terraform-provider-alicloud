@@ -72,11 +72,12 @@ resource "alicloud_vpc_flow_log" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `aggregation_interval` - (Optional, Computed, Available since v1.205.0) The sampling interval of the flow log. Unit: seconds. Valid values: 1, 5, and 10 (default).
 * `description` - (Optional) The Description of the VPC Flow Log.
 * `flow_log_name` - (Optional) The Name of the VPC Flow Log.
 * `ip_version` - (Optional, Computed, Available since v1.243.0) The IP address type of the collected traffic.
-* `log_store_name` - (Required, ForceNew) The Logstore that stores the captured traffic data. 
+* `log_store_name` - (Required, ForceNew) The Logstore that stores the captured traffic data.
 * `project_name` - (Required, ForceNew) The project that manages the captured traffic data.
 * `resource_group_id` - (Optional, Computed, Available since v1.205.0) The ID of the resource group.
 * `resource_id` - (Required, ForceNew) The ID of the resource.
@@ -97,6 +98,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `business_status` - Business status
 * `create_time` - Creation time
@@ -106,6 +108,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Flow Log.
 * `delete` - (Defaults to 10 mins) Used when delete the Flow Log.
 * `update` - (Defaults to 10 mins) Used when update the Flow Log.

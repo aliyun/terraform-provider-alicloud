@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Waiting Room resource.
 
-
-
 For information about ESA Waiting Room and how to use it, see [What is Waiting Room](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateWaitingRoom).
 
 -> **NOTE:** Available since v1.244.0.
@@ -79,6 +77,7 @@ resource "alicloud_esa_waiting_room" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cookie_name` - (Required) Custom Cookie name.
 * `custom_page_html` - (Optional) User-defined waiting room page content, when the waiting room type is custom type, you need to enter. The incoming content needs to be base64 encoded.
 * `description` - (Optional) Waiting room description.
@@ -120,6 +119,7 @@ The following arguments are supported:
 ### `host_name_and_path`
 
 The host_name_and_path supports the following:
+
 * `domain` - (Required) The domain name.
 * `path` - (Required) The path.
 * `subdomain` - (Required) The subdomain.
@@ -127,12 +127,14 @@ The host_name_and_path supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<waiting_room_id>`.
 * `waiting_room_id` - The waiting room ID, which can be obtained by calling the [ListWaitingRooms](https://help.aliyun.com/document_detail/2850279.html) API.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Waiting Room.
 * `delete` - (Defaults to 5 mins) Used when delete the Waiting Room.
 * `update` - (Defaults to 5 mins) Used when update the Waiting Room.

@@ -92,7 +92,6 @@ The following arguments are supported:
 * `desc` - (Optional) The description of the configuration.
 * `beta_ips`-(Optional, Computed) The list of IP addresses where the beta release of the configuration is performed.
 
-
 ## Attributes Reference
 
 The following attributes are exported:

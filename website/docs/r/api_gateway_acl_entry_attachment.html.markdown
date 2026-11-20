@@ -49,18 +49,21 @@ resource "alicloud_api_gateway_acl_entry_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `acl_id` - (Required, ForceNew) The ID of the ACL that the entry will be attached to.
-* `entry` - (Required, ForceNew) The CIDR block of the entry to attach. 
+* `entry` - (Required, ForceNew) The CIDR block of the entry to attach.
 * `comment` - (Optional, ForceNew) The comment for the entry.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource. The value formats as `<acl_id>:<entry>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the ACL Entry Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the ACL Entry Attachment.
 * `update` - (Defaults to 5 mins) Used when update the ACL Entry Attachment.

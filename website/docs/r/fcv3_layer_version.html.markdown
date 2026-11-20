@@ -52,6 +52,7 @@ resource "alicloud_fcv3_layer_version" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `acl` - (Optional) The access permission of the layer, 1: public, 0: private, default is private
 * `code` - (Optional, ForceNew, List) Layer code configuration See [`code`](#code) below.
 * `compatible_runtime` - (Optional, ForceNew, List) List of runtime environments supported by the layer
@@ -63,6 +64,7 @@ The following arguments are supported:
 ### `code`
 
 The code supports the following:
+
 * `checksum` - (Optional, ForceNew) The CRC-64 value of the code package. If checksum is provided, Function Compute checks whether the checksum of the code package is consistent with the provided checksum.
 * `oss_bucket_name` - (Optional, ForceNew) Name of the OSS Bucket where the user stores the Layer Code ZIP package
 * `oss_object_name` - (Optional, ForceNew) Name of the OSS Object where the user stores the Layer Code ZIP package
@@ -71,6 +73,7 @@ The code supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<layer_name>:<version>`.
 * `code_size` - (Available since v1.234.0) The code package size of the layer, in bytes.
 * `create_time` - The creation time of the resource
@@ -80,6 +83,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Layer Version.
 * `delete` - (Defaults to 5 mins) Used when delete the Layer Version.
 * `update` - (Defaults to 5 mins) Used when update the Layer Version.

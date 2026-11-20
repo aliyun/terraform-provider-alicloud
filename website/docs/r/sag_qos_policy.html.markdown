@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_sag_qos_policy
 
-Provides a Sag qos policy resource. 
+Provides a Sag qos policy resource.
 You need to create a QoS policy to set priorities, rate limits, and quintuple rules for different messages.
 
 For information about Sag Qos Policy and how to use it, see [What is Qos Policy](https://www.alibabacloud.com/help/en/smart-access-gateway/latest/createqospolicy).
@@ -73,8 +73,7 @@ The following arguments are supported:
 * `dest_cidr` - (Required) The destination CIDR block.
 * `dest_port_range` - (Required) The destination port range.
 * `start_time` - (Optional) The time when the quintuple rule takes effect.
-* `end_time` - (Optional) The expiration time of the quintuple rule. 
-
+* `end_time` - (Optional) The expiration time of the quintuple rule.
 
 ## Attributes Reference
 
@@ -89,4 +88,3 @@ The Sag Qos Policy can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_sag_qos_policy.example qos-abc123456:qospy-abc123456
 ```
-

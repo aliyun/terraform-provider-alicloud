@@ -56,6 +56,7 @@ resource "alicloud_oss_bucket_user_defined_log_fields" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the bucket.
 * `header_set` - (Optional) Container for custom request header configuration information.
 * `param_set` - (Optional) Container for custom request parameters configuration information.
@@ -63,11 +64,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket User Defined Log Fields.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket User Defined Log Fields.
 * `update` - (Defaults to 5 mins) Used when update the Bucket User Defined Log Fields.

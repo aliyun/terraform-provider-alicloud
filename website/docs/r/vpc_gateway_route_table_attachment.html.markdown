@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_vpc_gateway_route_table_attachment
 
-Provides a VPC Gateway Route Table Attachment resource. 
+Provides a VPC Gateway Route Table Attachment resource.
 
 For information about VPC Gateway Route Table Attachment and how to use it, see [What is Gateway Route Table Attachment](https://www.alibabacloud.com/help/doc-detail/174112.htm).
 
@@ -51,7 +51,6 @@ resource "alicloud_vpc_gateway_route_table_attachment" "example" {
 
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_gateway_route_table_attachment&spm=docs.r.vpc_gateway_route_table_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -62,11 +61,10 @@ The following arguments are supported:
 * `ipv4_gateway_id` - (Required, ForceNew) The ID of the IPv4 Gateway instance.
 * `route_table_id` - (Required, ForceNew) The ID of the Gateway route table to be bound.
 
-
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<route_table_id>:<ipv4_gateway_id>`.
 * `create_time` - The creation time of the resource.
 * `status` - The status of the IPv4 Gateway instance. Value:
@@ -80,6 +78,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Gateway Route Table Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Gateway Route Table Attachment.
 

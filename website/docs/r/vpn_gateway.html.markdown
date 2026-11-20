@@ -86,6 +86,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_pay` - (Optional, Available since v1.160.0) Whether to pay automatically. Default value: `true`. Valid values:
   - `false`: If automatic payment is not enabled, you need to go to the order center to complete the payment after the order is generated.
   - `true`: Enable automatic payment, automatic payment order.
@@ -107,12 +108,14 @@ The following arguments are supported:
 * `enable_ssl` - (Optional) Enable or Disable SSL VPN.  At least one type of VPN should be enabled.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `instance_charge_type` - (Deprecated since v1.216.0). Field 'instance_charge_type' has been deprecated from provider version 1.216.0. New field 'payment_type' instead.
 * `name` - (Deprecated since v1.216.0). Field 'name' has been deprecated from provider version 1.216.0. New field 'vpn_gateway_name' instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the VPN gateway was created.
 * `status` - The status of the resource.

@@ -30,16 +30,17 @@ output "alicloud_cen_inter_region_traffic_qos_queue_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `traffic_qos_policy_id` - (ForceNew, Required) The ID of the traffic scheduling policy.
 * `ids` - (Optional, ForceNew, Computed) A list of Inter Region Traffic Qos Queue IDs.
 * `names` - (Optional, ForceNew) The name of inter Region Traffic Qos Queue. You can specify at most 10 names.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Inter Region Traffic Qos Queue IDs.
 * `names` - A list of name of Inter Region Traffic Qos Queues.
 * `queues` - A list of Inter Region Traffic Qos Queue Entries. Each element contains the following attributes:

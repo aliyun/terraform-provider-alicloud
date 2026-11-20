@@ -10,8 +10,6 @@ description: |-
 
 Provides a APIG Plugin resource.
 
-
-
 For information about APIG Plugin and how to use it, see [What is Plugin](https://next.api.alibabacloud.com/document/APIG/2024-03-27/InstallPlugin).
 
 -> **NOTE:** Available since v1.286.0.
@@ -80,13 +78,12 @@ resource "alicloud_apig_plugin" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_apig_plugin&spm=docs.r.apig_plugin.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `gateway_id` - (Required, ForceNew) The filter parameter for the gateway instance ID.
 
   -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
@@ -95,17 +92,18 @@ The following arguments are supported:
 
   -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `gateway_name` - The gateway name.
 * `plugin_class_name` - The filter parameter for the plugin class name.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Plugin.
 * `delete` - (Defaults to 5 mins) Used when delete the Plugin.
 

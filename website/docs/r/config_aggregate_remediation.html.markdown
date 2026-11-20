@@ -98,12 +98,12 @@ resource "alicloud_config_aggregate_remediation" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_config_aggregate_remediation&spm=docs.r.config_aggregate_remediation.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `aggregator_id` - (Required, ForceNew) The account Group ID.
 For more information about how to obtain the account group ID, see [ListAggregators](~~ 255797 ~~).
 * `config_rule_id` - (Required, ForceNew) The rule ID.
@@ -127,12 +127,14 @@ For more information about how to obtain the parameters of remediation settings,
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<aggregator_id>:<remediation_id>`.
 * `remediation_id` - Multi-account remediation ID
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Aggregate Remediation.
 * `delete` - (Defaults to 5 mins) Used when delete the Aggregate Remediation.
 * `update` - (Defaults to 5 mins) Used when update the Aggregate Remediation.

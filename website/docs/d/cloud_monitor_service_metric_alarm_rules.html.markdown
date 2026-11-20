@@ -77,6 +77,7 @@ output "cloud_monitor_service_metric_alarm_rules_id_0" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dimensions` - (ForceNew, Optional) The monitoring dimensions for the specified resource.
 Format: a set of key:value pairs, for example: `{"userId":"120886317861****"}` and `{"instanceId":"i-2ze2d6j5uhg20x47****"}`.
 * `metric_alarm_rule_id` - (ForceNew, Optional) The ID of the alarm rule.
@@ -102,14 +103,14 @@ You can enter a new alert rule name or use an existing alert rule name in CloudM
 * `status` - (ForceNew, Optional) The enabled status of the alarm rule. Valid values:
   - true: enabled.
   - false: disabled.
-* `ids` - (Optional, ForceNew, Computed) A list of Metric Alarm Rule IDs. 
+* `ids` - (Optional, ForceNew, Computed) A list of Metric Alarm Rule IDs.
 * `enable_details` - (Optional, ForceNew) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
-
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Metric Alarm Rule IDs.
 * `rules` - A list of Metric Alarm Rule Entries. Each element contains the following attributes:
     * `composite_expression` - Alert condition for multiple metrics.

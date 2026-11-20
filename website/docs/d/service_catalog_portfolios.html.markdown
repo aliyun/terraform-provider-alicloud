@@ -29,6 +29,7 @@ output "alicloud_service_catalog_portfolio_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Optional, ForceNew, Computed) A list of Portfolio IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `scope` - (Optional, ForceNew) The query scope. Valid values: `Local`(default), `Import`, `All`.
@@ -37,10 +38,10 @@ The following arguments are supported:
 * `product_id` - (Optional, ForceNew) The ID of the product.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Portfolio IDs.
 * `names` - A list of name of Portfolios.
 * `portfolios` - A list of Portfolio Entries. Each element contains the following attributes:

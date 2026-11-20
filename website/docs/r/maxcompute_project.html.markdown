@@ -42,6 +42,7 @@ resource "alicloud_maxcompute_project" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `comment` - (Optional, ForceNew) Project description information. The length is 1 to 256 English or Chinese characters. The default value is blank.
 * `default_quota` - (Optional) Used to implement computing resource allocation. Valid values: subQuota Nickname
 If the calculation Quota is not specified, the default Quota resource will be consumed by jobs initiated by the project. For more information about computing resource usage, see [Computing Resource Usage](https://www.alibabacloud.com/help/en/maxcompute/user-guide/use-of-computing-resources).
@@ -62,6 +63,7 @@ If the calculation Quota is not specified, the default Quota resource will be co
 ### `ip_white_list`
 
 The ip_white_list supports the following:
+
 * `ip_list` - (Optional) Set the IP address whitelist in the classic network. Only devices in the whitelist are allowed to access the project.
 
   -> **NOTE:** If you only configure a classic network IP address whitelist, access to the classic network is restricted and all access to the VPC is prohibited.
@@ -70,10 +72,10 @@ The ip_white_list supports the following:
 
   -> **NOTE:** If you only configure a VPC network IP address whitelist, access to the VPC network is restricted and access to the classic network is prohibited.
 
-
 ### `properties`
 
 The properties supports the following:
+
 * `allow_full_scan` - (Optional, Bool) Whether to allow full table scan. Default: `false`.
 * `enable_dr` - (Optional, Bool, Available since v1.253.0) Enable multi-AZ storage disaster tolerance. Valid values: `true`, `false`.
 * `enable_decimal2` - (Optional, Bool) Whether to turn on Decimal2.0.
@@ -85,6 +87,7 @@ The properties supports the following:
 To configure the permissions and IP whitelist parameters of the MaxCompute project, you must have the management permissions (Admin) of the corresponding project, including Super_Administrator, Admin, or custom management permissions. For more information, see the project management permissions list.
 
 You can turn on storage encryption only for projects that have not turned on storage encryption. For projects that have turned on storage encryption, you cannot turn off storage encryption or change the encryption algorithm. See [`encryption`](#properties-encryption) below.
+
 * `retention_days` - (Optional, Int) Set the number of days to retain backup data. During this time, you can restore the current version to any backup version. The value range of days is [0,30], and the default value is 1. 0 means backup is turned off.
 The effective policy after adjusting the backup cycle is:
 Extend the backup cycle: The new backup cycle takes effect on the same day.
@@ -101,6 +104,7 @@ hive: the type system of the Hive compatibility mode introduced by MaxCompute 2.
 ### `properties-encryption`
 
 The properties-encryption supports the following:
+
 * `algorithm` - (Optional) The encryption algorithm supported by the key, including AES256, AESCTR, and RC4.
 * `enable` - (Optional, Bool) Only enable function is supported. Value: (true)
 
@@ -111,6 +115,7 @@ The properties-encryption supports the following:
 ### `properties-table_lifecycle`
 
 The properties-table_lifecycle supports the following:
+
 * `type` - (Optional) Optional: When creating a table, the Lifecycle clause is optional. If the Lifecycle of the table is not set, the table is permanently valid.
 mandatory: the Lifecycle clause is required. You must set the Lifecycle of the table.
 inherit: If you do not set the lifecycle of the table when creating a table, the lifecycle of the table is the value of ODPS. table.lifecycle.value, and the ODPS. table.lifecycle.value attribute sets the lifecycle of the table.
@@ -119,6 +124,7 @@ inherit: If you do not set the lifecycle of the table when creating a table, the
 ### `security_properties`
 
 The security_properties supports the following:
+
 * `enable_download_privilege` - (Optional, Bool) Set whether to enable the [Download permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/download-control), that is, set the ODPS. security.enabledownloadprivilege property.
 * `label_security` - (Optional, Bool) Set whether to use the [Label permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/label-based-access-control), that is, set the LabelSecurity attribute, which is not used by default.
 * `object_creator_has_access_permission` - (Optional, Bool) Sets whether to allow the creator of the object to have access to the object, I .e. sets the attribute. The default is the allowed state.
@@ -130,12 +136,14 @@ The security_properties supports the following:
 ### `security_properties-project_protection`
 
 The security_properties-project_protection supports the following:
+
 * `exception_policy` - (Optional, JsonString) Set [Exceptions or Trusted Items](https://www.alibabacloud.com/help/en/maxcompute/security-and-compliance/project-data-protection)
 * `protected` - (Optional, Bool) Whether enabled, value:(true/false)
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Represents the creation time of the project
 * `owner` - Project owner
@@ -145,6 +153,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Project.
 * `delete` - (Defaults to 5 mins) Used when delete the Project.
 * `update` - (Defaults to 5 mins) Used when update the Project.

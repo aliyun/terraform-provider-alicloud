@@ -7,11 +7,11 @@ description: |-
   Provides a list of Vpc Ipv6 Internet Bandwidths to the user.
 ---
 
-# alicloud\_vpc\_ipv6\_internet\_bandwidths
+# alicloud_vpc_ipv6_internet_bandwidths
 
 This data source provides the Vpc Ipv6 Internet Bandwidths of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.143.0+.
+-> **NOTE:** Available since v1.143.0+.
 
 ## Example Usage
 
@@ -57,7 +57,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `Normal`, `FinancialLocked` and `SecurityLocked`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

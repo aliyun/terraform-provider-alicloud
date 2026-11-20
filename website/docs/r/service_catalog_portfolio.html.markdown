@@ -43,6 +43,7 @@ resource "alicloud_service_catalog_portfolio" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The description of the portfolio
 * `portfolio_name` - (Required) The name of the portfolio
 * `provider_name` - (Required) The provider name of the portfolio
@@ -50,6 +51,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the portfolio
 * `portfolio_arn` - The ARN of the portfolio
@@ -57,6 +59,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Portfolio.
 * `delete` - (Defaults to 5 mins) Used when delete the Portfolio.
 * `update` - (Defaults to 5 mins) Used when update the Portfolio.

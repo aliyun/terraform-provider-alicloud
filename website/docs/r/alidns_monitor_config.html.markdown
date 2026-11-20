@@ -104,7 +104,7 @@ The following arguments are supported:
 
 ### `isp_city_node`
 
-The isp_city_node supports the following: 
+The isp_city_node supports the following:
 
 * `city_code` - (Required) The code of the city node to monitor.
 * `isp_code` - (Required) The code of the Internet provider service (ISP) node to monitor.

@@ -14,7 +14,7 @@ For information about CDDC Dedicated Propre Host and how to use it, see [What is
 
 -> **NOTE:** Available since v1.210.0.
 
--> **DEPRECATED:**  This resource has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-mybase/latest/notice-stop-selling-mybase-hosted-instances-from-august-31-2023) from version `1.225.1`. 
+-> **DEPRECATED:**  This resource has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-mybase/latest/notice-stop-selling-mybase-hosted-instances-from-august-31-2023) from version `1.225.1`.
 
 ## Example Usage
 
@@ -152,6 +152,7 @@ Terraform cannot destroy resource `alicloud_cddc_dedicated_propre_host`. Terrafo
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_pay` - (Optional, Available since v1.215.0) Whether to pay automatically when the host is created.
 * `auto_renew` - (Optional) Whether to enable automatic renewal. Valid values:
   - **true**: On
@@ -202,6 +203,7 @@ Must be consistent with the parent resource cluster engine attributes.
 ### `ecs_class_list`
 
 The ecs_class_list supports the following:
+
 * `data_disk_performance_level` - (Optional, ForceNew) Data disk PL level.
 * `disk_capacity` - (Optional, ForceNew) The capacity of the data disk.
 * `disk_count` - (Optional, ForceNew) Number of mounted data disks.
@@ -213,7 +215,7 @@ The ecs_class_list supports the following:
 * `instance_type` - (Required, ForceNew) ECS specifications.
 * `sys_disk_capacity` - (Required, ForceNew) System disk capacity.
 * `sys_disk_type` - (Required, ForceNew) System disk type, value:
-  - **cloud_essd**: the ESSD cloud disk. 
+  - **cloud_essd**: the ESSD cloud disk.
   - **cloud_ssd**: SSD cloud disk.
   - **cloud_efficiency**: The ultra cloud disk.
   - **cloud_auto**: ESSD AutoPL cloud disk.
@@ -222,12 +224,14 @@ The ecs_class_list supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<dedicated_host_group_id>:<ecs_instance_id>`.
 * `ecs_instance_id` - ECS instance ID.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Dedicated Propre Host.
 
 ## Import

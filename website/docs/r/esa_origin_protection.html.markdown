@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Origin Protection resource.
 
-
-
 For information about ESA Origin Protection and how to use it, see [What is Origin Protection](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateOriginProtection).
 
 -> **NOTE:** Available since v1.256.0.
@@ -54,6 +52,7 @@ resource "alicloud_esa_origin_protection" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `origin_converge` - (Optional) The IP convergence status.
 
   - on
@@ -63,11 +62,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Origin Protection.
 * `delete` - (Defaults to 5 mins) Used when delete the Origin Protection.
 * `update` - (Defaults to 5 mins) Used when update the Origin Protection.

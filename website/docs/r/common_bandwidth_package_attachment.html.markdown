@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_common_bandwidth_package_attachment
 
-Provides a CBWP Common Bandwidth Package Attachment resource. 
+Provides a CBWP Common Bandwidth Package Attachment resource.
 
 -> **NOTE:** Terraform will auto build common bandwidth package attachment while it uses `alicloud_common_bandwidth_package_attachment` to build a common bandwidth package attachment resource.
 
@@ -58,6 +58,7 @@ resource "alicloud_common_bandwidth_package_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bandwidth_package_bandwidth` - (Optional, Computed) The maximum bandwidth for the EIP. This value cannot be larger than the maximum bandwidth of the Internet Shared Bandwidth instance. Unit: Mbit/s.
 
   -> **NOTE:**  From version 1.261.0, If you want to cancel the maximum bandwidth configuration for the EIP, you can set `bandwidth_package_bandwidth` to `Cancelled`.
@@ -74,12 +75,14 @@ You can specify up to 50 EIP IDs. Separate multiple IDs with commas (,).
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<bandwidth_package_id>:<instance_id>`.
 * `status` - The status of the Internet Shared Bandwidth instance.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Common Bandwidth Package Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Common Bandwidth Package Attachment.
 * `update` - (Defaults to 5 mins) Used when update the Common Bandwidth Package Attachment.

@@ -77,7 +77,6 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `create` - (Defaults to 1 mins) Used when create the Ram Directory.
 * `delete` - (Defaults to 1 mins) Used when delete the Ram Directory.
 
-
 ## Import
 
 ECD Ram Directory can be imported using the id, e.g.

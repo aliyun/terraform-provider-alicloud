@@ -31,6 +31,7 @@ output "first_quotas_quota_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `name_regex` - (Optional) A regex string to filter results by Quota name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `product_code` - (Required) The product code.
@@ -45,12 +46,14 @@ The following arguments are supported:
 ### `dimensions`
 
 The dimensions supports the following:
+
 * `key` - (Optional) The key of dimensions.
 * `value` - (Optional) The value of dimensions.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Quota IDs.
 * `names` - A list of Quota names.
 * `quotas` - A list of Quotas Quotas. Each element contains the following attributes:
@@ -58,6 +61,7 @@ The following attributes are exported in addition to the arguments listed above:
 ### `quotas`
 
 The quotas supports the following attributes:
+
 * `adjustable` - Is the quota adjustable.
 * `applicable_range` - The range of quota adjustment.
 * `applicable_type` - The type of quota.

@@ -84,6 +84,7 @@ resource "alicloud_alidns_address_pool" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `address_pool_name` - (Required) The name of the address pool.
 * `address` - (Required) The address lists of the Address Pool. See [`address`](#address) below for details.
 * `instance_id` - (Required, ForceNew) The ID of the instance.
@@ -93,6 +94,7 @@ The following arguments are supported:
 ### `address`
 
 The address supports the following:
+
 * `address` - (Required) The address that you want to add to the address pool.
 * `attribute_info` - (Required) The source region of the address. expressed as a JSON string. The structure is as follows:
   * `LineCodes`: List of home lineCodes.

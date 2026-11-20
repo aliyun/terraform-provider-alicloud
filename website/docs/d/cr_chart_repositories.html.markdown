@@ -7,11 +7,11 @@ description: |-
   Provides a list of Cr Chart Repositories to the user.
 ---
 
-# alicloud\_cr\_chart\_repositories
+# alicloud_cr_chart_repositories
 
 This data source provides the Cr Chart Repositories of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.149.0+.
+-> **NOTE:** Available since v1.149.0+.
 
 ## Example Usage
 
@@ -37,9 +37,10 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by repository name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of matched Container Registry Enterprise Edition repositories.
 * `names` - A list of repository names.
 * `repositories` - A list of Cr Chart Repositories. Each element contains the following attributes:

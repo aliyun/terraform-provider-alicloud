@@ -82,6 +82,7 @@ resource "alicloud_click_house_enterprise_db_cluster_public_endpoint" "default" 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `connection_string_prefix` - (Required) The public network connection string prefix of the instance.
 * `db_instance_id` - (Required, ForceNew) The cluster ID.
 * `net_type` - (Required, ForceNew) Network type of the connection address. Valid values:
@@ -90,11 +91,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<net_type>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Enterprise Db Cluster Public Endpoint.
 * `delete` - (Defaults to 5 mins) Used when delete the Enterprise Db Cluster Public Endpoint.
 * `update` - (Defaults to 5 mins) Used when update the Enterprise Db Cluster Public Endpoint.

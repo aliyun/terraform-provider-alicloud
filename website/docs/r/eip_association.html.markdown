@@ -96,12 +96,13 @@ resource "alicloud_eip_association" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `allocation_id` - (Required, ForceNew) The ID of the EIP instance.
 * `force` - (Optional) Specifies whether to disassociate the EIP from a NAT gateway if a DNAT or SNAT entry is added to the NAT gateway. Valid values:
   - `false` (default)
   - `true`
 
-* `instance_id` - (Required, ForceNew) The ID of the instance with which you want to associate the EIP. You can enter the ID of a NAT gateway, CLB instance, ECS instance, secondary ENI, HAVIP, or IP address. 
+* `instance_id` - (Required, ForceNew) The ID of the instance with which you want to associate the EIP. You can enter the ID of a NAT gateway, CLB instance, ECS instance, secondary ENI, HAVIP, or IP address.
 * `instance_type` - (Optional, ForceNew, Computed) The type of the instance with which you want to associate the EIP. Valid values:
   - `Nat`: NAT gateway
   - `SlbInstance`: CLB instance
@@ -131,15 +132,16 @@ The following arguments are supported:
 
   -> **NOTE:**   This parameter is required if `instance_type` is set to `IpAddress`, which indicates that the EIP is to be associated with an IP address.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<allocation_id>:<instance_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Association.
 * `delete` - (Defaults to 5 mins) Used when delete the Association.
 * `update` - (Defaults to 5 mins) Used when update the Association.

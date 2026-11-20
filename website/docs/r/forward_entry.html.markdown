@@ -78,6 +78,7 @@ resource "alicloud_forward_entry" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `external_ip` - (Required) - When querying DNAT entries of an Internet NAT gateway, this parameter indicates the Elastic IP address used in the DNAT entry to provide public network access.
   - When querying DNAT entries of a VPC NAT gateway, this parameter indicates the NAT IP address used for access from external networks.
 * `external_port` - (Required) - The external port or port range that is used for port forwarding when you query DNAT entries of Internet NAT gateways. Valid values: `1` to `65535`.
@@ -104,6 +105,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<forward_table_id>:<forward_entry_id>`.
 * `forward_entry_id` - (Available since v1.43.0) The id of the forward entry on the server.
 * `status` - (Available since v1.119.1) The status of forward entry.
@@ -113,6 +115,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.119.1.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Forward Entry.
 * `delete` - (Defaults to 5 mins) Used when delete the Forward Entry.
 * `update` - (Defaults to 5 mins) Used when update the Forward Entry.

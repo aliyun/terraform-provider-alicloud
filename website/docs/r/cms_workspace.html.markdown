@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cms Workspace resource.
 
-
-
 For information about Cms Workspace and how to use it, see [What is Workspace](https://next.api.alibabacloud.com/document/Cms/2024-03-30/PutWorkspace).
 
 -> **NOTE:** Available since v1.276.0.
@@ -41,13 +39,12 @@ resource "alicloud_cms_workspace" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cms_workspace&spm=docs.r.cms_workspace.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The description of the workspace.
 * `display_name` - (Optional) The dispalyName of the workspace.
 * `sls_project` - (Required, ForceNew) The project bind to workspace.
@@ -56,13 +53,15 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the workspace.
 * `region_id` - The region of the workspace.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Workspace.
 * `delete` - (Defaults to 5 mins) Used when delete the Workspace.
 * `update` - (Defaults to 5 mins) Used when update the Workspace.

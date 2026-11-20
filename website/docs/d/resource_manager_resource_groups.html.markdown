@@ -53,4 +53,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `region_statuses`- (Available since v1.114.0) The status of the resource group in all regions.
     * `region_id` - The region ID.
     * `status` - The status of the regional resource group.
-  
+

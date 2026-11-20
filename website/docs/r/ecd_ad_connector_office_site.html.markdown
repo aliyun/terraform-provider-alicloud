@@ -96,7 +96,6 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `create` - (Defaults to 5 mins) Used when create the Ad Connector Office Site.
 * `delete` - (Defaults to 1 mins) Used when delete the Ad Connector Office Site.
 
-
 ## Import
 
 ECD Ad Connector Office Site can be imported using the id, e.g.

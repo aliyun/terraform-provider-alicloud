@@ -103,6 +103,7 @@ output "alicloud_cloud_firewall_nat_firewall_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `lang` - (ForceNew, Optional) Lang
 * `member_uid` - (ForceNew, Optional) Member Account ID
 * `nat_gateway_id` - (ForceNew, Optional) NAT gateway ID
@@ -116,10 +117,10 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed) A list of Nat Firewall IDs.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Nat Firewall IDs.
 * `firewalls` - A list of Nat Firewall Entries. Each element contains the following attributes:
   * `ali_uid` - Alibaba Cloud account ID

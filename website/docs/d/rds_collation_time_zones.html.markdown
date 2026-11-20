@@ -7,7 +7,7 @@ description: |-
   Operation to query the character set collations and time zones available for use in ApsaraDB RDS.
 ---
 
-# alicloud\_rds\_collation\_time\_zones
+# alicloud_rds_collation_time_zones
 
 Operation to query the character set collations and time zones available for use in ApsaraDB RDS.
 

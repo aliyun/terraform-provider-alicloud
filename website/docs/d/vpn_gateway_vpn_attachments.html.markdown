@@ -131,6 +131,7 @@ output "alicloud_vpn_gateway_vpn_attachment_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `page_number` - (ForceNew, Optional) Current page number.
 * `page_size` - (ForceNew, Optional) Number of records per page.
 * `ids` - (Optional, ForceNew, Computed) A list of Vpn Attachment IDs.
@@ -138,10 +139,10 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `init`, `active`, `attaching`, `attached`, `detaching`, `financialLocked`, `provisioning`, `updating`, `upgrading`, `deleted`.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Vpn Attachment IDs.
 * `names` - A list of name of Vpn Attachments.
 * `attachments` - A list of Vpn Attachment Entries. Each element contains the following attributes:

@@ -10,7 +10,6 @@ description: |-
 
 Provides a Ens Instance resource.
 
-
 For information about ENS Instance and how to use it, see [What is Instance](https://next.api.alibabacloud.com/document/Ens/2017-11-10/RunInstances).
 
 -> **NOTE:** Available since v1.216.0.
@@ -80,6 +79,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
+
 * `amount` - (Optional, Int) The number of instances created, with a minimum of 1 and a maximum of 100
 * `auto_release_time` - (Optional, ForceNew, Available since v1.230.0) The automatic release time of the pay-as-you-go instance. According to the [ISO 8601] standard, UTC +0 time is used. The format is: 'yyyy-MM-ddTHH:mm:ssZ '.
   - If the second ('ss') value is not '00', it is automatically taken as the start of the current minute ('mm').
@@ -164,6 +164,7 @@ The following arguments are supported:
 ### `data_disk`
 
 The data_disk supports the following:
+
 * `category` - (Optional, ForceNew) Data disk type. Optional values:
   - cloud_efficiency: Ultra cloud disk
   - cloud_ssd: Full Flash cloud disk
@@ -176,6 +177,7 @@ The data_disk supports the following:
 ### `system_disk`
 
 The system_disk supports the following:
+
 * `category` - (Optional, ForceNew) System disk type. Value
   - cloud_efficiency: Ultra cloud disk
   - cloud_ssd: Full Flash cloud disk
@@ -186,6 +188,7 @@ The system_disk supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `data_disk` - Data disk specifications
   * `disk_id` - Cloud Disk ID.
@@ -193,6 +196,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.
 * `update` - (Defaults to 5 mins) Used when update the Instance.

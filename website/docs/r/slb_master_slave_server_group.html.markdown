@@ -149,7 +149,7 @@ resource "alicloud_slb_listener" "tcp" {
 The following arguments are supported:
 
 * `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch a new master slave server group.
-* `name` - (Required, ForceNew) Name of the master slave server group. 
+* `name` - (Required, ForceNew) Name of the master slave server group.
 * `servers` - (Optional, ForceNew) A list of ECS instances to be added. Only two ECS instances can be supported in one resource. See [`servers`](#servers) below.
 * `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
 
@@ -161,7 +161,7 @@ The servers mapping supports the following:
 * `port` - (Required) The port used by the backend server. Valid value range: [1-65535].
 * `weight` - (Optional) Weight of the backend server. Valid value range: [0-100]. Default to 100.
 * `type` - (Optional, Available in 1.51.0+) Type of the backend server. Valid value ecs, eni. Default to eni.
-* `server_type` - (Optional) The server type of the backend server. Valid value Master, Slave. 
+* `server_type` - (Optional) The server type of the backend server. Valid value Master, Slave.
 
 ## Attributes Reference
 

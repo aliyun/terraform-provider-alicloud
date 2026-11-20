@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_edas_k8s_application
 
-Create an EDAS k8s application.For information about EDAS K8s Application and how to use it, see [What is EDAS K8s Application](https://www.alibabacloud.com/help/en/edas/developer-reference/api-edas-2017-08-01-insertk8sapplication). 
+Create an EDAS k8s application.For information about EDAS K8s Application and how to use it, see [What is EDAS K8s Application](https://www.alibabacloud.com/help/en/edas/developer-reference/api-edas-2017-08-01-insertk8sapplication).
 
 -> **NOTE:** Available since v1.105.0.
 
@@ -113,11 +113,11 @@ The following arguments are supported:
 * `internet_slb_id` - (Optional, ForceNew, Deprecated since v1.194.0) Public network SLB ID. If not configured, EDAS will automatically purchase a new SLB for the user.
   It has been deprecated, and new resource 'alicloud_edas_k8s_slb_attachment' replaces it.
 * `limit_mem` - (Optional) The memory limit of the application instance during application operation, unit: M.
-* `requests_mem` - (Optional) When the application is created, the memory limit of the application instance, unit: M. When set to 0, it means unlimited. 
+* `requests_mem` - (Optional) When the application is created, the memory limit of the application instance, unit: M. When set to 0, it means unlimited.
 * `requests_m_cpu` - (Optional) When the application is created, the CPU quota of the application instance, unit: number of millcores, similar to request_cpu
 * `limit_m_cpu` - (Optional)  The CPU quota of the application instance during application operation. Unit: Number of millcores, set to 0 means unlimited, similar to request_cpu.
 * `command` - (Optional) The set command, if set, will replace the startup command in the mirror when the mirror is started.
-* `command_args` - (Optional) Used in combination with the command, the parameter of the command is a JsonArray string in the format: `[{"argument":"-c"},{"argument":"test"}]`. Among them, -c and test are two parameters that need to be set. 
+* `command_args` - (Optional) Used in combination with the command, the parameter of the command is a JsonArray string in the format: `[{"argument":"-c"},{"argument":"test"}]`. Among them, -c and test are two parameters that need to be set.
 * `envs` - (Optional)  Deployment environment variables, the format must conform to the JSON object array, such as: `{"name":"x","value":"y"},{"name":"x2","value":"y2"}`, If you want to cancel the configuration, you need to set an empty JSON array "" to indicate no configuration.
 * `pre_stop` - (Optional) Execute script before stopping
 * `post_start` - (Optional) Execute script after startup

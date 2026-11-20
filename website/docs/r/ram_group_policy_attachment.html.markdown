@@ -10,8 +10,6 @@ description: |-
 
 Provides a RAM Group Policy Attachment resource.
 
-
-
 For information about RAM Group Policy Attachment and how to use it, see [What is Group Policy Attachment](https://next.api.alibabacloud.com/document/Ram/2015-05-01/AttachPolicyToGroup).
 
 -> **NOTE:** Available since v1.0.0.
@@ -73,6 +71,7 @@ resource "alicloud_ram_group_policy_attachment" "attach" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `group_name` - (Required, ForceNew) The name of the group.
 * `policy_name` - (Required, ForceNew) The name of the policy.
 * `policy_type` - (Required, ForceNew) Policy type.
@@ -82,11 +81,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `group:<policy_name>:<policy_type>:<group_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Group Policy Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Group Policy Attachment.
 

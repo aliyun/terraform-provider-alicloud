@@ -64,14 +64,15 @@ output "alicloud_governance_baseline_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Optional, ForceNew, Computed) A list of Baseline IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Baseline IDs.
 * `names` - A list of name of Baselines.
 * `baselines` - A list of Baseline Entries. Each element contains the following attributes:

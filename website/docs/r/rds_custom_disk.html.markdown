@@ -60,11 +60,10 @@ resource "alicloud_rds_custom_disk" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_pay` - (Optional) Whether to pay automatically. Value range:
   - `true`: automatic payment. You need to ensure that your account balance is sufficient.
   - `false`: only orders are generated without deduction.
-
-
 
   -> **NOTE:**  The default value is true. If the balance of your payment method is insufficient, you can set the AutoPay parameter to false. In this case, unpaid orders will be generated. You can log on to the RDS management console to pay by yourself.
 
@@ -113,6 +112,7 @@ The following arguments are supported:
   -> **NOTE:** From version 1.283.0, `performance_level` can be modified.
 
 For more information about how to select an ESSD performance level, see [ESSD cloud disk](~~ 122389 ~~).
+
 * `resource_group_id` - (Optional, Available since v1.283.0) The ID of the resource group to which the disk belongs.
 * `size` - (Required, Int) Capacity size. Unit: GiB. You must pass in a parameter value for this parameter. Value range:
   - `cloud`:5~2,000.
@@ -129,8 +129,10 @@ For more information about how to select an ESSD performance level, see [ESSD cl
   - `Elastic_ephemeral_disk_premium`:64 to 8,192.
 
 If you specify the 'SnapshotId' parameter, the 'SnapshotId' parameter and the 'Size' parameter have the following limitations:
+
   - If the snapshot capacity corresponding to the 'SnapshotId' parameter is greater than the set 'Size' parameter value, the actual size of the cloud disk created is the size of the specified snapshot.
   - If the snapshot capacity corresponding to the 'SnapshotId' parameter is less than the set 'Size' parameter value, the size of the cloud disk created is the specified 'Size' parameter value.
+
 * `snapshot_id` - (Optional, ForceNew) The snapshot used to create the cloud disk. Snapshots made on or before July 15, 2013 cannot be used to create cloud disks. The 'SnapshotId' parameter and the 'Size' parameter have the following limitations:
   - If the snapshot capacity corresponding to the 'SnapshotId' parameter is greater than the set 'Size' parameter value, the actual size of the cloud disk created is the size of the specified snapshot.
   - If the snapshot capacity corresponding to the 'SnapshotId' parameter is less than the set 'Size' parameter value, the size of the cloud disk created is the specified 'Size' parameter value.

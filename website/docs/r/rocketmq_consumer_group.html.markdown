@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_rocketmq_consumer_group
 
-Provides a RocketMQ Consumer Group resource. 
+Provides a RocketMQ Consumer Group resource.
 
 For information about RocketMQ Consumer Group and how to use it, see [What is Consumer Group](https://www.alibabacloud.com/help/en/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/developer-reference/api-rocketmq-2022-08-01-createconsumergroup).
 
@@ -104,6 +104,7 @@ resource "alicloud_rocketmq_consumer_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `consume_retry_policy` - (Required, Set) Consumption retry strategy. See [`consume_retry_policy`](#consume_retry_policy) below.
 * `consumer_group_id` - (Required, ForceNew) The first ID of the resource.
 * `delivery_order_type` - (Optional) Delivery order.
@@ -114,6 +115,7 @@ The following arguments are supported:
 ### `consume_retry_policy`
 
 The consume_retry_policy supports the following:
+
 * `dead_letter_target_topic` - (Optional, Available since v1.247.0) The dead-letter topic. If the consumer fails to consume a message in an abnormal situation and the message is still unsuccessful after retrying, the message will be delivered to the dead letter Topic for subsequent business recovery or backtracking.
 * `max_retry_times` - (Optional) Maximum number of retries.
 * `retry_policy` - (Optional) Consume retry policy.
@@ -121,6 +123,7 @@ The consume_retry_policy supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<consumer_group_id>`.
 * `create_time` - The creation time of the resource.
 * `region_id` - (Available since v1.247.0) The ID of the region in which the instance resides.
@@ -129,6 +132,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Consumer Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Consumer Group.
 * `update` - (Defaults to 5 mins) Used when update the Consumer Group.

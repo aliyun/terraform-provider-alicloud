@@ -150,6 +150,7 @@ resource "alicloud_fcv3_provision_config" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `always_allocate_cpu` - (Optional, Computed, Bool) Whether the CPU is always allocated. Defaults to `true`. If you omit the argument, the value returned by the service is stored and no diff is generated; removing the argument does not trigger an update.
 * `always_allocate_gpu` - (Optional, Computed, Bool) Whether to always assign GPU to function instance. Defaults to `true`. For a function without GPU, the service keeps this value consistent with `always_allocate_cpu`, so configure both arguments with the same value in that case; different values produce a persistent diff. If you omit the argument, the value returned by the service is stored and no diff is generated; removing the argument does not trigger an update.
 * `function_name` - (Required, ForceNew) The name of the function. If this parameter is not specified, the provisioned configurations of all functions are listed.
@@ -161,6 +162,7 @@ The following arguments are supported:
 ### `scheduled_actions`
 
 The scheduled_actions supports the following:
+
 * `end_time` - (Optional) Policy expiration time
 * `name` - (Optional) Policy Name
 * `schedule_expression` - (Optional) Timing Configuration
@@ -171,6 +173,7 @@ The scheduled_actions supports the following:
 ### `target_tracking_policies`
 
 The target_tracking_policies supports the following:
+
 * `end_time` - (Optional) Policy expiration time
 * `max_capacity` - (Optional, Int) Maximum value of expansion
 * `metric_target` - (Optional, Float) Tracking value of the indicator
@@ -183,6 +186,7 @@ The target_tracking_policies supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `current` - (Available since v1.234.0) Number of actual resources
 * `current_error` - (Available since v1.234.0) Error message when a Reserved Instance creation fails
@@ -191,6 +195,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Provision Config.
 * `delete` - (Defaults to 5 mins) Used when delete the Provision Config.
 * `update` - (Defaults to 5 mins) Used when update the Provision Config.

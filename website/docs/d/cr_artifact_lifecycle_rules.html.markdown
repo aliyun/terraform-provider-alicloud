@@ -73,14 +73,15 @@ output "alicloud_cr_artifact_lifecycle_rule_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required) Instance ID
 * `ids` - (Optional, Computed) A list of Artifact Lifecycle Rule IDs. The value is formulated as `<instance_id>:<artifact_lifecycle_rule_id>`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Artifact Lifecycle Rule IDs.
 * `rules` - A list of Artifact Lifecycle Rule Entries. Each element contains the following attributes:
     * `artifact_lifecycle_rule_id` - The first ID of the resource.

@@ -129,6 +129,7 @@ resource "alicloud_alb_listener_acl_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `acl_id` - (Required, ForceNew) The ID list of the access policy group bound by the listener.
 * `acl_type` - (Required, ForceNew) Access control type:
   - **White**: only requests from IP addresses or address segments in the selected access control list are forwarded. The whitelist applies to scenarios where only specific IP addresses are allowed to access. There are certain business risks in setting up a whitelist. Once the whitelist is set, only the IP addresses in the whitelist can access the load balancer listener. If whitelist access is enabled but no IP addresses are added to the access policy group, the server load balancer listener forwards all requests.
@@ -138,12 +139,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<listener_id>:<acl_id>`.
 * `status` - Listener Status.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Listener Acl Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Listener Acl Attachment.
 

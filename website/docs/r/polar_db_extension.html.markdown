@@ -10,8 +10,6 @@ description: |-
 
 Provides a Polar Db Extension resource.
 
-
-
 For information about Polar Db Extension and how to use it, see [What is Extension](https://next.api.alibabacloud.com/document/polardb/2017-08-01/CreateExtensions).
 
 -> **NOTE:** Available since v1.264.0.
@@ -94,6 +92,7 @@ resource "alicloud_polar_db_extension" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_name` - (Required, ForceNew) The database account name of the associated PolarDB cluster. Only support `Super` account.
 * `db_cluster_id` - (Required, ForceNew) The ID of the cluster.
 * `db_name` - (Required, ForceNew) PolarDB cluster database name.
@@ -103,12 +102,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_cluster_id>:<account_name>:<db_name>:<extension_name>`.
 * `default_version` - Default version.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Extension.
 * `delete` - (Defaults to 5 mins) Used when delete the Extension.
 * `update` - (Defaults to 5 mins) Used when update the Extension.

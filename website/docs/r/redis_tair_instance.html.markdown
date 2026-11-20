@@ -85,6 +85,7 @@ resource "alicloud_redis_tair_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `additional_bandwidth` - (Optional, Set, Available since v2.2.0) The additional bandwidth to add to each data shard of the instance. Unit: MB/s. Setting this block adjusts the shard bandwidth to the specification default plus the configured value, which also changes the total `bandwidth` of the instance. See [`additional_bandwidth`](#additional_bandwidth) below. **NOTE:** The purchased bandwidth is read back from the `DescribeRoleZoneInfo` API as each data node's `CurrentBandWidth` minus its `DefaultBandWidth` (the specification default) for the shards managed by this resource, so bandwidth changed outside Terraform is detected on refresh. Removing a block does not release the purchased bandwidth of that shard; set its `bandwidth` to `0` explicitly to release it. **NOTE:** The additional bandwidth is purchased for a limited order duration (the API default is 1 day) and must be renewed with the `RenewAdditionalBandwidth` operation before it expires; this resource does not manage the renewal or the order duration. The additional bandwidth is charged on a pay-as-you-go basis.
 * `bandwidth_burst` - (Optional, Bool, Available since v2.2.0) Specifies whether to enable Elastic Burst for the instance. After it is enabled, the instance can temporarily burst beyond the default bandwidth limit during bandwidth auto scaling. **NOTE:** This attribute is write-only and cannot be read back; Terraform keeps the configured value in the state.
 * `auto_renew` - (Optional) Specifies whether to enable auto-renewal for the instance. Default value: false. Valid values: true(enables auto-renewal), false(disables auto-renewal).
@@ -102,13 +103,11 @@ The following arguments are supported:
 
   -> **NOTE:**  * To create a custom key, you can call the [CreateKey](https://help.aliyun.com/document_detail/28947.html) operation of Key Management Service.
 
-
   -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `encryption_name` - (Optional, Available since v1.273.0) The encryption algorithm. The default value is AES-CTR-256.
 
   -> **NOTE:**  This parameter is available only when the `TDEStatus` parameter is set to `Enabled`.
-
 
   -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 * `engine_version` - (Optional, Computed) The database version. Default value: `1.0`. The valid values depend on the Tair instance series:
@@ -158,7 +157,6 @@ The following arguments are supported:
 
   -> **NOTE:**  * `$roleName`: The RAM role name. The value is fixed as `AliyunRdsInstanceEncryptionDefaultRole`.
 
-
   -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 * `secondary_zone_id` - (Optional, ForceNew) The ID of the secondary zone.This parameter is returned only if the instance is deployed in two zones.
 * `security_group_id` - (Optional) Security group id. Multiple security group IDs can be bound at once by separating them with a comma (`,`); the order of the IDs is not significant and does not trigger a diff.
@@ -200,6 +198,7 @@ The `additional_bandwidth` block supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `architecture_type` - The architecture of the instance.  cluster, standard, rwsplit.
 * `connection_domain` - The internal endpoint of the instance.
@@ -216,6 +215,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 60 mins) Used when create the Tair Instance.
 * `delete` - (Defaults to 30 mins) Used when delete the Tair Instance.
 * `update` - (Defaults to 60 mins) Used when update the Tair Instance.

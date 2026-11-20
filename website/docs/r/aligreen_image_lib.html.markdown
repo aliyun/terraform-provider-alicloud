@@ -54,6 +54,7 @@ resource "alicloud_aligreen_image_lib" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `biz_types` - (Optional, List) List of business scenarios. For example: ["bizTypeA", "bizTypeB", "bizTypeC"]
 * `category` - (Required, ForceNew) The category of the image library. Valid values: BLACK: a blacklist, WHITE: a whitelist, REVIEW: a review list
 * `enable` - (Optional, Computed) Specifies whether to enable the image library. Valid values: true: Enable the image library. This is the default value. false: Disable the image library.
@@ -63,11 +64,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Image Lib.
 * `delete` - (Defaults to 5 mins) Used when delete the Image Lib.
 * `update` - (Defaults to 5 mins) Used when update the Image Lib.

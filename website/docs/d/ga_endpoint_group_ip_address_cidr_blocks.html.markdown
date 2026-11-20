@@ -43,4 +43,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `endpoint_group_region` - The region ID of the endpoint group.
   * `ip_address_cidr_blocks` - The CIDR blocks.
   * `status` - The status of the list of endpoint group ip address cidr blocks.
-  
+

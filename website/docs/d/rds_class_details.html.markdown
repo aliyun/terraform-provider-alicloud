@@ -50,7 +50,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `max_iombps` - The maximum IO bandwidth corresponding to the instance specification. Unit: Mbps. 
+* `max_iombps` - The maximum IO bandwidth corresponding to the instance specification. Unit: Mbps.
 * `max_connections` - The maximum number of connections.
 * `class_group` - The specification family.
 * `cpu` - The number of CPU cores corresponding to the instance specification. Unit: pieces.

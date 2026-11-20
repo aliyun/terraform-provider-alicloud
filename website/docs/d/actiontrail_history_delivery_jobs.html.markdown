@@ -7,7 +7,7 @@ description: |-
   Provides a list of Actiontrail History Delivery Jobs to the user.
 ---
 
-# alicloud\_actiontrail\_history\_delivery\_jobs
+# alicloud_actiontrail_history_delivery_jobs
 
 This data source provides the Actiontrail History Delivery Jobs of the current Alibaba Cloud user.
 
@@ -53,6 +53,7 @@ The following attributes are exported in addition to the arguments listed above:
 ### `jobs`
 
 The jobs supports the following attributes:
+
 * `create_time` - The time when the task was created.
 * `end_time` - The time when the task ended.
 * `history_delivery_job_id` -  The resource ID in terraform of History Delivery Job.
@@ -67,5 +68,6 @@ The jobs supports the following attributes:
 ### `jobs.job_status`
 
 The job_status supports the following attributes:
+
 * `region` - The region of the delivery job.
 * `status` - The status of the task. Valid values: `0`, `1`, `2`, `3`. `0`: The task is initializing. `1`: The task is delivering historical events. `2`: The delivery of historical events is complete. `3`: The task fails.

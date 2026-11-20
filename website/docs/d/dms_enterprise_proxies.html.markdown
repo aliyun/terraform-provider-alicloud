@@ -7,11 +7,11 @@ description: |-
   Provides a list of Dms Enterprise Proxies to the user.
 ---
 
-# alicloud\_dms\_enterprise\_proxies
+# alicloud_dms_enterprise_proxies
 
 This data source provides the Dms Enterprise Proxies of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.188.0+.
+-> **NOTE:** Available since v1.188.0+.
 
 ## Example Usage
 
@@ -32,7 +32,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `tid` - (Optional, ForceNew) The ID of the tenant.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

@@ -36,6 +36,7 @@ output "alicloud_nas_log_analysis_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `file_system_type` - (Optional, ForceNew) The type of the file system. Valid values: `standard`, `extreme`, `all`.
 * `ids` - (Optional, ForceNew, List) A list of Log Analysis IDs. Each element is the ID of the file system for which log delivery is enabled.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -43,6 +44,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `analyses` - A list of Log Analysis. Each element contains the following attributes:
   * `id` - The ID of the Log Analysis. It is the same as the file system ID.
   * `file_system_id` - The ID of the file system for which log delivery is enabled.

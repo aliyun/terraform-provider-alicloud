@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Scheduled Preload Job resource.
 
-
-
 For information about ESA Scheduled Preload Job and how to use it, see [What is Scheduled Preload Job](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateScheduledPreloadJob).
 
 -> **NOTE:** Available since v1.248.0.
@@ -51,6 +49,7 @@ resource "alicloud_esa_scheduled_preload_job" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `insert_way` - (Required, ForceNew) The method to submit the URLs to be prefetched.
 * `oss_url` - (Optional) Preheat OSS files regularly and fill in the OSS file address. Note: The OSS file contains the URL that you need to warm up.
 
@@ -62,10 +61,10 @@ The following arguments are supported:
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<scheduled_preload_job_id>`.
 * `create_time` - The time when the task was created.
 * `scheduled_preload_job_id` - The ID of the prefetch task.
@@ -73,6 +72,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Scheduled Preload Job.
 * `delete` - (Defaults to 5 mins) Used when delete the Scheduled Preload Job.
 

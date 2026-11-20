@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_ess_scaling_groups
 
-This data source provides available scaling group resources. 
+This data source provides available scaling group resources.
 
 -> **NOTE:** Available since v1.39.0
 
@@ -116,15 +116,15 @@ The following attributes are exported in addition to the arguments listed above:
   * `enable_desired_capacity` - (Available since v1.242.0) Indicates whether the Expected Number of Instances feature is enabled.
   * `creation_time` - Creation time of scaling group.
   * `tags` - A mapping of tags to assign to the resource.
-  * `stop_instance_timeout` - (Available since v1.242.0) The period of time that is required by an ECS instance to enter the Stopped state during the scale-in process. Unit: seconds. 
+  * `stop_instance_timeout` - (Available since v1.242.0) The period of time that is required by an ECS instance to enter the Stopped state during the scale-in process. Unit: seconds.
   * `desired_capacity` - (Available since v1.242.0) The expected number of ECS instances in the scaling group. Auto Scaling automatically maintains the expected number of ECS instances that you specified.
   * `max_instance_lifetime` - (Available since v1.242.0) The maximum life span of each instance in the scaling group. Unit: seconds.
   * `multi_az_policy` - (Available since v1.242.0) The scaling policy of the multi-zone scaling group of the ECS type.
-  * `group_type` - (Available since v1.242.0) The type of the instances in the scaling group. 
+  * `group_type` - (Available since v1.242.0) The type of the instances in the scaling group.
   * `resource_group_id` - (Available since v1.242.0) The ID of the resource group to which the scaling group that you want to query belongs.
   * `spot_instance_remedy` - (Available since v1.242.0) Indicates whether supplementation of preemptible instances is enabled. If this parameter is set to true, Auto Scaling creates an instance to replace a preemptible instance when Auto Scaling receives a system message indicating that the preemptible instance is to be reclaimed.
   * `spot_instance_pools` - (Available since v1.242.0) The number of instance types. Auto Scaling creates preemptible instances of multiple instance types that are provided at the lowest price.
-  * `on_demand_percentage_above_base_capacity` - (Available since v1.242.0) The percentage of pay-as-you-go instances in the excess instances when the minimum number of pay-as-you-go instances is reached. OnDemandBaseCapacity specifies the minimum number of pay-as-you-go instances that must be contained in the scaling group. 
+  * `on_demand_percentage_above_base_capacity` - (Available since v1.242.0) The percentage of pay-as-you-go instances in the excess instances when the minimum number of pay-as-you-go instances is reached. OnDemandBaseCapacity specifies the minimum number of pay-as-you-go instances that must be contained in the scaling group.
   * `on_demand_base_capacity` - (Available since v1.242.0) The lower limit of the number of pay-as-you-go instances in the scaling group.
   * `spot_allocation_strategy` - (Available since v1.242.0) The allocation policy of preemptible instances. This parameter indicates the method used by Auto Scaling to select instance types to create the required number of preemptible instances. This parameter takes effect only if you set multi_az_policy to COMPOSABLE.
   * `allocation_strategy` -  (Available since v1.242.0) The allocation policy of instances. Auto Scaling selects instance types based on the allocation policy to create instances. The allocation policy applies to pay-as-you-go and preemptible instances.

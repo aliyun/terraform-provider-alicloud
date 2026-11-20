@@ -43,6 +43,7 @@ resource "alicloud_ros_stack_group" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `administration_role_name` - (Optional, Computed) The name of the RAM role that you specify for the administrator account in ROS when you create the self-managed stack group. If you do not specify this parameter, the default value AliyunROSStackGroupAdministrationRole is used. You can use the administrator role in ROS to assume the execution role AliyunROSStackGroupExecutionRole to perform operations on the stacks that correspond to stack instances in the stack group.
 * `auto_deployment` - (Optional, List, Available since v1.257.0) Automatic deployment setting information. Description
 This parameter is required only if the PermissionModel is SERVICE_MANAGED. See [`auto_deployment`](#auto_deployment) below.
@@ -65,6 +66,7 @@ This parameter is required only if the PermissionModel is SERVICE_MANAGED. See [
 ### `auto_deployment`
 
 The auto_deployment supports the following:
+
 * `enabled` - (Optional, Available since v1.257.0) Enable or disable automatic deployment. Valid Values:
   - `true`: Enable automatic deployment. After automatic deployment is enabled, if a member account is added to the target folder, the stack group will automatically deploy the stack instance to the account. If a member account is deleted from the target folder, the stack group automatically deletes the stack instance in the account.
   - `false`: disable automatic deployment. After automatic deployment is disabled, the stack instance will not change when the member accounts in the target folder change.
@@ -77,12 +79,14 @@ The auto_deployment supports the following:
 ### `parameters`
 
 The parameters supports the following:
+
 * `parameter_key` - (Required) The key of parameter N. If you do not specify the key and value of the parameter, ROS uses the default key and value in the template.
 * `parameter_value` - (Required) The value of parameter N.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `stack_group_id` - The ID of stack group.
 * `status` - The status of the stack group.
@@ -90,6 +94,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Stack Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Stack Group.
 * `update` - (Defaults to 5 mins) Used when update the Stack Group.

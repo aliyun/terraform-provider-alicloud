@@ -10,8 +10,6 @@ description: |-
 
 Provides a APIG Http Api resource.
 
-
-
 For information about APIG Http Api and how to use it, see [What is Http Api](https://next.api.aliyun.com/api/APIG/2024-03-27/CreateHttpApi).
 
 -> **NOTE:** Available since v1.240.0.
@@ -55,13 +53,12 @@ resource "alicloud_apig_http_api" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_apig_http_api&spm=docs.r.apig_http_api.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ai_protocols` - (Optional, List, Available since v1.285.0) AI API protocols. Currently the supported value is `OpenAI/v1`.
 
   -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
@@ -96,11 +93,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Http Api.
 * `delete` - (Defaults to 5 mins) Used when delete the Http Api.
 * `update` - (Defaults to 6 mins) Used when update the Http Api.

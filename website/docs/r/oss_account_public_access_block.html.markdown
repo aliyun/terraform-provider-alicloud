@@ -44,16 +44,19 @@ resource "alicloud_oss_account_public_access_block" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `block_public_access` - (Required) Whether or not AlibabaCloud OSS should block public bucket policies for buckets in this account is enabled.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as ``.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Account Public Access Block.
 * `delete` - (Defaults to 5 mins) Used when delete the Account Public Access Block.
 * `update` - (Defaults to 5 mins) Used when update the Account Public Access Block.

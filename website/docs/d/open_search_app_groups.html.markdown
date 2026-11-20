@@ -52,7 +52,6 @@ The following arguments are supported:
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
@@ -85,7 +84,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `status` - The status of the resource. Valid values: `producing`,`review_pending`,`config_pending`,`normal`,`frozen`.
   * `switched_time` - The Switched time.
   * `type` - Application type. Valid Values: `standard`, `enhanced`.
-
 
 ### `groups.quota`
 

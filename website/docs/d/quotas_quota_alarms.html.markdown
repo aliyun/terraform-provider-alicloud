@@ -31,6 +31,7 @@ output "first_quotas_quota_alarm_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `ids` - (Optional, Computed) A list of Quota Alarm IDs.
 * `name_regex` - (Optional) A regex string to filter results by Quota Alarm name.
@@ -43,18 +44,21 @@ The following arguments are supported:
 ### `quota_dimensions`
 
 The quota_dimensions supports the following:
+
 * `key` - (Optional) The key of quota_dimensions.
 * `value` - (Optional) The value of quota_dimensions.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `names` - A list of Quota Alarm names.
 * `alarms` - A list of Quotas Quota Alarms. Each element contains the following attributes:
 
 ### `alarms`
 
 The alarms supports the following attributes:
+
 * `alarm_id` - The first ID of the resource.
 * `id` - The ID of the Quota Alarm.
 * `product_code` - The Product Code.
@@ -68,5 +72,6 @@ The alarms supports the following attributes:
 ### `alarms.quota_dimensions`
 
 The quota_dimensions supports the following:
+
 * `key` - The key of quota_dimensions.
 * `value` - The value of quota_dimensions.

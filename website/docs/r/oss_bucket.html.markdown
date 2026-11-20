@@ -7,7 +7,7 @@ description: |-
   Provides a resource to create a oss bucket.
 ---
 
-# alicloud\_oss\_bucket
+# alicloud_oss_bucket
 
 Provides a resource to create a oss bucket and set its attribution.
 
@@ -330,7 +330,7 @@ resource "alicloud_oss_bucket_acl" "bucket-tag-lifecycle" {
 }
 ```
 
-Set bucket policy 
+Set bucket policy
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket&exampleId=ac859beb-d9a3-1c87-9e63-a0b12dcc36541b9feae5&activeTab=example&spm=docs.r.oss_bucket.5.ac859bebd9&intl_lang=EN_US" target="_blank">
@@ -448,7 +448,7 @@ resource "alicloud_oss_bucket" "default" {
 }
 ```
 
-Set bucket server-side encryption rule 
+Set bucket server-side encryption rule
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket&exampleId=160d1480-f315-e1b1-53a4-f1f0ee5f48cbddb6294c&activeTab=example&spm=docs.r.oss_bucket.8.160d1480f3&intl_lang=EN_US" target="_blank">
@@ -496,7 +496,7 @@ resource "alicloud_oss_bucket_acl" "bucket-kms" {
 }
 ```
 
-Set bucket tags 
+Set bucket tags
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket&exampleId=2a2df177-e6f4-d509-595b-e4f9e6f2a96718df758b&activeTab=example&spm=docs.r.oss_bucket.9.2a2df177e6&intl_lang=EN_US" target="_blank">
@@ -525,7 +525,7 @@ resource "alicloud_oss_bucket_acl" "bucket-tags" {
 }
 ```
 
-Enable bucket versioning 
+Enable bucket versioning
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket&exampleId=b8d407a9-6b97-1516-1050-161aaadf990c2ef94de1&activeTab=example&spm=docs.r.oss_bucket.10.b8d407a96b&intl_lang=EN_US" target="_blank">
@@ -646,7 +646,6 @@ The following arguments are supported:
 * `lifecycle_rule_allow_same_action_overlap` - (Optional, Available since 1.208.1) A boolean that indicates lifecycle rules allow prefix overlap.
 * `access_monitor` - (Optional, Available since 1.208.1) A access monitor status of a bucket. See [`access_monitor`](#access_monitor) below.
 * `resource_group_id` - (Optional, Available since 1.219.0) The ID of the resource group to which the bucket belongs.
-
 
 ### `cors_rule`
 
@@ -777,7 +776,6 @@ The server_side_encryption_rule configuration block supports the following:
 The versioning configuration block supports the following:
 
 * `status` - (Required) Specifies the versioning state of a bucket. Valid values: `Enabled` and `Suspended`.
-
 
 ### `transfer_acceleration`
 

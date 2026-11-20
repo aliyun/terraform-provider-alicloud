@@ -80,7 +80,6 @@ resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
 
 Using `vpcs` to attach being in different regions several vpc instances to a private zone
 
-
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_pvtz_zone_attachment&exampleId=fa7a7da7-a003-aa6f-1e19-5fd998e8b3727ed6e2ef&activeTab=example&spm=docs.r.pvtz_zone_attachment.2.fa7a7da7a0&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
@@ -134,13 +133,14 @@ resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
 The following arguments are supported:
 
 * `zone_id` - (Required, ForceNew) The name of the Private Zone Record.
-* `vpc_ids` - (Optional, Conflict with `vpcs`) The id List of the VPC with the same region, for example:["vpc-1","vpc-2"]. 
+* `vpc_ids` - (Optional, Conflict with `vpcs`) The id List of the VPC with the same region, for example:["vpc-1","vpc-2"].
 * `vpcs` - (Optional, Conflict with `vpc_ids`, Available since v1.62.1) See [`vpcs`](#vpcs) below.Recommend to use `vpcs`.
 * `lang` - (Optional, ForceNew, Available since v1.62.1) The language of code.
 * `user_client_ip` - (Optional, ForceNew, Available since v1.62.1) The user custom IP address.
 
 ### `vpcs`
 The vpcs support the following:
+
 * `vpc_id` - (Required) The Id of the vpc.
 * `region_id` - (Optional) The region of the vpc. If not set, the current region will instead of.
 
@@ -152,7 +152,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 * `create` - (Defaults to 5 mins) Used when creating the Private Zone Attachment.
 * `update` - (Defaults to 5 mins) Used when updating the Private Zone Attachment.
-* `delete` - (Defaults to 5 mins) Used when terminating the Private Zone Attachment. 
+* `delete` - (Defaults to 5 mins) Used when terminating the Private Zone Attachment.
 
 ## Attributes Reference
 

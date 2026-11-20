@@ -46,9 +46,7 @@ resource "alicloud_subnet" "foo" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_subnet&spm=docs.r.subnet.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
@@ -80,13 +78,14 @@ The following arguments are supported:
 * `vpc_ipv6_cidr_block` - (Optional, Available since v1.280.0) The IPv6 CIDR block of the VPC. If the VPC has multiple IPv6 CIDR blocks, you can use this parameter to specify the IPv6 CIDR block range to which the VSwitch belongs. This parameter is used only for create and update operations.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `name` - (Deprecated since v1.119.0) Field `name` has been deprecated from provider version 1.119.0. New field `vswitch_name` instead.
 * `availability_zone` - (Deprecated since v1.119.0) Field `availability_zone` has been deprecated from provider version 1.119.0. New field `zone_id` instead.
-
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the VSwitch.
 * `ipv6_cidr_block` - The IPv6 CIDR block of the VSwitch.
@@ -95,6 +94,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vswitch.
 * `delete` - (Defaults to 10 mins) Used when delete the Vswitch.
 * `update` - (Defaults to 5 mins) Used when update the Vswitch.

@@ -166,13 +166,16 @@ output "alicloud_vpc_route_target_group_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `resource_group_id` - (Optional) The ID of the resource group to which the route target group belongs.
 * `route_target_group_id` - (Optional) The ID of the route target group.
 A maximum of 50 instance IDs can be specified in a single query.
 * `route_target_member_list` - (Optional) The member list of the route target group.
 In active/standby mode, the following restrictions apply to route target group members:
+
 1. The route target group must contain exactly two members.
 2. The route target group members must belong to different zones. See [`route_target_member_list`](#route_target_member_list) below.
+
 * `tags` - (Optional) The tags of the route target group.
 * `vpc_id` - (Optional) The ID of the VPC to which the route target group belongs.
 * `ids` - (Optional, Computed) A list of Route Target Group IDs.
@@ -182,6 +185,7 @@ In active/standby mode, the following restrictions apply to route target group m
 ### `route_target_member_list`
 
 The route_target_member_list supports the following:
+
 * `member_id` - (Required) The instance ID of the route target member. Used to filter route target groups that contain the specified member.
 * `member_type` - (Required) The instance type of the route target configuration. The following type is currently supported: GatewayLoadBalancerEndpoint.
 * `enable_status` - (Computed) Indicates the enable status of the current route target configuration. Valid values: `Enable`, `Disable`.
@@ -191,6 +195,7 @@ The route_target_member_list supports the following:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Route Target Group IDs.
 * `names` - A list of name of Route Target Groups.
 * `groups` - A list of Route Target Group Entries. Each element contains the following attributes:

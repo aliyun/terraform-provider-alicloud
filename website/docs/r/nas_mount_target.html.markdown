@@ -77,12 +77,14 @@ resource "alicloud_nas_mount_target" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_group_name` - (Optional) The name of the permission group.
 * `dual_stack` - (Optional, Available since v1.247.0) Whether to create an IPv6 mount point.
 
 Value:
-- true: create
-- false (default): not created
+
+* true: create
+* false (default): not created
 
 -> **NOTE:**  currently, only extreme NAS supports IPv6 function in various regions in mainland China, and IPv6 function needs to be turned on for this file system.
 
@@ -96,12 +98,14 @@ Value:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<file_system_id>:<mount_target_domain>`.
 * `mount_target_domain` - The domain name of the Mount point.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Mount Target.
 * `delete` - (Defaults to 5 mins) Used when delete the Mount Target.
 * `update` - (Defaults to 5 mins) Used when update the Mount Target.

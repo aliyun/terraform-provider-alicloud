@@ -10,8 +10,6 @@ description: |-
 
 Provides a AnalyticDB for PostgreSQL (GPDB) Db Extension resource.
 
-
-
 For information about AnalyticDB for PostgreSQL (GPDB) Db Extension and how to use it, see [What is Db Extension](https://next.api.alibabacloud.com/document/gpdb/2016-05-03/CreateExtensions).
 
 -> **NOTE:** Available since v1.291.0.
@@ -88,13 +86,12 @@ resource "alicloud_gpdb_db_extension" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_gpdb_db_extension&spm=docs.r.gpdb_db_extension.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_instance_id` - (Required, ForceNew) The instance ID.
 
   -> **NOTE:**   You can call the [DescribeDBInstances](https://www.alibabacloud.com/help/en/doc-detail/86911.html) operation to query the information about all AnalyticDB for PostgreSQL instances within a region, including instance IDs.
@@ -106,6 +103,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<db_instance_id>:<database_name>:<extension_name>`.
 * `current_version` - Plug-in current version.
 * `description` - Plug-in description.
@@ -117,6 +115,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Db Extension.
 * `delete` - (Defaults to 5 mins) Used when delete the Db Extension.
 * `update` - (Defaults to 5 mins) Used when update the Db Extension.

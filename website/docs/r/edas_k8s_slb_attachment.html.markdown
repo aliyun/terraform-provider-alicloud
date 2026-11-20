@@ -112,9 +112,9 @@ resource "alicloud_edas_k8s_slb_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `app_id` - (Required, ForceNew) The ID of the EDAS k8s application to which you want to bind SLB instances.
 * `slb_configs` - (Optional) The configurations of SLB attachment, which is supported for multiple configurations. See [`slb_configs`](#slb_configs) below.
-
 
 ### `slb_configs`
 

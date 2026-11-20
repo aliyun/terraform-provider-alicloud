@@ -31,7 +31,7 @@ output "first_config_rule_id" {
 The following arguments are supported:
 
 * `ids` - (Optional, ForceNew) A list of Config Rule IDs.
-* `status` - (Optional, ForceNew, Available since v1.124.1) The status of the config rule, valid values: `ACTIVE`, `DELETING`, `EVALUATING` and `INACTIVE`. 
+* `status` - (Optional, ForceNew, Available since v1.124.1) The status of the config rule, valid values: `ACTIVE`, `DELETING`, `EVALUATING` and `INACTIVE`.
 * `rule_name` - (Optional, ForceNew, Available since v1.124.1) The name of config rule.
 * `risk_level` - (Optional, ForceNew) The risk level of Config Rule. Valid values: `1`: Critical ,`2`: Warning , `3`: Info.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
@@ -60,7 +60,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `event_source` - Event source of the Config Rule.
   * `scope_compliance_resource_types` - The types of the resources to be evaluated against the rule.
   * `source_detail_message_type` - Rule trigger mechanism.
-  * `source_maximum_execution_frequency` - Rule execution cycle. 
+  * `source_maximum_execution_frequency` - Rule execution cycle.
   * `source_identifier`- The identifier of the managed rule or the arn of the custom function.
   * `source_owner`- The source owner of the Config Rule.
   * `compliance` - The information about the compliance evaluations based on the rule.

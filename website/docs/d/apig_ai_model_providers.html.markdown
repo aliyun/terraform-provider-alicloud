@@ -33,14 +33,15 @@ output "first_provider_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `gateway_id` - (Required, ForceNew) The ID of the AI gateway instance. The target instance must exist, belong to the current account, and be of the AI gateway type.
-* `ids` - (Optional, Computed) A list of Ai Model Provider IDs. 
-* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
+* `gateway_id` - (Required, ForceNew) The ID of the AI gateway instance. The target instance must exist, belong to the current account, and be of the AI gateway type.
+* `ids` - (Optional, Computed) A list of Ai Model Provider IDs.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Ai Model Provider IDs.
 * `providers` - A list of Ai Model Provider Entries. Each element contains the following attributes:
     * `display_name` - Model supplier presentation name.

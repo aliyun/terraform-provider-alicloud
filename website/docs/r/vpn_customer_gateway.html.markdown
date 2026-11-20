@@ -48,6 +48,7 @@ resource "alicloud_vpn_customer_gateway" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `asn` - (Optional, ForceNew) Asn.
 * `customer_gateway_name` - (Optional) The name of the customer gateway.
 * `description` - (Optional) The description of the customer gateway.
@@ -55,17 +56,20 @@ The following arguments are supported:
 * `tags` - (Optional, Map) tag.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `name` - (Deprecated since v1.216.0). Field 'name' has been deprecated from provider version 1.216.0. New field 'customer_gateway_name' instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the customer gateway was created.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Customer Gateway.
 * `delete` - (Defaults to 5 mins) Used when delete the Customer Gateway.
 * `update` - (Defaults to 5 mins) Used when update the Customer Gateway.

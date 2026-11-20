@@ -107,7 +107,7 @@ resource "alicloud_ess_scaling_group" "default" {
 
 ## Module Support
 
-You can use to the existing [autoscaling module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling/alicloud) 
+You can use to the existing [autoscaling module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling/alicloud)
 to create a scaling group, configuration and lifecycle hook one-click.
 
 ## Argument Reference
@@ -151,7 +151,7 @@ The following arguments are supported:
 * `on_demand_percentage_above_base_capacity` - (Optional, Available since v1.54.0) Controls the percentages of On-Demand Instances and Spot Instances for your additional capacity beyond OnDemandBaseCapacity.  
 * `spot_instance_pools` - (Optional, Available since v1.54.0) The number of Spot pools to use to allocate your Spot capacity. The Spot pools is composed of instance types of lowest price.
 * `spot_instance_remedy` - (Optional, Available since v1.54.0) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.
-* `group_deletion_protection` - (Optional, Available since v1.102.0) Specifies whether the scaling group deletion protection is enabled. `true` or `false`, Default value: `false`.            
+* `group_deletion_protection` - (Optional, Available since v1.102.0) Specifies whether the scaling group deletion protection is enabled. `true` or `false`, Default value: `false`.
 * `launch_template_id` - (Optional, Available since v1.141.0) Instance launch template ID, scaling group obtains launch configuration from instance launch template, see [Launch Template](https://www.alibabacloud.com/help/doc-detail/73916.html). Creating scaling group from launch template enable group automatically.
 * `launch_template_version` - (Optional, Available since v1.159.0) The version number of the launch template. Valid values are the version number, `Latest`, or `Default`, Default value: `Default`.
 * `group_type` - (Optional, ForceNew, Available since v1.164.0) Resource type within scaling group. Optional values: ECS, ECI. Default to ECS.
@@ -159,7 +159,7 @@ The following arguments are supported:
 * `health_check_types` - (Optional, Available since v1.228.0) The health check modes of the scaling group. Valid values: ECS, NONE, LOAD_BALANCER.
 * `instance_id` - (Optional, ForceNew, Available since v1.228.0) The ID of the instance from which Auto Scaling obtains the required configuration information and uses the information to automatically create a scaling configuration.
 * `container_group_id` - (Optional, ForceNew, Available since v1.233.0) The ID of the elastic container instance.
-* `scaling_policy` - (Optional, Available since v1.227.0) The reclaim mode of the scaling group. Optional values: recycle, release, forceRecycle, forceRelease. 
+* `scaling_policy` - (Optional, Available since v1.227.0) The reclaim mode of the scaling group. Optional values: recycle, release, forceRecycle, forceRelease.
 * `max_instance_lifetime` - (Optional, Available since v1.227.0) The maximum life span of an instance in the scaling group. Unit: seconds.
 * `stop_instance_timeout` - (Optional, Available since v1.238.0) The period of time required by the ECS instance to enter the Stopped state. Unit: seconds. Valid values: 30 to 240.
 * `tags` - (Optional, Available since v1.160.0) A mapping of tags to assign to the resource.
@@ -169,7 +169,7 @@ The following arguments are supported:
 * `launch_template_override` - (Optional, Available since v1.216.0) The details of the instance types that are specified by using the Extend Instance Type of Launch Template feature.  See [`launch_template_override`](#launch_template_override) below for details.
 * `resource_group_id` - (Optional, Available since v1.224.0) The ID of the resource group to which you want to add the scaling group.
 * `alb_server_group` - (Optional, Available since v1.224.0) If a Serve ALB instance is specified in the scaling group, the scaling group automatically attaches its ECS instances to the Server ALB instance.  See [`alb_server_group`](#alb_server_group) below for details.
-* `balance_mode` - (Optional, Available since v1.262.1) The zone balancing mode. This parameter takes effect only when zone balancing is enabled. Valid values: BalancedBestEffort, BalancedOnly. 
+* `balance_mode` - (Optional, Available since v1.262.1) The zone balancing mode. This parameter takes effect only when zone balancing is enabled. Valid values: BalancedBestEffort, BalancedOnly.
 * `auto_rebalance` - (Optional, Available since v1.262.1) Specifies whether to enable automatic rebalancing for the scaling group. This parameter takes effect only when BalancedOnly is enabled for a zone-balanced scaling group. Valid values: false, true.
 
 ### `alb_server_group`
@@ -180,7 +180,6 @@ The AlbServerGroup mapping supports the following:
 * `weight` - (Optional) The weight of the ECS instance as a backend server after Auto Scaling adds the ECS instance to ALB server group.
 * `port` - (Optional) The port number used by an ECS instance after Auto Scaling adds the ECS instance to ALB server group.
 
-
 ### `launch_template_override`
 
 The launchTemplateOverride mapping supports the following:
@@ -189,13 +188,11 @@ The launchTemplateOverride mapping supports the following:
 * `instance_type` - (Optional) The instance type in launchTemplateOverride.
 * `spot_price_limit` - (Optional) The maximum bid price of instance type in launchTemplateOverride.
 
-
   -> **NOTE:** When detach loadbalancers, instances in group will be remove from loadbalancer's `Default Server Group`; On the contrary, When attach loadbalancers, instances in group will be added to loadbalancer's `Default Server Group`.
 
   -> **NOTE:** When detach dbInstances, private ip of instances in group will be remove from dbInstance's `WhiteList`; On the contrary, When attach dbInstances, private ip of instances in group will be added to dbInstance's `WhiteList`.
 
   -> **NOTE:** `on_demand_base_capacity`,`on_demand_percentage_above_base_capacity`,`spot_instance_pools`,`spot_instance_remedy` are valid only if `multi_az_policy` is 'COST_OPTIMIZED'.
-
 
 ## Attributes Reference
 

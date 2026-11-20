@@ -57,13 +57,12 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_express_connect_virtual_border_router&spm=docs.r.express_connect_virtual_border_router.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bandwidth` - (Optional, Computed, Int) The bandwidth of the VBR instance. Unit: Mbps.
   - When creating a VBR instance for an exclusive leased line, the values are `50`, `100`, `200`, `300`, `400`, `500`, `1000`, `2048`, `5120`, `8192`, `10240`, `20480`, `40960`, `50120`, `61440`, and `102400`.
   - When creating a VBR instance for a shared line, you do not need to configure it. The bandwidth of the VBR is the bandwidth set when creating a shared physical line.
@@ -102,13 +101,15 @@ The default value is the logon Alibaba Cloud account ID.
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `create_time` - (Available since v1.263.0) The creation time of the VBR.
 * `route_table_id` - (Available since v1.263.0) The ID of the route table of the VBR.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Virtual Border Router.
 * `delete` - (Defaults to 5 mins) Used when delete the Virtual Border Router.
 * `update` - (Defaults to 5 mins) Used when update the Virtual Border Router.

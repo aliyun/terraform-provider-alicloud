@@ -62,7 +62,6 @@ The following arguments are supported:
 * `site_version` - (Optional) The version of the site.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:

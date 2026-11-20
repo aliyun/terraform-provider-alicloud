@@ -29,15 +29,16 @@ output "alicloud_adb_resource_group_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_cluster_id` - (Required, ForceNew) DBClusterId
 * `group_name` - (Optional, ForceNew) The name of the resource pool, which cannot exceed 64 bytes in length.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `ids` - (Optional, ForceNew, Computed)  A list of AnalyticDB for MySQL (ADB) Resource Group IDs.
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `groups` - A list of Resource Group Entries. Each element contains the following attributes:
     * `id` - The `key` of the resource supplied above.The value is formulated as `<db_cluster_id>:<group_name>`.
     * `create_time` - Creation time.

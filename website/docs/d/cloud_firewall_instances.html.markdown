@@ -45,4 +45,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `create_time` - The Creation time of the resource.
   * `renewal_duration_unit` - Automatic renewal period unit. Valid values: `Month`,`Year`.
   * `payment_type` - The payment type of the resource. Valid values: `Subscription`.
-    

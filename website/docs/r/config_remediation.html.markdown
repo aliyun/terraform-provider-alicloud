@@ -78,6 +78,7 @@ resource "alicloud_config_remediation" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `config_rule_id` - (Required, ForceNew) Rule ID.
 * `invoke_type` - (Required) Execution type, valid values: `Manual`, `Automatic`.
 * `params` - (Required, JsonString) Remediation parameter.
@@ -87,17 +88,17 @@ The following arguments are supported:
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 
-
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.
 * `remediation_id` - Remediation ID.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Remediation.
 * `delete` - (Defaults to 5 mins) Used when delete the Remediation.
 * `update` - (Defaults to 5 mins) Used when update the Remediation.

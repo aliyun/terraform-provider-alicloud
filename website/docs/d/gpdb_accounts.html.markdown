@@ -7,7 +7,7 @@ description: |-
   Provides a list of Gpdb Accounts to the user.
 ---
 
-# alicloud\_gpdb\_accounts
+# alicloud_gpdb_accounts
 
 This data source provides the Gpdb Accounts of the current Alibaba Cloud user.
 

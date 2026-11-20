@@ -25,10 +25,10 @@ Create or reference the master RDS first, then reference its attributes so all f
 
 Two regions are involved:
 
-- **Provider region** (the `provider "alicloud" { region = ... }` block, or `ALICLOUD_REGION`): the
+* **Provider region** (the `provider "alicloud" { region = ... }` block, or `ALICLOUD_REGION`): the
   region where the GAD instance itself is created and lives (`region_id` after apply). This is the
   DTS-side region.
-- **master_db_instance_region**: the region where the master RDS instance lives. For a cross-region
+* **master_db_instance_region**: the region where the master RDS instance lives. For a cross-region
   DR (disaster recovery) topology the master is in a different region from the GAD instance, so the
   master RDS is provisioned through a provider alias pinned to the master region.
 
@@ -133,9 +133,7 @@ resource "alicloud_dts_gad_instance" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dts_gad_instance&spm=docs.r.dts_gad_instance.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
@@ -152,6 +150,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `region_id` - The region ID of the resource (the provider region where the GAD instance lives).
@@ -160,6 +159,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Gad Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Gad Instance.
 * `update` - (Defaults to 5 mins) Used when update the Gad Instance.

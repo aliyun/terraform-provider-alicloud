@@ -116,6 +116,7 @@ resource "alicloud_ecs_ram_role_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required, ForceNew) The ID of the instance.
 * `policy` - (Optional) The additional policy. When you attach an instance RAM role to instances, you can specify an additional policy to further limit the permissions of the role.
 * `ram_role_name` - (Required, ForceNew) The name of the instance RAM role.
@@ -123,11 +124,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<ram_role_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ram Role Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Ram Role Attachment.
 

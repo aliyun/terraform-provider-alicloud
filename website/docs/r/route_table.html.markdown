@@ -49,6 +49,7 @@ resource "alicloud_route_table" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `associate_type` - (Optional, ForceNew, Computed) The type of cloud resource that is bound to the routing table. Value:
   - `VSwitch`: switch.
   - `Gateway`:IPv4 Gateway.
@@ -59,11 +60,13 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The ID of VPC.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `name` - (Deprecated since v1.119.1). Field 'name' has been deprecated from provider version 1.119.1. New field 'route_table_name' instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the routing table
 * `resource_group_id` - Resource group ID.
@@ -72,6 +75,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Route Table.
 * `delete` - (Defaults to 5 mins) Used when delete the Route Table.
 * `update` - (Defaults to 5 mins) Used when update the Route Table.

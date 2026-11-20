@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Http Incoming Response Header Modification Rule resource.
 
-
-
 For information about ESA Http Incoming Response Header Modification Rule and how to use it, see [What is Http Incoming Response Header Modification Rule](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateHttpIncomingResponseHeaderModificationRule).
 
 -> **NOTE:** Available since v1.266.0.
@@ -84,12 +82,12 @@ resource "alicloud_esa_http_incoming_response_header_modification_rule" "default
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_http_incoming_response_header_modification_rule&spm=docs.r.esa_http_incoming_response_header_modification_rule.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `response_header_modification` - (Required, List) Modify response headers, supporting add, delete, and modify operations. See [`response_header_modification`](#response_header_modification) below.
 * `rule` - (Optional) Rule content, using conditional expressions to match user requests. When adding global configuration, this parameter does not need to be set. There are two usage scenarios:
   - Match all incoming requests: value set to true
@@ -105,6 +103,7 @@ The following arguments are supported:
 ### `response_header_modification`
 
 The response_header_modification supports the following:
+
 * `name` - (Required) The response header name.
 * `operation` - (Required) Operation method. Possible values:
   - `add`: Add
@@ -118,12 +117,14 @@ The response_header_modification supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<config_id>`.
 * `config_id` - Config Id
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Http Incoming Response Header Modification Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Http Incoming Response Header Modification Rule.
 * `update` - (Defaults to 5 mins) Used when update the Http Incoming Response Header Modification Rule.

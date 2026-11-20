@@ -10,8 +10,6 @@ description: |-
 
 Provides a RAM User Policy Attachment resource.
 
-
-
 For information about RAM User Policy Attachment and how to use it, see [What is User Policy Attachment](https://next.api.alibabacloud.com/document/Ram/2015-05-01/AttachPolicyToUser).
 
 -> **NOTE:** Available since v1.0.0.
@@ -76,6 +74,7 @@ resource "alicloud_ram_user_policy_attachment" "attach" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `policy_name` - (Required, ForceNew) The name of the policy.
 * `policy_type` - (Required, ForceNew) Permission policy type.
   - Custom: Custom policy.
@@ -85,6 +84,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `user:<policy_name>:<policy_type>:<user_name>`.
 
 ## Timeouts
@@ -92,6 +92,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.246.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the User Policy Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the User Policy Attachment.
 

@@ -42,6 +42,7 @@ resource "alicloud_kms_application_access_point" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `application_access_point_name` - (Required, ForceNew) Application Access Point Name.
 * `description` - (Optional) Description .
 * `policies` - (Required) The policies that have bound to the Application Access Point (AAP).
@@ -49,11 +50,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Application Access Point.
 * `delete` - (Defaults to 5 mins) Used when delete the Application Access Point.
 * `update` - (Defaults to 5 mins) Used when update the Application Access Point.

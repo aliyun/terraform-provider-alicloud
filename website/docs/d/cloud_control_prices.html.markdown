@@ -64,6 +64,7 @@ data "alicloud_cloud_control_prices" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `desire_attributes` - (Optional, ForceNew) This property represent the detailed configuration of the Resource which you are going to get price.  Give same content as DesireAttributes of the 'Resource' Resource when start Create operation. 'PaymentType' is necessary when in DesireAttributes.  Here is a probably example when you get the price of SLB LoadBalancer:```json{"LoadBalancerName": "cc-test","Bandwidth": 6,"PaymentType": "PayAsYouGo","AddressType": "internet","LoadBalancerSpec": "slb.s3.small","InternetChargeType": "paybybandwidth"} Only flat string values are supported. It conflicts with `desire_attributes_json`.
 * `desire_attributes_json` - (Optional, ForceNew, Available since v1.295.0) The desired attributes in JSON format, which supports nested objects and arrays, such as the `SystemDisk` of an ECS instance. It has the same purpose as `desire_attributes` and conflicts with it. Here is a probably example when you get the price of an ECS instance:```json{"InstanceType": "ecs.g7.large", "SystemDisk": {"Category": "cloud_essd"}}
 * `product` - (Required, ForceNew) The product Code represents the product to be operated. Currently supported products and resources can be queried at the following link: [supported-services-and-resource-types](https://help.aliyun.com/zh/cloud-control-api/product-overview/supported-services-and-resource-types).
@@ -73,11 +74,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `prices` - A list of Price Entries. Each element contains the following attributes:
 
 ### `prices`
 
 The prices supports the following attributes:
+
 * `currency` - Currency. Value range: CNY: RMB. USD: USD. JPY: Japanese yen.
 * `discount_price` - Discount
 * `module_details` - Pricing Module Price Details
@@ -88,6 +91,7 @@ The prices supports the following attributes:
 ### `prices.module_details`
 
 The module_details supports the following attributes:
+
 * `cost_after_discount` - Preferential price.
 * `invoice_discount` - Discount.
 * `module_code` - Valuation Module Identification.
@@ -98,6 +102,7 @@ The module_details supports the following attributes:
 ### `prices.promotion_details`
 
 The promotion_details supports the following attributes:
+
 * `promotion_desc` - Offer Description.
 * `promotion_id` - Offer logo.
 * `promotion_name` - Offer Name.

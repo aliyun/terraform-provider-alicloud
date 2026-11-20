@@ -194,7 +194,7 @@ The following arguments are supported:
 * `release_version` - (Required, ForceNew) EMR Version, e.g. EMR-5.10.0. You can find the all valid EMR Version in emr web console.
 * `cluster_name` - (Required) The name of emr cluster. The name length must be less than 64. Supported characters: chinese character, english character, number, "-", "_".
 * `deploy_mode` - (Optional, ForceNew) The deploy mode of EMR cluster. Supported value: NORMAL or HA.
-* `log_collect_strategy` - (Optional, Available since v1.219.0) The log collect strategy of EMR cluster. 
+* `log_collect_strategy` - (Optional, Available since v1.219.0) The log collect strategy of EMR cluster.
 * `deletion_protection` - (Optional, Available since v1.236.0) The deletion protection of EMR cluster.
 * `security_mode` - (Optional) The security mode of EMR cluster. Supported value: NORMAL or KERBEROS.
 * `applications` - (Required, ForceNew) The applications of EMR cluster to be installed, e.g. HADOOP-COMMON, HDFS, YARN, HIVE, SPARK2, SPARK3, ZOOKEEPER etc. You can find all valid applications in emr web console.
@@ -213,7 +213,7 @@ The `subscription_config` block supports the following:
 * `auto_renew` - (Optional) Auto renew for prepaid, ’true’ or ‘false’ . Default value: false.
 * `auto_pay_order` - (Optional, Available since v1.219.0) Auto pay order for payment type of subscription, ’true’ or ‘false’ .  Default value is ’true’.
 * `auto_renew_duration_unit` - (Optional) If paymentType is Subscription, this should be specified. Supported value: Month or Year.
-* `auto_renew_duration` - (Optional) If paymentType is Subscription, this should be specified. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36、48. 
+* `auto_renew_duration` - (Optional) If paymentType is Subscription, this should be specified. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36、48.
 
 ### `application_configs`
 
@@ -244,7 +244,7 @@ The `node_attributes` block supports the following:
 
 ### `node_groups`
 
-The node_groups mapping supports the following: 
+The node_groups mapping supports the following:
 
 * `node_group_type` - (Required) The node group type of emr cluster, supported value: MASTER, CORE or TASK. Node group type of GATEWAY is available since v1.219.0. Node group type of MASTER-EXTEND is available since v1.243.0.
 * `node_group_name` - (Required) The node group name of emr cluster.
@@ -277,25 +277,25 @@ The private_pool_options mapping supports the following:
 
 ### `node_groups-subscription_config`
 
-The subscription_config mapping supports the following: 
+The subscription_config mapping supports the following:
 
 * `payment_duration_unit` - (Required) If paymentType is Subscription, this should be specified. Supported value: Month or Year.
 * `payment_duration` - (Required) If paymentType is Subscription, this should be specified. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36、48.
 * `auto_renew` - (Optional) Auto renew for prepaid, ’true’ or ‘false’ . Default value: false.
 * `auto_pay_order` - (Optional, Available since v1.219.0) Auto pay order for payment type of subscription, ’true’ or ‘false’ . Default value is ’true’.
 * `auto_renew_duration_unit` - (Optional) If paymentType is Subscription, this should be specified. Supported value: Month or Year.
-* `auto_renew_duration` - (Optional) If paymentType is Subscription, this should be specified. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36、48. 
+* `auto_renew_duration` - (Optional) If paymentType is Subscription, this should be specified. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36、48.
 
 ### `node_groups-spot_bid_prices`
 
-The spot_bid_prices mapping supports the following: 
+The spot_bid_prices mapping supports the following:
 
 * `instance_type` - (Required) Host Ecs instance type.
 * `bid_price` - (Required) The spot bid price of a PayAsYouGo instance.
 
 ### `node_groups-system_disk`
 
-The system_disk mapping supports the following: 
+The system_disk mapping supports the following:
 
 * `category` - (Required) The type of the data disk. Valid values: `cloud_efficiency`, `cloud_essd`, `cloud_ssd`. **NOTE:** Since version v1.230.0, the category `cloud_ssd` is available.
 * `size` - (Required)The size of a data disk, at least 40. Unit: GiB.
@@ -304,7 +304,7 @@ The system_disk mapping supports the following:
 
 ### `node_groups-data_disks`
 
-The data_disks mapping supports the following: 
+The data_disks mapping supports the following:
 
 * `category` - (Required) The type of the data disk. Valid values: `cloud_efficiency`, `cloud_essd`, `cloud`, `local_hdd_pro`, `local_disk`, `local_ssd_pro`. **NOTE:** Since version v1.230.0, the categories `cloud`, `local_hdd_pro`, `local_disk`, `local_ssd_pro` are available.
 * `size` - (Required)The size of a data disk, at least 40. Unit: GiB.
@@ -313,7 +313,7 @@ The data_disks mapping supports the following:
 
 ### `node_groups-cost_optimized_config`
 
-The cost_optimized_config mapping supports the following: 
+The cost_optimized_config mapping supports the following:
 
 * `on_demand_base_capacity` - (Required) The cost optimized configuration which on demand based capacity.
 * `on_demand_percentage_above_base_capacity` - (Required) The cost optimized configuration which on demand percentage above based capacity.
@@ -470,7 +470,7 @@ The constraints supports the following:
 
 ### `bootstrap_scripts`
 
-The bootstrap_scripts mapping supports the following: 
+The bootstrap_scripts mapping supports the following:
 
 * `script_name` - (Required) The bootstrap script name.
 * `script_path` - (Required) The bootstrap script path, e.g. "oss://bucket/path".
@@ -482,7 +482,7 @@ The bootstrap_scripts mapping supports the following:
 
 ### `bootstrap_scripts-node_selector`
 
-The node_selector mapping supports the following: 
+The node_selector mapping supports the following:
 
 * `node_select_type` - (Required) The bootstrap scripts execution target node select type. Supported value: NODE, NODEGROUP or CLUSTER.
 * `node_names` - (Optional) The bootstrap scripts execution target node names.
@@ -502,7 +502,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 10 mins) Used when creating the cluster (until it reaches the initial `RUNNING` status). 
+* `create` - (Defaults to 10 mins) Used when creating the cluster (until it reaches the initial `RUNNING` status).
 * `delete` - (Defaults to 5 mins) Used when terminating the cluster.
 
 ## Import

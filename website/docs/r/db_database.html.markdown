@@ -22,7 +22,6 @@ For information about RDS Database and how to use it, see [What is Database](htt
 
 ## Example Usage
 
-
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_db_database&exampleId=b9562bfa-c01e-6238-1dad-1236062aa84cc311cb1c&activeTab=example&spm=docs.r.db_database.0.b9562bfac0&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
@@ -94,6 +93,7 @@ resource "alicloud_db_database" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required, ForceNew) The instance ID. You can call the DescribeDBInstances operation to query the instance ID.
 * `data_base_name` - (Optional, ForceNew, Available since v1.267.0) The name of the database.
 
@@ -128,12 +128,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<data_base_name>`.
 * `status` - The status of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Database.
 * `delete` - (Defaults to 5 mins) Used when delete the Database.
 * `update` - (Defaults to 5 mins) Used when update the Database.

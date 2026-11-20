@@ -7,7 +7,7 @@ description: |-
   Provides a list of Amqp Virtual Hosts to the user.
 ---
 
-# alicloud\_amqp\_virtual\_hosts
+# alicloud_amqp_virtual_hosts
 
 This data source provides the Amqp Virtual Hosts of the current Alibaba Cloud user.
 

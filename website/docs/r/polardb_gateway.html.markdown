@@ -35,9 +35,7 @@ resource "alicloud_polardb_gateway" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_gateway&spm=docs.r.polardb_gateway.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

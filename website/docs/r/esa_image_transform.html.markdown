@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Image Transform resource.
 
-
-
 For information about ESA Image Transform and how to use it, see [What is Image Transform](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateImageTransform).
 
 -> **NOTE:** Available since v1.244.0.
@@ -53,6 +51,7 @@ resource "alicloud_esa_image_transform" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `enable` - (Required) Specifies whether to enable image transformation. Valid values:
   - `on`: Enabled.
   - `off`: Disabled.
@@ -84,6 +83,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Image Transform.
 * `delete` - (Defaults to 5 mins) Used when delete the Image Transform.
 * `update` - (Defaults to 5 mins) Used when update the Image Transform.

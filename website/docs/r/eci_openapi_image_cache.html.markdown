@@ -77,9 +77,7 @@ resource "alicloud_eci_openapi_image_cache" "default" {
 
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eci_openapi_image_cache&spm=docs.r.eci_openapi_image_cache.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

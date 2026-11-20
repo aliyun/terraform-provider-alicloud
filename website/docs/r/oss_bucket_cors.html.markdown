@@ -68,6 +68,7 @@ resource "alicloud_oss_bucket_cors" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the Bucket.
 * `cors_rule` - (Required) The Cross-Origin Resource Sharing (CORS) configuration of the Bucket. See [`cors_rule`](#cors_rule) below.
 * `response_vary` - (Optional, Computed) Specifies whether to return the Vary: Origin header. Valid values: true: returns the Vary: Origin header, regardless of whether the request is a cross-origin request or whether the cross-origin request succeeds. false: does not return the Vary: Origin header. This element is valid only when at least one CORS rule is configured.
@@ -75,6 +76,7 @@ The following arguments are supported:
 ### `cors_rule`
 
 The cors_rule supports the following:
+
 * `allowed_headers` - (Optional) Specifies whether the headers specified by Access-Control-Request-Headers in the OPTIONS preflight request are allowed. You can use only one asterisk (*) as the wildcard for allowed header. .
 * `allowed_methods` - (Required) The cross-origin request method that is allowed. Valid values: GET, PUT, DELETE, POST, and HEAD.
 * `allowed_origins` - (Optional) The origins from which cross-origin requests are allowed. .
@@ -84,11 +86,13 @@ The cors_rule supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Cors.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Cors.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Cors.

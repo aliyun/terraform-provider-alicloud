@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_api_gateway_plugin
 
-Provides a Api Gateway Plugin resource. 
+Provides a Api Gateway Plugin resource.
 
 For information about Api Gateway Plugin and how to use it, see [What is Plugin](https://www.alibabacloud.com/help/en/api-gateway/developer-reference/api-cloudapi-2016-07-14-createplugin).
 
@@ -82,6 +82,7 @@ resource "alicloud_api_gateway_plugin" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The description of the plug-in, which cannot exceed 200 characters.
 * `plugin_data` - (Required) The definition statement of the plug-in. Plug-in definition statements in the JSON and YAML formats are supported.
 * `plugin_name` - (Required) The name of the plug-in that you want to create. It can contain uppercase English letters, lowercase English letters, Chinese characters, numbers, and underscores (_). It must be 4 to 50 characters in length and cannot start with an underscore (_).
@@ -105,12 +106,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Create time.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Plugin.
 * `delete` - (Defaults to 5 mins) Used when delete the Plugin.
 * `update` - (Defaults to 5 mins) Used when update the Plugin.

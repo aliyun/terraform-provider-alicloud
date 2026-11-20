@@ -191,7 +191,7 @@ The following arguments are supported:
 
 The `chain_config` block supports the following:
 
-* `routers` - (Optional) Execution sequence relationship between delivery chain nodes. See [`routers`](#chain_config-routers) below. 
+* `routers` - (Optional) Execution sequence relationship between delivery chain nodes. See [`routers`](#chain_config-routers) below.
 * `nodes` - (Optional) Each node in the delivery chain. See [`nodes`](#chain_config-nodes) below.
 
   -> **NOTE:** The `from` and `to` fields are all fixed, and their structure and the value of `node_name` are fixed. You can refer to the template given in the example for configuration.
@@ -199,22 +199,26 @@ The `chain_config` block supports the following:
 ### `chain_config-routers`
 
 The `routers` block supports the following:
+
 * `from` - (Optional) Source node. See [`from`](#chain_config-routers-from) below.
 * `to` - (Optional) Destination node. See [`to`](#chain_config-routers-to) below.
 
 ### `chain_config-routers-from`
 
 The `from` block supports the following:
+
 * `node_name` - (Optional) The name of node. Valid values: `DOCKER_IMAGE_BUILD`, `DOCKER_IMAGE_PUSH`, `VULNERABILITY_SCANNING`, `ACTIVATE_REPLICATION`, `TRIGGER`, `SNAPSHOT`, `TRIGGER_SNAPSHOT`.
 
 ### `chain_config-routers-to`
 
 The `to` block supports the following:
+
 * `node_name` - (Optional) The name of node. Valid values: `DOCKER_IMAGE_BUILD`, `DOCKER_IMAGE_PUSH`, `VULNERABILITY_SCANNING`, `ACTIVATE_REPLICATION`, `TRIGGER`, `SNAPSHOT`, `TRIGGER_SNAPSHOT`.
 
 ### `chain_config-nodes`
 
 The `nodes` block supports the following:
+
 * `node_name` - (Optional) The name of delivery chain node.
 * `enable` - (Optional) Whether to enable the delivery chain node. Valid values: `true`, `false`.
 * `node_config` - (Optional) The configuration of delivery chain node. See [`node_config`](#chain_config-nodes-node_config) below.
@@ -222,11 +226,13 @@ The `nodes` block supports the following:
 ### `chain_config-nodes-node_config`
 
 The `node_config` block supports the following:
+
 * `deny_policy` - (Optional) Blocking rules for scanning nodes in delivery chain nodes. See [`deny_policy`](#chain_config-nodes-node_config-deny_policy) below. **Note:** When `node_name` is `VULNERABILITY_SCANNING`, the parameters in `deny_policy` need to be filled in.
 
 ### `chain_config-nodes-node_config-deny_policy`
 
 The `deny_policy` block supports the following:
+
 * `issue_count` - (Optional) The count of scanning vulnerabilities that triggers blocking.
 * `issue_level` - (Optional) The level of scanning vulnerability that triggers blocking. Valid values: `LOW`, `MEDIUM`, `HIGH`, `UNKNOWN`.
 * `logic` - (Optional) The logic of trigger blocking. Valid values: `AND`, `OR`.

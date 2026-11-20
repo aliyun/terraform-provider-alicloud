@@ -10,8 +10,6 @@ description: |-
 
 Provides a Hologres (Hologram) Instance resource.
 
-
-
 For information about Hologres (Hologram) Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/zh/hologres/developer-reference/api-hologram-2022-06-01-createinstance).
 
 -> **NOTE:** Available since v1.213.0.
@@ -79,6 +77,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_pay` - (Optional) Whether to pay automatically. The default value is true. Value:
   - true: automatic payment
   - false: only generate orders, not pay
@@ -131,6 +130,7 @@ The following arguments are supported:
 ### `endpoints`
 
 The endpoints supports the following:
+
 * `type` - (Optional) The network type.
 * `vswitch_id` - (Optional) The ID of the virtual switch.
 * `vpc_id` - (Optional) VPC primary key.
@@ -138,6 +138,7 @@ The endpoints supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `region_id` - (Available since v1.259.0) The region ID.
@@ -150,6 +151,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.
 * `update` - (Defaults to 10 mins) Used when update the Instance.

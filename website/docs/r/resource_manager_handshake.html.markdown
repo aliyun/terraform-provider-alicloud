@@ -12,8 +12,6 @@ Provides a Resource Manager Handshake resource.
 
 -> **NOTE:** If the invitation has been accepted and `target_type` is `Account`, destroying this resource removes the invited cloud account from the resource directory.
 
-
-
 For information about Resource Manager Handshake and how to use it, see [What is Handshake](https://www.alibabacloud.com/help/en/doc-detail/135287.htm).
 
 -> **NOTE:** Available since v1.82.0.
@@ -42,6 +40,7 @@ resource "alicloud_resource_manager_handshake" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `note` - (Optional, ForceNew) The description of the invitation.
 The description can be up to 1,024 characters in length.
 * `target_entity` - (Required, ForceNew) The ID or logon email address of the account that you want to invite.
@@ -53,6 +52,7 @@ The description can be up to 1,024 characters in length.
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the invitation was created. The time is displayed in UTC.
 * `expire_time` - The time when the invitation expires. The time is displayed in UTC.
@@ -60,11 +60,12 @@ The following attributes are exported:
 * `master_account_name` - The name of the management account of the resource directory.
 * `modify_time` - The time when the invitation was modified. The time is displayed in UTC.
 * `resource_directory_id` - The ID of the resource directory.
-* `status` - The status of the invitation. 
+* `status` - The status of the invitation.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Handshake.
 * `delete` - (Defaults to 5 mins) Used when delete the Handshake.
 

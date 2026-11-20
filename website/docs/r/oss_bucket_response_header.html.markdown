@@ -72,18 +72,19 @@ resource "alicloud_oss_bucket_overwrite_config" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_response_header&spm=docs.r.oss_bucket_response_header.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the bucket
 * `rule` - (Optional, List) The container that holds the response header rules. See [`rule`](#rule) below.
 
 ### `rule`
 
 The rule supports the following:
+
 * `filters` - (Optional, Set) The container that holds the operations that need to be apply rules. See [`filters`](#rule-filters) below.
 * `hide_headers` - (Optional, Set) The container that holds the response headers that need to be hidden. See [`hide_headers`](#rule-hide_headers) below.
 * `name` - (Optional) The response header rule name.
@@ -91,21 +92,25 @@ The rule supports the following:
 ### `rule-filters`
 
 The rule-filters supports the following:
+
 * `operation` - (Optional, List) The operation to which the rule applies.
 
 ### `rule-hide_headers`
 
 The rule-hide_headers supports the following:
+
 * `header` - (Optional, List) The response header needs to be hidden.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Response Header.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Response Header.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Response Header.

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ecs Image Pipelines to the user.
 ---
 
-# alicloud\_ecs\_image\_pipelines
+# alicloud_ecs_image_pipelines
 
 This data source provides the Ecs Image Pipelines of the current Alibaba Cloud user.
 

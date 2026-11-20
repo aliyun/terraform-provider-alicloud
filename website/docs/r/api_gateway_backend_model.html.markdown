@@ -48,9 +48,7 @@ resource "alicloud_api_gateway_backend_model" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_api_gateway_backend_model&spm=docs.r.api_gateway_backend_model.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
@@ -72,6 +70,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Backend Model.
 * `delete` - (Defaults to 5 mins) Used when delete the Backend Model.
 * `update` - (Defaults to 5 mins) Used when update the Backend Model.

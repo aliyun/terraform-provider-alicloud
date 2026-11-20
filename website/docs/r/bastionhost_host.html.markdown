@@ -83,9 +83,9 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) Specify the new create a host where the Bastion host ID of.
 * `instance_region_id` - (Optional) The instance region id.
 * `os_type` - (Required) Specify the new create the host's operating system. Valid values: `Linux`,`Windows`.
-* `source` - (Required, ForceNew) Specify the new create a host of source. Valid values: 
-  * `Local`: localhost 
-  * `Ecs`:ECS instance 
+* `source` - (Required, ForceNew) Specify the new create a host of source. Valid values:
+  * `Local`: localhost
+  * `Ecs`:ECS instance
   * `Rds`:RDS exclusive cluster host.
 * `source_instance_id` - (Optional, ForceNew) Specify the newly created ECS instance ID or dedicated cluster host ID. **NOTE:** This parameter is required if the `source` parameter is set to `Ecs` or `Rds`.
 

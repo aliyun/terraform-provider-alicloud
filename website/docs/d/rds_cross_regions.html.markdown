@@ -7,7 +7,7 @@ description: |-
   Provide a list of available RDS remote disaster recovery regions for Alibaba Cloud accounts.
 ---
 
-# alicloud\_rds\_cross\_regions
+# alicloud_rds_cross_regions
 
 This data source provides an available area for remote disaster recovery for RDS.
 

@@ -86,6 +86,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Remote Write.
 * `delete` - (Defaults to 5 mins) Used when delete the Remote Write.
 * `update` - (Defaults to 5 mins) Used when update the Remote Write.

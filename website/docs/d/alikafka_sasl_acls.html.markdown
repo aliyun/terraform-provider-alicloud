@@ -34,9 +34,9 @@ output "first_sasl_acl_username" {
 The following arguments are supported:
 
 * `instance_id` - (Required) ID of the ALIKAFKA Instance that owns the sasl acls.
-* `username` - (Required) Get results for the specified username. 
-* `acl_resource_type` - (Required) Get results for the specified resource type. 
-* `acl_resource_name` - (Required) Get results for the specified resource name. 
+* `username` - (Required) Get results for the specified username.
+* `acl_resource_type` - (Required) Get results for the specified resource type.
+* `acl_resource_name` - (Required) Get results for the specified resource name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

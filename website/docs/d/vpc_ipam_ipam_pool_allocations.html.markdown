@@ -59,6 +59,7 @@ output "alicloud_vpc_ipam_ipam_pool_allocation_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cidr` - (ForceNew, Optional) The allocated address segment.
 * `ipam_pool_allocation_id` - (ForceNew, Optional) The instance ID of the ipam pool allocation.
 * `ipam_pool_allocation_name` - (ForceNew, Optional) The name of the ipam pool allocation.It must be 1 to 128 characters in length and cannot start with 'http:// 'or 'https.
@@ -67,10 +68,10 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Ipam Pool Allocation IDs.
 * `names` - A list of name of Ipam Pool Allocations.
 * `allocations` - A list of Ipam Pool Allocation Entries. Each element contains the following attributes:

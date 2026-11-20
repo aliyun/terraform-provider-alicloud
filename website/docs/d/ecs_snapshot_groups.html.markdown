@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ecs Snapshot Groups to the user.
 ---
 
-# alicloud\_ecs\_snapshot\_groups
+# alicloud_ecs_snapshot_groups
 
 This data source provides the Ecs Snapshot Groups of the current Alibaba Cloud user.
 

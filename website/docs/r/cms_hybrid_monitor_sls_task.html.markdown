@@ -110,26 +110,26 @@ resource "alicloud_cms_hybrid_monitor_sls_task" "default" {
 
 The following arguments are supported:
 
-* `attach_labels` - (Optional) The label of the monitoring task. See [`attach_labels`](#attach_labels) below. 
+* `attach_labels` - (Optional) The label of the monitoring task. See [`attach_labels`](#attach_labels) below.
 * `collect_interval` - (Optional) The interval at which metrics are collected. Valid values: `15`, `60`(default value). Unit: seconds.
 * `collect_target_type` - (Required, ForceNew) The type of the collection target, enter the name of the Logstore group.
 * `description` - (Optional) The description of the metric import task.
 * `namespace` - (Required, ForceNew) The name of the namespace.
-* `sls_process_config` - (Required) The configurations of the logs that are imported from Log Service. See [`sls_process_config`](#sls_process_config) below. 
+* `sls_process_config` - (Required) The configurations of the logs that are imported from Log Service. See [`sls_process_config`](#sls_process_config) below.
 * `task_name` - (Required, ForceNew) The name of the metric import task, enter the name of the metric for logs imported from Log Service.
 
 ### `sls_process_config`
 
-The sls_process_config supports the following: 
+The sls_process_config supports the following:
 
-* `express` - (Optional) The extended fields that specify the results of basic operations that are performed on aggregation results. See [`express`](#sls_process_config-express) below. 
-* `filter` - (Optional) The conditions that are used to filter logs imported from Log Service. See [`filter`](#sls_process_config-filter) below. 
-* `group_by` - (Optional) The dimension based on which data is aggregated. This parameter is equivalent to the GROUP BY clause in SQL. See [`group_by`](#sls_process_config-group_by) below. 
-* `statistics` - (Optional) The method that is used to aggregate logs imported from Log Service. See [`statistics`](#sls_process_config-statistics) below. 
+* `express` - (Optional) The extended fields that specify the results of basic operations that are performed on aggregation results. See [`express`](#sls_process_config-express) below.
+* `filter` - (Optional) The conditions that are used to filter logs imported from Log Service. See [`filter`](#sls_process_config-filter) below.
+* `group_by` - (Optional) The dimension based on which data is aggregated. This parameter is equivalent to the GROUP BY clause in SQL. See [`group_by`](#sls_process_config-group_by) below.
+* `statistics` - (Optional) The method that is used to aggregate logs imported from Log Service. See [`statistics`](#sls_process_config-statistics) below.
 
 ### `sls_process_config-statistics`
 
-The statistics supports the following: 
+The statistics supports the following:
 
 * `alias` - (Optional) The alias of the aggregation result.
 * `function` - (Optional) The function that is used to aggregate log data within a statistical period. Valid values: `count`, `sum`, `avg`, `max`, `min`, `value`, `countps`, `sumps`, `distinct`, `distribution`, `percentile`.
@@ -141,21 +141,21 @@ The statistics supports the following:
 
 ### `sls_process_config-group_by`
 
-The group_by supports the following: 
+The group_by supports the following:
 
 * `alias` - (Optional) The alias of the aggregation result.
 * `sls_key_name` - (Optional) The name of the key that is used to aggregate logs imported from Log Service.
 
 ### `sls_process_config-filter`
 
-The filter supports the following: 
+The filter supports the following:
 
-* `filters` - (Optional) The conditions that are used to filter logs imported from Log Service. See [`filters`](#sls_process_config-filter-filters) below. 
+* `filters` - (Optional) The conditions that are used to filter logs imported from Log Service. See [`filters`](#sls_process_config-filter-filters) below.
 * `relation` - (Optional) The relationship between multiple filter conditions. Valid values: `and`(default value), `or`.
 
 ### `sls_process_config-filter-filters`
 
-The filters supports the following: 
+The filters supports the following:
 
 * `operator` - (Optional) The method that is used to filter logs imported from Log Service. Valid values: `>`, `>=`, `=`, `<=`, `<`, `!=`, `contain`, `notContain`.
 * `sls_key_name` - (Optional) The name of the key that is used to filter logs imported from Log Service.
@@ -163,14 +163,14 @@ The filters supports the following:
 
 ### `sls_process_config-express`
 
-The express supports the following: 
+The express supports the following:
 
 * `alias` - (Optional) The alias of the extended field that specifies the result of basic operations that are performed on aggregation results.
 * `express` - (Optional) The extended field that specifies the result of basic operations that are performed on aggregation results.
 
 ### `attach_labels`
 
-The attach_labels supports the following: 
+The attach_labels supports the following:
 
 * `name` - (Optional) The tag key of the metric.
 * `value` - (Optional) The tag value of the metric.

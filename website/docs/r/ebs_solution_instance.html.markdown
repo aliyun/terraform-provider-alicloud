@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_ebs_solution_instance
 
-Provides a EBS Solution Instance resource. 
+Provides a EBS Solution Instance resource.
 
 For information about EBS Solution Instance and how to use it, see [What is Solution Instance](https://www.alibabacloud.com/help/en/).
 
@@ -120,6 +120,7 @@ resource "alicloud_ebs_solution_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) Solution Instance Description.
 * `parameters` - (Optional) Solution Instance Creation Parameters. See [`parameters`](#parameters) below.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group.
@@ -130,12 +131,14 @@ The following arguments are supported:
 ### `parameters`
 
 The parameters supports the following:
+
 * `parameter_key` - (Required) Create parameter Key.
 * `parameter_value` - (Required) Create parameter Value.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Solution Instance Creation Time.
 * `status` - The status of the resource.
@@ -143,6 +146,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Solution Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Solution Instance.
 * `update` - (Defaults to 5 mins) Used when update the Solution Instance.

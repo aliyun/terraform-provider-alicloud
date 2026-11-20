@@ -35,7 +35,6 @@ For information about acl and how to use it, see [Configure an access control li
 
 -> **NOTE:** Available since v1.20.0.
 
-
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">

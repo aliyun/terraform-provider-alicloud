@@ -85,4 +85,3 @@ OTS instance can be imported using instance id or name, e.g.
 ```shell
 $ terraform import alicloud_ots_instance.foo "my-ots-instance"
 ```
-

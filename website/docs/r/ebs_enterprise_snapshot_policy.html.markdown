@@ -63,6 +63,7 @@ resource "alicloud_ebs_enterprise_snapshot_policy" "defaultPE3jjR" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cross_region_copy_info` - (Optional) Snapshot replication information. See [`cross_region_copy_info`](#cross_region_copy_info) below.
 * `desc` - (Optional) Description information representing the resource.
 * `enterprise_snapshot_policy_name` - (Required) The name of the resource.
@@ -78,18 +79,21 @@ The following arguments are supported:
 ### `cross_region_copy_info`
 
 The cross_region_copy_info supports the following:
+
 * `enabled` - (Optional) Enable Snapshot replication.
 * `regions` - (Optional) Destination region for Snapshot replication. See [`regions`](#cross_region_copy_info-regions) below.
 
 ### `cross_region_copy_info-regions`
 
 The cross_region_copy_info-regions supports the following:
+
 * `region_id` - (Optional) Destination region ID.
 * `retain_days` - (Optional) Number of days of snapshot retention for replication.
 
 ### `retain_rule`
 
 The retain_rule supports the following:
+
 * `number` - (Optional) Retention based on counting method.
 * `time_interval` - (Optional) Time unit.
 * `time_unit` - (Optional) Time-based retention.
@@ -97,11 +101,13 @@ The retain_rule supports the following:
 ### `schedule`
 
 The schedule supports the following:
+
 * `cron_expression` - (Required) CronTab expression.
 
 ### `special_retain_rules`
 
 The special_retain_rules supports the following:
+
 * `enabled` - (Optional) Whether special reservations are enabled. Value range:
   - true
   - false.
@@ -110,6 +116,7 @@ The special_retain_rules supports the following:
 ### `special_retain_rules-rules`
 
 The special_retain_rules-rules supports the following:
+
 * `special_period_unit` - (Optional) The cycle unit of the special reserved snapshot. If the value is set to WEEKS, the first snapshot of each week is reserved. The retention time is determined by TimeUnit and TimeInterval. The value range is:
   - WEEKS
   - MONTHS
@@ -122,17 +129,20 @@ The special_retain_rules-rules supports the following:
 ### `storage_rule`
 
 The storage_rule supports the following:
+
 * `enable_immediate_access` - (Optional) Snapshot speed available.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Enterprise Snapshot Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Enterprise Snapshot Policy.
 * `update` - (Defaults to 5 mins) Used when update the Enterprise Snapshot Policy.

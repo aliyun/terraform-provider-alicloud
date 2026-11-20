@@ -70,17 +70,20 @@ resource "alicloud_cloud_phone_key_pair" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `key_pair_name` - (Required) ADB key pair name.
 * `public_key_body` - (Optional) The public key of the key pair.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Key Pair.
 * `delete` - (Defaults to 5 mins) Used when delete the Key Pair.
 * `update` - (Defaults to 5 mins) Used when update the Key Pair.

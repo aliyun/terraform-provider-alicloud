@@ -10,8 +10,6 @@ description: |-
 
 Provides a Max Compute Quota resource.
 
-
-
 For information about Max Compute Quota and how to use it, see [What is Quota](https://next.api.alibabacloud.com/document/MaxCompute/2022-01-04/CreateQuota).
 
 -> **NOTE:** Available since v1.247.0.
@@ -107,6 +105,7 @@ Terraform cannot destroy resource `alicloud_max_compute_quota`. Terraform will r
 ## Argument Reference
 
 The following arguments are supported:
+
 * `commodity_code` - (Required) Valid values: odps_intl/odpsplus_intl/odps/odpsplus
   - *NOTE:** --odps_intl: International Station standard post-payment -- odpsplus_intl: International Station standard pre-payment -- odps: China Station standard post-payment -- odpsplus: China Station standard pre-payment
 * `commodity_data` - (Optional) Define quota rules when creating quotas, for example:{"CU":50,"ord_time":"1:Month","autoRenew":false}.
@@ -130,6 +129,7 @@ If PaymentType is PayAsYouGo, you do not need to fill in
 ### `sub_quota_info_list`
 
 The sub_quota_info_list supports the following:
+
 * `nick_name` - (Required) Secondary Quota nickname.
 
   -> **NOTE:** -- Subscription: If you enter partNickName, the first-level QuotaNickName created is os_partNickName_p. Each first-level Quota has a default second-level Quota whose QuotaNickName is os_partNickName . -- The first-level quotanicname created by PayAsYouGo is os_PayAsYouGoQuota_p  by default, the second-level quotanicname is os_PayAsYouGoQuota
@@ -140,6 +140,7 @@ The sub_quota_info_list supports the following:
 ### `sub_quota_info_list-parameter`
 
 The sub_quota_info_list-parameter supports the following:
+
 * `enable_priority` - (Optional, Computed) Enable priority. Valid values: true/false, default: false
 * `force_reserved_min` - (Optional, Computed) Exclusive or not. Valid values: true/false, default: false
 * `max_cu` - (Required, Int) The value of maxCU in Reserved CUs.
@@ -155,15 +156,16 @@ The sub_quota_info_list-parameter supports the following:
 
   -> **NOTE:** -- If you want to not restrict SingleJobCuLimit, please make sure that this parameter is not included in the configuration at all. That is, do not configure SingleJobCuLimit to "null" or any other invalid value
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 31 mins) Used when create the Quota.
 * `update` - (Defaults to 5 mins) Used when update the Quota.
 

@@ -42,12 +42,12 @@ resource "alicloud_polardb_global_security_ip_group" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_global_security_ip_group&spm=docs.r.polardb_global_security_ip_group.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `global_ip_group_name` - (Required) The name of the IP whitelist template. The name of the IP whitelist template must meet the following requirements:
 
   - The name can contain lowercase letters, digits, and underscores (\_).
@@ -57,16 +57,17 @@ The following arguments are supported:
 
   -> **NOTE:**   Multiple IP addresses are separated by commas (,). You can create up to 1,000 IP addresses or CIDR blocks for all IP whitelists.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `region_id` - The region ID of the IP whitelist template.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Global Security Ip Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Global Security Ip Group.
 * `update` - (Defaults to 5 mins) Used when update the Global Security Ip Group.

@@ -42,17 +42,20 @@ resource "alicloud_oos_default_patch_baseline" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `patch_baseline_name` - (Required,ForceNew) The name of the patch baseline.
+
+* `patch_baseline_name` - (Required, ForceNew) The name of the patch baseline.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.
 * `patch_baseline_id` - The ID of the patch baseline.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Default Patch Baseline.
 * `delete` - (Defaults to 5 mins) Used when delete the Default Patch Baseline.
 

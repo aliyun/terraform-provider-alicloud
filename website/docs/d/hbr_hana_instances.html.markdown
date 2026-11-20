@@ -7,7 +7,7 @@ description: |-
   Provides a list of Hbr Hana Instances to the user.
 ---
 
-# alicloud\_hbr\_hana\_instances
+# alicloud_hbr_hana_instances
 
 This data source provides the Hbr Hana Instances of the current Alibaba Cloud user.
 
@@ -35,9 +35,9 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `vault_id` - (Optional, ForceNew) The id of the vault.
 * `status` - (Optional, ForceNew) The status of the SAP HANA instance. Valid values:
-  - `INITIALIZING`: The instance is being initialized. 
-  - `INITIALIZED`: The instance is registered. 
-  - `INVALID_HANA_NODE`: The instance is invalid. 
+  - `INITIALIZING`: The instance is being initialized.
+  - `INITIALIZED`: The instance is registered.
+  - `INVALID_HANA_NODE`: The instance is invalid.
   - `INITIALIZE_FAILED`: The client fails to be installed on the instance.
 
 ## Attributes Reference

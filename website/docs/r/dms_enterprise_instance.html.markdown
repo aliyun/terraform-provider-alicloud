@@ -120,7 +120,7 @@ resource "alicloud_dms_enterprise_instance" "default" {
 
 The following arguments are supported:
 
-* `tid` - (Optional) The tenant ID. 
+* `tid` - (Optional) The tenant ID.
 * `instance_type` - (Required) Database type. Valid values: `MySQL`, `SQLServer`, `PostgreSQL`, `Oracle,` `DRDS`, `OceanBase`, `Mongo`, `Redis`.
 * `instance_source` - (Required) The source of the database instance. Valid values: `PUBLIC_OWN`, `RDS`, `ECS_OWN`, `VPC_IDC`.
 * `network_type` - (Required, ForceNew) Network type. Valid values: `CLASSIC`, `VPC`.
@@ -146,14 +146,13 @@ The following arguments are supported:
 * `data_link_name` - (Optional) Cross-database query datalink name.
 * `ddl_online` - (Optional) Whether to use online services, currently only supports MySQL and PolarDB. Valid values: `0` Not used, `1` Native online DDL priority, `2` DMS lock-free table structure change priority.
 * `use_dsql` - (Optional) Whether to enable cross-instance query. Valid values: `0` not open, `1` open.
-* `instance_id` - (Optional) The instance id of the database instance. 
+* `instance_id` - (Optional) The instance id of the database instance.
 * `dba_id` - (Optional) The dba id of the database instance.
 * `skip_test` - (Optional) Whether the instance ignores test connectivity. Valid values: `true`, `false`.
 * `safe_rule_id` - (Optional) The safe rule id of the database instance.
 * `instance_alias` - (Optional, Deprecated from v1.100.0) Field `instance_alias` has been deprecated from version 1.100.0. Use `instance_name` instead.
 * `state` - (Deprecated) It has been deprecated from provider version 1.100.0 and 'status' instead.
 
-                            
 ## Attributes Reference
 
 The following attributes are exported:
@@ -168,7 +167,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 30 mins) Used when creating the DMS enterprise instance. 
+* `create` - (Defaults to 30 mins) Used when creating the DMS enterprise instance.
 * `update` - (Defaults to 30 mins) Used when updating the DMS enterprise instance.
 * `read` - (Defaults to 5 mins) Used when reading the DMS enterprise instance.
 * `delete` - (Defaults to 30 mins) Used when deleting the DMS enterprise instance.

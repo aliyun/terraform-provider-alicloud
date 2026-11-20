@@ -99,6 +99,7 @@ resource "alicloud_cen_transit_router_route_table_association" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dry_run` - (Optional) Whether to perform PreCheck on this request, including permissions and instance status verification. Value:
   - `false` (default): A normal request is sent, and the associated forwarding relationship is directly created after the check is passed.
   - `true`: The check request is sent, only verification is performed, and no Association forwarding relationship is created. Check items include whether required parameters and request format are filled in. If the check does not pass, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.
@@ -108,12 +109,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<transit_router_attachment_id>:<transit_router_route_table_id>`.
 * `status` - The status of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Transit Router Route Table Association.
 * `delete` - (Defaults to 5 mins) Used when delete the Transit Router Route Table Association.
 * `update` - (Defaults to 5 mins) Used when update the Transit Router Route Table Association.

@@ -10,8 +10,6 @@ description: |-
 
 Provides a Log Service (SLS) Etl resource.
 
-
-
 For information about Log Service (SLS) Etl and how to use it, see [What is Etl](https://next.api.alibabacloud.com/document/Sls/2020-12-30/CreateETL).
 
 -> **NOTE:** Available since v1.248.0.
@@ -72,12 +70,12 @@ resource "alicloud_sls_etl" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_etl&spm=docs.r.sls_etl.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `configuration` - (Required, Set) Detailed configuration of the data processing task.   See [`configuration`](#configuration) below.
 * `description` - (Optional) Description of the data processing task.  
 * `display_name` - (Required) The display name of the data processing task.
@@ -91,6 +89,7 @@ The following arguments are supported:
 ### `configuration`
 
 The configuration supports the following:
+
 * `from_time` - (Required, ForceNew, Int) The start timestamp of the processing time (accurate to the second). Enter 0 to start consuming from the first log received in the source Logstore.
 * `lang` - (Required) The syntax type used for data transformation.
 * `logstore` - (Required, ForceNew) The name of the source Logstore.
@@ -103,6 +102,7 @@ The configuration supports the following:
 ### `configuration-sink`
 
 The configuration-sink supports the following:
+
 * `datasets` - (Required, List) Result datasets to write to.  
 * `endpoint` - (Required) The endpoint of the region where the destination project resides.
 * `logstore` - (Required) The name of the destination Logstore.
@@ -113,6 +113,7 @@ The configuration-sink supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<project>:<job_name>`.
 * `create_time` - The time when the task was created.
 * `status` - Task status.
@@ -120,6 +121,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Etl.
 * `delete` - (Defaults to 5 mins) Used when delete the Etl.
 * `update` - (Defaults to 5 mins) Used when update the Etl.

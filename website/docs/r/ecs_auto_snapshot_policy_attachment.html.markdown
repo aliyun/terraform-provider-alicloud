@@ -58,12 +58,14 @@ resource "alicloud_ecs_auto_snapshot_policy_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_snapshot_policy_id` - (Required, ForceNew) The ID of the automatic snapshot policy that is applied to the cloud disk.
 * `disk_id` - (Required, ForceNew) The ID of the disk.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<auto_snapshot_policy_id>:<disk_id>`.
 * `region_id` - (Available since v1.271.0) The ID of the region where the automatic snapshot policy and the cloud disk are located.
 
@@ -72,6 +74,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.271.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Auto Snapshot Policy Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Auto Snapshot Policy Attachment.
 

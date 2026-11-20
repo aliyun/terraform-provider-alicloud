@@ -36,16 +36,17 @@ output "alicloud_fcv3_function_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `resource_group_id` - (ForceNew, Optional) Resource Group ID
-* `ids` - (Optional, ForceNew, Computed) A list of Function IDs. 
+* `ids` - (Optional, ForceNew, Computed) A list of Function IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by function name.
 * `prefix` - (Optional, ForceNew) A prefix string to filter results by function name.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Function IDs.
 * `names` - A list of name of Functions.
 * `functions` - A list of Function Entries. Each element contains the following attributes:

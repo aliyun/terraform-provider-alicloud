@@ -66,6 +66,7 @@ resource "alicloud_nlb_server_group_server_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The description of the servers.
 The description must be 2 to 256 characters in length, and can contain letters, digits, commas (,), periods (.), semicolons (;), forward slashes (/), at signs (@), underscores (\_), and hyphens (-).
 * `port` - (Optional, ForceNew, Computed, Int) The port that is used by the backend server. Valid values: `1` to `65535`.
@@ -86,6 +87,7 @@ The description must be 2 to 256 characters in length, and can contain letters, 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<server_group_id>_<server_id>_<server_ip>_<server_type>_<port>`.
 * `zone_id` - The zone ID of the server.
 * `status` - The status of the resource
@@ -93,6 +95,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Server Group Server Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Server Group Server Attachment.
 * `update` - (Defaults to 5 mins) Used when update the Server Group Server Attachment.

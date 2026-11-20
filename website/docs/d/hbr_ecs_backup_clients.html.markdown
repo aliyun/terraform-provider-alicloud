@@ -7,7 +7,7 @@ description: |-
   Provides a list of Hybrid Backup Recovery (HBR) Ecs Backup Clients to the user.
 ---
 
-# alicloud\_hbr\_ecs\_backup\_clients
+# alicloud_hbr_ecs_backup_clients
 
 This data source provides the Hbr Ecs File Backup Clients of the current Alibaba Cloud user.
 

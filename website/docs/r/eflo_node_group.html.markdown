@@ -199,6 +199,7 @@ resource "alicloud_eflo_node_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `az` - (Required, ForceNew) Az
 * `cluster_id` - (Required, ForceNew) Cluster ID
 * `ignore_failed_node_tasks` - (Optional) Whether to allow skipping failed nodes. Default value: False
@@ -218,6 +219,7 @@ The following arguments are supported:
 ### `ip_allocation_policy`
 
 The ip_allocation_policy supports the following:
+
 * `bond_policy` - (Optional, List) Specify the cluster subnet ID based on the bond name See [`bond_policy`](#ip_allocation_policy-bond_policy) below.
 * `machine_type_policy` - (Optional, List) Model Assignment Policy See [`machine_type_policy`](#ip_allocation_policy-machine_type_policy) below.
 * `node_policy` - (Optional, List) Node allocation policy See [`node_policy`](#ip_allocation_policy-node_policy) below.
@@ -225,42 +227,49 @@ The ip_allocation_policy supports the following:
 ### `ip_allocation_policy-bond_policy`
 
 The ip_allocation_policy-bond_policy supports the following:
+
 * `bond_default_subnet` - (Optional) Default bond cluster subnet
 * `bonds` - (Optional, List) Bond information See [`bonds`](#ip_allocation_policy-bond_policy-bonds) below.
 
 ### `ip_allocation_policy-machine_type_policy`
 
 The ip_allocation_policy-machine_type_policy supports the following:
+
 * `bonds` - (Optional, List) Bond information See [`bonds`](#ip_allocation_policy-machine_type_policy-bonds) below.
 * `machine_type` - (Optional) Model
 
 ### `ip_allocation_policy-node_policy`
 
 The ip_allocation_policy-node_policy supports the following:
+
 * `bonds` - (Optional, List) Bond information See [`bonds`](#ip_allocation_policy-node_policy-bonds) below.
 * `node_id` - (Optional) Node ID
 
 ### `ip_allocation_policy-node_policy-bonds`
 
 The ip_allocation_policy-node_policy-bonds supports the following:
+
 * `name` - (Optional) The bond name
 * `subnet` - (Optional) IP source cluster subnet
 
 ### `ip_allocation_policy-machine_type_policy-bonds`
 
 The ip_allocation_policy-machine_type_policy-bonds supports the following:
+
 * `name` - (Optional) The bond name
 * `subnet` - (Optional) IP source cluster subnet
 
 ### `ip_allocation_policy-bond_policy-bonds`
 
 The ip_allocation_policy-bond_policy-bonds supports the following:
+
 * `name` - (Optional) The bond name
 * `subnet` - (Optional) IP source cluster subnet
 
 ### `nodes`
 
 The nodes supports the following:
+
 * `hostname` - (Optional) Host name
 * `login_password` - (Optional) Login Password
 * `node_id` - (Optional) Node ID
@@ -270,6 +279,7 @@ The nodes supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<cluster_id>:<node_group_id>`.
 * `create_time` - Create time
 * `node_group_id` - The first ID of the resource
@@ -277,6 +287,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Node Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Node Group.
 * `update` - (Defaults to 120 mins) Used when update the Node Group.

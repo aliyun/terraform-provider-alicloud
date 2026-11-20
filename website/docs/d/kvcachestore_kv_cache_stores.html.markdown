@@ -28,6 +28,7 @@ output "first_store_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Optional, Computed) A list of Kv Cache Store IDs.
 * `kvcs_ids` - (Optional) The ID of the Kv Cache Store used to filter the results.
 * `name` - (Optional) The instance name used to filter the results.
@@ -39,6 +40,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `stores` - A list of Kv Cache Store entries. Each element contains the following attributes:
   * `id` - The ID of the instance. The value is the same as `kvcs_id`.
   * `kvcs_id` - The ID of the instance.

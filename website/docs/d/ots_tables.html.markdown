@@ -7,7 +7,7 @@ description: |-
     Provides a list of ots tables to the user.
 ---
 
-# alicloud\_ots\_tables
+# alicloud_ots_tables
 
 This data source provides the ots tables of the current Alibaba Cloud user.
 

@@ -7,13 +7,13 @@ description: |-
   Provides a datasource to open the Resource Manager Account Deletion Check Task.
 ---
 
-# alicloud\_resource\_manager\_account\_deletion\_check\_task
+# alicloud_resource_manager_account_deletion_check_task
 
 Using this data source can open Resource Manager Account Deletion Check Task.
 
 For information about Resource Manager Account Deletion Check Task and how to use it, see [What is Resource Manager Account Deletion Check Task](https://www.alibabacloud.com/help/en/resource-management/latest/check-account-delete).
 
--> **NOTE:** Available in v1.187.0+.
+-> **NOTE:** Available since v1.187.0+.
 
 -> **NOTE:** The member deletion feature is in invitational preview. You can contact the service manager of Alibaba Cloud to apply for a trial.
 

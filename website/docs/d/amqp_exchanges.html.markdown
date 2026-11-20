@@ -7,7 +7,7 @@ description: |-
   Provides a list of Amqp Exchanges to the user.
 ---
 
-# alicloud\_amqp\_exchanges
+# alicloud_amqp_exchanges
 
 This data source provides the Amqp Exchanges of the current Alibaba Cloud user.
 

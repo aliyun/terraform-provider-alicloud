@@ -10,8 +10,6 @@ description: |-
 
 Provides a RAM Role Policy Attachment resource.
 
-
-
 For information about RAM Role Policy Attachment and how to use it, see [What is Role Policy Attachment](https://next.api.alibabacloud.com/document/Ram/2015-05-01/AttachPolicyToRole).
 
 -> **NOTE:** Available since v1.0.0.
@@ -90,6 +88,7 @@ resource "alicloud_ram_role_policy_attachment" "attach" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `policy_name` - (Required, ForceNew) The name of the policy.
 * `policy_type` - (Required, ForceNew) Policy type.
   - Custom: Custom policy.
@@ -99,11 +98,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `role:<policy_name>:<policy_type>:<role_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Role Policy Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Role Policy Attachment.
 

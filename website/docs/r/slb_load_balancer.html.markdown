@@ -90,7 +90,7 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 * `period` - (Optional) The duration that you will buy the resource, in month. It is valid when `PaymentType` is `Subscription`. Default to 1. Valid values: [1-9, 12, 24, 36]. This attribute is only used to create `Subscription` instance or modify the `PayAsYouGo` instance to `Subscription`. Once effect, it will not be modified that means running `terraform apply` will not affect the resource.
 * `master_zone_id` - (Optional, ForceNew) The primary zone ID of the SLB instance. If not specified, the system will be randomly assigned. You can query the primary and standby zones in a region by calling the [DescribeZone](https://help.aliyun.com/document_detail/27585.htm) API.
 * `slave_zone_id` - (Optional, ForceNew) The standby zone ID of the SLB instance. If not specified, the system will be randomly assigned. You can query the primary and standby zones in a region by calling the DescribeZone API.
-* `delete_protection` - (Optional) Whether enable the deletion protection or not. on: Enable deletion protection. off: Disable deletion protection. Default to off. Only postpaid instance support this function.   
+* `delete_protection` - (Optional) Whether enable the deletion protection or not. on: Enable deletion protection. off: Disable deletion protection. Default to off. Only postpaid instance support this function.
 * `address_ip_version` - (Optional, ForceNew) The IP version of the SLB instance to be created, which can be set to `ipv4` or `ipv6` . Default to `ipv4`. Now, only internet instance support `ipv6` address.
 * `address` - (Optional, ForceNew) Specify the IP address of the private network for the SLB instance, which must be in the destination CIDR block of the corresponding switch.
 * `resource_group_id` - (Optional, ForceNew) The id of resource group which the SLB belongs.
@@ -119,7 +119,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 5 mins) Used when creating the SLB load balancer.(until it reaches the initial `active` status). 
+* `create` - (Defaults to 5 mins) Used when creating the SLB load balancer.(until it reaches the initial `active` status).
 * `delete` - (Defaults to 9 mins) Used when terminating the SLB load balancer.
 
 ## Import

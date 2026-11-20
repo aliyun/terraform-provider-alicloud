@@ -106,13 +106,11 @@ The permissions supports the following:
 * `is_custom` - (Optional) Whether the grant object is a RAM role.
 * `is_ram_role` - (Optional) Whether the grant object is an entity.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of User Permission. The value is same as `sub_account_user_id`.
-
 
 ## Timeouts
 

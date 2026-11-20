@@ -10,8 +10,6 @@ description: |-
 
 Provides a CEN Flow Log resource.
 
-
-
 For information about CEN Flow Log and how to use it, see [What is Flow Log](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createflowlog).
 
 -> **NOTE:** Available since v1.73.0.
@@ -58,6 +56,7 @@ resource "alicloud_cen_flowlog" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cen_id` - (Required, ForceNew) cen id
 * `description` - (Optional) The description of the flowlog.
 * `flow_log_name` - (Optional) The name of the flowlog.
@@ -78,6 +77,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - CreateTime
 * `region_id` - region id
@@ -85,6 +85,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Flow Log.
 * `delete` - (Defaults to 5 mins) Used when delete the Flow Log.
 * `update` - (Defaults to 5 mins) Used when update the Flow Log.

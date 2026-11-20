@@ -71,7 +71,7 @@ The following arguments are supported:
 
 ### `event_pattern`
 
-The event_pattern supports the following: 
+The event_pattern supports the following:
 
 * `product` - (Required) The type of the cloud service.
 * `sql_filter` - (Optional) The SQL condition that is used to filter events. If the content of an event meets the specified SQL condition, an alert is automatically triggered.

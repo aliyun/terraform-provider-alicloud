@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cassandra_data_center
 
-Provides a Cassandra dataCenter resource supports replica set dataCenters only. The Cassandra provides stable, reliable, and automatic scalable database services. 
+Provides a Cassandra dataCenter resource supports replica set dataCenters only. The Cassandra provides stable, reliable, and automatic scalable database services.
 It offers a full range of database solutions, such as disaster recovery, backup, recovery, monitoring, and alarms.
 You can see detail product introduction in the [Cassandra product documentation](https://www.alibabacloud.com/help/product/49055.htm).
 
@@ -98,9 +98,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 30 mins) Used when creating the Cassandra dataCenter (until it reaches the initial `Running` status). 
-* `update` - (Defaults to 30 mins) Used when updating the Cassandra dataCenter (until it reaches the initial `Running` status). 
-* `delete` - (Defaults to 5 mins) Used when terminating the Cassandra dataCenter. 
+* `create` - (Defaults to 30 mins) Used when creating the Cassandra dataCenter (until it reaches the initial `Running` status).
+* `update` - (Defaults to 30 mins) Used when updating the Cassandra dataCenter (until it reaches the initial `Running` status).
+* `delete` - (Defaults to 5 mins) Used when terminating the Cassandra dataCenter.
 
 ## Import
 

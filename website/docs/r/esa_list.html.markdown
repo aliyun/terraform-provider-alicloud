@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA List resource.
 
-
-
 For information about ESA List and how to use it, see [What is List](https://www.alibabacloud.com/help/en/edge-security-acceleration/esa/user-guide/grouping).
 
 -> **NOTE:** Available since v1.242.0.
@@ -52,6 +50,7 @@ resource "alicloud_esa_list" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The description of the custom list.
 * `items` - (Optional, List) The items in the custom list, which are displayed as an array.
 * `kind` - (Optional, ForceNew) The type of the custom list.
@@ -60,11 +59,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the List.
 * `delete` - (Defaults to 5 mins) Used when delete the List.
 * `update` - (Defaults to 5 mins) Used when update the List.

@@ -80,6 +80,7 @@ resource "alicloud_express_connect_traffic_qos_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dst_cidr` - (Optional) The traffic of the QoS rule matches the Destination IPv4 network segment.
 
   -> **NOTE:**  If this parameter is not supported, enter `SrcIPv6Cidr` or **DstIPv6Cidr * *.
@@ -144,6 +145,7 @@ The length is 0 to 128 characters and cannot start with 'http:// 'or 'https.
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<qos_id>:<queue_id>:<rule_id>`.
 * `rule_id` - The ID of the QoS rule.
 * `status` - The status of the QoS rule. Value:
@@ -151,6 +153,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Traffic Qos Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Traffic Qos Rule.
 * `update` - (Defaults to 5 mins) Used when update the Traffic Qos Rule.

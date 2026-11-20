@@ -69,6 +69,7 @@ resource "alicloud_express_connect_router_grant_association" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ecr_id` - (Required, ForceNew) The ID of the associated Leased Line Gateway instance.
 * `ecr_owner_ali_uid` - (Required, ForceNew, Int) The ID of the Alibaba Cloud account (primary account) to which the leased line gateway instance is authorized.
 * `instance_id` - (Required, ForceNew) The ID of the network instance.
@@ -80,12 +81,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<ecr_id>:<instance_id>:<instance_region_id>:<ecr_owner_ali_uid>:<instance_type>`.
 * `status` - The status of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Grant Association.
 * `delete` - (Defaults to 5 mins) Used when delete the Grant Association.
 

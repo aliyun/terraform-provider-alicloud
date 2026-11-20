@@ -10,8 +10,6 @@ description: |-
 
 Provides a PAI Workspace Member resource.
 
-
-
 For information about PAI Workspace Member and how to use it, see [What is Member](https://www.alibabacloud.com/help/en/pai/developer-reference/api-aiworkspace-2021-02-04-createmember).
 
 -> **NOTE:** Available since v1.249.0.
@@ -63,6 +61,7 @@ resource "alicloud_pai_workspace_member" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `roles` - (Required, List) The list of roles. see [how to use it](https://www.alibabacloud.com/help/en/pai/developer-reference/api-aiworkspace-2021-02-04-createmember).
 * `user_id` - (Required, ForceNew) The ID of the User.
 * `workspace_id` - (Required, ForceNew) The ID of the Workspace.
@@ -70,6 +69,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<workspace_id>:<member_id>`.
 * `create_time` - The time when the workspace is created, in UTC. The time follows the ISO 8601 standard.
 * `member_id` - The member ID.
@@ -77,6 +77,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Member.
 * `delete` - (Defaults to 5 mins) Used when delete the Member.
 * `update` - (Defaults to 5 mins) Used when update the Member.

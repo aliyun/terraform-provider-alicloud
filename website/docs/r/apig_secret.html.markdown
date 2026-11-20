@@ -86,9 +86,7 @@ resource "alicloud_apig_secret" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_apig_secret&spm=docs.r.apig_secret.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

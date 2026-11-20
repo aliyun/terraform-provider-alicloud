@@ -35,7 +35,6 @@ output "ecd_user_id_1" {
 
 The following arguments are supported:
 
-
 * `ids` - (Optional, ForceNew, Computed)  A list of User IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `Unlocked`, `Locked`.

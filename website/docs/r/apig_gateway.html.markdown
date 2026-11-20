@@ -79,13 +79,12 @@ The `alicloud_apig_gateway` resource allows you to manage  `payment_type = "Subs
 Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
 You can resume managing the subscription instance via the AlibabaCloud Console.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_apig_gateway&spm=docs.r.apig_gateway.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `gateway_edition` - (Optional, ForceNew, Computed, Available since v1.284.0) Gateway instance edition. Valid values:
   - Professional: Standard instance.
   - Serverless: Serverless instance.
@@ -113,42 +112,50 @@ The following arguments are supported:
 ### `log_config`
 
 The log_config supports the following:
+
 * `sls` - (Optional, Set) The Simple Log Service configuration for the gateway. See [`sls`](#log_config-sls) below.
 
 ### `log_config-sls`
 
 The log_config-sls supports the following:
+
 * `enable` - (Optional) The Simple Log Service configuration for the gateway.
 
 ### `network_access_config`
 
 The network_access_config supports the following:
+
 * `type` - (Optional) The network access type of the gateway instance.
 
 ### `vswitch`
 
 The vswitch supports the following:
+
 * `vswitch_id` - (Optional, ForceNew) The ID of the virtual switch.
 
 ### `vpc`
 
 The vpc supports the following:
+
 * `vpc_id` - (Required, ForceNew) The ID of the VPC network associated with the gateway.
 
 ### `zone_config`
 
 The zone_config supports the following:
+
 * `select_option` - (Required) Zone selection option.
 
 ### `zones`
 
 The zones supports the following:
+
 * `vswitch_id` - (Optional, ForceNew) The ID of the virtual switch in the availability zone.
 * `zone_id` - (Optional, ForceNew) The ID of the availability zone for the gateway.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_from` - The source from which the gateway was created.
 * `create_time` - The creation timestamp. Unit: milliseconds.
@@ -188,6 +195,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 11 mins) Used when create the Gateway.
 * `delete` - (Defaults to 5 mins) Used when delete the Gateway.
 * `update` - (Defaults to 5 mins) Used when update the Gateway.

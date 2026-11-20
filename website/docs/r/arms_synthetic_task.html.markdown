@@ -210,6 +210,7 @@ resource "alicloud_arms_synthetic_task" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `available_assertions` - (Optional) Assertion List. See [`available_assertions`](#available_assertions) below.
 * `common_setting` - (Optional) Common settings. See [`common_setting`](#common_setting) below.
 * `custom_period` - (Optional) Custom Cycle. See [`custom_period`](#custom_period) below.
@@ -226,6 +227,7 @@ The following arguments are supported:
 ### `available_assertions`
 
 The available_assertions supports the following:
+
 * `expect` - (Required) Expected value.
 * `operator` - (Required) Condition: gt: greater than; gte: greater than or equal to; lt: less than; te: less than or equal to; eq: equal to; neq: not equal to; ctn: contains; nctn: does not contain; exist: exists; n_exist: does not exist; belong: belongs to; reg_match: regular matching.
 * `target` - (Optional) Check the target. If the target is HttpResCode, HttpResBody, or httpressetime, you do not need to specify the target. If the target is HttpResHead, you need to specify the key in the header. If the target is HttpResHead, you need to use jsonPath.
@@ -234,6 +236,7 @@ The available_assertions supports the following:
 ### `common_setting`
 
 The common_setting supports the following:
+
 * `custom_host` - (Optional) Custom host. See [`custom_host`](#common_setting-custom_host) below.
 * `ip_type` - (Optional) IP Type:
   - 0: Automatic
@@ -252,6 +255,7 @@ The common_setting supports the following:
 ### `common_setting-custom_host`
 
 The common_setting-custom_host supports the following:
+
 * `hosts` - (Required) The host list. See [`hosts`](#common_setting-custom_host-hosts) below.
 * `select_type` - (Required) Selection method:
   - 0: Random
@@ -260,6 +264,7 @@ The common_setting-custom_host supports the following:
 ### `common_setting-custom_host-hosts`
 
 The common_setting-custom_host-hosts supports the following:
+
 * `domain` - (Required) Domain Name.
 * `ip_type` - (Required) IpType.
 * `ips` - (Required) The IP list.
@@ -267,12 +272,14 @@ The common_setting-custom_host-hosts supports the following:
 ### `custom_period`
 
 The custom_period supports the following:
+
 * `end_hour` - (Optional) End hours, 0-24.
 * `start_hour` - (Optional) Starting hours, 0-24.
 
 ### `monitor_conf`
 
 The monitor_conf supports the following:
+
 * `api_http` - (Optional) HTTP(S) task configuration information. See [`api_http`](#monitor_conf-api_http) below.
 * `file_download` - (Optional) File download type task configuration. See [`file_download`](#monitor_conf-file_download) below.
 * `net_dns` - (Optional) The configuration parameters of the DNS dial test. Required when TaskType is 3. See [`net_dns`](#monitor_conf-net_dns) below.
@@ -284,6 +291,7 @@ The monitor_conf supports the following:
 ### `monitor_conf-api_http`
 
 The monitor_conf-api_http supports the following:
+
 * `connect_timeout` - (Optional) Connection timeout, in ms. Default 5000. Optional range: 1000-300000ms.
 * `method` - (Optional) HTTP method, GET or POST.
 * `request_body` - (Optional) HTTP request body. See [`request_body`](#monitor_conf-api_http-request_body) below.
@@ -294,6 +302,7 @@ The monitor_conf-api_http supports the following:
 ### `monitor_conf-file_download`
 
 The monitor_conf-file_download supports the following:
+
 * `connection_timeout` - (Optional) Connection timeout time, in ms. Default 5000. Optional range: 1000-120000ms.
 * `custom_header_content` - (Optional, Map) Custom request header content, JSON Map.
 * `download_kernel` - (Optional) Download the kernel.
@@ -326,6 +335,7 @@ Default 1.
 ### `monitor_conf-net_dns`
 
 The monitor_conf-net_dns supports the following:
+
 * `dns_server_ip_type` - (Optional) The IP address type of the DNS server.
   - 0 (default):ipv4
   - 1:ipv6
@@ -340,6 +350,7 @@ The monitor_conf-net_dns supports the following:
 ### `monitor_conf-net_icmp`
 
 The monitor_conf-net_icmp supports the following:
+
 * `interval` - (Optional) The interval at which ICMP(Ping) packets are sent. The unit is milliseconds (ms), the minimum value is 200, the maximum value is 2000, and the default value is 200.
 * `package_num` - (Optional) Number of ICMP(Ping) packets sent. The minimum value is 1, the maximum value is 50, and the default is 4.
 * `package_size` - (Optional) The size of the sent ICMP(Ping) packet. The unit is byte. The ICMP(PING) packet size is limited to 32, 64, 128, 256, 512, 1024, 1080, and 1450.
@@ -353,6 +364,7 @@ The monitor_conf-net_icmp supports the following:
 ### `monitor_conf-net_tcp`
 
 The monitor_conf-net_tcp supports the following:
+
 * `connect_times` - (Optional) The number of TCP connections established. The minimum value is 1, the maximum value is 16, and the default is 4.
 * `interval` - (Optional) The interval between TCP connections. The unit is milliseconds (ms), the minimum value is 200, the maximum value is 10000, and the default value is 200.
 * `target_url` - (Required) Dial test target address (host).
@@ -364,6 +376,7 @@ The monitor_conf-net_tcp supports the following:
 ### `monitor_conf-stream`
 
 The monitor_conf-stream supports the following:
+
 * `custom_header_content` - (Optional, Map) Custom header, in JSON Map format.
 * `player_type` - (Optional) Player, do not pass the default 12.
   - 12:VLC
@@ -379,6 +392,7 @@ The monitor_conf-stream supports the following:
 ### `monitor_conf-website`
 
 The monitor_conf-website supports the following:
+
 * `automatic_scrolling` - (Optional) Whether to support automatic scrolling screen, loading page.
   - 0 (default): No
 1: Yes.
@@ -409,12 +423,14 @@ The monitor_conf-website supports the following:
 ### `monitor_conf-api_http-request_body`
 
 The monitor_conf-api_http-request_body supports the following:
+
 * `content` - (Optional) The request body content, in JSON string format. When the type is text/plain,application/json,application/xml,text/html, the content can be converted to a JSON string.
 * `type` - (Optional) The request body type. Supported parameters include text/plain, application/json, application/x-www-form-urlencoded, multipart/form-data, application/xml, and text/html.
 
 ### `monitors`
 
 The monitors supports the following:
+
 * `city_code` - (Required) The city code of monitor.
 * `client_type` - (Required) The type of monitor.
 * `operator_code` - (Required) The operator code of monitor.
@@ -422,11 +438,13 @@ The monitors supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Synthetic Task.
 * `delete` - (Defaults to 5 mins) Used when delete the Synthetic Task.
 * `update` - (Defaults to 5 mins) Used when update the Synthetic Task.

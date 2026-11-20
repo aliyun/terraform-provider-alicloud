@@ -222,16 +222,17 @@ resource "alicloud_gpdb_hadoop_data_source" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_instance_id` - (Required, ForceNew) The instance ID.
 
 * `data_source_description` - (Optional) Data Source Description
 * `data_source_name` - (Optional, ForceNew) Data Source Name
 * `data_source_type` - (Optional) The type of the data source. Valid values:
 
-  *   mysql
+  * mysql
   - postgresql
 
-  *   hdfs
+  * hdfs
   - hive
 * `emr_instance_id` - (Optional) The ID of the Emr instance.
 * `hadoop_core_conf` - (Optional) The string that specifies the content of the Hadoop core-site.xml file.
@@ -250,10 +251,10 @@ The following arguments are supported:
 
 * `yarn_conf` - (Optional) The string that specifies the content of the Hadoop yarn-site.xml file. This parameter must be specified when DataSourceType is set to HDFS.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<data_source_id>`.
 * `create_time` - Creation time
 * `data_source_id` - The data source ID.
@@ -263,6 +264,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Hadoop Data Source.
 * `delete` - (Defaults to 5 mins) Used when delete the Hadoop Data Source.
 * `update` - (Defaults to 5 mins) Used when update the Hadoop Data Source.

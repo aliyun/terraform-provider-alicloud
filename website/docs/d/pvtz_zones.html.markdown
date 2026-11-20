@@ -56,7 +56,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `names` - A list of Zone names. 
+* `names` - A list of Zone names.
 * `zones` - A list of Zone. Each element contains the following attributes:
   * `id` - The ID of the Private Zone.
   * `zone_id` - The ID of the Zone.

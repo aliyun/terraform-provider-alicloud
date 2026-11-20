@@ -130,7 +130,7 @@ The following attributes are exported in addition to the arguments listed above:
       * `url` - The service address of the Kiali.
     * `pilot` - The configuration of the Link trace sampling.
       * `http10_enabled` - Whether to support the HTTP1.0.
-      * `trace_sampling` - The  percentage of the Link trace sampling.    
+      * `trace_sampling` - The  percentage of the Link trace sampling.
     * `prometheus` - the configuration of the Prometheus.
       * `external_url` - The  service addresses of the Prometheus.
       * `use_external` - Whether to enable external Prometheus.

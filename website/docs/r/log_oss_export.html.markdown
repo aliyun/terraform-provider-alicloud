@@ -109,7 +109,6 @@ The following arguments are supported:
 * `name` - (Required) The name of the key.
 * `type` - (Required) Type of configuration name.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
@@ -120,8 +119,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins) Used when Creating LogOssexport instance. 
-* `update` - (Defaults to 1 mins) Used when Updating LogOssexport instance. 
+* `create` - (Defaults to 1 mins) Used when Creating LogOssexport instance.
+* `update` - (Defaults to 1 mins) Used when Updating LogOssexport instance.
 * `delete` - (Defaults to 1 mins) Used when terminating the LogOssexport instance.
 
 ## Import

@@ -7,21 +7,21 @@ description: |-
     Provides a list of availability zones for mongoDB that can be used by an Alibaba Cloud account.
 ---
 
-# alicloud\_mongodb\_zones
+# alicloud_mongodb_zones
 
 This data source provides availability zones for mongoDB that can be accessed by an Alibaba Cloud account within the region configured in the provider.
 
--> **NOTE:** Available in v1.73.0+.
+-> **NOTE:** Available since v1.73.0+.
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_mongodb_zones" "zones_ids" {}
 
 # Create an mongoDB instance with the first matched zone
 resource "alicloud_mongodb_instance" "mongodb" {
-    zone_id = data.alicloud_mongodb_zones.zones_ids.zones[0].id
+  zone_id = data.alicloud_mongodb_zones.zones_ids.zones[0].id
 
   # Other properties...
 }
@@ -42,4 +42,3 @@ The following attributes are exported in addition to the arguments listed above:
 * `zones` - A list of availability zones. Each element contains the following attributes:
   * `id` - ID of the zone.
   * `multi_zone_ids` - A list of zone ids in which the multi zone.
-

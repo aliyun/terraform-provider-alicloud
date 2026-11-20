@@ -93,6 +93,7 @@ resource "alicloud_realtime_compute_deployment" "create_Deployment9" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `artifact` - (Required, List) Content of the deployment job See [`artifact`](#artifact) below.
 * `batch_resource_setting` - (Optional, List) Batch job resource settings See [`batch_resource_setting`](#batch_resource_setting) below.
 * `deployment_name` - (Required) Name of the deployment
@@ -111,6 +112,7 @@ The following arguments are supported:
 ### `artifact`
 
 The artifact supports the following:
+
 * `jar_artifact` - (Optional, List) JarArtifact See [`jar_artifact`](#artifact-jar_artifact) below.
 * `kind` - (Required, ForceNew) Artifact type
 * `python_artifact` - (Optional, List) PythonArtifact See [`python_artifact`](#artifact-python_artifact) below.
@@ -119,6 +121,7 @@ The artifact supports the following:
 ### `artifact-jar_artifact`
 
 The artifact-jar_artifact supports the following:
+
 * `additional_dependencies` - (Optional, List) Full URL paths of additional dependencies; you can specify other dependencies required by the JAR here
 * `entry_class` - (Optional) Main class; you must specify the fully qualified class name
 * `jar_uri` - (Optional) Full URL path of the JAR job
@@ -127,6 +130,7 @@ The artifact-jar_artifact supports the following:
 ### `artifact-python_artifact`
 
 The artifact-python_artifact supports the following:
+
 * `additional_dependencies` - (Optional, List) Full URL paths of additional dependencies  
 * `additional_python_archives` - (Optional, List) URL paths of dependent Python archive files  
 * `additional_python_libraries` - (Optional, List) URL paths of dependent Python library files  
@@ -137,18 +141,21 @@ The artifact-python_artifact supports the following:
 ### `artifact-sql_artifact`
 
 The artifact-sql_artifact supports the following:
+
 * `additional_dependencies` - (Optional, List) Full URL path of additional files. If you need to use dependencies such as UDFs, connectors, or formats that are not registered on the VVP platform, you must add them using this method. Dependencies already registered on the platform do not require this approach.
 * `sql_script` - (Optional) Text content of the SQL job
 
 ### `batch_resource_setting`
 
 The batch_resource_setting supports the following:
+
 * `basic_resource_setting` - (Optional, List) Resource settings for basic mode See [`basic_resource_setting`](#batch_resource_setting-basic_resource_setting) below.
 * `max_slot` - (Optional, Int) Maximum number of slots
 
 ### `batch_resource_setting-basic_resource_setting`
 
 The batch_resource_setting-basic_resource_setting supports the following:
+
 * `jobmanager_resource_setting_spec` - (Optional, List) JobManager resource settings See [`jobmanager_resource_setting_spec`](#batch_resource_setting-basic_resource_setting-jobmanager_resource_setting_spec) below.
 * `parallelism` - (Optional, Int) Parallelism.
 * `taskmanager_resource_setting_spec` - (Optional, List) TaskManager resource settings See [`taskmanager_resource_setting_spec`](#batch_resource_setting-basic_resource_setting-taskmanager_resource_setting_spec) below.
@@ -156,30 +163,35 @@ The batch_resource_setting-basic_resource_setting supports the following:
 ### `batch_resource_setting-basic_resource_setting-jobmanager_resource_setting_spec`
 
 The batch_resource_setting-basic_resource_setting-jobmanager_resource_setting_spec supports the following:
+
 * `cpu` - (Optional, Float) CPU
 * `memory` - (Optional) Memory
 
 ### `batch_resource_setting-basic_resource_setting-taskmanager_resource_setting_spec`
 
 The batch_resource_setting-basic_resource_setting-taskmanager_resource_setting_spec supports the following:
+
 * `cpu` - (Optional, Float) CPU
 * `memory` - (Optional) Memory
 
 ### `deployment_target`
 
 The deployment_target supports the following:
+
 * `mode` - (Required) Deployment mode, valid values: PER_JOB or SESSION
 * `name` - (Required) Deployment target name
 
 ### `local_variables`
 
 The local_variables supports the following:
+
 * `name` - (Optional) Job variable name
 * `value` - (Optional) Job variable value
 
 ### `logging`
 
 The logging supports the following:
+
 * `log4j2_configuration_template` - (Optional, Computed) Custom log template  
 * `log4j_loggers` - (Optional, Computed, Set) log4j configuration   See [`log4j_loggers`](#logging-log4j_loggers) below.
 * `log_reserve_policy` - (Optional, Computed, List) Log retention policy   See [`log_reserve_policy`](#logging-log_reserve_policy) below.
@@ -188,18 +200,21 @@ The logging supports the following:
 ### `logging-log4j_loggers`
 
 The logging-log4j_loggers supports the following:
+
 * `logger_level` - (Optional, Computed) Log output level  
 * `logger_name` - (Optional, Computed) Class name for log output  
 
 ### `logging-log_reserve_policy`
 
 The logging-log_reserve_policy supports the following:
+
 * `expiration_days` - (Optional, Computed, Int) Number of days to retain logs after log retention is enabled
 * `open_history` - (Optional, Computed) Whether to enable log retention
 
 ### `streaming_resource_setting`
 
 The streaming_resource_setting supports the following:
+
 * `basic_resource_setting` - (Optional, Computed, List) Resource settings for basic mode See [`basic_resource_setting`](#streaming_resource_setting-basic_resource_setting) below.
 * `expert_resource_setting` - (Optional, Computed, List) Expert mode resource settings See [`expert_resource_setting`](#streaming_resource_setting-expert_resource_setting) below.
 * `resource_setting_mode` - (Optional, Computed) Resource mode used in streaming mode, valid values: BASIC or EXPERT
@@ -207,6 +222,7 @@ The streaming_resource_setting supports the following:
 ### `streaming_resource_setting-basic_resource_setting`
 
 The streaming_resource_setting-basic_resource_setting supports the following:
+
 * `jobmanager_resource_setting_spec` - (Optional, Computed, List) JobManager resource settings See [`jobmanager_resource_setting_spec`](#streaming_resource_setting-basic_resource_setting-jobmanager_resource_setting_spec) below.
 * `parallelism` - (Optional, Computed, Int) Parallelism
 * `taskmanager_resource_setting_spec` - (Optional, Computed, List) TaskManager resource settings See [`taskmanager_resource_setting_spec`](#streaming_resource_setting-basic_resource_setting-taskmanager_resource_setting_spec) below.
@@ -214,36 +230,42 @@ The streaming_resource_setting-basic_resource_setting supports the following:
 ### `streaming_resource_setting-expert_resource_setting`
 
 The streaming_resource_setting-expert_resource_setting supports the following:
+
 * `jobmanager_resource_setting_spec` - (Optional, List) Basic resource settings for JobManager See [`jobmanager_resource_setting_spec`](#streaming_resource_setting-expert_resource_setting-jobmanager_resource_setting_spec) below.
 * `resource_plan` - (Optional) Resource plan for expert mode
 
 ### `streaming_resource_setting-expert_resource_setting-jobmanager_resource_setting_spec`
 
 The streaming_resource_setting-expert_resource_setting-jobmanager_resource_setting_spec supports the following:
+
 * `cpu` - (Optional, Float) CPU
 * `memory` - (Optional) Memory
 
 ### `streaming_resource_setting-basic_resource_setting-jobmanager_resource_setting_spec`
 
 The streaming_resource_setting-basic_resource_setting-jobmanager_resource_setting_spec supports the following:
+
 * `cpu` - (Optional, Computed, Float) CPU
 * `memory` - (Optional, Computed) Memory
 
 ### `streaming_resource_setting-basic_resource_setting-taskmanager_resource_setting_spec`
 
 The streaming_resource_setting-basic_resource_setting-taskmanager_resource_setting_spec supports the following:
+
 * `cpu` - (Optional, Computed, Float) CPU
 * `memory` - (Optional, Computed) Memory
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<resource_id>:<namespace>:<deployment_id>`.
 * `deployment_id` - Resource property field representing the primary resource ID
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Deployment.
 * `delete` - (Defaults to 5 mins) Used when delete the Deployment.
 * `update` - (Defaults to 5 mins) Used when update the Deployment.

@@ -28,14 +28,15 @@ output "alicloud_bss_open_api_product_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Optional, ForceNew, List) A list of product IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Product name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `names` - A list of name of Products.
 * `products` - A list of Product Entries. Each element contains the following attributes:
   * `id` - The ID of the product. The value is formulated as `<product_code>:<product_type>:<subscription_type>`.

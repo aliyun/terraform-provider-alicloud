@@ -53,9 +53,7 @@ resource "alicloud_cr_internet_endpoint" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cr_internet_endpoint&spm=docs.r.cr_internet_endpoint.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

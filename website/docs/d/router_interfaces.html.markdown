@@ -7,7 +7,7 @@ description: |-
     Provides a list of router interfaces to the user.
 ---
 
-# alicloud\_router\_interfaces
+# alicloud_router_interfaces
 
 This data source provides information about [router interfaces](https://www.alibabacloud.com/help/en/express-connect/developer-reference/api-vpc-2016-04-28-describerouterinterfaces-efficiency-channels)
 that connect VPCs together.
@@ -16,7 +16,7 @@ that connect VPCs together.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_router_interfaces" "router_interfaces_ds" {
   name_regex = "^testenv"
   status     = "Active"
@@ -36,7 +36,7 @@ The following arguments are supported:
 * `specification` - (Optional) Specification of the link, such as `Small.1` (10Mb), `Middle.1` (100Mb), `Large.2` (2Gb), ...etc.
 * `router_id` - (Optional) ID of the VRouter located in the local region.
 * `router_type` - (Optional) Router type in the local region. Valid values are `VRouter` and `VBR` (physical connection).
-* `role` - (Optional) Role of the router interface. Valid values are `InitiatingSide` (connection initiator) and 
+* `role` - (Optional) Role of the router interface. Valid values are `InitiatingSide` (connection initiator) and
   `AcceptingSide` (connection receiver). The value of this parameter must be `InitiatingSide` if the `router_type` is set to `VBR`.
 * `opposite_interface_id` - (Optional) ID of the peer router interface.
 * `opposite_interface_owner_id` - (Optional) Account ID of the owner of the peer router interface.

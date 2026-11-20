@@ -7,7 +7,7 @@ description: |-
     Provides a list of regions that can be used by an Alibaba Cloud account.
 ---
 
-# alicloud\_regions
+# alicloud_regions
 
 This data source provides Alibaba Cloud regions.
 

@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cloud Enterprise Network (CEN) Inter Region Traffic Qos Queue resource.
 
-
-
 For information about Cloud Enterprise Network (CEN) Inter Region Traffic Qos Queue and how to use it, see [What is Inter Region Traffic Qos Queue](https://next.api.alibabacloud.com/document/Cbn/2017-09-12/CreateCenInterRegionTrafficQosQueue).
 
 -> **NOTE:** Available since v1.195.0.
@@ -109,6 +107,7 @@ resource "alicloud_cen_inter_region_traffic_qos_queue" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bandwidth` - (Optional, Available since v1.246.0) The guaranteed bandwidth value. If guaranteed by bandwidth is selected for TrafficQosPolicy, this value is valid.
 * `dscps` - (Required, List) The DSCP value of the traffic packet to be matched in the current queue, ranging from 0 to 63.
 * `inter_region_traffic_qos_queue_description` - (Optional) The description information of the traffic scheduling policy.
@@ -119,12 +118,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `status` - The status of the traffic scheduling policy.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Inter Region Traffic Qos Queue.
 * `delete` - (Defaults to 5 mins) Used when delete the Inter Region Traffic Qos Queue.
 * `update` - (Defaults to 5 mins) Used when update the Inter Region Traffic Qos Queue.

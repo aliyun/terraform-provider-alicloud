@@ -55,7 +55,7 @@ The following arguments are supported:
 * `policy_document` - (Required, ForceNew) The content of the policy. The content must be 1 to 2,048 characters in length.
 * `description` - (Optional, ForceNew) The description of the policy. The description must be 1 to 1,024 characters in length.
 * `default_version` - (Optional, Computed, Deprecated from version 1.90.0) The version of the policy. Default to v1.
-    
+
 ## Attributes Reference
 
 * `id` - The resource ID of policy. The value is same as `policy_name`.

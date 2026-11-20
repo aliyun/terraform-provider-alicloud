@@ -64,14 +64,13 @@ Deleting the subscription resource or removing it from your configuration
 will remove it from your state file and management, but will not destroy the `yundun_dbaudit_instance`.
 You can resume managing the subscription yundun_dbaudit_instance via the AlibabaCloud Console.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_yundun_dbaudit_instance&spm=docs.r.yundun_dbaudit_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `plan_code` - (Required) Plan code of the Cloud DBAudit to produce. (alpha.professional, alpha.basic, alpha.premium) 
+* `plan_code` - (Required) Plan code of the Cloud DBAudit to produce. (alpha.professional, alpha.basic, alpha.premium)
 * `description` - (Required) Description of the instance. This name can have a string of 1 to 63 characters.
 * `period` - (Required) Duration for initially producing the instance. Valid values: [1~9], 12, 24, 36. At present, the provider does not support modify "period".
 

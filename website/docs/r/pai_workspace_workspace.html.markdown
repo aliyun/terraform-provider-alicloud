@@ -10,8 +10,6 @@ description: |-
 
 Provides a PAI Workspace Workspace resource.
 
-
-
 For information about PAI Workspace Workspace and how to use it, see [What is Workspace](https://next.api.alibabacloud.com/document/AIWorkSpace/2021-02-04/CreateWorkspace).
 
 -> **NOTE:** Available since v1.233.0.
@@ -49,6 +47,7 @@ resource "alicloud_pai_workspace_workspace" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Required) Workspace description, no more than 80 characters.
 * `display_name` - (Optional) It is recommended that you name the workspace based on the business attribute to identify the purpose of the workspace. If not configured, the default value is the workspace name.
 * `env_types` - (Required, ForceNew, List) Environments contained in the workspace:
@@ -63,6 +62,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The UTC time when the workspace is created. The time format is ISO8601.
 * `status` - Workspace state, possible values:
@@ -82,6 +82,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Workspace.
 * `delete` - (Defaults to 5 mins) Used when delete the Workspace.
 * `update` - (Defaults to 5 mins) Used when update the Workspace.

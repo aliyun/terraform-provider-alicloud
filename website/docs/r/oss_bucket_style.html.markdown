@@ -58,6 +58,7 @@ resource "alicloud_oss_bucket_style" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) Storage space to which the picture style belongs
 * `category` - (Optional, Computed) Style category, valid values: image, document, video.
 * `content` - (Required) The Image style content can contain single or multiple image processing parameters.
@@ -66,12 +67,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<bucket>:<style_name>`.
 * `create_time` - Image Style Creation Time
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Style.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Style.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Style.

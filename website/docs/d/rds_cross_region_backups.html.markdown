@@ -7,7 +7,7 @@ description: |-
   Provides a list of Rds Cross Region Backups to the user.
 ---
 
-# alicloud\_rds\_cross\_region\_backups
+# alicloud_rds_cross_region_backups
 
 This data source provides the Rds Parameter Groups of the current Alibaba Cloud user.
 

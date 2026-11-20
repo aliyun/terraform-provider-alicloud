@@ -7,7 +7,7 @@ description: |-
   Provides a list of mns queues available to the user.
 ---
 
-# alicloud\_mns\_queues
+# alicloud_mns_queues
 
 This data source provides a list of MNS queues in an Alibaba Cloud account according to the specified parameters.
 
@@ -36,7 +36,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `names` - A list of queue names. 
+* `names` - A list of queue names.
 * `queues` - A list of queues. Each element contains the following attributes:
   * `id` - The id of the queue, The value is set to `name`.
   * `name` - The name of the queue

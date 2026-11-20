@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_sls_alert
 
-Provides a SLS Alert resource. 
+Provides a SLS Alert resource.
 
 For information about SLS Alert and how to use it, see [What is Alert](https://www.alibabacloud.com/help/en/doc-detail/209202.html).
 
@@ -194,6 +194,7 @@ resource "alicloud_sls_alert" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `alert_name` - (Required, ForceNew) Alert rule ID, unique under Project.
 * `configuration` - (Required) Detailed configuration of alarm monitoring rules. See [`configuration`](#configuration) below.
 * `description` - (Optional) Compatible fields, set to empty strings.
@@ -205,6 +206,7 @@ The following arguments are supported:
 ### `configuration`
 
 The configuration supports the following:
+
 * `annotations` - (Optional) Label. See [`annotations`](#configuration-annotations) below.
 * `auto_annotation` - (Optional, Computed) Whether to turn on automatic labeling. true (default): The automatic annotation function is enabled, and the system automatically adds information such as__county__to the alarm. For more information, see Automatic Labeling. false: Turn off the automatic annotation function.
 * `condition_configuration` - (Optional) Alarm trigger condition. See [`condition_configuration`](#configuration-condition_configuration) below.
@@ -231,36 +233,42 @@ The configuration supports the following:
 ### `configuration-annotations`
 
 The configuration-annotations supports the following:
+
 * `key` - (Optional) Field name.
 * `value` - (Optional) Field value.
 
 ### `configuration-condition_configuration`
 
 The configuration-condition_configuration supports the following:
+
 * `condition` - (Optional) Data matching expression.
 * `count_condition` - (Optional) The number of data items to determine the expression, indicating the number of data items that meet the conditions. Indicates that if there is data that is satisfied, it can be set to an empty string. In other cases, you need to set it to an expression, for example,__count __> 3.
 
 ### `configuration-group_configuration`
 
 The configuration-group_configuration supports the following:
+
 * `fields` - (Optional) The field used for grouping evaluation. When type is set to custom, fields must be set.
 * `type` - (Optional) Group evaluation type. The values are as follows: no_group: not grouped. custom: custom. labels_auto: label automatic. Only applicable to time series data.
 
 ### `configuration-join_configurations`
 
 The configuration-join_configurations supports the following:
+
 * `condition` - (Optional) When type is set to inner_join, left_join, right_join, full_join, left_exclude, or right_exclude, condition must be set, for example, set to $0.host = = $1.ip.
 * `type` - (Optional) Collection operation type. The values are as follows: cross_join: Cartesian product. inner_join: inline. left_join: left joint. right_join: right link. full_join: full union. left_exclude: left repulsion. right_exclude: right repulsion. concat: stitching, traversing each dataset sequentially. no_join: not merged, only the first dataset is taken.
 
 ### `configuration-labels`
 
 The configuration-labels supports the following:
+
 * `key` - (Optional) Field name.
 * `value` - (Optional) Field value.
 
 ### `configuration-policy_configuration`
 
 The configuration-policy_configuration supports the following:
+
 * `action_policy_id` - (Optional) The ID of the action policy used. If the alert policy is in advanced mode and the selected alert policy is not configured with a dynamic action policy, set the actionPolicyId to an empty string.
 * `alert_policy_id` - (Optional) Alarm policy ID. If it is in simple mode or normal mode, set it to sls.builtin.dynamic (dynamic alarm policy built into the system). For advanced mode, set it to the specified alarm policy ID.
 * `repeat_interval` - (Optional) Repeat the waiting time. For example, 5m, 1H, etc.
@@ -268,6 +276,7 @@ The configuration-policy_configuration supports the following:
 ### `configuration-query_list`
 
 The configuration-query_list supports the following:
+
 * `chart_title` - (Optional) Chart Name.
 * `dashboard_id` - (Optional) Dashboard ID.
 * `end` - (Optional) End time. When storeType is set to log or metric, end must be set.
@@ -285,22 +294,26 @@ The configuration-query_list supports the following:
 ### `configuration-severity_configurations`
 
 The configuration-severity_configurations supports the following:
+
 * `eval_condition` - (Optional) Trigger condition. See [`eval_condition`](#configuration-severity_configurations-eval_condition) below.
 * `severity` - (Optional) Alarm severity.
 
 ### `configuration-sink_alerthub`
 
 The configuration-sink_alerthub supports the following:
+
 * `enabled` - (Optional) Open.
 
 ### `configuration-sink_cms`
 
 The configuration-sink_cms supports the following:
+
 * `enabled` - (Optional) Open.
 
 ### `configuration-sink_event_store`
 
 The configuration-sink_event_store supports the following:
+
 * `enabled` - (Optional) Open.
 * `endpoint` - (Optional) SLS service endpoint.
 * `event_store` - (Optional) Event Library Name.
@@ -310,6 +323,7 @@ The configuration-sink_event_store supports the following:
 ### `configuration-template_configuration`
 
 The configuration-template_configuration supports the following:
+
 * `annotations` - (Optional, Map) Template Annotations.
 * `lang` - (Optional) Template Language.
 * `template_id` - (Optional) Template ID.
@@ -320,12 +334,14 @@ The configuration-template_configuration supports the following:
 ### `configuration-severity_configurations-eval_condition`
 
 The configuration-severity_configurations-eval_condition supports the following:
+
 * `condition` - (Optional) Data matching expression. When the data content does not need to be determined, set it to an empty string. In other cases, it needs to be set as an expression, for example, errCnt> 10.
 * `count_condition` - (Optional) The number of pieces of data to determine the number of pieces of data to indicate how many pieces of data meet the conditions. If data exists, it is satisfied. Set it to an empty string. In other cases, it needs to be set as an expression, such as__count__> 3.
 
 ### `schedule`
 
 The schedule supports the following:
+
 * `cron_expression` - (Optional) Cron expression, the minimum accuracy is minutes, 24 hours. For example, 0 0/1 * * * means that the check is conducted every 1 hour from 00:00. When type is set to Cron, cronExpression must be set.
 * `delay` - (Optional) Timed task execution delay (unit: s).
 * `interval` - (Optional) Fixed interval for scheduling.
@@ -336,12 +352,14 @@ The schedule supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<project_name>:<alert_name>`.
 * `create_time` - Alarm rule creation time.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Alert.
 * `delete` - (Defaults to 5 mins) Used when delete the Alert.
 * `update` - (Defaults to 5 mins) Used when update the Alert.

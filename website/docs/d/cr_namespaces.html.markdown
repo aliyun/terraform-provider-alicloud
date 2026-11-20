@@ -7,17 +7,17 @@ description: |-
   Provides a list of Container Registry namespaces.
 ---
 
-# alicloud\_cr\_namespaces
+# alicloud_cr_namespaces
 
 -> **DEPRECATION NOTICE:** This data source is deprecated and will be removed in a future release.
 
 This data source provides a list Container Registry namespaces on Alibaba Cloud.
 
--> **NOTE:** Available in v1.35.0+
+-> **NOTE:** Available since v1.35.0+
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_cr_namespaces" "my_namespaces" {
   name_regex  = "my-namespace"
@@ -46,4 +46,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `name` - Name of Container Registry namespace.
   * `auto_create` - Boolean, when it set to true, repositories are automatically created when pushing new images. If it set to false, you create repository for images before pushing.
   * `default_visibility` - `PUBLIC` or `PRIVATE`, default repository visibility in this namespace.
-

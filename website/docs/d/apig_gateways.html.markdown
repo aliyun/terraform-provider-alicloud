@@ -72,6 +72,7 @@ output "alicloud_apig_gateway_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Optional, ForceNew, Computed) A list of Gateway IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Gateway name.
 * `gateway_id` - (Optional, ForceNew) Cloud-native API gateway ID.
@@ -81,10 +82,10 @@ The following arguments are supported:
 * `enable_details` - (Optional, ForceNew) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Gateway IDs.
 * `names` - A list of name of Gateways.
 * `gateways` - A list of Gateway Entries. Each element contains the following attributes:

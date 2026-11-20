@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cloud Enterprise Network (CEN) Transit Route Table Aggregation resource.
 
-
-
 For information about Cloud Enterprise Network (CEN) Transit Route Table Aggregation and how to use it, see [What is Transit Route Table Aggregation](https://next.api.alibabacloud.com/document/Cbn/2017-09-12/CreateTransitRouteTableAggregation).
 
 -> **NOTE:** Available since v1.245.0.
@@ -55,6 +53,7 @@ resource "alicloud_cen_transit_route_table_aggregation" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `transit_route_table_aggregation_cidr` - (Required, ForceNew) The destination CIDR block of the aggregate route.
 
   -> **NOTE:**   The following CIDR blocks are not supported:
@@ -77,12 +76,14 @@ The valid value is `VPC`, which indicates that the aggregate route is advertised
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<transit_route_table_id>#<transit_route_table_aggregation_cidr>`.
 * `status` - The status of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Transit Route Table Aggregation.
 * `delete` - (Defaults to 5 mins) Used when delete the Transit Route Table Aggregation.
 * `update` - (Defaults to 5 mins) Used when update the Transit Route Table Aggregation.

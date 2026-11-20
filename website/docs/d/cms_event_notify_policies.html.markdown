@@ -86,6 +86,7 @@ output "alicloud_cms_event_notify_policy_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `name` - (ForceNew, Optional) Filters results by fuzzy matching on the policy name.
 * `order_by` - (ForceNew, Optional) The sorting field. Supported values include createTime, updateTime, and name.
 * `order_desc` - (ForceNew, Optional) Specifies whether to sort in descending order. A value of true indicates descending order, and a value of false indicates ascending order.
@@ -94,10 +95,10 @@ The following arguments are supported:
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Event Notify Policy IDs.
 * `policies` - A list of Event Notify Policy Entries. Each element contains the following attributes:
   * `create_time` - The creation time.

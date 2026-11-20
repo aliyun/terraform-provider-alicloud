@@ -43,15 +43,16 @@ resource "alicloud_dms_enterprise_proxy_access" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `indep_account` - (ForceNew, Optional) Database account.
 * `indep_password` - (ForceNew, Optional) Database password.
-* `proxy_id` - (Required, ForceNew) The ID of the security agent. 
+* `proxy_id` - (Required, ForceNew) The ID of the security agent.
 * `user_id` - (Required, ForceNew) The user ID.
-
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the proxy access resource.
 * `access_id` - The authorized account of the security agent.
 * `access_secret` - Secure access agent authorization password.
@@ -67,6 +68,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Proxy Access.
 * `delete` - (Defaults to 5 mins) Used when delete the Proxy Access.
 

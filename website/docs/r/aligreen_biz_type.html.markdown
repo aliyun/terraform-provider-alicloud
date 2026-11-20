@@ -10,8 +10,6 @@ description: |-
 
 Provides a Aligreen Biz Type resource.
 
-
-
 For information about Aligreen Biz Type and how to use it, see [What is Biz Type](https://next.api.alibabacloud.com/document/Green/2017-08-23/CreateBizType).
 
 -> **NOTE:** Available since v1.228.0.
@@ -50,6 +48,7 @@ resource "alicloud_aligreen_biz_type" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `biz_type_import` - (Optional) The name of the existing business scenario that was imported from when the business scenario was created.
 * `biz_type_name` - (Required, ForceNew) The name of the business scenario defined by the customer. It can contain no more than 32 characters in English, numbers, and underscores.
 * `cite_template` - (Optional, ForceNew) Specifies whether to import the configuration of an industry template. Default value: false. Valid values: true: imports the configuration of an industry template. false: does not import the configuration of an industry template. If the value is true, you must specify the industryInfo parameter.
@@ -59,11 +58,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Biz Type.
 * `delete` - (Defaults to 5 mins) Used when delete the Biz Type.
 * `update` - (Defaults to 5 mins) Used when update the Biz Type.

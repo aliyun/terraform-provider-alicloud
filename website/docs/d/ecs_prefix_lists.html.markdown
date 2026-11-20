@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ecs Prefix Lists to the user.
 ---
 
-# alicloud\_ecs\_prefix\_lists
+# alicloud_ecs_prefix_lists
 
 This data source provides the Ecs Prefix Lists of the current Alibaba Cloud user.
 
@@ -38,7 +38,6 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional) Specifies whether to return detailed information about the prefix list entries. Default: false.
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
@@ -56,4 +55,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `entry` - The entries of the prefix list.
     * `cidr` - The CIDR block of the entry.
     * `description` - The description of the entry.
-

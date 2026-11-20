@@ -139,10 +139,10 @@ The following arguments are supported:
 * `backup_rate_limit` - (Optional) The backup rate limit.
 * `backup_retention_period` - (Optional, ForceNew) The retention time of backup data. Valid values: 0 to 1825. Default value: 730 days.
 * `backup_speed_limit` - (Optional) The backup speed limit.
-* `backup_start_time` - (Optional, ForceNew) The start time of full Backup. The format is `<I> HH:mm</I>` Z(UTC time). 
+* `backup_start_time` - (Optional, ForceNew) The start time of full Backup. The format is `<I> HH:mm</I>` Z(UTC time).
 * `backup_storage_type` - (Optional, ForceNew) Built-in storage type, Valid values: `system`.
 * `backup_strategy_type` - (Optional) The backup strategy type. Valid values: `simple`, `manual`.
-* `cross_aliyun_id` - (Optional, ForceNew) The UID that is backed up across Alibaba cloud accounts. 
+* `cross_aliyun_id` - (Optional, ForceNew) The UID that is backed up across Alibaba cloud accounts.
 * `cross_role_name` - (Optional, ForceNew) The name of the RAM role that is backed up across Alibaba cloud accounts.
 * `database_region` - (Optional) The database region.
 * `database_type` - (Required, ForceNew) Database type. Valid values: `DRDS`, `FIle`, `MSSQL`, `MariaDB`, `MongoDB`, `MySQL`, `Oracle`, `PPAS`, `PostgreSQL`, `Redis`.

@@ -10,8 +10,6 @@ description: |-
 
 Provides a Application Load Balancer (ALB) A Script resource.
 
-
-
 For information about Application Load Balancer (ALB) A Script and how to use it, see [What is A Script](https://www.alibabacloud.com/help/en/slb/application-load-balancer/developer-reference/api-alb-2020-06-16-createascripts).
 
 -> **NOTE:** Available since v1.195.0.
@@ -114,6 +112,7 @@ resource "alicloud_alb_ascript" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ascript_name` - (Required) AScript name.
 * `dry_run` - (Optional, Available since v1.241.0) Whether to PreCheck only this request
 * `enabled` - (Optional) Whether AScript is enabled.
@@ -126,18 +125,21 @@ The following arguments are supported:
 ### `ext_attributes`
 
 The ext_attributes supports the following:
+
 * `attribute_key` - (Optional) Key to extend attribute
 * `attribute_value` - (Optional) The value of the extended attribute
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `status` - Script status
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the A Script.
 * `delete` - (Defaults to 5 mins) Used when delete the A Script.
 * `update` - (Defaults to 5 mins) Used when update the A Script.

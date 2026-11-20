@@ -97,6 +97,7 @@ resource "alicloud_havip_attachment" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ha_vip_id` - (Optional, ForceNew, Available since v1.211.0) The ID of the HaVip instance.
 * `instance_id` - (Required, ForceNew) The ID of the ECS instance bound to the HaVip instance.
 * `instance_type` - (Optional, ForceNew, Computed) The type of the instance to be associated with the HAVIP. Valid values: * `EcsInstance`: an ECS instance * `NetworkInterface`: an ENI. If you want to associate the HAVIP with an ENI, this parameter is required.
@@ -106,12 +107,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<ha_vip_id>:<instance_id>`.
 * `status` - The status of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ha Vip Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Ha Vip Attachment.
 

@@ -10,8 +10,6 @@ description: |-
 
 Provides a RAM Login Profile resource.
 
-
-
 For information about RAM Login Profile and how to use it, see [What is Login Profile](https://www.alibabacloud.com/help/en/ram/developer-reference/api-ram-2015-05-01-createloginprofile).
 
 -> **NOTE:** Available since v1.0.0.
@@ -47,6 +45,7 @@ resource "alicloud_ram_login_profile" "profile" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `mfa_bind_required` - (Optional, Computed) Specifies whether to forcefully enable multi-factor authentication (MFA) for the RAM user. Valid values:
   - true: forcefully enables MFA for the RAM user. The RAM user must bind an MFA device upon the next logon.
   - false (default): does not forcefully enable MFA for the RAM user.
@@ -59,12 +58,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Creation time.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Login Profile.
 * `delete` - (Defaults to 5 mins) Used when delete the Login Profile.
 * `update` - (Defaults to 5 mins) Used when update the Login Profile.

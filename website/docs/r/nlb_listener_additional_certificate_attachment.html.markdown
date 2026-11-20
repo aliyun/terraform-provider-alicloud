@@ -202,6 +202,7 @@ resource "alicloud_nlb_listener_additional_certificate_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `certificate_id` - (Required, ForceNew) The ID of additional certificates.
 * `dry_run` - (Optional) Specifies whether to perform a dry run, without performing the actual request. Valid values:
 
@@ -212,12 +213,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<listener_id>:<certificate_id>`.
 * `status` - The status of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Listener Additional Certificate Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Listener Additional Certificate Attachment.
 

@@ -17,7 +17,6 @@ For information about Cloud SSO SCIM Server Credential and how to use it, see [W
 
 -> **NOTE:** Cloud SSO Only Support `cn-shanghai` And `us-west-1` Region
 
-
 ## Example Usage
 
 Basic Usage

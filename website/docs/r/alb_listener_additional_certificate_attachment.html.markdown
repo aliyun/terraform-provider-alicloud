@@ -190,14 +190,12 @@ The following attributes are exported:
 * `status` - The status of the certificate.
 * `certificate_type` - The type of the certificate.
 
-
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the Listener.
 * `delete` - (Defaults to 2 mins) Used when delete the Listener.
-
 
 ## Import
 

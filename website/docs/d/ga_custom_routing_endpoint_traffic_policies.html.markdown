@@ -55,4 +55,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `port_ranges` - The port range of the traffic policy.
     * `from_port` - The first port of the port range.
     * `to_port` - The last port of the port range.
-  
+

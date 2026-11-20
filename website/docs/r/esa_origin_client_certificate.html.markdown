@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Origin Client Certificate resource.
 
-
-
 For information about ESA Origin Client Certificate and how to use it, see [What is Origin Client Certificate](https://next.api.alibabacloud.com/document/ESA/2024-09-10/UploadOriginClientCertificate).
 
 -> **NOTE:** Available since v1.255.0.
@@ -56,6 +54,7 @@ resource "alicloud_esa_origin_client_certificate" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `certificate` - (Required, ForceNew) The certificate content.
 * `hostnames` - (Optional, List) The domain names to associate.
 * `origin_client_certificate_name` - (Optional, ForceNew) The certificate name.
@@ -65,6 +64,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<origin_client_certificate_id>`.
 * `create_time` - The time when the certificate was created.
 * `origin_client_certificate_id` - The certificate ID.
@@ -73,6 +73,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Origin Client Certificate.
 * `delete` - (Defaults to 5 mins) Used when delete the Origin Client Certificate.
 * `update` - (Defaults to 5 mins) Used when update the Origin Client Certificate.

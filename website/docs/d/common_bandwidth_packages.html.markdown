@@ -7,7 +7,7 @@ description: |-
     Provides a list of Common Bandwidth Packages owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_common\_bandwidth\_packages
+# alicloud_common_bandwidth_packages
 
 This data source provides a list of Common Bandwidth Packages owned by an Alibaba Cloud account.
 

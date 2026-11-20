@@ -68,13 +68,12 @@ output "domain_validation_list" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_certificate_apply&spm=docs.r.ssl_certificates_service_certificate_apply.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required, ForceNew) The ID of the certificate instance to submit the application on.
 * `domain` - (Optional, ForceNew, Computed) The domain names the certificate is requested for, separated by commas.
 * `csr` - (Optional, ForceNew, Computed) The content of the certificate signing request.
@@ -87,6 +86,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `certificate_status` - The status of the certificate this application produces.
 * `pending_result` - The reason the application is pending, if the review has not passed.
@@ -106,6 +106,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Certificate Apply.
 * `delete` - (Defaults to 20 mins) Used when delete the Certificate Apply. Withdrawing the application is processed asynchronously and the instance can stay in the pending state for several minutes afterwards; it has to leave that state before the instance itself can be refunded and removed.
 

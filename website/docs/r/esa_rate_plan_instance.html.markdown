@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Rate Plan Instance resource.
 
-
-
 For information about ESA Rate Plan Instance and how to use it, see [What is Rate Plan Instance](https://www.alibabacloud.com/help/en/edge-security-acceleration/esa/product-overview/query-package-information).
 
 -> **NOTE:** Available since v1.234.0.
@@ -52,6 +50,7 @@ resource "alicloud_esa_rate_plan_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_pay` - (Optional) Specifies whether to enable auto payment.
 
   -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
@@ -78,33 +77,37 @@ The following arguments are supported:
 * `plan_name` - (Optional) Package name.  
 
 For China site accounts:
-- `entranceplan`: Free Edition
-- `basic`: Basic Edition
-- `medium`: Standard Edition
-- `high`: Advanced Edition
+
+* `entranceplan`: Free Edition
+* `basic`: Basic Edition
+* `medium`: Standard Edition
+* `high`: Advanced Edition
 
 For International site accounts:
+
   - `entranceplan_intl`: Entrance version
   - `basicplan_intl`: Pro version
   - `vipplan_intl`: Premium version
+
 * `type` - (Optional) The DNS setup option for the website. Valid values:
   - `NS`
   - `CNAME`
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the plan was purchased.
-* `instance_status` - The instance status. 
+* `instance_status` - The instance status.
 * `status` - The plan status.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Rate Plan Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Rate Plan Instance.
 * `update` - (Defaults to 5 mins) Used when update the Rate Plan Instance.

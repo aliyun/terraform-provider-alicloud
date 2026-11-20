@@ -7,11 +7,11 @@ description: |-
   Provides a list of Message Notification Service Queues to the user.
 ---
 
-# alicloud\_message\_service\_queues
+# alicloud_message_service_queues
 
 This data source provides the Message Notification Service Queues of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.188.0+.
+-> **NOTE:** Available since v1.188.0+.
 
 ## Example Usage
 
@@ -46,7 +46,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `names` - A list of Queue names. 
+* `names` - A list of Queue names.
 * `queues` - A list of Queues. Each element contains the following attributes:
   * `id` - The ID of the Queue. Its value is same as Queue Name.
   * `queue_name` - The name of the queue.

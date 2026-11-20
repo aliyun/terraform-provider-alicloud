@@ -97,24 +97,24 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) You Want to Query the User the Bastion Host ID of.
 * `mobile` - (Optional) Specify the New of the User That Created a Different Mobile Phone Number from Your.
 * `mobile_country_code` - (Optional) Specify the New Create User Mobile Phone Number of the International Domain Name. The Default Value Is the CN. Valid Values:
-  * CN: Mainland China (+86) 
-  * HK: hong Kong, China (+852) 
-  * MO: Macau, China (+853) 
-  * TW: Taiwan, China (+886) 
+  * CN: Mainland China (+86)
+  * HK: hong Kong, China (+852)
+  * MO: Macau, China (+853)
+  * TW: Taiwan, China (+886)
   * RU: Russian (+7)
-  * SG: Singapore (+65) 
-  * MY: malaysia (+60) 
-  * ID: Indonesia (+62) 
-  * DE: Germany (+49) 
-  * AU: Australia (+61) 
-  * US: United States (+1) 
-  * AE: dubai (+971) 
-  * JP: Japan (+81) Introducing the Long-Range 
-  * GB: United Kingdom (+44) 
-  * IN: India (+91) 
-  * KR: South Korea (+82) 
-  * PH: philippines (+63) 
-  * CH: Switzerland (+41) 
+  * SG: Singapore (+65)
+  * MY: malaysia (+60)
+  * ID: Indonesia (+62)
+  * DE: Germany (+49)
+  * AU: Australia (+61)
+  * US: United States (+1)
+  * AE: dubai (+971)
+  * JP: Japan (+81) Introducing the Long-Range
+  * GB: United Kingdom (+44)
+  * IN: India (+91)
+  * KR: South Korea (+82)
+  * PH: philippines (+63)
+  * CH: Switzerland (+41)
   * SE: Sweden (+46)
 * `password` - (Optional, Sensitive) Specify the New User's Password. Supports up to 128 Characters. Description of the New User as the Source of the Local User That Is, Source Value for Local, this Parameter Is Required.
 * `source` - (Required, ForceNew) Specify the New of the User That Created the Source. Valid Values:

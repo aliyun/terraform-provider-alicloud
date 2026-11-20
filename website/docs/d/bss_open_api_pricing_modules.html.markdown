@@ -31,8 +31,9 @@ output "alicloud_bss_openapi_pricing_module_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `product_code` - (Required, ForceNew) The product code. 
-* `product_type` - (Optional, ForceNew) The product type. 
+
+* `product_code` - (Required, ForceNew) The product code.
+* `product_type` - (Optional, ForceNew) The product type.
 * `subscription_type` - (Required, ForceNew) Subscription type. Value:
   * Subscription: Prepaid.
   * PayAsYouGo: postpaid.
@@ -40,10 +41,10 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Property name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `names` - A list of name of Pricing Modules.
 * `modules` - A list of Pricing Module Entries. Each element contains the following attributes:
   * `id` - The ID of the pricing module. The value is formulated as `<product_code>:<product_type>:<subscription_type>:<code>`.

@@ -31,6 +31,7 @@ output "alicloud_threat_detection_honeypot_preset_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `current_page` - (Optional) The current page number.
 * `honeypot_image_name` - (ForceNew, Optional) Honeypot mirror name
 * `lang` - (Optional) The language.
@@ -41,10 +42,10 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Honeypot Preset IDs.
 * `presets` - A list of Honeypot Preset Entries. Each element contains the following attributes:
   * `honeypot_image_name` - Honeypot mirror name.

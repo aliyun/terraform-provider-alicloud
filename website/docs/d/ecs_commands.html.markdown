@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ecs Commands to the user.
 ---
 
-# alicloud\_ecs\_commands
+# alicloud_ecs_commands
 
 This data source provides the Ecs Commands of the current Alibaba Cloud user.
 

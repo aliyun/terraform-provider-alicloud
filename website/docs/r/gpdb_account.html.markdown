@@ -79,6 +79,7 @@ resource "alicloud_gpdb_account" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_description` - (Optional) The description of the account.
 * `account_name` - (Required, ForceNew) The account name.
 * `account_password` - (Optional, Sensitive) The password of the account. Exactly one of `account_password` and `account_password_wo` can be set.
@@ -98,12 +99,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<account_name>`.
 * `status` - The status of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Account.
 * `delete` - (Defaults to 5 mins) Used when delete the Account.
 * `update` - (Defaults to 5 mins) Used when update the Account.

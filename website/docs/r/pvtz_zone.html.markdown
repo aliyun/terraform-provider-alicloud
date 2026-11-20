@@ -56,9 +56,9 @@ The following arguments are supported:
 ### `user_info`
 
 The user_info supports the following:
+
 * `user_id` - (Optional, Available in 1.146.0+) The user ID belonging to the region is used for cross-account synchronization scenarios.
 * `region_ids` - (Optional, Available in 1.146.0+) The list of the region IDs.
-
 
 ## Attributes Reference
 
@@ -75,4 +75,3 @@ Private Zone can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_pvtz_zone.example abc123456
 ```
-

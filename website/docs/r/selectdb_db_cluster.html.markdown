@@ -91,9 +91,9 @@ The desired_params supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of DBCluster. It formats as <db_instance_id>:<db_cluster_id>.
-* `db_cluster_id` - The id of the cluster. 
+* `db_cluster_id` - The id of the cluster.
 * `engine` - The engine of DBCluster. Always `selectdb`.
-* `engine_version` - The version of DBCluster. 
+* `engine_version` - The version of DBCluster.
 * `create_time` - The time when DBCluster is created.
 * `status` - The current status of the resource.
 * `cpu` - The cpu resource amount of DBCluster. Depends on `db_cluster_class`.

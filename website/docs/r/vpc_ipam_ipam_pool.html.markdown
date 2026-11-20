@@ -55,13 +55,12 @@ resource "alicloud_vpc_ipam_ipam_pool" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_ipam_ipam_pool&spm=docs.r.vpc_ipam_ipam_pool.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `allocation_default_cidr_mask` - (Optional, Int) The default network mask assigned by the IPAM address pool.
 IPv4 network mask value range: 0 to 32 bits, and the IPv6 network mask value range is 0 to 128 bits.
 * `allocation_max_cidr_mask` - (Optional, Computed, Int) The maximum network mask assigned by the IPAM address pool.
@@ -92,7 +91,8 @@ It must be 2 to 256 characters in length and must start with an English letter o
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `region_id` - The ID of the IPAM hosting region.
 * `status` - The status of the resource.
@@ -100,6 +100,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ipam Pool.
 * `delete` - (Defaults to 5 mins) Used when delete the Ipam Pool.
 * `update` - (Defaults to 5 mins) Used when update the Ipam Pool.

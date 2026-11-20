@@ -124,7 +124,7 @@ resource "alicloud_ess_alarm" "default" {
 
 ## Module Support
 
-You can use to the existing [autoscaling-rule module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling-rule/alicloud) 
+You can use to the existing [autoscaling-rule module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling-rule/alicloud)
 to create alarm task, different type rules and scheduled task one-click.
 
 ## Argument Reference
@@ -137,7 +137,7 @@ The following arguments are supported:
 * `enable` - (Optional, Available in 1.48.0+) Whether to enable specific ess alarm. Default to true.
 * `alarm_actions` - (Required) The list of actions to execute when this alarm transition into an ALARM state. Each action is specified as ess scaling rule ari.
 * `scaling_group_id` - (Required, ForceNew) The scaling group associated with this alarm, the 'ForceNew' attribute is available in 1.56.0+.
-* `metric_type` - (Optional, ForceNew) The type for the alarm's associated metric. Supported value: system, custom. "system" means the metric data is collected by Aliyun Cloud Monitor Service(CMS), "custom" means the metric data is upload to CMS by users. Defaults to system. 
+* `metric_type` - (Optional, ForceNew) The type for the alarm's associated metric. Supported value: system, custom. "system" means the metric data is collected by Aliyun Cloud Monitor Service(CMS), "custom" means the metric data is upload to CMS by users. Defaults to system.
 * `metric_name` - (Optional) The name for the alarm's associated metric. See [`dimensions`](#dimensions) below for details.
 * `period` - (Optional) The period in seconds over which the specified statistic is applied. Supported value: 60, 120, 300, 900. Defaults to 300.
 * `statistics` - (Optional) The statistic to apply to the alarm's associated metric. Supported value: Average, Minimum, Maximum. Defaults to Average.
@@ -149,6 +149,7 @@ The following arguments are supported:
 * `expressions` - (Optional, Available since v1.225.1) Support multi alert rule. See [`expressions`](#expressions) below for details.
 * `expressions_logic_operator` - (Optional, Available since v1.225.1) The relationship between the trigger conditions in the multi-metric alert rule.
 * `state` - (Optional) The status of the event-triggered task. Valid values:
+
  - ALARM: The alert condition is met and an alert is triggered.
  - OK: The alert condition is not met.
  - INSUFFICIENT_DATA: Auto Scaling cannot determine whether the alert condition is met due to insufficient data.

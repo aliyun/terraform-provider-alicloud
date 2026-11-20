@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ebs Regions to the user.
 ---
 
-# alicloud\_ebs\_regions
+# alicloud_ebs_regions
 
 This data source provides the Ebs Regions of the current Alibaba Cloud user.
 

@@ -7,13 +7,13 @@ description: |-
   Provides a list of Cr Chains to the user.
 ---
 
-# alicloud\_cr\_chains
+# alicloud_cr_chains
 
 This data source provides the Cr Chains of the current Alibaba Cloud user.
 
 For information about CR Chains and how to use it, see [What is Chain](https://www.alibabacloud.com/help/en/doc-detail/357821.html).
 
--> **NOTE:** Available in v1.161.0+.
+-> **NOTE:** Available since v1.161.0+.
 
 ## Example Usage
 

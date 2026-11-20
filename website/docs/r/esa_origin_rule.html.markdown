@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Origin Rule resource.
 
-
-
 For information about ESA Origin Rule and how to use it, see [What is Origin Rule](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateOriginRule).
 
 -> **NOTE:** Available since v1.244.0.
@@ -52,6 +50,7 @@ resource "alicloud_esa_origin_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dns_record` - (Optional) Overwrite the DNS resolution record of the origin request.
 * `follow302_enable` - (Optional, Available since v1.262.1) Return Source 302 follow switch. Value range:
   - `on`: ON.
@@ -98,12 +97,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<config_id>`.
 * `config_id` - Back-to-source rule configuration ID
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Origin Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Origin Rule.
 * `update` - (Defaults to 5 mins) Used when update the Origin Rule.

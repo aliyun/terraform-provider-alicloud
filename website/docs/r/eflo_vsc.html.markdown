@@ -47,6 +47,7 @@ resource "alicloud_eflo_vsc" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `node_id` - (Required, ForceNew) The ID of the Node.
 * `resource_group_id` - (Optional) The ID of the resource group.
 * `tags` - (Optional, Map) The tag of the resource.
@@ -56,12 +57,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `status` - The status of the Vsc.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vsc.
 * `delete` - (Defaults to 5 mins) Used when delete the Vsc.
 * `update` - (Defaults to 5 mins) Used when update the Vsc.

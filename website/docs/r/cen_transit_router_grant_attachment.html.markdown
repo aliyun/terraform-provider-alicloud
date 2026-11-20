@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cloud Enterprise Network (CEN) Transit Router Grant Attachment resource.
 
-
-
 For information about Cloud Enterprise Network (CEN) Transit Router Grant Attachment and how to use it, see [What is Transit Router Grant Attachment](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/grantinstancetotransitrouter).
 
 -> **NOTE:** Available since v1.187.0.
@@ -48,13 +46,12 @@ resource "alicloud_cen_transit_router_grant_attachment" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_grant_attachment&spm=docs.r.cen_transit_router_grant_attachment.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cen_id` - (Required, ForceNew) CEN instance ID
 * `cen_owner_id` - (Required, ForceNew, Int) The ID of the account of the CEN instance.
 * `instance_id` - (Required, ForceNew) The ID of the network instance.
@@ -68,11 +65,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<instance_type>:<instance_id>:<cen_owner_id>:<cen_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Transit Router Grant Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Transit Router Grant Attachment.
 * `update` - (Defaults to 5 mins) Used when update the Transit Router Grant Attachment.

@@ -78,6 +78,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Instance ACL Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance ACL Attachment.
 * `update` - (Defaults to 5 mins) Used when update the Instance ACL Attachment.

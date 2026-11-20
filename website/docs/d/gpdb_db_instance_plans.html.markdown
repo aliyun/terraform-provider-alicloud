@@ -7,7 +7,7 @@ description: |-
   Provides a list of Gpdb Db Instance Plans to the user.
 ---
 
-# alicloud\_gpdb\_db\_instance\_plans
+# alicloud_gpdb_db_instance_plans
 
 This data source provides the Gpdb Db Instance Plans of the current Alibaba Cloud user.
 

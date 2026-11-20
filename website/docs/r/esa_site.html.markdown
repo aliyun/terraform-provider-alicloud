@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Site resource.
 
-
-
 For information about ESA Site and how to use it, see [What is Site](https://www.alibabacloud.com/help/en/edge-security-acceleration/esa/user-guide/site-management).
 
 -> **NOTE:** Available since v1.234.0.
@@ -62,12 +60,12 @@ resource "alicloud_esa_site" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_site&spm=docs.r.esa_site.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_type` - (Required, ForceNew) The DNS setup. Valid values:
   - `NS`
   - `CNAME`
@@ -157,6 +155,7 @@ The following arguments are supported:
 ### `site_waf_settings`
 
 The site_waf_settings supports the following:
+
 * `add_bot_protection_headers` - (Optional, Set, Available since v1.276.0) Add BOT Protection Header. See [`add_bot_protection_headers`](#site_waf_settings-add_bot_protection_headers) below.
 * `add_security_headers` - (Optional, Set, Available since v1.276.0) Add Security Header. See [`add_security_headers`](#site_waf_settings-add_security_headers) below.
 * `bandwidth_abuse_protection` - (Optional, Set, Available since v1.276.0) Anti-theft brush. See [`bandwidth_abuse_protection`](#site_waf_settings-bandwidth_abuse_protection) below.
@@ -167,16 +166,19 @@ The site_waf_settings supports the following:
 ### `site_waf_settings-add_bot_protection_headers`
 
 The site_waf_settings-add_bot_protection_headers supports the following:
+
 * `enable` - (Optional, Available since v1.276.0) Switch.
 
 ### `site_waf_settings-add_security_headers`
 
 The site_waf_settings-add_security_headers supports the following:
+
 * `enable` - (Optional, Available since v1.276.0) Switch.
 
 ### `site_waf_settings-bandwidth_abuse_protection`
 
 The site_waf_settings-bandwidth_abuse_protection supports the following:
+
 * `action` - (Optional, Available since v1.276.0) Anti-theft brush Rule Action.Valid values:
   - `deny`: Deny.
   - `monitor`: Monitor.
@@ -186,6 +188,7 @@ The site_waf_settings-bandwidth_abuse_protection supports the following:
 ### `site_waf_settings-bot_management`
 
 The site_waf_settings-bot_management supports the following:
+
 * `definite_bots` - (Optional, Set, Available since v1.276.0) Definitely Bot. See [`definite_bots`](#site_waf_settings-bot_management-definite_bots) below.
 * `effect_on_static` - (Optional, Set, Available since v1.276.0) VApply to Static Resource Requests. See [`effect_on_static`](#site_waf_settings-bot_management-effect_on_static) below.
 * `js_detection` - (Optional, Set, Available since v1.276.0) JavaScript Challenge. See [`js_detection`](#site_waf_settings-bot_management-js_detection) below.
@@ -195,6 +198,7 @@ The site_waf_settings-bot_management supports the following:
 ### `site_waf_settings-client_ip_identifier`
 
 The site_waf_settings-client_ip_identifier supports the following:
+
 * `headers` - (Optional, List, Available since v1.276.0) Specify Headers.
 * `mode` - (Optional, Available since v1.276.0) Identification Mode.Valid values:
   - `headers`: Specify headers.
@@ -203,6 +207,7 @@ The site_waf_settings-client_ip_identifier supports the following:
 ### `site_waf_settings-security_level`
 
 The site_waf_settings-security_level supports the following:
+
 * `value` - (Optional, Available since v1.276.0) Security level value. Valid values:
   - `high`: High.
   - `low`: Low.
@@ -214,6 +219,7 @@ The site_waf_settings-security_level supports the following:
 ### `site_waf_settings-bot_management-definite_bots`
 
 The site_waf_settings-bot_management-definite_bots supports the following:
+
 * `action` - (Optional, Available since v1.276.0) Action.Valid values:
   - `allow`: Allow.
   - `deny`: Deny.
@@ -223,16 +229,19 @@ The site_waf_settings-bot_management-definite_bots supports the following:
 ### `site_waf_settings-bot_management-effect_on_static`
 
 The site_waf_settings-bot_management-effect_on_static supports the following:
+
 * `enable` - (Optional, Available since v1.276.0) Switch.
 
 ### `site_waf_settings-bot_management-js_detection`
 
 The site_waf_settings-bot_management-js_detection supports the following:
+
 * `enable` - (Optional, Available since v1.276.0) Switch.
 
 ### `site_waf_settings-bot_management-likely_bots`
 
 The site_waf_settings-bot_management-likely_bots supports the following:
+
 * `action` - (Optional, Available since v1.276.0) Action.Valid values:
   - `allow`: Allow.
   - `deny`: Deny.
@@ -242,6 +251,7 @@ The site_waf_settings-bot_management-likely_bots supports the following:
 ### `site_waf_settings-bot_management-verified_bots`
 
 The site_waf_settings-bot_management-verified_bots supports the following:
+
 * `action` - (Optional, Available since v1.276.0) Action.Valid values:
   - `allow`: Allow.
   - `deny`: Deny.
@@ -251,6 +261,7 @@ The site_waf_settings-bot_management-verified_bots supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the website was added. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 * `site_waf_settings` - Site WAF Configuration Details.
@@ -268,6 +279,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 45 mins) Used when create the Site.
 * `delete` - (Defaults to 15 mins) Used when delete the Site.
 * `update` - (Defaults to 5 mins) Used when update the Site.

@@ -7,9 +7,9 @@ description: |-
     Provides a list of instances available to the DNS.
 ---
 
-# alicloud\_dns\_instances
+# alicloud_dns_instances
 
--> **DEPRECATED:**  This resource has been renamed to [alicloud_alidns_instances](https://www.terraform.io/docs/providers/alicloud/d/alidns_instances) from version 1.95.0. 
+-> **DEPRECATED:**  This resource has been renamed to [alicloud_alidns_instances](https://www.terraform.io/docs/providers/alicloud/d/alidns_instances) from version 1.95.0.
 
 This data source provides a list of DNS instances in an Alibaba Cloud account according to the specified filters.
 
@@ -37,7 +37,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of instance IDs. 
+* `ids` - A list of instance IDs.
 * `instances` - A list of instances. Each element contains the following attributes:
   * `id` - Id of the instance.
   * `domain_numbers` - Number of domain names bound.

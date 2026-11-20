@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cms Group Metric Rules to the user.
 ---
 
-# alicloud\_cms\_group\_metric\_rules
+# alicloud_cms_group_metric_rules
 
 This data source provides the Cms Group Metric Rules of the current Alibaba Cloud user.
 

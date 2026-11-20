@@ -7,7 +7,7 @@ description: |-
   Provides a datasource to open the DataWorks service automatically.
 ---
 
-# alicloud\_dataworks\_service
+# alicloud_dataworks_service
 
 Using this data source can open DataWorks service automatically. If the service has been opened, it will return opened.
 

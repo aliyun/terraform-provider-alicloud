@@ -7,7 +7,7 @@ description: |-
   Provides a list of ENS Security Groups to the user.
 ---
 
-# alicloud\_ens\_security_groups
+# alicloud_ens_security_groups
 
 This data source provides the ENS Security Groups of the current Alibaba Cloud user.
 
@@ -49,6 +49,7 @@ The following attributes are exported:
 ### `groups`
 
 The groups supports the following attributes:
+
 * `create_time` - Creation time of the security group, UTC time.
 * `description` - Security group description information.
 * `id` - The ID of the Security Group.
@@ -60,6 +61,7 @@ The groups supports the following attributes:
 ### `groups.permissions`
 
 The permissions supports the following attributes:
+
 * `creation_time` - Creation time, UTC time.
 * `description` - Rule description information.
 * `dest_cidr_ip` - Destination IP address segment for outbound authorization.

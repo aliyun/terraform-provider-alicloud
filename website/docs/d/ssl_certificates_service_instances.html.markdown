@@ -53,6 +53,7 @@ output "alicloud_ssl_certificates_service_instance_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `brand` - (ForceNew, Optional) The certificate brand. Valid values: WoSign, CFCA, DigiCert, GeoTrust, GlobalSign, vTrus, and Alibaba.
 * `certificate_status` - (ForceNew, Optional) The status of the certificate.
   - `issued`: Issued
@@ -75,10 +76,10 @@ The following arguments are supported:
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Instance IDs.
 * `instances` - A list of Instance Entries. Each element contains the following attributes:
   * `auto_reissue` - **NOTE:** This field is only available when `enable_details` is `true`. Specifies whether to enable managed renewal.

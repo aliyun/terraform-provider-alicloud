@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ddoscoo Domain Resources to the user.
 ---
 
-# alicloud\_ddoscoo\_domain\_resources
+# alicloud_ddoscoo_domain_resources
 
 This data source provides the Ddoscoo Domain Resources of the current Alibaba Cloud user.
 

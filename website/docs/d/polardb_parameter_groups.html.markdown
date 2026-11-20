@@ -7,7 +7,7 @@ description: |-
   Provides a list of PolarDB Parameter Groups to the user.
 ---
 
-# alicloud\_polardb\_parameter\_groups
+# alicloud_polardb_parameter_groups
 
 This data source provides the PolarDB Parameter Groups of the current Alibaba Cloud user.
 

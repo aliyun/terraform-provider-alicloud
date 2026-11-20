@@ -10,8 +10,6 @@ description: |-
 
 Provides a FCV3 Vpc Binding resource.
 
-
-
 For information about FCV3 Vpc Binding and how to use it, see [What is Vpc Binding](https://www.alibabacloud.com/help/en/functioncompute/fc-3-0/developer-reference/api-fc-2023-03-30-createvpcbinding).
 
 -> **NOTE:** Available since v1.230.0.
@@ -66,17 +64,20 @@ resource "alicloud_fcv3_vpc_binding" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `function_name` - (Required, ForceNew) Function Name
 * `vpc_id` - (Optional, ForceNew, Computed) VPC instance ID
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<function_name>:<vpc_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vpc Binding.
 * `delete` - (Defaults to 5 mins) Used when delete the Vpc Binding.
 

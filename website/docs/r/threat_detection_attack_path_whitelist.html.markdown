@@ -53,13 +53,12 @@ resource "alicloud_threat_detection_attack_path_whitelist" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_threat_detection_attack_path_whitelist&spm=docs.r.threat_detection_attack_path_whitelist.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `attack_path_asset_list` - (Optional, List) The list of attack path cloud product assets. See [`attack_path_asset_list`](#attack_path_asset_list) below.
 * `path_name` - (Required) The path name of the whitelist. You can call [ListAvailableAttackPath](https://next.api.alibabacloud.com/document/Sas/2018-12-03/ListAvailableAttackPath) to query the available path names.
 * `path_type` - (Required) The path type of the whitelist. You can call [ListAvailableAttackPath](https://next.api.alibabacloud.com/document/Sas/2018-12-03/ListAvailableAttackPath) to query the available path types.
@@ -70,6 +69,7 @@ The following arguments are supported:
 ### `attack_path_asset_list`
 
 The attack_path_asset_list supports the following:
+
 * `asset_sub_type` - (Optional, Int) The subtype of the cloud product asset. You can call [ListCloudAssetInstances](https://next.api.alibabacloud.com/document/Sas/2018-12-03/ListCloudAssetInstances) to query the asset subtypes.
 * `asset_type` - (Optional, Int) The type of the cloud product asset. You can call [ListCloudAssetInstances](https://next.api.alibabacloud.com/document/Sas/2018-12-03/ListCloudAssetInstances) to query the asset types.
 * `instance_id` - (Optional) The instance ID of the cloud product asset. You can call [ListCloudAssetInstances](https://next.api.alibabacloud.com/document/Sas/2018-12-03/ListCloudAssetInstances) to query the instance IDs.
@@ -80,11 +80,13 @@ The attack_path_asset_list supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Attack Path Whitelist.
 * `delete` - (Defaults to 5 mins) Used when delete the Attack Path Whitelist.
 * `update` - (Defaults to 5 mins) Used when update the Attack Path Whitelist.

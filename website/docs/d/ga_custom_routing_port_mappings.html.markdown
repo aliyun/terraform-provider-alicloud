@@ -54,4 +54,4 @@ The following attributes are exported in addition to the arguments listed above:
     * `ip_address` - The service IP address of the backend instance.
     * `port` - The service port of the backend instance.
   * `status` - The access policy of traffic for the backend instance.
-  
+

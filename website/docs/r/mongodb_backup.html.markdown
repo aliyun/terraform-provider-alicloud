@@ -75,13 +75,12 @@ resource "alicloud_mongodb_backup" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mongodb_backup&spm=docs.r.mongodb_backup.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `backup_method` - (Optional, ForceNew) Backup Method. Valid values: `Snapshot`, `Physical`, `Logical`. Default value: `Physical`.
 * `backup_retention_period` - (Optional, ForceNew, Int) Backup retention days. Valid values: `7` - `730`, `-1` (Long-term retention). Not passing means consistent with the default backup policy.
 * `db_instance_id` - (Required, ForceNew) The ID of the MongoDB instance.
@@ -89,6 +88,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<db_instance_id>:<backup_id>`.
 * `backup_db_names` - Backup DB Names.
 * `backup_download_url` - Backup Download URL.
@@ -105,6 +105,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 23 mins) Used when create the Backup.
 * `delete` - (Defaults to 5 mins) Used when delete the Backup.
 

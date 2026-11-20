@@ -129,9 +129,7 @@ resource "alicloud_alidns_cloud_gtm_address" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_cloud_gtm_address&spm=docs.r.alidns_cloud_gtm_address.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

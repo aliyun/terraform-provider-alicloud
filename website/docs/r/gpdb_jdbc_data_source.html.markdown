@@ -10,8 +10,6 @@ description: |-
 
 Provides a AnalyticDB for PostgreSQL (GPDB) Jdbc Data Source resource.
 
-
-
 For information about AnalyticDB for PostgreSQL (GPDB) Jdbc Data Source and how to use it, see [What is Jdbc Data Source](https://www.alibabacloud.com/help/en/analyticdb/analyticdb-for-postgresql/developer-reference/api-gpdb-2016-05-03-createjdbcdatasource).
 
 -> **NOTE:** Available since v1.230.0.
@@ -98,6 +96,7 @@ resource "alicloud_gpdb_jdbc_data_source" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `data_source_description` - (Optional) Data Source Description
 * `data_source_name` - (Optional, ForceNew) Data Source Name
 * `data_source_type` - (Optional) Data Source Type
@@ -109,6 +108,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<data_source_id>`.
 * `create_time` - The creation time of the resource
 * `data_source_id` - The data source ID.
@@ -117,6 +117,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Jdbc Data Source.
 * `delete` - (Defaults to 5 mins) Used when delete the Jdbc Data Source.
 * `update` - (Defaults to 5 mins) Used when update the Jdbc Data Source.

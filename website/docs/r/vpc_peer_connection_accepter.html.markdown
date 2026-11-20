@@ -94,6 +94,7 @@ resource "alicloud_vpc_peer_connection_accepter" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bandwidth` - (Optional, Computed, Int, Available since v1.231.0) The new bandwidth of the VPC peering connection. Unit: Mbit/s. The value must be an integer greater than 0.
 * `description` - (Optional, Computed, Available since v1.231.0) The new description of the VPC peering connection.
 The description must be 1 to 256 characters in length, and cannot start with `http://` or `https://`.
@@ -113,10 +114,10 @@ The name must be 1 to 128 characters in length, and cannot start with `http://` 
 
   -> **NOTE:**   You can use resource groups to manage resources within your Alibaba Cloud account by group. This helps you resolve issues such as resource grouping and permission management for your Alibaba Cloud account. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `accepting_owner_uid` - The ID of the Alibaba Cloud account (primary account) of the receiving end of the VPC peering connection to be created.-to-peer connection to the VPC account.-account VPC peer-to-peer connection.
 * `accepting_region_id` - The region ID of the recipient of the VPC peering connection to be created.-to-peer connection in the same region, enter the same region ID as the region ID of the initiator.-region VPC peer-to-peer connection, enter a region ID that is different from the region ID of the initiator.
@@ -129,6 +130,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Peer Connection Accepter.
 * `delete` - (Defaults to 5 mins) Used when delete the Peer Connection Accepter.
 * `update` - (Defaults to 5 mins) Used when update the Peer Connection Accepter.

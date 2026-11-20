@@ -37,7 +37,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `backend_servers` - 
+* `backend_servers` -
   * `id` - backend server ID.
   * `weight` - Weight associated to the ECS instance.
   * `server_type` - Type of the backend server.

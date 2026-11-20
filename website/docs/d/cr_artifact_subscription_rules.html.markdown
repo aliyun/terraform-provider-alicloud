@@ -25,6 +25,7 @@ data "alicloud_cr_artifact_subscription_rules" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required, ForceNew) Instance ID
 * `namespace_name` - (ForceNew, Optional) Namespace name
 * `repo_name` - (ForceNew, Optional) Repository name
@@ -32,10 +33,10 @@ The following arguments are supported:
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Artifact Subscription Rule IDs.
 * `rules` - A list of Artifact Subscription Rule Entries. Each element contains the following attributes:
   * `accelerate` - Whether to enable acceleration.

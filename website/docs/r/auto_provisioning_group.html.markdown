@@ -7,12 +7,11 @@ description: |-
   Provides a ECS Auto Provisioning group resource.
 ---
 
-# alicloud\_auto\_provisioning\_group
+# alicloud_auto_provisioning_group
 
 Provides a ECS auto provisioning group resource which is a solution that uses preemptive instances and pay_as_you_go instances to rapidly deploy clusters.
 
 -> **NOTE:** Available since v1.79.0
-
 
 ## Example Usage
 
@@ -76,7 +75,6 @@ data "alicloud_images" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_auto_provisioning_group&spm=docs.r.auto_provisioning_group.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -107,15 +105,17 @@ The following arguments are supported:
 ### `launch_template_config`
 
 The config mapping supports the following:
+
 * `instance_type` - (Optional) The instance type of the Nth extended configurations of the launch template.
 * `max_price` - (Required) The maximum price of the instance type specified in the Nth extended configurations of the launch template.
 * `vswitch_id` - (Required) The ID of the VSwitch in the Nth extended configurations of the launch template.
 * `weighted_capacity` - (Required) The weight of the instance type specified in the Nth extended configurations of the launch template.
 * `priority` - (Optional) The priority of the instance type specified in the Nth extended configurations of the launch template. A value of 0 indicates the highest priority.
-                     
+
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the auto provisioning group
 
 ## Import

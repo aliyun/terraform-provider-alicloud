@@ -48,6 +48,7 @@ resource "alicloud_eip_segment_address" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bandwidth` - (Optional, Available since v1.207.0) The maximum bandwidth of the contiguous EIP group. Unit: Mbit/s.
   - Valid values when `InstanceChargeType` is set to `PostPaid` and `InternetChargeType` is set to `PayByBandwidth`: `1` to `500`.****
   - Valid values when `InstanceChargeType` is set to `PostPaid` and `InternetChargeType` is set to `PayByTraffic`: `1` to `200`.****
@@ -84,13 +85,14 @@ The following arguments are supported:
 
   If your services are deployed in China East 1 Finance, this parameter is required and you must set the parameter to `BGP_FinanceCloud`.
 
-* `netmode` - (Optional, Available since v1.207.0) The network type. Set the value to `public`, which specifies the public network type. 
-* `resource_group_id` - (Optional) The resource group ID. 
-* `zone` - (Optional, ForceNew, Computed) The zone of the contiguous EIP group. 
+* `netmode` - (Optional, Available since v1.207.0) The network type. Set the value to `public`, which specifies the public network type.
+* `resource_group_id` - (Optional) The resource group ID.
+* `zone` - (Optional, ForceNew, Computed) The zone of the contiguous EIP group.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the contiguous Elastic IP address group was created. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 * `segment_address_name` - The name of the contiguous Elastic IP address group.
@@ -99,6 +101,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Segment Address.
 * `delete` - (Defaults to 5 mins) Used when delete the Segment Address.
 

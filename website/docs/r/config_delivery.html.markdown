@@ -58,6 +58,7 @@ resource "alicloud_config_delivery" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `configuration_item_change_notification` - (Optional) Indicates whether the specified destination receives resource change logs. If the value of this parameter is true, Cloud Config delivers the resource change logs to OSS, Log Service, or MNS when the configurations of the resources change. Valid values:  
   - true: The specified destination receives resource change logs.  
   - false: The specified destination does not receive resource change logs.  
@@ -72,7 +73,7 @@ The following arguments are supported:
 
   The lowest risk level of the events to which you want to subscribe is in the following format: {"filterType":"RuleRiskLevel","value":"1","multiple":false}, The value field indicates the risk level of the events to which you want to subscribe. Valid values: 1, 2, and 3. The value 1 indicates the high risk level, the value 2 indicates the medium risk level, and the value 3 indicates the low risk level.
 
-  The setting of the resource types of the events to which you want to subscribe is in the following format: {"filterType":"ResourceType","values":["ACS::ACK::Cluster","ACS::ActionTrail::Trail","ACS::CBWP::CommonBandwidthPackage"],"multiple":true}, The values field indicates the resource types of the events to which you want to subscribe. The value of the field is a JSON array. 
+  The setting of the resource types of the events to which you want to subscribe is in the following format: {"filterType":"ResourceType","values":["ACS::ACK::Cluster","ACS::ActionTrail::Trail","ACS::CBWP::CommonBandwidthPackage"],"multiple":true}, The values field indicates the resource types of the events to which you want to subscribe. The value of the field is a JSON array.
 
   Examples:[{"filterType":"ResourceType","values":["ACS::ActionTrail::Trail","ACS::CBWP::CommonBandwidthPackage","ACS::CDN::Domain","ACS::CEN::CenBandwidthPackage","ACS::CEN::CenInstance","ACS::CEN::Flowlog","ACS::DdosCoo::Instance"],"multiple":true}].  
 * `delivery_channel_name` - (Optional) The name of the delivery channel.
@@ -88,7 +89,7 @@ The following arguments are supported:
 * `non_compliant_notification` - (Optional) Indicates whether the specified destination receives resource non-compliance events. If the value of this parameter is true, Cloud Config delivers resource non-compliance events to Log Service or MNS when resources are evaluated as non-compliant. Valid values:  
   - true: The specified destination receives resource non-compliance events.  
   - false: The specified destination does not receive resource non-compliance events.  
-* `oversized_data_oss_target_arn` - (Optional) The oss ARN of the delivery channel when the value data oversized limit.  The value must be in one of the following formats:  acs:oss:{RegionId}:{Aliuid}:{bucketName} if your delivery destination is an Object Storage Service (OSS) bucket. 
+* `oversized_data_oss_target_arn` - (Optional) The oss ARN of the delivery channel when the value data oversized limit.  The value must be in one of the following formats:  acs:oss:{RegionId}:{Aliuid}:{bucketName} if your delivery destination is an Object Storage Service (OSS) bucket.
 * `status` - (Optional, Computed) The status of the delivery channel. Valid values:  
   - 0: The delivery channel is disabled.  
   - 1: The delivery channel is enabled.  
@@ -96,12 +97,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `delivery_channel_id` - The ID of the delivery channel. It is the same as the resource `id`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Delivery.
 * `delete` - (Defaults to 5 mins) Used when delete the Delivery.
 * `update` - (Defaults to 5 mins) Used when update the Delivery.

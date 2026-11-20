@@ -12,7 +12,7 @@ Using this data source can open MNS service automatically. If the service has be
 
 For information about MNS and how to use it, see [What is MNS](https://www.alibabacloud.com/help/en/product/27412.htm).
 
--> **NOTE:** Deprecated since v1.252.0.
+-> **DEPRECATED:** Deprecated since v1.252.0.
 
 -> **DEPRECATED:**  This datasource has been deprecated from version `1.252.0`. Please use new resource [alicloud_message_service_service](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/message_service_service).
 
@@ -38,4 +38,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

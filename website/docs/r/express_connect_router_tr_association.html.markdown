@@ -87,6 +87,7 @@ resource "alicloud_express_connect_router_tr_association" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `allowed_prefixes` - (Optional) List of allowed route prefixes.
 * `association_region_id` - (Required, ForceNew) The region to which the VPC or TR belongs.
 * `cen_id` - (Optional, ForceNew) The ID of the CEN instance.
@@ -97,6 +98,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<ecr_id>:<association_id>:<transit_router_id>`.
 * `association_id` - The first ID of the resource.
 * `create_time` - The creation time of the resource.
@@ -105,6 +107,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Express Connect Router Tr Association.
 * `delete` - (Defaults to 5 mins) Used when delete the Express Connect Router Tr Association.
 * `update` - (Defaults to 5 mins) Used when update the Express Connect Router Tr Association.

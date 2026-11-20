@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cloud Enterprise Network (CEN) Transit Router Multicast Domain resource.
 
-
-
 For information about Cloud Enterprise Network (CEN) Transit Router Multicast Domain and how to use it, see [What is Transit Router Multicast Domain](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createtransitroutermulticastdomain).
 
 -> **NOTE:** Available since v1.195.0.
@@ -56,6 +54,7 @@ resource "alicloud_cen_transit_router_multicast_domain" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `options` - (Optional, Set, Available since v1.242.0) The function options of the multicast domain. See [`options`](#options) below.
 * `tags` - (Optional, Map) A mapping of tags to assign to the resource.
 * `transit_router_id` - (Required, ForceNew) The ID of the forwarding router instance.
@@ -65,11 +64,13 @@ The following arguments are supported:
 ### `options`
 
 The options supports the following:
+
 * `igmpv2_support` - (Optional) Whether to enable IGMP function for multicast domain. Default value: `disable`. Valid values: `enable`, `disable`.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Transit Router Multicast Domain.
 * `region_id` - (Available since v1.242.0) The region ID of the transit router.
 * `status` - The status of the Transit Router Multicast Domain.
@@ -77,6 +78,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Transit Router Multicast Domain.
 * `delete` - (Defaults to 5 mins) Used when delete the Transit Router Multicast Domain.
 * `update` - (Defaults to 5 mins) Used when update the Transit Router Multicast Domain.

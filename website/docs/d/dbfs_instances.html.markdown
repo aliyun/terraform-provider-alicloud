@@ -7,7 +7,7 @@ description: |-
   Provides a list of DBFS Instances to the user.
 ---
 
-# alicloud\_dbfs\_instances
+# alicloud_dbfs_instances
 
 ~> **NOTE:** This data source has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://www.alibabacloud.com/help/en/dbfs/).
 

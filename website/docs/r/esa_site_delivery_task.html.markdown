@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Site Delivery Task resource.
 
-
-
 For information about ESA Site Delivery Task and how to use it, see [What is Site Delivery Task](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateSiteDeliveryTask).
 
 -> **NOTE:** Available since v1.247.0.
@@ -80,6 +78,7 @@ resource "alicloud_esa_site_delivery_task" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `business_type` - (Required) Real-time log type. Valid values:
   - `dcdn_log_access_l1 (default)`: access log.
   - `dcdn_log_er`: edge function log.
@@ -126,74 +125,82 @@ The following arguments are supported:
 ### `http_delivery`
 
 The http_delivery supports the following:
-* `compress` - (Optional) 
-* `dest_url` - (Optional) 
-* `header_param` - (Optional, Map) 
-* `log_body_prefix` - (Optional) 
-* `log_body_suffix` - (Optional) 
-* `max_batch_mb` - (Optional, Int) 
-* `max_batch_size` - (Optional, Int) 
-* `max_retry` - (Optional, Int) 
-* `query_param` - (Optional, Map) 
-* `standard_auth_on` - (Optional) 
+
+* `compress` - (Optional)
+* `dest_url` - (Optional)
+* `header_param` - (Optional, Map)
+* `log_body_prefix` - (Optional)
+* `log_body_suffix` - (Optional)
+* `max_batch_mb` - (Optional, Int)
+* `max_batch_size` - (Optional, Int)
+* `max_retry` - (Optional, Int)
+* `query_param` - (Optional, Map)
+* `standard_auth_on` - (Optional)
 * `standard_auth_param` - (Optional, List)  See [`standard_auth_param`](#http_delivery-standard_auth_param) below.
-* `transform_timeout` - (Optional, Int) 
+* `transform_timeout` - (Optional, Int)
 
 ### `http_delivery-standard_auth_param`
 
 The http_delivery-standard_auth_param supports the following:
-* `expired_time` - (Optional, Int) 
-* `private_key` - (Optional) 
-* `url_path` - (Optional) 
+
+* `expired_time` - (Optional, Int)
+* `private_key` - (Optional)
+* `url_path` - (Optional)
 
 ### `kafka_delivery`
 
 The kafka_delivery supports the following:
-* `balancer` - (Optional) 
-* `brokers` - (Optional, List) 
+
+* `balancer` - (Optional)
+* `brokers` - (Optional, List)
 * `compress` - (Optional) The compression method. By default, data is not compressed.
-* `machanism_type` - (Optional) 
-* `password` - (Optional) 
-* `topic` - (Optional) 
-* `user_auth` - (Optional) 
-* `user_name` - (Optional) 
+* `machanism_type` - (Optional)
+* `password` - (Optional)
+* `topic` - (Optional)
+* `user_auth` - (Optional)
+* `user_name` - (Optional)
 
 ### `oss_delivery`
 
 The oss_delivery supports the following:
-* `aliuid` - (Optional) 
-* `bucket_name` - (Optional) 
-* `prefix_path` - (Optional) 
+
+* `aliuid` - (Optional)
+* `bucket_name` - (Optional)
+* `prefix_path` - (Optional)
 * `region` - (Optional) The region ID of the service.
 
 ### `s3_delivery`
 
 The s3_delivery supports the following:
-* `access_key` - (Optional) 
-* `bucket_path` - (Optional) 
-* `endpoint` - (Optional) 
-* `prefix_path` - (Optional) 
-* `region` - (Optional) 
-* `s3_cmpt` - (Optional) 
-* `secret_key` - (Optional) 
+
+* `access_key` - (Optional)
+* `bucket_path` - (Optional)
+* `endpoint` - (Optional)
+* `prefix_path` - (Optional)
+* `region` - (Optional)
+* `s3_cmpt` - (Optional)
+* `secret_key` - (Optional)
 * `server_side_encryption` - (Optional) Server-side encryption
 * `vertify_type` - (Optional) Authentication Type
 
 ### `sls_delivery`
 
 The sls_delivery supports the following:
-* `sls_log_store` - (Optional) 
-* `sls_project` - (Optional) 
-* `sls_region` - (Optional) 
+
+* `sls_log_store` - (Optional)
+* `sls_project` - (Optional)
+* `sls_region` - (Optional)
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<task_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Site Delivery Task.
 * `delete` - (Defaults to 5 mins) Used when delete the Site Delivery Task.
 * `update` - (Defaults to 5 mins) Used when update the Site Delivery Task.

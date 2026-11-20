@@ -50,6 +50,7 @@ resource "alicloud_resource_manager_message_contact" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `email_address` - (Required) The email address of the contact.
 After you specify an email address, you need to call [SendEmailVerificationForMessageContact](~~SendEmailVerificationForMessageContact~~) to send verification information to the email address. After the verification is passed, the email address takes effect.
 * `message_contact_name` - (Required) The name of the contact.
@@ -63,6 +64,7 @@ Specify the mobile phone number in the `-` format.
 -> **NOTE:**  Only mobile phone numbers in the `86-` format in the Chinese mainland are supported.
 
 After you specify a mobile phone number, you need to call [SendPhoneVerificationForMessageContact](~~SendPhoneVerificationForMessageContact~~) to send verification information to the mobile phone number. After the verification is passed, the mobile phone number takes effect.
+
 * `title` - (Required) The job title of the contact.Valid values:
   - FinanceDirector
   - TechnicalDirector
@@ -74,13 +76,15 @@ After you specify a mobile phone number, you need to call [SendPhoneVerification
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the contact was created.
-* `status` - The status of the contact. 
+* `status` - The status of the contact.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Message Contact.
 * `delete` - (Defaults to 5 mins) Used when delete the Message Contact.
 * `update` - (Defaults to 5 mins) Used when update the Message Contact.

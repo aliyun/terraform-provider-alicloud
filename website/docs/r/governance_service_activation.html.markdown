@@ -38,13 +38,12 @@ resource "alicloud_governance_service_activation" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_governance_service_activation&spm=docs.r.governance_service_activation.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `region` - (Required, ForceNew, String) The region in which Cloud Governance Center is activated for the account.
   - It must be the activation region: `OpenGovernanceService`, `DecommissionGovernance` and `GetGovernanceServiceStatus` all require `RegionId` to name the region where the service is activated, and requests naming another region fail.
   - It must be the same as the `region` of the provider configuration, because the activation is requested through that region.
@@ -54,12 +53,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - (String) The ID of the resource supplied above. It equals `region`.
 * `status` - (String) The activation status of Cloud Governance Center for the current account and region, returned by `GetGovernanceServiceStatus`. Valid values: `Enabled`, `Disabled`, `EnableFailed`, `DisableFailed`, `Enabling`, `Disabling`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions. Each timeout is a [Go duration](https://pkg.go.dev/time#ParseDuration) string, such as `30m` or `1h`:
+
 * `create` - (Defaults to 20 mins) Used when create the Service Activation.
 * `delete` - (Defaults to 30 mins) Used when delete the Service Activation.
 

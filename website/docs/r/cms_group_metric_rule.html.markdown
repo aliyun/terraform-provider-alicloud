@@ -123,7 +123,7 @@ The critical supports the following:
 
 ### `escalations-info`
 
-The info supports the following: 
+The info supports the following:
 
 * `comparison_operator` - (Optional) The comparison operator of the threshold for info-level alerts.
 * `statistics` - (Optional) The statistical aggregation method for info-level alerts.

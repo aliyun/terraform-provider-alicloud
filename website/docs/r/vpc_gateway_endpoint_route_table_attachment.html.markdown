@@ -72,18 +72,21 @@ resource "alicloud_vpc_gateway_endpoint_route_table_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `gateway_endpoint_id` - (Required, ForceNew) The ID of the gateway endpoint instance to which you want to associate the route table.
 * `route_table_id` - (Required, ForceNew) Routing table ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<gateway_endpoint_id>:<route_table_id>`.
 * `status` - Status of the gateway endpoint.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Gateway Endpoint Route Table Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Gateway Endpoint Route Table Attachment.
 

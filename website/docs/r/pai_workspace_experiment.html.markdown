@@ -10,8 +10,6 @@ description: |-
 
 Provides a PAI Workspace Experiment resource.
 
-
-
 For information about PAI Workspace Experiment and how to use it, see [What is Experiment](https://next.api.alibabacloud.com/document/AIWorkSpace/2021-02-04/CreateExperiment).
 
 -> **NOTE:** Available since v1.236.0.
@@ -56,6 +54,7 @@ resource "alicloud_pai_workspace_experiment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `accessibility` - (Optional, Computed) Experimental Visibility
 * `artifact_uri` - (Required, ForceNew) ArtifactUri is default OSS storage path of the output of trials in the experiment
 * `experiment_name` - (Required) Name is the name of the experiment, unique in a namespace
@@ -65,18 +64,21 @@ The following arguments are supported:
 ### `labels`
 
 The labels supports the following:
+
 * `key` - (Optional, Available since v2.1.0) The key of the experiment label.
 * `value` - (Optional, Available since v2.1.0) The value of the experiment label.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - GmtCreateTime is time when this entity is created.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Experiment.
 * `delete` - (Defaults to 5 mins) Used when delete the Experiment.
 * `update` - (Defaults to 5 mins) Used when update the Experiment.

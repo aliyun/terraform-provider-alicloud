@@ -87,6 +87,7 @@ output "alicloud_cms_alert_rule_v2_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `filter_datasource_type_eq` - (Optional) Filter by exact match of data source type
 * `filter_display_name_contains` - (Optional) Filter by display name using contains matching
 * `filter_display_name_not_contains` - (Optional) Filter by display name that does not contain the specified value
@@ -106,13 +107,13 @@ The following arguments are supported:
 * `filter_uuid_eq` - (Optional) Filter by exact UUID match
 * `filter_uuid_in` - (Optional) Filter by UUID list inclusion match. Separate multiple UUIDs with commas (,).
 * `workspace` - (Optional) Workspace.
-* `ids` - (Optional, Computed) A list of Alert Rule V2 IDs. 
+* `ids` - (Optional, Computed) A list of Alert Rule V2 IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Alert Rule V2 IDs.
 * `rules` - A list of Alert Rule V2 Entries. Each element contains the following attributes:
     * `action_integration_config` - Action integration configuration.

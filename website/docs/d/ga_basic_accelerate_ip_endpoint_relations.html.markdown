@@ -56,4 +56,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `ip_address` - The address of the Basic Accelerate IP.
   * `basic_endpoint_name` - The name of the Basic Endpoint.
   * `status` - The status of the Basic Accelerate Ip Endpoint Relation.
-	

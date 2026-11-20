@@ -100,14 +100,14 @@ The config_rule_ids supports the following:
 
 ### `config_rules`
 
-The config_rules supports the following: 
+The config_rules supports the following:
 
 * `managed_rule_identifier` - (Required) The Managed Rule Identifier.
 * `config_rule_parameters` - (Optional, Set) A list of Config Rule Parameters. See [`config_rule_parameters`](#config_rules-config_rule_parameters) below.
 
 ### `config_rules-config_rule_parameters`
 
-The config_rule_parameters supports the following: 
+The config_rule_parameters supports the following:
 
 * `parameter_name` - (Optional) The parameter name.
 * `parameter_value` - (Optional) The parameter value.

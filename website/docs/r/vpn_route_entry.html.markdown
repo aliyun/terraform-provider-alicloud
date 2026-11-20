@@ -17,7 +17,6 @@ Provides a VPN Route Entry resource.
 
 For information about VPN Route Entry and how to use it, see [What is VPN Route Entry](https://www.alibabacloud.com/help/en/doc-detail/127250.html).
 
-
 ## Example Usage
 
 Basic Usage

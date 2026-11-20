@@ -7,7 +7,7 @@ description: |-
     Deprecated: use alicloud_slb_load_balancers instead. Provides a list of server load balancers to the user.
 ---
 
-# alicloud\_slbs
+# alicloud_slbs
 
 -> **DEPRECATED:** This datasource has been renamed to [alicloud_slb_load_balancers](https://www.terraform.io/docs/providers/alicloud/d/slb_load_balancers) from version 1.123.1.
 

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Mse Gateways to the user.
 ---
 
-# alicloud\_mse\_gateways
+# alicloud_mse_gateways
 
 This data source provides the Mse Gateways of the current Alibaba Cloud user.
 

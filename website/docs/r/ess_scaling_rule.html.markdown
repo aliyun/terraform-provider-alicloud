@@ -113,7 +113,7 @@ resource "alicloud_ess_scaling_rule" "default" {
 
 ## Module Support
 
-You can use to the existing [autoscaling-rule module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling-rule/alicloud) 
+You can use to the existing [autoscaling-rule module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling-rule/alicloud)
 to create different type rules, alarm task and scheduled task one-click.
 
 ## Argument Reference
@@ -129,7 +129,7 @@ The following arguments are supported:
   - QuantityChangeInCapacity：(0, 500] U (-500, 0]
   - PercentChangeInCapacity：[0, 10000] U [-100, 0]
   - TotalCapacity：[0, 1000]
-* `scaling_rule_name` - (Optional) Name shown for the scaling rule, which must contain 2-64 characters (English or Chinese), starting with numbers, English letters or Chinese characters, and can contain number, underscores `_`, hypens `-`, and decimal point `.`. If this parameter value is not specified, the default value is scaling rule id. 
+* `scaling_rule_name` - (Optional) Name shown for the scaling rule, which must contain 2-64 characters (English or Chinese), starting with numbers, English letters or Chinese characters, and can contain number, underscores `_`, hypens `-`, and decimal point `.`. If this parameter value is not specified, the default value is scaling rule id.
 * `cooldown` - (Optional) The cooldown time of the scaling rule. This parameter is applicable only to simple scaling rules. Value range: [0, 86,400], in seconds. The default value is empty，if not set, the return value will be 0, which is the default value of integer.
 * `scaling_rule_type` - (Optional, ForceNew, Available since v1.58.0) The scaling rule type, either "SimpleScalingRule", "TargetTrackingScalingRule", "StepScalingRule", "PredictiveScalingRule". Default to "SimpleScalingRule".
 * `estimated_instance_warmup` - (Optional, Available since v1.58.0) The estimated time, in seconds, until a newly launched instance will contribute CloudMonitor metrics. Default to 300.
@@ -150,7 +150,6 @@ The following arguments are supported:
 * `hybrid_monitor_namespace` - (Optional, Available since v1.245.0) The ID of the Hybrid Cloud Monitoring metric repository.
 * `metric_type` - (Optional, Available since v1.245.0) The type of the metric. Valid values: system, custom, hybrid.
 * `hybrid_metrics` - (Optional, Available since v1.245.0) The Hybrid Cloud Monitoring metrics. See [`hybrid_metrics`](#hybrid_metrics) below.
-
 
 ### `step_adjustment`
 
@@ -184,7 +183,6 @@ The alarmDimension mapping supports the following:
 
 * `dimension_key` - (Optional) The dimension key of the metric.
 * `dimension_value` - (Optional, ForceNew) The dimension value of the metric.
-
 
 ## Attributes Reference
 

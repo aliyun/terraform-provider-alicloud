@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ecs Hpc Clusters to the user.
 ---
 
-# alicloud\_ecs\_hpc\_clusters
+# alicloud_ecs_hpc_clusters
 
 This data source provides the Ecs Hpc Clusters of the current Alibaba Cloud user.
 

@@ -154,7 +154,6 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `create` - (Defaults to 5 mins) Used when connecting the scaling group.
 * `delete` - (Defaults to 5 mins) Used when unbundling the scaling group.
 
-
 ESS server groups can be imported using the id, e.g.
 
 ```shell

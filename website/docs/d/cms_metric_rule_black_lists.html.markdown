@@ -30,6 +30,7 @@ output "alicloud_cms_rule_black_list_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `category` - (ForceNew, Optional) Cloud service classification. For example, Redis includes kvstore_standard, kvstore_sharding, and kvstore_splitrw.
 * `metric_rule_black_list_id` - (ForceNew, Optional) The first ID of the resource
 * `namespace` - (ForceNew, Optional) The data namespace of the cloud service.
@@ -38,10 +39,10 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Metric Rule Black List IDs.
 * `names` - A list of name of Metric Rule Black Lists.
 * `lists` - A list of Metric Rule Black List Entries. Each element contains the following attributes:

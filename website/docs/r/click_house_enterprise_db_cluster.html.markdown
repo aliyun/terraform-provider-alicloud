@@ -111,12 +111,12 @@ resource "alicloud_click_house_enterprise_db_cluster" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_click_house_enterprise_db_cluster&spm=docs.r.click_house_enterprise_db_cluster.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional, Computed, Available since v1.270.0) Cluster description.
 * `multi_zones` - (Optional, ForceNew, Computed, List) The multi-zone configuration. See [`multi_zones`](#multi_zones) below.
 * `node_count` - (Optional, Computed, Int, Available since v1.270.0) The number of nodes. Valid values: 2 to 16. This parameter is required when NodeScaleMin and NodeScaleMax are configured to define the auto-scaling range.
@@ -133,13 +133,15 @@ The following arguments are supported:
 ### `multi_zones`
 
 The multi_zones supports the following:
+
 * `vswitch_ids` - (Optional, ForceNew, List) List of vSwitch IDs.
 * `zone_id` - (Optional, ForceNew) Zone ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `category` - Instance type.
 * `charge_type` - The billing method.
 * `computing_group_ids` - List of computing group IDs.
@@ -168,6 +170,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 60 mins) Used when create the Enterprise Db Cluster.
 * `delete` - (Defaults to 5 mins) Used when delete the Enterprise Db Cluster.
 * `update` - (Defaults to 60 mins) Used when update the Enterprise Db Cluster.

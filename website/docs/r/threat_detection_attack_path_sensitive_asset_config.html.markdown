@@ -50,11 +50,13 @@ resource "alicloud_threat_detection_attack_path_sensitive_asset_config" "default
 ## Argument Reference
 
 The following arguments are supported:
+
 * `attack_path_asset_list` - (Required, Set) The attack path sensitive asset configuration list. See [`attack_path_asset_list`](#attack_path_asset_list) below.
 
 ### `attack_path_asset_list`
 
 The attack_path_asset_list supports the following:
+
 * `asset_sub_type` - (Required, Int) Cloud product asset subtype.
 * `asset_type` - (Required, Int) The asset type of the cloud product asset.
 * `instance_id` - (Required) The ID of the cloud product instance.
@@ -64,11 +66,13 @@ The attack_path_asset_list supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Attack Path Sensitive Asset Config.
 * `delete` - (Defaults to 5 mins) Used when delete the Attack Path Sensitive Asset Config.
 * `update` - (Defaults to 5 mins) Used when update the Attack Path Sensitive Asset Config.

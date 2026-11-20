@@ -7,7 +7,7 @@ description: |-
   Provides a list of ActionTrail Trails to the specified filters.
 ---
 
-# alicloud\_actiontrail\_trails
+# alicloud_actiontrail_trails
 
 This data source provides a list of ActionTrail Trails in an Alibaba Cloud account according to the specified filters.
 
@@ -48,6 +48,7 @@ The following attributes are exported in addition to the arguments listed above:
 ### `actiontrails`
 
 The actiontrails supports the following attributes:
+
 * `trail_name` - The name of the ActionTrail Trail.
 * `event_rw` - Indicates whether the event is a read or a write event.
 * `is_organization_trail` - Indicates whether the trail is a multi-account trail.
@@ -63,6 +64,7 @@ The actiontrails supports the following attributes:
 ### `trails`
 
 The trails supports the following attributes:
+
 * `trail_name` - The name of the ActionTrail Trail.
 * `event_rw` - Indicates whether the event is a read or a write event.
 * `is_organization_trail` - Indicates whether the trail is a multi-account trail.

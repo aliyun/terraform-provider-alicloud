@@ -90,7 +90,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID of Acl Attachment. The value formats as `<listener_id>:<acl_id>`.
-* `status` - The status of the Acl Attachment. 
+* `status` - The status of the Acl Attachment.
 
 ## Timeouts
 

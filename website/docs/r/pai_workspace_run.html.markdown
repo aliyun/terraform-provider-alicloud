@@ -10,8 +10,6 @@ description: |-
 
 Provides a PAI Workspace Run resource.
 
-
-
 For information about PAI Workspace Run and how to use it, see [What is Run](https://next.api.alibabacloud.com/document/AIWorkSpace/2021-02-04/CreateRun).
 
 -> **NOTE:** Available since v1.236.0.
@@ -63,6 +61,7 @@ resource "alicloud_pai_workspace_run" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `experiment_id` - (Required, ForceNew) Resource attribute field of the experiment ID to which Run belongs
 * `run_name` - (Optional) The name of the resource
 * `source_id` - (Optional, ForceNew) Attribute Resource field representing the source task ID
@@ -71,12 +70,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Run.
 * `delete` - (Defaults to 5 mins) Used when delete the Run.
 * `update` - (Defaults to 5 mins) Used when update the Run.

@@ -39,14 +39,15 @@ output "alicloud_maxcompute_project_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Optional, ForceNew, Computed) A list of Project IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Project IDs.
 * `names` - A list of name of Projects.
 * `projects` - A list of Project Entries. Each element contains the following attributes:
@@ -54,6 +55,7 @@ The following attributes are exported in addition to the arguments listed above:
 ### `projects`
 
 The projects supports the following:
+
 * `cost_storage` - View the current storage size of the Project. The storage size is the same as the measurement size, that is, the compressed logical storage size collected by the Project.
 * `comment` - Project description information. The length is 1 to 256 English or Chinese characters. The default value is blank.
 * `create_time` - Represents the creation time of the project
@@ -69,12 +71,14 @@ The projects supports the following:
 ### `projects-ip_white_list`
 
 The projects-ip_white_list supports the following:
+
 * `ip_list` - Set the IP address whitelist in the classic network. Only devices in the whitelist are allowed to access the project.-> **NOTE:** If you only configure a classic network IP address whitelist, access to the classic network is restricted and all access to the VPC is prohibited.
 * `vpc_ip_list` - Set the IP address whitelist in the VPC network to allow only devices in the whitelist to access the project space.-> **NOTE:** If you only configure a VPC network IP address whitelist, access to the VPC network is restricted and access to the classic network is prohibited.
 
 ### `projects-properties`
 
 The projects-properties supports the following:
+
 * `allow_full_scan` - Whether to allow full table scan. Default: false.
 * `enable_decimal2` - Whether to turn on Decimal2.0.
 * `encryption` - Storage encryption. For details, see [Storage Encryption](https://www.alibabacloud.com/help/en/maxcompute/security-and-compliance/storage-encryption)-> **NOTE :**:To enable storage encryption, you need to modify the parameters of the basic attributes of the MaxCompute project. This operation permission is authenticated by RAM, and you need to have the Super_Administrator role permission of the corresponding project.To configure the permissions and IP whitelist parameters of the MaxCompute project, you must have the management permissions (Admin) of the corresponding project, including Super_Administrator, Admin, or custom management permissions. For more information, see the project management permissions list.You can turn on storage encryption only for projects that have not turned on storage encryption. For projects that have turned on storage encryption, you cannot turn off storage encryption or change the encryption algorithm.
@@ -87,6 +91,7 @@ The projects-properties supports the following:
 ### `projects-properties-encryption`
 
 The projects-properties-encryption supports the following:
+
 * `algorithm` - The encryption algorithm supported by the key, including AES256, AESCTR, and RC4.
 * `enable` - Only enable function is supported. Value: (true).
 * `key` - The encryption algorithm Key, the Key type used by the project, including the Default Key (MaxCompute Default Key) and the self-contained Key (BYOK). The MaxCompute Default Key is the Default Key created inside MaxCompute.
@@ -94,12 +99,14 @@ The projects-properties-encryption supports the following:
 ### `projects-properties-table_lifecycle`
 
 The projects-properties-table_lifecycle supports the following:
+
 * `type` - Optional: When creating a table, the Lifecycle clause is optional. If the Lifecycle of the table is not set, the table is permanently valid.mandatory: the Lifecycle clause is required. You must set the Lifecycle of the table.inherit: If you do not set the lifecycle of the table when creating a table, the lifecycle of the table is the value of ODPS. table.lifecycle.value, and the ODPS. table.lifecycle.value attribute sets the lifecycle of the table.
 * `value` - The value of the life cycle, in days. The value range is 1~37231, and the default value is 37231.
 
 ### `projects-security_properties`
 
 The projects-security_properties supports the following:
+
 * `enable_download_privilege` - Set whether to enable the [Download permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/download-control), that is, set the ODPS. security.enabledownloadprivilege property.
 * `label_security` - Set whether to use the [Label permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/label-based-access-control), that is, set the LabelSecurity attribute, which is not used by default.
 * `object_creator_has_access_permission` - Sets whether to allow the creator of the object to have access to the object, I .e. sets the attribute. The default is the allowed state.
@@ -111,5 +118,6 @@ The projects-security_properties supports the following:
 ### `projects-security_properties-project_protection`
 
 The projects-security_properties-project_protection supports the following:
+
 * `exception_policy` - Set [Exceptions or Trusted Items](https://www.alibabacloud.com/help/en/maxcompute/security-and-compliance/project-data-protection).
 * `protected` - Whether enabled, value:(true/false).

@@ -65,4 +65,3 @@ Market order can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_market_order.order your-order-id
 ```
- 

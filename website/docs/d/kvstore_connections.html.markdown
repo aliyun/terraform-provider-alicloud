@@ -10,7 +10,7 @@ description: |-
 # alicloud_kvstore_connections
 
 This data source can query the public IP of the specified Tair (Redis OSS-Compatible) And Memcache (KVStore).
- 
+
 -> **NOTE:** Available since v1.101.0.
 
 ## Example Usage

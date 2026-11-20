@@ -35,7 +35,7 @@ The following arguments are supported:
 
 * `aggregator_id` - (Required, ForceNew) The ID of aggregator.
 * `aggregate_config_rule_name` - (Optional, ForceNew) The config rule name.
-* `status` - (Optional, ForceNew) The state of the config rule, valid values: `ACTIVE`, `DELETING`, `EVALUATING` and `INACTIVE`. 
+* `status` - (Optional, ForceNew) The state of the config rule, valid values: `ACTIVE`, `DELETING`, `EVALUATING` and `INACTIVE`.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `ids` - (Optional, ForceNew, Computed)  A list of Aggregate Config Rule IDs.
 * `risk_level` - (Optional, ForceNew) The Risk Level. Valid values `1`: critical, `2`: warning, `3`: info.
@@ -58,8 +58,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `compliance_pack_id` - The ID of Compliance Package.
   * `config_rule_arn` - The config rule arn.
   * `config_rule_id` - The ID of the rule.
-  * `status` - The status of the rule. 
-  * `event_source` - Event source of the Config Rule. 
+  * `status` - The status of the rule.
+  * `event_source` - Event source of the Config Rule.
   * `description` - The description of the rule.
   * `id` - The ID of the Aggregate Config Rule.
   * `config_rule_trigger_types` - The trigger types of config rules.

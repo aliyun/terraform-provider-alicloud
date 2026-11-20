@@ -50,4 +50,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `accelerator_id` - The id of the Global Accelerator Basic Accelerator instance.
   * `ip_set_id` - The ID of the Basic Ip Set.
   * `status` - The status of the Basic Accelerate IP instance.
-	

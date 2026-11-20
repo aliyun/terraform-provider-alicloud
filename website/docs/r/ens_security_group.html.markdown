@@ -10,8 +10,6 @@ description: |-
 
 Provides a ENS Security Group resource.
 
-
-
 For information about ENS Security Group and how to use it, see [What is Security Group](https://www.alibabacloud.com/help/en/ens/developer-reference/api-createsnapshot).
 
 -> **NOTE:** Available since v1.213.0.
@@ -37,13 +35,12 @@ resource "alicloud_ens_security_group" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ens_security_group&spm=docs.r.ens_security_group.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) Security group description information
 It must be 2 to 256 characters in length and must start with a letter or Chinese, but cannot start with http:// or https://
 * `permissions` - (Optional, List, Available since v1.287.0) A collection of rules for a security group instance See [`permissions`](#permissions) below.
@@ -53,6 +50,7 @@ The security group name. The length is 2~128 English or Chinese characters. It m
 ### `permissions`
 
 The permissions supports the following:
+
 * `creation_time` - (Computed, Available since v1.287.0) Creation time, UTC time.
 * `description` - (Optional, Available since v1.287.0) Rule description information
 * `dest_cidr_ip` - (Optional, Available since v1.287.0) Destination IP address segment for outbound authorization
@@ -75,11 +73,13 @@ Example value: 0.0.0.0/0
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Security Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Security Group.
 * `update` - (Defaults to 5 mins) Used when update the Security Group.

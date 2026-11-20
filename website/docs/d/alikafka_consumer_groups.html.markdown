@@ -7,7 +7,7 @@ description: |-
     Provides a list of alikafka consumer groups available to the user.
 ---
 
-# alicloud\_alikafka\_consumer\_groups
+# alicloud_alikafka_consumer_groups
 
 This data source provides a list of ALIKAFKA Consumer Groups in an Alibaba Cloud account according to the specified filters.
 
@@ -33,7 +33,7 @@ The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed)  A list of ALIKAFKA Consumer Groups IDs, It is formatted to `<instance_id>:<consumer_id>`.
 * `instance_id` - (Required) ID of the ALIKAFKA Instance that owns the consumer groups.
-* `consumer_id_regex` - (Optional) A regex string to filter results by the consumer group id. 
+* `consumer_id_regex` - (Optional) A regex string to filter results by the consumer group id.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ### `groups`

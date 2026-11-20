@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Https Application Configuration resource.
 
-
-
 For information about ESA Https Application Configuration and how to use it, see [What is Https Application Configuration](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateHttpsApplicationConfiguration).
 
 -> **NOTE:** Available since v1.244.0.
@@ -62,6 +60,7 @@ resource "alicloud_esa_https_application_configuration" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `alt_svc` - (Optional) Function switch, default off. Value range:
   - `on`: on.
   - `off`: off.
@@ -111,12 +110,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<config_id>`.
 * `config_id` - Config Id
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Https Application Configuration.
 * `delete` - (Defaults to 5 mins) Used when delete the Https Application Configuration.
 * `update` - (Defaults to 5 mins) Used when update the Https Application Configuration.

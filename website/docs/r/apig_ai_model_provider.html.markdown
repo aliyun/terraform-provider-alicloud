@@ -49,13 +49,12 @@ resource "alicloud_apig_ai_model_provider" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_apig_ai_model_provider&spm=docs.r.apig_ai_model_provider.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `display_name` - (Required) Model supplier presentation name. Required, no more than 128 characters in length.
 
 * `gateway_id` - (Required, ForceNew) The ID of the AI gateway instance. The target instance must exist, belong to the current account, and be of the AI gateway type.
@@ -64,11 +63,11 @@ The following arguments are supported:
 
 * `service_ids` - (Optional, List) The full collection of AI service IDs to bind to the model vendor. If not passed, existing bindings are retained; if empty array, all bindings are cleared.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `model_count` - The number of model cards currently associated with the model supplier.
 * `source` - Model supplier source.
 * `update_time` - The last update time of the model vendor, in the format of yyyy-MM-dd HH:mm:ss.
@@ -76,6 +75,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ai Model Provider.
 * `delete` - (Defaults to 5 mins) Used when delete the Ai Model Provider.
 * `update` - (Defaults to 5 mins) Used when update the Ai Model Provider.

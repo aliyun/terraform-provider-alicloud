@@ -49,23 +49,24 @@ resource "alicloud_threat_detection_monitor_account" "default" {
 
 Terraform cannot destroy resource `alicloud_threat_detection_monitor_account`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_threat_detection_monitor_account&spm=docs.r.threat_detection_monitor_account.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_ids` - (Optional) The list of member account IDs in the resource directory. You can call [ListAccountsInResourceDirectory](https://next.api.alibabacloud.com/document/Sas/2018-12-03/ListAccountsInResourceDirectory) to obtain the member account IDs. Multiple member account IDs must be separated by commas (,). The monitor account list is fully replaced by the incoming list. If this parameter is not specified, the existing monitor account list is cleared.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<Alibaba Cloud Account ID>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Monitor Account.
 * `update` - (Defaults to 5 mins) Used when update the Monitor Account.
 * `delete` - (Defaults to 5 mins) Used when delete the Monitor Account.

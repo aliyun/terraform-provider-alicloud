@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ocean Base Instances to the user.
 ---
 
-# alicloud\_ocean\_base\_instances
+# alicloud_ocean_base_instances
 
 This data source provides the Ocean Base Instances of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.203.0+.
+-> **NOTE:** Available since v1.203.0+.
 
 ## Example Usage
 
@@ -36,15 +36,15 @@ output "ocean_base_instance_id_2" {
 The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed)  A list of Instance IDs.
-* `instance_id` - (ForceNew,Optional) OceanBase cluster ID.
-* `resource_group_id` - (ForceNew,Optional) The ID of the enterprise resource group to which the instance resides.
-* `search_key` - (ForceNew,Optional) The filter keyword for the query list.
+* `instance_id` - (ForceNew, Optional) OceanBase cluster ID.
+* `resource_group_id` - (ForceNew, Optional) The ID of the enterprise resource group to which the instance resides.
+* `search_key` - (ForceNew, Optional) The filter keyword for the query list.
 * `instance_name` - (Optional, ForceNew) OceanBase cluster name. The length is 1 to 20 English or Chinese characters. If this parameter is not specified, the default value is the InstanceId of the cluster.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Instance name.
 * `status` - (Optional, ForceNew) The status of the Instance. Value range: `PENDING_CREATE`, `ONLINE`, `TENANT_CREATING`, `TENANT_SPEC_MODIFYING`, `EXPANDING`, `REDUCING`, `SPEC_UPGRADING`, `DISK_UPGRADING`, `WHITE_LIST_MODIFYING`, `PARAMETER_MODIFYING`, `SSL_MODIFYING`, `PREPAID_EXPIRE_CLOSED`, `ARREARS_CLOSED`, `PENDING_DELETE`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

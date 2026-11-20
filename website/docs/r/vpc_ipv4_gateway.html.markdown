@@ -53,6 +53,7 @@ resource "alicloud_vpc_ipv4_gateway" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dry_run` - (Optional) Whether to PreCheck only this request. Value:-**true**: The check request is sent without creating an IPv4 Gateway. Check items include whether required parameters, request format, and business restrictions are filled in. If the check does not pass, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.-**false** (default): Sends a normal request, returns an HTTP 2xx status code and directly creates an IPv4 Gateway.
 * `enabled` - (Optional, Computed, Available since v1.193.1) Whether the IPv4 gateway is active or not. Valid values are `true` and `false`.
 * `internet_mode` - (Optional, Available since v1.249.0) The public network traffic mode of the VPC after the IPv4 Gateway is deleted:
@@ -67,6 +68,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `ipv4_gateway_id` - Resource primary key field.
@@ -76,6 +78,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ipv4 Gateway.
 * `delete` - (Defaults to 5 mins) Used when delete the Ipv4 Gateway.
 * `update` - (Defaults to 5 mins) Used when update the Ipv4 Gateway.

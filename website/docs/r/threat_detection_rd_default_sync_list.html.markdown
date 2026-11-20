@@ -45,9 +45,7 @@ resource "alicloud_threat_detection_rd_default_sync_list" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_threat_detection_rd_default_sync_list&spm=docs.r.threat_detection_rd_default_sync_list.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

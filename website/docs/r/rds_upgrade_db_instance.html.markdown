@@ -94,6 +94,7 @@ resource "alicloud_rds_upgrade_db_instance" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `source_db_instance_id` - (Required, ForceNew) The source db instance id.
 * `db_instance_storage_type` - (Required) The type of storage media that is used for the new instance. Valid values:
   * **local_ssd**: local SSDs.
@@ -150,7 +151,7 @@ The following arguments are supported:
   * **Classic**: Classic Network.
   * **VPC**: VPC.
 * `maintain_time` - (Optional, Computed) The maintainable time period of the instance. Format: <I> HH:mm</I> Z-<I> HH:mm</I> Z(UTC time).
-* `password` - (Optional) The password of the certificate. 
+* `password` - (Optional) The password of the certificate.
 
   -> **NOTE:** This parameter is available only when the instance runs SQL Server 2019 SE or an Enterprise Edition of SQL Server.
 * `port` - (Optional, Computed) The port.

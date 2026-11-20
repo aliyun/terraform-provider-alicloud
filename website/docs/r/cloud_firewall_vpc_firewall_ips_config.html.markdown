@@ -51,12 +51,12 @@ resource "alicloud_cloud_firewall_vpc_firewall_ips_config" "default" {
 
 Terraform cannot destroy resource `alicloud_cloud_firewall_vpc_firewall_ips_config`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_vpc_firewall_ips_config&spm=docs.r.cloud_firewall_vpc_firewall_ips_config.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `basic_rules` - (Required, Int) Base rule switch. Value:
   - `1`: on.
   - `0`: Off.
@@ -82,11 +82,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vpc Firewall Ips Config.
 * `update` - (Defaults to 5 mins) Used when update the Vpc Firewall Ips Config.
 

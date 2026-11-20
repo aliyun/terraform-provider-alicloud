@@ -99,7 +99,6 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `update` - (Defaults to 1 mins) Used when updating the Hana Backup Plan.
 * `delete` - (Defaults to 1 mins) Used when deleting the Hana Backup Plan.
 
-
 ## Import
 
 Hybrid Backup Recovery (HBR) Hana Backup Plan can be imported using the id, which consists of plan_id, vault_id and cluster_id, e.g.

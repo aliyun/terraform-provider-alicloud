@@ -10,8 +10,6 @@ description: |-
 
 Provides a SSL Certificates Certificate resource.
 
-
-
 For information about SSL Certificates Certificate and how to use it, see [What is Certificate](https://www.alibabacloud.com/help/product/28533.html).
 
 -> **NOTE:** Available since v1.129.0.
@@ -116,6 +114,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `cert_identifier` - (Available since v2.3.0) The global certificate identifier in the format of "id+region", e.g. "13781326-cn-hangzhou".
 
@@ -124,6 +123,7 @@ The following attributes are exported:
 -> **NOTE:** Available since 1.260.1.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Certificate.
 * `delete` - (Defaults to 5 mins) Used when delete the Certificate.
 * `update` - (Defaults to 5 mins) Used when update the Certificate.

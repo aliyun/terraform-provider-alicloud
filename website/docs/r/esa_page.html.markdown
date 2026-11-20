@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Page resource.
 
-
-
 For information about ESA Page and how to use it, see [What is Page](https://www.alibabacloud.com/help/en/edge-security-acceleration/esa/user-guide/customize-page).
 
 -> **NOTE:** Available since v1.242.0.
@@ -48,6 +46,7 @@ resource "alicloud_esa_page" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `content` - (Optional) The Base64-encoded content of the error page. The content type is specified by the Content-Type field.
 * `content_type` - (Required) The Content-Type field in the HTTP header.
 * `description` - (Optional) The description of the custom error page.
@@ -56,11 +55,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Page.
 * `delete` - (Defaults to 5 mins) Used when delete the Page.
 * `update` - (Defaults to 5 mins) Used when update the Page.

@@ -73,13 +73,12 @@ resource "alicloud_rds_custom_disk_attachment" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_custom_disk_attachment&spm=docs.r.rds_custom_disk_attachment.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `delete_with_instance` - (Optional, ForceNew) Whether the disk is released together with the instance when the instance is released. Value range:
 true: Release.
 false: Do not release. The disk is converted to a pay-as-you-go data disk and is retained.
@@ -93,6 +92,7 @@ This parameter is not supported for cloud disks with the multi-Mount feature ena
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<disk_id>:<instance_id>`.
 * `region_id` - The region ID of the resource.
 * `status` - The status of the disk.
@@ -100,6 +100,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Custom Disk Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Custom Disk Attachment.
 

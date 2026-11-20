@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ddoscoo Ports to the user.
 ---
 
-# alicloud\_ddoscoo\_ports
+# alicloud_ddoscoo_ports
 
 This data source provides the Ddoscoo Ports of the current Alibaba Cloud user.
 
@@ -45,7 +45,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `ports` - A list of DdosCoo Ports. Each element contains the following attributes:
   * `backend_port` - The source station port.
   * `frontend_port` - The forwarding port.
-  * `frontend_protocol` - The forwarding protocol. 
+  * `frontend_protocol` - The forwarding protocol.
   * `instance_id` - The Ddoscoo instance ID.
   * `id` - The ID of the Port.
   * `real_servers` - List of source IP addresses.

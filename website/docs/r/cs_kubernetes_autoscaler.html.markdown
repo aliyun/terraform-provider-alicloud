@@ -9,11 +9,11 @@ description: |-
 
 # alicloud_cs_kubernetes_autoscaler
 
-This resource will help you to manager cluster-autoscaler in Kubernetes Cluster. 
+This resource will help you to manager cluster-autoscaler in Kubernetes Cluster.
 
 -> **NOTE:** The scaling group must use CentOS7 or AliyunLinux2 as base image.
 
--> **NOTE:** The cluster-autoscaler can only use the same size of instanceTypes in one scaling group. 
+-> **NOTE:** The cluster-autoscaler can only use the same size of instanceTypes in one scaling group.
 
 -> **NOTE:** Add Policy to RAM role of the node to deploy cluster-autoscaler if you need.
 
@@ -134,7 +134,6 @@ The nodepools mapping supports the following:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 90 mins) Used when creating cluster-autoscaler in the kubernetes cluster (until it reaches the initial `running` status). 
+* `create` - (Defaults to 90 mins) Used when creating cluster-autoscaler in the kubernetes cluster (until it reaches the initial `running` status).
 * `update` - (Defaults to 60 mins) Used when activating the cluster-autoscaler in the kubernetes cluster when necessary during update.
-* `delete` - (Defaults to 60 mins) Used when deleting cluster-autoscaler in kubernetes cluster. 
-
+* `delete` - (Defaults to 60 mins) Used when deleting cluster-autoscaler in kubernetes cluster.
