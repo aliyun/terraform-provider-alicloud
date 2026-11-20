@@ -15,6 +15,7 @@ Provides a VPN Pbr Route Entry resource.
 
 For information about VPN Pbr Route Entry and how to use it, see [What is VPN Pbr Route Entry](https://www.alibabacloud.com/help/en/doc-detail/127248.html).
 
+-> **NOTE:** The example requires an existing active IPsec VPN gateway that supports dual-tunnel IPsec connections and BGP. Set `vpn_gateway_id` to that gateway's ID.
 
 ## Example Usage
 
@@ -39,7 +40,8 @@ variable "name" {
   default = "terraform-example"
 }
 
-data "alicloud_vpn_gateways" "default" {
+variable "vpn_gateway_id" {
+  description = "The ID of an existing active IPsec VPN gateway that supports dual-tunnel IPsec connections and BGP."
 }
 
 resource "alicloud_vpn_customer_gateway" "defaultCustomerGateway" {
@@ -57,7 +59,7 @@ resource "alicloud_vpn_customer_gateway" "changeCustomerGateway" {
 }
 
 resource "alicloud_vpn_connection" "default" {
-  vpn_gateway_id      = data.alicloud_vpn_gateways.default.ids.0
+  vpn_gateway_id      = var.vpn_gateway_id
   vpn_connection_name = var.name
   local_subnet = [
     "3.0.0.0/24"
@@ -132,7 +134,7 @@ resource "alicloud_vpn_connection" "default" {
 
 
 resource "alicloud_vpn_pbr_route_entry" "default" {
-  vpn_gateway_id = data.alicloud_vpn_gateways.default.ids.0
+  vpn_gateway_id = var.vpn_gateway_id
   route_source   = "192.168.1.0/24"
   route_dest     = "10.0.0.0/24"
   next_hop       = alicloud_vpn_connection.default.id
@@ -155,7 +157,7 @@ The following arguments are supported:
 * `route_dest` - (Required, ForceNew) The destination CIDR block of the policy-based route.
 * `weight` - (Required) The weight of the policy-based route. Valid values: 0 and 100.
 * `description` - (Optional, ForceNew, String, Available since v2.3.0) The description of the policy-based route. The description must be 1 to 100 characters in length. This field is only set when the route entry is created; changing it forces a new resource to be created. The Describe API does not return this field, so the imported state does not contain it and setting it after an import also creates a new resource.
-* `priority` - (Optional, Computed, Int, Available since v2.3.0) The policy priority of the policy-based route. Valid values: `1` to `100`. Defaults to `10` on the server when this argument is omitted. A smaller value indicates a higher priority.
+* `priority` - (Optional, Computed, Int, Available since v2.3.0) The policy priority of the policy-based route. Valid values: `1` to `100`. A smaller value indicates a higher priority. Defaults to `10`. The server assigns this value when the argument is omitted during creation. If you later remove it from the configuration, the current value is retained; set `priority = 10` explicitly to restore `10`.
 
   -> **NOTE:** Policy priority is available only for VPN gateways that support it; gateways on earlier versions return the `VpnPbrRouteEntryPriority.NotSupport` error when this argument is set. For more information, see [policy route matching rules](https://www.alibabacloud.com/help/doc-detail/110777.html).
 
