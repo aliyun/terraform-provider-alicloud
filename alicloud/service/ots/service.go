@@ -852,8 +852,34 @@ func ConvertSearchIndexFieldTypeString(typeStr SearchIndexFieldTypeString) (tabl
 		return tablestore.FieldType_GEO_POINT, nil
 	case "Nested":
 		return tablestore.FieldType_NESTED, nil
+	case "Vector":
+		return tablestore.FieldType_VECTOR, nil
+	case "FuzzyKeyword":
+		return tablestore.FieldType_FUZZY_KEYWORD, nil
 	default:
 		return 0, errs.WrapError(fmt.Errorf("unexpected search index field type string: %s", typeStr))
+	}
+}
+
+func ConvertSearchIndexVectorDataTypeString(dataTypeStr SearchIndexVectorDataTypeString) (tablestore.VectorDataType, error) {
+	switch dataTypeStr {
+	case "float32":
+		return tablestore.VectorDataType_FLOAT_32, nil
+	default:
+		return "", errs.WrapError(fmt.Errorf("unexpected search index vector data type string: %s", dataTypeStr))
+	}
+}
+
+func ConvertSearchIndexVectorMetricTypeString(metricTypeStr SearchIndexVectorMetricTypeString) (tablestore.VectorMetricType, error) {
+	switch metricTypeStr {
+	case "euclidean":
+		return tablestore.VectorMetricType_EUCLIDEAN, nil
+	case "cosine":
+		return tablestore.VectorMetricType_COSINE, nil
+	case "dot_product":
+		return tablestore.VectorMetricType_DOT_PRODUCT, nil
+	default:
+		return "", errs.WrapError(fmt.Errorf("unexpected search index vector metric type string: %s", metricTypeStr))
 	}
 }
 
