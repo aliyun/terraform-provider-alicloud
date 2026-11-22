@@ -1144,11 +1144,11 @@ func inboundEndpointUnitRequestClient(t *testing.T, handler http.HandlerFunc) *c
 	endpoints := new(sync.Map)
 	endpoint := strings.TrimPrefix(server.URL, "http://")
 	t.Setenv("NO_PROXY", endpoint)
-	client, err := (&connectivity.Config{
+	client, err := connectivity.NewClient(&connectivity.Config{
 		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
 		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
 		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
-	}).Client()
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
