@@ -345,16 +345,21 @@ func ResourceDispatchRuleRead(d *schema.ResourceData, meta interface{}) error {
 		}
 		return errs.WrapError(err)
 	}
-	notifyPolicy, err := armsService.ListArmsNotificationPolicies(d.Id())
+	// DescribeDispatchRule only carries the rule itself: it neither reports the
+	// notify time window nor the notify template. Both are read from the
+	// notification policy detail, looked up by id so that an account with more
+	// rules than one page still resolves the right policy.
+	detail, err := NewServiceV2(client).DescribeArmsNotificationPolicy(d.Id())
 	if err != nil {
-		if errs.NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_arms_dispatch_rule armsService.ListArmsNotificationPolicies Failed!!! %s", err)
-			d.SetId("")
-			return nil
+		if !errs.NotFoundError(err) {
+			return errs.WrapError(err)
 		}
-		return errs.WrapError(err)
+		// The rule exists (DescribeDispatchRule answered), so a missing policy
+		// detail is not evidence of deletion: leave the notify attributes alone
+		// instead of writing fabricated defaults.
+		log.Printf("[DEBUG] Resource alicloud_arms_dispatch_rule notification policy %s is not listed, keeping the known notify configuration: %s", d.Id(), err)
+		detail = nil
 	}
-
 	if groupRulesList, ok := object["GroupRules"]; ok && groupRulesList != nil {
 		groupRulesMaps := make([]map[string]interface{}, 0)
 		for _, groupRulesListItem := range groupRulesList.([]interface{}) {
@@ -401,55 +406,208 @@ func ResourceDispatchRuleRead(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	if notifyRulesList, ok := object["NotifyRules"]; ok && notifyRulesList != nil {
-		notifyRulesMaps := make([]map[string]interface{}, 0)
-		for _, notifyRulesListItem := range notifyRulesList.([]interface{}) {
-			if notifyRulesItemMap, ok := notifyRulesListItem.(map[string]interface{}); ok {
-				notifyRulesMap := make(map[string]interface{}, 0)
-				notifyObjectsMaps := make([]map[string]interface{}, 0)
-				for _, notifyObjects := range notifyRulesItemMap["NotifyObjects"].([]interface{}) {
-					notifyObjectsArg := notifyObjects.(map[string]interface{})
-					notifyObjectsMap := make(map[string]interface{}, 0)
-					notifyObjectsMap["notify_type"] = convertArmsDispatchRuleNotifyTypeResponse(notifyObjectsArg["NotifyType"])
-					notifyObjectsMap["notify_object_id"] = notifyObjectsArg["NotifyObjectId"]
-					notifyObjectsMap["name"] = notifyObjectsArg["Name"]
-					notifyObjectsMaps = append(notifyObjectsMaps, notifyObjectsMap)
-				}
-				notifyRulesMap["notify_objects"] = notifyObjectsMaps
-				notifyRulesMap["notify_channels"] = notifyRulesItemMap["NotifyChannels"]
-
-				notifyRule := notifyPolicy["NotifyRule"].(map[string]interface{})
-				notifyRulesMap["notify_start_time"] = notifyRule["NotifyStartTime"]
-				notifyRulesMap["notify_end_time"] = notifyRule["NotifyEndTime"]
-				notifyRulesMaps = append(notifyRulesMaps, notifyRulesMap)
-			}
+	if notifyRules := buildArmsDispatchRuleNotifyRules(object, detail); notifyRules != nil {
+		if err := d.Set("notify_rules", notifyRules); err != nil {
+			return errs.WrapError(err)
 		}
-		d.Set("notify_rules", notifyRulesMaps)
 	}
-
-	if notifyTemplate, ok := notifyPolicy["NotifyTemplate"]; ok && notifyTemplate != nil {
-		notifyTemplateMaps := make([]map[string]interface{}, 0)
-		notifyTemplateObject := notifyTemplate.(map[string]interface{})
-		if len(notifyTemplateObject) != 0 {
-			notifyTemplateMap := map[string]interface{}{
-				"email_title":           notifyTemplateObject["EmailTitle"],
-				"email_content":         notifyTemplateObject["EmailContent"],
-				"email_recover_title":   notifyTemplateObject["EmailRecoverTitle"],
-				"email_recover_content": notifyTemplateObject["EmailRecoverContent"],
-				"tts_content":           notifyTemplateObject["TtsContent"],
-				"tts_recover_content":   notifyTemplateObject["TtsRecoverContent"],
-				"sms_content":           notifyTemplateObject["SmsContent"],
-				"sms_recover_content":   notifyTemplateObject["SmsRecoverContent"],
-				"robot_content":         notifyTemplateObject["RobotContent"],
-			}
-			notifyTemplateMaps = append(notifyTemplateMaps, notifyTemplateMap)
+	if notifyTemplate := buildArmsDispatchRuleNotifyTemplate(detail); notifyTemplate != nil {
+		if err := d.Set("notify_template", []map[string]interface{}{notifyTemplate}); err != nil {
+			return errs.WrapError(err)
 		}
-		d.Set("notify_template", notifyTemplateMaps)
 	}
 
 	d.Set("dispatch_rule_name", object["Name"])
 	return nil
 }
+
+// buildArmsDispatchRuleNotifyRules merges the DescribeDispatchRule payload with the
+// matching notification policy detail into the notify_rules state. Notify objects
+// and channels belong to the dispatch rule, while the notify time window is only
+// published on the notification policy detail. A nil result means the attribute must
+// be left alone: either the payload carries no usable notify rule, or the window is
+// not confirmed by the detail. In the latter case Read keeps the existing window
+// (e.g. a non-default 08:30-20:15) instead of rewriting it to the all-day default.
+func buildArmsDispatchRuleNotifyRules(describe, detail map[string]interface{}) []map[string]interface{} {
+	notifyRules, ok := describe["NotifyRules"].([]interface{})
+	if !ok || len(notifyRules) == 0 {
+		return nil
+	}
+	notifyStartTime, notifyEndTime, windowConfirmed := armsDispatchRuleNotifyTimeRange(detail)
+	if !windowConfirmed {
+		log.Printf("[DEBUG] Resource alicloud_arms_dispatch_rule notify window is not confirmed by the notification policy detail, keeping the known notify_rules")
+		return nil
+	}
+	notifyRulesMaps := make([]map[string]interface{}, 0, len(notifyRules))
+	for _, item := range notifyRules {
+		notifyRule, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		notifyRulesMaps = append(notifyRulesMaps, map[string]interface{}{
+			"notify_objects":    buildArmsDispatchRuleNotifyObjects(notifyRule["NotifyObjects"]),
+			"notify_channels":   armsDispatchRuleStringList(notifyRule["NotifyChannels"]),
+			"notify_start_time": notifyStartTime,
+			"notify_end_time":   notifyEndTime,
+		})
+	}
+	if len(notifyRulesMaps) == 0 {
+		return nil
+	}
+	return notifyRulesMaps
+}
+
+func buildArmsDispatchRuleNotifyObjects(source interface{}) []map[string]interface{} {
+	notifyObjectsMaps := make([]map[string]interface{}, 0)
+	notifyObjects, ok := source.([]interface{})
+	if !ok {
+		return notifyObjectsMaps
+	}
+	for _, item := range notifyObjects {
+		notifyObject, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		notifyObjectsMaps = append(notifyObjectsMaps, map[string]interface{}{
+			"notify_type":      convertArmsDispatchRuleNotifyTypeResponse(notifyObject["NotifyType"]),
+			"notify_object_id": notifyObject["NotifyObjectId"],
+			"name":             notifyObject["Name"],
+		})
+	}
+	return notifyObjectsMaps
+}
+
+// armsDispatchRuleNotifyTimeRange reads the notify window from the notification
+// policy detail and reports whether it is confirmed. Only a detail that actually
+// publishes a NotifyRule object counts: when both window fields are absent or empty
+// it is the verified all-day case and normalizes to 00:00/23:59; when both are
+// non-empty strings they are used verbatim. A missing detail, an unparseable or
+// non-object NotifyRule, a partially published window, or a non-string field is NOT
+// confirmed, so the caller must keep the existing state rather than fill business
+// defaults.
+func armsDispatchRuleNotifyTimeRange(detail map[string]interface{}) (string, string, bool) {
+	if detail == nil {
+		return "", "", false
+	}
+	raw, ok := detail["NotifyRule"]
+	if !ok || raw == nil {
+		return "", "", false
+	}
+	parsed, ok := armsNpParseJSON(raw)
+	if !ok {
+		return "", "", false
+	}
+	notifyRule, ok := parsed.(map[string]interface{})
+	if !ok {
+		return "", "", false
+	}
+	start, startOK := armsDispatchRuleWindowField(notifyRule["NotifyStartTime"])
+	end, endOK := armsDispatchRuleWindowField(notifyRule["NotifyEndTime"])
+	if !startOK || !endOK {
+		return "", "", false
+	}
+	if start == "" && end == "" {
+		startTime, endTime := normalizeArmsNotifyTimeRange(start, end)
+		return startTime, endTime, true
+	}
+	if start == "" || end == "" {
+		return "", "", false
+	}
+	return start, end, true
+}
+
+// armsDispatchRuleWindowField treats an absent or null field as an empty string and
+// rejects any non-string value, so a malformed window is reported as unconfirmed.
+func armsDispatchRuleWindowField(value interface{}) (string, bool) {
+	if value == nil {
+		return "", true
+	}
+	text, ok := value.(string)
+	return text, ok
+}
+
+// buildArmsDispatchRuleNotifyTemplate maps the notification policy template onto
+// the notify_template schema. The published field may arrive as a parsed object, a
+// JSON string or a single item array; an empty or unexpected value means the rule
+// has no template to publish and refresh must keep the previous state.
+func buildArmsDispatchRuleNotifyTemplate(detail map[string]interface{}) map[string]interface{} {
+	raw, ok := detail["NotifyTemplate"]
+	if !ok || raw == nil {
+		return nil
+	}
+	parsed, ok := armsNpParseJSON(raw)
+	if !ok {
+		return nil
+	}
+	var template map[string]interface{}
+	switch value := parsed.(type) {
+	case map[string]interface{}:
+		template = value
+	case []interface{}:
+		if len(value) == 0 {
+			return nil
+		}
+		template, _ = value[0].(map[string]interface{})
+	default:
+		return nil
+	}
+	if len(template) == 0 {
+		return nil
+	}
+	notifyTemplateMap := map[string]interface{}{
+		"email_title":           armsDispatchRuleString(template["EmailTitle"]),
+		"email_content":         armsDispatchRuleString(template["EmailContent"]),
+		"email_recover_title":   armsDispatchRuleString(template["EmailRecoverTitle"]),
+		"email_recover_content": armsDispatchRuleString(template["EmailRecoverContent"]),
+		"tts_content":           armsDispatchRuleString(template["TtsContent"]),
+		"tts_recover_content":   armsDispatchRuleString(template["TtsRecoverContent"]),
+		"sms_content":           armsDispatchRuleString(template["SmsContent"]),
+		"sms_recover_content":   armsDispatchRuleString(template["SmsRecoverContent"]),
+		"robot_content":         armsDispatchRuleString(template["RobotContent"]),
+	}
+	if notifyTemplateMap["robot_content"] == "" {
+		notifyTemplateMap["robot_content"] = armsDispatchRuleString(template["DingContent"])
+	}
+	return notifyTemplateMap
+}
+
+func armsDispatchRuleString(source interface{}) string {
+	if source == nil {
+		return ""
+	}
+	if value, ok := source.(string); ok {
+		return value
+	}
+	return fmt.Sprint(source)
+}
+
+func armsDispatchRuleStringList(source interface{}) []string {
+	values, ok := source.([]interface{})
+	if !ok {
+		return []string{}
+	}
+	list := make([]string, 0, len(values))
+	for _, value := range values {
+		list = append(list, armsDispatchRuleString(value))
+	}
+	return list
+}
+
+// The ARMS API omits NotifyStartTime and NotifyEndTime for all-day rules.
+// Normalize the empty response to the values used when creating the rule so
+// that refresh does not produce a perpetual no-op diff.
+func normalizeArmsNotifyTimeRange(start, end interface{}) (string, string) {
+	startTime, _ := start.(string)
+	if startTime == "" {
+		startTime = "00:00"
+	}
+	endTime, _ := end.(string)
+	if endTime == "" {
+		endTime = "23:59"
+	}
+	return startTime, endTime
+}
+
 func ResourceDispatchRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}

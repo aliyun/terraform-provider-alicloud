@@ -422,6 +422,113 @@ func TestAccAliCloudARMSDispatchRule_basic(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudARMSDispatchRule_notifyWindow covers the attributes that only the
+// notification policy detail publishes: a non-default notify window and the notify
+// template. Both must survive refresh and import instead of being normalized away or
+// left empty.
+func TestAccAliCloudARMSDispatchRule_notifyWindow(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_arms_dispatch_rule.default"
+	ra := acctest.ResourceAttrInit(resourceId, ArmsDispatchRuleMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return arms.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeArmsDispatchRule")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testaccArmsNotifyWindow%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, ArmsDispatchRuleBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.ARMSSupportRegions)
+		},
+
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dispatch_rule_name": "${var.name}",
+					"group_rules": []map[string]interface{}{
+						{
+							"group_wait_time": "5",
+							"group_interval":  "15",
+							"grouping_fields": []string{"alertname"},
+							"repeat_interval": "61",
+						},
+					},
+					"dispatch_type": "CREATE_ALERT",
+					"label_match_expression_grid": []map[string]interface{}{
+						{
+							"label_match_expression_groups": []map[string]interface{}{
+								{
+									"label_match_expressions": []map[string]interface{}{
+										{
+											"key":      "_aliyun_arms_involvedObject_kind",
+											"value":    "app",
+											"operator": "eq",
+										},
+									},
+								},
+							},
+						},
+					},
+					"notify_rules": []map[string]interface{}{
+						{
+							"notify_objects": []map[string]interface{}{
+								{
+									"notify_object_id": "${alicloud_arms_alert_contact.default.id}",
+									"notify_type":      "ARMS_CONTACT",
+									"name":             "${var.name}",
+								},
+							},
+							"notify_channels":   []string{"dingTalk"},
+							"notify_start_time": "08:30",
+							"notify_end_time":   "20:15",
+						},
+					},
+					"notify_template": []map[string]interface{}{
+						{
+							"email_title":           "NotifyWindowEmailTitle",
+							"email_content":         "NotifyWindowEmailContent",
+							"email_recover_title":   "NotifyWindowEmailRecoverTitle",
+							"email_recover_content": "NotifyWindowEmailRecoverContent",
+							"sms_content":           "NotifyWindowSmsContent",
+							"sms_recover_content":   "NotifyWindowSmsRecoverContent",
+							"tts_content":           "NotifyWindowTtsContent",
+							"tts_recover_content":   "NotifyWindowTtsRecoverContent",
+							"robot_content":         "NotifyWindowRobotContent",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"notify_rules.#":    "1",
+						"notify_template.#": "1",
+					}),
+					// notify_rules and notify_template are TypeSet attributes, so
+					// their elements are addressed by hash, not a stable .0 index.
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "notify_rules.*", map[string]string{
+						"notify_start_time": "08:30",
+						"notify_end_time":   "20:15",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "notify_template.*", map[string]string{
+						"email_title":   "NotifyWindowEmailTitle",
+						"robot_content": "NotifyWindowRobotContent",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dispatch_type", "is_recover"},
+			},
+		},
+	})
+}
+
 var ArmsDispatchRuleMap = map[string]string{
 	"status": acctest.CHECKSET,
 }
