@@ -78,7 +78,7 @@ The value of GrafanaWorkspaceEdition is advanced_edition. This parameter is inva
   - PricingCycle is set to Year, indicating annual payment. The value range is 1 to 3. Default value: 1.
 * `grafana_version` - (Optional) Grafana version
 * `grafana_workspace_edition` - (Optional, ForceNew) The edition. **Valid values:**
-  - standard: `Beta Edition(For internal testing only) `
+  - standard: `Beta Edition(For internal testing only)`
   - personal_edition: Developer Edition
   - experts_edition: Pro Edition
   - advanced_edition: Advanced Edition
@@ -98,7 +98,8 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Grafana Workspace.
 * `delete` - (Defaults to 10 mins) Used when delete the Grafana Workspace.
 * `update` - (Defaults to 5 mins) Used when update the Grafana Workspace.
