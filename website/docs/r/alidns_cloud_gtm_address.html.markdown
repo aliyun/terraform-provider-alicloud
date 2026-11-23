@@ -141,18 +141,18 @@ The following arguments are supported:
 * `type` - (Required, ForceNew) The address type. Valid values: `IPv4`, `IPv6`, `domain`.
 * `address` - (Required) The address value. Must match `type`: an IPv4 address, an IPv6 address, or a domain name.
 * `enable_status` - (Required) Whether the address participates in DNS resolution. Valid values:
-    * `enable` - The address participates in resolution when its health check is normal.
-    * `disable` - The address does not participate in resolution regardless of health status.
+  * `enable` - The address participates in resolution when its health check is normal.
+  * `disable` - The address does not participate in resolution regardless of health status.
 * `available_mode` - (Required) How the availability of the address is determined. Valid values:
-    * `auto` - Availability is computed from the attached health-check tasks.
-    * `manual` - Availability is set explicitly via `manual_available_status`; health-check results are informational only.
+  * `auto` - Availability is computed from the attached health-check tasks.
+  * `manual` - Availability is set explicitly via `manual_available_status`; health-check results are informational only.
 * `manual_available_status` - (Optional) The manually-set availability status. Only meaningful when `available_mode` is `manual`. Valid values: `available`, `unavailable`.
 * `health_judgement` - (Required) The rule used to judge overall health when the address has multiple health-check tasks. Valid values:
-    * `any_ok` - Any task reports healthy.
-    * `all_ok` - All tasks report healthy.
-    * `p30_ok` - At least 30% of tasks report healthy.
-    * `p50_ok` - At least 50% of tasks report healthy.
-    * `p70_ok` - At least 70% of tasks report healthy.
+  * `any_ok` - Any task reports healthy.
+  * `all_ok` - All tasks report healthy.
+  * `p30_ok` - At least 30% of tasks report healthy.
+  * `p50_ok` - At least 50% of tasks report healthy.
+  * `p70_ok` - At least 70% of tasks report healthy.
 * `health_tasks` - (Optional, Set) The health-check tasks attached to this address. Each task references a Cloud GTM monitor template. See [`health_tasks`](#health_tasks) below.
 * `remark` - (Optional) The remark of the address. Passing an empty value clears the existing remark.
 
@@ -172,7 +172,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when creating the Cloud Gtm Address.
 * `update` - (Defaults to 5 mins) Used when updating the Cloud Gtm Address.
