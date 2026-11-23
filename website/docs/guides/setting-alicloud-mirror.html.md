@@ -1,6 +1,6 @@
 ---
 layout: "alicloud"
-page_title: "Alibaba Cloud Provider Mirror Guide"
+page_title: "Alicloud: alicloud_setting-alicloud-mirror.html.md"
 sidebar_current: "docs-alicloud-guide-alicloud-mirror-guide"
 description: |-
   Setting alibaba cloud provider mirror configure
@@ -32,9 +32,10 @@ or even though failed as following:
 ╵
 ```
 
-Since Terraform CLI v0.13.2, it provides to set the [network_mirror](https://developer.hashicorp.com/terraform/cli/config/config-file#network_mirror) feature.
+Since Terraform CLI v0.13.2, it provides to set the [network_mirror](https://developer.hashicorp.com/terraform/cli/config/config-file#explicit-installation-method-configuration) feature.
 In order to fix above downloading `alicloud` provider failed issue, Alibaba Cloud provides mirror service, and you can set
-the following configuration in the [CLI Configuration File](https://developer.hashicorp.com/terraform/cli/config/config-file):
+the following configuration in the [CLI Configuration File](https://developer.hashicorp.com/terraform/cli/config/config-file#provider-installation):
+
 ```terraform
 provider_installation {
   network_mirror {
