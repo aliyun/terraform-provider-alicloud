@@ -82,6 +82,7 @@ resource "alicloud_gpdb_external_data_service" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_instance_id` - (Required, ForceNew) Instance ID
 * `service_description` - (Optional) Service Description
 * `service_name` - (Required, ForceNew) Service Name
@@ -90,6 +91,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<service_id>`.
 * `create_time` - The creation time of the resource
 * `service_id` - Service ID
@@ -98,6 +100,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the External Data Service.
 * `delete` - (Defaults to 5 mins) Used when delete the External Data Service.
 * `update` - (Defaults to 5 mins) Used when update the External Data Service.

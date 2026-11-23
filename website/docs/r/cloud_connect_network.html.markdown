@@ -54,7 +54,6 @@ The following arguments are supported:
 * `cidr_block` - (Optional) The CidrBlock of the CCN instance. Defaults to null.
 * `is_default` - (Required) Created by default. If the client does not have ccn in the binding, it will create a ccn for the user to replace.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
@@ -68,4 +67,3 @@ The cloud connect network instance can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_cloud_connect_network.example ccn-abc123456
 ```
-

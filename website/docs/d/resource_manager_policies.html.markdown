@@ -7,7 +7,7 @@ description: |-
     Provides a list of Resource Manager Policies to the user.
 ---
 
-# alicloud\_resource\_manager\_policies
+# alicloud_resource_manager_policies
 
 This data source provides the Resource Manager Policies of the current Alibaba Cloud user.
 

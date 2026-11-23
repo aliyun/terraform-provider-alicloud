@@ -63,9 +63,7 @@ resource "alicloud_ens_load_balancer_http_listener" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ens_load_balancer_http_listener&spm=docs.r.ens_load_balancer_http_listener.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

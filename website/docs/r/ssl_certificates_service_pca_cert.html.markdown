@@ -10,8 +10,6 @@ description: |-
 
 Provides a SSL Certificates Pca Cert resource.
 
-
-
 For information about SSL Certificates Pca Cert and how to use it, see [What is Pca Cert](https://next.api.alibabacloud.com/document/cas/2020-06-30/CreateClientCertificate).
 
 -> **NOTE:** Available since v1.270.0.
@@ -78,16 +76,15 @@ resource "alicloud_ssl_certificates_service_pca_cert" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_pca_cert&spm=docs.r.ssl_certificates_service_pca_cert.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `after_time` - (Optional, Int) The service expiration time of the client certificate, specified as a Unix timestamp in seconds.  
 
   -> **NOTE:**  The `before_time` and `after_time` parameters must either both be empty or both be specified.
-
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
@@ -116,11 +113,14 @@ For the meanings of different country codes, see the **International Codes** sec
 * `days` - (Optional, ForceNew, Computed, Int) Validity period of the client certificate, in days.  
 
 The `days`, `before_time`, and `after_time` parameters cannot all be empty. Additionally, `before_time` and `after_time` must either both be set or both remain unset. The specific rules are as follows:  
-  - If you set the `days` parameter, you may optionally also set `before_time` and `after_time`.  
-  - If you do not set the `days` parameter, you must set both `before_time` and `after_time`.  
+
+- If you set the `days` parameter, you may optionally also set `before_time` and `after_time`.
+- If you do not set the `days` parameter, you must set both `before_time` and `after_time`.
 
 -> **NOTE:** - If you set `days`, `before_time`, and `after_time` simultaneously, the validity period of the client certificate is determined by the value of `days`.  
-  - The validity period of the client certificate cannot exceed that of the issuing subordinate CA certificate. You can call [DescribeCACertificate](https://help.aliyun.com/document_detail/465954.html) to check the validity period of the subordinate CA certificate.  
+
+- The validity period of the client certificate cannot exceed that of the issuing subordinate CA certificate. You can call [DescribeCACertificate](https://help.aliyun.com/document_detail/465954.html) to check the validity period of the subordinate CA certificate.
+
 * `enable_crl` - (Optional, Int) Whether to include the CRL URL. Valid values:
   - `0`: No.
   - `1`: Yes.  
@@ -166,15 +166,16 @@ The name of the state or province where the certificate's organization is locate
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Pca Cert.
 * `delete` - (Defaults to 5 mins) Used when delete the Pca Cert.
 * `update` - (Defaults to 5 mins) Used when update the Pca Cert.

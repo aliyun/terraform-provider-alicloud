@@ -73,6 +73,7 @@ output "alicloud_sls_etl_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `project` - (ForceNew, Required) Project Name
 * `logstore` - (ForceNew, Required) Source Logstore Name.
 * `offset` - (ForceNew, Optional) Query start row. The default value is 0.
@@ -83,6 +84,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Etl IDs.
 * `etls` - A list of Etl Entries. Each element contains the following attributes:
   * `configuration` - Detailed configuration of data processing tasks

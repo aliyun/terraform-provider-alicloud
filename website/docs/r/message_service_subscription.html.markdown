@@ -10,8 +10,6 @@ description: |-
 
 Provides a Message Service Subscription resource.
 
-
-
 For information about Message Service Subscription and how to use it, see [What is Subscription](https://www.alibabacloud.com/help/en/mns/developer-reference/api-mns-open-2022-01-19-subscribe).
 
 -> **NOTE:** Available since v1.188.0.
@@ -53,6 +51,7 @@ resource "alicloud_message_service_subscription" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dlq_policy` - (Optional, Set, Available since v1.244.0) The dead-letter queue policy. See [`dlq_policy`](#dlq_policy) below.
 * `topic_name`- (Required, ForceNew) The topic which The subscription belongs to was named with the name. A topic name must start with an English letter or a digit, and can contain English letters, digits, and hyphens, with the length not exceeding 255 characters.
 * `subscription_name` - (Required, ForceNew) Two topics subscription on a single account in the same topic cannot have the same name. A topic subscription name must start with an English letter or a digit, and can contain English letters, digits, and hyphens, with the length not exceeding 255 characters.
@@ -73,18 +72,21 @@ The following arguments are supported:
 ### `dlq_policy`
 
 The dlq_policy supports the following:
+
 * `dead_letter_target_queue` - (Optional) The queue to which dead-letter messages are delivered.
 * `enabled` - (Optional, Bool) Specifies whether to enable the dead-letter message delivery. Valid values: `true`, `false`.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Subscription. The value formats as `<topic_name>:<subscription_name>`.
 * `create_time` - (Available since v1.244.0) The time when the subscription was created.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Subscription.
 * `delete` - (Defaults to 5 mins) Used when delete the Subscription.
 * `update` - (Defaults to 5 mins) Used when update the Subscription.

@@ -10,8 +10,6 @@ description: |-
 
 Provides a Eflo Experiment Plan resource.
 
-
-
 For information about Eflo Experiment Plan and how to use it, see [What is Experiment Plan](https://www.alibabacloud.com/help/en/pai/developer-reference/api-eflo-cnp-2023-08-28-createexperimentplan).
 
 -> **NOTE:** Available since v1.248.0.
@@ -99,6 +97,7 @@ resource "alicloud_eflo_experiment_plan" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `external_params` - (Optional, Map) Additional operating parameters. You can include information about the specified node.
 * `plan_name` - (Optional) Indicates the name of the experiment plan, which is used to distinguish different experiment plans.
 * `resource_group_id` - (Optional) The ID of the resource group.
@@ -109,12 +108,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Experiment Plan.
 * `delete` - (Defaults to 5 mins) Used when delete the Experiment Plan.
 * `update` - (Defaults to 5 mins) Used when update the Experiment Plan.

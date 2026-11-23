@@ -75,4 +75,5 @@ action "alicloud_ssl_certificates_service_pca_cert_sync" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Required, List) The identifiers of the PCA client certificates to synchronize to the SSL Certificates service.

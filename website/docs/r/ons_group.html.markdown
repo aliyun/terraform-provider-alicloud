@@ -11,7 +11,7 @@ description: |-
 
 Provides an ONS group resource.
 
-For more information about how to use it, see [RocketMQ Group Management API](https://www.alibabacloud.com/help/doc-detail/29616.html). 
+For more information about how to use it, see [RocketMQ Group Management API](https://www.alibabacloud.com/help/doc-detail/29616.html).
 
 -> **NOTE:** Available since v1.53.0.
 
@@ -78,8 +78,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 4 mins) Used when Creating ONS instance. 
-* `delete` - (Defaults to 4 mins) Used when terminating the ONS instance. 
+* `create` - (Defaults to 4 mins) Used when Creating ONS instance.
+* `delete` - (Defaults to 4 mins) Used when terminating the ONS instance.
 
 ## Import
 

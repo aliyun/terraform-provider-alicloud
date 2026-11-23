@@ -52,6 +52,7 @@ resource "alicloud_eflo_node_group_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cluster_id` - (Optional, ForceNew, Computed) Cluster ID
 * `data_disk` - (Optional, List) The data disk of the cloud disk to be attached to the node. See [`data_disk`](#data_disk) below.
 * `hostname` - (Required, ForceNew) Node hostname
@@ -65,6 +66,7 @@ The following arguments are supported:
 ### `data_disk`
 
 The data_disk supports the following:
+
 * `category` - (Optional) Type
 * `delete_with_node` - (Optional) Indicate whether the data disk is released with the node. true indicates that the data disk will be released together when the node unsubscribes.
 * `performance_level` - (Optional) Performance level
@@ -73,11 +75,13 @@ The data_disk supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<cluster_id>:<node_group_id>:<node_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 3605 mins) Used when create the Node Group Attachment.
 * `delete` - (Defaults to 3605 mins) Used when delete the Node Group Attachment.
 

@@ -7,7 +7,7 @@ description: |-
   Provide character sets supported by available RDS instances for Alibaba Cloud accounts.
 ---
 
-# alicloud\_rds\_character\_set\_names
+# alicloud_rds_character_set_names
 
 This data source is the character set supported by querying RDS instances.
 

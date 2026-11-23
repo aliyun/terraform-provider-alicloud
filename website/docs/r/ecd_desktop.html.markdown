@@ -17,7 +17,6 @@ For information about ECD Desktop and how to use it, see [What is Desktop](https
 
 ## Example Usage
 
-
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">

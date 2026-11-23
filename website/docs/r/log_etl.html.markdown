@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_log_etl
 
-The data transformation of the log service is a hosted, highly available, and scalable data processing service, 
+The data transformation of the log service is a hosted, highly available, and scalable data processing service,
 which is widely applicable to scenarios such as data regularization, enrichment, distribution, aggregation, and index reconstruction.
 [Refer to details](https://www.alibabacloud.com/help/zh/doc-detail/125384.htm).
 
@@ -129,10 +129,10 @@ The following arguments are supported:
 * `role_arn` - (Optional) Sts role info under source logstore. `role_arn` and `(access_key_id, access_key_secret)` fill in at most one. If you do not fill in both, then you must fill in `(kms_encrypted_access_key_id, kms_encrypted_access_key_secret, kms_encryption_access_key_id_context, kms_encryption_access_key_secret_context)` to use KMS to get the key pair.
 * `etl_sinks` - (Required) Target logstore configuration for delivery after data processing. See [`etl_sinks`](#etl_sinks) below.
 
-
 ### `etl_sinks`
 
 The etl_sinks supports the following:
+
 * `access_key_id` - (Optional, Sensitive) Delivery target logstore access key id.
 * `kms_encrypted_access_key_id` - (Optional) An KMS encrypts access key id used to a log etl job. If the `access_key_id` is filled in, this field will be ignored.
 * `access_key_secret` - (Optional, Sensitive) Delivery target logstore access key secret.
@@ -144,7 +144,7 @@ The etl_sinks supports the following:
 * `role_arn` - (Optional) Sts role info under delivery target logstore. `role_arn` and `(access_key_id, access_key_secret)` fill in at most one. If you do not fill in both, then you must fill in `(kms_encrypted_access_key_id, kms_encrypted_access_key_secret)` to use KMS to get the key pair.
 * `type` - (Optional)  ETL sinks type, the default value is AliyunLOG.
 * `datasets` - (Optional, Available since v1.261.0) LogETL datasets.
-    
+
 -> **Note:** `from_time` and `to_time` no modification allowed after successful creation.
 
 ## Attributes Reference
@@ -157,10 +157,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 2 mins) Used when Creating LogEtl instance. 
-* `delete` - (Defaults to 3 mins) Used when terminating the LogEtl instance. 
-* `update` - (Defaults to 5 mins) Used when Updating LogEtl instance. 
-
+* `create` - (Defaults to 2 mins) Used when Creating LogEtl instance.
+* `delete` - (Defaults to 3 mins) Used when terminating the LogEtl instance.
+* `update` - (Defaults to 5 mins) Used when Updating LogEtl instance.
 
 ## Import
 

@@ -75,4 +75,3 @@ The following attributes are exported in addition to the arguments listed above:
     * `min` - DB Instance available storage min value.
     * `max` - DB Instance available storage max value.
     * `step` - DB Instance available storage increase step.
-    

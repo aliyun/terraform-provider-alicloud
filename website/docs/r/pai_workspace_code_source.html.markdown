@@ -10,8 +10,6 @@ description: |-
 
 Provides a PAI Workspace Code Source resource.
 
-
-
 For information about PAI Workspace Code Source and how to use it, see [What is Code Source](https://next.api.alibabacloud.com/document/AIWorkSpace/2021-02-04/CreateCodeSource).
 
 -> **NOTE:** Available since v1.236.0.
@@ -61,6 +59,7 @@ resource "alicloud_pai_workspace_code_source" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `accessibility` - (Required) Visibility of the code configuration, possible values:
   - PRIVATE: In this workspace, it is only visible to you and the administrator.
   - PUBLIC: In this workspace, it is visible to everyone.
@@ -77,12 +76,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Code Source.
 * `delete` - (Defaults to 5 mins) Used when delete the Code Source.
 * `update` - (Defaults to 5 mins) Used when update the Code Source.

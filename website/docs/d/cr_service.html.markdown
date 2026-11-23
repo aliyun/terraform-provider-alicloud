@@ -7,13 +7,13 @@ description: |-
     Provides a datasource to open the Container Registry (CR) service automatically.
 ---
 
-# alicloud\_cr\_service
+# alicloud_cr_service
 
 Using this data source can open Container Registry (CR) service automatically. If the service has been opened, it will return opened.
 
 For information about Container Registry (CR) and how to use it, see [What is Container Registry (CR)](https://www.alibabacloud.com/help/en/doc-detail/142759.htm).
 
--> **NOTE:** Available in v1.116.0+
+-> **NOTE:** Available since v1.116.0+
 
 ## Example Usage
 
@@ -37,4 +37,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

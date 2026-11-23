@@ -7,7 +7,7 @@ description: |-
   Provides a list of Rds Backups to the user.
 ---
 
-# alicloud\_rds\_backups
+# alicloud_rds_backups
 
 This data source provides the Rds Backups of the current Alibaba Cloud user.
 

@@ -10,8 +10,6 @@ description: |-
 
 Provides a Eflo Er resource.
 
-
-
 For information about Eflo Er and how to use it, see [What is Er](https://next.api.alibabacloud.com/document/eflo/2022-05-30/CreateEr).
 
 -> **NOTE:** Available since v1.258.0.
@@ -50,6 +48,7 @@ resource "alicloud_eflo_er" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) Description.
 * `er_name` - (Required) Lingjun HUB name
 * `master_zone_id` - (Required, ForceNew) Primary zone
@@ -59,6 +58,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `region_id` - region information
@@ -67,6 +67,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Er.
 * `delete` - (Defaults to 5 mins) Used when delete the Er.
 * `update` - (Defaults to 5 mins) Used when update the Er.

@@ -32,9 +32,9 @@ output "first_record_id" {
 
 The following arguments are supported:
 
-* `domain_name` - (Required) The domain name associated to the records. 
+* `domain_name` - (Required) The domain name associated to the records.
 * `type` - (Optional) Record type. Valid values: `A`, `NS`, `MX`, `TXT`, `CNAME`, `SRV`, `AAAA`, `REDIRECT_URL`, `FORWORD_URL` .
-* `line` - (Optional) ISP line. For checking all resolution lines enumeration please visit [Alibaba Cloud DNS doc](https://www.alibabacloud.com/help/en/dns/resolve-line-enumeration) 
+* `line` - (Optional) ISP line. For checking all resolution lines enumeration please visit [Alibaba Cloud DNS doc](https://www.alibabacloud.com/help/en/dns/resolve-line-enumeration)
 * `status` - (Optional) Record status. Valid values: `ENABLE` and `DISABLE`.
 * `is_locked` - (Optional, type: bool) Whether the record is locked or not.
 * `ids` - (Optional) A list of record IDs.
@@ -47,16 +47,15 @@ The following arguments are supported:
 * `search_mode` - (Optional) Search mode, Valid values: `LIKE`, `EXACT`, `ADVANCED`, `LIKE` (fuzzy), `EXACT` (accurate) search supports KeyWord field, `ADVANCED` (advanced) mode supports other fields.
 * `type_key_word` - (Optional) Analyze type keywords, search by full match, not case sensitive.
 * `value_key_word` - (Optional) The keywords of the recorded value are searched according to the `%ValueKeyWord%` mode, and are not case sensitive.
-* `rr_regex` - (Optional) Host record regex. 
-* `value_regex` - (Optional) Host record value regex. 
+* `rr_regex` - (Optional) Host record regex.
+* `value_regex` - (Optional) Host record value regex.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of record IDs. 
+* `ids` - A list of record IDs.
 * `records` - A list of records. Each element contains the following attributes:
   * `id` - ID of the resource.
   * `record_id` - ID of the record.
@@ -66,7 +65,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `type` - Type of the record.
   * `ttl` - TTL of the record.
   * `priority` - Priority of the `MX` record.
-  * `line` - ISP line of the record. 
+  * `line` - ISP line of the record.
   * `status` - Status of the record.
   * `locked` - Indicates whether the record is locked.
   * `remark` - The remark of the domain record.  **NOTE:** Available in 1.144.0+.

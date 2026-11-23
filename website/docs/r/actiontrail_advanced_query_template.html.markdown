@@ -48,6 +48,7 @@ resource "alicloud_actiontrail_advanced_query_template" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `simple_query` - (Required) Distinguish whether the current template is a simple query
 * `template_name` - (Optional) The name of the resource
 * `template_sql` - (Required) SQL content saved on behalf of the current template
@@ -55,11 +56,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Advanced Query Template.
 * `delete` - (Defaults to 5 mins) Used when delete the Advanced Query Template.
 * `update` - (Defaults to 5 mins) Used when update the Advanced Query Template.

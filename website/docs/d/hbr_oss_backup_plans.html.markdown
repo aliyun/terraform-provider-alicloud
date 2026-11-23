@@ -7,7 +7,7 @@ description: |-
   Provides a list of Hybrid Backup Recovery (HBR) OssBackupPlans to the user.
 ---
 
-# alicloud\_hbr\_oss\_backup\_plans
+# alicloud_hbr_oss_backup_plans
 
 This data source provides the Hbr OssBackupPlans of the current Alibaba Cloud user.
 

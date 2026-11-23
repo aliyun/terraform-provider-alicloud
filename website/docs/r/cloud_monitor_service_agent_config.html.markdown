@@ -45,12 +45,12 @@ resource "alicloud_cloud_monitor_service_agent_config" "default" {
 
 Terraform cannot destroy resource `alicloud_cloud_monitor_service_agent_config`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_monitor_service_agent_config&spm=docs.r.cloud_monitor_service_agent_config.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `enable_install_agent_new_ecs` - (Optional) Whether the cloud monitoring plug-in is automatically installed on the newly purchased ECS host. Value:
   - true (default): The cloud monitoring plug-in is automatically installed on the newly purchased ECS host.
   - false: The cloud monitoring plug-in is not automatically installed on the newly purchased ECS host.
@@ -58,11 +58,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<Alibaba Cloud Account ID>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Agent Config.
 * `update` - (Defaults to 5 mins) Used when update the Agent Config.
 

@@ -7,11 +7,11 @@ description: |-
     Provides a list of CEN(Cloud Enterprise Network) Route Maps owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_cen\_route\_maps
+# alicloud_cen_route_maps
 
 This data source provides CEN Route Maps available to the user.
 
--> **NOTE:** Available in v1.87.0+.
+-> **NOTE:** Available since v1.87.0+.
 
 ## Example Usage
 
@@ -60,12 +60,12 @@ The following attributes are exported in addition to the arguments listed above:
   * `destination_child_instance_types` - A match statement that indicates the list of IDs of the destination instances.
   * `destination_cidr_blocks` - A match statement that indicates the prefix list.
   * `destination_instance_ids` - A match statement that indicates the list of IDs of the destination instances.
-  * `destination_instance_ids_reverse_match` - Indicates whether to enable the reverse match method of the DestinationInstanceIds match condition. 
+  * `destination_instance_ids_reverse_match` - Indicates whether to enable the reverse match method of the DestinationInstanceIds match condition.
   * `destination_route_table_ids` - A match statement that indicates the list of IDs of the destination route tables.
   * `map_result` - The action that is performed to a route if the route meets all the match conditions.
   * `match_asns` - A match statement that indicates the As path list.
   * `match_community_set` - A match statement that indicates the community set.
-  * `next_priority` - The priority of the next route map that is associated with the current route map. 
+  * `next_priority` - The priority of the next route map that is associated with the current route map.
   * `operate_community_set` - An action statement that operates the community attribute.
   * `preference` - An action statement that modifies the preference of the route.
   * `prepend_as_path` - Indicates AS Path prepending when a regional gateway receives or publishes a route.

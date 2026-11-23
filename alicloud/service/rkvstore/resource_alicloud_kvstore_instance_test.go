@@ -2184,6 +2184,349 @@ func TestAccAliCloudKVStoreRedisInstance_node_type_stand_alone(t *testing.T) {
 	testAccKvstoreNodeType(t, "STAND_ALONE", "single", "redis.shard.small.2.ce", "OnECS", "")
 }
 
+// Single-AZ -> multi-AZ migration using the API default replica distribution:
+// only secondary_zone_id is added and replica_count/slave_replica_count are not
+// declared, so MigrateToOtherZone omits the replica parameter group and the
+// server migrates one standby node to the secondary zone. Previously d.GetOk
+// dropped SlaveReplicaCount=0 and sent a partial group, which the API rejected
+// with TotalReplicaCountCannotBeChange. Covers verification requirement #1
+// (default distribution) and #3 (clean plan after migration).
+func TestAccAliCloudKVStoreRedisInstance_singleToMultiZoneDefaultReplica(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudKVStoreMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return rkvstore.NewR_kvstoreService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeKvstoreInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisInstanceSingleToMultiDefault%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudKVStoreRedisInstanceVpcBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			// Create a single-AZ instance: no secondary_zone_id and no replica
+			// distribution declared, so ReplicaCount/SlaveReplicaCount are computed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":      "redis.shard.small.ce",
+					"db_instance_name":    name,
+					"instance_type":       "Redis",
+					"engine_version":      "7.0",
+					"shard_count":         "2",
+					"payment_type":        "PostPaid",
+					"zone_id":             "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
+					"password_wo":         "YourPassword123!",
+					"password_wo_version": 1,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":      "redis.shard.small.ce",
+						"db_instance_name":    name,
+						"instance_type":       "Redis",
+						"engine_version":      "7.0",
+						"shard_count":         "2",
+						"payment_type":        "PostPaid",
+						"zone_id":             acctest.CHECKSET,
+						"vswitch_id":          acctest.CHECKSET,
+						"password_wo_version": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+			// Add secondary_zone_id only (default replica distribution): the replica
+			// parameter group is omitted so MigrateToOtherZone uses the server
+			// default and migrates one standby node to the secondary zone.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.1.id}",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":           acctest.CHECKSET,
+						"secondary_zone_id": acctest.CHECKSET,
+					}),
+				),
+			},
+			// Import after the migration proves the migrated zone assignment is
+			// what the API returns, not just what the provider wrote to state.
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+			// After the migration the state matches the config; the plan must be empty.
+			{
+				Config:             testAccConfig(map[string]interface{}{}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+// Single-AZ -> multi-AZ migration with an explicit replica distribution change:
+// secondary_zone_id is added and replica_count/slave_replica_count are changed
+// (1/0 -> 0/1) in the same Update. MigrateToOtherZone must send the complete
+// replica group (including the zero value) so the total stays invariant, and
+// ModifyInstanceSpec must NOT re-send the replica counts afterwards (the
+// migration already consumed the change), otherwise it carries the unchanged
+// InstanceClass and fails the apply with InstanceClassDoesNotChange. Covers
+// verification requirement #2 and #3.
+func TestAccAliCloudKVStoreRedisInstance_singleToMultiZoneExplicitReplica(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudKVStoreMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return rkvstore.NewR_kvstoreService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeKvstoreInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisInstanceSingleToMultiExplicit%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudKVStoreRedisInstanceVpcBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			// Create a single-AZ instance with replica_count=1 (one-master-one-
+			// standby single-AZ: ReplicaCount=1, SlaveReplicaCount=0).
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":      "redis.shard.small.ce",
+					"db_instance_name":    name,
+					"instance_type":       "Redis",
+					"engine_version":      "7.0",
+					"shard_count":         "2",
+					"payment_type":        "PostPaid",
+					"zone_id":             "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
+					"replica_count":       "1",
+					"password_wo":         "YourPassword123!",
+					"password_wo_version": 1,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":      "redis.shard.small.ce",
+						"db_instance_name":    name,
+						"instance_type":       "Redis",
+						"engine_version":      "7.0",
+						"shard_count":         "2",
+						"payment_type":        "PostPaid",
+						"zone_id":             acctest.CHECKSET,
+						"vswitch_id":          acctest.CHECKSET,
+						"replica_count":       "1",
+						"password_wo_version": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+			// Add secondary_zone_id and switch the replica distribution to 0
+			// primary / 1 secondary (the total stays 1). MigrateToOtherZone sends
+			// the complete group (ReplicaCount=0, SlaveReplicaCount=1); the later
+			// ModifyInstanceSpec skips the replica counts because the migration
+			// already consumed the change, so apply does not fail with
+			// InstanceClassDoesNotChange.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_zone_id":   "${data.alicloud_kvstore_zones.default.zones.1.id}",
+					"replica_count":       "0",
+					"slave_replica_count": "1",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":             acctest.CHECKSET,
+						"secondary_zone_id":   acctest.CHECKSET,
+						"replica_count":       "0",
+						"slave_replica_count": "1",
+					}),
+				),
+			},
+			// Import after the migration proves the new replica distribution and
+			// zone assignment are what the API returns, not just provider state.
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+			// After the migration the state matches the config; the plan must be empty.
+			{
+				Config:             testAccConfig(map[string]interface{}{}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+// Single-AZ -> multi-AZ migration with an explicitly declared but UNCHANGED
+// replica distribution: secondary_zone_id is added while replica_count=1 /
+// slave_replica_count=0 stay exactly as declared during create (no HasChange).
+// The declared distribution must be sent as the complete replica group so the
+// migration either preserves it or terminates with a clear API error; silently
+// taking the server default distribution would move the standby node to the
+// secondary zone (remote 0/1) while returning success, leaving a perpetual
+// plan diff against the declared values. The real MigrateToOtherZone API
+// rejects ReplicaCount=1/SlaveReplicaCount=0 combined with SecondaryZoneId
+// (InvalidParameters.Format: a multi-AZ instance requires at least one standby
+// in the secondary zone), so this declared distribution cannot be preserved
+// and the migration must fail with that explicit error while the instance
+// keeps its single-AZ 1/0 shape.
+func TestAccAliCloudKVStoreRedisInstance_singleToMultiZoneDeclaredUnchangedReplica(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudKVStoreMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return rkvstore.NewR_kvstoreService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeKvstoreInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisInstanceSingleToMultiDeclaredUnchanged%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudKVStoreRedisInstanceVpcBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			// Create a single-AZ instance with the replica distribution
+			// explicitly declared (one-master-one-standby: ReplicaCount=1,
+			// SlaveReplicaCount=0).
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":      "redis.shard.small.ce",
+					"db_instance_name":    name,
+					"instance_type":       "Redis",
+					"engine_version":      "7.0",
+					"shard_count":         "2",
+					"payment_type":        "PostPaid",
+					"zone_id":             "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
+					"replica_count":       "1",
+					"slave_replica_count": "0",
+					"password_wo":         "YourPassword123!",
+					"password_wo_version": 1,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":      "redis.shard.small.ce",
+						"db_instance_name":    name,
+						"instance_type":       "Redis",
+						"engine_version":      "7.0",
+						"shard_count":         "2",
+						"payment_type":        "PostPaid",
+						"zone_id":             acctest.CHECKSET,
+						"vswitch_id":          acctest.CHECKSET,
+						"replica_count":       "1",
+						"slave_replica_count": "0",
+						"password_wo_version": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+			// Add secondary_zone_id only: the declared replica distribution is
+			// unchanged (1/0, no HasChange). MigrateToOtherZone must send the
+			// declared complete group (ReplicaCount=1, SlaveReplicaCount=0)
+			// instead of omitting it and silently applying the server default
+			// distribution (which would be 0/1 and diverge from the config on
+			// the next plan). No ModifyInstanceSpec replica call may follow:
+			// the counts did not change. The real API refuses a multi-AZ
+			// instance with no standby in the secondary zone, so this step
+			// must terminate with that explicit API error rather than return
+			// success with a diverging remote distribution.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_zone_id":   "${data.alicloud_kvstore_zones.default.zones.1.id}",
+					"replica_count":       "1",
+					"slave_replica_count": "0",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
+				}),
+				ExpectError: regexp.MustCompile(`(?s)MigrateToOtherZone Failed.*InvalidParameters\.Format`),
+			},
+			// The rejected migration leaves the instance intact on single-AZ
+			// with the declared 1/0 distribution. Re-applying the original
+			// config (secondary_zone_id removed) must succeed and match the
+			// declared values: no partial state, no drifted distribution.
+			// secondary_zone_id is asserted as "" (unset): the REMOVEKEY
+			// sentinel in a check map only drops an expectation inherited
+			// from a previous step, and no earlier step asserted it.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_zone_id": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":             acctest.CHECKSET,
+						"secondary_zone_id":   "",
+						"replica_count":       "1",
+						"slave_replica_count": "0",
+					}),
+				),
+			},
+			// Import after the failed migration proves the remote instance is
+			// still the single-AZ one with the declared 1/0 distribution, not
+			// just provider state.
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+			// The state matches the declared config; the plan must be empty.
+			{
+				Config:             testAccConfig(map[string]interface{}{}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
 func TestAccAliCloudKVStoreRedisInstance_node_type_master_slave(t *testing.T) {
 	testAccKvstoreNodeType(t, "MASTER_SLAVE", "double", "redis.shard.small.2.ce", "OnECS", "")
 }

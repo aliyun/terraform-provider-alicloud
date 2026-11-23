@@ -164,9 +164,7 @@ resource "alicloud_ehpc_user" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ehpc_user&spm=docs.r.ehpc_user.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_emr_cluster
 
-Provides a EMR Cluster resource. With this you can create, read, and release  EMR Cluster. 
+Provides a EMR Cluster resource. With this you can create, read, and release  EMR Cluster.
 
 -> **DEPRECATED:**  This resource has been deprecated from version `1.204.0`. Please use new resource [emrv2_cluster](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/emrv2_cluster).
 
@@ -153,9 +153,9 @@ resource "alicloud_emr_cluster" "default" {
 
 The hosts of EMR Cluster are orginized as host group. Scaling up/down is operating host group.
 
-In the case of scaling up cluster, we should add the node_count of some host group. 
+In the case of scaling up cluster, we should add the node_count of some host group.
 
--> **NOTE:** Scaling up is only applicable to CORE and TASK group. Cost time of scaling up will vary with the number of scaling-up nodes. 
+-> **NOTE:** Scaling up is only applicable to CORE and TASK group. Cost time of scaling up will vary with the number of scaling-up nodes.
 Scaling down is only applicable to TASK group. If you want to scale down CORE group, please submit tickets or contact EMR support team.
 
 As the following case, we scale up the TASK group 2 nodes by increasing host_group.node_count by 2.
@@ -292,7 +292,7 @@ resource "alicloud_emr_cluster" "default" {
 
 ### 3. Scale Down
 
-In the case of scaling down a cluster, we need to specified the host group and the instance list. 
+In the case of scaling down a cluster, we need to specified the host group and the instance list.
 
 -> **NOTE:** Graceful decommission of hadoop cluster has been supported Available since v1.168.0.
 
@@ -540,7 +540,6 @@ resource "alicloud_emr_cluster" "gateway" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_emr_cluster&spm=docs.r.emr_cluster.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -552,23 +551,23 @@ The following arguments are supported:
 * `cluster_type` - (Required, ForceNew) EMR Cluster Type, e.g. HADOOP, KAFKA, DRUID, GATEWAY etc. You can find all valid EMR cluster type in emr web console. Supported 'GATEWAY' available in 1.61.0+.
 * `charge_type` - (Optional, ForceNew) Charge Type for this cluster. Supported value: PostPaid or PrePaid. Default value: PostPaid.
 * `zone_id` - (Required, ForceNew) Zone ID, e.g. cn-huhehaote-a
-* `security_group_id` (Optional, ForceNew) Security Group ID for Cluster, you can also specify this key for each host group.
-* `vswitch_id` (Optional, ForceNew) Global vswitch id, you can also specify it in host group.
-* `option_software_list` (Optional, ForceNew) Optional software list.
-* `high_availability_enable` (Optional, ForceNew) High Available for HDFS and YARN. If this is set true, MASTER group must have two nodes.
-* `use_local_metadb` (Optional, ForceNew) Use local metadb. Default is false.
-* `ssh_enable` (Optional, ForceNew) If this is set true, we can ssh into cluster. Default value is false.
-* `master_pwd` (Optional, ForceNew) Master ssh password.
-* `eas_enable` (Optional, ForceNew) High security cluster (true) or not. Default value is false.
-* `user_defined_emr_ecs_role` (Optional, ForceNew) Alicloud EMR uses roles to perform actions on your behalf when provisioning cluster resources, running applications, dynamically scaling resources. EMR uses the following roles when interacting with other Alicloud services. Default value is AliyunEmrEcsDefaultRole.
-* `key_pair_name` (Optional, ForceNew) Ssh key pair.
-* `deposit_type` (Optional, ForceNew) Cluster deposit type, HALF_MANAGED or FULL_MANAGED.
-* `related_cluster_id` (Optional, ForceNew) This specify the related cluster id, if this cluster is a Gateway.
+* `security_group_id` - (Optional, ForceNew) Security Group ID for Cluster, you can also specify this key for each host group.
+* `vswitch_id` - (Optional, ForceNew) Global vswitch id, you can also specify it in host group.
+* `option_software_list` - (Optional, ForceNew) Optional software list.
+* `high_availability_enable` - (Optional, ForceNew) High Available for HDFS and YARN. If this is set true, MASTER group must have two nodes.
+* `use_local_metadb` - (Optional, ForceNew) Use local metadb. Default is false.
+* `ssh_enable` - (Optional, ForceNew) If this is set true, we can ssh into cluster. Default value is false.
+* `master_pwd` - (Optional, ForceNew) Master ssh password.
+* `eas_enable` - (Optional, ForceNew) High security cluster (true) or not. Default value is false.
+* `user_defined_emr_ecs_role` - (Optional, ForceNew) Alicloud EMR uses roles to perform actions on your behalf when provisioning cluster resources, running applications, dynamically scaling resources. EMR uses the following roles when interacting with other Alicloud services. Default value is AliyunEmrEcsDefaultRole.
+* `key_pair_name` - (Optional, ForceNew) Ssh key pair.
+* `deposit_type` - (Optional, ForceNew) Cluster deposit type, HALF_MANAGED or FULL_MANAGED.
+* `related_cluster_id` - (Optional, ForceNew) This specify the related cluster id, if this cluster is a Gateway.
 * `host_group` - (Optional) Groups of Host, You can specify MASTER as a group, CORE as a group (just like the above example). See [`host_group`](#host_group) below.
 * `tags` - (Optional, Available since v1.67.0) A mapping of tags to assign to the resource.
 * `period` - (Optional, Available since v1.101.0) If charge type is PrePaid, this should be specified, unit is month. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36.
-* `is_open_public_ip` (Optional, ForceNew) Whether the MASTER node has a public IP address enabled. Default value is false.
-* `bootstrap_action` (Optional) Boot action parameters. See [`bootstrap_action`](#bootstrap_action) below.
+* `is_open_public_ip` - (Optional, ForceNew) Whether the MASTER node has a public IP address enabled. Default value is false.
+* `bootstrap_action` - (Optional) Boot action parameters. See [`bootstrap_action`](#bootstrap_action) below.
 * `resource_group_id` - (Optional, Available since v1.182.0) The Id of resource group which the emr-cluster belongs.
 * `meta_store_type` - (Optional, ForceNew, Available since v1.182.0) The type of emr-cluster service component metadata storage. ’dlf’ or ’local’ or ’user_rds’ .
 * `meta_store_conf` - (Optional, Available since v1.182.0) The configuration of emr-cluster service component metadata storage. If meta store type is ’user_rds’, this should be specified. See [`meta_store_conf`](#meta_store_conf) below.
@@ -642,7 +641,7 @@ The configs mapping supports the following:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 20 mins) Used when creating the cluster (until it reaches the initial `IDLE` status). 
+* `create` - (Defaults to 20 mins) Used when creating the cluster (until it reaches the initial `IDLE` status).
 * `delete` - (Defaults to 10 mins) Used when terminating the instance.
 
 ## Attribute Reference
@@ -658,4 +657,3 @@ Aliclioud E-MapReduce cluster can be imported using the id e.g.
 ```shell
 $ terraform import alicloud_emr_cluster.default C-B47FB8FE96C67XXXX
 ```
-

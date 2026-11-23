@@ -7,7 +7,7 @@ description: |-
   Provides a list of Event Bridge Rules to the user.
 ---
 
-# alicloud\_event\_bridge\_rules
+# alicloud_event_bridge_rules
 
 This data source provides the Event Bridge Rules of the current Alibaba Cloud user.
 

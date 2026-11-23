@@ -7,7 +7,7 @@ description: |-
     Provides a list of Cms Metric Rule Templates to the user.
 ---
 
-# alicloud\_cms\_metric\_rule\_templates
+# alicloud_cms_metric_rule_templates
 
 This data source provides the Cms Metric Rule Templates of the current Alibaba Cloud user.
 

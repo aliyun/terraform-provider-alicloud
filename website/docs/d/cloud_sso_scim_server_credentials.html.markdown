@@ -15,7 +15,6 @@ This data source provides the Cloud Sso Scim Server Credentials of the current A
 
 -> **NOTE:** Cloud SSO Only Support `cn-shanghai` And `us-west-1` Region
 
-
 ## Example Usage
 
 Basic Usage

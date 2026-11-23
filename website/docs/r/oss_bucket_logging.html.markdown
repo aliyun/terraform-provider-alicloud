@@ -66,6 +66,7 @@ resource "alicloud_oss_bucket_logging" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the bucket
 * `logging_role` - (Optional, Available since v1.262.0) Authorization role used for bucket logging
 * `target_bucket` - (Required) The bucket that stores access logs.
@@ -74,11 +75,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Logging.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Logging.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Logging.

@@ -7,18 +7,18 @@ description: |-
     Provides a list of available KMS Secret Versions.
 ---
 
-# alicloud\_kms\_secret\_versions
+# alicloud_kms_secret_versions
 
 This data source provides a list of KMS Secret Versions in an Alibaba Cloud account according to the specified filters.
- 
--> **NOTE:** Available in v1.88.0+.
+
+-> **NOTE:** Available since v1.88.0+.
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_kms_secret_versions" "kms_secret_versions_ds" {
-  secret_name = "secret_name"
+  secret_name    = "secret_name"
   enable_details = true
 }
 
@@ -42,11 +42,10 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` -  A list of Kms Secret Version ids. 
+* `ids` -  A list of Kms Secret Version ids.
 * `versions` - A list of KMS Secret Versions. Each element contains the following attributes:
   * `secret_data` - The secret value. Secrets Manager decrypts the stored secret value in ciphertext and returns it. (Returned when `enable_details` is true).
   * `secret_data_type` - The type of the secret value. (Returned when `enable_details` is true).
   * `secret_name` - The name of the secret.
   * `version_id` - The version number of the secret value.
   * `version_stages` - Stage labels that mark the secret version.
-

@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cms Prometheus View resource.
 
-
-
 For information about Cms Prometheus View and how to use it, see [What is Prometheus View](https://next.api.alibabacloud.com/document/Cms/2024-03-30/CreatePrometheusView).
 
 -> **NOTE:** Available since v1.278.0.
@@ -65,13 +63,12 @@ resource "alicloud_cms_prometheus_view" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cms_prometheus_view&spm=docs.r.cms_prometheus_view.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auth_free_read_policy` - (Optional) Read password-free address whitelist policy.
 * `enable_auth_free_read` - (Optional, Bool) Specifies whether to enable password-free read access. Valid values: `true`, `false`.
 * `prometheus_instances` - (Required, Set) The list of Prometheus instances. See [`prometheus_instances`](#prometheus_instances) below.
@@ -82,6 +79,7 @@ The following arguments are supported:
 ### `prometheus_instances`
 
 The prometheus_instances supports the following:
+
 * `prometheus_instance_id` - (Required) The ID of the prometheus instance.
 * `region_id` - (Required) The region ID of the prometheus instance.
 * `user_id` - (Required) The user ID of the prometheus instance.
@@ -89,6 +87,7 @@ The prometheus_instances supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the instance was created.
 * `region_id` - The region ID.
@@ -96,6 +95,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Prometheus View.
 * `delete` - (Defaults to 5 mins) Used when delete the Prometheus View.
 * `update` - (Defaults to 5 mins) Used when update the Prometheus View.

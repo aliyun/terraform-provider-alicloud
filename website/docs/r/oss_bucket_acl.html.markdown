@@ -65,17 +65,20 @@ Terraform cannot destroy resource `alicloud_oss_bucket_acl`. Terraform will remo
 ## Argument Reference
 
 The following arguments are supported:
+
 * `acl` - (Required) Bucket-level Access Control List (ACL)，Valid values: `private`, `public-read`, `public-read-write`.
 * `bucket` - (Required, ForceNew) The name of the bucket to which the current ACL configuration belongs.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Acl.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Acl.
 

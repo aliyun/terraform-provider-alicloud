@@ -7,7 +7,7 @@ description: |-
     Provides a list of alikafka instances available to the user.
 ---
 
-# alicloud\_alikafka\_instances
+# alicloud_alikafka_instances
 
 This data source provides a list of ALIKAFKA Instances in an Alibaba Cloud account according to the specified filters.
 
@@ -58,7 +58,7 @@ output "first_instance_name" {
 The following arguments are supported:
 
 * `ids` - (Optional) A list of instance IDs to filter results.
-* `name_regex` - (Optional) A regex string to filter results by the instance name. 
+* `name_regex` - (Optional) A regex string to filter results by the instance name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 
@@ -76,7 +76,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `id` - ID of the instance.
   * `name` - Name of the instance.
   * `create_time` - The create time of the instance.
-  * `service_status` - The current status of the instance. -1: unknown status, 0: wait deploy, 1: initializing, 2: preparing, 3 starting, 5: in service, 7: wait upgrade, 8: upgrading, 10: released, 15: freeze, 101: deploy error, 102: upgrade error. 
+  * `service_status` - The current status of the instance. -1: unknown status, 0: wait deploy, 1: initializing, 2: preparing, 3 starting, 5: in service, 7: wait upgrade, 8: upgrading, 10: released, 15: freeze, 101: deploy error, 102: upgrade error.
   * `deploy_type` - The deploy type of the instance. 0: sharing instance, 1: vpc instance, 2: vpc instance(support ip mapping), 3: eip instance, 4: eip/vpc instance, 5: vpc instance.
   * `vpc_id` - The ID of attaching VPC to instance.
   * `vswitch_id` - The ID of attaching vswitch to instance.

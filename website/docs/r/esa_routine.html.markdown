@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Routine resource.
 
-
-
 For information about ESA Routine and how to use it, see [What is Routine](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateRoutine).
 
 -> **NOTE:** Available since v1.251.0.
@@ -63,6 +61,7 @@ resource "alicloud_esa_routine" "from_file" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `name` - (Required, ForceNew) Routine Name, which must be unique in the same account.
 * `description` - (Optional, ForceNew) The description of the routine.
 * `code` - (Optional) The JavaScript source code of the routine. When set or changed, the code is uploaded as a new staging version and then committed into a formal code version. To manage the code from a local file, use the Terraform built-in `file()` function, e.g. `code = file("index.js")`.
@@ -72,6 +71,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the routine was created.
 * `latest_code_version` - The most recent committed code version of the routine.
@@ -79,6 +79,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Routine.
 * `update` - (Defaults to 5 mins) Used when update the Routine.
 * `delete` - (Defaults to 5 mins) Used when delete the Routine.

@@ -52,13 +52,12 @@ resource "alicloud_esa_routine_code_deployment" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_routine_code_deployment&spm=docs.r.esa_routine_code_deployment.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `routine_name` - (Required, ForceNew) The name of the routine to deploy.
 * `env` - (Required, ForceNew) The target environment. Valid values: `staging`, `production`.
 * `strategy` - (Optional, ForceNew) The deployment strategy. Valid values: `percentage`. Default value: `percentage`.
@@ -67,18 +66,21 @@ The following arguments are supported:
 ### `code_versions`
 
 The `code_versions` supports the following:
+
 * `code_version` - (Required, ForceNew) The committed code version to deploy.
 * `percentage` - (Required, ForceNew) The traffic percentage of this code version. Valid values: 1 to 100.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource. It is formatted as `<routine_name>:<env>`.
 * `deployment_id` - The ID of the deployment record.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Routine Code Deployment.
 * `delete` - (Defaults to 5 mins) Used when delete the Routine Code Deployment.
 

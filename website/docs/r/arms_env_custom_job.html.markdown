@@ -76,6 +76,7 @@ EOF
 ## Argument Reference
 
 The following arguments are supported:
+
 * `aliyun_lang` - (Optional) The locale. The default is Chinese zh | en.
 * `config_yaml` - (Required) Yaml configuration string.
 * `env_custom_job_name` - (Required, ForceNew) Custom job name.
@@ -85,11 +86,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<environment_id>:<env_custom_job_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Env Custom Job.
 * `delete` - (Defaults to 5 mins) Used when delete the Env Custom Job.
 * `update` - (Defaults to 5 mins) Used when update the Env Custom Job.

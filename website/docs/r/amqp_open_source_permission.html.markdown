@@ -103,13 +103,12 @@ resource "alicloud_amqp_open_source_permission" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_amqp_open_source_permission&spm=docs.r.amqp_open_source_permission.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `configure` - (Optional) Permission configuration, such as .*
 * `instance_id` - (Required, ForceNew) Instance ID
 * `read` - (Optional) Read permission, such as .*
@@ -120,11 +119,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<user_name>:<vhost>:<instance_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Open Source Permission.
 * `delete` - (Defaults to 5 mins) Used when delete the Open Source Permission.
 * `update` - (Defaults to 5 mins) Used when update the Open Source Permission.

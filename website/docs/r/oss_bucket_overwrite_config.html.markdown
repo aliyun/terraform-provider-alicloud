@@ -72,18 +72,19 @@ resource "alicloud_oss_bucket_overwrite_config" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_overwrite_config&spm=docs.r.oss_bucket_overwrite_config.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the bucket
 * `rule` - (Optional, List) Forbid overwrite rule See [`rule`](#rule) below.
 
 ### `rule`
 
 The rule supports the following:
+
 * `action` - (Optional) The operation type. Currently, only "forbid" is supported.
 * `id` - (Optional) Rule ID
 * `prefix` - (Optional) The prefix of the Object name, which is used to filter objects to be processed.
@@ -93,16 +94,19 @@ The rule supports the following:
 ### `rule-principals`
 
 The rule-principals supports the following:
+
 * `principal` - (Optional, List) Authorized subject. Supports the input of primary accounts, sub-accounts, or roles. Invalid setting if the value is empty.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Overwrite Config.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Overwrite Config.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Overwrite Config.

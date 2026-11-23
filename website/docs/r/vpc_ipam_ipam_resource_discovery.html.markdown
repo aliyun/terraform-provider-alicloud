@@ -50,6 +50,7 @@ resource "alicloud_vpc_ipam_ipam_resource_discovery" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ipam_resource_discovery_description` - (Optional) The description of resource discovery.
 * `ipam_resource_discovery_name` - (Optional) The name of the resource
 * `operating_region_list` - (Required, Set) The list of operating regions for resource discovery.
@@ -59,6 +60,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the resource discovery was created.
 * `region_id` - The region ID of the resource
@@ -67,6 +69,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ipam Resource Discovery.
 * `delete` - (Defaults to 5 mins) Used when delete the Ipam Resource Discovery.
 * `update` - (Defaults to 5 mins) Used when update the Ipam Resource Discovery.

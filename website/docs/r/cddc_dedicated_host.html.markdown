@@ -15,7 +15,7 @@ For information about ApsaraDB for MyBase Dedicated Host and how to use it, see 
 
 -> **NOTE:** Available since v1.147.0.
 
--> **DEPRECATED:**  This resource has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-mybase/latest/notice-stop-selling-mybase-hosted-instances-from-august-31-2023) from version `1.225.1`. 
+-> **DEPRECATED:**  This resource has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-mybase/latest/notice-stop-selling-mybase-hosted-instances-from-august-31-2023) from version `1.225.1`.
 
 ## Example Usage
 
@@ -89,8 +89,8 @@ The following arguments are supported:
 * `os_password` - (Optional) Host password. **NOTE:** The creation of a host password is supported only when the database type is `Tair-PMem`.
 * `payment_type` - (Required) The payment type of the resource. Valid values: `Subscription`.
 * `period` - (Optional) The unit of the subscription duration. Valid values: `Year`, `Month`, `Week`.
-* `used_time` - (Optional) The subscription duration of the host. Valid values: 
-  * If the Period parameter is set to `Year`, the value of the UsedTime parameter ranges from `1` to `5`. 
+* `used_time` - (Optional) The subscription duration of the host. Valid values:
+  * If the Period parameter is set to `Year`, the value of the UsedTime parameter ranges from `1` to `5`.
   * If the Period parameter is set to `Month`, the value of the UsedTime parameter ranges from `1` to `9`.
   * If the Period parameter is set to `Week`, the value of the UsedTime parameter ranges from `1`, `2` and `3`.
 * `vswitch_id` - (Required, ForceNew) The ID of the vSwitch to which the host is connected.

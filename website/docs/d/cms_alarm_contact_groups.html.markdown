@@ -7,7 +7,7 @@ description: |-
   Provides a list of CMS Groups to the user.
 ---
 
-# alicloud\_cms\_alarm\_contact\_groups
+# alicloud_cms_alarm_contact_groups
 
 This data source provides the CMS Groups of the current Alibaba Cloud user.
 
@@ -28,7 +28,7 @@ data "alicloud_cms_alarm_contact_groups" "example" {
 The following arguments are supported:
 
 * `ids` - (Optional, ForceNew)  A list of Alarm Contact Group IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Alarm Contact Group name. 
+* `name_regex` - (Optional, ForceNew) A regex string to filter results by Alarm Contact Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

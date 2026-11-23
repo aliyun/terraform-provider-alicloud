@@ -52,13 +52,12 @@ resource "alicloud_cms_integration_policy" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cms_integration_policy&spm=docs.r.cms_integration_policy.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `entity_group` - (Optional, ForceNew, Set) The entity group used to create the policy. See [`entity_group`](#entity_group) below.
 * `force` - (Optional, Bool) Specifies whether to force delete the cloud native appliance. Valid values:
   - `true`: Enable.
@@ -73,23 +72,26 @@ The following arguments are supported:
 ### `entity_group`
 
 The entity_group supports the following:
+
 * `cluster_entity_type` - (Optional, ForceNew) The cluster entity type.
 * `cluster_id` - (Optional, ForceNew) The cluster ID.
 * `entity_user_id` - (Optional, ForceNew, Available since v2.1.0) The ID of the user who owns the cluster.
 * `disable_policy_share` - (Optional, Bool, ForceNew, Available since v2.1.0) Specifies whether to disable unique policy binding. Default Value: `false`. Valid values: `true`, `false`.
 * `cluster_namespace` - (Optional, ForceNew, Available since v2.1.0) The cluster Namespace.
 
--> **NOTE:** If `disable_policy_share` is set to `true`, you can create multiple policies for a container cluster, and `cluster_namespace` is required.
+  -> **NOTE:** If `disable_policy_share` is set to `true`, you can create multiple policies for a container cluster, and `cluster_namespace` is required.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `region_id` - The region ID of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Integration Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Integration Policy.
 * `update` - (Defaults to 5 mins) Used when update the Integration Policy.

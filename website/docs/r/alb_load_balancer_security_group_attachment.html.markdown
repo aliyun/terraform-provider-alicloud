@@ -93,6 +93,7 @@ resource "alicloud_alb_load_balancer_security_group_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dry_run` - (Optional) Whether to PreCheck only this request. Value:
   - `true`: Send a check request,
   - `false` (default): Send a normal request.
@@ -102,11 +103,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<load_balancer_id>:<security_group_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Load Balancer Security Group Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Load Balancer Security Group Attachment.
 

@@ -4,7 +4,9 @@ import argparse
 import copy
 from decimal import Decimal, InvalidOperation
 import hashlib
+import http.client
 import importlib.util
+import itertools
 import json
 import os
 from pathlib import Path
@@ -16,7 +18,7 @@ import time
 import urllib.error
 import urllib.request
 
-from acube_diagnostics import (REUSE_SCAN_LIMIT, acc_execution_counts, publish_acc_summary, publish_report, redact,
+from acube_diagnostics import (REUSE_SCAN_LIMIT, acc_execution_counts, publish_acc_summary, publish_planning_failure, publish_report, redact,
                                report_directory, terminal_report)
 import doc_examples
 
@@ -24,6 +26,8 @@ REPOSITORY = 'code.alibaba-inc.com/opensource-tools/terraform-provider-alicloud'
 BASE_URL = 'https://pre-acube.aliyun-inc.com'
 TERMINAL = {'success', 'failed', 'cancelled'}
 REUSE_SCAN_SKIP_REASON = f'scan-limit-{REUSE_SCAN_LIMIT}'
+# How long ACube may stay unavailable in a row, e.g. while preproduction redeploys, before a safe call fails.
+UNAVAILABLE_WINDOW_SECONDS = 5 * 60
 
 
 def digest(value):
@@ -92,6 +96,14 @@ def planning_diagnostic(reason):
                'TestAcc functions in its companion *_test.go. For a private helper, merge it into the owning '
                'resource/data source and merge its tests into the owner test file. Do not add an empty or skipped '
                'AccTest just to satisfy discovery; real coverage is required.')
+        if ' Fix: ' in reason:
+            reason, fix = reason.split(' Fix: ', 1)
+    elif reason.startswith(('website/docs/r/', 'website/docs/d/')):
+        code = 'DOC001'
+        guide = 'scripts/ci/README-scopes.md#documentation-scenes-and-source-evidence'
+        fix = ('Correct the indicated fence or scenario input at the reported location. '
+               'CI supplies an omitted aliyun/alicloud source in the execution copy. '
+               'For missing references, declare each listed dependency or group the required inputs in the scenario manifest.')
     elif 'test helper consumers' in reason:
         code = 'ACC002'
         fix = ('Find references to the named helper in both the base and head commits. For methods, inspect the '
@@ -169,8 +181,9 @@ class Client:
             headers={'X-Provider-Run-Token': self.token, 'Content-Type': 'application/json'})
         # POST replay is safe only for source import or a server-fenced submission.
         safe = method == 'GET' or path in ('/sources/import', '/acctest/reusable-cases') or body and body.get('idempotencyKey')
-        deadline = time.monotonic() + 180
-        for attempt in range(10):
+        # Each call starts a new window, so a later outage gets the full window again.
+        deadline = time.monotonic() + UNAVAILABLE_WINDOW_SECONDS
+        for attempt in itertools.count():
             try:
                 with self.opener.open(request, timeout=max(1, min(90, deadline - time.monotonic()))) as response:
                     reuse_proof = response.headers.get('X-AccTest-Reuse-Query')
@@ -188,10 +201,11 @@ class Client:
                 return value['data']
             except urllib.error.HTTPError as error:
                 error.close()
-                if not safe or error.code not in (429, 502, 503, 504) or attempt == 9 or time.monotonic() >= deadline:
+                if not safe or error.code not in (429, 502, 503, 504) or time.monotonic() >= deadline:
                     raise ValueError('ACube HTTP ' + str(error.code)) from None
-            except (urllib.error.URLError, TimeoutError, socket.timeout):
-                if not safe or attempt == 9 or time.monotonic() >= deadline:
+            except (urllib.error.URLError, TimeoutError, socket.timeout, ConnectionError,
+                    http.client.BadStatusLine, http.client.IncompleteRead):
+                if not safe or time.monotonic() >= deadline:
                     raise ValueError('ACube unavailable; rerun the same CI run to recover the original receipt') from None
             print(json.dumps({'acubeRetry': attempt + 1, 'method': method, 'path': path}), flush=True)
             time.sleep(max(0, min(2 ** attempt, 20, deadline - time.monotonic())))
@@ -282,6 +296,7 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         target = output / 'diagnostics' / 'scope.json'
         target.write_text(json.dumps(report, indent=2))
         target.chmod(0o600)
+        publish_planning_failure(kind, frozen['head'], frozen['base'], report['diagnostics'])
         for item in report['diagnostics']:
             print(f"CI planning blocker: {item['reason']}\n  Code: {item['code']}\n"
                   f"  Repair: {item['fix']}\n  Guide: {item['guide']}", file=sys.stderr, flush=True)
@@ -478,8 +493,20 @@ def main():
     args = parser.parse_args()
     spec = importlib.util.spec_from_file_location('change_range', Path(__file__).with_name('aone-range.py'))
     ranges = importlib.util.module_from_spec(spec); spec.loader.exec_module(ranges)
-    base, head = ranges.resolve(os.environ)
-    frozen = plan(base, head, include_examples=args.kind == 'examples' or args.plan_only)
+    base = None
+    try:
+        base, head = ranges.resolve(os.environ)
+        frozen = plan(base, head, include_examples=args.kind == 'examples' or args.plan_only)
+    except (ValueError, subprocess.CalledProcessError) as error:
+        if not args.plan_only:
+            checkout = subprocess.run(['git', 'rev-parse', '--verify', 'HEAD'], capture_output=True, text=True)
+            reason = str(error) if isinstance(error, ValueError) else f'{error.cmd[0]} failed (exit {error.returncode})'
+            fix = ('Verify the checkout SHA and fetch the MR target and comparison base before retrying.'
+                   if base is None else 'Run the failed planning step at this commit with the same base. '
+                   'Inspect the planner error in the job log, correct the indicated input, and retry.')
+            publish_planning_failure(args.kind, checkout.stdout.strip() or '无法解析', base or '无法解析',
+                                     [dict(code='PLAN001', reason=reason, fix=fix)])
+        raise
     mr_id = os.environ.get('CODE_MR_ID','')
     frozen['mergeRequestId'] = None if mr_id in ('','null') else numeric_id(mr_id)
     if args.plan_only:

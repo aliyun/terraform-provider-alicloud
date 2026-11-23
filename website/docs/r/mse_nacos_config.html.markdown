@@ -90,8 +90,7 @@ The following arguments are supported:
 * `type` - (Optional) The format of the configuration. Supported formats include TEXT, JSON, and XML.
 * `content` - (Required) The content of the configuration.
 * `desc` - (Optional) The description of the configuration.
-* `beta_ips`-(Optional, Computed) The list of IP addresses where the beta release of the configuration is performed.
-
+* `beta_ips` - (Optional, Computed) The list of IP addresses where the beta release of the configuration is performed.
 
 ## Attributes Reference
 
@@ -113,6 +112,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 Microservice Engine (MSE) Nacos Config can be imported using the id, e.g.
 
 **Note**: If instance_id, namespace_id, data_id, and group contain ":", please replace it with "\\\\:", available since v1.243.0
+
 ```shell
 $ terraform import alicloud_mse_nacos_config.example <instance_id>:<namespace_id>:<data_id>:<group>
 ```

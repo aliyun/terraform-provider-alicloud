@@ -108,7 +108,7 @@ resource "alicloud_ess_scaling_configuration" "default" {
 
 ## Module Support
 
-You can use to the existing [autoscaling module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling/alicloud) 
+You can use to the existing [autoscaling module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling/alicloud)
 to create a configuration, scaling group and lifecycle hook one-click.
 
 ## Argument Reference
@@ -130,7 +130,7 @@ The following arguments are supported:
 * `security_group_ids` - (Optional, Available since v1.43.0) List IDs of the security group used to create new instances. It is conflict with `security_group_id`.
 * `scaling_configuration_name` - (Optional) Name shown for the scheduled task. which must contain 2-64 characters (English or Chinese), starting with numbers, English letters or Chinese characters, and can contain number, underscores `_`, hypens `-`, and decimal point `.`. If this parameter value is not specified, the default value is ScalingConfigurationId.
 * `internet_charge_type` - (Optional) Network billing type, Values: PayByBandwidth or PayByTraffic.
-* `internet_max_bandwidth_in` - (Optional) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). 
+* `internet_max_bandwidth_in` - (Optional) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second).
 * `internet_max_bandwidth_out` - (Optional, Available since v1.214.0) Maximum outgoing bandwidth from the public network, measured in Mbps (Mega bit per second). The value range for PayByBandwidth is [0,1024].
 * `credit_specification` - (Optional, Available since v1.98.0) Performance mode of the t5 burstable instance. Valid values: 'Standard', 'Unlimited'.
 * `system_disk_category` - (Optional) Category of the system disk. The parameter value options are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd` and `cloud`. `cloud` only is used to some no I/O optimized instance. Default to `cloud_efficiency`.
@@ -142,7 +142,7 @@ The following arguments are supported:
 * `system_disk_encrypted` - (Optional, Available since v1.199.0) Whether to encrypt the system disk.
 * `system_disk_kms_key_id` - (Optional, Available since v1.232.0) The ID of the KMS key that you want to use to encrypt the system disk.
 * `system_disk_encrypt_algorithm` - (Optional, Available since v1.232.0) The algorithm that you want to use to encrypt the system disk. Valid values: AES-256, SM4-128.
-* `system_disk_provisioned_iops` - (Optional, Available since v1.232.0) IOPS measures the number of read and write operations that an EBS device can process per second. 
+* `system_disk_provisioned_iops` - (Optional, Available since v1.232.0) IOPS measures the number of read and write operations that an EBS device can process per second.
 * `image_options_login_as_non_root` - (Optional, Available since v1.232.0) Specifies whether to use ecs-user to log on to an ECS instance. For more information, see Manage the username used to log on to an ECS instance. Valid values: true, false. Default value: false.
 * `deletion_protection` - (Optional, Available since v1.232.0) Specifies whether to enable the Release Protection feature for ECS instances. This parameter is applicable to only pay-as-you-go instances. You can use this parameter to specify whether an ECS instance can be directly released by using the ECS console or calling the DeleteInstance operation. Valid values: true, false. Default value: false.
 * `enable` - (Optional) Whether enable the specified scaling group(make it active) to which the current scaling configuration belongs.
@@ -198,16 +198,15 @@ The following arguments are supported:
 
   -> **NOTE:** The last scaling configuration can't be set to inactive and deleted alone.
 
-
 ### `data_disk`
 
 The datadisk mapping supports the following:
 
-* `size` - (Optional) Size of data disk, in GB. The value ranges [5,2000] for a cloud disk, [5,1024] for an ephemeral disk, [5,800] for an ephemeral_ssd disk, [20,32768] for cloud_efficiency, cloud_ssd, cloud_essd disk. 
+* `size` - (Optional) Size of data disk, in GB. The value ranges [5,2000] for a cloud disk, [5,1024] for an ephemeral disk, [5,800] for an ephemeral_ssd disk, [20,32768] for cloud_efficiency, cloud_ssd, cloud_essd disk.
 * `provisioned_iops` - (Optional, Available since v1.232.0) IOPS measures the number of read and write operations that an Elastic Block Storage (EBS) device can process per second.
 * `device` - (Optional, Deprecated, Available since v1.92.0) The mount point of data disk N. Valid values of N: 1 to 16. If this parameter is not specified, the system automatically allocates a mount point to created ECS instances. The name of the mount point ranges from /dev/xvdb to /dev/xvdz in alphabetical order.
 * `category` - (Optional) Category of data disk. The parameter value options are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd` , `cloud_essd` and `cloud`.
-* `snapshot_id` - (Optional) Snapshot used for creating the data disk. If this parameter is specified, the size parameter is neglected, and the size of the created disk is the size of the snapshot. 
+* `snapshot_id` - (Optional) Snapshot used for creating the data disk. If this parameter is specified, the size parameter is neglected, and the size of the created disk is the size of the snapshot.
 * `delete_with_instance` - (Optional) Whether to delete data disks attached on ecs when release ecs instance. Optional value: `true` or `false`, default to `true`.
 * `encrypted` - (Optional, Available since v1.92.0) Specifies whether data disk N is to be encrypted. Valid values of N: 1 to 16. Valid values: `true`: encrypted, `false`: not encrypted. Default value: `false`.
 * `kms_key_id` - (Optional, Available since v1.92.0) The CMK ID for data disk N. Valid values of N: 1 to 16.
@@ -221,7 +220,7 @@ The datadisk mapping supports the following:
 The networkInterfaces mapping supports the following:
 
 * `instance_type` - (Optional, Available since v1.235.0) The ENI type. If you specify NetworkInterfaces.N, specify at least one primary ENI. You cannot specify SecurityGroupId or SecurityGroupIds.N. Valid values: Primary, Secondary.
-* `network_interface_traffic_mode` - (Optional, Available since v1.235.0) The communication mode of the ENI. Valid values: Standard, HighPerformance. 
+* `network_interface_traffic_mode` - (Optional, Available since v1.235.0) The communication mode of the ENI. Valid values: Standard, HighPerformance.
 * `ipv6_address_count` - (Optional, Int, Available since v1.235.0) The number of randomly generated IPv6 addresses that you want to assign to primary ENI N. Setting it to `0` or removing it from the configuration stops requesting IPv6 addresses: the parameter is left out of the request and the Auto Scaling service drops the previously requested count.
 * `security_group_ids` - (Optional, Available since v1.235.0) The ID of security group N to which ENI N belongs.
 

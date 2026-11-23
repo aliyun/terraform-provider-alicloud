@@ -96,6 +96,7 @@ resource "alicloud_cen_child_instance_route_entry_to_attachment" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cen_id` - (Required, ForceNew) The ID of the CEN instance.
 * `child_instance_route_table_id` - (Required, ForceNew) The first ID of the resource
 * `destination_cidr_block` - (Required, ForceNew) DestinationCidrBlock
@@ -105,6 +106,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.The value is formulated as `<cen_id>:<child_instance_route_table_id>:<transit_router_attachment_id>:<destination_cidr_block>`.
 * `service_type` - ServiceType
 * `status` - The status of the resource
@@ -112,6 +114,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Child Instance Route Entry To Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Child Instance Route Entry To Attachment.
 

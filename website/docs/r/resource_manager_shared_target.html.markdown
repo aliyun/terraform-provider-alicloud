@@ -10,8 +10,6 @@ description: |-
 
 Provides a Resource Manager Shared Target resource.
 
-
-
 For information about Resource Manager Shared Target and how to use it, see [What is Shared Target](https://www.alibabacloud.com/help/en/resource-management/resource-sharing/developer-reference/api-resourcesharing-2020-01-10-associateresourceshare).
 
 -> **NOTE:** Available since v1.111.0.
@@ -54,12 +52,14 @@ resource "alicloud_resource_manager_shared_target" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `resource_share_id` - (Required, ForceNew) The ID of the resource share.
 * `target_id` - (Required, ForceNew) The ID of the principal.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<resource_share_id>:<target_id>`.
 * `create_time` - (Available since v1.259.0) The time when the association of the entity was created.
 * `status` - The status of shared target.
@@ -67,6 +67,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Shared Target.
 * `delete` - (Defaults to 10 mins) Used when delete the Shared Target.
 

@@ -1,5 +1,6 @@
 import importlib.util
 import contextlib
+import http.client
 import io
 import json
 import os
@@ -7,12 +8,104 @@ import subprocess
 import tempfile
 from pathlib import Path
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import acube_diagnostics as diagnostics
 
 spec = importlib.util.spec_from_file_location('integration', Path(__file__).with_name('acube-integration.py'))
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+
+
+class FakeClock:
+    """Monotonic time that moves only while the client sleeps."""
+
+    def __init__(self):
+        self.now, self.sleeps = 0, []
+
+    def monotonic(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+def unavailable(code):
+    return m.urllib.error.HTTPError(m.BASE_URL, code, 'unavailable', {}, io.BytesIO())
+
+
+class UnavailableTest(unittest.TestCase):
+    def call(self, acube, method='GET', path='/42', body=None):
+        """Call ACube through a fake transport on a fake clock; return the result or error, clock and attempts."""
+        client, clock = m.Client('test-token-' + 'x' * 32), FakeClock()
+        with patch.object(client.opener, 'open', side_effect=lambda *_args, **_kwargs: acube(clock)) as opened, \
+                patch.object(m.time, 'monotonic', clock.monotonic), patch.object(m.time, 'sleep', clock.sleep), \
+                contextlib.redirect_stdout(io.StringIO()):
+            try:
+                result = client.call(method, path, body)
+            except ValueError as error:
+                result = error
+        return result, clock, opened.call_count
+
+    def test_safe_calls_wait_out_five_minutes_of_unavailability(self):
+        def redeploy(clock):
+            if clock.now == 0:
+                raise http.client.BadStatusLine('invalid status line')
+            if clock.now == 1:
+                response = io.BytesIO()
+                response.headers = {}
+                response.read = Mock(side_effect=http.client.IncompleteRead(b'{', 10))
+                return response
+            # Down for four minutes, longer than the earlier three-minute window.
+            if clock.now < 240:
+                raise unavailable(502)
+            response = io.BytesIO(b'{"code":"SUCCESS","data":{"status":"running"}}')
+            response.headers = {}
+            return response
+        result, clock, _ = self.call(redeploy)
+        self.assertEqual({'status': 'running'}, result)
+        self.assertEqual(251, clock.now)
+        self.assertEqual(20, max(clock.sleeps))
+
+        def down(clock):
+            raise unavailable(503)
+
+        def unreachable(clock):
+            raise ConnectionResetError()
+        for acube, message in [(down, 'ACube HTTP 503'),
+                               (unreachable, 'ACube unavailable; rerun the same CI run to recover the original receipt')]:
+            with self.subTest(message):
+                result, clock, attempts = self.call(acube)
+                self.assertEqual(message, str(result))
+                self.assertEqual(5 * 60, m.UNAVAILABLE_WINDOW_SECONDS)
+                self.assertEqual(m.UNAVAILABLE_WINDOW_SECONDS, clock.now, 'gives up exactly when the window ends')
+                self.assertGreater(attempts, 10)
+
+    def test_client_errors_and_unfenced_submissions_fail_at_once(self):
+        def not_found(clock):
+            raise unavailable(404)
+
+        def down(clock):
+            raise unavailable(503)
+
+        def unreachable(clock):
+            raise ConnectionResetError()
+
+        def truncated(clock):
+            raise http.client.IncompleteRead(b'{', 10)
+
+        for acube, method, path, body, message in [
+                (not_found, 'GET', '/42', None, 'ACube HTTP 404'),
+                (down, 'POST', '', {'mode': 'acctest'}, 'ACube HTTP 503'),
+                (unreachable, 'POST', '', {'mode': 'acctest'},
+                 'ACube unavailable; rerun the same CI run to recover the original receipt'),
+                (truncated, 'POST', '', {'mode': 'acctest'},
+                 'ACube unavailable; rerun the same CI run to recover the original receipt')]:
+            with self.subTest(message, method=method):
+                result, clock, attempts = self.call(acube, method, path, body)
+                self.assertEqual(message, str(result))
+                self.assertEqual((1, 0), (attempts, clock.now))
+
 
 class IntegrationTest(unittest.TestCase):
     def test_scope_errors_have_stable_self_service_guidance(self):
@@ -29,6 +122,16 @@ class IntegrationTest(unittest.TestCase):
                 self.assertEqual(result['reason'], reason)
                 self.assertIn(repair, result['fix'])
                 self.assertEqual(result['guide'], 'scripts/ci/provider-layout.md')
+
+    def test_planner_exposes_companion_repair_and_document_guide(self):
+        reason = 'No AccTest cases for affected resource: data_source_demo.go (data.alicloud_demo).'
+        fix = 'Create or update data_source_demo_test.go with a runnable TestAcc case.'
+        result = m.planning_diagnostic(reason + ' Fix: ' + fix)
+        self.assertEqual((result['code'], result['reason'], result['fix']), ('ACC001', reason, fix))
+        result = m.planning_diagnostic('website/docs/d/demo.html.markdown:19: Reference is outside this HCL fence')
+        self.assertEqual(result['code'], 'DOC001')
+        self.assertIn('missing references', result['fix'])
+        self.assertIn('README-scopes.md#documentation-scenes', result['guide'])
 
     def setUp(self):
         # Synthetic regression receipts must never appear in the real CI Summary.
@@ -109,7 +212,10 @@ class IntegrationTest(unittest.TestCase):
                 if path == '/acctest/reusable-cases': return real.call(method, path, body)
                 raise AssertionError('No task submission is authorized')
         error = m.urllib.error.HTTPError(m.BASE_URL, 503, 'unavailable', {}, io.BytesIO())
-        with tempfile.TemporaryDirectory() as root, patch.object(real.opener, 'open', side_effect=error), patch.object(m.time, 'sleep'):
+        clock = FakeClock()
+        with tempfile.TemporaryDirectory() as root, patch.object(real.opener, 'open', side_effect=error), \
+                patch.object(m.time, 'monotonic', clock.monotonic), patch.object(m.time, 'sleep', clock.sleep), \
+                contextlib.redirect_stdout(io.StringIO()):
             with self.assertRaises(ValueError):
                 m.execute(Client(), {'head': 'a' * 40, 'base': 'b' * 40, 'packages': {'alicloud': ['TestAccOne']}},
                           'acctest', 'run-123', Path(root))
@@ -171,6 +277,24 @@ class IntegrationTest(unittest.TestCase):
             report = json.loads((Path(root)/'diagnostics/scope.json').read_text())
             self.assertEqual(report['status'], 'blocked')
             self.assertEqual(report['blockers'], scope['blocked'])
+
+    def test_summary_contains_only_blockers_for_the_requested_job(self):
+        acc = 'No AccTest cases for affected resource: data_source_demo.go. Fix: Move TestAccDemo into data_source_demo_test.go.'
+        doc = 'website/docs/d/demo.html.markdown:19: Reference is outside this HCL fence: alicloud_demo.default'
+        frozen = dict(base='1'*40, head='2'*40, packages={}, examples=[],
+                      scope=dict(blocked=[acc], coverageBlockers=[acc]), documents=dict(blocked=[doc]))
+        for kind, code, other, action in [('acctest', 'ACC001', 'DOC001', 'Move TestAccDemo'),
+                                          ('examples', 'DOC001', 'ACC001', 'declare each listed dependency')]:
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                summary = root/'summary.md'
+                with patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': str(summary)}), self.assertRaises(ValueError):
+                    m.execute(None, frozen, kind, 'run', root)
+                body = summary.read_text()
+                for expected in (frozen['head'], frozen['base'], code, action, '已提交云端任务：0'):
+                    self.assertIn(expected, body)
+                self.assertNotIn(other, body)
+                self.assertNotIn('ACube task', body)
 
     def test_acc_only_plan_does_not_load_docs_or_invoke_title_resolver(self):
         scope = dict(packages={'alicloud/service/vpc':['TestAccVpc']},

@@ -10,8 +10,6 @@ description: |-
 
 Provides an AliKafka Sasl User resource.
 
-
-
 For information about AliKafka Sasl User and how to use it, see [What is Sasl User](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-alikafka-2019-09-16-createsasluser).
 
 -> **NOTE:** Available since v1.66.0.
@@ -86,6 +84,7 @@ resource "alicloud_alikafka_sasl_user" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required, ForceNew) The instance ID.
 * `mechanism` - (Optional, ForceNew, Available since v1.266.0) The encryption method. Valid values:
   - SCRAM-SHA-512. This is the default value.
@@ -104,6 +103,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Sasl User. It formats as `<instance_id>:<username>`.
 
 ## Import

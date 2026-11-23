@@ -10,8 +10,6 @@ description: |-
 
 Provides a Mongodb Audit Policy resource.
 
-
-
 For information about Mongodb Audit Policy and how to use it, see [What is Audit Policy](https://www.alibabacloud.com/help/doc-detail/131941.html).
 
 -> **NOTE:** Available since v1.148.0.
@@ -75,6 +73,7 @@ Terraform cannot destroy resource `alicloud_mongodb_audit_policy`. Terraform wil
 ## Argument Reference
 
 The following arguments are supported:
+
 * `audit_status` - (Required) Audit state. Valid values: `enable`, `disabled`. The audit policy cannot be created with `disabled` — the underlying API rejects it. Create the resource with `enable` and switch to `disabled` in a later apply.
 * `db_instance_id` - (Required, ForceNew) Database Instance Id
 * `storage_period` - (Optional, Int) Audit log retention duration, in days.
@@ -96,6 +95,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
@@ -103,6 +103,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.161.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Audit Policy.
 * `update` - (Defaults to 15 mins) Used when update the Audit Policy.
 

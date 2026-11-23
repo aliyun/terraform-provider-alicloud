@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cms Dynamic Tag Groups to the user.
 ---
 
-# alicloud\_cms\_dynamic\_tag\_groups
+# alicloud_cms_dynamic_tag_groups
 
 This data source provides the Cms Dynamic Tag Groups of the current Alibaba Cloud user.
 
@@ -64,4 +64,3 @@ The following attributes are exported in addition to the arguments listed above:
     * `tag_value_match_function` - Matching method of tag value. Valid values: `all`, `startWith`,`endWith`,`contains`,`notContains`,`equals`.
   * `status` -  The status of the resource. Valid values: `RUNNING`, `FINISH`.
   * `tag_key` - The tag key of the tag.
-

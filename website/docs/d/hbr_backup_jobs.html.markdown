@@ -7,7 +7,7 @@ description: |-
   Provides a list of Hbr Backup Jobs to the user.
 ---
 
-# alicloud\_hbr\_backup\_jobs
+# alicloud_hbr_backup_jobs
 
 This data source provides the Hbr Backup Jobs of the current Alibaba Cloud user.
 
@@ -79,7 +79,6 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The status of backup job. Valid values: `COMPLETE`, `PARTIAL_COMPLETE`, `FAILED`, `UNAVAILABLE`.
 * `sort_direction` - (Optional, ForceNew) The sort direction, sort results by ascending or descending order based on the value jobs id. Valid values: `ASCEND`, `DESCEND`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-
 
 * `filter` - (Optional) More complex filters can be expressed using one or more `filter` sub-blocks, which take the following arguments. See [`filter`](#filter) below.
 

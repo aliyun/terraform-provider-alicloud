@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cms Monitor Groups to the user.
 ---
 
-# alicloud\_cms\_monitor\_groups
+# alicloud_cms_monitor_groups
 
 This data source provides the Cms Monitor Groups of the current Alibaba Cloud user.
 

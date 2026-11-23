@@ -37,7 +37,6 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew, Available in 1.98.0+) Status of the CEN Bandwidth Package in CEN instance, Valid value: `Idle` and `InUse`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:

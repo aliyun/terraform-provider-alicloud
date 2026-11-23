@@ -41,12 +41,12 @@ resource "alicloud_rds_backup" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_backup&spm=docs.r.rds_backup.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `backup_method` - (Optional, ForceNew, Computed) The backup type. Valid values:  
 * `Logical`: logical backup (supported only for MySQL)  
 * `Physical`: physical backup (supported for MySQL, SQL Server, and PostgreSQL)  
@@ -72,7 +72,6 @@ Default value: `Physical`.
 
   -> **NOTE:**  - SQL Server: The `BackupType` parameter is specified and set to `FullBackup`.
 
-
   -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `backup_type` - (Optional, ForceNew, Computed) The backup type. Valid values:  
@@ -83,7 +82,6 @@ Default value: `Physical`.
 
   -> **NOTE:**  This parameter takes effect only when the `BackupStrategy` parameter is specified and its value is `db`.
 
-
   -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `remove_from_state` - (Optional) Remove form state when resource cannot be deleted. Valid values: `true` and `false`.
@@ -91,6 +89,7 @@ Default value: `Physical`.
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `backup_id` - The backup set ID.
 * `backup_job_id` - (String, Available since v2.2.0) The backup job ID. This is a create-only attribute returned by the CreateBackup API. It cannot be recovered via Read or Import because DescribeBackups does not return this field.
@@ -100,6 +99,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Backup.
 * `delete` - (Defaults to 5 mins) Used when delete the Backup.
 

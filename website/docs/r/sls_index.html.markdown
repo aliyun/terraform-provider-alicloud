@@ -10,8 +10,6 @@ description: |-
 
 Provides a Log Service (SLS) Index resource.
 
-
-
 For information about Log Service (SLS) Index and how to use it, see [What is Index](https://next.api.alibabacloud.com/document/Sls/2020-12-30/CreateIndex).
 
 -> **NOTE:** Available since v1.260.0.
@@ -110,6 +108,7 @@ resource "alicloud_sls_index" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `keys` - (Optional, Map) Field index
 * `line` - (Optional, List) Full-text index See [`line`](#line) below.
 * `log_reduce` - (Optional) Whether log clustering is enabled
@@ -122,6 +121,7 @@ The following arguments are supported:
 ### `line`
 
 The line supports the following:
+
 * `case_sensitive` - (Required) Is case sensitive
 * `chn` - (Required) Does it include Chinese
 * `exclude_keys` - (Optional, List) List of excluded fields
@@ -131,11 +131,13 @@ The line supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<project_name>:<logstore_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Index.
 * `delete` - (Defaults to 5 mins) Used when delete the Index.
 * `update` - (Defaults to 5 mins) Used when update the Index.

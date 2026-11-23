@@ -68,17 +68,20 @@ Terraform cannot destroy resource `alicloud_oss_bucket_transfer_acceleration`. T
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the Bucket.
 * `enabled` - (Optional) Specifies whether to enable transfer acceleration for the bucket. Valid values: true: transfer acceleration for the bucket is enabled. false: transfer acceleration for the bucket is disabled.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Transfer Acceleration.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Transfer Acceleration.
 

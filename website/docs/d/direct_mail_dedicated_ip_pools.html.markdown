@@ -30,6 +30,7 @@ data "alicloud_direct_mail_dedicated_ip_pools" "by_name" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `all` - (Optional, Bool, Available since v2.2.0) The flag that indicates whether to query all records.
 * `ids` - (Optional, Computed, List, Available since v2.2.0) A list of Dedicated Ip Pool IDs.
 * `keyword` - (Optional, String, Available since v2.2.0) The keyword used to search by name.

@@ -68,6 +68,7 @@ resource "alicloud_hbr_replication_vault" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The description of the backup vault.
 * `encrypt_type` - (Optional, ForceNew, Computed, Available since v1.252.0) The encryption type of the backup vault.
 * `kms_key_id` - (Optional, ForceNew, Available since v1.252.0) Alibaba Cloud KMS custom Key or Alias. This parameter is required only when EncryptType = KMS.
@@ -79,6 +80,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `region_id` - RegionId
 * `status` - The status of the mirror backup vault.
@@ -86,6 +88,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Replication Vault.
 * `delete` - (Defaults to 15 mins) Used when delete the Replication Vault.
 * `update` - (Defaults to 5 mins) Used when update the Replication Vault.

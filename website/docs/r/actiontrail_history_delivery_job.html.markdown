@@ -22,8 +22,6 @@ For information about Action Trail History Delivery Job and how to use it, see [
 
 -> **NOTE:** An Alibaba cloud account can only have one running delivery history job at the same time.
 
-
-
 ## Example Usage
 
 Basic Usage
@@ -80,11 +78,13 @@ resource "alicloud_actiontrail_history_delivery_job" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `trail_name` - (Required, ForceNew) The Track Name.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `status` - The status of the resource
@@ -92,6 +92,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the History Delivery Job.
 * `delete` - (Defaults to 5 mins) Used when delete the History Delivery Job.
 

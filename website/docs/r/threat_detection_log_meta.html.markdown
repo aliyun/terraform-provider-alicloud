@@ -51,6 +51,7 @@ Terraform cannot destroy resource `alicloud_threat_detection_log_meta`. Terrafor
 ## Argument Reference
 
 The following arguments are supported:
+
 * `log_meta_name` - (Required, ForceNew) The name of the exclusive Logstore where logs are stored. Value:
   - aegis-log-client: client event log
   - aegis-log-crack: Brute Force log
@@ -77,11 +78,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Log Meta.
 * `update` - (Defaults to 5 mins) Used when update the Log Meta.
 

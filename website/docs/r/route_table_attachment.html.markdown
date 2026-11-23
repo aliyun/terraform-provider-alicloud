@@ -62,18 +62,21 @@ resource "alicloud_route_table_attachment" "foo" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `route_table_id` - (Required, ForceNew) The ID of the route table to be bound to the switch.
 * `vswitch_id` - (Required, ForceNew) The ID of the switch to bind the route table.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<route_table_id>:<vswitch_id>`.
 * `status` - The status of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Route Table Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Route Table Attachment.
 

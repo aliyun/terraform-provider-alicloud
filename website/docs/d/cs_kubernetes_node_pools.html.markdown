@@ -97,15 +97,16 @@ output "alicloud_cs_kubernetes_node_pool_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cluster_id` - (Required, ForceNew) The id of kubernetes cluster.
 * `node_pool_name` - (ForceNew, Optional) The name of node pool.
 * `ids` - (Optional, ForceNew, Computed) A list of Nodepool IDs.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Nodepool IDs.
 * `nodepools` - A list of Nodepool Entries. Each element contains the following attributes:
   * `auto_renew` - Whether to enable automatic renewal for nodes in the node pool takes effect only when `instance_charge_type` is set to `PrePaid`. Default value: `false`. Valid values:- `true`: Automatic renewal. - `false`: Do not renew automatically.
@@ -135,10 +136,10 @@ The following attributes are exported in addition to the arguments listed above:
   * `install_cloud_monitor` - Whether to install cloud monitoring on the ECS node. After installation, you can view the monitoring information of the created ECS instance in the cloud monitoring console and recommend enable it. Default value: `false`. Valid values:- `true` : install cloud monitoring on the ECS node.- `false` : does not install cloud monitoring on the ECS node.
   * `instance_charge_type` - Node payment type. Valid values: `PostPaid`, `PrePaid`, default is `PostPaid`. If value is `PrePaid`, the arguments `period`, `period_unit`, `auto_renew` and `auto_renew_period` are required.
   * `instance_types` - In the node instance specification list, you can select multiple instance specifications as alternatives. When each node is created, it will try to purchase from the first specification until it is created successfully. The final purchased instance specifications may vary with inventory changes.
-  * `internet_charge_type` - The billing method for network usage. Valid values `PayByBandwidth` and `PayByTraffic`. Conflict with `eip_internet_charge_type`, EIP and public network IP can only choose one. 
+  * `internet_charge_type` - The billing method for network usage. Valid values `PayByBandwidth` and `PayByTraffic`. Conflict with `eip_internet_charge_type`, EIP and public network IP can only choose one.
   * `internet_max_bandwidth_out` - The maximum bandwidth of the public IP address of the node. The unit is Mbps(Mega bit per second). The value range is:\[1,100\]
   * `key_name` - The name of the key pair. When the node pool is a managed node pool, only `key_name` is supported.
-  * `kubelet_configuration` - Kubelet configuration parameters for worker nodes. See [`kubelet_configuration`](#kubelet_configuration) below. More information in [Kubelet Configuration](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/).
+  * `kubelet_configuration` - Kubelet configuration parameters for worker nodes. More information in [Kubelet Configuration](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/).
     * `allowed_unsafe_sysctls` - Allowed sysctl mode whitelist.
     * `cluster_dns` - The list of IP addresses of the cluster DNS servers.
     * `container_log_max_files` - The maximum number of log files that can exist in each container.
@@ -203,11 +204,11 @@ The following attributes are exported in addition to the arguments listed above:
   * `period` - Node payment period. Its valid value is one of {1, 2, 3, 6, 12}.
   * `period_unit` - Node payment period unit, valid value: `Month`. Default is `Month`.
   * `platform` - Operating system release, using `image_type` instead.
-  * `pre_user_data` - Node pre custom data, base64-encoded, the script executed before the node is initialized. 
+  * `pre_user_data` - Node pre custom data, base64-encoded, the script executed before the node is initialized.
   * `private_pool_options` - Private node pool configuration.
     * `private_pool_options_id` - The ID of the private node pool.
     * `private_pool_options_match_criteria` - The type of private node pool. This parameter specifies the type of the private pool that you want to use to create instances. A private node pool is generated when an elasticity assurance or a capacity reservation service takes effect. The system selects a private node pool to launch instances. Valid values: `Open`: specifies an open private node pool. The system selects an open private node pool to launch instances. If no matching open private node pool is available, the resources in the public node pool are used. `Target`: specifies a private node pool. The system uses the resources of the specified private node pool to launch instances. If the specified private node pool is unavailable, instances cannot be started. `None`: no private node pool is used. The resources of private node pools are not used to launch the instances.
-  * `ram_role_name` - The name of the Worker RAM role.* If it is empty, the default Worker RAM role created in the cluster will be used.* If the specified RAM role is not empty, the specified RAM role must be a **Common Service role**, and its **trusted service** configuration must be **cloud server**. For more information, see [Create a common service role](https://help.aliyun.com/document_detail/116800.html). If the specified RAM role is not the default Worker RAM role created in the cluster, the role name cannot start with 'KubernetesMasterRole-'or 'KubernetesWorkerRole.-> **NOTE:**  This parameter is only supported for ACK-managed clusters of 1.22 or later versions.
+  * `ram_role_name` - The name of the Worker RAM role.*If it is empty, the default Worker RAM role created in the cluster will be used.* If the specified RAM role is not empty, the specified RAM role must be a **Common Service role**, and its **trusted service** configuration must be **cloud server**. For more information, see [Create a common service role](https://help.aliyun.com/document_detail/116800.html). If the specified RAM role is not the default Worker RAM role created in the cluster, the role name cannot start with 'KubernetesMasterRole-'or 'KubernetesWorkerRole.-> **NOTE:**  This parameter is only supported for ACK-managed clusters of 1.22 or later versions.
   * `rds_instances` - The list of RDS instances.
   * `resource_group_id` - The ID of the resource group
   * `runtime_name` - The runtime name of containers. If not set, the cluster runtime will be used as the node pool runtime. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm).

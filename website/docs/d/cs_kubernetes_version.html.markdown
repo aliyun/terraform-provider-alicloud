@@ -79,7 +79,7 @@ data "alicloud_cs_kubernetes_version" "extended" {
 The following arguments are supported.
 
 * `cluster_type` - (Required) The type of cluster. Its valid value are `Kubernetes` and `ManagedKubernetes`.
-* `kubernetes_version` - (Optional) The ACK released kubernetes version. 
+* `kubernetes_version` - (Optional) The ACK released kubernetes version.
 * `support_policy` - (Optional, Available since v2.3.0) Version support policy used to filter metadata. Valid values: `Standard` and `Extended`. When omitted, ACK uses the Standard view. Use `Extended` to query extended support versions for ACK Pro clusters using the Default profile. Independent ACS and Edge version lines are not controlled by this policy.
 * `profile` - (Optional) The profile of cluster. Its valid value are `Default`, `Serverless`, `Edge` and `Acs`.
 
@@ -88,9 +88,8 @@ The following arguments are supported.
 The following attributes are exported.
 
 * `metadata` - A Set of Kubernetes version metadata.
-  * `version` - The ACK released kubernetes version. 
+  * `version` - The ACK released kubernetes version.
   * `support_policy` - (Available since v2.3.0) The support policy required by the version (`Standard` or `Extended`).
   * `runtime` - The list of supported runtime.
     * `name` - The runtime name.
     * `version` - The runtime version.
-

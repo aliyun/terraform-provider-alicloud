@@ -104,7 +104,6 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `create` - (Defaults to 1 mins) Used when create the Instance Allowed Ip Attachment.
 * `delete` - (Defaults to 1 mins) Used when delete the Instance Allowed Ip Attachment.
 
-
 ## Import
 
 AliKafka Instance Allowed Ip Attachment can be imported using the id, which consists of instance_id, allowed_type, port_range and allowed_ip, e.g.

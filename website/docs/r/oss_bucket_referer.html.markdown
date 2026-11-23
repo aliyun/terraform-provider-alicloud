@@ -71,6 +71,7 @@ resource "alicloud_oss_bucket_referer" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `allow_empty_referer` - (Required) Whether to allow empty Referer request headers.
 * `allow_truncate_query_string` - (Optional, Computed) Specifies whether to truncate the query string in the URL when the Referer is matched. Valid values: true, false.
 * `bucket` - (Required, ForceNew) Name of the Bucket.
@@ -81,11 +82,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Referer.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Referer.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Referer.

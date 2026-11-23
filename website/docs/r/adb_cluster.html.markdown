@@ -121,9 +121,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 50 mins) Used when creating the adb cluster (until it reaches the initial `Running` status). 
-* `update` - (Defaults to 72 mins) Used when updating the adb cluster (until it reaches the initial `Running` status). 
-* `delete` - (Defaults to 50 mins) Used when terminating the adb cluster. 
+* `create` - (Defaults to 50 mins) Used when creating the adb cluster (until it reaches the initial `Running` status).
+* `update` - (Defaults to 72 mins) Used when updating the adb cluster (until it reaches the initial `Running` status).
+* `delete` - (Defaults to 50 mins) Used when terminating the adb cluster.
 
 ## Import
 

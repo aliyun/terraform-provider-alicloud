@@ -52,13 +52,12 @@ resource "alicloud_alidns_cloud_gtm_instance_config" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_cloud_gtm_instance_config&spm=docs.r.alidns_cloud_gtm_instance_config.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `address_pool_lb_strategy` - (Optional) The load balancing strategy among address pools:
   - round_robin: Round-robin. For any incoming DNS resolution request, all address pools are returned, and the order of these address pools is rotated with each request.
   - sequence: Sequential. For any incoming DNS resolution request, the address pool with the smallest sequence number is returned (the sequence number indicates the priority of the address pool, where a smaller number means higher priority). If the address pool with the smallest sequence number is unavailable, the next address pool with the next smallest sequence number is returned.
@@ -85,6 +84,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<config_id>:<instance_id>`.
 * `config_id` - The domain name instance configuration ID.
 * `instance_id` - The instance ID associated with the GTM 3.
@@ -92,6 +92,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Cloud Gtm Instance Config.
 * `delete` - (Defaults to 5 mins) Used when delete the Cloud Gtm Instance Config.
 * `update` - (Defaults to 5 mins) Used when update the Cloud Gtm Instance Config.

@@ -58,7 +58,7 @@ The following arguments are supported:
   * `full_match`: exact match
 * `status` - (Optional, ForceNew) The status of the domain name. The value of this parameter is used as a condition to filter domain names.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-  * `Key`: It can be up to 64 characters in length. It cannot be a null string. 
+  * `Key`: It can be up to 64 characters in length. It cannot be a null string.
   * `Value`: It can be up to 128 characters in length. It can be a null string.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
   * `onine`: indicates that the domain name is enabled.
@@ -67,7 +67,6 @@ The following arguments are supported:
   * `configure_failed`: indicates that the domain name failed to be configured.
   * `checking`: indicates that the domain name is under review.
   * `check_failed`: indicates that the domain name failed the review.
-
 
 ## Attributes Reference
 

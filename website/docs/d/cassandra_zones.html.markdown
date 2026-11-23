@@ -7,23 +7,23 @@ description: |-
     Provides a list of availability zones for Cassandra that can be used by an Alibaba Cloud account.
 ---
 
-# alicloud\_cassandra\_zones
+# alicloud_cassandra_zones
 
 This data source provides availability zones for Cassandra that can be accessed by an Alibaba Cloud account within the region configured in the provider.
 
--> **NOTE:** Available in v1.88.0+.
+-> **NOTE:** Available since v1.88.0+.
 
 -> **DEPRECATED:**  This data source has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-cassandra/latest/cassandra-delisting-notice) from version `1.220.0`.
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_cassandra_zones" "zones_ids" {}
 
 # Create an Cassandra cluster with the first matched zone
 resource "alicloud_cassandra_cluster" "cassandra" {
-    zone_id = data.alicloud_cassandra_zones.zones_ids.zones[0].id
+  zone_id = data.alicloud_cassandra_zones.zones_ids.zones[0].id
 
   # Other properties...
 }

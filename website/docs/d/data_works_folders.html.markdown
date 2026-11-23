@@ -7,7 +7,7 @@ description: |-
   Provides a list of Data Works Folders to the user.
 ---
 
-# alicloud\_data\_works\_folders
+# alicloud_data_works_folders
 
 This data source provides the Data Works Folders of the current Alibaba Cloud user.
 

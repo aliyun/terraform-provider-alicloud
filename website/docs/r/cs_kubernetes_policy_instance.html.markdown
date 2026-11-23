@@ -155,12 +155,12 @@ resource "alicloud_cs_kubernetes_policy_instance" "object" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_policy_instance&spm=docs.r.cs_kubernetes_policy_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cluster_id` - (Required, ForceNew) Target cluster ID
 * `namespaces` - (Optional, Computed, List) Limits the namespace of the policy implementation. Empty indicates all namespaces.
 * `parameters` - (Optional, Map) The parameter configuration of the current rule instance. For more information about the parameters supported by each policy rule, see [Container Security Policy Rule Base Description](https://www.alibabacloud.com/help/doc-detail/359819.html).
@@ -170,12 +170,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<cluster_id>:<policy_name>:<instance_name>`.
 * `instance_name` - Rule Instance Name
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Policy Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Policy Instance.
 * `update` - (Defaults to 5 mins) Used when update the Policy Instance.

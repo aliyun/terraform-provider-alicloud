@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cr Endpoint Acl Policies to the user.
 ---
 
-# alicloud\_cr\_endpoint\_acl\_policies
+# alicloud_cr_endpoint_acl_policies
 
 This data source provides the Cr Endpoint Acl Policies of the current Alibaba Cloud user.
 

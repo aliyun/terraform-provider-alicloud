@@ -41,6 +41,7 @@ resource "alicloud_alidns_custom_line" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `custom_line_name` - (Required) The name of the Custom Line.
 * `domain_name` - (Required, ForceNew) The Domain name.
 * `ip_segment_list` - (Required) The IP segment list. See [`ip_segment_list`](#ip_segment_list) below for details.
@@ -52,7 +53,6 @@ The ip_segment_list supports the following:
 
 * `start_ip` - (Required) The start IP address of the CIDR block.
 * `end_ip` - (Required) The end IP address of the CIDR block.
-
 
 ## Attributes Reference
 

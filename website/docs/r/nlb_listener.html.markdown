@@ -10,8 +10,6 @@ description: |-
 
 Provides a Network Load Balancer (NLB) Listener resource.
 
-
-
 For information about Network Load Balancer (NLB) Listener and how to use it, see [What is Listener](https://www.alibabacloud.com/help/en/server-load-balancer/latest/api-nlb-2022-04-30-createlistener).
 
 -> **NOTE:** Available since v1.191.0.
@@ -120,6 +118,7 @@ resource "alicloud_nlb_listener" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `alpn_enabled` - (Optional, Computed) Specifies whether to enable Application-Layer Protocol Negotiation (ALPN). Valid values:
   - `true`
   - `false` (default)
@@ -136,14 +135,14 @@ The following arguments are supported:
 
   -> **NOTE:**  Effective only for TCPSSL listener.
 
-* `ca_certificate_ids` - (Optional, List) The list of certificate authority (CA) certificates. This parameter takes effect only for listeners that use SSL over TCP. 
+* `ca_certificate_ids` - (Optional, List) The list of certificate authority (CA) certificates. This parameter takes effect only for listeners that use SSL over TCP.
 
   -> **NOTE:**  Only one CA certificate is supported.
 
 * `ca_enabled` - (Optional, Computed) Specifies whether to enable mutual authentication. Valid values:
   - `true` : yes
   - `false` (default): no
-* `certificate_ids` - (Optional, List) The list of server certificates. This parameter takes effect only for listeners that use SSL over TCP. 
+* `certificate_ids` - (Optional, List) The list of server certificates. This parameter takes effect only for listeners that use SSL over TCP.
 
   -> **NOTE:**  This parameter takes effect only for TCPSSL listeners.
 
@@ -184,12 +183,13 @@ Valid values: `tls_cipher_policy\_1\_0` (default), `tls_cipher_policy\_1\_1`, `t
 
   -> **NOTE:**  This parameter is required when `ListenerPort` is set to `0`.
 
-* `status` - (Optional, Computed) The status of the resource. Valid values: `Running`, `Stopped`. When you want to enable this instance, you can set the property value to `Running`; 
+* `status` - (Optional, Computed) The status of the resource. Valid values: `Running`, `Stopped`. When you want to enable this instance, you can set the property value to `Running`;
 * `tags` - (Optional, Map) The tag of the resource
 
 ### `proxy_protocol_config`
 
 The proxy_protocol_config supports the following:
+
 * `proxy_protocol_config_private_link_ep_id_enabled` - (Optional, Computed, Available since v1.243.0) Whether to enable carrying PrivateLinkEpId to backend servers through Proxy Protocol.
 * `proxy_protocol_config_private_link_eps_id_enabled` - (Optional, Available since v1.243.0) Whether to enable carrying PrivateLinkEpsId to backend servers through the Proxy Protocol.
 * `proxy_protocol_config_vpc_id_enabled` - (Optional, Available since v1.243.0) Whether to enable carrying VpcId to backend servers through Proxy Protocol.
@@ -197,6 +197,7 @@ The proxy_protocol_config supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `region_id` - The ID of the region where the Network Load Balancer (NLB) instance is deployed.
 You can call the [DescribeRegions](https://www.alibabacloud.com/help/en/doc-detail/443657.html) operation to query the most recent region list.
@@ -204,6 +205,7 @@ You can call the [DescribeRegions](https://www.alibabacloud.com/help/en/doc-deta
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 30 mins) Used when create the Listener.
 * `delete` - (Defaults to 30 mins) Used when delete the Listener.
 * `update` - (Defaults to 30 mins) Used when update the Listener.

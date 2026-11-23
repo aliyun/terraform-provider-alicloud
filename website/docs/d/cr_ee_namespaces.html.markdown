@@ -7,15 +7,15 @@ description: |-
   Provides a list of Container Registry Enterprise Edition namespaces.
 ---
 
-# alicloud\_cr\_ee\_namespaces
+# alicloud_cr_ee_namespaces
 
 This data source provides a list Container Registry Enterprise Edition namespaces on Alibaba Cloud.
 
--> **NOTE:** Available in v1.86.0+
+-> **NOTE:** Available since v1.86.0+
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_cr_ee_namespaces" "my_namespaces" {
   instance_id = "cri-xxx"
@@ -48,7 +48,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `id` - ID of Container Registry Enterprise Edition namespace. It formats as `<instance_id>:<namespace_name>`. Before 1.161.0, it is a namespace uuid.
   * `name` - Name of Container Registry Enterprise Edition namespace.
   * `namespace_name` - Name of Container Registry Enterprise Edition namespace.
-  * `namespace_id` - Container Registry Enterprise Edition namespace id. It is a uuid. 
+  * `namespace_id` - Container Registry Enterprise Edition namespace id. It is a uuid.
   * `auto_create` - Boolean, when it set to true, repositories are automatically created when pushing new images. If it set to false, you create repository for images before pushing.
   * `default_visibility` - `PUBLIC` or `PRIVATE`, default repository visibility in this namespace.
-

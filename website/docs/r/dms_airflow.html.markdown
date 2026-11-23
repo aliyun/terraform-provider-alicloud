@@ -83,6 +83,7 @@ resource "alicloud_dms_airflow" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `airflow_name` - (Required) Name of the Airflow instance
 * `app_spec` - (Required) Airflow instance specifications
 * `dags_dir` - (Optional) Dag scan path
@@ -102,6 +103,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<workspace_id>:<airflow_id>`.
 * `airflow_id` - AirflowId
 * `region_id` - The region ID of the resource
@@ -109,6 +111,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Airflow.
 * `delete` - (Defaults to 5 mins) Used when delete the Airflow.
 * `update` - (Defaults to 5 mins) Used when update the Airflow.

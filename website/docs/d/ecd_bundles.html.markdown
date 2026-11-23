@@ -57,4 +57,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `image_id` - The image id attribute of the bundle.
   * `os_type` - The os type attribute of the bundle.
   * `bundle_name` - The name of the bundle.
-   

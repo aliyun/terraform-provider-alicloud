@@ -41,8 +41,6 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-
 ## Import
 
 Global events storage region not can be imported.
-

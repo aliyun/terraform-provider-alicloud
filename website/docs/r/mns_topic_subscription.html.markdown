@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud MNS Topic Subscription resource.
 ---
 
-# alicloud\_mns\_topic\_subscription
+# alicloud_mns_topic_subscription
 
 Provides a MNS topic subscription resource.
 
@@ -47,9 +47,10 @@ The following arguments are supported:
 * `notify_strategy` - (Optional) The NotifyStrategy attribute of Subscription. This attribute specifies the retry strategy when message sending fails. The Valid values: `EXPONENTIAL_DECAY_RETRY` and `BACKOFF_RETRY`. Default value to `BACKOFF_RETRY` .
 * `notify_content_format` - (Optional, ForceNew) The NotifyContentFormat attribute of Subscription. This attribute specifies the content format of the messages pushed to users. The valid values: `SIMPLIFIED`, `XML` and `JSON`. Default to `SIMPLIFIED`.
 * `endpoint` - (Required, ForceNew) The endpoint has three format. Available values format:
-- `HTTP Format`: http://xxx.com/xxx
-- `Queue Format`: acs:mns:{REGION}:{AccountID}:queues/{QueueName}
-- `Email Format`: mail:directmail:{MailAddress}
+
+* `HTTP Format`: `http://xxx.com/xxx`
+* `Queue Format`: acs:mns:{REGION}:{AccountID}:queues/{QueueName}
+* `Email Format`: mail:directmail:{MailAddress}
 
 * `filter_tag` - (Optional, ForceNew) The length should be shorter than 16.
 

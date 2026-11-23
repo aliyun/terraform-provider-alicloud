@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cddc Dedicated Hosts to the user.
 ---
 
-# alicloud\_cddc\_dedicated\_hosts
+# alicloud_cddc_dedicated_hosts
 
 This data source provides the Cddc Dedicated Hosts of the current Alibaba Cloud user.
 
@@ -75,14 +75,14 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Dedicated Host IDs.
 * `order_id` - (Optional, ForceNew) The ID of the order.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The state of the host. Valid values: 
-  * `0:` The host is being created. 
-  * `1`: The host is running. 
-  * `2`: The host is faulty. 
-  * `3`: The host is ready for deactivation. 
-  * `4`: The host is being maintained. 
-  * `5`: The host is deactivated. 
-  * `6`: The host is restarting. 
+* `status` - (Optional, ForceNew) The state of the host. Valid values:
+  * `0:` The host is being created.
+  * `1`: The host is running.
+  * `2`: The host is faulty.
+  * `3`: The host is ready for deactivation.
+  * `4`: The host is being maintained.
+  * `5`: The host is deactivated.
+  * `6`: The host is restarting.
   * `7`: The host is locked.
 * `zone_id` - (Optional, ForceNew) The ID of the zone.
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.

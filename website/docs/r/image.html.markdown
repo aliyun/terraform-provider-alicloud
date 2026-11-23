@@ -94,20 +94,21 @@ resource "alicloud_image" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `architecture` - (Optional, ForceNew, Computed) The system architecture of the system disk. If you specify a data disk snapshot to create the system disk of the custom image, you must use Architecture to specify the system architecture of the system disk. Valid values: `i386`, `x86\_64`, `arm64`. Default value: `x86\_64`.
 * `boot_mode` - (Optional, Computed, Available since v1.227.0) The new boot mode of the image. Valid values:
 
-  *   BIOS: Basic Input/Output System (BIOS)
+  * BIOS: Basic Input/Output System (BIOS)
 
-  *   UEFI: Unified Extensible Firmware Interface (UEFI)
+  * UEFI: Unified Extensible Firmware Interface (UEFI)
 
-  *   UEFI-Preferred: BIOS and UEFI
+  * UEFI-Preferred: BIOS and UEFI
 
   -> **NOTE:**   Before you change the boot mode, we recommend that you obtain the boot modes supported by the image. If you specify an unsupported boot mode for the image, ECS instances that use the image cannot start as expected. If you do not know which boot modes are supported by the image, we recommend that you use the image check feature to perform a check. For information about the image check feature, see [Overview](https://www.alibabacloud.com/help/en/doc-detail/439819.html).
 
   -> **NOTE:**   For information about the UEFI-Preferred boot mode, see [Best practices for ECS instance boot modes](https://www.alibabacloud.com/help/en/doc-detail/2244655.html).
 
-* `description` - (Optional) The new description of the custom image. The description must be 2 to 256 characters in length It cannot start with `http://` or `https://`. This parameter is empty by default, which specifies that the original description is retained. 
+* `description` - (Optional) The new description of the custom image. The description must be 2 to 256 characters in length It cannot start with `http://` or `https://`. This parameter is empty by default, which specifies that the original description is retained.
 * `detection_strategy` - (Optional, Available since v1.227.0) The mode in which to check the custom image. If you do not specify this parameter, the image is not checked. Only the standard check mode is supported.
 
   -> **NOTE:**   This parameter is supported for most Linux and Windows operating system versions. For information about image check items and operating system limits for image check, see [Overview of image check](https://www.alibabacloud.com/help/en/doc-detail/439819.html) and [Operating system limits for image check](https://www.alibabacloud.com/help/en/doc-detail/475800.html).
@@ -120,28 +121,30 @@ The following arguments are supported:
 
   Default value: false
 * `delete_auto_snapshot` - (Optional, Available since 1.136.0) Not the public attribute and it used to automatically delete dependence snapshots while deleting the image.
-* `image_family` - (Optional, Available since v1.227.0) The name of the image family. The name must be 2 to 128 characters in length. It must start with a letter and cannot start with acs: or aliyun. It cannot contain http:// or https://. It can contain letters, digits, periods (.), colons (:), underscores (\_), and hyphens (-). By default, this parameter is empty. 
-* `image_name` - (Optional) The name of the custom image. The name must be 2 to 128 characters in length. It must start with a letter and cannot start with acs: or aliyun. It cannot contain http:// or https://. It can contain letters, digits, periods (.), colons (:), underscores (\_), and hyphens (-). By default, this parameter is empty. In this case, the original name is retained. 
+* `image_family` - (Optional, Available since v1.227.0) The name of the image family. The name must be 2 to 128 characters in length. It must start with a letter and cannot start with acs: or aliyun. It cannot contain http:// or https://. It can contain letters, digits, periods (.), colons (:), underscores (\_), and hyphens (-). By default, this parameter is empty.
+* `image_name` - (Optional) The name of the custom image. The name must be 2 to 128 characters in length. It must start with a letter and cannot start with acs: or aliyun. It cannot contain http:// or https://. It can contain letters, digits, periods (.), colons (:), underscores (\_), and hyphens (-). By default, this parameter is empty. In this case, the original name is retained.
 * `image_version` - (Optional, ForceNew, Available since v1.227.0) The image version.
 
   -> **NOTE:**  If you specify an instance by configuring `InstanceId`, and the instance uses an Alibaba Cloud Marketplace image or a custom image that is created from an Alibaba Cloud Marketplace image, you must leave this parameter empty or set this parameter to the value of ImageVersion of the instance.
 
-* `instance_id` - (Optional) The instance ID. 
-* `license_type` - (Optional, Available since v1.227.0) The type of the license that is used to activate the operating system after the image is imported. Set the value to BYOL. BYOL: The license that comes with the source operating system is used. When you use the BYOL license, make sure that your license key is supported by Alibaba Cloud. 
-* `platform` - (Optional, ForceNew, Computed) The operating system distribution for the system disk in the custom image. If you specify a data disk snapshot to create the system disk of the custom image, use Platform to specify the operating system distribution for the system disk. Valid values: `Aliyun`, `Anolis`, `CentOS`, `Ubuntu`, `CoreOS`, `SUSE`, `Debian`, `OpenSUSE`, `FreeBSD`, `RedHat`, `Kylin`, `UOS`, `Fedora`, `Fedora CoreOS`, `CentOS Stream`, `AlmaLinux`, `Rocky Linux`, `Gentoo`, `Customized Linux`, `Others Linux`, `Windows Server 2022`, `Windows Server 2019`, `Windows Server 2016`, `Windows Server 2012`, `Windows Server 2008`, `Windows Server 2003`. Default value: `Others Linux`. 
+* `instance_id` - (Optional) The instance ID.
+* `license_type` - (Optional, Available since v1.227.0) The type of the license that is used to activate the operating system after the image is imported. Set the value to BYOL. BYOL: The license that comes with the source operating system is used. When you use the BYOL license, make sure that your license key is supported by Alibaba Cloud.
+* `platform` - (Optional, ForceNew, Computed) The operating system distribution for the system disk in the custom image. If you specify a data disk snapshot to create the system disk of the custom image, use Platform to specify the operating system distribution for the system disk. Valid values: `Aliyun`, `Anolis`, `CentOS`, `Ubuntu`, `CoreOS`, `SUSE`, `Debian`, `OpenSUSE`, `FreeBSD`, `RedHat`, `Kylin`, `UOS`, `Fedora`, `Fedora CoreOS`, `CentOS Stream`, `AlmaLinux`, `Rocky Linux`, `Gentoo`, `Customized Linux`, `Others Linux`, `Windows Server 2022`, `Windows Server 2019`, `Windows Server 2016`, `Windows Server 2012`, `Windows Server 2008`, `Windows Server 2003`. Default value: `Others Linux`.
 * `resource_group_id` - (Optional, Computed, Available since 1.115.0) The ID of the resource group to which to assign the custom image. If you do not specify this parameter, the image is assigned to the default resource group.
 
   -> **NOTE:**   If you call the CreateImage operation as a Resource Access Management (RAM) user who does not have the permissions to manage the default resource group and do not specify `ResourceGroupId`, the `Forbbiden: User not authorized to operate on the specified resource` error message is returned. You must specify the ID of a resource group that the RAM user has the permissions to manage or grant the RAM user the permissions to manage the default resource group before you call the CreateImage operation again.
 
-* `snapshot_id` - (Optional) The ID of the snapshot that you want to use to create the custom image. 
+* `snapshot_id` - (Optional) The ID of the snapshot that you want to use to create the custom image.
 * `tags` - (Optional, Map) The tag
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `name` - (Deprecated since v1.227.0). Field 'name' has been deprecated from provider version 1.227.0. New field 'image_name' instead.
 
 ### `disk_device_mapping`
 
 The disk_device_mapping supports the following:
+
 * `device` - (Optional, ForceNew, Computed) The device name of disk N in the custom image. Valid values:
   - For disks other than basic disks, such as standard SSDs, ultra disks, and enhanced SSDs (ESSDs), the valid values range from /dev/vda to /dev/vdz in alphabetical order.
   - For basic disks, the valid values range from /dev/xvda to /dev/xvdz in alphabetical order.
@@ -150,14 +153,15 @@ The disk_device_mapping supports the following:
   - data: data disk. You can specify up to 16 snapshots to use to create data disks in the custom image.
 * `size` - (Optional, ForceNew, Computed) The size of disk N in the custom image. Unit: GiB. The valid values and default value of DiskDeviceMapping.N.Size vary based on the value of DiskDeviceMapping.N.SnapshotId.
   - If no corresponding snapshot IDs are specified in the value of DiskDeviceMapping.N.SnapshotId, DiskDeviceMapping.N.Size has the following valid values and default values:
-    *   For basic disks, the valid values range from 5 to 2000, and the default value is 5.
-    *   For other disks, the valid values range from 20 to 32768, and the default value is 20.
+    * For basic disks, the valid values range from 5 to 2000, and the default value is 5.
+    * For other disks, the valid values range from 20 to 32768, and the default value is 20.
   - If a corresponding snapshot ID is specified in the value of DiskDeviceMapping.N.SnapshotId, the value of DiskDeviceMapping.N.Size must be greater than or equal to the size of the specified snapshot. The default value of DiskDeviceMapping.N.Size is the size of the specified snapshot.
 * `snapshot_id` - (Optional, ForceNew, Computed) The ID of snapshot N to use to create the custom image. .
 
 ### `features`
 
 The features supports the following:
+
 * `nvme_support` - (Optional, ForceNew, Computed) Specifies whether to support the Non-Volatile Memory Express (NVMe) protocol. Valid values:
   - supported: The image supports NVMe. Instances created from this image also support NVMe.
   - unsupported: The image does not support NVMe. Instances created from this image do not support NVMe.
@@ -165,6 +169,7 @@ The features supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The create time
 * `disk_device_mapping` - Snapshot information for the image
@@ -180,10 +185,10 @@ The following attributes are exported:
   * true: The image is available and can be used to create ECS instances.
   * false: The image is unavailable and cannot be used to create ECS instances.
 
-
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Image.
 * `delete` - (Defaults to 10 mins) Used when delete the Image.
 * `update` - (Defaults to 10 mins) Used when update the Image.

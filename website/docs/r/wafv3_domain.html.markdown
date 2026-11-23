@@ -10,8 +10,6 @@ description: |-
 
 Provides a WAFV3 Domain resource.
 
-
-
 For information about WAFV3 Domain and how to use it, see [What is Domain](https://www.alibabacloud.com/help/en/web-application-firewall/latest/api-waf-openapi-2021-10-01-createdomain).
 
 -> **NOTE:** Available since v1.200.0.
@@ -93,6 +91,7 @@ resource "alicloud_wafv3_domain" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_type` - (Optional) The mode in which the domain name is added to WAF. Valid values:
 share: CNAME record mode. This is the default value.
 
@@ -108,6 +107,7 @@ share: CNAME record mode. This is the default value.
 ### `listen`
 
 The listen supports the following:
+
 * `cert_id` - (Optional) The ID of the certificate to be added. This parameter is used only if the value of `HttpsPorts` is not empty (indicating that the domain name uses the HTTPS protocol).
 * `cipher_suite` - (Optional, Int) The type of the cipher suites that you want to add. This parameter is available only if you specify `HttpsPorts`. Valid values:
   - `1`: all cipher suites.
@@ -158,10 +158,10 @@ The listen supports the following:
 
   -> **NOTE:**   This parameter is required only if you set `XffHeaderMode` to 2.
 
-
 ### `redirect`
 
 The redirect supports the following:
+
 * `backends` - (Optional, Computed, List) The IP addresses or domain names of the origin server. You cannot specify both IP addresses and domain names. If you specify domain names, the domain names can be resolved only to IPv4 addresses.
 
   - If you specify IP addresses, specify the value in the **\["ip1","ip2",...]** format. You can enter up to 20 IP addresses.
@@ -183,7 +183,6 @@ Value range: 1~3600. Default value: 5.
   - `true` (default)
   - `false`
 * `keepalive_requests` - (Optional, Computed, Int) The number of reused persistent connections. Valid values: 60 to 1000. Default value: 1000
-
 
   -> **NOTE:**   This parameter specifies the number of persistent connections that can be reused after you enable the persistent connection feature.
 
@@ -222,6 +221,7 @@ By specifying custom request header fields and corresponding values, when the ac
 ### `redirect-backend_ports`
 
 The redirect-backend_ports supports the following:
+
 * `backend_port` - (Optional, Int, Available since v2.2.0) The back-to-source port. Valid values: `1` to `65535`. Required together with `listen_port` and `protocol`.
 * `listen_port` - (Optional, Int, Available since v2.2.0) The listening port. Valid values: `1` to `65535`. Required together with `backend_port` and `protocol`.
 * `protocol` - (Optional, String, Available since v2.2.0) The protocol type. Valid values: `http` and `https`. Required together with `listen_port` and `backend_port`.
@@ -229,20 +229,23 @@ The redirect-backend_ports supports the following:
 ### `redirect-request_headers`
 
 The redirect-request_headers supports the following:
+
 * `key` - (Optional) Specified custom request header fields
 * `value` - (Optional) Customize the value of the request header field.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<domain>`.
 * `cname` - The CNAME assigned by WAF to the domain name.
 * `domain_id` - The domain ID.
-* `status` - The status of the domain name. 
+* `status` - The status of the domain name.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Domain.
 * `delete` - (Defaults to 5 mins) Used when delete the Domain.
 * `update` - (Defaults to 5 mins) Used when update the Domain.

@@ -43,11 +43,13 @@ resource "alicloud_ram_group" "group" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `comments` - (Optional) The Group comment information. The maximum length is 128 characters.
 * `group_name` - (Optional, ForceNew, Available since v1.245.0) The group name. You must specify at least one of the `group_name` and `name`.
 It can be 1 to 64 characters in length and can contain letters, digits, periods (.), underscores (_), and dashes (-).
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `name` - (Deprecated since v1.120.0). Field 'name' has been deprecated from provider version 1.120.0. New field 'group_name' instead.
 * `force` - (Optional, Bool) Specifies whether to force delete the Group. Default value: `false`. Valid values:
   - `true`: Enable.
@@ -56,6 +58,7 @@ The following arguments will be discarded. Please use new fields as soon as poss
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - (Available since v1.245.0) The create time of the group.
 
@@ -64,6 +67,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.245.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Group.
 * `update` - (Defaults to 5 mins) Used when update the Group.

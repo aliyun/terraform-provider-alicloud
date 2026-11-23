@@ -94,6 +94,7 @@ Terraform cannot destroy resource `alicloud_aligreen_oss_stock_task`. Terraform 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `audio_antispam_freeze_config` - (Optional, ForceNew) Voice auto freeze configuration. Example:{"type":"suggestion","value":"block,review"}. The results are frozen according to the suggestion in the speech detection results.
 * `audio_auto_freeze_opened` - (Optional, ForceNew) Audio detection auto freeze switch. Value: true: automatically freeze, false: not automatically freeze.
 * `audio_max_size` - (Optional, ForceNew, Int) Resource property field representing the maximum size of a single audio. 1~2048MB, the default is 200MB, more than not detected.
@@ -140,11 +141,13 @@ antispam: Video voice antispam
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Oss Stock Task.
 
 ## Import

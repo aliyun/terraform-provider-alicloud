@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cloud Enterprise Network (CEN) Transit Router Ecr Attachment resource.
 
-
-
 For information about Cloud Enterprise Network (CEN) Transit Router Ecr Attachment and how to use it, see [What is Transit Router Ecr Attachment](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createtransitrouterecrattachment).
 
 -> **NOTE:** Available since v1.235.0.
@@ -74,13 +72,12 @@ resource "alicloud_cen_transit_router_ecr_attachment" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_ecr_attachment&spm=docs.r.cen_transit_router_ecr_attachment.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cen_id` - (Optional, ForceNew) CenId
 * `ecr_id` - (Required, ForceNew) EcrId
 * `ecr_owner_id` - (Optional, ForceNew, Int) EcrOwnerId
@@ -92,13 +89,15 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `status` - The status of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Transit Router Ecr Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Transit Router Ecr Attachment.
 * `update` - (Defaults to 5 mins) Used when update the Transit Router Ecr Attachment.

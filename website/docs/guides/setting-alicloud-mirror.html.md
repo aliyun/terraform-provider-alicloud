@@ -8,8 +8,8 @@ description: |-
 
 # Setting a Network Mirror
 
-Alibaba Cloud Provider has two source: `source = hashicorp/alicloud` and `source = aliyun/alicloud`. 
-Sometimes, running `terraform init` command to download and install provider will be too slow, 
+Alibaba Cloud Provider has two source: `source = hashicorp/alicloud` and `source = aliyun/alicloud`.
+Sometimes, running `terraform init` command to download and install provider will be too slow,
 or even though failed as following:
 
 ```text

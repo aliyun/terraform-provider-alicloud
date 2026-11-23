@@ -7,11 +7,11 @@ description: |-
   Provides a list of Vpc Ipv6 Gateways to the user.
 ---
 
-# alicloud\_vpc\_ipv6\_gateways
+# alicloud_vpc_ipv6_gateways
 
 This data source provides the Vpc Ipv6 Gateways of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.142.0+.
+-> **NOTE:** Available since v1.142.0+.
 
 ## Example Usage
 
@@ -61,7 +61,7 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `Available`, `Deleting`, `Pending`.
 * `vpc_id` - (Optional, ForceNew) The ID of the virtual private cloud (VPC) to which the IPv6 gateway belongs.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

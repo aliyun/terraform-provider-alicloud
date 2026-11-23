@@ -48,16 +48,19 @@ Terraform cannot destroy resource `alicloud_threat_detection_file_upload_limit`.
 ## Argument Reference
 
 The following arguments are supported:
+
 * `limit` - (Required) File Upload Threshold.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as ``.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the File Upload Limit.
 * `update` - (Defaults to 5 mins) Used when update the File Upload Limit.
 

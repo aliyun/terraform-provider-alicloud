@@ -46,19 +46,21 @@ resource "alicloud_dcdn_kv_namespace" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Required, ForceNew) Namespace description information
 * `namespace` - (Required, ForceNew) Namespace name. The name can contain letters, digits, hyphens (-), and underscores (_).
-
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.
 * `status` - The status of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Kv Namespace.
 * `delete` - (Defaults to 5 mins) Used when delete the Kv Namespace.
 

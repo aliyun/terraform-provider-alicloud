@@ -7,7 +7,7 @@ description: |-
   Provides a list of Bastionhost Host Share Keys to the user.
 ---
 
-# alicloud\_bastionhost\_host\_share\_keys
+# alicloud_bastionhost_host_share_keys
 
 This data source provides the Bastionhost Host Share Keys of the current Alibaba Cloud user.
 

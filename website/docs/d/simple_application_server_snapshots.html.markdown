@@ -7,7 +7,7 @@ description: |-
   Provides a list of Simple Application Server Snapshots to the user.
 ---
 
-# alicloud\_simple\_application\_server\_snapshots
+# alicloud_simple_application_server_snapshots
 
 This data source provides the Simple Application Server Snapshots of the current Alibaba Cloud user.
 

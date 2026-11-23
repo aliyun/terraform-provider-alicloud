@@ -141,13 +141,12 @@ resource "alicloud_cloud_firewall_vpc_cen_tr_firewall" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_vpc_cen_tr_firewall&spm=docs.r.cloud_firewall_vpc_cen_tr_firewall.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cen_id` - (Required, ForceNew) The ID of the Cloud Enterprise Network (CEN) instance.
 * `firewall_description` - (Optional, ForceNew) The description of the firewall.
 * `firewall_name` - (Required) The name of the Cloud Firewall instance.
@@ -172,7 +171,8 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `firewall_eni_id` - The ID of the firewall ENI.
 * `firewall_eni_vpc_id` - The ID of the VPC where the firewall ENI resides.
 * `firewall_vpc_attachment_id` - The attachment ID used in the firewall VPC to connect to the transit router (TR) in automatic mode.
@@ -181,6 +181,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 41 mins) Used when create the Vpc Cen Tr Firewall.
 * `delete` - (Defaults to 46 mins) Used when delete the Vpc Cen Tr Firewall.
 * `update` - (Defaults to 5 mins) Used when update the Vpc Cen Tr Firewall.

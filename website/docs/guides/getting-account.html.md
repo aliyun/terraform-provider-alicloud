@@ -32,4 +32,3 @@ For more account registration details, see [Sign up with Alibaba Cloud](https://
 There is a simple method to check whether an Alibaba Cloud account is an International-Site or China-Site account:
 An account can only access its corresponding site. That is, an International-Site account can only login to the [International-Site Website](https://www.alibabacloud.com/) and
 a China-Site account to the [China-Site Website](https://www.aliyun.com/).
-

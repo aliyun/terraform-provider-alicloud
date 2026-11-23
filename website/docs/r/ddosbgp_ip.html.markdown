@@ -10,8 +10,6 @@ description: |-
 
 Provides a Anti-DDoS Pro (DdosBgp) Ip resource.
 
-
-
 For information about Anti-DDoS Pro (DdosBgp) Ip and how to use it, see [What is Ip](https://www.alibabacloud.com/help/en/ddos-protection/latest/addip).
 
 -> **NOTE:** Available since v1.180.0.
@@ -64,6 +62,7 @@ resource "alicloud_ddosbgp_ip" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required, ForceNew) The ID of the Anti-DDoS Origin instance.
 * `ip` - (Required, ForceNew) The IP address that you want to add.
 * `member_uid` - (Optional, ForceNew, Available since v1.225.1) The member to which the asset belongs.
@@ -72,12 +71,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<ip>`.
 * `status` - The status of the IP address.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ip.
 * `delete` - (Defaults to 5 mins) Used when delete the Ip.
 

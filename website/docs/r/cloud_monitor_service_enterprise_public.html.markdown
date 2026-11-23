@@ -43,12 +43,14 @@ resource "alicloud_cloud_monitor_service_enterprise_public" "default" {
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Enterprise Public.
 * `delete` - (Defaults to 5 mins) Used when delete the Enterprise Public.
 

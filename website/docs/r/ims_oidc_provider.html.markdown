@@ -55,7 +55,8 @@ resource "alicloud_ims_oidc_provider" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `client_ids` - (Optional, Set) Client ID. 
+
+* `client_ids` - (Optional, Set) Client ID.
 * `description` - (Optional) Description of OIDC identity provider.
 * `fingerprints` - (Optional, Set) The authentication fingerprint of the HTTPS CA certificate.
 * `issuance_limit_time` - (Optional, Computed, Int) The earliest time when an external IdP is allowed to issue an ID Token. If the iat field in the ID Token is greater than the current time, the request is rejected.
@@ -66,6 +67,7 @@ Unit: hours. Value range: 1~168.
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `arn` - ARN of OIDC identity provider.
 * `create_time` - Creation Time (UTC time).
@@ -73,6 +75,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Oidc Provider.
 * `delete` - (Defaults to 5 mins) Used when delete the Oidc Provider.
 * `update` - (Defaults to 5 mins) Used when update the Oidc Provider.

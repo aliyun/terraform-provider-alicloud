@@ -117,13 +117,12 @@ resource "alicloud_ecs_snapshot_lock" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_snapshot_lock&spm=docs.r.ecs_snapshot_lock.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cool_off_period` - (Required, Int, Available since v2.1.0) The cool-off period. Unit: hours. Valid values: `0` to `72`. A value of `0` indicates that the snapshot is locked without a cool-off period. During the cool-off period, users with the required RAM permissions can unlock the snapshot, extend or shorten the cool-off period, and extend or shorten the lock duration. If the snapshot is already locked in compliance mode, set this parameter to `0` when you extend the lock duration. The cool-off period must be shorter than the lock duration.
 * `dry_run` - (Optional, Bool, Available since v2.1.0) Specifies whether to perform only a dry run, without performing the actual request. Defaults to `false`. Valid values:
   - `true`: performs only a precheck. If the precheck passes, the `DryRunOperation` error code is returned. If the precheck fails, an error message is returned.
@@ -138,6 +137,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `cool_off_period_expired_time` - (Computed, String, Available since v2.1.0) The time when the cool-off period ends. The API does not return this value while the lock is still in the cool-off period.
 * `lock_creation_time` - (Computed, String, Available since v2.1.0) The time when the snapshot was locked.

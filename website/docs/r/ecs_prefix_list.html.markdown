@@ -50,8 +50,6 @@ The following arguments are supported:
 * `description` - (Optional) The description of the prefix list. The description must be 2 to 256 characters in length and cannot start with `http://` or `https://`.
 * `entry` - (Required) The Entry. See [`entry`](#entry) below.
 
-
-
 ### `entry`
 
 The entry supports the following:
@@ -65,13 +63,11 @@ The entry supports the following:
   * For more information about CIDR blocks, see the "What is CIDR block?" section of the [Network FAQ](https://www.alibabacloud.com/help/doc-detail/40637.htm) topic.  * The total number of entries must not exceed the `max_entries` value.
 * `description` - (Optional) The description in entry. The description must be 2 to 32 characters in length and cannot start with `http://` or `https://`.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Prefix List.
-
 
 ## Import
 

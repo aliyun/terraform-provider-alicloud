@@ -57,19 +57,19 @@ resource "alicloud_direct_mail_dedicated_ip_pool" "with_ips" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_direct_mail_dedicated_ip_pool&spm=docs.r.direct_mail_dedicated_ip_pool.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `buy_resource_ids` - (Optional, String, Available since v2.2.0) The IDs of the purchased IP instances. Separate multiple IDs with commas (,). You can obtain the instance IDs from the response of the DedicatedIpNonePoolList operation. Member order is insignificant: the provider compares configurations and state by the trimmed, sorted ID set, so listing the IDs in a different order does not trigger an update. The configured IDs are the complete member set: an update replaces the pool members with the configured IDs, and removing `buy_resource_ids` removes all members. If members are changed outside Terraform, the next refresh records the actual (possibly empty) membership and the next apply restores the configured members.
 * `name` - (Required, ForceNew, String, Available since v2.2.0) The name of the IP pool. The name must be 1 to 50 characters in length. It can contain letters, digits, underscores (_), and hyphens (-). The name cannot be changed after the IP pool is created; changing `name` replaces the pool with a new one that has a different ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - (Computed, String, Available since v2.2.0) The ID of the resource supplied above.
 * `create_time` - (Computed, String, Available since v2.2.0) The creation time.
 * `ip_count` - (Computed, Int, Available since v2.2.0) The number of source IP addresses.
@@ -81,6 +81,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Dedicated Ip Pool.
 * `update` - (Defaults to 5 mins) Used when update the Dedicated Ip Pool.
 * `delete` - (Defaults to 5 mins) Used when delete the Dedicated Ip Pool.

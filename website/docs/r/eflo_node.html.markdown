@@ -55,6 +55,7 @@ resource "alicloud_eflo_node" "default" {
   status         = "Unused"
 }
 ```
+
 Creating a PayAsYouGo eflo node
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_eflo_node&exampleId=c7a78e81-3b3b-8b48-df8c-216206f8d1f9fe457282&activeTab=example&spm=docs.r.eflo_node.1.c7a78e813b&intl_lang=EN_US" target="_blank">
@@ -175,6 +176,7 @@ The default is Subscription.
   - ManualRenewal: manual renewal.
 
 The default ManualRenewal.
+
 * `resource_group_id` - (Optional, Computed) The ID of the resource group
 * `server_arch` - (Optional) Architecture
 
@@ -195,6 +197,7 @@ The default ManualRenewal.
 ### `data_disk`
 
 The data_disk supports the following:
+
 * `category` - (Optional) Data disk type
 * `performance_level` - (Optional) Performance level
 * `size` - (Optional, Int) Data disk size
@@ -202,6 +205,7 @@ The data_disk supports the following:
 ### `ip_allocation_policy`
 
 The ip_allocation_policy supports the following:
+
 * `bond_policy` - (Optional, ForceNew, List, Available since v1.265.0) Specify the cluster subnet ID based on the bond name See [`bond_policy`](#ip_allocation_policy-bond_policy) below.
 * `machine_type_policy` - (Optional, ForceNew, List, Available since v1.265.0) Model Assignment Policy See [`machine_type_policy`](#ip_allocation_policy-machine_type_policy) below.
 * `node_policy` - (Optional, ForceNew, List, Available since v1.265.0) Node allocation policy See [`node_policy`](#ip_allocation_policy-node_policy) below.
@@ -209,18 +213,21 @@ The ip_allocation_policy supports the following:
 ### `ip_allocation_policy-bond_policy`
 
 The ip_allocation_policy-bond_policy supports the following:
+
 * `bond_default_subnet` - (Optional, ForceNew, Available since v1.265.0) Default bond cluster subnet
 * `bonds` - (Optional, ForceNew, List, Available since v1.265.0) Bond information See [`bonds`](#ip_allocation_policy-bond_policy-bonds) below.
 
 ### `ip_allocation_policy-machine_type_policy`
 
 The ip_allocation_policy-machine_type_policy supports the following:
+
 * `bonds` - (Optional, ForceNew, List, Available since v1.265.0) Bond information See [`bonds`](#ip_allocation_policy-machine_type_policy-bonds) below.
 * `machine_type` - (Optional, ForceNew, Available since v1.265.0) Model
 
 ### `ip_allocation_policy-node_policy`
 
 The ip_allocation_policy-node_policy supports the following:
+
 * `bonds` - (Optional, ForceNew, List, Available since v1.265.0) Bond information See [`bonds`](#ip_allocation_policy-node_policy-bonds) below.
 * `hostname` - (Optional, ForceNew, Available since v1.265.0) Host name
 * `node_id` - (Optional, ForceNew, Available since v1.265.0) Node ID
@@ -228,24 +235,28 @@ The ip_allocation_policy-node_policy supports the following:
 ### `ip_allocation_policy-node_policy-bonds`
 
 The ip_allocation_policy-node_policy-bonds supports the following:
+
 * `name` - (Optional, ForceNew, Available since v1.265.0) Bond Name
 * `subnet` - (Optional, ForceNew, Available since v1.265.0) IP source cluster subnet
 
 ### `ip_allocation_policy-machine_type_policy-bonds`
 
 The ip_allocation_policy-machine_type_policy-bonds supports the following:
+
 * `name` - (Optional, ForceNew, Available since v1.265.0) Bond Name
 * `subnet` - (Optional, ForceNew, Available since v1.265.0) IP source cluster subnet
 
 ### `ip_allocation_policy-bond_policy-bonds`
 
 The ip_allocation_policy-bond_policy-bonds supports the following:
+
 * `name` - (Optional, ForceNew, Available since v1.265.0) Bond Name
 * `subnet` - (Optional, ForceNew, Available since v1.265.0) IP source cluster subnet
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `region_id` - The region ID of the resource
@@ -253,6 +264,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 30 mins) Used when create the Node.
 * `delete` - (Defaults to 5 mins) Used when delete the Node.
 * `update` - (Defaults to 30 mins) Used when update the Node.

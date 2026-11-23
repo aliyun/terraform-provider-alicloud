@@ -7,13 +7,13 @@ description: |-
   Provides a datasource to open the Threat Detection Log Shipper automatically.
 ---
 
-# alicloud\_threat\_detection\_log\_shipper
+# alicloud_threat_detection_log_shipper
 
 Using this data source can open Threat Detection Log Shipper automatically. If the service has been enabled, it will return `Opened`.
 
 For information about Threat Detection Log Shipper and how to use it, see [What is Log Shipper](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-modifyopenlogshipper).
 
--> **NOTE:** Available in v1.195.0+.
+-> **NOTE:** Available since v1.195.0+.
 
 ## Example Usage
 

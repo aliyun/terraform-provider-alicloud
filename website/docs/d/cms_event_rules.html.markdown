@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cms Event Rules to the user.
 ---
 
-# alicloud\_cms\_event\_rules
+# alicloud_cms_event_rules
 
 This data source provides the Cms Event Rules of the current Alibaba Cloud user.
 

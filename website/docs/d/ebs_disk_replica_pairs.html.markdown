@@ -28,15 +28,16 @@ output "alicloud_ebs_disk_replica_pair_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Optional, ForceNew) A list of Disk Replica Pair IDs.
 * `replica_group_id` - (Optional, ForceNew) Consistent Replication Group ID, you can specify a consistent replication group ID to query the replication pairs within the group.
 * `site` - (Optional, ForceNew) Get data for replication pairs where this Region is the production site or the disaster recovery site.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Disk Replica Pair IDs.
 * `pairs` - A list of Disk Replica Pair Entries. Each element contains the following attributes:
   * `id` - The first ID of the Disk Replica Pair.

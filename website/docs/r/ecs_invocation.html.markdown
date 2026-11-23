@@ -111,8 +111,8 @@ The following arguments are supported:
   * When you set `repeat_mode` to `Period`, you must specify `frequency`.
   * The value of the Frequency parameter is a cron expression. For more information, see [Cron expression](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/cron-expression).
 * `parameters` - (Optional, ForceNew) The key-value pairs of custom parameters to be passed in when the custom parameter feature is enabled.  Number of custom parameters: 0 to 10.
-* `username` - (Optional, ForceNew, Computed) The username that is used to run the command on the ECS instance. 
-  * For Linux instances, the root username is used. 
+* `username` - (Optional, ForceNew, Computed) The username that is used to run the command on the ECS instance.
+  * For Linux instances, the root username is used.
   * For Windows instances, the System username is used.
   * You can also specify other usernames that already exist in the ECS instance to run the command. It is more secure to run Cloud Assistant commands as a regular user. For more information, see [Configure a regular user to run Cloud Assistant commands](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/run-cloud-assistant-commands-as-a-regular-user).
 * `windows_password_name` - (Optional, ForceNew) The name of the password used to run the command on a Windows instance.

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cms Sls Groups to the user.
 ---
 
-# alicloud\_cms\_sls\_groups
+# alicloud_cms_sls_groups
 
 This data source provides the Cms Sls Groups of the current Alibaba Cloud user.
 

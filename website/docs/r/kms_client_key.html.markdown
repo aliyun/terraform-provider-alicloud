@@ -49,6 +49,7 @@ resource "alicloud_kms_client_key" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `aap_name` - (Required, ForceNew) ClientKey's parent Application Access Point name.
 * `not_after` - (Optional, ForceNew) The ClientKey expiration time. Example: "2027-08-10 T08:03:30Z".
 * `not_before` - (Optional, ForceNew) The valid start time of the ClientKey. Example: "2022-08-10 T08:03:30Z".
@@ -58,12 +59,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Create timestamp, e.g. "2022-08-10T08:03:30Z".
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Client Key.
 * `delete` - (Defaults to 5 mins) Used when delete the Client Key.
 

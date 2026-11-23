@@ -35,9 +35,7 @@ resource "alicloud_ims_user" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ims_user&spm=docs.r.ims_user.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

@@ -7,7 +7,7 @@ description: |-
   Provides an RDS account resource.
 ---
 
-# alicloud\_db\_account
+# alicloud_db_account
 
 Provides an RDS account resource and used to manage databases.
 

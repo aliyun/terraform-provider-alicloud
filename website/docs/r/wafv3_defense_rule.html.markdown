@@ -10,8 +10,6 @@ description: |-
 
 Provides a WAFV3 Defense Rule resource.
 
-
-
 For information about WAFV3 Defense Rule and how to use it, see [What is Defense Rule](https://next.api.alibabacloud.com/document/waf-openapi/2021-10-01/CreateDefenseRule).
 
 -> **NOTE:** Available since v1.257.0.
@@ -82,13 +80,12 @@ resource "alicloud_wafv3_defense_rule" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_wafv3_defense_rule&spm=docs.r.wafv3_defense_rule.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `config` - (Required, Set) Rule configuration content, in JSON format, constructed with a series of parameters.
 
   -> **NOTE:**  Depending on the specified **protection rule type**(`DefenseScene`), the specific parameters vary. For more information, see **Protection Rule Parameter Description**.
@@ -99,19 +96,22 @@ The following arguments are supported:
 * `defense_scene` - (Required, ForceNew) The WAF protection scenario to be created.
 
 When the protection rule type `DefenseType` is set to `template`, the value is as follows:
-  - `waf_base`: (Available since v1.269.0) indicates new web core protection.
-  - `ip_blacklist`: indicates the IP address blacklist.
-  - `custom_acl`: indicates a custom rule.
-  - `whitelist`: indicates the whitelist.
-  - `region_block`: indicates that the region is blocked.
-  - `cc`: indicates CC protection.
-  - `tamperproof`: Indicates that the web page is tamper-proof.
-  - `dlp`: Indicates information leakage protection.
-  - `spike_throttle`: indicates peak current limit.
+
+- `waf_base`: (Available since v1.269.0) indicates new web core protection.
+- `ip_blacklist`: indicates the IP address blacklist.
+- `custom_acl`: indicates a custom rule.
+- `whitelist`: indicates the whitelist.
+- `region_block`: indicates that the region is blocked.
+- `cc`: indicates CC protection.
+- `tamperproof`: Indicates that the web page is tamper-proof.
+- `dlp`: Indicates information leakage protection.
+- `spike_throttle`: indicates peak current limit.
 
 When the protection rule type `DefenseType` is set to `resource`, the value is as follows:
-  - `account_identifier`: indicates account extraction.
-  - `waf_codec`: indicates decode setting.
+
+- `account_identifier`: indicates account extraction.
+- `waf_codec`: indicates decode setting.
+
 * `defense_type` - (Required, ForceNew) The protection rule type. Value:
   - `template` (default): indicates the template protection rule.
   - `resource`: indicates the rule of the protected object dimension.
@@ -129,6 +129,7 @@ When the protection rule type `DefenseType` is set to `resource`, the value is a
 ### `config`
 
 The config supports the following:
+
 * `abroad_regions` - (Optional) The regions outside China from which you want to block requests. Separate multiple region codes with commas (,). You can call the DescribeIpAbroadCountryInfos operation to query the countries and regions outside China that can be blocked.
 * `account_identifiers` - (Optional, List) The policies for account extraction. Up to five policies are supported. Each policy is a JSON string. For more information, see accountIdentifiers description. See [`account_identifiers`](#config-account_identifiers) below.
 * `auto_update` - (Optional, Available since v1.269.0) Whether the new Web core protection rules are automatically updated. Values:
@@ -234,6 +235,7 @@ The config supports the following:
 ### `config-account_identifiers`
 
 The config-account_identifiers supports the following:
+
 * `decode_type` - (Optional) The authentication mode. Valid values:
   - plain: indicates plaintext.
   - basic: indicates Basic authentication.
@@ -246,6 +248,7 @@ The config-account_identifiers supports the following:
 ### `config-conditions`
 
 The config-conditions supports the following:
+
 * `key` - (Optional) Match field. Valid values: URL, URLPath, IP, Referer, User-Agent, Params, Cookie, Content-Type, Content-Length, X-Forwarded-For, Post-Body, Http-Method, Header, Host, HttpCode, and SensitiveInfo.
 
   -> **NOTE:**  Support for matching fields is based on the display in the WAF console. HttpCode and SensitiveInfo are the matching fields supported by the information leakage prevention rule (dlp).
@@ -288,10 +291,10 @@ The config-conditions supports the following:
 
   -> **NOTE:**  The value range of the logical (opValue) and matching content (values) parameters in the matching condition parameter is related to the specified matching field (key).
 
-
 ### `config-gray_config`
 
 The config-gray_config supports the following:
+
 * `gray_rate` - (Optional, Int) The percentage of traffic for which the canary release takes effect. The value must be in the range of 1 to 100.
 * `gray_sub_key` - (Optional) The sub-feature of the statistical object. This parameter is required when you set the `GrayTarget` parameter to `cookie`, `header`, or `queryarg`.
 * `gray_target` - (Optional) The type of the canary release object. Valid values:
@@ -304,6 +307,7 @@ The config-gray_config supports the following:
 ### `config-rate_limit`
 
 The config-rate_limit supports the following:
+
 * `interval` - (Optional, Int) The statistical period, in seconds. This parameter specifies the period during which access counts are collected, and works with the Threshold parameter.
 Valid values: 1 to 1800 seconds.
 * `status` - (Optional, Set) Response code frequency setting. The description is in the JSON string format. See [`status`](#config-rate_limit-status) below.
@@ -321,6 +325,7 @@ Valid values: 60 to 86400.
 ### `config-time_config`
 
 The config-time_config supports the following:
+
 * `time_periods` - (Optional, List) The time period during which the rule is effective. This parameter is required when you set the `TimeScope` parameter to `period`. A maximum of five time periods can be set. See [`time_periods`](#config-time_config-time_periods) below.
 * `time_scope` - (Optional, Computed) The effective period of the rule. Valid values:
   - `permanent` (default): The rule is always effective.
@@ -332,6 +337,7 @@ The config-time_config supports the following:
 ### `config-waf_base_config`
 
 The config-waf_base_config supports the following:
+
 * `rule_batch_operation_config` - (Optional, Available since v1.269.0) The batch operation on rules. If this parameter is not empty, the RuleDetail parameter must be empty. Valid values:
   - `default`: restores the default settings.
   - `all_on`: enables all rules.
@@ -346,6 +352,7 @@ The config-waf_base_config supports the following:
 ### `config-waf_base_config-rule_detail`
 
 The config-waf_base_config-rule_detail supports the following:
+
 * `rule_action` - (Optional, Available since v1.269.0) Web core protection rule action. Valid values:
   - `block`: blocks requests.
   - `monitor`: places requests in observation mode.
@@ -355,24 +362,28 @@ The config-waf_base_config-rule_detail supports the following:
 ### `config-time_config-time_periods`
 
 The config-time_config-time_periods supports the following:
+
 * `end` - (Optional, Int) The end time of the rule. This is a UNIX timestamp in milliseconds.
 * `start` - (Optional, Int) The start time of the rule. This is a UNIX timestamp in milliseconds.
 
 ### `config-time_config-week_time_periods`
 
 The config-time_config-week_time_periods supports the following:
+
 * `day` - (Optional) The time period of each day when the rule is effective. It includes the start time start and end time end. You can specify multiple time periods.
 * `day_periods` - (Optional, List) The time period of each day when the rule is effective.  See [`day_periods`](#config-time_config-week_time_periods-day_periods) below.
 
 ### `config-time_config-week_time_periods-day_periods`
 
 The config-time_config-week_time_periods-day_periods supports the following:
+
 * `end` - (Optional, Int) The end time of each day when the rule is effective. This is a millisecond-level timestamp relative to 00:00 of the day. The value must be in the range of [0-86400000).
 * `start` - (Optional, Int) The start time of each day when the rule is effective. This is a millisecond-level timestamp relative to 00:00 of the day. The value must be in the range of [0-86400000).
 
 ### `config-rate_limit-status`
 
 The config-rate_limit-status supports the following:
+
 * `code` - (Optional, Int) Required. Specifies the response code.
 * `count` - (Optional, Int) The threshold for the number of occurrences. When the number of occurrences of the specified HTTP status code exceeds this threshold, the protection rule is triggered. Valid values: 2 to 50000. You can specify Count or Ratio. You cannot specify the two parameters at the same time.
 * `ratio` - (Optional, Int) The threshold for the proportion of occurrences (percentage). When the proportion of occurrences of the specified HTTP status code exceeds this threshold, the protection rule is triggered. Valid values: 1 to 100. You can specify Count or Ratio. You cannot specify the two parameters at the same time.
@@ -380,6 +391,7 @@ The config-rate_limit-status supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<instance_id>:<defense_type>:<rule_id>`.
 * `gmt_modified` - The modification time of the protection rule.
 * `rule_id` - The protection rule ID.
@@ -387,6 +399,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Defense Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Defense Rule.
 * `update` - (Defaults to 5 mins) Used when update the Defense Rule.

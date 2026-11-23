@@ -106,6 +106,7 @@ resource "alicloud_cr_ee_sync_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required, ForceNew) The ID of the Container Registry source instance.
 * `namespace_name` - (Required, ForceNew) The namespace name of the source instance.
 * `repo_name` - (Optional, ForceNew) The image repository name of the source instance.
@@ -142,6 +143,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.240.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Repo Sync Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Repo Sync Rule.
 

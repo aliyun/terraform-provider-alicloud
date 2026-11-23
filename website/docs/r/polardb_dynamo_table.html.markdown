@@ -105,9 +105,7 @@ resource "alicloud_polardb_dynamo_table" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_dynamo_table&spm=docs.r.polardb_dynamo_table.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

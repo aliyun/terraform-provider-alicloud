@@ -97,7 +97,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `origin_verify` - Specifies whether to verify the origin server certificate.
   * `origin_mtls` - Specifies whether mTLS is enabled.
   * `follow302_enable` - Specifies whether to follow 302 redirects from the origin.
-  * `follow302_max_tries` - The maximum number of 302 redirects to follow.   
+  * `follow302_max_tries` - The maximum number of 302 redirects to follow.
   * `follow302_target_host` - The host to use for the origin request after following a 302 redirect.
   * `follow302_retain_header` - Specifies whether to retain the original request header when following a redirect.
   * `follow302_retain_args` - Specifies whether to retain the original request parameters when following a redirect.

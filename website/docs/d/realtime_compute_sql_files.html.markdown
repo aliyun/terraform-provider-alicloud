@@ -34,6 +34,7 @@ output "first_sql_file_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `namespace` - (Required) The name of the namespace.
 * `workspace` - (Required) The ID of the workspace.
 * `ids` - (Optional, Computed) A list of Sql File IDs. The value is formulated as `<workspace>:<namespace>:<sql_file_id>`.
@@ -42,6 +43,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Sql File IDs.
 * `files` - A list of Sql File Entries. Each element contains the following attributes:
   * `batch_mode` - Whether the SQL query script runs in batch mode.

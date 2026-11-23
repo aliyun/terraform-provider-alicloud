@@ -59,11 +59,11 @@ resource "alicloud_cms_monitor_group_instances" "example" {
 The following arguments are supported:
 
 * `group_id` - (Required, ForceNew) The id of Cms Group.
-* `instances` - (Required) Instance information added to the Cms Group. See [`instances`](#instances) below. 
+* `instances` - (Required) Instance information added to the Cms Group. See [`instances`](#instances) below.
 
 ### `instances`
 
-The instances supports the following: 
+The instances supports the following:
 
 * `category` - (Required) The category of instance.
 * `instance_id` - (Required) The id of instance.

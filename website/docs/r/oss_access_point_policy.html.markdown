@@ -72,13 +72,12 @@ resource "alicloud_oss_access_point_policy" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_access_point_policy&spm=docs.r.oss_access_point_policy.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_point_name` - (Required, ForceNew) The name of the access point.
 * `bucket` - (Required, ForceNew) The name of the bucket to which the access point belongs.
 * `policy` - (Required) The JSON-formatted access point policy document. The policy is compared semantically (key ordering and whitespace differences are ignored).
@@ -86,6 +85,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<bucket>:<access_point_name>`.
 
 ## Import

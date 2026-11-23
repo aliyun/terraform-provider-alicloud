@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cloud SSO Directory resource.
 
-
-
 For information about Cloud SSO Directory and how to use it, see [What is Directory](https://www.alibabacloud.com/help/en/cloudsso/latest/api-cloudsso-2021-05-15-createdirectory).
 
 -> **NOTE:** Available since v1.135.0.
@@ -45,6 +43,7 @@ resource "alicloud_cloud_sso_directory" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `directory_global_access_status` - (Optional, Computed, Available since v1.248.0) Directory Global Acceleration activation status
 * `directory_name` - (Optional) DirectoryName
 * `login_preference` - (Optional, List, Available since v1.248.0) Login preferences See [`login_preference`](#login_preference) below.
@@ -59,18 +58,21 @@ The following arguments are supported:
 ### `login_preference`
 
 The login_preference supports the following:
+
 * `allow_user_to_get_credentials` - (Optional, Computed, Available since v1.248.0) Whether the user can obtain the program access credential in the portal after logging in.
 * `login_network_masks` - (Optional, Available since v1.248.0) IP address whitelist
 
 ### `mfa_authentication_setting_info`
 
 The mfa_authentication_setting_info supports the following:
+
 * `mfa_authentication_advance_settings` - (Optional, Computed, Available since v1.248.0) Global MFA validation policy
 * `operation_for_risk_login` - (Optional, Computed, Available since v1.248.0) MFA verification policy for abnormal logon.
 
 ### `password_policy`
 
 The password_policy supports the following:
+
 * `max_login_attempts` - (Optional, Computed, Int, Available since v1.248.0) Number of password retries.
 * `max_password_age` - (Optional, Computed, Int, Available since v1.248.0) Password validity period.
 * `min_password_different_chars` - (Optional, Computed, Int, Available since v1.248.0) The minimum number of different characters in a password.
@@ -81,6 +83,7 @@ The password_policy supports the following:
 ### `saml_identity_provider_configuration`
 
 The saml_identity_provider_configuration supports the following:
+
 * `binding_type` - (Optional, ForceNew, Computed, Available since v1.248.0) The Binding method for initiating a SAML request.
 * `encoded_metadata_document` - (Optional, Computed) EncodedMetadataDocument
 * `entity_id` - (Optional, ForceNew, Available since v1.248.0) EntityId
@@ -91,6 +94,7 @@ The saml_identity_provider_configuration supports the following:
 ### `saml_service_provider`
 
 The saml_service_provider supports the following:
+
 * `authn_sign_algo` - (Optional, Computed, Available since v1.248.0) Signature algorithms supported by AuthNRequest
 * `certificate_type` - (Optional, Computed, Available since v1.248.0) Type of certificate used for signing in the SSO process
 * `support_encrypted_assertion` - (Optional, Computed, Available since v1.248.0) Whether IdP-side encryption of Assertion is supported.
@@ -98,12 +102,14 @@ The saml_service_provider supports the following:
 ### `user_provisioning_configuration`
 
 The user_provisioning_configuration supports the following:
+
 * `default_landing_page` - (Optional, Available since v1.248.0) The duration of the Session after the user logs in.
 * `session_duration` - (Optional, Available since v1.248.0) The duration of the Session after the user logs in.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - CreateTime
 * `password_policy` - Password policy
@@ -125,6 +131,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Directory.
 * `delete` - (Defaults to 5 mins) Used when delete the Directory.
 * `update` - (Defaults to 5 mins) Used when update the Directory.

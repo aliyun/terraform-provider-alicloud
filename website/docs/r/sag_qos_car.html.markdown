@@ -69,7 +69,6 @@ The following arguments are supported:
 * `max_bandwidth_percent` - (Optional) The maximum bandwidth percentage allowed for the stream specified in the quintuple rule. It is based on the maximum upstream bandwidth you set for the associated Smart Access Gateway (SAG) instance.This parameter is required when the value of the LimitType parameter is Percent.
 * `percent_source_type` - (Optional) The bandwidth type when the speed is limited based on percentage. Valid values: CcnBandwidth, InternetUpBandwidth.The default value is InternetUpBandwidth.
 
-
 ## Attributes Reference
 
 The following attributes are exported:

@@ -7,11 +7,11 @@ description: |-
   Provides a list of Threat Detection Vul Whitelists to the user.
 ---
 
-# alicloud\_threat\_detection\_vul\_whitelists
+# alicloud_threat_detection_vul_whitelists
 
 This data source provides Threat Detection Vul Whitelists of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.195.0+.
+-> **NOTE:** Available since v1.195.0+.
 
 ## Example Usage
 
@@ -30,6 +30,7 @@ output "alicloud_threat_detection_vul_whitelist_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Optional, ForceNew, Computed) A list of Threat Detection Vul Whitelist IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -43,4 +44,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `whitelist` - Information about the vulnerability to be added to the whitelist.
   * `target_info` - Set the effective range of the whitelist.
   * `reason` - Reason for adding whitelist.
-  

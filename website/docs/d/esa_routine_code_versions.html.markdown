@@ -31,6 +31,7 @@ output "code_versions" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `routine_name` - (Required) The name of the routine to query code versions for.
 * `search_key_word` - (Optional) A keyword used to fuzzy-match code versions.
 * `ids` - (Optional) A list of code version IDs (code version numbers) used to filter the result.
@@ -39,6 +40,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `versions` - A list of Routine Code Versions. Each element contains the following attributes:
   * `id` - The ID of the code version. Same as `code_version`.
   * `code_version` - The code version number.

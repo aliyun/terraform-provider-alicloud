@@ -86,13 +86,12 @@ resource "alicloud_apig_source" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_apig_source&spm=docs.r.apig_source.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `gateway_id` - (Required, ForceNew) The ID of the gateway instance.
 * `k8s_source_info` - (Optional, ForceNew, Set) The ACK cluster source information. Required when `type` is `K8S`. See [`k8s_source_info`](#k8s_source_info) below.
 * `nacos_source_info` - (Optional, ForceNew, Set) The MSE Nacos source information. Required when `type` is `MSE_NACOS`. See [`nacos_source_info`](#nacos_source_info) below.
@@ -102,16 +101,19 @@ The following arguments are supported:
 ### `k8s_source_info`
 
 The k8s_source_info supports the following:
+
 * `cluster_id` - (Optional, ForceNew) The ID of the ACK cluster.
 
 ### `nacos_source_info`
 
 The nacos_source_info supports the following:
+
 * `instance_id` - (Optional, ForceNew) The ID of the MSE Nacos instance.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `association_reason` - The reason for the association status.
 * `association_status` - The association status of the source.
@@ -125,6 +127,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax/operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Source.
 * `delete` - (Defaults to 5 mins) Used when delete the Source.
 * `update` - (Defaults to 6 mins) Used when update the Source.

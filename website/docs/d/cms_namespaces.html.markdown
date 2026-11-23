@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cms Namespaces to the user.
 ---
 
-# alicloud\_cms\_namespaces
+# alicloud_cms_namespaces
 
 This data source provides the Cms Namespaces of the current Alibaba Cloud user.
 

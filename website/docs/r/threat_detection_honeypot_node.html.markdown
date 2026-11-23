@@ -41,6 +41,7 @@ resource "alicloud_threat_detection_honeypot_node" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `allow_honeypot_access_internet` - (Optional, ForceNew) Whether to allow honeypot access to the external network. Value:-**true**: Allow-**false**: Disabled
 * `available_probe_num` - (Required) Number of probes available.
 * `node_name` - (Required) Management node name.
@@ -49,6 +50,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `status` - The status of the resource
@@ -56,6 +58,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Honeypot Node.
 * `delete` - (Defaults to 5 mins) Used when delete the Honeypot Node.
 * `update` - (Defaults to 5 mins) Used when update the Honeypot Node.

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cms Hybrid Monitor Datas to the user.
 ---
 
-# alicloud\_cms\_hybrid\_monitor\_datas
+# alicloud_cms_hybrid_monitor_datas
 
 This data source provides the Cms Hybrid Monitor Datas of the current Alibaba Cloud user.
 

@@ -85,21 +85,22 @@ resource "alicloud_mongodb_replica_set_role" "public" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_instance_id` - (Required, ForceNew) The instance ID.
 * `role_id` - (Required, ForceNew) The role ID in the replica set.
 * `connection_prefix` - (Optional) The prefix of the connection string, will be computed if not specified.
 * `connection_port` - (Optional) The port of the connection string, will be computed if not specified.`
 * `network_type` - (Required, ForceNew) The network type of the connection string. Valid values:
-    - `VPC`: private network address.
-    - `Public`: public network address.
+  - `VPC`: private network address.
+  - `Public`: public network address.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. Composed of instance ID, network type and role ID with format `<db_instance_id>:<network_type>:<role_id>`.
 * `replica_set_role` - The role of the related connection string.
 * `connection_domain` - The connection address of the role.
-
 
 ## Import
 

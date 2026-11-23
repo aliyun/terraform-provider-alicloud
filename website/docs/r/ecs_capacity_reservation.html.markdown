@@ -60,6 +60,7 @@ resource "alicloud_ecs_capacity_reservation" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `capacity_reservation_name` - (Optional) Capacity reservation service name.
 * `description` - (Optional) description of the capacity reservation instance.
 * `end_time` - (Optional) The expiration time of the capacity reservation service. The time format follows the ISO 8601 standard and must use UTC +0 time, in the format `yyyy-MM-ddTHH:mm:ssZ`. This parameter takes effect only when `end_time_type` is set to `Limited`. Example: `2021-10-30T06:32:00Z`.
@@ -76,6 +77,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.
 * `payment_type` - The payment type of the resource
 * `start_time_type` - The capacity is scheduled to take effect. Possible values:-Now: Effective immediately.-Later: the specified time takes effect.
@@ -86,6 +88,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Capacity Reservation.
 * `delete` - (Defaults to 5 mins) Used when delete the Capacity Reservation.
 * `update` - (Defaults to 5 mins) Used when update the Capacity Reservation.

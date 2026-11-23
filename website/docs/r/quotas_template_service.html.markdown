@@ -50,19 +50,21 @@ Terraform cannot destroy resource `alicloud_quotas_template_service`. Terraform 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `service_status` - (Required, Int) Status of the quota template. Valid values:
   - `-1`: disabled.
   - `1`: enabled.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as ``.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Template Service.
 * `update` - (Defaults to 5 mins) Used when update the Template Service.
 

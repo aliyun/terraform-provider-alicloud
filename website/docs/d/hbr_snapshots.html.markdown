@@ -7,7 +7,7 @@ description: |-
   Provides a list of Hybrid Backup Recovery (HBR) Snapshots to the user.
 ---
 
-# alicloud\_hbr\_snapshots
+# alicloud_hbr_snapshots
 
 This data source provides the Hbr Snapshots of the current Alibaba Cloud user.
 

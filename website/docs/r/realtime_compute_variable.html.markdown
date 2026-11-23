@@ -78,9 +78,7 @@ resource "alicloud_realtime_compute_variable" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_realtime_compute_variable&spm=docs.r.realtime_compute_variable.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

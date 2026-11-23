@@ -7,11 +7,11 @@ description: |-
   Provides a list of Alidns Address Pools to the user.
 ---
 
-# alicloud\_alidns\_address\_pools
+# alicloud_alidns_address_pools
 
 This data source provides the Alidns Address Pools of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.152.0+.
+-> **NOTE:** Available since v1.152.0+.
 
 ## Example Usage
 
@@ -46,7 +46,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

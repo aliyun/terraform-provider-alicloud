@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_log_alert
 
-Log alert is a unit of log service, which is used to monitor and alert the user's logstore status information. 
+Log alert is a unit of log service, which is used to monitor and alert the user's logstore status information.
 Log Service enables you to configure alerts based on the charts in a dashboard to monitor the service status in real time.
 
 For information about SLS Alert and how to use it, see [SLS Alert Overview](https://www.alibabacloud.com/help/en/doc-detail/209202.html)
@@ -384,12 +384,11 @@ The following arguments are supported:
 * `run_immediately` - (Optional) Whether to run the alert immediately.
 * `time_zone` - (Optional) Time zone for schedule.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
 
-*  `id` - The ID of the log alert. It formats of `<project>:<alert_name>`.
+* `id` - The ID of the log alert. It formats of `<project>:<alert_name>`.
 
 ## Import
 

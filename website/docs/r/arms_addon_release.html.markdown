@@ -125,6 +125,7 @@ resource "alicloud_arms_addon_release" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `addon_name` - (Required, ForceNew) Addon Name.
 * `addon_release_name` - (Optional, ForceNew, Computed) The name of the resource.
 * `addon_version` - (Required) Version number of Addon. Addon information can be obtained through ListAddons.
@@ -135,12 +136,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<environment_id>:<addon_release_name>`.
 * `create_time` - Creation time.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Addon Release.
 * `delete` - (Defaults to 5 mins) Used when delete the Addon Release.
 * `update` - (Defaults to 5 mins) Used when update the Addon Release.

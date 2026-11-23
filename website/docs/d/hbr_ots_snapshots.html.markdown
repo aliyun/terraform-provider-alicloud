@@ -7,7 +7,7 @@ description: |-
   Provides a list of Hybrid Backup Recovery (HBR) Ots Snapshots to the user.
 ---
 
-# alicloud\_hbr\_ots\_snapshots
+# alicloud_hbr_ots_snapshots
 
 This data source provides the Hbr Ots Snapshots of the current Alibaba Cloud user.
 
@@ -57,4 +57,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `table_name` - The name of the table in the Table store instance.
   * `range_start` - The time when the backup job started. This value is a UNIX timestamp. Unit: milliseconds.
   * `range_end` - The time when the backup job ended. This value is a UNIX timestamp. Unit: milliseconds.
-

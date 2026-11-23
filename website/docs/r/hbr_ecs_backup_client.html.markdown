@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Hybrid Backup Recovery (HBR) Ecs Backup Client resource.
 ---
 
-# alicloud\_hbr\_ecs\_backup\_client
+# alicloud_hbr_ecs_backup_client
 
 Provides a Hybrid Backup Recovery (HBR) Ecs Backup Client resource.
 
 For information about Hybrid Backup Recovery (HBR) Ecs Backup Client and how to use it, see [What is Ecs Backup Client](https://www.alibabacloud.com/help/doc-detail/186570.htm).
 
--> **NOTE:** Available in v1.132.0+.
+-> **NOTE:** Available since v1.132.0+.
 
 ## Example Usage
 
@@ -109,13 +109,13 @@ The following attributes are exported:
 ## Notice
 
 -> **Note:** Please read the following precautions carefully before deleting a client:
+
 1. You cannot delete active clients that have received heartbeat packets within one hour.
 2. You can make the client inactive by change the status of client to `STOPPED`.
 3. The resources bound to the client will be deleted in cascade, including:
     - Backup plan
     - Backup task (Running in the background)
     - Snapshot
-
 
 ## Import
 

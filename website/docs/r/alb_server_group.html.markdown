@@ -10,8 +10,6 @@ description: |-
 
 Provides a Application Load Balancer (ALB) Server Group resource.
 
-
-
 For information about Application Load Balancer (ALB) Server Group and how to use it, see [What is Server Group](https://www.alibabacloud.com/help/en/slb/application-load-balancer/developer-reference/api-alb-2020-06-16-createservergroup).
 
 -> **NOTE:** Available since v1.131.0.
@@ -119,6 +117,7 @@ resource "alicloud_alb_server_group" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `connection_drain_config` - (Optional, Computed, List, Available since v1.242.0) Elegant interrupt configuration. See [`connection_drain_config`](#connection_drain_config) below.
 * `cross_zone_enabled` - (Optional, Computed, Available since v1.242.0) Indicates whether cross-zone load balancing is enabled for the server group. Valid values:
   - `true` (default)
@@ -126,11 +125,11 @@ The following arguments are supported:
 
   -> **NOTE:**
 
-  *   Basic ALB instances do not support server groups that have cross-zone load balancing disabled. Only Standard and WAF-enabled ALB instances support server groups that have cross-zone load balancing.
+  * Basic ALB instances do not support server groups that have cross-zone load balancing disabled. Only Standard and WAF-enabled ALB instances support server groups that have cross-zone load balancing.
 
-  *   Cross-zone load balancing can be disabled for server groups of the server and IP type, but not for server groups of the Function Compute type.
+  * Cross-zone load balancing can be disabled for server groups of the server and IP type, but not for server groups of the Function Compute type.
 
-  *   When cross-zone load balancing is disabled, session persistence cannot be enabled.
+  * When cross-zone load balancing is disabled, session persistence cannot be enabled.
 * `dry_run` - (Optional, Available since v1.243.0) Whether to PreCheck only this request. Value:
 true: Send a check request,
 false (default): Send a normal request.
@@ -142,22 +141,22 @@ false (default): Send a normal request.
 * `ipv6_enabled` - (Optional, ForceNew, Available since v1.243.0) Enable Ipv6
 * `protocol` - (Optional, ForceNew, Computed) The backend protocol. Valid values:
 
-  *   `HTTP`: allows you to associate an HTTPS, HTTP, or QUIC listener with the server group. This is the default value.
+  * `HTTP`: allows you to associate an HTTPS, HTTP, or QUIC listener with the server group. This is the default value.
 
-  *   `HTTPS`: allows you to associate HTTPS listeners with backend servers.
+  * `HTTPS`: allows you to associate HTTPS listeners with backend servers.
 
-  *   `gRPC`: allows you to associate an HTTPS or QUIC listener with the server group.
+  * `gRPC`: allows you to associate an HTTPS or QUIC listener with the server group.
 
   -> **NOTE:**   You do not need to specify a backend protocol if you set `ServerGroupType` to `Fc`.
 
 * `resource_group_id` - (Optional, Computed) Elegant interrupt configuration.
 * `scheduler` - (Optional, Computed) The scheduling algorithm. Valid values:
 
-  *   `Wrr` (default): The weighted round-robin algorithm is used. Backend servers that have higher weights receive more requests than those that have lower weights.
+  * `Wrr` (default): The weighted round-robin algorithm is used. Backend servers that have higher weights receive more requests than those that have lower weights.
 
-  *   `Wlc`: The weighted least connections algorithm is used. Requests are distributed based on the weights and the number of connections to backend servers. If two backend servers have the same weight, the backend server that has fewer connections is expected to receive more requests.
+  * `Wlc`: The weighted least connections algorithm is used. Requests are distributed based on the weights and the number of connections to backend servers. If two backend servers have the same weight, the backend server that has fewer connections is expected to receive more requests.
 
-  *   `Sch`: The consistent hashing algorithm is used. Requests from the same source IP address are distributed to the same backend server.
+  * `Sch`: The consistent hashing algorithm is used. Requests from the same source IP address are distributed to the same backend server.
 
   -> **NOTE:**  This parameter takes effect when the `ServerGroupType` parameter is set to `Instance` or `Ip`.
 
@@ -178,10 +177,10 @@ false (default): Send a normal request.
 
   -> **NOTE:**   This parameter takes effect when the `ServerGroupType` parameter is set to `Instance` or `Ip`.
 
-
 ### `connection_drain_config`
 
 The connection_drain_config supports the following:
+
 * `connection_drain_enabled` - (Optional, Computed, Available since v1.242.0) Specifies whether to enable connection draining. Valid values:
 
   - `true`
@@ -195,6 +194,7 @@ The connection_drain_config supports the following:
 ### `health_check_config`
 
 The health_check_config supports the following:
+
 * `health_check_codes` - (Optional, Computed, List) The status code for a successful health check
 * `health_check_connect_port` - (Optional, Computed, Int) The backend port that is used for health checks.
 
@@ -206,31 +206,31 @@ The health_check_config supports the following:
 
 * `health_check_enabled` - (Required) Specifies whether to enable the health check feature. Valid values:
 
-  *   `true`
+  * `true`
 
-  *   `false`
+  * `false`
 
   -> **NOTE:**   If the `ServerGroupType` parameter is set to `Instance` or `Ip`, the health check feature is enabled by default. If the `ServerGroupType` parameter is set to `Fc`, the health check feature is disabled by default.
 
 * `health_check_host` - (Optional, Computed) The domain name that is used for health checks.
 
-  *   **Backend Server Internal IP** (default): Use the internal IP address of backend servers as the health check domain name.
+  * **Backend Server Internal IP** (default): Use the internal IP address of backend servers as the health check domain name.
 
-  *   **Custom Domain Name**: Enter a domain name.
+  * **Custom Domain Name**: Enter a domain name.
 
-    *   The domain name must be 1 to 80 characters in length.
-    *   The domain name can contain lowercase letters, digits, hyphens (-), and periods (.).
-    *   The domain name must contain at least one period (.) but cannot start or end with a period (.).
-    *   The rightmost domain label of the domain name can contain only letters, and cannot contain digits or hyphens (-).
-    *   The domain name cannot start or end with a hyphen (-).
+    * The domain name must be 1 to 80 characters in length.
+    * The domain name can contain lowercase letters, digits, hyphens (-), and periods (.).
+    * The domain name must contain at least one period (.) but cannot start or end with a period (.).
+    * The rightmost domain label of the domain name can contain only letters, and cannot contain digits or hyphens (-).
+    * The domain name cannot start or end with a hyphen (-).
 
   -> **NOTE:**   This parameter takes effect only if `HealthCheckProtocol` is set to `HTTP`, `HTTPS`, or `gRPC`.
 
 * `health_check_http_version` - (Optional, Computed) The HTTP version that is used for health checks. Valid values:
 
-  *   **HTTP1.0**
+  * **HTTP1.0**
 
-  *   **HTTP1.1**
+  * **HTTP1.1**
 
   -> **NOTE:**   This parameter takes effect only if you set `HealthCheckEnabled` to true and `HealthCheckProtocol` to `HTTP` or `HTTPS`.
 
@@ -242,11 +242,11 @@ The health_check_config supports the following:
 
 * `health_check_method` - (Optional, Computed) The HTTP method that is used for health checks. Valid values:
 
-  *   `GET`: If the length of a response exceeds 8 KB, the response is truncated. However, the health check result is not affected.
+  * `GET`: If the length of a response exceeds 8 KB, the response is truncated. However, the health check result is not affected.
 
-  *   `POST`: gRPC health checks use the POST method by default.
+  * `POST`: gRPC health checks use the POST method by default.
 
-  *   `HEAD`: HTTP and HTTPS health checks use the HEAD method by default.
+  * `HEAD`: HTTP and HTTPS health checks use the HEAD method by default.
 
   -> **NOTE:**   This parameter takes effect only if you set `HealthCheckEnabled` to true and `HealthCheckProtocol` to `HTTP`, `HTTPS`, or `gRPC`.
 
@@ -282,6 +282,7 @@ The health_check_config supports the following:
 ### `servers`
 
 The servers supports the following:
+
 * `description` - (Optional) The description of the backend server. The description must be 2 to 256 characters in length, and cannot start with http:// or https://.
 * `port` - (Optional, Int) The port that is used by the backend server. Valid values: `1` to `65535`. You can specify at most 200 servers in each call.
 
@@ -289,17 +290,17 @@ The servers supports the following:
 
 * `remote_ip_enabled` - (Optional, Available since v1.194.0) Specifies whether to enable the remote IP feature. You can specify at most 200 servers in each call. Default values:
 
-  *   `true`: enables the feature.
+  * `true`: enables the feature.
 
-  *   `false`: disables the feature.
+  * `false`: disables the feature.
 
   -> **NOTE:**   This parameter takes effect only when `ServerType` is set to `Ip`.
 
 * `server_id` - (Required) The ID of the backend server. You can specify at most 200 servers in each call.
 
-  *   If the server group is of the `Instance` type, set ServerId to the ID of a resource of the `Ecs`, `Eni`, or `Eci` type.
+  * If the server group is of the `Instance` type, set ServerId to the ID of a resource of the `Ecs`, `Eni`, or `Eci` type.
 
-  *   If the server group is of the `Ip` type, set ServerId to IP addresses.
+  * If the server group is of the `Ip` type, set ServerId to IP addresses.
 
   -> **NOTE:**   You cannot perform this operation on a server group of the Function Compute type. You can call the [ListServerGroups](https://www.alibabacloud.com/help/en/doc-detail/213627.html) operation to query the type of server groups.
 
@@ -320,10 +321,10 @@ The servers supports the following:
 
   -> **NOTE:**   You do not need to set this parameter if you set `ServerType` to `Fc`.
 
-
 ### `slow_start_config`
 
 The slow_start_config supports the following:
+
 * `slow_start_duration` - (Optional, Computed, Int, Available since v1.242.0) The duration of a slow start.
 
   Valid values: 30 to 900.
@@ -337,6 +338,7 @@ The slow_start_config supports the following:
 ### `sticky_session_config`
 
 The sticky_session_config supports the following:
+
 * `cookie` - (Optional, Computed) The cookie to be configured on the server.
 
   The cookie must be 1 to 200 characters in length and can contain only ASCII characters and digits. It cannot contain commas (,), semicolons (;), or space characters. It cannot start with a dollar sign ($).
@@ -353,34 +355,35 @@ The sticky_session_config supports the following:
 
 * `sticky_session_enabled` - (Optional) Specifies whether to enable session persistence. Valid values:
 
-  *   `true`
+  * `true`
 
-  *   `false`
+  * `false`
 
   -> **NOTE:**   This parameter takes effect when the `ServerGroupType` parameter is set to `Instance` or `Ip`.
 
 * `sticky_session_type` - (Optional, Computed) The method that is used to handle a cookie. Valid values:
 
-  *   `Insert`: inserts a cookie.
+  * `Insert`: inserts a cookie.
 
   ALB inserts a cookie (SERVERID) into the first HTTP or HTTPS response packet that is sent to a client. The next request from the client contains this cookie and the listener forwards this request to the recorded backend server.
 
-  *   `Server`: rewrites a cookie.
+  * `Server`: rewrites a cookie.
 
   When ALB detects a user-defined cookie, it overwrites the original cookie with the user-defined cookie. Subsequent requests to ALB carry this user-defined cookie, and ALB determines the destination servers of the requests based on the cookies.
 
   -> **NOTE:**  This parameter takes effect when the `StickySessionEnabled` parameter is set to `true` for the server group.
 
-
 ### `uch_config`
 
 The uch_config supports the following:
+
 * `type` - (Optional, Available since v1.242.0) The parameter type. Only QueryString can be filled.
 * `value` - (Optional, Available since v1.242.0) Consistency hash parameter value
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `servers` - List of servers.
@@ -391,6 +394,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Server Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Server Group.
 * `update` - (Defaults to 5 mins) Used when update the Server Group.

@@ -78,13 +78,12 @@ resource "alicloud_vpn_gateway_enhanced_vpn_gateway" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpn_gateway_enhanced_vpn_gateway&spm=docs.r.vpn_gateway_enhanced_vpn_gateway.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_propagate` - (Optional) Specifies whether to automatically propagate BGP routes to the VPC
 * `description` - (Optional) The description of the VPN gateway.
 * `disaster_recovery_vswitch_id` - (Optional, ForceNew) The ID of the backup VSwitch to which the VPN gateway is attached.
@@ -99,6 +98,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the VPN gateway was created.
 * `status` - The status of the resource.
@@ -106,6 +106,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Enhanced Vpn Gateway.
 * `delete` - (Defaults to 5 mins) Used when delete the Enhanced Vpn Gateway.
 * `update` - (Defaults to 5 mins) Used when update the Enhanced Vpn Gateway.

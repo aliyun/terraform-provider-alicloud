@@ -50,15 +50,16 @@ output "alicloud_redis_global_security_ip_group_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `engine` - (ForceNew, Optional) The engine type of the resource, such as Redis or Tair.
 * `global_security_group_id` - (ForceNew, Optional) The ID of the IP whitelist template.
 * `ids` - (Optional, Computed) A list of Global Security Ip Group IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Global Security Ip Group IDs.
 * `groups` - A list of Global Security Ip Group Entries. Each element contains the following attributes:
   * `global_ip_list` - The IP address in the whitelist template.

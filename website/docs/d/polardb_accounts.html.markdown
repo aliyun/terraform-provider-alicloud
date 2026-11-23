@@ -7,7 +7,7 @@ description: |-
     Provides a collection of PolarDB endpoints according to the specified filters.
 ---
 
-# alicloud\_polardb\_accounts
+# alicloud_polardb_accounts
 
 The `alicloud_polardb_accounts` data source provides a collection of PolarDB cluster database account available in Alibaba Cloud account.
 Filters support regular expression for the account name, searches by clusterId.
@@ -73,7 +73,7 @@ output "account" {
 
 The following arguments are supported:
 
-* `db_cluster_id` - (Required) The polarDB cluster ID. 
+* `db_cluster_id` - (Required) The polarDB cluster ID.
 * `name_regex` - (Optional) A regex string to filter results by account name.
 
 ## Attributes Reference
@@ -89,4 +89,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `account_type` - Account type, Valid values are `Normal`, `Super`.
   * `database_privileges` - A list of database privilege. Each element contains the following attributes.
       * `account_privilege` - Account privilege of database
-      * `db_name` - The account owned database name 
+      * `db_name` - The account owned database name

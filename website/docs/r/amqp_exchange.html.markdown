@@ -10,8 +10,6 @@ description: |-
 
 Provides a RabbitMQ (AMQP) Exchange resource.
 
-
-
 For information about RabbitMQ (AMQP) Exchange and how to use it, see [What is Exchange](https://www.alibabacloud.com/help/en/message-queue-for-rabbitmq/latest/createexchange).
 
 -> **NOTE:** Available since v1.128.0.
@@ -75,6 +73,7 @@ resource "alicloud_amqp_exchange" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `alternate_exchange` - (Optional) The alternate exchange. An alternate exchange is used to receive messages that fail to be routed to queues from the current exchange.
 * `auto_delete_state` - (Required, ForceNew) Specifies whether to automatically delete the exchange. Valid values:
 
@@ -102,12 +101,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<virtual_host_name>:<exchange_name>`.
 * `create_time` - The time when the exchange was created. Unix timestamp, to millisecond level.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Exchange.
 * `delete` - (Defaults to 5 mins) Used when delete the Exchange.
 

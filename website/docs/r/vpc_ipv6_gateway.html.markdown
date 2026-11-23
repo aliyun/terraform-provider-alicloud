@@ -67,6 +67,7 @@ resource "alicloud_vpc_ipv6_gateway" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The description of the IPv6 gateway. The description must be 0 to 256 characters in length and cannot start with `http://` or `https://`.
 * `ipv6_gateway_name` - (Optional) The name of the IPv6 gateway. The name must be 0 to 128 characters in length and cannot start with `http://` or `https://`.
 * `resource_group_id` - (Optional, Computed, Available since v1.205.0) The ID of the resource group to which the instance belongs.
@@ -74,11 +75,10 @@ The following arguments are supported:
 * `tags` - (Optional, Map, Available since v1.205.0) The tags for the resource.
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC) for which you want to create the IPv6 gateway.
 
-
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `business_status` - The status of the IPv6 gateway.
 * `create_time` - The creation time of the resource.
@@ -90,6 +90,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ipv6 Gateway.
 * `delete` - (Defaults to 5 mins) Used when delete the Ipv6 Gateway.
 * `update` - (Defaults to 5 mins) Used when update the Ipv6 Gateway.

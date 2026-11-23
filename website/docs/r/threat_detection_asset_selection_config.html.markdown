@@ -52,6 +52,7 @@ Terraform cannot destroy resource `alicloud_threat_detection_asset_selection_con
 ## Argument Reference
 
 The following arguments are supported:
+
 * `business_type` - (Required, ForceNew) The first ID of the resource
 * `platform` - (Optional, ForceNew) The operating system type.
 * `target_type` - (Required, ForceNew) Target object type.
@@ -59,11 +60,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Asset Selection Config.
 
 ## Import

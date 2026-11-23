@@ -10,8 +10,6 @@ description: |-
 
 Provides a Tair (Redis OSS-Compatible) And Memcache (KVStore) Account resource.
 
-
-
 For information about Tair (Redis OSS-Compatible) And Memcache (KVStore) Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/en/redis/developer-reference/api-r-kvstore-2015-01-01-createaccount-redis).
 
 -> **NOTE:** Available since v1.66.0.
@@ -96,7 +94,7 @@ The following arguments are supported:
 * `account_type` - (Optional, ForceNew) Privilege type of account.
   - Normal: Common privilege.
     Default to Normal.
-* `account_privilege` - (Optional) The privilege of account access database. Default value: `RoleReadWrite` 
+* `account_privilege` - (Optional) The privilege of account access database. Default value: `RoleReadWrite`
   - `RoleReadOnly`: This value is only for Redis and Memcache
   - `RoleReadWrite`: This value is only for Redis and Memcache
 
@@ -110,6 +108,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 6 mins) Used when create the Account.
 * `delete` - (Defaults to 5 mins) Used when delete the Account.
 * `update` - (Defaults to 7 mins) Used when update the Account.

@@ -14,7 +14,6 @@ For more detail product introduction, see [AnalyticDB for PostgreSQL documentati
 
 -> **DEPRECATED:**  This resource  has been deprecated from version `1.147.0`. Please use new resource [alicloud_gpdb_instance](https://www.terraform.io/docs/providers/alicloud/r/alicloud_gpdb_instance).
 
-
 ## Example Usage
 
 ### Create a AnalyticDB for PostgreSQL instance
@@ -57,11 +56,11 @@ resource "alicloud_gpdb_elastic_instance" "adb_pg_instance" {
 
 The following arguments are supported:
 
-* `engine` (Required, ForceNew) Database engine: `gpdb`.
+* `engine` - (Required, ForceNew) Database engine: `gpdb`.
 * `engine_version` - (Required, ForceNew) Database version. Valid value is `6.0`.
 * `seg_storage_type` - (Required, ForceNew) The disk type of segment nodes. Valid values: `cloud_essd`, `cloud_efficiency`.
 * `seg_node_num` - (Required, ForceNew) The number of segment nodes. Minimum is `4`, max is `256`, step is `4`.
-* `storage_size` - (Required, ForceNew) The storage capacity of per segment node. Unit: GB. Minimum is `50`, max is `4000`, step is `50`. 
+* `storage_size` - (Required, ForceNew) The storage capacity of per segment node. Unit: GB. Minimum is `50`, max is `4000`, step is `50`.
 * `instance_spec` - (Required, ForceNew) The specification of segment nodes.
   * When `db_instance_category` is `HighAvailability`, Valid values: `2C16G`, `4C32G`, `16C128G`.
   * When `db_instance_category` is `Basic`, Valid values: `2C8G`, `4C16G`, `8C32G`, `16C64G`.
@@ -79,7 +78,6 @@ The following arguments are supported:
 * `tags` - (Optional, Available since v1.158.0) A mapping of tags to assign to the resource.
 * `encryption_key` - (Optional, ForceNew, Available since v1.158.0) The ID of the encryption key. **Note:** If the `encryption_type` parameter is set to `CloudDisk`, you must specify this parameter to the encryption key that is in the same region as the disk that is specified by the EncryptionType parameter. Otherwise, leave this parameter empty.
 * `encryption_type` - (Optional, ForceNew, Available since v1.158.0)  The type of the encryption. Valid values: `CloudDisk`. **Note:** Disk encryption cannot be disabled after it is enabled.
-
 
 ## Attributes Reference
 

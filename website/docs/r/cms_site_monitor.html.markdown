@@ -82,6 +82,7 @@ resource "alicloud_cms_site_monitor" "basic" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `address` - (Required) The URL or IP address monitored by the site monitoring task.
 * `agent_group` - (Optional, ForceNew, Available since v1.262.0) The type of the detection point. Default value: `PC`. Valid values: `PC`, `MOBILE`.
 * `custom_schedule` - (Optional, Set, Available since v1.262.0) Custom probing period. Only a certain period of time from Monday to Sunday can be selected for detection. See [`custom_schedule`](#custom_schedule) below.
@@ -99,6 +100,7 @@ The following arguments are supported:
 ### `custom_schedule`
 
 The custom_schedule supports the following:
+
 * `days` - (Optional, List, Available since v1.262.0) The days in a week.
 * `end_hour` - (Optional, Int, Available since v1.262.0) The end time of the detection. Unit: hours.
 * `start_hour` - (Optional, Int, Available since v1.262.0) The start time of the detection. Unit: hours.
@@ -115,6 +117,7 @@ The isp_cities supports the following:
 ### `option_json`
 
 The option_json supports the following:
+
 * `assertions` - (Optional, List, Available since v1.262.0) Assertion configuration group. See [`assertions`](#option_json-assertions) below.
 * `attempts` - (Optional, Int, Available since v1.262.0) Number of retries after DNS failed.
 * `cookie` - (Optional, Available since v1.262.0) The Cookie that sends the HTTP request.
@@ -182,6 +185,7 @@ The option_json supports the following:
 ### `option_json-assertions`
 
 The option_json-assertions supports the following:
+
 * `operator` - (Optional, Available since v1.262.0) Assertion comparison operator. Value:
   - contains: contains.
   - doesNotContain: does not contain.
@@ -214,6 +218,7 @@ The following attributes are exported:
 -> **NOTE:** Available since 1.207.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Site Monitor.
 * `delete` - (Defaults to 5 mins) Used when delete the Site Monitor.
 * `update` - (Defaults to 5 mins) Used when update the Site Monitor.

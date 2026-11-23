@@ -69,6 +69,11 @@ class Repository:
 
 
 class DocumentExamplesTest(unittest.TestCase):
+    def setUp(self):
+        summary = patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': ''})
+        summary.start()
+        self.addCleanup(summary.stop)
+
     def prepared(self, *blocks):
         files = {DOC: page(*(blocks or (CONFIG,)))}
         contract(files)
@@ -159,14 +164,28 @@ class DocumentExamplesTest(unittest.TestCase):
                 result = Repository({}, files).plan()
                 self.assertTrue(result['blocked'])
 
-    def test_original_provider_cannot_be_repaired_in_the_test_copy(self):
-        files = self.prepared(RESOURCE)
+    def test_invalid_explicit_source_cannot_be_repaired_in_the_test_copy(self):
+        files = self.prepared(CONFIG.replace("aliyun/alicloud", "hashicorp/alicloud"))
         manifest = json.loads(files[docs.manifest_path(DOC)])
         manifest['cases'][0]['mainTf'] = CONFIG
         files[docs.manifest_path(DOC)] = json.dumps(manifest)
         result = Repository({}, files).plan()
         self.assertEqual(result['examples'], [])
-        self.assertIn('Fix source document HCL', result['blocked'][0])
+        self.assertIn('Fix the invalid configuration', result['blocked'][0])
+
+    def test_omitted_source_is_adapted_only_in_execution_copy(self):
+        for doc in (DOC, DOC.replace('/r/', '/d/')):
+            for original in (RESOURCE, PROVIDER.replace('source = "aliyun/alicloud"', '') + RESOURCE,
+                             'terraform { required_providers {} }\n' + RESOURCE):
+                with self.subTest(doc=doc, original=original):
+                    result = Repository({}, {doc: page(original)}).plan()
+                    self.assertEqual(result['blocked'], [])
+                    case, = result['examples']
+                    self.assertEqual(case['originalMainTf'], original)
+                    self.assertEqual(case['originalSha256'], docs.sha(original))
+                    self.assertIn('aliyun/alicloud', case['adaptationDiff'])
+                    self.assertEqual(case['mainTfSha256'], docs.sha(case['mainTf']))
+                    docs.validate_configuration(case['mainTf'], snapshot=True)
 
     def test_published_source_version_needs_explicit_reviewed_test_adaptation(self):
         original = CONFIG.replace('source =', 'version = ">= 1.200.0"\n      source =')
@@ -271,7 +290,7 @@ class DocumentExamplesTest(unittest.TestCase):
     def test_entire_batch_is_preflighted_before_any_http_request(self):
         files = self.prepared()
         other = 'website/docs/r/other.html.markdown'
-        files[other] = page(RESOURCE)
+        files[other] = page(CONFIG.replace("aliyun/alicloud", "hashicorp/alicloud"))
         frozen = dict(head='a'*40, base='b'*40, packages={}, scope={'blocked': []})
         frozen['documents'] = Repository({}, files).plan()
         frozen['examples'] = frozen['documents']['examples']

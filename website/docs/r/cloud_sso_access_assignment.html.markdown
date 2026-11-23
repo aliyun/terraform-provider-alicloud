@@ -84,6 +84,7 @@ locals {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_configuration_id` - (Required, ForceNew) The ID of the access configuration.
 * `directory_id` - (Required, ForceNew) The ID of the Directory.
 * `principal_id` - (Required, ForceNew) The ID of the CloudSSO identity.
@@ -96,12 +97,13 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The resource ID of Access Assignment. It formats as `<directory_id>:<access_configuration_id>:<target_type>:<target_id>:<principal_type>:<principal_id>`. 
+* `id` - The resource ID of Access Assignment. It formats as `<directory_id>:<access_configuration_id>:<target_type>:<target_id>:<principal_type>:<principal_id>`.
 * `create_time` - (Available since v1.254.0) The time when the access permissions were assigned.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Access Assignment.
 * `delete` - (Defaults to 5 mins) Used when delete the Access Assignment.
 

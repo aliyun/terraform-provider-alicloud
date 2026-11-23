@@ -42,6 +42,7 @@ resource "alicloud_threat_detection_baseline_strategy" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `baseline_strategy_name` - (Required, ForceNew) Policy name.
 * `custom_type` - (Required) The type of policy. Value:
   * **common**: standard policy
@@ -59,16 +60,17 @@ The following arguments are supported:
   * **groupId**: Added by asset group.
   * **uuid**: Add by single asset.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the baseline check policy, same with `baseline_strategy_id`.
 * `baseline_strategy_id` - The ID of the baseline check policy.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Baseline Strategy.
 * `delete` - (Defaults to 5 mins) Used when delete the Baseline Strategy.
 * `update` - (Defaults to 5 mins) Used when update the Baseline Strategy.

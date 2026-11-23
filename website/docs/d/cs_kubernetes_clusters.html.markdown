@@ -96,5 +96,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `service_cidr` - The CIDR block for the service network.
   * `master_period` - Master payment period.
   * `master_period_unit` - Master payment period unit.
-  * `pod_cidr` - The CIDR block for the pod network. 
+  * `pod_cidr` - The CIDR block for the pod network.
   * `cluster_network_type` - The cluster network type.

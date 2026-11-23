@@ -67,6 +67,7 @@ resource "alicloud_ens_nat_gateway" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ens_region_id` - (Required, ForceNew) The ID of the ENS node.
 * `instance_type` - (Optional, ForceNew) NAT specifications. Value: `enat.default`.
 * `nat_name` - (Optional) The name of the NAT gateway. The length is 1 to 128 characters, but it cannot start with 'http:// 'or 'https.
@@ -76,12 +77,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Creation time. UTC time, in the format of YYYY-MM-DDThh:mm:ssZ.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Nat Gateway.
 * `delete` - (Defaults to 5 mins) Used when delete the Nat Gateway.
 * `update` - (Defaults to 5 mins) Used when update the Nat Gateway.

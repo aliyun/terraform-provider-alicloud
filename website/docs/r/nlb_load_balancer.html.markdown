@@ -10,8 +10,6 @@ description: |-
 
 Provides a Network Load Balancer (NLB) Load Balancer resource.
 
-
-
 For information about Network Load Balancer (NLB) Load Balancer and how to use it, see [What is Load Balancer](https://www.alibabacloud.com/help/en/server-load-balancer/latest/api-nlb-2022-04-30-createloadbalancer).
 
 -> **NOTE:** Available since v1.191.0.
@@ -141,6 +139,7 @@ resource "alicloud_nlb_load_balancer" "nlb" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `address_ip_version` - (Optional, ForceNew, Computed) The protocol version. Valid values:
 
   - **ipv4:** IPv4. This is the default value.
@@ -186,18 +185,18 @@ You can log on to the [Resource Management console](https://resourcemanager.cons
 ### `deletion_protection_config`
 
 The deletion_protection_config supports the following:
+
 * `enabled` - (Optional, Computed) Specifies whether to enable deletion protection. Valid values:
   - `true`: yes
   - `false` (default): no
 * `reason` - (Optional, Computed) The reason why deletion protection is enabled. The reason must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (\_), and hyphens (-). The reason must start with a letter.
 
-
   -> **NOTE:**  This parameter takes effect only when `DeletionProtectionEnabled` is set to `true`.
-
 
 ### `modification_protection_config`
 
 The modification_protection_config supports the following:
+
 * `reason` - (Optional) The reason why the configuration read-only mode is enabled. The value must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (\_), and hyphens (-). The value must start with a letter.
 
   -> **NOTE:**   This parameter takes effect only if the `status` parameter is set to `ConsoleProtection`.
@@ -208,10 +207,10 @@ The modification_protection_config supports the following:
 
   -> **NOTE:**  If you set this parameter to `ConsoleProtection`, you cannot use the NLB console to modify instance configurations. However, you can call API operations to modify instance configurations.
 
-
 ### `zone_mappings`
 
 The zone_mappings supports the following:
+
 * `allocation_id` - (Optional, Computed) The ID of the elastic IP address (EIP) that is associated with the Internet-facing NLB instance. You can specify one EIP for each zone. You must add at least two zones. You can add a maximum of 10 zones.
 * `ipv4_local_addresses` - (Optional, Computed, Set, Available since v1.245.0) IPv4 Local address list. The list of addresses that NLB interacts with backend services.
 * `ipv6_address` - (Optional, Computed) The IPv6 address of the NLB instance.
@@ -224,6 +223,7 @@ You can call the [DescribeZones](https://www.alibabacloud.com/help/en/doc-detail
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Resource creation time, using Greenwich Mean Time, formating' yyyy-MM-ddTHH:mm:ssZ '.
 * `deletion_protection_config` - Specifies whether to enable deletion protection. Default value: `false`.
@@ -242,6 +242,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Load Balancer.
 * `delete` - (Defaults to 11 mins) Used when delete the Load Balancer.
 * `update` - (Defaults to 5 mins) Used when update the Load Balancer.

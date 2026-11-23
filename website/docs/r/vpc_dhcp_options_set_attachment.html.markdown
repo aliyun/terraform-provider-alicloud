@@ -56,14 +56,14 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The ID of the VPC network that is to be associated with the DHCP options set..
 * `dry_run` - (Optional) Specifies whether to precheck this request only. Default values: `false`. Valid values:
   * `true` - Runs a precheck without associating the DHCP options set with the VPC network. The system checks whether your AccessKey pair is valid, whether the RAM user is authorized, and whether required parameters are specified. An error message is returned if the request fails the precheck. If the request passes the precheck, the `DryRunOperation` error code is returned.
-  * `false` - Runs a precheck and returns a 2XX HTTP status code. After the request passes the precheck, the DHCP options set is associated with the VPC network. 
+  * `false` - Runs a precheck and returns a 2XX HTTP status code. After the request passes the precheck, the DHCP options set is associated with the VPC network.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The Disk Attachment ID and it formats as `<vpc_id>:<dhcp_options_set_id>`.
-* `status` -The status of the VPC network that is associated with the DHCP options set.  Valid values: `InUse` or `Pending`. 
+* `status` -The status of the VPC network that is associated with the DHCP options set.  Valid values: `InUse` or `Pending`.
 
 ## Timeouts
 

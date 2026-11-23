@@ -7,7 +7,7 @@ description: |-
   Provides a list of Api Gateway Backends to the user.
 ---
 
-# alicloud\_api\_gateway\_backends
+# alicloud_api_gateway_backends
 
 This data source provides the Api Gateway Backends of the current Alibaba Cloud user.
 
@@ -37,7 +37,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Backend names.
-* `backends` - A list of Api Gateway Backends. Each element contains the following attributes: 
+* `backends` - A list of Api Gateway Backends. Each element contains the following attributes:
   * `id` - The resource ID in terraform of Backend.
   * `backend_id` -  The id of the Backend.
   * `backend_type` - The type of the Backend.

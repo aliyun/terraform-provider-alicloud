@@ -32,6 +32,7 @@ output "alicloud_ssl_certificates_service_instance_certificate_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (ForceNew, Optional) The ID of the certificate instance that issued the certificate. Use it to list the certificates a single instance has issued.
 * `certificate_status` - (ForceNew, Optional) The status of the certificate. Valid values: `issued`, `revoked`, `willExpire` and `expired`.
 * `certificate_source` - (ForceNew, Optional) The source of the certificate. Valid values: `BUY`, `UPLOAD` and `TEST`.
@@ -41,6 +42,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Instance Certificate IDs.
 * `certificates` - A list of Instance Certificate Entries. Each element contains the following attributes:
   * `certificate_id` - The ID of the certificate.

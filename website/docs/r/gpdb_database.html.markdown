@@ -10,8 +10,6 @@ description: |-
 
 Provides a GPDB Database resource.
 
-
-
 For information about GPDB Database and how to use it, see [What is Database](https://www.alibabacloud.com/help/en/).
 
 -> **NOTE:** Available since v1.232.0.
@@ -80,6 +78,7 @@ resource "alicloud_gpdb_database" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `character_set_name` - (Optional, ForceNew) Character set, default value is UTF8
 * `collate` - (Optional, ForceNew) Database locale parameters, specifying string comparison/collation
 * `ctype` - (Optional, ForceNew) Database locale parameters, specifying character classification/case conversion rules
@@ -91,11 +90,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<database_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Database.
 * `delete` - (Defaults to 5 mins) Used when delete the Database.
 

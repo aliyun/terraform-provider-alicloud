@@ -10,8 +10,6 @@ description: |-
 
 Provides a File Storage (NAS) Access Point resource.
 
-
-
 For information about NAS Access Point and how to use it, see [What is Access Point](https://www.alibabacloud.com/help/zh/nas/developer-reference/api-nas-2017-06-26-createaccesspoint).
 
 -> **NOTE:** Available since v1.224.0.
@@ -97,6 +95,7 @@ resource "alicloud_nas_access_point" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_group` - (Required) The name of the permission group.
 * `access_point_name` - (Optional) The name of the access point.
 * `enabled_ram` - (Optional, Bool) Specifies whether to enable the RAM policy. Default value: `false`. Valid values:
@@ -112,12 +111,14 @@ The following arguments are supported:
 ### `posix_user`
 
 The posix_user supports the following:
+
 * `posix_group_id` - (Optional, ForceNew, Int) The ID of the Posix user group.
 * `posix_user_id` - (Optional, ForceNew, Int) The Posix user ID.
 
 ### `root_path_permission`
 
 The root_path_permission supports the following:
+
 * `owner_group_id` - (Optional, ForceNew, Int) The ID of the primary user group.
 * `owner_user_id` - (Optional, ForceNew, Int) The owner user ID.
 * `permission` - (Optional, ForceNew) The Portable Operating System Interface for UNIX (POSIX) permission.
@@ -125,6 +126,7 @@ The root_path_permission supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<file_system_id>:<access_point_id>`.
 * `access_point_id` - The ID of the access point.
 * `create_time` - The time when the access point was created.
@@ -136,6 +138,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Access Point.
 * `delete` - (Defaults to 5 mins) Used when delete the Access Point.
 * `update` - (Defaults to 5 mins) Used when update the Access Point.

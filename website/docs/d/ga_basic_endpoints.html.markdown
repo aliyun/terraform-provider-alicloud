@@ -67,4 +67,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `endpoint_zone_id` - The zone id of the Basic Endpoint.
   * `basic_endpoint_name` - The name of the Basic Endpoint.
   * `status` - The status of the Basic Endpoint.
-	

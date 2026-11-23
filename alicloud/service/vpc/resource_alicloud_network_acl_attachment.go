@@ -1,10 +1,12 @@
 package vpc
 
 import (
+	"context"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/id"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -12,10 +14,10 @@ import (
 
 func ResourceAliyunNetworkAclAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliyunNetworkAclAttachmentCreate,
-		Read:   resourceAliyunNetworkAclAttachmentRead,
-		Update: resourceAliyunNetworkAclAttachmentUpdate,
-		Delete: resourceAliyunNetworkAclAttachmentDelete,
+		CreateContext: resourceAliyunNetworkAclAttachmentCreate,
+		ReadContext:   resourceAliyunNetworkAclAttachmentRead,
+		UpdateContext: resourceAliyunNetworkAclAttachmentUpdate,
+		DeleteContext: resourceAliyunNetworkAclAttachmentDelete,
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
@@ -48,18 +50,40 @@ func ResourceAliyunNetworkAclAttachment() *schema.Resource {
 	}
 }
 
-func resourceAliyunNetworkAclAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-	d.SetId(d.Get("network_acl_id").(string) + COLON_SEPARATED + id.UniqueId())
-
-	return resourceAliyunNetworkAclAttachmentUpdate(d, meta)
+func networkAclAttachmentRemaining(deadline, now time.Time) time.Duration {
+	return deadline.Sub(now)
 }
 
-func resourceAliyunNetworkAclAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+func networkAclAttachmentRetry(ctx context.Context, deadline time.Time, f func() error, additionalRetryCodes ...string) error {
+	transientCodes := append([]string{"NetworkStatus.Modifying", "ResourceStatus.Error", "OperationDenied.NetworkAclAttachmentInMiddleStatus"}, additionalRetryCodes...)
+	return retry.RetryContext(ctx, networkAclAttachmentRemaining(deadline, time.Now()), func() *retry.RetryError {
+		err := f()
+		if err == nil {
+			return nil
+		}
+		if IsExpectedErrors(err, transientCodes) || NeedRetry(err) {
+			return retry.RetryableError(err)
+		}
+		return retry.NonRetryableError(err)
+	})
+}
+
+func networkAclAttachmentDeleteIdempotent(err error) bool {
+	return IsExpectedErrors(err, []string{"InvalidNetworkAcl.NotFound", "InvalidResource.NotBinding", "InvalidResource.NotFound", "Mismatch.NetworkAclAndVSwitch"})
+}
+
+func resourceAliyunNetworkAclAttachmentCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	d.SetId(d.Get("network_acl_id").(string) + COLON_SEPARATED + id.UniqueId())
+
+	return resourceAliyunNetworkAclAttachmentUpdateWithDeadline(ctx, d, meta, time.Now().Add(d.Timeout(schema.TimeoutCreate)))
+}
+
+func resourceAliyunNetworkAclAttachmentRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return diag.FromErr(WrapError(err))
 	}
 	networkAclId := parts[0]
 	vpcResource := []vpc.Resource{}
@@ -71,34 +95,40 @@ func resourceAliyunNetworkAclAttachmentRead(d *schema.ResourceData, meta interfa
 			ResourceType: resourceType.(string),
 		})
 	}
-	err = vpcService.DescribeNetworkAclAttachment(networkAclId, vpcResource)
+	vpcResource, err = vpcService.DescribeNetworkAclAttachment(ctx, networkAclId, vpcResource)
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return diag.FromErr(WrapError(err))
 	}
 	d.Set("network_acl_id", networkAclId)
 
 	vpcRes := make([]map[string]interface{}, 0)
 	for _, v := range vpcResource {
 		vpcRes = append(vpcRes, map[string]interface{}{
-			"ResourceId":   v.ResourceId,
-			"ResourceType": v.ResourceType,
+			"resource_id":   v.ResourceId,
+			"resource_type": v.ResourceType,
 		})
 	}
 	d.Set("resources", vpcRes)
 	return nil
 }
 
-func resourceAliyunNetworkAclAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliyunNetworkAclAttachmentUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	return resourceAliyunNetworkAclAttachmentUpdateWithDeadline(ctx, d, meta, time.Now().Add(d.Timeout(schema.TimeoutUpdate)))
+}
+
+func resourceAliyunNetworkAclAttachmentUpdateWithDeadline(ctx context.Context, d *schema.ResourceData, meta interface{}, deadline time.Time) diag.Diagnostics {
+	ctx, cancel := context.WithDeadline(ctx, deadline)
+	defer cancel()
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return diag.FromErr(WrapError(err))
 	}
 	networkAclId := parts[0]
 	if d.HasChange("resources") {
@@ -114,7 +144,7 @@ func resourceAliyunNetworkAclAttachmentUpdate(d *schema.ResourceData, meta inter
 			request.NetworkAclId = networkAclId
 			request.ClientToken = buildClientToken(request.GetActionName())
 			var resources []vpc.UnassociateNetworkAclResource
-			vpcResource := []vpc.Resource{}
+			removed := make([]vpc.Resource, 0, len(remove))
 			for _, t := range remove {
 				s := t.(map[string]interface{})
 				var resourceId, resourceType string
@@ -128,21 +158,24 @@ func resourceAliyunNetworkAclAttachmentUpdate(d *schema.ResourceData, meta inter
 					ResourceId:   resourceId,
 					ResourceType: resourceType,
 				})
-				vpcResource = append(vpcResource, vpc.Resource{
+				removed = append(removed, vpc.Resource{
 					ResourceId:   resourceId,
 					ResourceType: resourceType,
 				})
 			}
 			request.Resource = &resources
-			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.UnassociateNetworkAcl(request)
+			err = networkAclAttachmentRetry(ctx, deadline, func() error {
+				raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+					return vpcClient.UnassociateNetworkAcl(request)
+				})
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return err
 			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			if err != nil && !networkAclAttachmentDeleteIdempotent(err) {
+				return diag.FromErr(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			if err := vpcService.WaitForNetworkAclAttachment(request.NetworkAclId, vpcResource, Available, Timeout5Minute); err != nil {
-				return WrapError(err)
+			if err := vpcService.WaitForNetworkAclAttachment(ctx, request.NetworkAclId, removed, Deleted, deadline); err != nil {
+				return diag.FromErr(WrapError(err))
 			}
 		}
 
@@ -152,7 +185,6 @@ func resourceAliyunNetworkAclAttachmentUpdate(d *schema.ResourceData, meta inter
 			request.NetworkAclId = networkAclId
 			request.ClientToken = buildClientToken(request.GetActionName())
 			var resources []vpc.AssociateNetworkAclResource
-			vpcResource := []vpc.Resource{}
 			for _, t := range create {
 				s := t.(map[string]interface{})
 				var resourceId, resourceType string
@@ -166,73 +198,93 @@ func resourceAliyunNetworkAclAttachmentUpdate(d *schema.ResourceData, meta inter
 					ResourceId:   resourceId,
 					ResourceType: resourceType,
 				})
-				vpcResource = append(vpcResource, vpc.Resource{
+			}
+			request.Resource = &resources
+			err = networkAclAttachmentRetry(ctx, deadline, func() error {
+				raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+					return vpcClient.AssociateNetworkAcl(request)
+				})
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return err
+			})
+			if err != nil {
+				return diag.FromErr(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+			}
+			desired := make([]vpc.Resource, 0)
+			for _, t := range n.List() {
+				s := t.(map[string]interface{})
+				resourceId, _ := s["resource_id"].(string)
+				resourceType, _ := s["resource_type"].(string)
+				desired = append(desired, vpc.Resource{
 					ResourceId:   resourceId,
 					ResourceType: resourceType,
 				})
 			}
-			request.Resource = &resources
-			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.AssociateNetworkAcl(request)
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			if err := vpcService.WaitForNetworkAclAttachment(request.NetworkAclId, vpcResource, Available, Timeout5Minute); err != nil {
-				return WrapError(err)
+			if err := vpcService.WaitForNetworkAclAttachment(ctx, request.NetworkAclId, desired, Available, deadline); err != nil {
+				return diag.FromErr(WrapError(err))
 			}
 		}
 	}
 
-	return resourceAliyunNetworkAclAttachmentRead(d, meta)
+	return resourceAliyunNetworkAclAttachmentRead(ctx, d, meta)
 }
 
-func resourceAliyunNetworkAclAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliyunNetworkAclAttachmentDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
+	deadline := time.Now().Add(d.Timeout(schema.TimeoutDelete))
+	ctx, cancel := context.WithDeadline(ctx, deadline)
+	defer cancel()
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return diag.FromErr(WrapError(err))
 	}
 	networkAclId := parts[0]
 
-	resources := []vpc.UnassociateNetworkAclResource{}
-	object, err := vpcService.DescribeNetworkAcl(networkAclId)
-	vpcResource := []vpc.Resource{}
-	request := vpc.CreateUnassociateNetworkAclRequest()
-	request.RegionId = client.RegionId
-	request.NetworkAclId = networkAclId
-	request.ClientToken = buildClientToken(request.GetActionName())
-	res, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
-	for _, e := range res {
-		item := e.(map[string]interface{})
-		resources = append(resources, vpc.UnassociateNetworkAclResource{
-			ResourceId:   item["ResourceId"].(string),
-			ResourceType: item["ResourceType"].(string),
-		})
+	vpcResource := make([]vpc.Resource, 0)
+	for _, e := range d.Get("resources").(*schema.Set).List() {
+		s := e.(map[string]interface{})
+		resourceId, _ := s["resource_id"].(string)
+		resourceType, _ := s["resource_type"].(string)
 		vpcResource = append(vpcResource, vpc.Resource{
-			ResourceId:   item["ResourceId"].(string),
-			ResourceType: item["ResourceType"].(string),
+			ResourceId:   resourceId,
+			ResourceType: resourceType,
 		})
 	}
-	request.Resource = &resources
-	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.UnassociateNetworkAcl(request)
-		})
-		//Waiting for unassociate the network acl
-		if err != nil {
-			if IsExpectedErrors(err, []string{"TaskConflict"}) {
-				return retry.RetryableError(err)
-			}
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		return nil
-	})
+
+	object, err := vpcService.DescribeNetworkAclWithContext(ctx, networkAclId)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		if !NotFoundError(err) {
+			return diag.FromErr(WrapError(err))
+		}
+		object = nil
 	}
-	return vpcService.WaitForNetworkAclAttachment(networkAclId, vpcResource, Deleted, Timeout5Minute)
+
+	// The network acl can be shared by several attachment instances, so only the resources recorded
+	// in this instance's state may be unbound; unassociating every resource of the acl would release
+	// the bindings that belong to the sibling attachments.
+	resources, err := networkAclAttachmentResourcesToUnbind(object, vpcResource)
+	if err != nil {
+		return diag.FromErr(WrapError(err))
+	}
+	if len(resources) > 0 {
+		request := vpc.CreateUnassociateNetworkAclRequest()
+		request.RegionId = client.RegionId
+		request.NetworkAclId = networkAclId
+		request.ClientToken = buildClientToken(request.GetActionName())
+		request.Resource = &resources
+		err = networkAclAttachmentRetry(ctx, deadline, func() error {
+			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.UnassociateNetworkAcl(request)
+			})
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return err
+		}, "TaskConflict")
+		if err != nil && !networkAclAttachmentDeleteIdempotent(err) {
+			return diag.FromErr(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+		}
+	}
+
+	return diag.FromErr(vpcService.WaitForNetworkAclAttachment(ctx, networkAclId, vpcResource, Deleted, deadline))
 }

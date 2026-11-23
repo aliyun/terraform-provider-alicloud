@@ -54,13 +54,13 @@ resource "alicloud_vpc_ipam_ipam_scope" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ipam_id` - (Required, ForceNew) The id of the Ipam instance.
 * `ipam_scope_description` - (Optional) The description of the IPAM's scope of action.
 It must be 2 to 256 characters in length and must start with a lowercase letter, but cannot start with 'http:// 'or 'https. If it is not filled in, it is empty. The default value is empty.
 * `ipam_scope_name` - (Optional) The name of the resource.
 * `ipam_scope_type` - (Optional, ForceNew) IPAM scope of action type:
 `private`.
-
 
 -> **NOTE:**  Currently, only the role scope of the private network is supported.
 
@@ -70,6 +70,7 @@ It must be 2 to 256 characters in length and must start with a lowercase letter,
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `region_id` - The region ID of the resource.
@@ -78,6 +79,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ipam Scope.
 * `delete` - (Defaults to 5 mins) Used when delete the Ipam Scope.
 * `update` - (Defaults to 5 mins) Used when update the Ipam Scope.

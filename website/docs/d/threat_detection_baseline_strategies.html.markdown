@@ -40,16 +40,17 @@ output "alicloud_threat_detection_baseline_strategy_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `custom_type` - (ForceNew, Optional) The type of policy. Value:-**common**: standard policy-**custom**: custom policy
 * `ids` - (Optional, ForceNew, Computed) A list of Baseline Strategy IDs.
 * `strategy_ids` - (Optional, ForceNew) The IDs of the Baseline Strategy.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Baseline Strategy IDs.
 * `names` - A list of name of Baseline Strategies.
 * `strategies` - A list of Baseline Strategy Entries. Each element contains the following attributes:

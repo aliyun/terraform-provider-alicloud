@@ -15,7 +15,7 @@ For information about ECS Network Interface and how to use it, see [What is Netw
 
 -> **NOTE:** Available since v1.123.1.
 
--> **NOTE** Only one of `private_ip_addresses` or `secondary_private_ip_address_count` can be specified when assign private IPs. 
+-> **NOTE** Only one of `private_ip_addresses` or `secondary_private_ip_address_count` can be specified when assign private IPs.
 
 ## Example Usage
 

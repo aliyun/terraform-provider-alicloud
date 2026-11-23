@@ -10,8 +10,6 @@ description: |-
 
 Provides a AnalyticDB for PostgreSQL (GPDB) Supabase Project resource.
 
-
-
 For information about AnalyticDB for PostgreSQL (GPDB) Supabase Project and how to use it, see [What is Supabase Project](https://next.api.alibabacloud.com/document/gpdb/2016-05-03/CreateSupabaseProject).
 
 -> **NOTE:** Available since v1.266.0.
@@ -53,12 +51,12 @@ resource "alicloud_gpdb_supabase_project" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_gpdb_supabase_project&spm=docs.r.gpdb_supabase_project.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_password` - (Required) The password for the initial account.
   - Consists of three or more of uppercase letters, lowercase letters, numbers, and special characters.
   - Support for special characters:! @#$%^& *()_+-=
@@ -78,6 +76,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `region_id` - The region ID.
@@ -86,6 +85,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 15 mins) Used when create the Supabase Project.
 * `delete` - (Defaults to 5 mins) Used when delete the Supabase Project.
 * `update` - (Defaults to 5 mins) Used when update the Supabase Project.

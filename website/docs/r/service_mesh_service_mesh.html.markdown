@@ -10,8 +10,6 @@ description: |-
 
 Provides a Service Mesh Service Mesh resource.
 
-
-
 For information about Service Mesh Service Mesh and how to use it, see [What is Service Mesh](https://www.alibabacloud.com/help/en/asm/developer-reference/api-servicemesh-2020-01-11-createservicemesh).
 
 -> **NOTE:** Available since v1.138.0.
@@ -208,6 +206,7 @@ resource "alicloud_service_mesh_service_mesh" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cluster_ids` - (Optional, List, Available since v1.166.0) List of clusters.
 * `cluster_spec` - (Optional, Computed, Available since v1.166.0) Cluster specification
 * `customized_prometheus` - (Optional, Available since v1.211.2) Whether to customize Prometheus. Value:
@@ -233,11 +232,13 @@ The following arguments are supported:
 ### `extra_configuration`
 
 The extra_configuration supports the following:
+
 * `cr_aggregation_enabled` - (Optional) Whether the data plane KubeAPI access capability is enabled.
 
 ### `load_balancer`
 
 The load_balancer supports the following:
+
 * `api_server_public_eip` - (Optional, ForceNew) Indicates whether to use the IP address of a public network exposed API Server
 * `pilot_public_eip` - (Optional, ForceNew) Indicates whether to use the IP address of a public network exposure Istio Pilot. **Note**: This field has been deprecated and is readonly as of 1.232.0. Use pilot_public_eip_id instead.
 * `pilot_public_eip_id` - (Optional, Available since v1.232.0) the EIP instance id of Pilot load balancer.
@@ -245,6 +246,7 @@ The load_balancer supports the following:
 ### `mesh_config`
 
 The mesh_config supports the following:
+
 * `access_log` - (Optional, List) The access logging configuration See [`access_log`](#mesh_config-access_log) below.
 * `audit` - (Optional, Computed, List) Audit information See [`audit`](#mesh_config-audit) below.
 * `control_plane_log` - (Optional, List) Control plane log collection configuration. See [`control_plane_log`](#mesh_config-control_plane_log) below.
@@ -263,6 +265,7 @@ The mesh_config supports the following:
 ### `mesh_config-access_log`
 
 The mesh_config-access_log supports the following:
+
 * `enabled` - (Optional) Whether to enable access log
 * `gateway_enabled` - (Optional, Available since v1.223.1) Whether collect AccessLog of ASM Gateway to Alibaba Cloud SLS
 * `gateway_lifecycle` - (Optional, Computed, Int, Available since v1.223.1) Lifecycle of AccessLog of ASM Gateways which have been collected to Alibaba Cloud SLS
@@ -273,12 +276,14 @@ The mesh_config-access_log supports the following:
 ### `mesh_config-audit`
 
 The mesh_config-audit supports the following:
+
 * `enabled` - (Optional, Computed) Enable Audit
 * `project` - (Optional, Computed) Audit Log Items
 
 ### `mesh_config-control_plane_log`
 
 The mesh_config-control_plane_log supports the following:
+
 * `enabled` - (Required) Whether to enable control plane log collection. Value:
   -'true': enables control plane log collection.
   -'false': does not enable control plane log collection.
@@ -288,6 +293,7 @@ The mesh_config-control_plane_log supports the following:
 ### `mesh_config-kiali`
 
 The mesh_config-kiali supports the following:
+
 * `auth_strategy` - (Optional, Computed, Available since v1.232.0) The authentication strategy used when logging into the mesh topology. In data plane deployment mode, the mesh topology can use token, openid, or ramoauth authentication strategies; in managed mode, the mesh topology can use openid or ramoauth authentication strategies.
 * `custom_prometheus_url` - (Optional, Available since v1.232.0) When the mesh topology cannot automatically use the integrated ARMS Prometheus, you need to use this property to specify a custom Prometheus HTTP API Url. The corresponding Prometheus instance needs to have been configured to collect Istio metrics in the cluster within the service mesh.
 * `enabled` - (Optional) Whether to enable kiali, you must first open the collection Prometheus, when the configuration update is false, the system automatically set this value to false)
@@ -301,6 +307,7 @@ The mesh_config-kiali supports the following:
 ### `mesh_config-opa`
 
 The mesh_config-opa supports the following:
+
 * `enabled` - (Optional) Whether integration-open policy agent (OPA) plug-in
 * `limit_cpu` - (Optional) OPA proxy container of CPU resource limits
 * `limit_memory` - (Optional) OPA proxy container of the memory resource limit
@@ -311,12 +318,14 @@ The mesh_config-opa supports the following:
 ### `mesh_config-pilot`
 
 The mesh_config-pilot supports the following:
+
 * `http10_enabled` - (Optional) Whether to support the HTTP1.0
 * `trace_sampling` - (Optional, Float) Link trace sampling percentage
 
 ### `mesh_config-proxy`
 
 The mesh_config-proxy supports the following:
+
 * `cluster_domain` - (Optional, ForceNew, Computed) Cluster domain name
 * `limit_cpu` - (Optional) CPU resources
 * `limit_memory` - (Optional) Memory limit resource
@@ -326,6 +335,7 @@ The mesh_config-proxy supports the following:
 ### `mesh_config-sidecar_injector`
 
 The mesh_config-sidecar_injector supports the following:
+
 * `auto_injection_policy_enabled` - (Optional) Whether to enable by Pod Annotations automatic injection Sidecar
 * `enable_namespaces_by_default` - (Optional) Whether it is the all namespaces you turn on the auto injection capabilities
 * `init_cni_configuration` - (Optional, Computed, List) CNI configuration See [`init_cni_configuration`](#mesh_config-sidecar_injector-init_cni_configuration) below.
@@ -337,12 +347,14 @@ The mesh_config-sidecar_injector supports the following:
 ### `mesh_config-sidecar_injector-init_cni_configuration`
 
 The mesh_config-sidecar_injector-init_cni_configuration supports the following:
+
 * `enabled` - (Optional) Enable CNI
 * `exclude_namespaces` - (Optional) The excluded namespace
 
 ### `mesh_config-kiali-open_id_config`
 
 The mesh_config-kiali-open_id_config supports the following:
+
 * `client_id` - (Optional, Available since v1.232.0) The client id provided by the OIDC application
 * `client_secret` - (Optional, Available since v1.232.0) The client secret provided by the OIDC application
 * `issuer_uri` - (Optional, Available since v1.232.0) OIDC应用的Issuer URI
@@ -351,11 +363,13 @@ The mesh_config-kiali-open_id_config supports the following:
 ### `mesh_config-kiali-ram_oauth_config`
 
 The mesh_config-kiali-ram_oauth_config supports the following:
+
 * `redirect_uris` - (Optional, Available since v1.232.0) The redirect Uri provided to the RAM OAuth application. This needs to be the access address of the mesh topology service. When not provided, the redirect Uri will be automatically inferred based on the ServerConfig or the CLB address of the mesh topology integration.
 
 ### `mesh_config-kiali-server_config`
 
 The mesh_config-kiali-server_config supports the following:
+
 * `web_fqdn` - (Optional, Available since v1.232.0) The domain name or address used when accessing the mesh topology in a custom way
 * `web_port` - (Optional, Int, Available since v1.232.0) The port used when accessing the mesh topology in a custom way
 * `web_root` - (Optional, Available since v1.232.0) The root path of the service when accessing the mesh topology in a custom way
@@ -364,12 +378,14 @@ The mesh_config-kiali-server_config supports the following:
 ### `network`
 
 The network supports the following:
+
 * `vswitche_list` - (Required, ForceNew, List) Virtual Switch ID
 * `vpc_id` - (Required, ForceNew) VPC ID
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Service grid creation time
 * `kubeconfig` - Kubeconfig configuration content
@@ -395,6 +411,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Service Mesh.
 * `delete` - (Defaults to 20 mins) Used when delete the Service Mesh.
 * `update` - (Defaults to 10 mins) Used when update the Service Mesh.

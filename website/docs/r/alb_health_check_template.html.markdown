@@ -41,6 +41,7 @@ resource "alicloud_alb_health_check_template" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dry_run` - (Optional) Whether to PreCheck only this request, value:
 true: sends a check request and does not create a resource. Check items include whether required parameters, request format, and business restrictions have been filled in. If the check fails, the corresponding error is returned. If the check passes, the error code DryRunOperation is returned.
 false (default): Sends a normal request, returns the http_2xx status code after the check, and directly performs the operation.
@@ -66,11 +67,13 @@ gRPC: Check whether the server application is healthy by sending a POST or GET r
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Health Check Template.
 * `delete` - (Defaults to 5 mins) Used when delete the Health Check Template.
 * `update` - (Defaults to 5 mins) Used when update the Health Check Template.

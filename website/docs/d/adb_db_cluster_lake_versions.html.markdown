@@ -7,7 +7,7 @@ description: |-
   Provides a list of Adb DBCluster Lake Versions to the user.
 ---
 
-# alicloud\_adb\_db\_cluster\_lake\_versions
+# alicloud_adb_db_cluster_lake_versions
 
 This data source provides the Adb DBCluster Lake Versions of the current Alibaba Cloud user.
 

@@ -10,8 +10,6 @@ description: |-
 
 Provides a RAM Saml Provider resource.
 
-
-
 For information about RAM Saml Provider and how to use it, see [What is Saml Provider](https://www.alibabacloud.com/help/en/ram/developer-reference/api-ims-2019-08-15-createsamlprovider).
 
 -> **NOTE:** Available since v1.114.0.
@@ -41,6 +39,7 @@ resource "alicloud_ram_saml_provider" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The description.
 * `encodedsaml_metadata_document` - (Required) The metadata file which is Base64-encoded.
 The file is provided by an IdP that supports Security Assertion Markup Language (SAML) 2.0.
@@ -49,6 +48,7 @@ The file is provided by an IdP that supports Security Assertion Markup Language 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `arn` - The identity provider's ARN.
 * `update_date` - Update time.
@@ -56,6 +56,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Saml Provider.
 * `delete` - (Defaults to 5 mins) Used when delete the Saml Provider.
 * `update` - (Defaults to 5 mins) Used when update the Saml Provider.

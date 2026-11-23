@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_cloud_monitor_service_monitoring_agent_process
 
-Provides a Cloud Monitor Service Monitoring Agent Process resource. 
+Provides a Cloud Monitor Service Monitoring Agent Process resource.
 
 For information about Cloud Monitor Service Monitoring Agent Process and how to use it, see [What is Monitoring Agent Process](https://www.alibabacloud.com/help/en/cms/developer-reference/api-cms-2019-01-01-createmonitoragentprocess).
 

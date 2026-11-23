@@ -10,8 +10,6 @@ description: |-
 
 Provides a Max Compute Quota Schedule resource.
 
-
-
 For information about Max Compute Quota Schedule and how to use it, see [What is Quota Schedule](https://www.alibabacloud.com/help/en/).
 
 -> **NOTE:** Available since v1.242.0.
@@ -176,6 +174,7 @@ Terraform cannot destroy resource `alicloud_max_compute_quota_schedule`. Terrafo
 ## Argument Reference
 
 The following arguments are supported:
+
 * `nickname` - (Required, ForceNew) The nickname of level-1 compute quota.
 * `schedule_list` - (Optional, Set) schedule list See [`schedule_list`](#schedule_list) below.
 * `timezone` - (Required, ForceNew) Time zone, reference value: UTC +8
@@ -183,29 +182,31 @@ The following arguments are supported:
 ### `schedule_list`
 
 The schedule_list supports the following:
+
 * `condition` - (Optional, List) The value of effective condition. See [`condition`](#schedule_list-condition) below.
 * `plan` - (Required) The name of the quota plan.
-* `type` - (Required, ForceNew) The type of the quota plan. Valid values: daily 
+* `type` - (Required, ForceNew) The type of the quota plan. Valid values: daily
 
   -> **NOTE:** Currently, only daily is supported.
-
 
 ### `schedule_list-condition`
 
 The schedule_list-condition supports the following:
+
 * `at` - (Required) Effective time. The format is HH:mm, sample value: 00:00
 
   -> **NOTE:** The configuration must start from the effective time of 00:00. The input time must be either a whole hour or a half hour, and the minimum interval between each schedule is 30 minutes.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<nickname>:<timezone>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Quota Schedule.
 * `update` - (Defaults to 5 mins) Used when update the Quota Schedule.
 

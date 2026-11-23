@@ -10,8 +10,6 @@ description: |-
 
 Provides a Ddos Coo Domain Resource resource.
 
-
-
 For information about Ddos Coo Domain Resource and how to use it, see [What is Domain Resource](https://www.alibabacloud.com/help/en/anti-ddos/anti-ddos-pro-and-premium/developer-reference/api-ddoscoo-2020-01-01-createdomainresource).
 
 -> **NOTE:** Available since v1.123.0.
@@ -73,6 +71,7 @@ resource "alicloud_ddoscoo_domain_resource" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ai_mode` - (Optional, Available since v1.270.0) the mode of the Intelligent Protection policy.
   - watch: the Warning mode
   - defense: the Defense mode
@@ -99,7 +98,7 @@ The following arguments are supported:
 
   -> **NOTE:**   If you specify a value for the CertName, Cert, and Key parameters, you do not need to specify a value for the CertId parameter.
 
-* `cert_region` - (Optional, Available since v1.231.0) The region of the certificate. `cn-hangzhou` and `ap-southeast-1` are supported. The default value is `cn-hangzhou`. 
+* `cert_region` - (Optional, Available since v1.231.0) The region of the certificate. `cn-hangzhou` and `ap-southeast-1` are supported. The default value is `cn-hangzhou`.
 * `custom_ciphers` - (Optional, List, Available since v1.281.0) A custom list of cipher suites for TLS 1.2 and earlier versions.
 * `custom_headers` - (Optional, Available since v1.261.0) The key-value pair of the custom header. The key specifies the header name, and the value specifies the header value. You can specify up to five key-value pairs. The key-value pairs can be up to 200 characters in length.
   Take note of the following items:
@@ -160,6 +159,7 @@ The following arguments are supported:
 ### `proxy_types`
 
 The proxy_types supports the following:
+
 * `proxy_ports` - (Required, List) The port numbers.
 * `proxy_type` - (Optional) The type of the protocol. Valid values:
 
@@ -171,12 +171,14 @@ The proxy_types supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `cname` - The CNAME address to query.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Domain Resource.
 * `delete` - (Defaults to 5 mins) Used when delete the Domain Resource.
 * `update` - (Defaults to 5 mins) Used when update the Domain Resource.

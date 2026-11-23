@@ -7,9 +7,9 @@ description: |-
     Provides a list of domains available to the user.
 ---
 
-# alicloud\_dns\_domains
+# alicloud_dns_domains
 
--> **DEPRECATED:**  This resource has been renamed to [alicloud_alidns_domains](https://www.terraform.io/docs/providers/alicloud/d/alidns_domains) from version 1.95.0. 
+-> **DEPRECATED:**  This resource has been renamed to [alicloud_alidns_domains](https://www.terraform.io/docs/providers/alicloud/d/alidns_domains) from version 1.95.0.
 
 This data source provides a list of DNS Domains in an Alibaba Cloud account according to the specified filters.
 
@@ -30,7 +30,7 @@ output "first_domain_id" {
 
 The following arguments are supported:
 
-* `domain_name_regex` - (Optional) A regex string to filter results by the domain name. 
+* `domain_name_regex` - (Optional) A regex string to filter results by the domain name.
 * `group_name_regex` - (Optional)  A regex string to filter results by the group name.
 * `ali_domain` - (Optional, type: bool) Specifies whether the domain is from Alibaba Cloud or not.
 * `instance_id` - (Optional) Cloud analysis product ID.

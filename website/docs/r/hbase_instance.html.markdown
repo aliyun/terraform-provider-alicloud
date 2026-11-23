@@ -11,7 +11,7 @@ description: |-
 
 Provides a HBase instance resource supports replica set instances only. The HBase provides stable, reliable, and automatic scalable database services.
 It offers a full range of database solutions, such as disaster recovery, backup, recovery, monitoring, and alarms.
-You can see detail product introduction [here](https://www.alibabacloud.com/help/en/apsaradb-for-hbase/latest/createcluster)
+You can see detail product introduction in [ApsaraDB for HBase documentation](https://www.alibabacloud.com/help/en/apsaradb-for-hbase/latest/createcluster)
 
 -> **NOTE:** Available since v1.67.0.
 
@@ -73,7 +73,7 @@ this is a example for class netType instance. you can find more detail with the 
 
 The following arguments are supported:
 
-* `name` - (Required) HBase instance name. Length must be 2-128 characters long. Only Chinese characters, English letters, numbers, period (.), underline (_), or dash (-) are permitted. 
+* `name` - (Required) HBase instance name. Length must be 2-128 characters long. Only Chinese characters, English letters, numbers, period (.), underline (_), or dash (-) are permitted.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the HBase instance. If vswitch_id is not empty, this zone_id can be "" or consistent.
 * `engine` - (Optional, ForceNew) Valid values are "hbase/hbaseue/bds". The following types are supported after v1.73.0: `hbaseue` and `bds`. Single hbase instance need to set engine=hbase, core_instance_quantity=1.
 * `engine_version` - (Required, ForceNew) HBase major version. hbase:1.1/2.0, hbaseue:2.0, bds:1.0, unsupport other engine temporarily. Value options can refer to the latest docs [CreateInstance](https://www.alibabacloud.com/help/en/data-lake-analytics/latest/createinstance).
@@ -143,14 +143,13 @@ The following attributes are exported:
 * `id` - The ID of the HBase.
 * `master_instance_quantity` - Count nodes of the master node.
 
-
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when creating the HBase instance (until it reaches the initial `ACTIVATION` status).
 * `update` - (Defaults to 60 mins) Used when updating the HBase instance (until it reaches the initial `ACTIVATION` status).
-* `delete` - (Defaults to 30 mins) Used when terminating the HBase instance. 
+* `delete` - (Defaults to 30 mins) Used when terminating the HBase instance.
 
 ## Import
 

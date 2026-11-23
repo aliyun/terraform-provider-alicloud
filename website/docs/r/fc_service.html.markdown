@@ -290,7 +290,7 @@ The following arguments are supported:
 
 ### `log_config`
 
-The log_config supports the following: 
+The log_config supports the following:
 
 * `project` - (Required) The project name of the Alicloud Simple Log Service.
 * `logstore` - (Required) The log store name of Alicloud Simple Log Service.
@@ -299,7 +299,7 @@ The log_config supports the following:
 
 ### `vpc_config`
 
-The vpc_config supports the following: 
+The vpc_config supports the following:
 
 * `vpc_id` - (Optional) A vpc ID associated with the Function Compute Service.
 * `vswitch_ids` - (Required) A list of vswitch IDs associated with the Function Compute Service.
@@ -307,7 +307,7 @@ The vpc_config supports the following:
 
 ### `nas_config`
 
-The nas_config supports the following: 
+The nas_config supports the following:
 
 * `user_id` - (Required) The user id of your NAS file system.
 * `group_id` - (Required) The group id of your NAS file system.
@@ -315,17 +315,17 @@ The nas_config supports the following:
 
 ### `nas_config-mount_points`
 
-The nas_config-mount_points supports the following: 
+The nas_config-mount_points supports the following:
 
 * `server_addr` - (Required) The address of the remote NAS directory.
 * `mount_dir` - (Required) The local address where to mount your remote NAS directory.
 
 ### `tracing_config`
 
-The tracing_config supports the following: 
+The tracing_config supports the following:
 
 * `type` - (Required) Tracing protocol type. Currently, only Jaeger is supported.
-* `params` - (Required) Tracing parameters, which type is map[string]string. When the protocol type is Jaeger, the key is "endpoint" and the value is your tracing intranet endpoint. For example endpoint: http://tracing-analysis-dc-hz.aliyuncs.com/adapt_xxx/api/traces.
+* `params` - (Required) Tracing parameters, which type is map[string]string. When the protocol type is Jaeger, the key is "endpoint" and the value is your tracing intranet endpoint. For example endpoint: `http://tracing-analysis-dc-hz.aliyuncs.com/adapt_xxx/api/traces`.
 
 ## Attributes Reference
 

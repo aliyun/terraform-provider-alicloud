@@ -64,6 +64,7 @@ resource "alicloud_vpc_vswitch_cidr_reservation" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cidr_reservation_cidr` - (Optional, ForceNew) Reserved network segment CIdrBlock.
 * `cidr_reservation_description` - (Optional) The description of the reserved CIDR block.
 * `cidr_reservation_mask` - (Optional, ForceNew) Reserved segment mask.
@@ -72,11 +73,10 @@ The following arguments are supported:
 * `vswitch_cidr_reservation_name` - (Optional) The name of the resource.
 * `vswitch_id` - (Required, ForceNew) The Id of the switch instance.
 
-
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<vswitch_id>:<vswitch_cidr_reservation_id>`.
 * `create_time` - The creation time of the resource.
 * `status` - The status of the resource.
@@ -86,6 +86,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vswitch Cidr Reservation.
 * `delete` - (Defaults to 5 mins) Used when delete the Vswitch Cidr Reservation.
 * `update` - (Defaults to 5 mins) Used when update the Vswitch Cidr Reservation.

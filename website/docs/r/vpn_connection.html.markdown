@@ -194,10 +194,11 @@ The following arguments are supported:
 ### `bgp_config`
 
 The bgp_config supports the following:
+
 * `enable` - (Optional, Computed) specifies whether to enable BGP. Valid values: true and false (default).
-* `local_asn` - (Optional, Computed) the autonomous system number (ASN) on the Alibaba Cloud side. 
-   Valid values: 1 to 4294967295. Default value: 45104. You can enter a value in two segments separated by a period (.). 
-   Each segment is 16 bits in length. Enter the number in each segment in decimal format. 
+* `local_asn` - (Optional, Computed) the autonomous system number (ASN) on the Alibaba Cloud side.
+   Valid values: 1 to 4294967295. Default value: 45104. You can enter a value in two segments separated by a period (.).
+   Each segment is 16 bits in length. Enter the number in each segment in decimal format.
    For example, if you enter 123.456, the ASN is 8061384. The ASN is calculated by using the following formula: 123 × 65536 + 456 = 8061384.
 * `local_bgp_ip` - (Optional, Computed) the BGP address on the Alibaba Cloud side. It must be an IP address that falls within the CIDR block of the IPsec tunnel.
 * `tunnel_cidr` - (Optional, Computed) The CIDR block of the IPsec tunnel. The CIDR block must belong to 169.254.0.0/16 and the subnet mask is 30 bits in length.
@@ -205,6 +206,7 @@ The bgp_config supports the following:
 ### `health_check_config`
 
 The health_check_config supports the following:
+
 * `dip` - (Optional, Computed) the destination IP address configured for health checks.
 * `enable` - (Optional, Computed) specifies whether to enable health checks. Valid values: true and false. Default value: false.
 * `interval` - (Optional, Computed) the time interval of health check retries. Unit: seconds. Default value: 3.
@@ -214,12 +216,13 @@ The health_check_config supports the following:
 ### `ike_config`
 
 The ike_config supports the following:
+
 * `ike_auth_alg` - (Optional, Computed) the authentication algorithm that is used in Phase 1 negotiations. Valid values: md5, sha1, sha2
 * `ike_enc_alg` - (Optional, Computed) the encryption algorithm that is used in Phase 1 negotiations. Valid values: aes, aes192, aes256, des, and 3des. Default value: aes.
 * `ike_lifetime` - (Optional, Computed) the SA lifetime as a result of Phase 1 negotiations. Unit: seconds. Valid values: 0 to 86400. Default value: 86400.
 * `ike_local_id` - (Optional, Computed) the identifier of the VPN gateway. It can contain at most 100 characters. The default value is the IP address of the VPN gateway.
 * `ike_mode` - (Optional, Computed) the negotiation mode of IKE. Valid values: main and aggressive. Default value: main.
-  - main: This mode offers higher security during negotiations. 
+  - main: This mode offers higher security during negotiations.
   - aggressive: This mode supports faster negotiations and a higher success rate.
 * `ike_pfs` - (Optional, Computed) the Diffie-Hellman key exchange algorithm that is used in Phase 1 negotiations. Valid values: group1, group2, group5, and group14. Default value: group2.
 * `ike_remote_id` - (Optional, Computed) the identifier of the customer gateway. It can contain at most 100 characters. The default value is the IP address of the customer gateway.
@@ -230,6 +233,7 @@ The ike_config supports the following:
 ### `ipsec_config`
 
 The ipsec_config supports the following:
+
 * `ipsec_auth_alg` - (Optional, Computed) the authentication algorithm that is used in Phase 2 negotiations. Valid values: md5, sha1, sha256, sha384, and sha512. Default value: md5.
 * `ipsec_enc_alg` - (Optional, Computed) the encryption algorithm that is used in Phase 2 negotiations. Valid values: aes, aes192, aes256, des, and 3des. Default value: aes.
 * `ipsec_lifetime` - (Optional, Computed) the SA lifetime that is determined by Phase 2 negotiations. Unit: seconds. Valid values: 0 to 86400. Default value: 86400.
@@ -238,6 +242,7 @@ The ipsec_config supports the following:
 ### `tunnel_options_specification`
 
 The tunnel_options_specification supports the following:
+
 * `customer_gateway_id` - (Optional, ForceNew) The ID of the customer gateway in Tunnel.
 * `enable_dpd` - (Optional) Wether enable Dpd detection.
 * `enable_nat_traversal` - (Optional) enable nat traversal.
@@ -249,6 +254,7 @@ The tunnel_options_specification supports the following:
 ### `tunnel_options_specification-tunnel_bgp_config`
 
 The tunnel_options_specification-tunnel_bgp_config supports the following:
+
 * `local_asn` - (Optional) The autonomous system number (ASN) of the tunnel on the Alibaba Cloud side. Valid values: 1 to 4294967295. Default value: 45104.
 * `local_bgp_ip` - (Optional) The BGP IP address of the tunnel on the Alibaba Cloud side. The address is an IP address that falls within the BGP CIDR block.
 * `tunnel_cidr` - (Optional) The BGP CIDR block of the tunnel. The CIDR block must fall within the 169.254.0.0/16 range. The subnet mask of the CIDR block must be 30 bits in length.
@@ -256,11 +262,12 @@ The tunnel_options_specification-tunnel_bgp_config supports the following:
 ### `tunnel_options_specification-tunnel_ike_config`
 
 The tunnel_options_specification-tunnel_ike_config supports the following:
+
 * `ike_auth_alg` - (Optional) The authentication algorithm that is used in Phase 1 negotiations. Valid values: md5, sha1, sha256, sha384, and sha512. Default value: md5.
 * `ike_enc_alg` - (Optional) The encryption algorithm that is used in Phase 1 negotiations. Valid values: aes, aes192, aes256, des, and 3des. Default value: aes.
 * `ike_lifetime` - (Optional) The SA lifetime as a result of Phase 1 negotiations. Unit: seconds. Valid values: 0 to 86400. Default value: 86400.
 * `ike_mode` - (Optional) The negotiation mode of IKE. Valid values: main and aggressive. Default value: main.
-  - main: This mode offers higher security during negotiations. 
+  - main: This mode offers higher security during negotiations.
   - aggressive: This mode supports faster negotiations and a higher success rate.
 * `ike_pfs` - (Optional) The Diffie-Hellman key exchange algorithm that is used in Phase 1 negotiations. Default value: group2.
 * `ike_version` - (Optional) The version of the IKE protocol. Valid values: ikev1 and ikev2. Default value: ikev1.
@@ -276,6 +283,7 @@ The tunnel_options_specification-tunnel_ike_config supports the following:
 ### `tunnel_options_specification-tunnel_ipsec_config`
 
 The tunnel_options_specification-tunnel_ipsec_config supports the following:
+
 * `ipsec_auth_alg` - (Optional) The authentication algorithm that is used in Phase 2 negotiations. Valid values: md5, sha1, sha256, sha384, and sha512. Default value: md5.
 * `ipsec_enc_alg` - (Optional) The encryption algorithm that is used in Phase 2 negotiations. Valid values: aes, aes192, aes256, des, and 3des. Default value: aes.
 * `ipsec_lifetime` - (Optional) The SA lifetime as a result of Phase 2 negotiations. Unit: seconds. Valid values: 0 to 86400. Default value: 86400.
@@ -284,6 +292,7 @@ The tunnel_options_specification-tunnel_ipsec_config supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `bgp_config` - vpnBgp configuration.
   * `status` - Whether BGP function is turned on.
@@ -304,6 +313,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vpn Connection.
 * `delete` - (Defaults to 5 mins) Used when delete the Vpn Connection.
 * `update` - (Defaults to 5 mins) Used when update the Vpn Connection.

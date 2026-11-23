@@ -10,8 +10,6 @@ description: |-
 
 Provides a Private Link Vpc Endpoint Service resource.
 
-
-
 For information about Private Link Vpc Endpoint Service and how to use it, see [What is Vpc Endpoint Service](https://www.alibabacloud.com/help/en/privatelink/latest/api-privatelink-2020-04-15-createvpcendpointservice).
 
 -> **NOTE:** Available since v1.109.0.
@@ -43,6 +41,7 @@ resource "alicloud_privatelink_vpc_endpoint_service" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `address_ip_version` - (Optional, Computed, Available since v1.239.0) The IP address version.
 * `auto_accept_connection` - (Optional) Indicates whether the endpoint service automatically accepts endpoint connection requests. Valid values:
   - `true`
@@ -74,6 +73,7 @@ The following arguments are supported:
 ### `resource`
 
 The `resource` block supports the following:
+
 * `resource_id` - (Optional) The ID of the service resource.
 * `resource_type` - (Optional) The type of the service resource. Valid values:
   - `slb`: Classic Load Balancer (CLB).
@@ -85,17 +85,19 @@ The `resource` block supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the endpoint service was created.
 * `region_id` - The ID of the region to which the endpoint service belongs.
-* `service_business_status` - The service state of the endpoint service. 
+* `service_business_status` - The service state of the endpoint service.
 * `service_domain` - The domain name of the endpoint service.
-* `status` - The state of the endpoint service. 
+* `status` - The state of the endpoint service.
 * `vpc_endpoint_service_name` - The name of the endpoint service.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vpc Endpoint Service.
 * `delete` - (Defaults to 5 mins) Used when delete the Vpc Endpoint Service.
 * `update` - (Defaults to 5 mins) Used when update the Vpc Endpoint Service.

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Express Connect Access Points to the user.
 ---
 
-# alicloud\_express\_connect\_access\_points
+# alicloud_express_connect_access_points
 
 This data source provides the Express Connect Access Points of the current Alibaba Cloud user.
 

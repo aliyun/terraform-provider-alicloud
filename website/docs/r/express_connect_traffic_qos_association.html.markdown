@@ -54,6 +54,7 @@ resource "alicloud_express_connect_traffic_qos_association" "associateQos" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Optional, ForceNew, Computed) The ID of the associated instance.
 * `instance_type` - (Optional, ForceNew, Computed) The type of the associated instance. Value: **physical connection** physical connection.
 * `qos_id` - (Required, ForceNew) The QoS policy ID.
@@ -61,12 +62,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<qos_id>:<instance_id>:<instance_type>`.
 * `status` - The status of the associated instance. Value:
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Traffic Qos Association.
 * `delete` - (Defaults to 5 mins) Used when delete the Traffic Qos Association.
 

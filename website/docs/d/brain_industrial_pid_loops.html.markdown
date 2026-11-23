@@ -7,7 +7,7 @@ description: |-
   Provides a list of Brain Industrial Pid Loops to the user.
 ---
 
-# alicloud\_brain\_industrial\_pid\_loops
+# alicloud_brain_industrial_pid_loops
 
 This data source provides the Brain Industrial Pid Loops of the current Alibaba Cloud user.
 

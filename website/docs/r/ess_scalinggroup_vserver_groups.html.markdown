@@ -14,7 +14,7 @@ Attaches/Detaches vserver groups to a specified scaling group.
 -> **NOTE:** The load balancer of which vserver groups belongs to must be in `active` status.
 
 -> **NOTE:** If scaling group's network type is `VPC`, the vserver groups must be in the same `VPC`.
- 
+
 -> **NOTE:** A scaling group can have at most 5 vserver groups attached by default.
 
 -> **NOTE:** Vserver groups and the default group of loadbalancer share the same backend server quota.
@@ -164,7 +164,7 @@ the vserver_group supports the following:
 ### `vserver_groups-vserver_attributes`
 
 * `vserver_group_id` - (Required) ID of VServer Group.
-* `port` - (Required) - The port will be used for VServer Group backend server.
+* `port` - (Required) The port will be used for VServer Group backend server.
 * `weight` - (Required) The weight of an ECS instance attached to the VServer Group.
 
 ## Attributes Reference

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Sae Namespaces to the user.
 ---
 
-# alicloud\_sae\_namespaces
+# alicloud_sae_namespaces
 
 This data source provides the Sae Namespaces of the current Alibaba Cloud user.
 

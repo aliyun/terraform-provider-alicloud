@@ -7,7 +7,7 @@ description: |-
   Provides a list of Vpc Bgp Groups to the user.
 ---
 
-# alicloud\_vpc\_bgp\_groups
+# alicloud_vpc_bgp_groups
 
 This data source provides the Vpc Bgp Groups of the current Alibaba Cloud user.
 

@@ -78,6 +78,7 @@ Terraform cannot destroy resource `alicloud_ecs_image_pipeline_execution`. Terra
 ## Argument Reference
 
 The following arguments are supported:
+
 * `image_pipeline_id` - (Required, ForceNew) The ID of the image template.
 * `status` - (Optional, Computed) The status of the image build task. Valid values:
   - CANCELLED: canceled. The build process has been canceled.
@@ -85,12 +86,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the image build task was created.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Image Pipeline Execution.
 * `update` - (Defaults to 5 mins) Used when update the Image Pipeline Execution.
 

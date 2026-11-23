@@ -83,6 +83,7 @@ locals {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `deletion_strategy` - (Required) The processing policy for users who have been synchronized when deleting synchronization
 * `description` - (Optional) Description of User Synchronization
 * `directory_id` - (Required, ForceNew) The ID of the directory to which the synchronization belongs
@@ -95,6 +96,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<directory_id>:<user_provisioning_id>`.
 * `create_time` - The creation time of the synchronization
 * `status` - The status of the resource
@@ -106,6 +108,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the User Provisioning.
 * `delete` - (Defaults to 5 mins) Used when delete the User Provisioning.
 * `update` - (Defaults to 5 mins) Used when update the User Provisioning.

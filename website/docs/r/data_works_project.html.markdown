@@ -10,8 +10,6 @@ description: |-
 
 Provides a Data Works Project resource.
 
-
-
 For information about Data Works Project and how to use it, see [What is Project](https://www.alibabacloud.com/help/en/dataworks/developer-reference/api-dataworks-public-2024-05-18-createproject).
 
 -> **NOTE:** Available since v1.229.0.
@@ -55,6 +53,7 @@ resource "alicloud_data_works_project" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) Workspace Description
 * `dev_environment_enabled` - (Optional, Computed, Available since v1.237.0) Is Development Environment Enabled
 * `dev_role_disabled` - (Optional, Computed, Available since v1.237.0) Is Development Role Disabled
@@ -68,11 +67,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 15 mins) Used when create the Project.
 * `delete` - (Defaults to 5 mins) Used when delete the Project.
 * `update` - (Defaults to 5 mins) Used when update the Project.

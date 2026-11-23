@@ -58,4 +58,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `cluster_id` - The ID of the Prometheus instance.
   * `remote_write_name` - The name of the Remote Write configuration item.
   * `remote_write_yaml` - The details of the Remote Write configuration item. The value is in the YAML format.
-  

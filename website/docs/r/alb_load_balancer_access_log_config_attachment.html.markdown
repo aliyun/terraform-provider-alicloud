@@ -105,6 +105,7 @@ resource "alicloud_alb_load_balancer_access_log_config_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `load_balancer_id` - (Required, ForceNew) The ID of the load balancing instance.
 * `log_project` - (Required, ForceNew) The log items shipped by the access log.
 * `log_store` - (Required, ForceNew) Logstore for log delivery.
@@ -112,12 +113,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Load Balancer Access Log Config Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Load Balancer Access Log Config Attachment.
 

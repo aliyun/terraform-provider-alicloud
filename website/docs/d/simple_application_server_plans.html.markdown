@@ -7,7 +7,7 @@ description: |-
   Provides a list of Simple Application Server Plans to the user.
 ---
 
-# alicloud\_simple\_application\_server\_plans
+# alicloud_simple_application_server_plans
 
 This data source provides the Simple Application Server Plans of the current Alibaba Cloud user.
 

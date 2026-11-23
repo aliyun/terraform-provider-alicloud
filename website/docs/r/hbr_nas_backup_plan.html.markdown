@@ -15,7 +15,7 @@ For information about HBR Nas Backup Plan and how to use it, see [What is Nas Ba
 
 -> **NOTE:** Available since v1.132.0.
 
--> **NOTE:** Deprecated since v1.249.0.
+-> **DEPRECATED:** Deprecated since v1.249.0.
 
 -> **DEPRECATED:** This resource has been deprecated from version `1.249.0`. Please use new resource [alicloud_hbr_policy](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/hbr_policy) and [alicloud_hbr_policy_binding](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/hbr_policy_binding).
 
@@ -61,8 +61,8 @@ The following arguments are supported:
 * `vault_id` - (Required, ForceNew) The ID of Backup vault.
 * `retention` - (Required) Backup retention days, the minimum is 1.
 * `schedule` - (Required) Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered.
-    * `startTime` Backup start time, UNIX time seconds.
-    * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
+  * `startTime` Backup start time, UNIX time seconds.
+  * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
 * `backup_type` - (Required, ForceNew) Backup type. Valid values: `COMPLETE`.
 * `file_system_id` - (Required, ForceNew) The File System ID of Nas.

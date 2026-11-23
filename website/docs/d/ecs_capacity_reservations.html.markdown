@@ -31,6 +31,7 @@ output "alicloud_ecs_capacity_reservation_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_type` - (Optional) Instance type. Currently, you can only set the capacity reservation service for one instance type.
 * `payment_type` - (Optional) The payment type of the resource. value range `PostPaid`, `PrePaid`.
 * `platform` - (Optional) platform of the capacity reservation , value range `windows`, `linux`, `all`.
@@ -45,6 +46,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Capacity Reservation IDs.
 * `names` - A list of name of Capacity Reservations.
 * `reservations` - A list of Capacity Reservation Entries. Each element contains the following attributes:

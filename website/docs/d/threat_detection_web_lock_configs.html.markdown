@@ -28,6 +28,7 @@ output "alicloud_threat_detection_web_lock_config_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Optional, ForceNew, Computed) A list of Web Lock Config IDs.
 * `lang` - (Optional, ForceNew) The language of the content within the request and the response. Valid values: `zh`, `en`.
 * `remark` - (Optional, ForceNew) The string that allows you to search for servers in fuzzy match mode. You can enter a server name or IP address.
@@ -35,10 +36,10 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The protection status of the server that you want to query. Valid values: `on`, `off`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Web Lock Config IDs.
 * `configs` - A list of Web Lock Config Entries. Each element contains the following attributes:
   * `uuid` - The UUID of the server that has web tamper proofing enabled.
@@ -50,4 +51,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `exclusive_file_type` - The type of the file that has web tamper proofing disabled. **Note:** If the value of `mode` is `blacklist`, this parameter is returned.
   * `inclusive_file_type` - The type of the file that has web tamper proofing enabled. **Note:** If the value of `mode` is `whitelist`, this parameter is returned.
   * `local_backup_dir` - The local path to the backup files of the protected directory.
-  * `mode` - The protection mode of web tamper proofing. 
+  * `mode` - The protection mode of web tamper proofing.

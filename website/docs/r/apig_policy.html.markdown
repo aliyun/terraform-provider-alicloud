@@ -10,8 +10,6 @@ description: |-
 
 Provides a APIG Policy resource.
 
-
-
 For information about APIG Policy and how to use it, see [What is Policy](https://next.api.alibabacloud.com/document/APIG/2024-03-27/CreateAndAttachPolicy).
 
 -> **NOTE:** Available since v1.292.0.
@@ -84,13 +82,12 @@ resource "alicloud_apig_policy" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_apig_policy&spm=docs.r.apig_policy.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `attach_resource_ids` - (Required, ForceNew, List) The Mount point id list.
 * `attach_resource_type` - (Required, ForceNew) Policies support mount point types.
   - HttpApi:HttpApi.
@@ -109,12 +106,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `policy_class_id` - policy class id.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Policy.
 * `update` - (Defaults to 5 mins) Used when update the Policy.

@@ -7,13 +7,13 @@ description: |-
   Provides a list of Arms Prometheis to the user.
 ---
 
-# alicloud\_arms\_prometheis
+# alicloud_arms_prometheis
 
 This data source provides the Arms Prometheis of the current Alibaba Cloud user.
 
 -> **NOTE:** Available since v1.203.0.
 
--> **DEPRECATED:** This data source has been renamed to [alicloud_arms_prometheus](https://www.terraform.io/docs/providers/alicloud/d/arms_prometheus) from version 1.214.0.
+-> **DEPRECATED:** This data source has been renamed to [alicloud_arms_prometheus](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/arms_prometheus) from version 1.214.0.
 
 ## Example Usage
 
@@ -99,4 +99,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `http_api_inter_url` - Http api public network address.
   * `auth_token` - The token used to access the data source.
   * `tags` - The tag of the Prometheus.
-  

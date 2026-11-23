@@ -7,7 +7,7 @@ description: |-
   Provides an ECS Launch Template resource.
 ---
 
-# alicloud\_launch\_template
+# alicloud_launch_template
 
 Provides an ECS Launch Template resource.
 

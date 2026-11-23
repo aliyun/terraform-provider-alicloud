@@ -7,15 +7,15 @@ description: |-
     Provides a list of availability zones for Elasticsearch that can be used by an Alibaba Cloud account.
 ---
 
-# alicloud\_elasticsearch\_zones
+# alicloud_elasticsearch_zones
 
 This data source provides availability zones for Elasticsearch that can be accessed by an Alibaba Cloud account within the region configured in the provider.
 
--> **NOTE:** Available in v1.73.0+.
+-> **NOTE:** Available since v1.73.0+.
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_elasticsearch_zones" "zones_ids" {}
 ```

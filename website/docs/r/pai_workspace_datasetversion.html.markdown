@@ -10,8 +10,6 @@ description: |-
 
 Provides a PAI Workspace Datasetversion resource.
 
-
-
 For information about PAI Workspace Dataset Version and how to use it, see [What is Dataset Version](https://next.api.alibabacloud.com/document/AIWorkSpace/2021-02-04/CreateDatasetVersion).
 -> **NOTE:** Available since v1.236.0.
 
@@ -80,6 +78,7 @@ resource "alicloud_pai_workspace_datasetversion" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `data_count` - (Optional, Int) Data count.
 * `data_size` - (Optional, Int) Data size.
 * `data_source_type` - (Required, ForceNew) The data source type. The following values are supported:
@@ -95,7 +94,7 @@ The following arguments are supported:
   - FILE: FILE.
   - DIRECTORY: folder.
 * `source_id` - (Optional, ForceNew) The data source ID.
-* `source_type` - (Optional, ForceNew) The data source type. The default value is USER. 
+* `source_type` - (Optional, ForceNew) The data source type. The default value is USER.
 * `uri` - (Required, ForceNew) The Uri configuration sample is as follows:
   - The data source type is OSS:'oss:// bucket.endpoint/object'
   - The data source type is NAS:
@@ -111,12 +110,14 @@ The following arguments are supported:
 ### `labels`
 
 The labels supports the following:
+
 * `key` - (Optional, ForceNew) The key of the tags
 * `value` - (Optional, ForceNew) The value of the tags
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<dataset_id>:<version_name>`.
 * `create_time` - Update time.
 * `version_name` - The name of the resource
@@ -124,6 +125,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Datasetversion.
 * `delete` - (Defaults to 5 mins) Used when delete the Datasetversion.
 * `update` - (Defaults to 5 mins) Used when update the Datasetversion.

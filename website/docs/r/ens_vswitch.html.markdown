@@ -10,8 +10,6 @@ description: |-
 
 Provides a ENS Vswitch resource.
 
-
-
 For information about ENS Vswitch and how to use it, see [What is Vswitch](https://www.alibabacloud.com/help/en/ens/developer-reference/api-createvswitch).
 
 -> **NOTE:** Available since v1.213.0.
@@ -55,6 +53,7 @@ resource "alicloud_ens_vswitch" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cidr_block` - (Required, ForceNew) The CIDR block of the vSwitch.
 * `description` - (Optional) The description of the vSwitch.
 * `ens_region_id` - (Required, ForceNew) ENS Region ID.
@@ -64,6 +63,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Vswitch.
 * `create_time` - The time when the VPC was created.
 * `status` - The status of the vSwitch.
@@ -71,6 +71,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vswitch.
 * `delete` - (Defaults to 5 mins) Used when delete the Vswitch.
 * `update` - (Defaults to 5 mins) Used when update the Vswitch.

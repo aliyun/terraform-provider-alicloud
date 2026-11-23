@@ -372,8 +372,8 @@ The parameters supports the following:
 The following attributes are exported:
 
 * `id` - The PolarDB cluster ID.
-* `connection_string` - (Available since 1.81.0) PolarDB cluster connection string. 
-* `port` - (Available since 1.196.0) PolarDB cluster connection port. 
+* `connection_string` - (Available since 1.81.0) PolarDB cluster connection string.
+* `port` - (Available since 1.196.0) PolarDB cluster connection port.
 * `status` - (Available since 1.204.1) PolarDB cluster status.
 * `create_time` - (Available since 1.204.1) PolarDB cluster creation time.
 * `cn_node_ids` - (Available since v1.293.0) The IDs of the CN (Coordinator Node) nodes in a distributed cluster.

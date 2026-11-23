@@ -38,13 +38,12 @@ resource "alicloud_kvcachestore_kv_cache_store" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kvcachestore_kv_cache_store&spm=docs.r.kvcachestore_kv_cache_store.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `capacity` - (Required, Int) The storage capacity of the instance. Unit: GiB. The minimum value is `307200` (300 TiB), and the value must be a multiple of `307200`.
 * `description` - (Optional) The description of the instance.
 * `hpn_zone` - (Required, ForceNew) The cluster ID (HPN zone) of the instance.
@@ -55,6 +54,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is the KvcsId of the instance.
 * `create_time` - The creation time of the instance (ISO 8601).
 * `status` - The status of the instance. Valid values: `Creating`, `Available`, `InUse`, `Stopping`, `Stopped`, `Deleting`.
@@ -62,6 +62,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Kv Cache Store.
 * `delete` - (Defaults to 5 mins) Used when delete the Kv Cache Store.
 * `update` - (Defaults to 5 mins) Used when update the Kv Cache Store.

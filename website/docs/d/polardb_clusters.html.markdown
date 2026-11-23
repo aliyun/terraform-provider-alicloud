@@ -60,7 +60,7 @@ output "first_polardb_cluster_id" {
 The following arguments are supported:
 
 * `description_regex` - (Optional) A regex string to filter results by cluster description.
-* `ids` - (Optional) A list of PolarDB cluster IDs. 
+* `ids` - (Optional) A list of PolarDB cluster IDs.
 * `status` - (Optional) status of the cluster.
 * `db_type` - (Optional) Database type. Options are `MySQL`, `Oracle` and `PostgreSQL`. If no value is specified, all types are returned.
 * `tags` - (Optional, Available in v1.68.0+) A mapping of tags to assign to the resource.
@@ -73,8 +73,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of RDS cluster IDs. 
-* `descriptions` - A list of RDS cluster descriptions. 
+* `ids` - A list of RDS cluster IDs.
+* `descriptions` - A list of RDS cluster descriptions.
 * `clusters` - A list of PolarDB clusters. Each element contains the following attributes:
   * `id` - The ID of the PolarDB cluster.
   * `description` - The description of the PolarDB cluster.
@@ -95,8 +95,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `db_node_number` - The DBNodeNumber of the PolarDB cluster.
   * `db_node_class` - The DBNodeClass of the PolarDB cluster.
   * `storage_used` - The StorageUsed of the PolarDB cluster.
-  * `connection_string` - PolarDB cluster connection string. 
-  * `port` - PolarDB cluster connection port. 
+  * `connection_string` - PolarDB cluster connection string.
+  * `port` - PolarDB cluster connection port.
   * `db_nodes` - The DBNodes of the PolarDB cluster.
     * `db_node_class` - The db_node_class of the db_nodes.
     * `max_iops` - The max_iops of the db_nodes.

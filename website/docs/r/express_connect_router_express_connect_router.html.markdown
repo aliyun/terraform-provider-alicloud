@@ -59,6 +59,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
+
 * `alibaba_side_asn` - (Required, ForceNew) ASN representing resources.
 * `description` - (Optional) Represents the description of the leased line gateway.
 * `ecr_name` - (Optional) Name of the Gateway representing the leased line.
@@ -70,12 +71,14 @@ The following arguments are supported:
 ### `regions`
 
 The regions supports the following:
+
 * `region_id` - (Optional) Representative region ID.
 * `transit_mode` - (Optional, Computed) Represents the forwarding mode of the current region.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Represents the creation time of the resource.
 * `status` - The status of the resource.
@@ -85,12 +88,14 @@ The following attributes are exported:
 ### `disabled_route_entries`
 
 The disabled_route_entries supports the following:
+
 * `destination_cidr_block` - (Computed, String, Available since v2.3.0) The destination CIDR block of the disabled route entry.
 * `nexthop_instance_id` - (Computed, String, Available since v2.3.0) The ID of the next hop instance of the disabled route entry.
 
 ### `granted_instances`
 
 The granted_instances supports the following:
+
 * `node_id` - (Computed, String, Available since v2.3.0) The ID of the granted network instance, for example `vpc-xxx` or `vbr-xxx`.
 * `node_type` - (Computed, String, Available since v2.3.0) The type of the granted network instance. Valid values: `VPC`, `VBR`.
 * `node_region_id` - (Computed, String, Available since v2.3.0) The region ID of the granted network instance.
@@ -108,6 +113,7 @@ These actions are in addition to the base resource actions (`expressconnectroute
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Express Connect Router.
 * `delete` - (Defaults to 5 mins) Used when delete the Express Connect Router.
 * `update` - (Defaults to 5 mins) Used when update the Express Connect Router.

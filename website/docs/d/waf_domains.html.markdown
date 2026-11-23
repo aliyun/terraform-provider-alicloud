@@ -41,7 +41,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of WAF domain self ID, value as `domain_name`.
-* `names` - A list of WAF domain names. 
+* `names` - A list of WAF domain names.
 * `domains` - A list of Domains. Each element contains the following attributes:
   * `domain` - Field `domain` has been deprecated from version 1.94.0. Use `domain_name` instead.
   * `domain_name` - Name of the domain.

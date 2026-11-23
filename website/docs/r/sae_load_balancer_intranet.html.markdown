@@ -120,7 +120,6 @@ The intranet supports the following:
 * `target_port` - (Optional) The Container port.
 * `port` - (Optional) The SLB Port.
 
-
 ## Attributes Reference
 
 The following attributes are exported:

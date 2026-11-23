@@ -7,7 +7,7 @@ description: |-
     Provides a list of EIP owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_eips
+# alicloud_eips
 
 -> **DEPRECATED:**  This datasource has been deprecated from version `1.126.0`. Please use new datasource [alicloud_eip_addresses](https://www.terraform.io/docs/providers/alicloud/d/eip_addresses).
 
@@ -47,6 +47,7 @@ The following arguments are supported:
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `ip_addresses` - (Deprecated since v1.126.0) Field `ip_addresses` has been deprecated. Please use `ip_address` instead.
 
 ## Attributes Reference

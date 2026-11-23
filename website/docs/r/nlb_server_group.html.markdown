@@ -10,8 +10,6 @@ description: |-
 
 Provides a Network Load Balancer (NLB) Server Group resource.
 
-
-
 For information about Network Load Balancer (NLB) Server Group and how to use it, see [What is Server Group](https://www.alibabacloud.com/help/en/server-load-balancer/latest/createservergroup-nlb).
 
 -> **NOTE:** Available since v1.186.0.
@@ -68,6 +66,7 @@ resource "alicloud_nlb_server_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `address_ip_version` - (Optional, ForceNew, Computed) The protocol version. Valid values:
 
   - `ipv4` (default): IPv4
@@ -118,13 +117,14 @@ The name must be 2 to 128 characters in length, and can contain letters, digits,
 
   -> **NOTE:**  If `ServerGroupType` is set to `Instance`, only servers in the specified VPC can be added to the server group.
 
-
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `connection_drain` - (Deprecated since v1.231.0). Field 'connection_drain' has been deprecated from provider version 1.231.0. New field 'connection_drain_enabled' instead.
 
 ### `health_check`
 
 The health_check supports the following:
+
 * `health_check_connect_port` - (Optional, Computed, Int) The port that you want to use for health checks on backend servers.
 Valid values: `0` to `65535`.
 Default value: `0`. If you set the value to 0, the port of the backend server is used for health checks.
@@ -173,6 +173,7 @@ Default value: `2`.
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `region_id` - The ID of the region where the NLB instance is deployed.
 * `status` - Server group status. Value:
@@ -180,6 +181,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Server Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Server Group.
 * `update` - (Defaults to 5 mins) Used when update the Server Group.

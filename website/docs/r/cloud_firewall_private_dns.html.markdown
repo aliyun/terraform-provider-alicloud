@@ -80,6 +80,7 @@ resource "alicloud_cloud_firewall_private_dns" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_instance_name` - (Required) The name of Private DNS instance
 * `domain_name_list` - (Optional, Set) Private DNS domain name list
 * `firewall_type` - (Required, ForceNew, List) The type of firewall
@@ -99,6 +100,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<access_instance_id>:<region_no>`.
 * `access_instance_id` - The id of Private DNS instance
 * `status` - status
@@ -106,6 +108,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Private Dns.
 * `delete` - (Defaults to 5 mins) Used when delete the Private Dns.
 * `update` - (Defaults to 5 mins) Used when update the Private Dns.

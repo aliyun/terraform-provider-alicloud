@@ -87,7 +87,6 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the resource. Valid Status: `Creating`,`Available`,`Deleting`.
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:

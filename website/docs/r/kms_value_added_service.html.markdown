@@ -47,12 +47,12 @@ resource "alicloud_kms_value_added_service" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kms_value_added_service&spm=docs.r.kms_value_added_service.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `payment_type` - (Required, ForceNew) The payment type of the resource
 * `period` - (Optional, Int) Prepaid cycle. Unit for year
 
@@ -72,10 +72,10 @@ The following arguments are supported:
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `region_id` - The region ID of the resource
@@ -84,6 +84,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Value Added Service.
 * `delete` - (Defaults to 10 mins) Used when delete the Value Added Service.
 * `update` - (Defaults to 10 mins) Used when update the Value Added Service.

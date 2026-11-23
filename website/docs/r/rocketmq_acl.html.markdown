@@ -10,8 +10,6 @@ description: |-
 
 Provides a RocketMQ Acl resource.
 
-
-
 For information about RocketMQ Acl and how to use it, see [What is Acl](https://www.alibabacloud.com/help/en/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/developer-reference/api-rocketmq-2022-08-01-createinstanceacl).
 
 -> **NOTE:** Available since v1.245.0.
@@ -108,6 +106,7 @@ resource "alicloud_rocketmq_acl" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `actions` - (Required, List) The type of operations that can be performed on the resource. Valid values:
   - If `resource_type` is set to `Topic`. Valid values: `Pub`, `Sub`.
   - If `resource_type` is set to `Group`. Valid values: `Sub`.
@@ -121,11 +120,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Acl. It formats as `<instance_id>:<username>:<resource_type>:<resource_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Acl.
 * `delete` - (Defaults to 5 mins) Used when delete the Acl.
 * `update` - (Defaults to 5 mins) Used when update the Acl.

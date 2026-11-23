@@ -10,8 +10,6 @@ description: |-
 
 Provides a RAM Access Key resource.
 
-
-
 For information about RAM Access Key and how to use it, see [What is Access Key](https://www.alibabacloud.com/help/en/ram/developer-reference/api-ram-2015-05-01-createaccesskey).
 
 -> **NOTE:** Available since v1.0.0.
@@ -19,7 +17,6 @@ For information about RAM Access Key and how to use it, see [What is Access Key]
 -> **NOTE:**  You should set the `secret_file` if you want to get the access key.  
 
 -> **NOTE:**  From version 1.98.0, if not set `pgp_key`, the resource will output the access key secret to field `secret` and please protect your backend state file judiciously
-
 
 ## Example Usage
 
@@ -117,6 +114,7 @@ output "encrypted_secret" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `status` - (Optional, Computed) The status of the AccessKey. Value:
   - Active: Activated.
   - Inactive: Disabled.
@@ -127,11 +125,12 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - (Available since v1.246.0) The create time of the AccessKey.
-* `secret` - (Available since v1.98.0) The secret access key. Note that this will be written to the state file. 
-If you use this, please protect your backend state file judiciously. 
-Alternatively, you may supply a `pgp_key` instead, which will prevent the secret from being stored in plaintext, 
+* `secret` - (Available since v1.98.0) The secret access key. Note that this will be written to the state file.
+If you use this, please protect your backend state file judiciously.
+Alternatively, you may supply a `pgp_key` instead, which will prevent the secret from being stored in plaintext,
 at the cost of preventing the use of the secret key in automation.
 * `key_fingerprint` - (Available since v1.47.0) The fingerprint of the PGP key used to encrypt the secret
 * `encrypted_secret` - (Available since v1.47.0) The encrypted secret, base64 encoded. ~> NOTE: The encrypted secret may be decrypted using the command line, for example: `terraform output encrypted_secret | base64 --decode | keybase pgp decrypt`.
@@ -141,6 +140,7 @@ at the cost of preventing the use of the secret key in automation.
 -> **NOTE:** Available since v1.246.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Access Key.
 * `delete` - (Defaults to 5 mins) Used when delete the Access Key.
 * `update` - (Defaults to 5 mins) Used when update the Access Key.

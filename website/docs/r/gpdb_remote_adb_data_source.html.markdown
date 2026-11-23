@@ -120,6 +120,7 @@ resource "alicloud_gpdb_remote_adb_data_source" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `data_source_name` - (Optional) Data Source Name
 * `local_database` - (Required, ForceNew) The database of the local instance which connection data.
 * `local_db_instance_id` - (Required, ForceNew) The instanceId of the local instance which connection data.
@@ -133,6 +134,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<local_db_instance_id>:<remote_adb_data_source_id>`.
 * `remote_adb_data_source_id` - The first ID of the resource
 * `status` - The status of the resource
@@ -140,6 +142,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Remote ADB Data Source.
 * `delete` - (Defaults to 5 mins) Used when delete the Remote ADB Data Source.
 * `update` - (Defaults to 5 mins) Used when update the Remote ADB Data Source.

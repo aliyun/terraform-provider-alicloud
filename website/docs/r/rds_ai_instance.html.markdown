@@ -10,8 +10,6 @@ description: |-
 
 Provides a Rds Ai Instance resource.
 
-
-
 For information about Rds Ai Instance and how to use it, see [What is Instance](https://next.api.alibabacloud.com/document/RdsAi/2025-05-07/CreateAppInstance).
 
 -> **NOTE:** Available since v1.268.0.
@@ -56,12 +54,12 @@ resource "alicloud_rds_ai_instance" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_ai_instance&spm=docs.r.rds_ai_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `app_name` - (Required, ForceNew) The name of the new AI application.
 * `app_type` - (Required, ForceNew) Application type. Currently, only `supabase` is supported.
 * `auth_config_list` - (Optional, Set) Authentication information list. See [`auth_config_list`](#auth_config_list) below.
@@ -108,23 +106,27 @@ The following arguments are supported:
 ### `auth_config_list`
 
 The auth_config_list supports the following:
+
 * `name` - (Optional) The configuration item name. For more information, see [How to use it](https://www.alibabacloud.com/help/en/rds/apsaradb-rds-for-postgresql/authentication).
 * `value` - (Optional) The value of the configuration item.
 
 ### `storage_config_list`
 
 The storage_config_list supports the following:
+
 * `name` - (Optional) The configuration item name. For more information, see [How to use it](https://www.alibabacloud.com/help/en/rds/apsaradb-rds-for-postgresql/storage).
 * `value` - (Optional) The value of the configuration item.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 20 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.
 * `update` - (Defaults to 5 mins) Used when update the Instance.

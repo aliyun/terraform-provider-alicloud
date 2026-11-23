@@ -130,9 +130,7 @@ resource "alicloud_rds_custom" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_custom&spm=docs.r.rds_custom.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
@@ -158,7 +156,6 @@ Valid values: `1` to `5`. Default value: `1`.
   -> **NOTE:**  * If you purchase the instance on a monthly basis, the auto-renewal period is one month.
 
   -> **NOTE:**  * If you purchase the instance on an annual basis, the auto-renewal period is one year.
-
 
   -> **NOTE:** This parameter is only evaluated during resource creation and update. Modifying it in isolation will not trigger any action.
 
@@ -293,6 +290,7 @@ Default value: `NoSpot`.
 ### `data_disk`
 
 The data_disk supports the following:
+
 * `category` - (Optional, ForceNew) The type of data disk. Valid values:
   - `cloud_efficiency`: Ultra disk.
   - `cloud_ssd`: SSD cloud disk.
@@ -316,6 +314,7 @@ The data_disk supports the following:
 ### `system_disk`
 
 The system_disk supports the following:
+
 * `category` - (Optional, ForceNew) The system disk category. Valid values:
   - `cloud_efficiency`: ultra disk.
   - `cloud_ssd`: standard SSD.
@@ -326,6 +325,7 @@ The system_disk supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `region_id` - The region ID.
 * `system_disk_id` - The ID of the system disk attached to the Custom instance.
@@ -333,6 +333,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Custom.
 * `delete` - (Defaults to 5 mins) Used when delete the Custom.
 * `update` - (Defaults to 7 mins) Used when update the Custom.

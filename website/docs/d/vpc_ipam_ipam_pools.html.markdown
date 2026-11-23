@@ -56,6 +56,7 @@ output "alicloud_vpc_ipam_ipam_pool_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ipam_pool_id` - (ForceNew, Optional) The first ID of the resource.
 * `ipam_pool_name` - (ForceNew, Optional) The name of the resource.
 * `ipam_scope_id` - (ForceNew, Optional) Ipam scope id.
@@ -67,10 +68,10 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Ipam Pool IDs.
 * `names` - A list of name of Ipam Pools.
 * `pools` - A list of Ipam Pool Entries. Each element contains the following attributes:
@@ -80,13 +81,13 @@ The following attributes are exported in addition to the arguments listed above:
   * `auto_import` - Whether the automatic import function is enabled for the address pool.
   * `create_time` - The creation time of the resource.
   * `has_sub_pool` - Whether it is a child address pool. Value:-**true**: Yes.-**false**: No.
-  * `ip_version` - The IP protocol version. Currently, only **IPv4** is supported * *.
+  * `ip_version` - The IP protocol version. Currently, only **IPv4** is supported **.
   * `ipam_id` - Ipam id.
   * `ipam_pool_description` - The description of the IPAM address pool.It must be 2 to 256 characters in length and must start with an English letter or a Chinese character, but cannot start with 'http:// 'or 'https. If it is not filled in, it is empty. The default value is empty.
   * `ipam_pool_id` - The first ID of the resource.
   * `ipam_pool_name` - The name of the resource.
   * `ipam_scope_id` - Ipam scope id.
-  * `pool_depth` - The depth of the IPAM address pool. Value range: **0 to 10 * *.
+  * `pool_depth` - The depth of the IPAM address pool. Value range: **0 to 10**.
   * `pool_region_id` - The effective region of the IPAM address pool.
   * `resource_group_id` - The ID of the resource group.
   * `source_ipam_pool_id` - The instance ID of the source IPAM address pool.> If this parameter is not entered, the created address pool is the parent address pool.

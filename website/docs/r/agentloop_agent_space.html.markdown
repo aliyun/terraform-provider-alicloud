@@ -41,13 +41,12 @@ resource "alicloud_agentloop_agent_space" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_agentloop_agent_space&spm=docs.r.agentloop_agent_space.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `agent_space` - (Required, ForceNew) The name of the Agent Space. It must be 2 to 64 characters in length.
 * `cms_workspace` - (Optional) The name of an existing CMS (CloudMonitor) workspace to bind to the Agent Space, used for observability data. If omitted, the backend automatically creates a dedicated CMS workspace (recommended).
 * `description` - (Optional) The description of the Agent Space.
@@ -57,6 +56,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is the same as `agent_space`.
 * `cms_workspace_bind_type` - The bind type of the CMS workspace. Valid values: `AutoCreated`, `UserSelected`.
 * `create_time` - The creation time of the Agent Space, in ISO 8601 UTC format (`yyyy-MM-ddTHH:mm:ssZ`).
@@ -69,6 +69,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Agent Space.
 * `delete` - (Defaults to 5 mins) Used when delete the Agent Space.
 * `update` - (Defaults to 5 mins) Used when update the Agent Space.

@@ -141,9 +141,7 @@ resource "alicloud_dts_check_job" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dts_check_job&spm=docs.r.dts_check_job.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Express Connect Virtual Border Routers to the user.
 ---
 
-# alicloud\_express\_connect\_virtual\_border\_routers
+# alicloud_express_connect_virtual_border_routers
 
 This data source provides the Express Connect Virtual Border Routers of the current Alibaba Cloud user.
 
@@ -61,6 +61,7 @@ The following arguments are supported:
 
 More complex filters can be expressed using one or more `filter` sub-blocks,
 which take the following arguments:
+
 * `key` - (Optional) The key of the field to filter by, as defined by
   [Alibaba Cloud API](https://www.alibabacloud.com/help/en/doc-detail/124791.htm).
 * `values` - (Optional) Set of values that are accepted for the given field.

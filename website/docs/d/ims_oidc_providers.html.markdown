@@ -54,19 +54,20 @@ output "alicloud_ims_oidc_provider_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `ids` - (Optional, ForceNew, Computed) A list of Oidc Provider IDs. 
+
+* `ids` - (Optional, ForceNew, Computed) A list of Oidc Provider IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
-
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Oidc Provider IDs.
 * `names` - A list of name of Oidc Providers.
 * `providers` - A list of Oidc Provider Entries. Each element contains the following attributes:
   * `arn` - ARN of OIDC identity provider.
-  * `client_ids` - Client ID. 
+  * `client_ids` - Client ID.
   * `create_time` - Creation Time (UTC time).
   * `description` - Description of OIDC identity provider.
   * `fingerprints` - The authentication fingerprint of the HTTPS CA certificate.

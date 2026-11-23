@@ -69,17 +69,20 @@ resource "alicloud_ebs_enterprise_snapshot_policy_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `disk_id` - (Optional, ForceNew, Computed) Cloud Disk ID.
 * `policy_id` - (Required, ForceNew) the enterprise snapshot policy id.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<policy_id>:<disk_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Enterprise Snapshot Policy Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Enterprise Snapshot Policy Attachment.
 

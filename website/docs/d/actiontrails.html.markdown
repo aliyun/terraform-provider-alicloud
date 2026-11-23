@@ -7,7 +7,7 @@ description: |-
   Provides a list of ActionTrail Trails to the specified filters.
 ---
 
-# alicloud\_actiontrails
+# alicloud_actiontrails
 
 -> **DEPRECATED:**  This datasource has been renamed to [alicloud_actiontrail_trails](https://www.terraform.io/docs/providers/alicloud/d/actiontrail_trails) from version 1.95.0.
 
@@ -50,6 +50,7 @@ The following attributes are exported in addition to the arguments listed above:
 ### `actiontrails`
 
 The actiontrails supports the following attributes:
+
 * `trail_name` - The name of the ActionTrail Trail.
 * `event_rw` - Indicates whether the event is a read or a write event.
 * `is_organization_trail` - Indicates whether the trail is a multi-account trail.
@@ -65,6 +66,7 @@ The actiontrails supports the following attributes:
 ### `trails`
 
 The trails supports the following attributes:
+
 * `trail_name` - The name of the ActionTrail Trail.
 * `event_rw` - Indicates whether the event is a read or a write event.
 * `is_organization_trail` - Indicates whether the trail is a multi-account trail.

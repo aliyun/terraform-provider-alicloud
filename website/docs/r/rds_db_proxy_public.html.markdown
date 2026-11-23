@@ -10,8 +10,6 @@ description: |-
 
 Provides a RDS database proxy public network address resource.
 
-
-
 For information about Resource AlicloudRdsDBProxyPublic and how to use it, see [What is proxy](https://www.alibabacloud.com/help/en/rds/developer-reference/api-rds-2014-08-15-createdbproxyendpointaddress).
 
 -> **NOTE:** Available since v1.250.0.
@@ -113,6 +111,7 @@ resource "alicloud_rds_db_proxy_public" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_instance_id` - (Required, ForceNew) Instance ID.
 * `db_proxy_endpoint_id` - (Required, ForceNew)Database proxy connection address ID.
 * `connection_string_prefix` - (Required)The prefix for the new database proxy connection address can be customized.
@@ -122,11 +121,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 60 mins) Used when create the Proxy Public Network Address.
 * `delete` - (Defaults to 20 mins) Used when delete the Proxy Public Network Address.
 * `update` - (Defaults to 30 mins) Used when update the Proxy Public Network Address.

@@ -17,6 +17,7 @@ import (
 	ossv2 "github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/fc-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/client/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,7 +55,7 @@ func TestUnitFcClientUsesClientReadTimeout(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			client := &AliyunClient{
 				accountId: "1234567890",
-				config: &Config{
+				config: &config.Config{
 					RegionId:          "cn-beijing",
 					Protocol:          "HTTPS",
 					Credential:        credential,
@@ -112,7 +113,7 @@ func TestUnitOssV2ClientUsesClientTimeouts(t *testing.T) {
 
 	client := &AliyunClient{
 		accountId: "1234567890",
-		config: &Config{
+		config: &config.Config{
 			RegionId:             "cn-beijing",
 			Protocol:             "HTTP",
 			Credential:           credential,
@@ -170,7 +171,7 @@ func TestUnitLegacySdkConfigUsesClientReadTimeout(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			client := &AliyunClient{
-				config: &Config{
+				config: &config.Config{
 					RegionId:          "cn-beijing",
 					Protocol:          "HTTPS",
 					ClientReadTimeout: tc.timeoutMs,
@@ -213,7 +214,7 @@ func TestUnitLegacyVpcClientUsesClientTimeouts(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			client := &AliyunClient{
 				accountId: "1234567890",
-				config: &Config{
+				config: &config.Config{
 					RegionId:             "cn-beijing",
 					Protocol:             "HTTPS",
 					Credential:           credential,
@@ -265,7 +266,7 @@ func TestUnitLegacySdkClientUsesClientReadTimeout(t *testing.T) {
 	defer releaseFn()
 
 	client := &AliyunClient{
-		config: &Config{
+		config: &config.Config{
 			RegionId:          "cn-beijing",
 			Protocol:          "HTTP",
 			ClientReadTimeout: 500,

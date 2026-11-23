@@ -54,9 +54,7 @@ resource "alicloud_sls_metric_store" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_metric_store&spm=docs.r.sls_metric_store.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

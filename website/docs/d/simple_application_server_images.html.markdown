@@ -7,7 +7,7 @@ description: |-
   Provides a list of Simple Application Server Images to the user.
 ---
 
-# alicloud\_simple\_application\_server\_images
+# alicloud_simple_application_server_images
 
 This data source provides the Simple Application Server Images of the current Alibaba Cloud user.
 

@@ -84,6 +84,7 @@ resource "alicloud_vpc_vbr_ha" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional, ForceNew) The description of the VBR switching group.
 It must be 2 to 256 characters in length and must start with a letter or Chinese, but cannot start with 'http:// 'or 'https.
 * `dry_run` - (Optional) Whether to PreCheck only this request. Value range:
@@ -96,6 +97,7 @@ It must be 2 to 256 characters in length and must start with a letter or Chinese
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the VBR.
 * `region_id` - The ID of the region to which the VBR belongs.
@@ -104,6 +106,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 8 mins) Used when create the Vbr Ha.
 * `delete` - (Defaults to 8 mins) Used when delete the Vbr Ha.
 

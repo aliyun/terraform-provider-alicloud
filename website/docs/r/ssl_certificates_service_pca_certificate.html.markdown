@@ -10,8 +10,6 @@ description: |-
 
 Provides a SSL Certificates Pca Certificate resource.
 
-
-
 For information about SSL Certificates Pca Certificate and how to use it, see [What is Pca Certificate](https://next.api.alibabacloud.com/document/cas/2020-06-30/CreateRootCACertificate).
 
 -> **NOTE:** Available since v1.257.0.
@@ -43,13 +41,12 @@ resource "alicloud_ssl_certificates_service_pca_certificate" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_pca_certificate&spm=docs.r.ssl_certificates_service_pca_certificate.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `algorithm` - (Optional, ForceNew, Computed) The key algorithm type of the root CA certificate. The key algorithm is expressed in the format `_`. Valid values:
   - `RSA_1024`: Corresponds to the signature algorithm Sha256WithRSA.
   - `RSA_2048`: Corresponds to the signature algorithm Sha256WithRSA.
@@ -101,12 +98,14 @@ For country codes, see the **International Codes** section in [Managing Company 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `status` - The current CA status.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Pca Certificate.
 * `delete` - (Defaults to 5 mins) Used when delete the Pca Certificate.
 * `update` - (Defaults to 5 mins) Used when update the Pca Certificate.

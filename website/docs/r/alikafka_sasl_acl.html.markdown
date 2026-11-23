@@ -97,6 +97,7 @@ resource "alicloud_alikafka_sasl_acl" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `acl_operation_type` - (Required, ForceNew) Operation type. Valid values:
   - `Write`: write
   - `Read`: read
@@ -138,6 +139,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<instance_id>:<username>:<acl_resource_type>:<acl_resource_name>:<acl_resource_pattern_type>:<acl_operation_type>`.
 
 ## Timeouts
@@ -145,6 +147,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.270.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Sasl Acl.
 * `delete` - (Defaults to 5 mins) Used when delete the Sasl Acl.
 

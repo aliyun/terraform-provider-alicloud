@@ -649,13 +649,12 @@ func ResourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request["SlaveReadOnlyCount"] = v
 	}
 
-	if v, ok := d.GetOk("replica_count"); ok {
-		request["ReplicaCount"] = v
-	}
-
-	if v, ok := d.GetOk("slave_replica_count"); ok {
-		request["SlaveReplicaCount"] = v
-	}
+	// ReplicaCount and SlaveReplicaCount are independent optional parameters for
+	// CreateInstance. Send each one only when the user configured it: reading the
+	// raw configuration keeps an explicitly-set zero (both attributes are
+	// Optional+Computed, so d.Get alone cannot tell an explicit zero from an
+	// unset attribute).
+	replicaCountsCreateRequest(request, d, configuredTopLevelKeysFromRawConfig(d))
 
 	vswitchId := helper.Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
@@ -1159,12 +1158,32 @@ func ResourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		migrateToOtherZoneReq["SlaveReadOnlyCount"] = v
 	}
 
-	if v, ok := d.GetOk("replica_count"); ok {
-		migrateToOtherZoneReq["ReplicaCount"] = v
-	}
-
-	if v, ok := d.GetOk("slave_replica_count"); ok {
-		migrateToOtherZoneReq["SlaveReplicaCount"] = v
+	// ReplicaCount and SlaveReplicaCount form a complete parameter group for
+	// MigrateToOtherZone: the API requires the total (ReplicaCount +
+	// SlaveReplicaCount) to stay the same across migration and rejects a partial
+	// group with TotalReplicaCountCannotBeChange. d.GetOk drops integer zero
+	// values, so a one-master-one-standby single-AZ instance (SlaveReplicaCount=0)
+	// would previously lose SlaveReplicaCount and only send ReplicaCount.
+	//
+	// Send both values when the user explicitly changed the replica
+	// distribution in this update, OR when either count is explicitly declared
+	// in the raw config even if unchanged. Both attributes are Optional+
+	// Computed, so only the raw config can tell an explicitly declared value
+	// from an unset one: a declared distribution must be preserved by the
+	// migration or rejected by the API with a clear error, never silently
+	// replaced by the server default distribution (which moves one standby node
+	// to the secondary zone and would make the remote state diverge from the
+	// declared values on the next plan). Only when neither count is configured
+	// is the group omitted so the API applies its default distribution.
+	// d.Get (not d.GetOk) is used so zero values are included and the group
+	// stays complete. The dual->single REMOVEKEY absorb block below overrides
+	// these counts for that conversion.
+	configuredReplicaKeys := configuredTopLevelKeysFromRawConfig(d)
+	_, replicaCountConfigured := configuredReplicaKeys["replica_count"]
+	_, slaveReplicaCountConfigured := configuredReplicaKeys["slave_replica_count"]
+	if !d.IsNewResource() && (d.HasChange("replica_count") || d.HasChange("slave_replica_count") || replicaCountConfigured || slaveReplicaCountConfigured) {
+		migrateToOtherZoneReq["ReplicaCount"] = d.Get("replica_count")
+		migrateToOtherZoneReq["SlaveReplicaCount"] = d.Get("slave_replica_count")
 	}
 
 	if !d.IsNewResource() && d.HasChange("availability_zone") {
@@ -1197,6 +1216,15 @@ func ResourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 					migrateToOtherZoneReq["ZoneId"] = v
 				}
 			}
+		}
+	}
+
+	// ZoneId is required by MigrateToOtherZone. After the fallback resolution
+	// above, fail fast with a clear error instead of sending a request that the
+	// API rejects with MissingParameter (as happened in v1.283.0 and earlier).
+	if update {
+		if zoneID, ok := migrateToOtherZoneReq["ZoneId"]; !ok || fmt.Sprint(zoneID) == "" {
+			return errs.WrapError(errs.Error("failed to resolve a non-empty ZoneId for MigrateToOtherZone; set zone_id (or availability_zone) explicitly for instance %s", d.Id()))
 		}
 	}
 
@@ -1267,6 +1295,18 @@ func ResourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
+	// Track whether MigrateToOtherZone will consume a replica distribution
+	// change. When it does, the later ModifyInstanceSpec block must not re-send
+	// ReplicaCount/SlaveReplicaCount: re-applying an already-applied change
+	// while InstanceClass is unchanged triggers InstanceClassDoesNotChange and
+	// fails the apply after a successful migration. The flag excludes the
+	// REMOVEKEY (dual->single) conversion: there the absorb block above
+	// overrides the user's replica counts with live totals to preserve the
+	// sum, so the migration does not actually consume the user's replica
+	// change and ModifyInstanceSpec must still apply it. Independent replica
+	// count changes (no AZ migration) still go through ModifyInstanceSpec
+	// below.
+	migrateConsumedReplicaChange := update && !isRemoveSecondaryZone && (d.HasChange("replica_count") || d.HasChange("slave_replica_count"))
 	if update {
 		action := "MigrateToOtherZone"
 		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
@@ -1484,20 +1524,24 @@ func ResourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("replica_count") {
+	// Skip re-sending ReplicaCount/SlaveReplicaCount to ModifyInstanceSpec
+	// when the preceding MigrateToOtherZone already consumed this replica
+	// distribution change. Re-applying it here would carry the unchanged
+	// InstanceClass as well and trigger InstanceClassDoesNotChange, failing the
+	// apply after a successful migration. Independent replica count changes (no
+	// AZ migration) still go through ModifyInstanceSpec below; d.Get (not
+	// d.GetOk) is used so an explicitly-set zero value is not dropped, since the
+	// two attributes are independent optional parameters here.
+	if !migrateConsumedReplicaChange && !d.IsNewResource() && d.HasChange("replica_count") {
 		update = true
 
-		if v, ok := d.GetOk("replica_count"); ok {
-			modifyInstanceSpecReq["ReplicaCount"] = v
-		}
+		modifyInstanceSpecReq["ReplicaCount"] = d.Get("replica_count")
 	}
 
-	if !d.IsNewResource() && d.HasChange("slave_replica_count") {
+	if !migrateConsumedReplicaChange && !d.IsNewResource() && d.HasChange("slave_replica_count") {
 		update = true
 
-		if v, ok := d.GetOk("slave_replica_count"); ok {
-			modifyInstanceSpecReq["SlaveReplicaCount"] = v
-		}
+		modifyInstanceSpecReq["SlaveReplicaCount"] = d.Get("slave_replica_count")
 	}
 
 	if v, ok := d.GetOk("effective_time"); ok {

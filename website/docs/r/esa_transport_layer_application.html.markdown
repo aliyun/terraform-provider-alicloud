@@ -65,6 +65,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cross_border_optimization` - (Optional) Whether to enable China mainland network access optimization, default is disabled. Value range:
   - `on`: Enabled.
   - `off`: Disabled.
@@ -79,6 +80,7 @@ The following arguments are supported:
 ### `rules`
 
 The rules supports the following:
+
 * `client_ip_pass_through_mode` - (Required) Client IP pass-through protocol, supporting:
   - `off`: No pass-through.
   - `PPv1`: PROXY Protocol v1, supports client IP pass-through for TCP protocol.
@@ -106,6 +108,7 @@ Edge ports within a single rule and between multiple rules must not overlap.
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<application_id>`.
 * `application_id` - Layer 4 application ID.
 * `rules` - The list of forwarding rules. Rule details. For each rule, other parameters are required except comments.
@@ -115,6 +118,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 25 mins) Used when create the Transport Layer Application.
 * `delete` - (Defaults to 5 mins) Used when delete the Transport Layer Application.
 * `update` - (Defaults to 17 mins) Used when update the Transport Layer Application.

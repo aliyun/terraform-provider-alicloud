@@ -26,6 +26,7 @@ output "alicloud_threat_detection_asset_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `criteria` - (ForceNew, Optional) Set the conditions for searching assets. This parameter is in JSON format. Note the case when you enter the parameter. **NOTE:** You can search for assets by using conditions such as the instance ID, instance name, VPC ID, region, and public IP address of the asset.
 * `importance` - (ForceNew, Optional) Set asset importance. Value:
   - **2**: Significant assets
@@ -41,17 +42,17 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed) A list of Asset IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Asset IDs.
 * `assets` - A list of Asset Entries. Each element contains the following attributes:
   * `id` - The UUID of the asset.
   * `create_time` - The creation time of the resource
   * `uuid` - The UUID of the asset. Same as `id`.
   * `instance_id` - The ID of the asset.
-  * `instance_name` - The name of the asset. 
+  * `instance_name` - The name of the asset.
   * `cluster_id` - The ID of the cluster.
   * `cluster_name` - The name of the cluster.
   * `vpc_instance_id` - The ID of the VPC to which the asset belongs.

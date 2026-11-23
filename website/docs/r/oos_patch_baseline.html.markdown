@@ -10,8 +10,6 @@ description: |-
 
 Provides a Operation Orchestration Service (OOS) Patch Baseline resource.
 
-
-
 For information about Operation Orchestration Service (OOS) Patch Baseline and how to use it, see [What is Patch Baseline](https://www.alibabacloud.com/help/en/operation-orchestration-service/latest/patch-manager-overview).
 
 -> **NOTE:** Available since v1.146.0.
@@ -39,12 +37,12 @@ resource "alicloud_oos_patch_baseline" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oos_patch_baseline&spm=docs.r.oos_patch_baseline.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `approval_rules` - (Required) This value follows the json format. For more details, see the description of [ApprovalRules in the Request parameters table for details](https://www.alibabacloud.com/help/zh/operation-orchestration-service/latest/api-oos-2019-06-01-createpatchbaseline).
 * `approved_patches` - (Optional, List, Available since v1.219.0) List of approved patches.
 * `approved_patches_enable_non_security` - (Optional, Available since v1.219.0) Specifies whether approved patches include updates other than security updates.
@@ -71,12 +69,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `create_time` - Creation time.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Patch Baseline.
 * `delete` - (Defaults to 5 mins) Used when delete the Patch Baseline.
 * `update` - (Defaults to 5 mins) Used when update the Patch Baseline.

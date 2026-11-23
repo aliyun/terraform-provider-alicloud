@@ -145,7 +145,6 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `create` - (Defaults to 1 mins) Used when creating the VPN Gateway Vco Route.
 * `delete` - (Defaults to 1 mins) Used when deleting the VPN Gateway Vco Route.
 
-
 ## Import
 
 VPN Gateway Vco Route can be imported using the id, which consists of vpn_connection_id, route_dest, next_hop and weight, e.g.

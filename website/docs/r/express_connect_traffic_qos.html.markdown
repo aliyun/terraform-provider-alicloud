@@ -42,6 +42,7 @@ resource "alicloud_express_connect_traffic_qos" "createQos" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `qos_description` - (Optional) The description of the QoS policy.
   The length is `0` to `256` characters and cannot start with 'http:// 'or 'https.
 * `qos_name` - (Optional) The name of the QoS policy.
@@ -52,12 +53,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `status` - The status of the QoS policy.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Traffic Qos.
 * `delete` - (Defaults to 5 mins) Used when delete the Traffic Qos.
 * `update` - (Defaults to 8 mins) Used when update the Traffic Qos.

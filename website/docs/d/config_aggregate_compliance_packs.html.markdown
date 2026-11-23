@@ -38,8 +38,7 @@ The following arguments are supported:
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `ids` - (Optional, ForceNew, Computed)  A list of Aggregate Compliance Pack IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid values `ACTIVE`, `CREATING`, `INACTIVE`. 
-
+* `status` - (Optional, ForceNew) The status of the resource. Valid values `ACTIVE`, `CREATING`, `INACTIVE`.
 
 ## Attributes Reference
 

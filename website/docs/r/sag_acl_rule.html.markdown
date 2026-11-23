@@ -68,9 +68,8 @@ The following arguments are supported:
 * `source_cidr` - (Required) The source address. It is an IPv4 address range in the CIDR format. Default value: 0.0.0.0/0.
 * `source_port_range` - (Required) The range of the source port. Valid value: 80/80.
 * `dest_cidr` - (Required) The destination address. It is an IPv4 address range in CIDR format. Default value: 0.0.0.0/0.
-* `dest_port_range` - (Required) The range of the destination port. Valid value: 80/80. 
-* `priority` - (Optional) The priority of the ACL rule. Value range: 1 to 100. 
-
+* `dest_port_range` - (Required) The range of the destination port. Valid value: 80/80.
+* `priority` - (Optional) The priority of the ACL rule. Value range: 1 to 100.
 
 ## Attributes Reference
 
@@ -85,4 +84,3 @@ The Sag Acl Rule can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_sag_acl_rule.example acr-abc123456
 ```
-

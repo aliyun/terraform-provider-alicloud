@@ -78,12 +78,12 @@ resource "alicloud_click_house_enterprise_db_cluster_backup_policy" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_click_house_enterprise_db_cluster_backup_policy&spm=docs.r.click_house_enterprise_db_cluster_backup_policy.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `backup_retention_period` - (Required, Int) Backup retention time.
 * `db_instance_id` - (Required, ForceNew) The instance ID.
 * `preferred_backup_period` - (Required) Backup period.
@@ -92,11 +92,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Enterprise Db Cluster Backup Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Enterprise Db Cluster Backup Policy.
 * `update` - (Defaults to 5 mins) Used when update the Enterprise Db Cluster Backup Policy.

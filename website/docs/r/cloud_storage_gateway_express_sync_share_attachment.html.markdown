@@ -125,7 +125,6 @@ The following arguments are supported:
 * `gateway_id` - (Required, ForceNew) The ID of the Gateway.
 * `share_name` - (Required, ForceNew) The name of the GatewayFileShare. **NOTE:** When GatewayFileShare is associated with a speed sync group, its reverse synchronization function will be turned off by default.
 
-
 ## Attributes Reference
 
 The following attributes are exported:

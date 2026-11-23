@@ -100,7 +100,6 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `update` - (Defaults to 1 mins) Used when update the scheduler rule.
 * `delete` - (Defaults to 1 mins) Used when delete the scheduler rule.
 
-
 ## Import
 
 DdosCoo Scheduler Rule can be imported using the id or the rule name, e.g.

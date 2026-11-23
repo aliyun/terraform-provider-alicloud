@@ -7,7 +7,7 @@ description: |-
   Provides a list of Video Surveillance System Groups to the user.
 ---
 
-# alicloud\_video\_surveillance\_system\_groups
+# alicloud_video_surveillance_system_groups
 
 This data source provides the Video Surveillance System Groups of the current Alibaba Cloud user.
 

@@ -10,8 +10,6 @@ description: |-
 
 Provides a Pai Flow Pipeline resource.
 
-
-
 For information about Pai Flow Pipeline and how to use it, see [What is Pipeline](https://www.alibabacloud.com/help/en/pai/developer-reference/api-paiflow-2021-02-02-createpipeline).
 
 -> **NOTE:** Available since v1.248.0.
@@ -153,18 +151,21 @@ EOF
 ## Argument Reference
 
 The following arguments are supported:
+
 * `manifest` - (Required) The pipeline definition. For more information, see the [sample pipeline definition]((https://www.alibabacloud.com/help/en/pai/developer-reference/api-paiflow-2021-02-02-createpipeline)).
 * `workspace_id` - (Required, ForceNew) The ID of the workspace.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Pipeline.
 * `delete` - (Defaults to 5 mins) Used when delete the Pipeline.
 * `update` - (Defaults to 5 mins) Used when update the Pipeline.

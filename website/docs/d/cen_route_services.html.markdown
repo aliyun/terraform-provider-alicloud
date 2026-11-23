@@ -7,11 +7,11 @@ description: |-
     Provides a list of CEN Route Service owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_cen_\_route\_services
+# alicloud_cen_route_services
 
 This data source provides CEN Route Service available to the user.
 
--> **NOTE:** Available in v1.102.0+
+-> **NOTE:** Available since v1.102.0+
 
 ## Example Usage
 
@@ -32,8 +32,8 @@ output "first_cen_route_service_id" {
 The following arguments are supported:
 
 * `access_region_id` - (Optional, ForceNew) The region of the network instances that access the cloud services.
-* `cen_id` -(Required, ForceNew) The ID of the CEN instance.
-* `host` -(Optional, ForceNew) The domain name or IP address of the cloud service.
+* `cen_id` - (Required, ForceNew) The ID of the CEN instance.
+* `host` - (Optional, ForceNew) The domain name or IP address of the cloud service.
 * `host_region_id` - (Optional, ForceNew) The region of the cloud service.
 * `host_vpc_id` - (Optional, ForceNew) The VPC associated with the cloud service.
 * `status` - (Optional, ForceNew) The status of the cloud service. Valid values: `Active`, `Creating` and `Deleting`.

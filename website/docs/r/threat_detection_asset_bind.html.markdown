@@ -54,17 +54,20 @@ Terraform cannot destroy resource `alicloud_threat_detection_asset_bind`. Terraf
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auth_version` - (Optional, Int) Bind version.
 * `uuid` - (Optional, ForceNew, Computed) The first ID of the resource
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Asset Bind.
 * `update` - (Defaults to 5 mins) Used when update the Asset Bind.
 

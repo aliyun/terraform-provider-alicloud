@@ -102,7 +102,7 @@ The following arguments are supported:
 * `db_cluster_access_white_list` - (Optional, Available since v1.145.0) The db cluster access white list. See [`db_cluster_access_white_list`](#db_cluster_access_white_list) below.
 * `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The id of the VPC.
 * `zone_id` - (Optional, ForceNew, Available since v1.185.0) The zone ID of the instance.
-* `multi_zone_vswitch_list` - (Optional, ForceNew, Available since v1.228.0) The zone IDs and 
+* `multi_zone_vswitch_list` - (Optional, ForceNew, Available since v1.228.0) The zone IDs and
 corresponding vswitch IDs and zone IDs of multi-zone setup. if set, a multi-zone DBCluster will be created. Currently only support 2 available zones, primary zone not included. See [`multi_zone_vswitch_list`](#multi_zone_vswitch_list) below.
 * `resource_group_id` - (Optional, Available since v1.245.0) The ID of the resource group.
 * `allocate_public_connection` - (Optional, Available since v1.245.0) Whether to enable public connection. Value options: `true`, `false`.
@@ -118,9 +118,9 @@ The db_cluster_access_white_list supports the following:
 ### `multi_zone_vswitch_list`
 
 The multi_zone_vswitch_list supports the following:
+
 * `zone_id` - (Optional, ForceNew, Available since v1.228.0) The zone ID of the vswitch.
 * `vswitch_id` - (Required, ForceNew, Available since v1.228.0) The ID of the vswitch.
-
 
 ## Attributes Reference
 

@@ -50,6 +50,7 @@ resource "alicloud_vpc_ipv4_cidr_block" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ipv4_ipam_pool_id` - (Optional, Available since v1.242.0) The ID of the IP Address Manager (IPAM) pool that contains IPv4 addresses.
 * `secondary_cidr_block` - (Optional, ForceNew, Computed) Additional network segment information.
 * `secondary_cidr_mask` - (Optional, Int, Available since v1.242.0) Add an additional CIDR block from the IPAM address pool to the VPC by entering a mask.
@@ -61,12 +62,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<vpc_id>:<secondary_cidr_block>`.
 * `region_id` - The ID of the region where the VPC resides.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ipv4 Cidr Block.
 * `delete` - (Defaults to 5 mins) Used when delete the Ipv4 Cidr Block.
 

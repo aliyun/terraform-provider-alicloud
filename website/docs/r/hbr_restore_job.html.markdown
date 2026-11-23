@@ -109,7 +109,7 @@ The following arguments are supported:
 * `snapshot_hash` - (Required, ForceNew) The hashcode of Snapshot.
 * `options` - (Optional, ForceNew) Recovery options. **NOTE:** Required while source_type equals `OSS` or `NAS`, invalid while source_type equals `ECS_FILE`. It's a json string with format:`"{"includes":[],"excludes":[]}",`. Recovery options. When restores OTS_TABLE and real target time is the rangEnd time of the snapshot, it should be a string with format: `{"UI_TargetTime":1650032529018}`.
 * `exclude` - (Optional) The exclude path. **NOTE:** Invalid while source_type equals `OSS` or `NAS`. It's a json string with format:`["/excludePath]`, up to 255 characters. **WARNING:** If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
-* `include` - (Optional) The include path. **NOTE:** Invalid while source_type equals `OSS` or `NAS`. It's a json string with format:`["/includePath"]`, Up to 255 characters. **WARNING:** The field is required while source_type equals `OTS_TABLE` which means source table name. If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan. 
+* `include` - (Optional) The include path. **NOTE:** Invalid while source_type equals `OSS` or `NAS`. It's a json string with format:`["/includePath"]`, Up to 255 characters. **WARNING:** The field is required while source_type equals `OTS_TABLE` which means source table name. If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
 * `target_bucket` - (Optional, ForceNew) The target name of OSS bucket. **NOTE:** Required while source_type equals `OSS`,
 * `target_prefix` - (Optional, ForceNew) The target prefix of the OSS object. **WARNING:** Required while source_type equals `OSS`. If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
 * `target_file_system_id` - (Optional, ForceNew) The ID of destination File System. **NOTE:** Required while source_type equals `NAS`
@@ -130,6 +130,7 @@ The following arguments are supported:
 ### `ots_detail`
 
 The ots_detail supports the following:
+
 * `overwrite_existing` - (Optional, ForceNew, Computed) Whether to overwrite the existing table storage recovery task. Valid values: `true`, `false`.
 
 ## Attributes Reference

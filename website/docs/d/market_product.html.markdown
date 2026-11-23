@@ -7,7 +7,7 @@ description: |-
     Provides details of a Market product item.
 ---
 
-# alicloud\_market\_product
+# alicloud_market_product
 
 This data source provides the Market product item details of Alibaba Cloud.
 
@@ -58,5 +58,3 @@ The following attributes are exported in addition to the arguments listed above:
       * `image_id` - The Ecs image id.
       * `image_name` - The Ecs image display name.
       * `region_id` - The Ecs image region.
-
- 

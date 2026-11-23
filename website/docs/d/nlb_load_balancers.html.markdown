@@ -7,7 +7,7 @@ description: |-
   Provides a list of Nlb Load Balancers to the user.
 ---
 
-# alicloud\_nlb\_load\_balancers
+# alicloud_nlb_load_balancers
 
 This data source provides the Nlb Load Balancers of the current Alibaba Cloud user.
 

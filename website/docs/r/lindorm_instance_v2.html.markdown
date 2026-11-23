@@ -90,14 +90,16 @@ resource "alicloud_lindorm_instance_v2" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `arbiter_vswitch_id` - (Optional, ForceNew) Coordination Zone VswitchId
 * `arbiter_zone_id` - (Optional, ForceNew) Coordination Zone ZoneId
 * `arch_version` - (Required) Deployment Scenario
 
 Enumeration value:
-  - **1.0**: Single Zone
-  - **2.0**: Multi-AZ Basic Edition
-  - **3.0**: Multi-AZ High Availability Edition
+
+- **1.0**: Single Zone
+- **2.0**: Multi-AZ Basic Edition
+- **3.0**: Multi-AZ High Availability Edition
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
@@ -106,7 +108,6 @@ Enumeration value:
 Value range: `1` to `12`.
 
 -> **NOTE:**  This item takes effect only when `AutoRenewal` is `true`.
-
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
@@ -118,7 +119,6 @@ The default value is false
 
 -> **NOTE:**  This parameter is valid only when the `PayType` value is `PREPAY` (Subscription).
 
-
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `cloud_storage_size` - (Optional, Int) The Sales page storage type supports cloud storage and local sites. If you select cloud storage, this parameter is required.
@@ -128,9 +128,11 @@ The default value is false
 * `cloud_storage_type` - (Optional, ForceNew) Cloud storage type, the sales page storage type supports cloud storage and local sites. If you select cloud storage, this parameter is required.
 
 Enumeration value:
-  - `StandardStorage`: Standard cloud storage
-  - **Performance storage**: Performance-based cloud storage
-  - **Capacity Storage**: Capacity-based cloud storage
+
+- `StandardStorage`: Standard cloud storage
+- **Performance storage**: Performance-based cloud storage
+- **Capacity Storage**: Capacity-based cloud storage
+
 * `deletion_protection` - (Optional, Computed) Whether to enable deletion protection
 * `duration` - (Optional, Int, Available since v1.262.0) The specified duration when the resource is purchased. Only the subscription instances are valid.
 
@@ -141,8 +143,10 @@ Enumeration value:
 * `payment_type` - (Required) Resource attribute fields representing payment types
 
 Enumeration value:
-  - `PREPAY`: Prepaid mode
-  - `POSTPAY`: Postpay mode
+
+- `PREPAY`: Prepaid mode
+- `POSTPAY`: Postpay mode
+
 * `pricing_cycle` - (Optional, Available since v1.262.0) Purchase duration unit: Month, Year
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
@@ -159,25 +163,29 @@ Enumeration value:
 ### `engine_list`
 
 The engine_list supports the following:
+
 * `engine_type` - (Required) Engine
 
 Enumeration value:
-  - `TABLE`: Wide table engine
-  - `TSDB`: Time series Engine
-  - `LSEARCH`: Search engine
-  - `LTS`: LTS engine
-  - `LVECTOR`: Vector engine
-  - `LCOLUMN`: Column-store engine
-  - `LAI`: AI engine
-  - `FILE`: The underlying file engine
-  - `LMESSAGE`: Message engine
-  - `LROW`: Wide table Engine 3.0
-  - `LSTREAM`: Stream engine
+
+- `TABLE`: Wide table engine
+- `TSDB`: Time series Engine
+- `LSEARCH`: Search engine
+- `LTS`: LTS engine
+- `LVECTOR`: Vector engine
+- `LCOLUMN`: Column-store engine
+- `LAI`: AI engine
+- `FILE`: The underlying file engine
+- `LMESSAGE`: Message engine
+- `LROW`: Wide table Engine 3.0
+- `LSTREAM`: Stream engine
+
 * `node_group` - (Optional, Set) Node Group List See [`node_group`](#engine_list-node_group) below.
 
 ### `engine_list-node_group`
 
 The engine_list-node_group supports the following:
+
 * `node_count` - (Required, Int) Number of nodes
 * `node_disk_size` - (Optional, Int) Local cloud disk storage capacity
 * `node_disk_type` - (Optional) Node Disk Type
@@ -223,12 +231,14 @@ The engine_list-node_group supports the following:
 ### `white_ip_list`
 
 The white_ip_list supports the following:
+
 * `group_name` - (Required, Available since v1.266.0) Group Name
 * `ip_list` - (Required, Available since v1.266.0) Whitelist information
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `engine_list` - Engine List
   * `connect_address_list` - Connect Address List
@@ -250,6 +260,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 101 mins) Used when create the Instance V2.
 * `delete` - (Defaults to 20 mins) Used when delete the Instance V2.
 * `update` - (Defaults to 1001 mins) Used when update the Instance V2.

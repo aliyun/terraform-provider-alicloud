@@ -225,6 +225,7 @@ resource "alicloud_kms_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bind_vpcs` - (Optional, Set) Aucillary VPCs used to access this KMS instance See [`bind_vpcs`](#bind_vpcs) below.
 * `deletion_protection` - (Optional, Bool, Available since v1.277.0) Specifies whether to enable deletion protection. Default value: `false`. Valid values:
   - `true`: enables deletion protection.
@@ -244,7 +245,6 @@ The following arguments are supported:
 * `period` - (Optional, Int) The subscription duration. Unit: month. The value must be an integral multiple of 12.
 
   -> **NOTE:**   This parameter is required if you create a subscription instance.
-
 
   -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
@@ -281,6 +281,7 @@ The following arguments are supported:
 ### `bind_vpcs`
 
 The bind_vpcs supports the following:
+
 * `region_id` - (Optional) region id
 * `vswitch_id` - (Optional) vswitch id
 * `vpc_id` - (Optional) VPC ID
@@ -289,6 +290,7 @@ The bind_vpcs supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `ca_certificate_chain_pem` - KMS instance certificate chain in PEM format.
 * `create_time` - The creation time of the resource.
@@ -299,6 +301,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 60 mins) Used when create the Instance.
 * `delete` - (Defaults to 10 mins) Used when delete the Instance.
 * `update` - (Defaults to 60 mins) Used when update the Instance.

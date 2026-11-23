@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_cloud_firewall_nat_firewall
 
-Provides a Cloud Firewall Nat Firewall resource. 
+Provides a Cloud Firewall Nat Firewall resource.
 
 For information about Cloud Firewall Nat Firewall and how to use it, see [What is Nat Firewall](https://www.alibabacloud.com/help/zh/cloud-firewall/developer-reference/api-cloudfw-2017-12-07-createsecurityproxy).
 
@@ -103,6 +103,7 @@ resource "alicloud_cloud_firewall_nat_firewall" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `firewall_switch` - (Optional) Safety protection switch. Value:-**open**: open-**close**: close.
 * `lang` - (Optional) Lang.
 * `nat_gateway_id` - (Required, ForceNew) NAT gateway ID.
@@ -119,6 +120,7 @@ The following arguments are supported:
 ### `nat_route_entry_list`
 
 The nat_route_entry_list supports the following:
+
 * `destination_cidr` - (Required, ForceNew) The destination network segment of the default route.
 * `nexthop_id` - (Required, ForceNew) The next hop address of the original NAT gateway.
 * `nexthop_type` - (Required, ForceNew) The network type of the next hop. Value: NatGateway : NAT Gateway.
@@ -127,11 +129,13 @@ The nat_route_entry_list supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Nat Firewall.
 * `delete` - (Defaults to 5 mins) Used when delete the Nat Firewall.
 * `update` - (Defaults to 5 mins) Used when update the Nat Firewall.

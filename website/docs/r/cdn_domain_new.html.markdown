@@ -51,6 +51,7 @@ resource "alicloud_cdn_domain_new" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cdn_type` - (Required, ForceNew) Cdn type of the accelerated domain. Valid values are `web`, `download`, `video`.
 * `certificate_config` - (Optional, Computed, List) Certificate configuration See [`certificate_config`](#certificate_config) below.
 * `check_url` - (Optional, Available since v1.206.0) Health test URL.
@@ -71,38 +72,42 @@ The following arguments are supported:
 ### `certificate_config`
 
 The certificate_config supports the following:
+
 * `cert_id` - (Optional, Available since v1.206.0) The ID of the certificate. It takes effect only when CertType = cas.
 * `cert_name` - (Optional) Certificate name, only flyer names are supported.
 * `cert_region` - (Optional, Available since v1.206.0) The certificate region, which takes effect only when CertType = cas, supports cn-hangzhou (domestic) and ap-southeast-1 (International), and is cn-hangzhou by default.
 * `cert_type` - (Optional) Certificate type. Value:
-  - **upload**: upload certificate. 
-  - **cas**: Cloud Shield certificate. 
+  - **upload**: upload certificate.
+  - **cas**: Cloud Shield certificate.
   - **free**: free certificate.
   > If the certificate type is **cas**, **PrivateKey** does not need to pass parameters.
 * `private_key` - (Optional) The content of the private key. If the certificate is not enabled, you do not need to enter the content of the private key. To configure the certificate, enter the content of the private key.
 * `server_certificate` - (Optional) The content of the security certificate. If the certificate is not enabled, you do not need to enter the content of the security certificate. Please enter the content of the certificate to configure the certificate.
 * `server_certificate_status` - (Optional) Whether the HTTPS certificate is enabled. Value:
-  - **on**(default): enabled. 
+  - **on**(default): enabled.
   - **off** : not enabled.
 
 ### `sources`
 
 The sources supports the following:
+
 * `content` - (Optional) The address of source. Valid values can be ip or doaminName. Each item's `content` can not be repeated.
 * `port` - (Optional, Computed, Int) The port of source. Valid values are `443` and `80`. Default value is `80`.
 * `priority` - (Optional, Computed, Int) Priority of the source. Valid values are `0` and `100`. Default value is `20`.
 * `type` - (Optional) The type of the source. Valid values are `ipaddr`, `domain` and `oss`.
-* `weight` - (Optional, Computed, Int) Weight of the source. Valid values are from `0` to `100`. Default value is `10`, but if type is `ipaddr`, the value can only be `10`. 
+* `weight` - (Optional, Computed, Int) Weight of the source. Valid values are from `0` to `100`. Default value is `10`, but if type is `ipaddr`, the value can only be `10`.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. It is the same as the `domain_name`.
 * `cname` - The CNAME domain name corresponding to the accelerated domain name.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 15 mins) Used when create the Domain.
 * `delete` - (Defaults to 15 mins) Used when delete the Domain.
 * `update` - (Defaults to 15 mins) Used when update the Domain.

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Hybrid Backup Recovery (HBR) OtsBackupPlans to the user.
 ---
 
-# alicloud\_hbr\_ots\_backup\_plans
+# alicloud_hbr_ots_backup_plans
 
 This data source provides the Hbr OtsBackupPlans of the current Alibaba Cloud user.
 
@@ -58,5 +58,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `updated_time` - The update time of the backup plan. UNIX time in seconds.
   * `ots_detail` - The details about the Tablestore instance.
     * `table_names` - The names of the destination tables in the Tablestore instance.
-
-

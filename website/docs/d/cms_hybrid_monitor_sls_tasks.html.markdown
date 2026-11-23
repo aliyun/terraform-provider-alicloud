@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cms Hybrid Monitor Sls Tasks to the user.
 ---
 
-# alicloud\_cms\_hybrid\_monitor\_sls\_tasks
+# alicloud_cms_hybrid_monitor_sls_tasks
 
 This data source provides the Cms Hybrid Monitor Sls Tasks of the current Alibaba Cloud user.
 

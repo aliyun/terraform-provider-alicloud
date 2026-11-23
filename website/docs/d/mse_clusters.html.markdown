@@ -111,4 +111,3 @@ The following attributes are exported in addition to the arguments listed above:
     * `role` - The role.
     * `ip` - The IP address of the instance.
     * `instance_type` - (Deprecated from version 1.232.0)
-

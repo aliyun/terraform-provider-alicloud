@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cddc Zones to the user.
 ---
 
-# alicloud\_cddc\_zones
+# alicloud_cddc_zones
 
 This data source provides the Cddc Zones of the current Alibaba Cloud user.
 

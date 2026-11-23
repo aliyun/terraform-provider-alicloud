@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cloud Sso User resource.
 
-
-
 For information about Cloud Sso User and how to use it, see [What is User](https://www.alibabacloud.com/help/en/cloudsso/latest/api-cloudsso-2021-05-15-createuser).
 
 -> **NOTE:** Available since v1.140.0.
@@ -63,6 +61,7 @@ locals {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The description of the user. The description can be up to 1,024 characters in length.
 * `directory_id` - (Required, ForceNew) The ID of the directory.
 * `display_name` - (Optional) The display name of the user. The display name can be up to 256 characters in length.
@@ -78,6 +77,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<directory_id>:<user_id>`.
 * `create_time` - (Available since v1.262.1) The time when the user was created.
 * `user_id` - The ID of the user.
@@ -87,6 +87,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.262.1.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the User.
 * `delete` - (Defaults to 5 mins) Used when delete the User.
 * `update` - (Defaults to 5 mins) Used when update the User.

@@ -75,13 +75,12 @@ resource "alicloud_mongodb_sharding_audit_filter" "default" {
 
 Terraform cannot destroy resource `alicloud_mongodb_sharding_audit_filter`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mongodb_sharding_audit_filter&spm=docs.r.mongodb_sharding_audit_filter.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_instance_id` - (Required, ForceNew) The ID of the sharding cluster instance.
 * `audit_status` - (Required) Audit state. Valid values: `enable`, `disabled`.
 * `filter` - (Required) The type of logs collected by the audit log feature of the instance. Separate multiple types with commas (,). Valid values:
@@ -104,12 +103,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource, same as `db_instance_id`.
 * `region_id` - The region ID of the sharding cluster instance.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Sharding Audit Filter.
 * `update` - (Defaults to 15 mins) Used when update the Sharding Audit Filter.
 

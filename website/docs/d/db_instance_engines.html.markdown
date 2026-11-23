@@ -7,15 +7,15 @@ description: |-
     Provides a list of RDS instacne engines resource info.
 ---
 
-# alicloud\_db\_instance\_engines
+# alicloud_db_instance_engines
 
 This data source provides the RDS instance engines resource available info of Alibaba Cloud.
 
--> **NOTE:** Available in v1.46.0+
+-> **NOTE:** Available since v1.46.0+
 
 ## Example Usage
 
-```tf
+```terraform
 data "alicloud_db_instance_engines" "resources" {
   instance_charge_type = "PostPaid"
   engine               = "MySQL"
@@ -53,4 +53,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `engine` - Database type.
   * `engine_version` - DB Instance version.
   * `category` - DB Instance category.
-  

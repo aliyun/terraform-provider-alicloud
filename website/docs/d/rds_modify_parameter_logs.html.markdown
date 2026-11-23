@@ -7,7 +7,7 @@ description: |-
   Provides a list of Rds Modify Parameter Logs to the user.
 ---
 
-# alicloud\_rds\_modify\_parameter\_logs
+# alicloud_rds_modify_parameter_logs
 
 This data source provides the Rds Modify Parameter Logs of the current Alibaba Cloud user.
 
@@ -46,5 +46,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `status` - The status of the new value specified for the parameter. Valid values:
     * **Applied**: The new value has taken effect.
     * **Syncing**: The new value is being applied and has not taken effect.
-  
-  

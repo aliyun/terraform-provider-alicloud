@@ -69,21 +69,21 @@ The following arguments are supported:
 * `instance_charge_type` - (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
 * `vswitch_id` - (Required from v1.91.0, ForceNew) The VSwitch ID to launch in.
 * `instance_series` - (Required, ForceNew) The parameter of the instance series. **NOTE:**  `drds.sn1.4c8g`,`drds.sn1.8c16g`,`drds.sn1.16c32g`,`drds.sn1.32c64g` are no longer supported. Valid values:
-    - `drds.sn2.4c16g` Starter Edition.
-    - `drds.sn2.8c32g` Standard Edition.
-    - `drds.sn2.16c64g` Enterprise Edition.
+  - `drds.sn2.4c16g` Starter Edition.
+  - `drds.sn2.8c32g` Standard Edition.
+  - `drds.sn2.16c64g` Enterprise Edition.
 * `specification` - (Required, ForceNew) User-defined DRDS instance specification. Value range:
-    - `drds.sn1.4c8g` for DRDS instance Starter version; 
-        - value range : `drds.sn1.4c8g.8c16g`, `drds.sn1.4c8g.16c32g`, `drds.sn1.4c8g.32c64g`, `drds.sn1.4c8g.64c128g`
-    - `drds.sn1.8c16g` for DRDS instance Standard edition;
-        - value range : `drds.sn1.8c16g.16c32g`, `drds.sn1.8c16g.32c64g`, `drds.sn1.8c16g.64c128g`
-    - `drds.sn1.16c32g` for DRDS instance Enterprise Edition;
-        - value range : `drds.sn1.16c32g.32c64g`, `drds.sn1.16c32g.64c128g`
-    - `drds.sn1.32c64g` for DRDS instance Extreme Edition;
-        - value range : `drds.sn1.32c64g.128c256g`
+  - `drds.sn1.4c8g` for DRDS instance Starter version;
+    - value range : `drds.sn1.4c8g.8c16g`, `drds.sn1.4c8g.16c32g`, `drds.sn1.4c8g.32c64g`, `drds.sn1.4c8g.64c128g`
+  - `drds.sn1.8c16g` for DRDS instance Standard edition;
+    - value range : `drds.sn1.8c16g.16c32g`, `drds.sn1.8c16g.32c64g`, `drds.sn1.8c16g.64c128g`
+  - `drds.sn1.16c32g` for DRDS instance Enterprise Edition;
+    - value range : `drds.sn1.16c32g.32c64g`, `drds.sn1.16c32g.64c128g`
+  - `drds.sn1.32c64g` for DRDS instance Extreme Edition;
+    - value range : `drds.sn1.32c64g.128c256g`
 * `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The id of the VPC.
 * `mysql_version` - (Optional, ForceNew, Available since v1.201.0) The MySQL version supported by the instance, with the following range of values. `5`: Fully compatible with MySQL 5.x (default) `8`: Fully compatible with MySQL 8.0. This parameter takes effect when the primary instance is created, and the read-only instance has the same MySQL version as the primary instance by default.
-       
+
 ## Attributes Reference
 
 The following attributes are exported:

@@ -19,7 +19,6 @@ For information about Cloud Firewall Vpc Firewall Control Policy and how to use 
 ~> **NOTE** Since v1.276.0. Set `new_order = -1` or omit the argument to let the Cloud Backend manage policy ordering automatically. You can also use `alicloud_cloud_firewall_vpc_firewall_control_policy_order` to manage the policy ordering.<br>
   If you want manged the policy order in parallel **do not** set the `new_order`, instead use `alicloud_cloud_firewall_vpc_firewall_control_policy_order` manage the policy order.
 
-
 ## Example Usage
 
 Basic Usage
@@ -71,6 +70,7 @@ resource "alicloud_cloud_firewall_vpc_firewall_control_policy" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `vpc_firewall_id` - (Required, ForceNew) The ID of the VPC firewall instance. Valid values:
   - When the VPC firewall protects traffic between two VPCs connected through the cloud enterprise network, the policy group ID uses the cloud enterprise network instance ID.
   - When the VPC firewall protects traffic between two VPCs connected through the express connection, the policy group ID uses the ID of the VPC firewall instance.

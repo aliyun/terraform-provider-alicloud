@@ -122,6 +122,7 @@ resource "alicloud_gwlb_server_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `connection_drain_config` - (Optional, Computed, List) Connected graceful interrupt configuration. See [`connection_drain_config`](#connection_drain_config) below.
 * `dry_run` - (Optional) Specifies whether to perform only a dry run, without performing the actual request. Valid values:
 
@@ -163,6 +164,7 @@ The following arguments are supported:
 ### `connection_drain_config`
 
 The connection_drain_config supports the following:
+
 * `connection_drain_enabled` - (Optional, Computed, Available since v1.236.0) Indicates whether connection draining is enabled. Valid values:
 
   - `true`
@@ -178,6 +180,7 @@ The connection_drain_config supports the following:
 ### `health_check_config`
 
 The health_check_config supports the following:
+
 * `health_check_connect_port` - (Optional, Computed, Int, Available since v1.236.0) The backend server port that is used for health checks.
 
   Valid values: `1` to `65535`.
@@ -236,6 +239,7 @@ The health_check_config supports the following:
 ### `servers`
 
 The servers supports the following:
+
 * `server_id` - (Required) The backend server ID.
 
   - If the server group is of the `Instance` type, set this parameter to the IDs of servers of the `Ecs`, `Eni`, or `Eci` type.
@@ -260,6 +264,7 @@ The servers supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the resource was created. The time follows the ISO 8601 standard in the **yyyy-MM-ddTHH:mm:ssZ** format. The time is displayed in UTC.
 * `draining_servers` - (Set, Available since v1.290.0) The backend servers that are being removed (in the `Draining` or `Removing` status).
@@ -272,6 +277,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Server Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Server Group.
 * `update` - (Defaults to 5 mins) Used when update the Server Group.

@@ -2,6 +2,7 @@
 package fcv3
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -17,10 +18,11 @@ import (
 
 func ResourceProvisionConfig() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceProvisionConfigCreate,
-		Read:   resourceProvisionConfigRead,
-		Update: resourceProvisionConfigUpdate,
-		Delete: resourceProvisionConfigDelete,
+		Create:        resourceProvisionConfigCreate,
+		Read:          resourceProvisionConfigRead,
+		Update:        resourceProvisionConfigUpdate,
+		Delete:        resourceProvisionConfigDelete,
+		CustomizeDiff: resourceProvisionConfigCustomizeDiff,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -33,10 +35,12 @@ func ResourceProvisionConfig() *schema.Resource {
 			"always_allocate_cpu": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 			"always_allocate_gpu": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 			"current": {
 				Type:     schema.TypeInt,
@@ -58,6 +62,10 @@ func ResourceProvisionConfig() *schema.Resource {
 			"qualifier": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Default:  "LATEST",
+				DiffSuppressFunc: func(_, old, new string, d *schema.ResourceData) bool {
+					return d.Id() != "" && provisionConfigEffectiveQualifier(old) == provisionConfigEffectiveQualifier(new)
+				},
 			},
 			"scheduled_actions": {
 				Type:     schema.TypeList,
@@ -94,6 +102,7 @@ func ResourceProvisionConfig() *schema.Resource {
 			"target": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validators.IntBetween(0, 10000),
 			},
 			"target_tracking_policies": {
@@ -140,11 +149,60 @@ func ResourceProvisionConfig() *schema.Resource {
 	}
 }
 
+func provisionConfigEffectiveQualifier(qualifier string) string {
+	if qualifier == "" {
+		return "LATEST"
+	}
+	return qualifier
+}
+
+func resourceProvisionConfigCustomizeDiff(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	if d.Id() == "" {
+		return nil
+	}
+	oldQualifier, newQualifier := d.GetChange("qualifier")
+	qualifierChanged := provisionConfigEffectiveQualifier(fmt.Sprint(oldQualifier)) != provisionConfigEffectiveQualifier(fmt.Sprint(newQualifier))
+	if !d.HasChange("function_name") && !qualifierChanged {
+		return nil
+	}
+	if !d.NewValueKnown("function_name") {
+		return fmt.Errorf("function_name must be known at plan time before replacing alicloud_fcv3_provision_config")
+	}
+	if !d.NewValueKnown("qualifier") {
+		return fmt.Errorf("qualifier must be known at plan time before replacing alicloud_fcv3_provision_config")
+	}
+	if qualifierChanged {
+		if err := d.ForceNew("qualifier"); err != nil {
+			return err
+		}
+	}
+	client := meta.(*connectivity.AliyunClient)
+	return ensureProvisionConfigQualifierAbsent(client, fmt.Sprint(d.Get("function_name")), fmt.Sprint(newQualifier))
+}
+
+func ensureProvisionConfigQualifierAbsent(client *connectivity.AliyunClient, functionName, qualifier string) error {
+	_, err := NewService(client).DescribeProvisionConfigWithQualifier(functionName, qualifier)
+	if errs.NotFoundError(err) {
+		return nil
+	}
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	return fmt.Errorf("provision configuration for function %q and qualifier %q already exists; refusing to overwrite an independent configuration", functionName, provisionConfigEffectiveQualifier(qualifier))
+}
+
 func resourceProvisionConfigCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
 	functionName := d.Get("function_name")
+	qualifier := ""
+	if v, ok := d.GetOk("qualifier"); ok {
+		qualifier = v.(string)
+	}
+	if err := ensureProvisionConfigQualifierAbsent(client, fmt.Sprint(functionName), qualifier); err != nil {
+		return err
+	}
 	action := fmt.Sprintf("/2023-03-30/functions/%s/provision-config", functionName)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -163,7 +221,10 @@ func resourceProvisionConfigCreate(d *schema.ResourceData, meta interface{}) err
 	if v, ok := d.GetOk("target_tracking_policies"); ok {
 		targetTrackingPoliciesMapsArray := make([]interface{}, 0)
 		for _, dataLoop := range v.([]interface{}) {
-			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopTmp, ok := dataLoop.(map[string]interface{})
+			if !ok {
+				continue
+			}
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["endTime"] = dataLoopTmp["end_time"]
 			dataLoopMap["name"] = dataLoopTmp["name"]
@@ -181,7 +242,10 @@ func resourceProvisionConfigCreate(d *schema.ResourceData, meta interface{}) err
 	if v, ok := d.GetOk("scheduled_actions"); ok {
 		scheduledActionsMapsArray := make([]interface{}, 0)
 		for _, dataLoop1 := range v.([]interface{}) {
-			dataLoop1Tmp := dataLoop1.(map[string]interface{})
+			dataLoop1Tmp, ok := dataLoop1.(map[string]interface{})
+			if !ok {
+				continue
+			}
 			dataLoop1Map := make(map[string]interface{})
 			dataLoop1Map["scheduleExpression"] = dataLoop1Tmp["schedule_expression"]
 			dataLoop1Map["target"] = dataLoop1Tmp["target"]
@@ -196,6 +260,9 @@ func resourceProvisionConfigCreate(d *schema.ResourceData, meta interface{}) err
 
 	if v, ok := d.GetOkExists("target"); ok {
 		request["target"] = v
+		// PutProvisionConfig deprecates target in favour of defaultTarget, so
+		// send the same value through both fields.
+		request["defaultTarget"] = v
 	}
 	if v, ok := d.GetOkExists("always_allocate_cpu"); ok {
 		request["alwaysAllocateCPU"] = v
@@ -231,7 +298,11 @@ func resourceProvisionConfigRead(d *schema.ResourceData, meta interface{}) error
 	client := meta.(*connectivity.AliyunClient)
 	service := NewService(client)
 
-	objectRaw, err := service.DescribeProvisionConfig(d.Id())
+	qualifier := ""
+	if v, ok := d.GetOk("qualifier"); ok {
+		qualifier = v.(string)
+	}
+	objectRaw, err := service.DescribeProvisionConfigWithQualifier(d.Id(), qualifier)
 	if err != nil {
 		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_fcv3_provision_config DescribeProvisionConfig Failed!!! %s", err)
@@ -256,8 +327,8 @@ func resourceProvisionConfigRead(d *schema.ResourceData, meta interface{}) error
 	if objectRaw["functionArn"] != nil {
 		d.Set("function_arn", objectRaw["functionArn"])
 	}
-	if objectRaw["target"] != nil {
-		d.Set("target", objectRaw["target"])
+	if target, ok := provisionConfigDefaultTarget(objectRaw); ok {
+		d.Set("target", target)
 	}
 
 	scheduledActions1Raw := objectRaw["scheduledActions"]
@@ -306,8 +377,73 @@ func resourceProvisionConfigRead(d *schema.ResourceData, meta interface{}) error
 	}
 
 	d.Set("function_name", d.Id())
+	d.Set("qualifier", provisionConfigEffectiveQualifier(qualifier))
 
 	return nil
+}
+
+// provisionConfigHasScalingPolicy reports whether the response carries any
+// scheduled action or target tracking policy. Without one the effective target
+// equals defaultTarget, so target is a safe fallback when defaultTarget is not
+// returned.
+func provisionConfigHasScalingPolicy(objectRaw map[string]interface{}) bool {
+	for _, key := range []string{"scheduledActions", "targetTrackingPolicies"} {
+		if list, ok := objectRaw[key].([]interface{}); ok && len(list) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// provisionConfigDefaultTarget returns the persistent default rather than the
+// policy-computed runtime target. Without a scaling policy the effective target
+// is also authoritative when the service omits defaultTarget.
+func provisionConfigDefaultTarget(object map[string]interface{}) (interface{}, bool) {
+	if object["defaultTarget"] != nil {
+		return object["defaultTarget"], true
+	}
+	if object["target"] != nil && !provisionConfigHasScalingPolicy(object) {
+		return object["target"], true
+	}
+	return nil, false
+}
+
+// provisionConfigUpdateTarget honors an explicit target, including zero. When
+// target is omitted, it reads the authoritative default from the same qualifier
+// as the replacement PUT instead of inheriting a potentially stale state value.
+func provisionConfigUpdateTarget(d *schema.ResourceData, client *connectivity.AliyunClient) (interface{}, error) {
+	target := d.Get("target")
+	if d.HasChange("target") || provisionConfigTargetConfigured(d) {
+		return target, nil
+	}
+
+	qualifier := ""
+	if v, ok := d.GetOk("qualifier"); ok {
+		qualifier = v.(string)
+	}
+	service := NewService(client)
+	object, err := service.DescribeProvisionConfigWithQualifier(d.Id(), qualifier)
+	if err != nil {
+		return nil, errs.WrapError(err)
+	}
+	if defaultTarget, ok := provisionConfigDefaultTarget(object); ok {
+		return defaultTarget, nil
+	}
+	return nil, fmt.Errorf("cannot determine the configured default target of provision config %q: the service response omits defaultTarget and no safe target fallback is available", d.Id())
+}
+
+// provisionConfigTargetConfigured reports whether the configuration sets
+// target explicitly, so an explicitly configured zero is never replaced by the
+// value reported by the service. When raw configuration is unavailable, the
+// caller honors a target change or reads the same qualifier's authoritative
+// default instead of treating state as authoritative.
+func provisionConfigTargetConfigured(d *schema.ResourceData) bool {
+	raw := d.GetRawConfig()
+	if raw.IsNull() || !raw.Type().IsObjectType() || !raw.Type().HasAttribute("target") {
+		return false
+	}
+	value := raw.GetAttr("target")
+	return value.IsKnown() && !value.IsNull()
 }
 
 func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -331,56 +467,82 @@ func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) err
 
 	if d.HasChange("target_tracking_policies") {
 		update = true
-		if v, ok := d.GetOk("target_tracking_policies"); ok || d.HasChange("target_tracking_policies") {
-			targetTrackingPoliciesMapsArray := make([]interface{}, 0)
-			for _, dataLoop := range v.([]interface{}) {
-				dataLoopTmp := dataLoop.(map[string]interface{})
-				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["endTime"] = dataLoopTmp["end_time"]
-				dataLoopMap["name"] = dataLoopTmp["name"]
-				dataLoopMap["startTime"] = dataLoopTmp["start_time"]
-				dataLoopMap["maxCapacity"] = dataLoopTmp["max_capacity"]
-				dataLoopMap["metricTarget"] = dataLoopTmp["metric_target"]
-				dataLoopMap["metricType"] = dataLoopTmp["metric_type"]
-				dataLoopMap["minCapacity"] = dataLoopTmp["min_capacity"]
-				dataLoopMap["timeZone"] = dataLoopTmp["time_zone"]
-				targetTrackingPoliciesMapsArray = append(targetTrackingPoliciesMapsArray, dataLoopMap)
+	}
+	if v, ok := d.GetOk("target_tracking_policies"); ok {
+		targetTrackingPoliciesMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range v.([]interface{}) {
+			dataLoopTmp, ok := dataLoop.(map[string]interface{})
+			if !ok {
+				continue
 			}
-			request["targetTrackingPolicies"] = targetTrackingPoliciesMapsArray
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["endTime"] = dataLoopTmp["end_time"]
+			dataLoopMap["name"] = dataLoopTmp["name"]
+			dataLoopMap["startTime"] = dataLoopTmp["start_time"]
+			dataLoopMap["maxCapacity"] = dataLoopTmp["max_capacity"]
+			dataLoopMap["metricTarget"] = dataLoopTmp["metric_target"]
+			dataLoopMap["metricType"] = dataLoopTmp["metric_type"]
+			dataLoopMap["minCapacity"] = dataLoopTmp["min_capacity"]
+			dataLoopMap["timeZone"] = dataLoopTmp["time_zone"]
+			targetTrackingPoliciesMapsArray = append(targetTrackingPoliciesMapsArray, dataLoopMap)
 		}
+		request["targetTrackingPolicies"] = targetTrackingPoliciesMapsArray
+	} else if d.HasChange("target_tracking_policies") {
+		request["targetTrackingPolicies"] = []interface{}{}
 	}
 
 	if d.HasChange("scheduled_actions") {
 		update = true
-		if v, ok := d.GetOk("scheduled_actions"); ok || d.HasChange("scheduled_actions") {
-			scheduledActionsMapsArray := make([]interface{}, 0)
-			for _, dataLoop1 := range v.([]interface{}) {
-				dataLoop1Tmp := dataLoop1.(map[string]interface{})
-				dataLoop1Map := make(map[string]interface{})
-				dataLoop1Map["scheduleExpression"] = dataLoop1Tmp["schedule_expression"]
-				dataLoop1Map["target"] = dataLoop1Tmp["target"]
-				dataLoop1Map["endTime"] = dataLoop1Tmp["end_time"]
-				dataLoop1Map["name"] = dataLoop1Tmp["name"]
-				dataLoop1Map["startTime"] = dataLoop1Tmp["start_time"]
-				dataLoop1Map["timeZone"] = dataLoop1Tmp["time_zone"]
-				scheduledActionsMapsArray = append(scheduledActionsMapsArray, dataLoop1Map)
+	}
+	if v, ok := d.GetOk("scheduled_actions"); ok {
+		scheduledActionsMapsArray := make([]interface{}, 0)
+		for _, dataLoop1 := range v.([]interface{}) {
+			dataLoop1Tmp, ok := dataLoop1.(map[string]interface{})
+			if !ok {
+				continue
 			}
-			request["scheduledActions"] = scheduledActionsMapsArray
+			dataLoop1Map := make(map[string]interface{})
+			dataLoop1Map["scheduleExpression"] = dataLoop1Tmp["schedule_expression"]
+			dataLoop1Map["target"] = dataLoop1Tmp["target"]
+			dataLoop1Map["endTime"] = dataLoop1Tmp["end_time"]
+			dataLoop1Map["name"] = dataLoop1Tmp["name"]
+			dataLoop1Map["startTime"] = dataLoop1Tmp["start_time"]
+			dataLoop1Map["timeZone"] = dataLoop1Tmp["time_zone"]
+			scheduledActionsMapsArray = append(scheduledActionsMapsArray, dataLoop1Map)
 		}
+		request["scheduledActions"] = scheduledActionsMapsArray
+	} else if d.HasChange("scheduled_actions") {
+		request["scheduledActions"] = []interface{}{}
 	}
 
 	if d.HasChange("target") {
 		update = true
-		request["target"] = d.Get("target")
 	}
 
 	if d.HasChange("always_allocate_cpu") {
 		update = true
-		request["alwaysAllocateCPU"] = d.Get("always_allocate_cpu")
 	}
 
 	if d.HasChange("always_allocate_gpu") {
 		update = true
+	}
+
+	// PutProvisionConfig replaces the stored provision configuration and
+	// requires target, so every update carries target plus the current
+	// always-allocate values. An omitted target is recovered from the same
+	// qualifier as the PUT, preserving its persistent default without writing
+	// zero or a policy-computed runtime target. An explicitly configured value,
+	// including zero, is sent directly.
+	if update {
+		targetValue, targetErr := provisionConfigUpdateTarget(d, client)
+		if targetErr != nil {
+			return targetErr
+		}
+		request["target"] = targetValue
+		// target is deprecated but still required by PutProvisionConfig; send
+		// the same configured default through defaultTarget as well.
+		request["defaultTarget"] = targetValue
+		request["alwaysAllocateCPU"] = d.Get("always_allocate_cpu")
 		request["alwaysAllocateGPU"] = d.Get("always_allocate_gpu")
 	}
 
@@ -411,6 +573,28 @@ func resourceProvisionConfigDelete(d *schema.ResourceData, meta interface{}) err
 
 	client := meta.(*connectivity.AliyunClient)
 	functionName := d.Id()
+
+	oldQualifier, newQualifier := d.GetChange("qualifier")
+	oldFunctionName, newFunctionName := d.GetChange("function_name")
+	qualifier, _ := oldQualifier.(string)
+	targetFunctionName, functionNameKnown := newFunctionName.(string)
+	targetQualifier, qualifierKnown := newQualifier.(string)
+	rawConfig := d.GetRawConfig()
+	hasReplacementConfig := rawConfig.Type().IsObjectType() && !rawConfig.IsNull()
+	unknownReplacementIdentity := hasReplacementConfig && (!rawConfig.GetAttr("function_name").IsKnown() || !rawConfig.GetAttr("qualifier").IsKnown())
+	identityChanged := oldFunctionName != newFunctionName || provisionConfigEffectiveQualifier(fmt.Sprint(oldQualifier)) != provisionConfigEffectiveQualifier(fmt.Sprint(newQualifier))
+	if unknownReplacementIdentity || identityChanged && (hasReplacementConfig || functionNameKnown && targetFunctionName != "") {
+		if unknownReplacementIdentity {
+			return fmt.Errorf("function_name and qualifier must be known before deleting the replaced alicloud_fcv3_provision_config")
+		}
+		if !functionNameKnown || targetFunctionName == "" || !qualifierKnown {
+			return fmt.Errorf("function_name and qualifier must be known before deleting the replaced alicloud_fcv3_provision_config")
+		}
+		if err := ensureProvisionConfigQualifierAbsent(client, targetFunctionName, targetQualifier); err != nil {
+			return err
+		}
+	}
+
 	action := fmt.Sprintf("/2023-03-30/functions/%s/provision-config", functionName)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -419,8 +603,8 @@ func resourceProvisionConfigDelete(d *schema.ResourceData, meta interface{}) err
 	request = make(map[string]interface{})
 	request["functionName"] = d.Id()
 
-	if v, ok := d.GetOk("qualifier"); ok {
-		query["qualifier"] = helper.StringPointer(v.(string))
+	if qualifier != "" {
+		query["qualifier"] = helper.StringPointer(qualifier)
 	}
 
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
@@ -448,7 +632,7 @@ func resourceProvisionConfigDelete(d *schema.ResourceData, meta interface{}) err
 	service := NewService(client)
 	deleteWait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	return retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
-		object, err := service.DescribeProvisionConfig(functionName)
+		object, err := service.DescribeProvisionConfigWithQualifier(functionName, qualifier)
 		if err != nil {
 			if errs.NotFoundError(err) {
 				return nil

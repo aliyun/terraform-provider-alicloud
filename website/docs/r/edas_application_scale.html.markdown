@@ -11,7 +11,6 @@ description: |-
 
 This operation is provided to scale out an EDAS application, see [What is EDAS Application Scale](https://www.alibabacloud.com/help/en/edas/developer-reference/api-edas-2017-08-01-scaleoutapplication).
 
-
 -> **NOTE:** Available since v1.82.0.
 
 ## Example Usage
@@ -124,4 +123,3 @@ The following attributes are exported:
 
 * `id` - The `key` of the resource supplied above. The value is formulated as `<app_id>:<ecu1,ecu2>`.
 * `ecc_info` - The ecc information of the resource supplied above. The value is formulated as `<ecc1,ecc2>`.
-

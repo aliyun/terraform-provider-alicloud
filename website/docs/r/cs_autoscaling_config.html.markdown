@@ -21,7 +21,12 @@ This resource will help you configure auto scaling for the kubernetes cluster, s
 
 -> **NOTE:** From version 1.256.0, support for setting the priority of scaling groups by parameter `priorities`.
 
+-> **NOTE:** Import reads the `cluster-autoscaler` configuration of the cluster. After importing, also declare `cluster_id` in your configuration: it is `ForceNew`, and an omitted `cluster_id` would plan a replacement. If you use a different `scaler_type` or configure `priorities`, declare them again as well.
+
+-> **NOTE:** Removing `skip_nodes_with_system_pods`, `skip_nodes_with_local_storage`, `daemonset_eviction_for_nodes`, `recycle_node_deletion_enabled` or `scale_up_from_zero` from the configuration makes the provider stop sending that argument; the provider does not send the server default instead. Removing an argument whose cluster value is `true` is not supported: the plan uses the zero value and the configuration does not converge. Set the argument to `false` explicitly instead of removing it.
+
 ## Example Usage
+
 If you do not have an existing cluster, you need to create an ACK cluster through [alicloud_cs_managed_kubernetes](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_managed_kubernetes) first, and then configure automatic scaling.
 
 Basic Usage
@@ -33,6 +38,13 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
 variable "name" {
   default = "terraform-example"
 }
@@ -121,14 +133,14 @@ The following arguments are supported.
 * `cluster_id` - (Optional, ForceNew) The id of kubernetes cluster.
 * `cool_down_duration` - (Optional) Specify the time interval between detecting a scale-in requirement (when the threshold is reached) and actually executing the scale-in operation (reducing the number of Pods). Default is `10m`. If the delay (cooldown) value is set too long, there could be complaints that the Horizontal Pod Autoscaler is not responsive to workload changes. However, if the delay value is set too short, the scale of the replicas set may keep thrashing as usual.
 * `unneeded_duration` - (Optional) Specify the time interval during which autoscaler does not perform scale-in operations after the most recent scale-out completion. Nodes added through scale-out can only be considered for scale-in after the period has elapsed. Default is `10m`.
-* `utilization_threshold` - (Optional) The scale-in a threshold. Default is `0.5`. 
-* `gpu_utilization_threshold` - (Optional) The scale-in threshold for GPU instance. Default is `0.5`. 
+* `utilization_threshold` - (Optional) The scale-in a threshold. Default is `0.5`.
+* `gpu_utilization_threshold` - (Optional) The scale-in threshold for GPU instance. Default is `0.5`.
 * `scan_interval` - (Optional) The interval at which the cluster is reevaluated for scaling. Default is `30s`.
 * `scale_down_enabled` - (Optional) Specify whether to allow the scale-in of nodes. Default is `true`.
 * `expander` - (Optional) The policy for selecting which node pool to scale. Valid values: `least-waste`, `random`, `priority`. For scaler type `goatscaler`, only the `least-waste` expander is currently supported. For more information on these policies, see [Configure auto scaling](https://www.alibabacloud.com/help/en/container-service-for-kubernetes/latest/auto-scaling-of-nodes#section-3bg-2ko-inl)
 * `skip_nodes_with_system_pods` - (Optional, Available since v1.209.0) If true cluster autoscaler will never delete nodes with pods from kube-system (except for DaemonSet or mirror pods). Default is `true`.
 * `skip_nodes_with_local_storage` - (Optional, Available since v1.209.0) If true cluster autoscaler will never delete nodes with pods with local storage, e.g. EmptyDir or HostPath. Default is `false`.
-* `daemonset_eviction_for_nodes` - (Optional, Available since v1.209.0) If true DaemonSet pods will be  terminated from nodes. Default is `false`. 
+* `daemonset_eviction_for_nodes` - (Optional, Available since v1.209.0) If true DaemonSet pods will be  terminated from nodes. Default is `false`.
 * `max_graceful_termination_sec` - (Optional, Available since v1.209.0) Maximum number of seconds CA waits for pod termination when trying to scale down a node. Default is `14400`.
 * `min_replica_count` - (Optional, Available since v1.209.0) Minimum number of replicas that a replica set or replication controller should have to allow their pods deletion in scale down. Default is `0`.
 * `recycle_node_deletion_enabled` - (Optional, Available since v1.209.0) Should CA delete the K8s node object when recycle node has scaled down successfully. Default is `false`.
@@ -139,7 +151,16 @@ The following arguments are supported.
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - Resource id.
+
+## Import
+
+The auto scaling configuration of an ACK cluster can be imported using the cluster ID, e.g.
+
+```shell
+$ terraform import alicloud_cs_autoscaling_config.example <cluster_id>
+```
 
 ## Timeouts
 
@@ -148,4 +169,3 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `create` - (Defaults to 90 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status).
 * `update` - (Defaults to 60 mins) Used when activating the kubernetes cluster when necessary during update.
 * `delete` - (Defaults to 60 mins) Used when terminating the kubernetes cluster.
-

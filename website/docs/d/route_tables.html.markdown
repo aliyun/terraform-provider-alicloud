@@ -77,4 +77,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `vswitch_ids` - A list of vswitch id.
   * `vpc_id` - The VPC ID.
   * `tags` - A mapping of tags to assign to the resource.
-

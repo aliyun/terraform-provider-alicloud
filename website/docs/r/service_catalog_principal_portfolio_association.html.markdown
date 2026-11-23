@@ -77,6 +77,7 @@ resource "alicloud_service_catalog_principal_portfolio_association" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `portfolio_id` - (Required, ForceNew) Product Portfolio ID
 * `principal_id` - (Required, ForceNew) RAM entity ID
 * `principal_type` - (Required, ForceNew) RAM entity type
@@ -84,11 +85,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<principal_id>:<principal_type>:<portfolio_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Principal Portfolio Association.
 * `delete` - (Defaults to 5 mins) Used when delete the Principal Portfolio Association.
 

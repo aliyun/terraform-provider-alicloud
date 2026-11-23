@@ -7,7 +7,7 @@ description: |-
   Provides a list of Api Gateway Models to the user.
 ---
 
-# alicloud\_api\_gateway\_models
+# alicloud_api_gateway_models
 
 This data source provides the Api Gateway Models of the current Alibaba Cloud user.
 

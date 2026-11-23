@@ -144,7 +144,7 @@ The following arguments are supported:
 * `frontend_port` - (Required, Int, ForceNew) The listener frontend port which is used to launch the new forwarding rule. Valid values: [1-65535].
 * `domain` - (Optional, ForceNew) Domain name of the forwarding rule. It can contain letters a-z, numbers 0-9, hyphens (-), and periods (.),
 and wildcard characters. The following two domain name formats are supported:
-  - Standard domain name: www.test.com
+  - Standard domain name: <www.test.com>
   - Wildcard domain name: *.test.com. wildcard (*) must be the first character in the format of (*.)
 * `url` - (Optional, ForceNew) Domain of the forwarding rule. It must be 2-80 characters in length. Only letters a-z, numbers 0-9, and characters '-' '/' '?' '%' '#' and '&' are allowed. URLs must be started with the character '/', but cannot be '/' alone.
 * `server_group_id` - (Required) ID of a virtual server group that will be forwarded.
@@ -180,7 +180,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `create` - (Defaults to 1 mins) Used when create the forwarding rule.
 * `update` - (Defaults to 1 mins) Used when update the forwarding rule.
 * `delete` - (Defaults to 1 mins) Used when delete the forwarding rule.
-                                                                                             
+
 ## Import
 
 Load balancer forwarding rule can be imported using the id, e.g.

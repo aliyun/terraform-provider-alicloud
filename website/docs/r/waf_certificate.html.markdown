@@ -7,13 +7,13 @@ description: |-
   Provides a Web Application Firewall Certificate resource.
 ---
 
-# alicloud\_waf\_certificate
+# alicloud_waf_certificate
 
 Provides a WAF Certificate resource.
 
 For information about WAF Certificate and how to use it, see [What is Certificate](https://www.alibabacloud.com/help/doc-detail/28517.htm).
 
--> **NOTE:** Available in v1.135.0+.
+-> **NOTE:** Available since v1.135.0+.
 
 ## Example Usage
 
@@ -51,7 +51,7 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The ID of the WAF instance.
 * `domain` - (Required, ForceNew) The domain that you want to add to WAF.
 * `private_key` - (Optional, ForceNew, Conflicts with `certificate_id`) The private key.
-* `certificate_id` - (Optional, ForceNew, Conflicts with `certificate`, `certificate_name`,`private_key`) The certificate id is automatically generated when you upload your certificate content.**NOTE:** you can also use Certificate ID saved in SSL.
+* `certificate_id` - (Optional, ForceNew, Conflicts with `certificate`, `certificate_name`, `private_key`) The certificate id is automatically generated when you upload your certificate content.**NOTE:** you can also use Certificate ID saved in SSL.
 
 ## Attributes Reference
 

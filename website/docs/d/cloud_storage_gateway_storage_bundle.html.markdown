@@ -1,17 +1,17 @@
 ---
 subcategory: "Cloud Storage Gateway"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_cloud_storage_gateway_storage_bundles"
+page_title: "Alicloud: alicloud_cloud_storage_gateway_storage_bundle"
 sidebar_current: "docs-alicloud-datasource-cloud-storage-gateway-storage-bundles"
 description: |-
   Provides a list of Cloud Storage Gateway Storage Bundles to the user.
 ---
 
-# alicloud\_cloud\_storage\_gateway\_storage\_bundles
+# alicloud_cloud_storage_gateway_storage_bundle
 
 This data source provides the Cloud Storage Gateway Storage Bundles of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.116.0+.
+-> **NOTE:** Available since v1.116.0+.
 
 ## Example Usage
 
@@ -38,7 +38,7 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Storage Bundle name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

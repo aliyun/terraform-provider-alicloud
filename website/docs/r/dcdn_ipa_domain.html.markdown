@@ -62,7 +62,7 @@ The following arguments are supported:
 
 ### `sources`
 
-The sources supports the following: 
+The sources supports the following:
 
 * `content` - (Required) The address of the origin server. You can specify an IP address or a domain name.
 * `port` - (Required) The custom port number. Valid values: `0` to `65535`.
@@ -83,7 +83,6 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `create` - (Defaults to 10 mins) Used when Creating DCDN Ipa domain instance.
 * `update` - (Defaults to 5 mins) Used when Creating DCDN Ipa domain instance.
 * `delete` - (Defaults to 10 mins) Used when terminating the DCDN Ipa domain instance.
-
 
 ## Import
 

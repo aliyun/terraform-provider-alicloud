@@ -126,6 +126,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
+
 * `category` - (Optional) EAIS instance category, valid values: `eais`, `ei`, default is `eais`.
 * `client_instance_id` - (Required, ForceNew) The ID of the ECS or ECI instance bound to the EAIS instance.
 * `ei_instance_type` - (Optional, ForceNew) The Ei instance specification, which is used to filter matching specifications for updating.
@@ -135,6 +136,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<client_instance_id>`.
 * `create_time` - The creation time of the resource
 * `region_id` - The region ID of the resource
@@ -142,6 +144,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Client Instance Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Client Instance Attachment.
 * `update` - (Defaults to 5 mins) Used when update the Client Instance Attachment.

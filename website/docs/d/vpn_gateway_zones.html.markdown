@@ -24,6 +24,7 @@ data "alicloud_vpn_gateway_zones" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `spec` - (Required, ForceNew) Bandwidth specification.-If an IPsec connection is bound to a VPN gateway instance, this parameter indicates the Bandwidth specification of the VPN gateway instance.-If an IPsec connection is bound to a forwarding router, this parameter indicates the bandwidth that you expect the IPsec connection to support.Different bandwidth specifications may affect the zone information that is found. Value:
   - `5M`
   - `10M`
@@ -36,10 +37,10 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed) A list of Zone IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Zone IDs.
 * `zones` - A list of Zone Entries. Each element contains the following attributes:
   * `zone_id` - The zone ID.

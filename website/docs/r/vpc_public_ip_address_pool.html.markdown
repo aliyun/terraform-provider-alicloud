@@ -10,8 +10,6 @@ description: |-
 
 Provides a VPC Public Ip Address Pool resource.
 
-
-
 For information about VPC Public Ip Address Pool and how to use it, see [What is Public Ip Address Pool](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/createpublicipaddresspool).
 
 -> **NOTE:** Available since v1.186.0.
@@ -46,6 +44,7 @@ resource "alicloud_vpc_public_ip_address_pool" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `biz_type` - (Optional, ForceNew, Computed) The name of the VPC Public IP address pool.
 * `description` - (Optional) Description.
 * `isp` - (Optional, ForceNew, Computed) The Internet service provider. Valid values: `BGP`, `BGP_PRO`, `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2`, `BGP_FinanceCloud`. Default Value: `BGP`.
@@ -59,6 +58,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `ip_address_remaining` - Whether there is a free IP address.
@@ -70,6 +70,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Public Ip Address Pool.
 * `delete` - (Defaults to 5 mins) Used when delete the Public Ip Address Pool.
 * `update` - (Defaults to 5 mins) Used when update the Public Ip Address Pool.

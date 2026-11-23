@@ -56,6 +56,7 @@ output "alicloud_esa_site_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_type` - (ForceNew, Optional) Access type. Value:-**NS**: Managed access via NS.-**CNAME**: access through CNAME.
 * `coverage` - (ForceNew, Optional) Acceleration area
 * `only_enterprise` - (ForceNew, Optional) Only the Enterprise version, pass **true** when the table only queries the enterprise version of the site.
@@ -71,10 +72,10 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Site IDs.
 * `names` - A list of name of Sites.
 * `sites` - A list of Site Entries. Each element contains the following attributes:

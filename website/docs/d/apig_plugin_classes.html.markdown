@@ -38,6 +38,7 @@ output "apig_plugin_class_id_0" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `type` - (Optional) The type of the plugin class used to filter results. Valid values: `Auth`, `FlowControl`, `FlowObservation`, `Security`, `TransportProtocol`, `Other`.
 * `ids` - (Optional, List) A list of Plugin Class IDs.
 * `name_regex` - (Optional) A regex string to filter results by plugin class name.
@@ -47,6 +48,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `names` - A list of name of Plugin Classes.
 * `classes` - A list of Plugin Class. Each element contains the following attributes:
   * `id` - The ID of the Plugin Class. It is the same as `plugin_class_id`.

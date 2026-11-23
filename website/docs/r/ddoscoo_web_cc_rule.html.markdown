@@ -97,12 +97,12 @@ resource "alicloud_ddoscoo_web_cc_rule" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ddoscoo_web_cc_rule&spm=docs.r.ddoscoo_web_cc_rule.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `domain` - (Required, ForceNew) The domain name of the website service.  
 
   -> **NOTE:**  The domain name must already have website service forwarding rules configured. You can call [DescribeDomains](https://help.aliyun.com/document_detail/91724.html) to query all domain names.
@@ -113,6 +113,7 @@ The following arguments are supported:
 ### `rule_detail`
 
 The rule_detail supports the following:
+
 * `action` - (Required) The action to take when a match occurs. Valid values:
   - `accept`: Allow
   - `block`: Block
@@ -126,6 +127,7 @@ The rule_detail supports the following:
 ### `rule_detail-condition`
 
 The rule_detail-condition supports the following:
+
 * `content` - (Required) Matching content.
 * `field` - (Required) Matching field.  
 * `header_name` - (Optional) Custom HTTP header field name.
@@ -137,6 +139,7 @@ The rule_detail-condition supports the following:
 ### `rule_detail-rate_limit`
 
 The rule_detail-rate_limit supports the following:
+
 * `interval` - (Required, Int) Statistical interval. Unit: seconds.
 * `sub_key` - (Optional) Header field name (required only when the statistic source is `header`).
 * `target` - (Required) Statistic source. Valid values:
@@ -148,6 +151,7 @@ The rule_detail-rate_limit supports the following:
 ### `rule_detail-statistics`
 
 The rule_detail-statistics supports the following:
+
 * `field` - (Required) The statistic source. Valid values:
   - `ip`: Count by IP address
   - `header`: Count by HTTP header
@@ -160,6 +164,7 @@ The rule_detail-statistics supports the following:
 ### `rule_detail-status_code`
 
 The rule_detail-status_code supports the following:
+
 * `code` - (Required, Int) Status code. The value range is `100` to `599`:
 * `count_threshold` - (Optional, Int) When the ratio is not used, the enforcement action is triggered only when the corresponding status code reaches `CountThreshold`. The value range is `2` to `50000`.
 * `enabled` - (Required) Whether the rule is enabled. Valid values:
@@ -173,11 +178,13 @@ The rule_detail-status_code supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<domain>:<name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Web Cc Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Web Cc Rule.
 * `update` - (Defaults to 5 mins) Used when update the Web Cc Rule.

@@ -142,10 +142,11 @@ resource "alicloud_data_works_di_alarm_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `description` - (Optional) 
+
+* `description` - (Optional)
 * `di_alarm_rule_name` - (Required) Data Integration alarm rule name
 * `di_job_id` - (Required, ForceNew, Int) Task ID: the ID of the task associated with the alert rule.
-* `enabled` - (Optional) 
+* `enabled` - (Optional)
 * `metric_type` - (Required) Alarm indicator type. Optional enumerated values:
   - Heartbeat (task status alarm)
   - FailoverCount(failover times alarm)
@@ -156,6 +157,7 @@ The following arguments are supported:
 ### `notification_settings`
 
 The notification_settings supports the following:
+
 * `inhibition_interval` - (Optional, Int) Alarm suppression interval, in minutes
 * `notification_channels` - (Optional, List) Alarm notification Channel See [`notification_channels`](#notification_settings-notification_channels) below.
 * `notification_receivers` - (Optional, List) List of alert notification recipients See [`notification_receivers`](#notification_settings-notification_receivers) below.
@@ -163,6 +165,7 @@ The notification_settings supports the following:
 ### `notification_settings-notification_channels`
 
 The notification_settings-notification_channels supports the following:
+
 * `channels` - (Optional, List) Channel, optional enumeration value:
 
   Mail (Mail)
@@ -181,12 +184,14 @@ The notification_settings-notification_channels supports the following:
 ### `notification_settings-notification_receivers`
 
 The notification_settings-notification_receivers supports the following:
+
 * `receiver_type` - (Optional) The type of the receiver. Valid values: AliyunUid/DingToken/FeishuToken/WebHookUrl.
 * `receiver_values` - (Optional, List) Receiver Value List
 
 ### `trigger_conditions`
 
 The trigger_conditions supports the following:
+
 * `ddl_report_tags` - (Optional, List) It takes effect only when the DDL notification is issued. The list of effective DDLs is required.
 * `duration` - (Optional, Int) Alarm calculation time interval, unit minute
 * `severity` - (Optional) Severity, optional enumeration value:
@@ -205,12 +210,14 @@ The trigger_conditions supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<di_job_id>:<di_alarm_rule_id>`.
 * `di_alarm_rule_id` - Resource attribute field representing resource level ID
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Di Alarm Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Di Alarm Rule.
 * `update` - (Defaults to 5 mins) Used when update the Di Alarm Rule.

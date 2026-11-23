@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Data Works Folder resource.
 ---
 
-# alicloud\_data\_works\_folder
+# alicloud_data_works_folder
 
 Provides a Data Works Folder resource.
 

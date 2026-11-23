@@ -50,6 +50,7 @@ resource "alicloud_ens_snapshot" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) Snapshot Description Information.
 * `disk_id` - (Required, ForceNew) Cloud Disk ID.
 * `ens_region_id` - (Required, ForceNew) The node ID of ENS.
@@ -58,6 +59,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Instance creation timeIt is expressed in accordance with the ISO8601 standard and uses UTC +0 time in the format of yyyy-MM-ddTHH:mm:ssZ.Example value: 2020-08-20 T14:52:28Z.
 * `status` - Snapshot Status. Valid values: creating, available, deleting, error.
@@ -65,6 +67,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Snapshot.
 * `delete` - (Defaults to 5 mins) Used when delete the Snapshot.
 * `update` - (Defaults to 5 mins) Used when update the Snapshot.

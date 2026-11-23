@@ -33,6 +33,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `cdn_ip` - Whether it belongs to an Alibaba Cloud CDN node.Valid values: `True`, `False`.
 * `isp` - The operator's Chinese name, e.g. `电信`.
 * `isp_ename` - The operator's English name, e.g. `telecom`.

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Sae Ingresses to the user.
 ---
 
-# alicloud\_sae\_ingresses
+# alicloud_sae_ingresses
 
 This data source provides the Sae Ingresses of the current Alibaba Cloud user.
 

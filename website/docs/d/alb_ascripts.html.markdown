@@ -31,6 +31,7 @@ output "alicloud_alb_ascript_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `ids` - (Optional, ForceNew, Computed) A list of AScript IDs.
 * `ascript_name` - (ForceNew, Optional) Script name.
@@ -39,10 +40,10 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of AScript IDs.
 * `names` - A list of name of AScripts.
 * `ascripts` - A list of AScript Entries. Each element contains the following attributes:

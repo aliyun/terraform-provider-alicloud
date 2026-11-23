@@ -79,6 +79,7 @@ output "alicloud_vpn_gateway_enhanced_vpn_gateway_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `status` - (ForceNew, Optional) The status of the resource
 * `vpc_id` - (ForceNew, Optional) The ID of the VPC to which the VPN gateway belongs.
 * `vpn_instance_id` - (ForceNew, Optional) The ID of the VPN gateway.
@@ -86,23 +87,23 @@ The following arguments are supported:
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional) Default to `false`. Set it to `true` to query detailed attributes.
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Enhanced Vpn Gateway IDs.
 * `gateways` - A list of Enhanced Vpn Gateway Entries. Each element contains the following attributes:
-    * `auto_propagate` - Specifies whether to automatically propagate BGP routes to the VPC.
-    * `create_time` - The time when the VPN gateway was created.
-    * `description` - The description of the VPN gateway.
-    * `disaster_recovery_vswitch_id` - The ID of the backup VSwitch to which the VPN gateway is attached.
-    * `gateway_type` - VPN gateway type.
-    * `network_type` - Type of Gateway.
-    * `status` - The status of the resource.
-    * `tags` - The Tag of.
-    * `vswitch_id` - The ID of the VSwitch to which the VPN gateway is attached.
-    * `vpc_id` - The ID of the VPC to which the VPN gateway belongs.
-    * `vpn_gateway_name` - The name of the VPN gateway.
-    * `vpn_instance_id` - The ID of the VPN gateway.
-    * `vpn_type` - The Type of Vpn.
-    * `id` - The ID of the resource supplied above.
+  * `auto_propagate` - Specifies whether to automatically propagate BGP routes to the VPC.
+  * `create_time` - The time when the VPN gateway was created.
+  * `description` - The description of the VPN gateway.
+  * `disaster_recovery_vswitch_id` - The ID of the backup VSwitch to which the VPN gateway is attached.
+  * `gateway_type` - VPN gateway type.
+  * `network_type` - Type of Gateway.
+  * `status` - The status of the resource.
+  * `tags` - The Tag of.
+  * `vswitch_id` - The ID of the VSwitch to which the VPN gateway is attached.
+  * `vpc_id` - The ID of the VPC to which the VPN gateway belongs.
+  * `vpn_gateway_name` - The name of the VPN gateway.
+  * `vpn_instance_id` - The ID of the VPN gateway.
+  * `vpn_type` - The Type of Vpn.
+  * `id` - The ID of the resource supplied above.

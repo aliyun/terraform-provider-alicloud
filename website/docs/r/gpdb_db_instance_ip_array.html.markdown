@@ -81,6 +81,7 @@ resource "alicloud_gpdb_db_instance_ip_array" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_instance_ip_array_attribute` - (Optional, ForceNew) The default is empty. To distinguish between different attribute values, the console does not display groups with the 'hidden' attribute.
 * `db_instance_ip_array_name` - (Required, ForceNew) The name of the IP address whitelist. If you do not specify this parameter, the default whitelist is queried.
 
@@ -103,11 +104,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<db_instance_ip_array_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the DB Instance IP Array.
 * `delete` - (Defaults to 5 mins) Used when delete the DB Instance IP Array.
 * `update` - (Defaults to 5 mins) Used when update the DB Instance IP Array.

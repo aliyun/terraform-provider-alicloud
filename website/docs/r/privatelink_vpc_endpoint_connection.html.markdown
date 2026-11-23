@@ -90,6 +90,7 @@ resource "alicloud_privatelink_vpc_endpoint_connection" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bandwidth` - (Optional, Computed, Int) The bandwidth of the endpoint connection. Valid values: 1024 to 10240. Unit: Mbit/s.
 
   Note: The bandwidth of an endpoint connection is in the range of 100 to 10,240 Mbit/s. The default bandwidth is 1,024 Mbit/s. When the endpoint is connected to the endpoint service, the default bandwidth is the minimum bandwidth. In this case, the connection bandwidth range is 1,024 to 10,240 Mbit/s.
@@ -103,6 +104,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<service_id>:<endpoint_id>`.
 * `status` - The state of the endpoint connection.
 * `endpoint_owner_id` - The owner ID of the endpoint.
@@ -110,6 +112,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vpc Endpoint Connection.
 * `delete` - (Defaults to 5 mins) Used when delete the Vpc Endpoint Connection.
 * `update` - (Defaults to 5 mins) Used when update the Vpc Endpoint Connection.

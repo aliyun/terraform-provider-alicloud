@@ -90,6 +90,7 @@ output "alicloud_gpdb_db_extension_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_instance_id` - (Required) The instance ID.
 
   -> **NOTE:**   You can call the [DescribeDBInstances](https://www.alibabacloud.com/help/en/doc-detail/86911.html) operation to query the information about all AnalyticDB for PostgreSQL instances within a region, including instance IDs.
@@ -99,10 +100,10 @@ The following arguments are supported:
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Db Extension IDs.
 * `extensions` - A list of Db Extension Entries. Each element contains the following attributes:
   * `current_version` - **NOTE:** This field is only available when `enable_details` is `true`. Plug-in current version.

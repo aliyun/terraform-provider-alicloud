@@ -10,8 +10,6 @@ description: |-
 
 Provides a Application Load Balancer (ALB) Listener resource.
 
-
-
 For information about Application Load Balancer (ALB) Listener and how to use it, see [What is Listener](https://www.alibabacloud.com/help/en/slb/application-load-balancer/developer-reference/api-alb-2020-06-16-createlistener).
 
 -> **NOTE:** Available since v1.133.0.
@@ -157,6 +155,7 @@ resource "alicloud_alb_listener" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_log_record_customized_headers_enabled` - (Optional) Access Log Whether to Enable Carry Custom Header Field. Valid values: `true`, `false`. Default Value: `false`.
 
   -> **NOTE:**  Only Instances outside the Security Group to Access the Log Switch `accesslogenabled` Open, in Order to Set This Parameter to the `true`.
@@ -190,6 +189,7 @@ The following arguments are supported:
 ### `access_log_tracing_config`
 
 The access_log_tracing_config supports the following:
+
 * `tracing_enabled` - (Required) Xtrace Function. Valid values: `true`, `false`. Default Value: `false`.
 
   -> **NOTE:**  Only Instances outside the Security Group to Access the Log Switch `accesslogenabled` Open, in Order to Set This Parameter to the value `true`.
@@ -199,42 +199,48 @@ The access_log_tracing_config supports the following:
 
   -> **NOTE:**  `tracingenabled` valued True When Effective.
 
-
 ### `ca_certificates`
 
 The ca_certificates supports the following:
+
 * `certificate_id` - (Optional) The ID of the certificate. Currently, only server certificates are supported.
 
 ### `certificates`
 
 The certificates supports the following:
+
 * `certificate_id` - (Optional, Available since v1.242.0) The ID of the certificate. Currently, only server certificates are supported.
 
 ### `default_actions`
 
 The default_actions supports the following:
+
 * `forward_group_config` - (Optional, List) Forwarding Action Configurations See [`forward_group_config`](#default_actions-forward_group_config) below.
 * `type` - (Required, ForceNew) The action type. Value: ForwardGroup, indicating forwarding to the server group.
 
 ### `default_actions-forward_group_config`
 
 The default_actions-forward_group_config supports the following:
+
 * `server_group_tuples` - (Required, List) The Forwarding Destination Server Group See [`server_group_tuples`](#default_actions-forward_group_config-server_group_tuples) below.
 
 ### `default_actions-forward_group_config-server_group_tuples`
 
 The default_actions-forward_group_config-server_group_tuples supports the following:
+
 * `server_group_id` - (Required) Forwarded to the Destination Server Group ID
 
 ### `quic_config`
 
 The quic_config supports the following:
+
 * `quic_listener_id` - (Optional) There Is a Need to Correlate the QuIC Listener ID. The Https Listener, in Effect at the Time. quicupgradeenabled True When Required.
 * `quic_upgrade_enabled` - (Optional, Computed) Indicates Whether to Enable the QuIC Upgrade
 
 ### `x_forwarded_for_config`
 
 The x_forwarded_for_config supports the following:
+
 * `x_forwarded_for_client_cert_client_verify_alias` - (Optional) The Custom Header Field Names Only When xforwardedforclientcertclientverifyenabled Has a Value of True, this Value Will Not Take Effect until.
 * `x_forwarded_for_client_cert_client_verify_enabled` - (Optional, Computed) Indicates Whether the X-Forwarded-Clientcert-clientverify Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate to Verify the Results.
 * `x_forwarded_for_client_cert_finger_print_alias` - (Optional) The Custom Header Field Names Only When xforwardedforclientcertfingerprintenabled, Which Evaluates to True When the Entry into Force of.
@@ -307,11 +313,13 @@ The acl_relations supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Listener.
 * `delete` - (Defaults to 5 mins) Used when delete the Listener.
 * `update` - (Defaults to 5 mins) Used when update the Listener.

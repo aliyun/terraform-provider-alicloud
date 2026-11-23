@@ -80,7 +80,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `forward_entry_name` - (Optional, ForceNew, Available since 1.119.1+) The name of forward entry.
 * `internal_port` - (Optional, ForceNew, Available since 1.119.1+) The internal port.
-* `ip_protocol` - (Optional, ForceNew, Available since 1.119.1+) The ip protocol. Valid values: `any`,`tcp` and `udp`. 
+* `ip_protocol` - (Optional, ForceNew, Available since 1.119.1+) The ip protocol. Valid values: `any`,`tcp` and `udp`.
 * `status` - (Optional, ForceNew, Available since 1.119.1+) The status of forward entry. Valid values: `Available`, `Deleting` and `Pending`.
 
 ## Attributes Reference
@@ -100,4 +100,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `status` - The status of the Forward Entry.
   * `forward_entry_id` - The forward entry ID.
   * `forward_entry_name` - The name of forward entry.
-

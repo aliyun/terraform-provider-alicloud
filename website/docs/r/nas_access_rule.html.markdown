@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_nas_access_rule
 
-Provides a NAS Access Rule resource. 
+Provides a NAS Access Rule resource.
 
 For information about NAS Access Rule and how to use it, see [What is Access Rule](https://www.alibabacloud.com/help/en/nas/developer-reference/api-nas-2017-06-26-createaccessrule).
 
@@ -60,6 +60,7 @@ resource "alicloud_nas_access_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_group_name` - (Required, ForceNew) AccessGroupName.
 * `file_system_type` - (Optional, ForceNew) filesystem type. include standard, extreme.
 * `ipv6_source_cidr_ip` - (Optional, Available since v1.218.0) Ipv6SourceCidrIp.
@@ -71,6 +72,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<access_group_name>:<file_system_type>:<access_rule_id>`.
 * `access_rule_id` - The first ID of the resource.
 * `region_id` - (Available since v1.256.0) The region ID.
@@ -78,6 +80,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Access Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Access Rule.
 * `update` - (Defaults to 5 mins) Used when update the Access Rule.

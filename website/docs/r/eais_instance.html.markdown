@@ -71,6 +71,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
+
 * `category` - (Optional) EAIS instance category, valid values: `eais`, `jupyter`, `ei`, default is `eais`.
 * `environment_var` - (Optional, List, Available since v1.246.0) Setting environment variables in eais instance on Initialization See [`environment_var`](#environment_var) below.
 * `force` - (Optional, Deprecated since v1.246.0) Whether to force the deletion when the instance status does not meet the deletion conditions.
@@ -86,12 +87,14 @@ The following arguments are supported:
 ### `environment_var`
 
 The environment_var supports the following:
+
 * `key` - (Optional, Available since v1.246.0) Keys for environment variables
 * `value` - (Optional, Available since v1.246.0) Values of environment variables
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `region_id` - Region ID
@@ -99,6 +102,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.
 * `update` - (Defaults to 5 mins) Used when update the Instance.

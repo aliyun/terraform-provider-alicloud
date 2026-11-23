@@ -50,16 +50,19 @@ Terraform cannot destroy resource `alicloud_cloud_firewall_ai_traffic_analysis_s
 ## Argument Reference
 
 The following arguments are supported:
+
 * `status` - (Optional, Computed) Status
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as ``.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ai Traffic Analysis Status.
 * `update` - (Defaults to 5 mins) Used when update the Ai Traffic Analysis Status.
 

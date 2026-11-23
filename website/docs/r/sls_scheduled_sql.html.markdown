@@ -86,12 +86,12 @@ resource "alicloud_sls_scheduled_sql" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_scheduled_sql&spm=docs.r.sls_scheduled_sql.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) Job description.
 * `display_name` - (Required) Task display name.
 * `project` - (Required, ForceNew) A short description of struct.
@@ -107,7 +107,8 @@ The following arguments are supported:
 ### `schedule`
 
 The schedule supports the following:
-* `cron_expression` - (Optional) Cron expression with a minimum precision of minutes in 24-hour format. For example, 0 0/1 * * * means checking once every hour starting from 00:00. When type is set to Cron, cronExpression must be specified.
+
+* `cron_expression` - (Optional) Cron expression with a minimum precision of minutes in 24-hour format. For example, 0 0/1 ** * means checking once every hour starting from 00:00. When type is set to Cron, cronExpression must be specified.
 * `delay` - (Optional, Int) Delay duration.
 * `interval` - (Optional) Time interval, such as 5m or 1h.
 * `run_immediately` - (Optional) Specifies whether to run the OSS import job immediately after it is created.
@@ -122,6 +123,7 @@ Hourly: Checks query and analysis results once every hour.
 ### `scheduled_sql_configuration`
 
 The scheduled_sql_configuration supports the following:
+
 * `data_format` - (Optional, ForceNew) Write mode.  
 * `dest_endpoint` - (Optional) The destination endpoint.
 * `dest_logstore` - (Optional) The destination Logstore.
@@ -143,11 +145,13 @@ The scheduled_sql_configuration supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<project>:<scheduled_sql_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Scheduled Sql.
 * `delete` - (Defaults to 5 mins) Used when delete the Scheduled Sql.
 * `update` - (Defaults to 5 mins) Used when update the Scheduled Sql.

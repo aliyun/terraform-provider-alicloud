@@ -7,21 +7,21 @@ description: |-
     Provides a datasource to open the EDAS service automatically.
 ---
 
-# alicloud\_edas\_service
+# alicloud_edas_service
 
 Using this data source can open EDAS service automatically. If the service has been opened, it will return opened.
 
 For information about EDAS and how to use it, see [What is EDAS](https://www.alibabacloud.com/help/product/29500.htm).
 
--> **NOTE:** Available in v1.98.0+
+-> **NOTE:** Available since v1.98.0+
 
 -> **NOTE:** The EDAS service is not support to be open automatically in the international site.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_edas_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 
@@ -37,4 +37,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

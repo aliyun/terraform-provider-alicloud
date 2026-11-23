@@ -104,7 +104,7 @@ The following arguments are supported:
   256 characters in length and cannot start with http:// or https://.
 * `security_group_id` - (Optional) ID of the security group used to create new instance. It is conflict
   with `security_group_ids`.
-* `container_group_name` - (Optional) The name series of the elastic container instances created from the scaling configuration. If you want to use an ordered instance name, specify the value for this parameter in the following format: name_prefix(AUTO_INCREMENT)[begin_number,bits]name_suffix.
+* `container_group_name` - (Optional) The name series of the elastic container instances created from the scaling configuration. If you want to use an ordered instance name, specify the value for this parameter in the following format: name_prefix\(AUTO_INCREMENT\)[begin_number,bits]name_suffix.
   name_prefix: the prefix of the hostname.
   (AUTO_INCREMENT): the sort method. This is a static field.
   begin_number: the start value of the sequential values. Valid values: 0 to 999999.
@@ -127,9 +127,9 @@ The following arguments are supported:
 * `egress_bandwidth` - (Optional) egress bandwidth.
 * `host_name` - (Optional) Hostname of an ECI instance.
 * `tags` - (Optional) A mapping of tags to assign to the resource. It will be applied for ECI instances finally.
-    - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot
+  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot
       be a null string.
-    - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be
+  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be
       a null string.
 * `image_registry_credentials` - (Optional)  The image registry credential.   See [`image_registry_credentials`](#image_registry_credentials) below for
   details.
@@ -197,7 +197,7 @@ The init_container supports the following:
 * `args` - (Optional) The arguments passed to the commands.
 * `commands` - (Optional) The commands run by the init container.
 * `cpu` - (Optional) The amount of CPU resources allocated to the container.
-* `environment_vars` - (Optional) The structure of environmentVars. 
+* `environment_vars` - (Optional) The structure of environmentVars.
   See [`environment_vars`](#init_containers-environment_vars) below for details.
 * `gpu` - (Optional) The number GPUs.
 * `image` - (Optional) The image of the container.
@@ -288,7 +288,7 @@ The container supports the following:
 * `memory` - (Optional) The amount of memory resources allocated to the container.
 * `name` - (Optional) The name of the init container.
 * `ports` - (Optional) The structure of port. See [`ports`](#containers-ports) below for details.
-* `volume_mounts` - (Optional) The structure of volumeMounts. 
+* `volume_mounts` - (Optional) The structure of volumeMounts.
    See [`volume_mounts`](#containers-volume_mounts) below for details.
 * `working_dir` - (Optional) The working directory of the container.
 * `liveness_probe_exec_commands` - (Optional, Available in 1.193.1+) Commands that you want to run in containers when you use the CLI to perform liveness probes.
@@ -327,7 +327,7 @@ The environment_var supports the following:
 * `key` - (Optional) The name of the variable. The name can be 1 to 128 characters in length and can contain letters,
   digits, and underscores (_). It cannot start with a digit.
 * `value` - (Optional) The value of the variable. The value can be 0 to 256 characters in length.
-* `field_ref_field_path` - (Optional, Available since 1.215.0) Environment variable value reference. Optional values: 
+* `field_ref_field_path` - (Optional, Available since 1.215.0) Environment variable value reference. Optional values:
   - status.podIP: IP of pod.
 
 ### `containers-ports`
@@ -346,7 +346,7 @@ The volume_mount supports the following:
 * `name` - (Optional) The name of the mounted volume.
 * `read_only` - (Optional) Default to `false`.
 * `sub_path` - (Optional, Available since v1.232.0) The subdirectory of volume N.
-* `mount_propagation` - (Optional, Available since v1.232.0) The mount propagation settings of volume N. Mount propagation enables volumes mounted on one container to be shared among other containers within the same pod or across distinct pods residing on the same node. Valid values: None, HostToCotainer, Bidirectional. 
+* `mount_propagation` - (Optional, Available since v1.232.0) The mount propagation settings of volume N. Mount propagation enables volumes mounted on one container to be shared among other containers within the same pod or across distinct pods residing on the same node. Valid values: None, HostToCotainer, Bidirectional.
 
 ### `acr_registry_infos`
 
@@ -374,4 +374,3 @@ ESS eci scaling configuration can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_ess_eci_scaling_configuration.example asc-abc123456
 ```
-

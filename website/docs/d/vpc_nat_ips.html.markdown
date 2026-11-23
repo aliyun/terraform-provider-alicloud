@@ -7,7 +7,7 @@ description: |-
   Provides a list of Vpc Nat Ips to the user.
 ---
 
-# alicloud\_vpc\_nat\_ips
+# alicloud_vpc_nat_ips
 
 This data source provides the Vpc Nat Ips of the current Alibaba Cloud user.
 

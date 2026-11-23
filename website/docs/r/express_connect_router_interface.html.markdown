@@ -10,8 +10,6 @@ description: |-
 
 Provides a Express Connect Router Interface resource.
 
-
-
 For information about Express Connect Router Interface and how to use it, see [What is Router Interface](https://next.api.alibabacloud.com/document/Vpc/2016-04-28/CreateRouterInterface).
 
 -> **NOTE:** Available since v1.199.0.
@@ -90,6 +88,7 @@ resource "alicloud_express_connect_router_interface" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_point_id` - (Optional, ForceNew) Access point ID
 * `auto_renew` - (Optional) Whether to enable automatic renewal. Value:
   - `false` (default): disabled.
@@ -107,7 +106,6 @@ The following arguments are supported:
 * `fast_link_mode` - (Optional, ForceNew) Whether the VBR router interface is created by using the fast connection mode. The fast connection mode can automatically complete the connection after the VBR and the router interfaces at both ends of the VPC are created. Value:
   - `true` : Yes.
   - `false`(default) : No.
-
 
   -> **NOTE:** - This parameter takes effect only when the value of `RouterType` is `VBR` and the value of `OppositeRouterType` is **VRouter.
   - When the `FastLinkMode` parameter is set to `true`, the `Role` parameter must be set to `InitiatingSide`,`AccessPointId`,`OppositeRouterType`,`opppiterouterid`, and `OppositeInterfaceOwnerId` are required.
@@ -131,16 +129,13 @@ The following arguments are supported:
 
   -> **NOTE:**  `period` is required when the value of the parameter `payment_type` is `Subscription`.
 
-
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `pricing_cycle` - (Optional) The billing cycle of the prepaid fee. Valid values:
   - `Month` (default): monthly payment.
   - `Year`: Pay per Year.
 
-
   -> **NOTE:**  `period` is required when the value of the parameter `payment_type` is `Subscription`.
-
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
@@ -168,6 +163,7 @@ The following arguments are supported:
   - Xlarge.1: 10000 Mbps
 
 When the Role is AcceptingSide (connecting to the receiving end), the Spec value is Negative, which means that the specification is not involved in creating the receiving end router interface.
+
 * `status` - (Optional, Computed) Resource attribute fields that represent the status of the resource. Value range:
   - Idle : Initialize.
   - Connecting : the initiator is in the process of Connecting.
@@ -182,22 +178,24 @@ When the Role is AcceptingSide (connecting to the receiving end), the Spec value
 * `tags` - (Optional, Map) The tag of the resource
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `auto_pay` - (Deprecated since v1.263.0). Field 'name' has been deprecated from provider version 1.263.0.
 * `opposite_interface_id` - (Deprecated since v1.263.1). Field 'router_table_id' has been deprecated from provider version 1.263.0.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `bandwidth` - The bandwidth of the router interface
-* `business_status` - The service status of the router interface. 
+* `business_status` - The service status of the router interface.
 * `connected_time` - Time the connection was established
 * `create_time` - The creation time of the resource
 * `cross_border` - CrossBorder
 * `end_time` - End Time of Prepaid
 * `has_reservation_data` - Whether there is renewal data
 * `opposite_bandwidth` - opposite bandwidth
-* `opposite_interface_business_status` - The service status of the router interface on the opposite end of the connection. 
+* `opposite_interface_business_status` - The service status of the router interface on the opposite end of the connection.
 * `opposite_interface_spec` - Specifications of the interface of the peer router.
 * `opposite_interface_status` - The status of the router interface on the peer of the connection.
 * `opposite_vpc_instance_id` - The peer VPC ID
@@ -211,6 +209,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Router Interface.
 * `delete` - (Defaults to 5 mins) Used when delete the Router Interface.
 * `update` - (Defaults to 5 mins) Used when update the Router Interface.

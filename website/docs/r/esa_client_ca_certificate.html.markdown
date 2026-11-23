@@ -10,15 +10,9 @@ description: |-
 
 Provides a ESA Client Ca Certificate resource.
 
-
-
 For information about ESA Client Ca Certificate and how to use it, see [What is Client Ca Certificate](https://next.api.alibabacloud.com/document/ESA/2024-09-10/UploadClientCaCertificate).
 
 -> **NOTE:** Available since v1.244.0.
-
-## Example Usage
-
-Basic Usage
 
 ## Example Usage
 

@@ -7,7 +7,7 @@ description: |-
   Provides a list of PolarDB Global Database Networks to the user.
 ---
 
-# alicloud\_polardb\_global\_database\_networks
+# alicloud_polardb_global_database_networks
 
 This data source provides the PolarDB Global Database Networks of the current Alibaba Cloud user.
 

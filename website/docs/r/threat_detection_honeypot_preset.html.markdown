@@ -55,6 +55,7 @@ resource "alicloud_threat_detection_honeypot_preset" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `honeypot_image_name` - (Required, ForceNew) Honeypot mirror name
 * `meta` - (Required, ForceNew) Honeypot template custom parameters. See [`meta`](#meta) below.
 * `node_id` - (Required, ForceNew) Unique id of management node
@@ -71,12 +72,14 @@ The meta supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.
 * `honeypot_preset_id` - Unique ID of honeypot Template
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Honeypot Preset.
 * `delete` - (Defaults to 5 mins) Used when delete the Honeypot Preset.
 * `update` - (Defaults to 5 mins) Used when update the Honeypot Preset.

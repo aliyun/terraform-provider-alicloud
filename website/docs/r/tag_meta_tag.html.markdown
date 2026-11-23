@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Tag Meta Tag resource.
 ---
 
-# alicloud\_tag\_meta\_tag
+# alicloud_tag_meta_tag
 
 Provides a Tag Meta Tag resource.
 
@@ -46,7 +46,8 @@ resource "alicloud_tag_meta_tag" "example" {
 The following arguments are supported:
 
 * `key` - (Required, ForceNew) The key of the tag meta tag. key must be 1 to 128 characters in length.
-* `values` - (Required, ForceNew) The values of the tag meta tag. 
+* `values` - (Required, ForceNew) The values of the tag meta tag.
+
 ## Attributes Reference
 
 The following attributes are exported:

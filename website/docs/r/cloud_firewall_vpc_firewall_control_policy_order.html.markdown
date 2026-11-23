@@ -48,13 +48,12 @@ resource "alicloud_cloud_firewall_vpc_firewall_control_policy_order" "default" {
 
 Terraform cannot destroy resource `alicloud_cloud_firewall_vpc_firewall_control_policy_order`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_vpc_firewall_control_policy_order&spm=docs.r.cloud_firewall_vpc_firewall_control_policy_order.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `acl_uuid` - (Optional, ForceNew, Computed) The unique identifier ID of the access control policy.  
   When modifying an access control policy, you must provide its unique identifier ID. You can obtain this ID by calling the [DescribeVpcFirewallControlPolicy](https://help.aliyun.com/document_detail/159758.html) API.
 * `lang` - (Optional) The language type used for requests and responses.  
@@ -82,11 +81,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<vpc_firewall_id>:<acl_uuid>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vpc Firewall Control Policy Order.
 * `update` - (Defaults to 5 mins) Used when update the Vpc Firewall Control Policy Order.
 

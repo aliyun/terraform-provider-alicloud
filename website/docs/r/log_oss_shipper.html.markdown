@@ -16,7 +16,6 @@ Log service data delivery management, this service provides the function of deli
 
 -> **DEPRECATED:**  This resource has been deprecated from version `1.215.0`. Please use new resource [alicloud_log_oss_export](https://www.terraform.io/docs/providers/alicloud/r/log_oss_export).
 
-
 ## Example Usage
 
 Basic Usage
@@ -92,7 +91,6 @@ The following arguments are supported:
 * `name` - (Required) The name of the key.
 * `type` - (Required) Type of configuration name.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
@@ -103,8 +101,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins) Used when Creating LogOssShipper instance. 
-* `update` - (Defaults to 1 mins) Used when Updating LogOssShipper instance. 
+* `create` - (Defaults to 1 mins) Used when Creating LogOssShipper instance.
+* `update` - (Defaults to 1 mins) Used when Updating LogOssShipper instance.
 * `delete` - (Defaults to 1 mins) Used when terminating the LogOssShipper instance.
 
 ## Import

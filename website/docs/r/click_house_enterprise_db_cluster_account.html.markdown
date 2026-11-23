@@ -90,6 +90,7 @@ resource "alicloud_click_house_enterprise_db_cluster_account" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account` - (Required, ForceNew) The name of the database account.
 * `account_type` - (Required, ForceNew) The type of the database account. Valid values:
   - `NormalAccount`: Normal account number.
@@ -105,6 +106,7 @@ The following arguments are supported:
 ### `dml_auth_setting`
 
 The dml_auth_setting supports the following:
+
 * `allow_databases` - (Optional, List) The list of databases that require authorization. If there are more than one, separate them with commas (,).
 * `allow_dictionaries` - (Optional, List) List of dictionaries that require authorization. If there are more than one, separate them with commas (,).
 * `ddl_authority` - (Required) Whether to grant the DDL permission to the database account. Value description:
@@ -118,11 +120,13 @@ The dml_auth_setting supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<account>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Enterprise Db Cluster Account.
 * `delete` - (Defaults to 5 mins) Used when delete the Enterprise Db Cluster Account.
 * `update` - (Defaults to 5 mins) Used when update the Enterprise Db Cluster Account.

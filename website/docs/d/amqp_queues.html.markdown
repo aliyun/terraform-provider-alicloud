@@ -7,7 +7,7 @@ description: |-
   Provides a list of Amqp Queues to the user.
 ---
 
-# alicloud\_amqp\_queues
+# alicloud_amqp_queues
 
 This data source provides the Amqp Queues of the current Alibaba Cloud user.
 

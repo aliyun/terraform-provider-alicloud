@@ -95,7 +95,3 @@ The havip can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_havip.foo havip-abc123456
 ```
-
-
-
-

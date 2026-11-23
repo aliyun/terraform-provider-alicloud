@@ -71,15 +71,16 @@ output "alicloud_fcv3_trigger_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `function_name` - (Required, ForceNew) Function Name
 * `ids` - (Optional, ForceNew, Computed) A list of Trigger IDs. The value is formulated as `<function_name>:<trigger_name>`.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Trigger IDs.
 * `names` - A list of name of Triggers.
 * `triggers` - A list of Trigger Entries. Each element contains the following attributes:

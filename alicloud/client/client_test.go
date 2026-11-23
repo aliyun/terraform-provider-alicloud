@@ -20,6 +20,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/credentials-go/credentials"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/client/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -91,8 +92,8 @@ func NewTestClient(t *testing.T) *AliyunClient {
 		t.Skipped()
 	}
 
-	config := &Config{
-		Region:      Beijing,
+	cfg := &config.Config{
+		Region:      config.Beijing,
 		RegionId:    "cn-beijing",
 		AccessKey:   accessKey,
 		SecretKey:   secretKey,
@@ -110,9 +111,9 @@ func NewTestClient(t *testing.T) *AliyunClient {
 	if err != nil {
 		t.Fatalf("create credential failed: %v", err)
 	}
-	config.Credential = credential
+	cfg.Credential = credential
 
-	client, err := NewClient(config)
+	client, err := NewClient(cfg)
 	if err != nil {
 		t.Fatalf("initial client failed: %v", err)
 	}
@@ -134,7 +135,7 @@ func TestTableStoreRequestUsesEnvironmentProxy(t *testing.T) {
 			t.Fatalf("create credential: %v", err)
 		}
 		client := &AliyunClient{
-			config: &Config{
+			config: &config.Config{
 				OtsEndpoint: "http://tablestore.invalid",
 				Credential:  credential,
 			},
@@ -460,7 +461,7 @@ func TestUnitResolveTeaProxy(t *testing.T) {
 			t.Setenv("NO_PROXY", tc.noProxy)
 			t.Setenv("no_proxy", "")
 
-			client := &AliyunClient{config: &Config{Protocol: tc.protocol}}
+			client := &AliyunClient{config: &config.Config{Protocol: tc.protocol}}
 			useProxy, proxyURL, noProxyHost, err := client.resolveTeaProxy(tc.endpoint)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.wantUseProxy, useProxy)
@@ -597,14 +598,14 @@ func TestUnitTeaRoaProxyRouting(t *testing.T) {
 							endpoints := &sync.Map{}
 							endpoints.Store("ots", endpoint)
 							endpoints.Store("cms", endpoint)
-							config := &Config{Protocol: protocol, RegionId: "cn-hangzhou", Credential: credential, Endpoints: endpoints,
+							cfg := &config.Config{Protocol: protocol, RegionId: "cn-hangzhou", Credential: credential, Endpoints: endpoints,
 								AccessKey: "test-access-key", SecretKey: "test-secret-key",
 								ClientReadTimeout: 2000, ClientConnectTimeout: 2000}
-							sdkConfig, err := config.PrepareTeaROAConfig()
+							sdkConfig, err := cfg.PrepareTeaROAConfig()
 							if err != nil {
 								t.Fatal(err)
 							}
-							client := &AliyunClient{config: config, teaRoaSdkConfig: sdkConfig}
+							client := &AliyunClient{config: cfg, teaRoaSdkConfig: sdkConfig}
 							// Only the isolated httptest TLS certificate is untrusted.
 							// Proxy and NoProxy runtime fields remain unset.
 							runtime := &util.RuntimeOptions{IgnoreSSL: tea.Bool(protocol == "HTTPS"), Autoretry: tea.Bool(false)}

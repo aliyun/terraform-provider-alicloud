@@ -7,7 +7,7 @@ description: |-
   Provides a list of Sae Instance Specifications to the user.
 ---
 
-# alicloud\_sae\_instance\_specifications
+# alicloud_sae_instance_specifications
 
 This data source provides the Sae Instance Specifications of the current Alibaba Cloud user.
 

@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cloud Enterprise Network (CEN) Transit Router Vbr Attachment resource.
 
-
-
 For information about Cloud Enterprise Network (CEN) Transit Router Vbr Attachment and how to use it, see [What is Transit Router Vbr Attachment](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createtransitroutervbrattachment).
 
 -> **NOTE:** Available since v1.126.0.
@@ -69,13 +67,12 @@ resource "alicloud_cen_transit_router_vbr_attachment" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_vbr_attachment&spm=docs.r.cen_transit_router_vbr_attachment.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_publish_route_enabled` - (Optional) AutoPublishRouteEnabled
 * `cen_id` - (Optional, ForceNew, Computed) CenId
 * `order_type` - (Optional, Computed, Available since v1.276.0) The entity that pays the fees of the network instance. Valid values:
@@ -96,7 +93,8 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `region_id` - RegionId.
 * `status` - The status of the resource.
@@ -105,6 +103,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Transit Router Vbr Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Transit Router Vbr Attachment.
 * `update` - (Defaults to 5 mins) Used when update the Transit Router Vbr Attachment.

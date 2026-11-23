@@ -10,8 +10,6 @@ description: |-
 
 Provides a ECS Snapshot resource.
 
-
-
 For information about ECS Snapshot and how to use it, see [What is Snapshot](https://www.alibabacloud.com/help/en/doc-detail/25524.htm).
 
 -> **NOTE:** Available since v1.120.0.
@@ -107,6 +105,7 @@ resource "alicloud_ecs_snapshot" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `category` - (Optional, ForceNew) The category of the snapshot. Valid values:
   - `standard`: Normal snapshot.
   - `flash`: Local snapshot.
@@ -127,6 +126,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Snapshot.
 * `available` - Whether ECS reports the snapshot as available. This read-only value can be `true` while `status` is still `progressing`, allowing the operations described in the availability note above. It reflects the most recent refresh, not the configured `wait_until` policy.
 * `create_time` - (Available since v1.239.0) The time when the snapshot was created.
@@ -138,6 +138,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.231.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Snapshot.
 * `delete` - (Defaults to 5 mins) Used when delete the Snapshot.
 * `update` - (Defaults to 5 mins) Used when update the Snapshot.

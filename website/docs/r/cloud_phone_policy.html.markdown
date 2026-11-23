@@ -60,6 +60,7 @@ resource "alicloud_cloud_phone_policy" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `camera_redirect` - (Optional) Whether to turn on local camera redirection.
 * `clipboard` - (Optional) Clipboard permissions.
 * `lock_resolution` - (Optional) Whether to lock the resolution.
@@ -71,6 +72,7 @@ The following arguments are supported:
 ### `net_redirect_policy`
 
 The net_redirect_policy supports the following:
+
 * `custom_proxy` - (Optional) Whether to manually configure the transparent proxy.
 * `host_addr` - (Optional) The transparent proxy IP address. The format is IPv4 address.
 * `net_redirect` - (Optional) Whether to enable network redirection.
@@ -82,11 +84,13 @@ The net_redirect_policy supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Policy.
 * `update` - (Defaults to 5 mins) Used when update the Policy.

@@ -67,6 +67,7 @@ Terraform cannot destroy resource `alicloud_governance_account`. Terraform will 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_id` - (Optional, ForceNew, Computed, Int) The ID of the enrolled account.
   - If you are creating a new resource account, this parameter is not required.
   - If you are enrolling a existing account to account factory, this parameter is required.
@@ -89,22 +90,24 @@ The following arguments are supported:
 
 * `default_domain_name` - (Optional, Available since v1.231.0) The domain name is used to qualify the login name of RAM users and RAM roles.
 
-                    
 ### `account_tags`
 
 The account_tags supports the following:
+
 * `tag_key` - (Optional, Available since v1.233.1) The key of the tags
 * `tag_value` - (Optional) The value of the tags
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `status` - Account registration status. Value:
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Account.
 * `update` - (Defaults to 5 mins) Used when update the Account.
 

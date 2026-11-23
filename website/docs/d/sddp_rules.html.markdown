@@ -39,10 +39,10 @@ output "sddp_rule_id" {
 The following arguments are supported:
 
 * `category` - (Optional, ForceNew) Sensitive Data Identification Rules for the Type of. Valid values:
-  * `0`: Keyword. 
+  * `0`: Keyword.
   * `2`: Regular expression.
 * `content_category` - (Optional, ForceNew) The Content Classification.
-* `custom_type` - (Optional, ForceNew)  Sensitive Data Identification Rules of Type. Valid values: 
+* `custom_type` - (Optional, ForceNew)  Sensitive Data Identification Rules of Type. Valid values:
   * `0`: the Built-in.
   * `1`: The User-Defined.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
@@ -56,8 +56,8 @@ The following arguments are supported:
   * `5`:RDS.
 * `risk_level_id` - (Optional) Sensitive Data Identification Rules of Risk Level ID. Valid values:
   * `2`:S1, Weak Risk Level.
-  * `3`:S2, Medium Risk Level. 
-  * `4`:S3 High Risk Level. 
+  * `3`:S2, Medium Risk Level.
+  * `4`:S3 High Risk Level.
   * `5`:S4, the Highest Risk Level.
 * `rule_type` - (Optional, ForceNew) Rule Type.
 * `status` - (Optional, ForceNew) Sensitive Data Identification Rules Detection State of.

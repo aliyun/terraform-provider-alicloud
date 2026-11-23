@@ -7,7 +7,7 @@ description: |-
   Provides a list of Vpc Nat Ip Cidrs to the user.
 ---
 
-# alicloud\_vpc\_nat\_ip\_cidrs
+# alicloud_vpc_nat_ip_cidrs
 
 This data source provides the Vpc Nat Ip Cidrs of the current Alibaba Cloud user.
 

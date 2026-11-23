@@ -10,8 +10,6 @@ description: |-
 
 Provides a Schedulerx Job resource.
 
-
-
 For information about Schedulerx Job and how to use it, see [What is Job](https://www.alibabacloud.com/help/en/schedulerx/schedulerx-serverless/developer-reference/api-schedulerx2-2019-04-30-createjob).
 
 -> **NOTE:** Available since v1.240.0.
@@ -117,6 +115,7 @@ resource "alicloud_schedulerx_job" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `attempt_interval` - (Optional, Int) Error retry interval, unit s, default value 30.
 * `class_name` - (Optional) Full path of the task interface class.
 
@@ -154,12 +153,14 @@ The following arguments are supported:
 ### `job_monitor_info`
 
 The job_monitor_info supports the following:
+
 * `contact_info` - (Optional, List) Contact information. See [`contact_info`](#job_monitor_info-contact_info) below.
 * `monitor_config` - (Optional, Computed, List) Alarm switch and threshold configuration. See [`monitor_config`](#job_monitor_info-monitor_config) below.
 
 ### `job_monitor_info-contact_info`
 
 The job_monitor_info-contact_info supports the following:
+
 * `ding` - (Optional) DingTalk swarm robot webhook address
 * `user_mail` - (Optional) User Email Address
 * `user_name` - (Optional) The user name
@@ -168,6 +169,7 @@ The job_monitor_info-contact_info supports the following:
 ### `job_monitor_info-monitor_config`
 
 The job_monitor_info-monitor_config supports the following:
+
 * `fail_enable` - (Optional, Computed) Enable failure alarm
 * `miss_worker_enable` - (Optional, Computed) Whether no available Machine alarm is on
 * `send_channel` - (Optional, Computed) Alarm sending form
@@ -186,6 +188,7 @@ The job_monitor_info-monitor_config supports the following:
 ### `map_task_xattrs`
 
 The map_task_xattrs supports the following:
+
 * `consumer_size` - (Optional, Int) The number of threads to execute a single trigger. The default value is 5.
 * `dispatcher_size` - (Optional, Int) The number of subtask distribution threads. The default value is 5.
 * `page_size` - (Optional, Int) The number of sub-tasks pulled by a parallel task at a time. The default value is 100.
@@ -196,6 +199,7 @@ The map_task_xattrs supports the following:
 ### `time_config`
 
 The time_config supports the following:
+
 * `calendar` - (Optional) The cron type can optionally fill in a custom calendar.
 * `data_offset` - (Optional, Int) Cron type can choose time offset, unit s.
 * `time_expression` - (Optional, Computed) Time expressions. Currently, the following types of time expressions are supported:
@@ -212,12 +216,14 @@ The time_config supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<namespace>:<group_id>:<job_id>`.
 * `job_id` - JobId
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Job.
 * `delete` - (Defaults to 5 mins) Used when delete the Job.
 * `update` - (Defaults to 5 mins) Used when update the Job.

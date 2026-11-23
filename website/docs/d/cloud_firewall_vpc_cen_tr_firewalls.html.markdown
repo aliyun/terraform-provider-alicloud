@@ -175,6 +175,7 @@ output "alicloud_cloud_firewall_vpc_cen_tr_firewall_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cen_id` - (ForceNew, Optional) The ID of the CEN instance.
 * `current_page` - (ForceNew, Optional) The page number of the pagination query. The default value is 1.
 * `firewall_id` - (ForceNew, Optional) Firewall ID
@@ -188,10 +189,10 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed) A list of Vpc Cen Tr Firewall IDs.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Vpc Cen Tr Firewall IDs.
 * `firewalls` - A list of Vpc Cen Tr Firewall Entries. Each element contains the following attributes:
   * `cen_id` - The ID of the CEN instance.

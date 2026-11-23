@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cr Endpoint Acl Service to the user.
 ---
 
-# alicloud\_cr\_endpoint\_acl\_service
+# alicloud_cr_endpoint_acl_service
 
 This data source provides the CR Endpoint Acl Service of the current Alibaba Cloud user.
 

@@ -10,8 +10,6 @@ description: |-
 
 Provides a AnalyticDB for MySQL (ADB) Account resource.
 
-
-
 For information about AnalyticDB for MySQL (ADB) Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/en/analyticdb-for-mysql/latest/api-doc-adb-2019-03-15-api-doc-createaccount).
 
 -> **NOTE:** Available since v1.71.0.
@@ -62,6 +60,7 @@ resource "alicloud_adb_account" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_description` - (Optional) The description of the account.
 * `account_name` - (Required, ForceNew) The name of the database account. The name must meet the following requirements:
   - Start with a lowercase letter and end with a lowercase letter or a digit.
@@ -82,6 +81,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<db_cluster_id>:<account_name>`.
 * `status` - (Available since v1.273.0) The status of the account.
 
@@ -90,6 +90,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.273.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Account.
 * `delete` - (Defaults to 5 mins) Used when delete the Account.
 * `update` - (Defaults to 5 mins) Used when update the Account.

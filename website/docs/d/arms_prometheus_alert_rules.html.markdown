@@ -7,7 +7,7 @@ description: |-
   Provides a list of Arms Prometheus Alert Rules to the user.
 ---
 
-# alicloud\_arms\_prometheus\_alert\_rules
+# alicloud_arms_prometheus_alert_rules
 
 This data source provides the Arms Prometheus Alert Rules of the current Alibaba Cloud user.
 

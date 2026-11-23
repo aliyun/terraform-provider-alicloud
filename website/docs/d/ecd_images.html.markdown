@@ -80,7 +80,6 @@ output "ecd_image_id_2" {
 
 The following arguments are supported:
 
-
 * `ids` - (Optional, ForceNew, Computed)  A list of Image IDs.
 * `image_type` - (Optional, ForceNew) The image type of the image. Valid values: `SYSTEM`, `CUSTOM`.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Image name.

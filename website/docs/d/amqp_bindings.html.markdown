@@ -7,7 +7,7 @@ description: |-
   Provides a list of Amqp Bindings to the user.
 ---
 
-# alicloud\_amqp\_bindings
+# alicloud_amqp_bindings
 
 This data source provides the Amqp Bindings of the current Alibaba Cloud user.
 

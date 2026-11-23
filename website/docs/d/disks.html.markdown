@@ -7,7 +7,7 @@ description: |-
     Provides a list of disks to the user.
 ---
 
-# alicloud\_disks
+# alicloud_disks
 
 -> **DEPRECATED:** This datasource has been renamed to [alicloud_ecs_disks](https://www.terraform.io/docs/providers/alicloud/d/ecs_disks) from version 1.122.0.
 

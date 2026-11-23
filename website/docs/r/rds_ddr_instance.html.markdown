@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_rds_ddr_instance
 
-Provide RDS remote disaster recovery instance resources. 
+Provide RDS remote disaster recovery instance resources.
 
 For information about RDS remote disaster recovery instance and how to use it, see [What is ApsaraDB for RDS Remote Disaster Recovery](https://www.alibabacloud.com/help/en/rds/developer-reference/api-rds-2014-08-15-createddrinstance).
 
@@ -215,27 +215,27 @@ The following arguments are supported:
 This value must be a multiple of 5 GB. For more information, see Primary ApsaraDB RDS instance types.
 
 * `db_instance_storage_type` - (Optional) The storage type of the instance. Valid values:
-    - local_ssd: specifies to use local SSDs. This value is recommended.
-    - cloud_ssd: specifies to use standard SSDs.
-    - cloud_essd: specifies to use enhanced SSDs (ESSDs).
-    - cloud_essd2: specifies to use enhanced SSDs (ESSDs).
-    - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
+  - local_ssd: specifies to use local SSDs. This value is recommended.
+  - cloud_ssd: specifies to use standard SSDs.
+  - cloud_essd: specifies to use enhanced SSDs (ESSDs).
+  - cloud_essd2: specifies to use enhanced SSDs (ESSDs).
+  - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
 
   -> **NOTE:** You can specify the time zone when you create a primary instance. You cannot specify the time zone when you create a read-only instance. Read-only instances inherit the time zone of their primary instance. If you do not specify this parameter, the system assigns the default time zone of the region where the instance resides.
 * `sql_collector_status` - (Optional) The sql collector status of the instance. Valid values are `Enabled`, `Disabled`, Default to `Disabled`.
 * `sql_collector_config_value` - (Optional) The sql collector keep time of the instance. Valid values are `30`, `180`, `365`, `1095`, `1825`, Default to `30`.
-    
+
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
-* `connection_string_prefix` - (Optional) The private connection string prefix. If you want to update public connection string prefix, please use resource alicloud_db_connection [connection_prefix](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/db_connection#connection_prefix). 
+* `connection_string_prefix` - (Optional) The private connection string prefix. If you want to update public connection string prefix, please use resource alicloud_db_connection [connection_prefix](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/db_connection#connection_prefix).
 
   -> **NOTE:** The prefix must be 8 to 64 characters in length and can contain letters, digits, and hyphens (-). It cannot contain Chinese characters and special characters ~!#%^&*=+\|{};:'",<>/?
 * `port` - (Optional) The private port of the database service. If you want to update public port, please use resource alicloud_db_connection [port](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/db_connection#port).
-* `payment_type` - (Required) Valid values are `Subscription`, `PayAsYouGo`, Default to `PayAsYouGo`. 
-* `resource_group_id` (Optional) The ID of resource group which the DB instance belongs.
+* `payment_type` - (Required) Valid values are `Subscription`, `PayAsYouGo`, Default to `PayAsYouGo`.
+* `resource_group_id` - (Optional) The ID of resource group which the DB instance belongs.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when payment_type is `Subscription`. Valid values: [1~9], 12, 24, 36.
 
   -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
-* `monitoring_period` - (Optional) The monitoring frequency in seconds. Valid values are 5, 60, 300. Defaults to 300. 
+* `monitoring_period` - (Optional) The monitoring frequency in seconds. Valid values are 5, 60, 300. Defaults to 300.
 * `auto_renew` - (Optional) Whether to renewal a DB instance automatically or not. It is valid when payment_type is `Subscription`. Default to `false`.
 * `auto_renew_period` - (Optional) Auto-renewal period of an instance, in the unit of the month. It is valid when payment_type is `Subscription`. Valid value:[1~12], Default to 1.
 * `zone_id` - (ForceNew, Optional) The Zone to launch the DB instance. It supports multiple zone.
@@ -252,15 +252,15 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
   -> **NOTE:** The IP address whitelists that have the hidden attribute are not displayed in the ApsaraDB RDS console. These IP address whitelists are used to access Alibaba Cloud services, such as Data Transmission Service (DTS).
 * `security_ip_type` - (Optional) The type of IP address in the IP address whitelist.
 * `whitelist_network_type` - (Optional) The network type of the IP address whitelist. Default value: MIX. Valid values:
-    - Classic: classic network in enhanced whitelist mode
-    - VPC: virtual private cloud (VPC) in enhanced whitelist mode
-    - MIX: standard whitelist mode
+  - Classic: classic network in enhanced whitelist mode
+  - VPC: virtual private cloud (VPC) in enhanced whitelist mode
+  - MIX: standard whitelist mode
 
   -> **NOTE:** In standard whitelist mode, IP addresses and CIDR blocks can be added only to the default IP address whitelist. In enhanced whitelist mode, IP addresses and CIDR blocks can be added to both IP address whitelists of the classic network type and those of the VPC network type.
 * `modify_mode` - (Optional) The method that is used to modify the IP address whitelist. Default value: Cover. Valid values:
-    - Cover: Use the value of the SecurityIps parameter to overwrite the existing entries in the IP address whitelist.
-    - Append: Add the IP addresses and CIDR blocks that are specified in the SecurityIps parameter to the IP address whitelist.
-    - Delete: Delete IP addresses and CIDR blocks that are specified in the SecurityIps parameter from the IP address whitelist. You must retain at least one IP address or CIDR block.
+  - Cover: Use the value of the SecurityIps parameter to overwrite the existing entries in the IP address whitelist.
+  - Append: Add the IP addresses and CIDR blocks that are specified in the SecurityIps parameter to the IP address whitelist.
+  - Delete: Delete IP addresses and CIDR blocks that are specified in the SecurityIps parameter from the IP address whitelist. You must retain at least one IP address or CIDR block.
 * `security_ip_mode` - (Optional)  Valid values are `normal`, `safety`, Default to `normal`. support `safety` switch to high security access mode.
 * `fresh_white_list_readins` - (Optional) The read-only instances to which you want to synchronize the IP address whitelist.
   * If the instance is attached with a read-only instance, you can use this parameter to synchronize the IP address whitelist to the read-only instance. If the instance is attached with multiple read-only instances, the read-only instances must be separated by commas (,).
@@ -268,63 +268,63 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm) . See [`parameters`](#parameters) below.
 * `force_restart` - (Optional) Set it to true to make some parameter efficient when modifying them. Default to false.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-    - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
-    - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
+  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
+  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 * `security_group_ids` - (Optional, List(string)) The list IDs to join ECS Security Group. At most supports three security groups.
 * `maintain_time` - (Optional) Maintainable time period format of the instance: HH:MMZ-HH:MMZ (UTC time)
 * `auto_upgrade_minor_version` - (Optional) The upgrade method to use. Valid values:
-   - Auto: Instances are automatically upgraded to a higher minor version.
-   - Manual: Instances are forcibly upgraded to a higher minor version when the current version is unpublished.
- 
+  - Auto: Instances are automatically upgraded to a higher minor version.
+  - Manual: Instances are forcibly upgraded to a higher minor version when the current version is unpublished.
+
    See more [details and limitation](https://www.alibabacloud.com/help/doc-detail/123605.htm).
 * `upgrade_db_instance_kernel_version` - (Optional) Whether to upgrade a minor version of the kernel. Valid values:
-    - true: upgrade
-    - false: not to upgrade
+  - true: upgrade
+  - false: not to upgrade
 * `upgrade_time` - (Optional) The method to update the minor engine version. Default value: Immediate. It is valid only when `upgrade_db_instance_kernel_version = true`. Valid values:
-    - Immediate: The minor engine version is immediately updated.
-    - MaintainTime: The minor engine version is updated during the maintenance window. For more information about how to change the maintenance window, see ModifyDBInstanceMaintainTime.
-    - SpecifyTime: The minor engine version is updated at the point in time you specify.
+  - Immediate: The minor engine version is immediately updated.
+  - MaintainTime: The minor engine version is updated during the maintenance window. For more information about how to change the maintenance window, see ModifyDBInstanceMaintainTime.
+  - SpecifyTime: The minor engine version is updated at the point in time you specify.
 * `switch_time` - (Optional) The specific point in time when you want to perform the update. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. It is valid only when `upgrade_db_instance_kernel_version = true`. The time must be in UTC.
 
   -> **NOTE:** This parameter takes effect only when you set the UpgradeTime parameter to SpecifyTime.
 * `target_minor_version` - (Optional) The minor engine version to which you want to update the instance. If you do not specify this parameter, the instance is updated to the latest minor engine version. It is valid only when `upgrade_db_instance_kernel_version = true`. You must specify the minor engine version in one of the following formats:
-    - PostgreSQL: rds_postgres_<Major engine version>00_<Minor engine version>. Example: rds_postgres_1200_20200830.
-    - MySQL: <RDS edition>_<Minor engine version>. Examples: rds_20200229, xcluster_20200229, and xcluster80_20200229. The following RDS editions are supported:
-      - rds: The instance runs RDS Basic or High-availability Edition.
-      - xcluster: The instance runs MySQL 5.7 on RDS Enterprise Edition.
-      - xcluster80: The instance runs MySQL 8.0 on RDS Enterprise Edition.
-    - SQLServer: <Minor engine version>. Example: 15.0.4073.23.
+  - PostgreSQL: rds_postgres_<Major engine version>00_<Minor engine version>. Example: rds_postgres_1200_20200830.
+  - MySQL: <RDS edition>_<Minor engine version>. Examples: rds_20200229, xcluster_20200229, and xcluster80_20200229. The following RDS editions are supported:
+    - rds: The instance runs RDS Basic or High-availability Edition.
+    - xcluster: The instance runs MySQL 5.7 on RDS Enterprise Edition.
+    - xcluster80: The instance runs MySQL 8.0 on RDS Enterprise Edition.
+  - SQLServer: <Minor engine version>. Example: 15.0.4073.23.
 
   -> **NOTE:** For more information about minor engine versions, see Release notes of minor AliPG versions, Release notes of minor AliSQL versions, and Release notes of minor engine versions of ApsaraDB RDS for SQL Server.
 * `ssl_action` - (Optional) Actions performed on SSL functions, Valid values: `Open`: turn on SSL encryption; `Close`: turn off SSL encryption; `Update`: update SSL certificate. See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26254.htm).
 * `tde_status` - (Optional, ForceNew) The TDE(Transparent Data Encryption) status. See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26256.htm).
 * `encryption_key` - (Optional) The key id of the KMS. Used for encrypting a disk if not null. Only for PostgreSQL, MySQL and SQLServer.
 * `ca_type` - (Optional) The type of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the SSLEnabled parameter to 1, the default value of this parameter is aliyun. Value range:
-    - aliyun: a cloud certificate
-    - custom: a custom certificate
+  - aliyun: a cloud certificate
+  - custom: a custom certificate
 * `server_cert` - (Optional) The content of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the CAType parameter to custom, you must also specify this parameter.
 * `server_key` - (Optional) The private key of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the CAType parameter to custom, you must also specify this parameter.
 * `client_ca_enabled` - (Optional) Specifies whether to enable the public key of the CA that issues client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. Valid values:
-    - 1: enables the public key
-    - 0: disables the public key
+  - 1: enables the public key
+  - 0: disables the public key
 * `client_ca_cert` - (Optional) The public key of the CA that issues client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the ClientCAEbabled parameter to 1, you must also specify this parameter.
 * `client_crl_enabled` - (Optional) Specifies whether to enable a certificate revocation list (CRL) that contains revoked client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. In addition, this parameter is available only when the public key of the CA that issues client certificates is enabled. Valid values:
-    - 1: enables the CRL
-    - 0: disables the CRL
+  - 1: enables the CRL
+  - 0: disables the CRL
 * `client_cert_revocation_list` - (Optional) The CRL that contains revoked client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the ClientCrlEnabled parameter to 1, you must also specify this parameter.
 * `acl` - (Optional) The method that is used to verify the identities of clients. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. In addition, this parameter is available only when the public key of the CA that issues client certificates is enabled. Valid values:
-    - cert
-    - perfer
-    - verify-ca
-    - verify-full (supported only when the instance runs PostgreSQL 12 or later)
+  - cert
+  - perfer
+  - verify-ca
+  - verify-full (supported only when the instance runs PostgreSQL 12 or later)
 * `replication_acl` - (Optional) The method that is used to verify the replication permission. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. In addition, this parameter is available only when the public key of the CA that issues client certificates is enabled. Valid values:
-    - cert
-    - perfer
-    - verify-ca
-    - verify-full (supported only when the instance runs PostgreSQL 12 or later)
+  - cert
+  - perfer
+  - verify-ca
+  - verify-full (supported only when the instance runs PostgreSQL 12 or later)
 * `ha_config` - (Optional) The primary/secondary switchover mode of the instance. Default value: Auto. Valid values:
-    - Auto: The system automatically switches over services from the primary to secondary instances in the event of a fault.
-    - Manual: You must manually switch over services from the primary to secondary instances in the event of a fault.
+  - Auto: The system automatically switches over services from the primary to secondary instances in the event of a fault.
+  - Manual: You must manually switch over services from the primary to secondary instances in the event of a fault.
 
   -> **NOTE:** If you set this parameter to Manual, you must specify the ManualHATime parameter.
 * `manual_ha_time` - (Optional) The time after when you want to enable automatic primary/secondary switchover. At most, you can set this parameter to 23:59:59 seven days later. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
@@ -352,7 +352,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `storage_upper_bound` - (Optional) The upper limit of the total storage space for automatic expansion of the storage space, that is, automatic expansion will not cause the total storage space of the instance to exceed this value. Unit: GB. The value must be ≥0.
 
   -> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
-* `deletion_protection` - (Optional) The switch of delete protection. Valid values: 
+* `deletion_protection` - (Optional) The switch of delete protection. Valid values:
   - true: delete protect.
   - false: no delete protect.
 
@@ -401,6 +401,7 @@ The pg_hba_conf mapping supports the following:
 * `user` - (Required) The user that is allowed to access the instance. If you specify multiple users, separate the usernames with commas (,).
 * `method` - (Required) The authentication method of Lightweight Directory Access Protocol (LDAP). Valid values: `trust`, `reject`, `scram-sha-256`, `md5`, `password`, `gss`, `sspi`, `ldap`, `radius`, `cert`, `pam`.
 * `option` - (Optional) Optional. The value of this parameter is based on the value of the HbaItem.N.Method parameter. In this topic, LDAP is used as an example. You must configure this parameter. For more information, see [Authentication Methods](https://www.postgresql.org/docs/11/auth-methods.html).
+
 ## Attributes Reference
 
 The following attributes are exported:
@@ -408,17 +409,17 @@ The following attributes are exported:
 * `id` - The RDS instance ID.
 * `connection_string` - RDS database connection string.
 * `ssl_status` - Status of the SSL feature. `Yes`: SSL is turned on; `No`: SSL is turned off.
-* `zone_id_slave_a` - The region ID of the secondary instance if you create a secondary instance. 
-* `zone_id_slave_b`- The region ID of the log instance if you create a log instance. 
+* `zone_id_slave_a` - The region ID of the secondary instance if you create a secondary instance.
+* `zone_id_slave_b`- The region ID of the log instance if you create a log instance.
 * `category` - The RDS edition of the instance.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 90 mins) Used when creating the db instance (until it reaches the initial `Running` status). 
-* `update` - (Defaults to 30 mins) Used when updating the db instance (until it reaches the initial `Running` status). 
-* `delete` - (Defaults to 20 mins) Used when terminating the db instance. 
+* `create` - (Defaults to 90 mins) Used when creating the db instance (until it reaches the initial `Running` status).
+* `update` - (Defaults to 30 mins) Used when updating the db instance (until it reaches the initial `Running` status).
+* `delete` - (Defaults to 20 mins) Used when terminating the db instance.
 
 ## Import
 

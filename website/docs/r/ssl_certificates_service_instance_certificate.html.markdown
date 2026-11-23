@@ -50,18 +50,18 @@ output "cert_identifier" {
 
 Terraform cannot destroy resource `alicloud_ssl_certificates_service_instance_certificate`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_instance_certificate&spm=docs.r.ssl_certificates_service_instance_certificate.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `certificate_id` - (Required, ForceNew, Int) The ID of the certificate.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `instance_id` - The ID of the certificate instance that issued this certificate.
 * `cert_identifier` - The global certificate identifier, formatted as the certificate ID plus `-` plus the site region ID. Alibaba Cloud services such as ALB, CDN and WAF reference a certificate by this value.
@@ -84,6 +84,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Instance Certificate.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance Certificate.
 

@@ -10,8 +10,6 @@ description: |-
 
 Provides a TAG Policy resource.
 
-
-
 For information about TAG Policy and how to use it, see [What is Policy](https://www.alibabacloud.com/help/en/resource-management/latest/create-policy).
 
 -> **NOTE:** Available since v1.203.0.
@@ -59,6 +57,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Policy.
 
 ## Timeouts
@@ -66,6 +65,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.243.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Policy.
 * `update` - (Defaults to 5 mins) Used when update the Policy.

@@ -53,16 +53,19 @@ resource "alicloud_cloud_sso_delegate_account" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_id` - (Required, ForceNew) Delegate administrator account Id
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Delegate Account.
 * `delete` - (Defaults to 5 mins) Used when delete the Delegate Account.
 

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Cddc Dedicated Host Groups to the user.
 ---
 
-# alicloud\_cddc\_dedicated\_host\_groups
+# alicloud_cddc_dedicated_host_groups
 
 This data source provides the Cddc Dedicated Host Groups of the current Alibaba Cloud user.
 

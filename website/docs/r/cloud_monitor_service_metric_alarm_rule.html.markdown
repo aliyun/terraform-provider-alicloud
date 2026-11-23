@@ -60,13 +60,12 @@ resource "alicloud_cloud_monitor_service_metric_alarm_rule" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_monitor_service_metric_alarm_rule&spm=docs.r.cloud_monitor_service_metric_alarm_rule.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `composite_expression` - (Optional, Set) Alert condition for multiple metrics.
 
   -> **NOTE:**  Single-metric and multi-metric conditions are mutually exclusive and cannot be configured simultaneously.
@@ -81,7 +80,6 @@ The following arguments are supported:
 * `interval` - (Optional) The trigger interval of the alarm rule. Unit: seconds.
 
   -> **NOTE:** For information about how to query the statistical period of a metric, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
-
 
   -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
@@ -138,6 +136,7 @@ You can enter a new alert rule name or use an existing alert rule name in CloudM
 ### `composite_expression`
 
 The composite_expression supports the following:
+
 * `expression_list` - (Optional, Set) A list of alert conditions created using standard expressions. See [`expression_list`](#composite_expression-expression_list) below.
 * `expression_list_join` - (Optional) The logical relationship between multiple metric-based alert conditions. Valid values:
   - `&&`: An alert is triggered only when all metrics meet their respective alert conditions. That is, an alert is triggered only when every expression in ExpressionList evaluates to `true`.
@@ -155,6 +154,7 @@ The composite_expression supports the following:
 ### `composite_expression-expression_list`
 
 The composite_expression-expression_list supports the following:
+
 * `comparison_operator` - (Optional) Threshold comparison operator. Valid values:
   - GreaterThanOrEqualToThreshold: greater than or equal to
   - GreaterThanThreshold: greater than
@@ -183,6 +183,7 @@ Unit: seconds.
 ### `escalations`
 
 The escalations supports the following:
+
 * `critical` - (Optional, Set) The trigger condition for Critical-level alerts. See [`critical`](#escalations-critical) below.
 * `info` - (Optional, Set) Trigger conditions for Info-level alerts. See [`info`](#escalations-info) below.
 * `warn` - (Optional, Set) Trigger condition for Warn-level alerts.   See [`warn`](#escalations-warn) below.
@@ -190,6 +191,7 @@ The escalations supports the following:
 ### `escalations-critical`
 
 The escalations-critical supports the following:
+
 * `comparison_operator` - (Optional) The comparison operator for the Critical-level threshold. Valid values:
   - GreaterThanOrEqualToThreshold: greater than or equal to
   - GreaterThanThreshold: greater than
@@ -209,6 +211,7 @@ The escalations-critical supports the following:
 ### `escalations-info`
 
 The escalations-info supports the following:
+
 * `comparison_operator` - (Optional) Comparison operator for Info-level thresholds. Valid values:
   - GreaterThanOrEqualToThreshold: Greater than or equal to
   - GreaterThanThreshold: Greater than
@@ -228,6 +231,7 @@ The escalations-info supports the following:
 ### `escalations-warn`
 
 The escalations-warn supports the following:
+
 * `comparison_operator` - (Optional) Comparison operator for the Warn-level threshold. Valid values:  
   - GreaterThanOrEqualToThreshold: greater than or equal to  
   - GreaterThanThreshold: greater than  
@@ -247,15 +251,16 @@ The escalations-warn supports the following:
 ### `labels`
 
 The labels supports the following:
+
 * `key` - (Optional) The tag key.
 * `value` - (Optional) Label value.
 
   -> **NOTE:**  The label value supports template parameters, which are replaced with actual label values.
 
-
 ### `prometheus`
 
 The prometheus supports the following:
+
 * `annotations` - (Optional, Set) When a Prometheus alert is triggered, the key-value pairs of annotations are rendered to help you better understand the metric or alert rule.
 
   -> **NOTE:**  This feature is equivalent to Annotations in Prometheus.
@@ -273,12 +278,14 @@ The prometheus supports the following:
 ### `prometheus-annotations`
 
 The prometheus-annotations supports the following:
+
 * `key` - (Optional) The key of the annotation.
 * `value` - (Optional) The value of the annotation.
 
 ### `targets`
 
 The targets supports the following:
+
 * `target_id` - (Optional) The ID of the alert trigger target. It only needs to be unique within the alert rule. The API rejects a target that omits it.
 * `arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of the resource that receives the alert. The API rejects a target that omits it. Simple Message Queue (formerly MNS) (SMQ), Auto Scaling, Simple Log Service and Function Compute are supported:
   - SMQ: `acs:mns:{regionId}:{userId}:/{Resource type}/{Resource name}/message`. {regionId}: the region ID of the SMQ queue or topic. {userId}: the ID of the Alibaba Cloud account that owns the resource. {Resource type}: the type of the resource that receives the alert. Valid values: queues, topics. {Resource name}: the queue name if the resource type is queues, or the topic name if the resource type is topics.
@@ -291,7 +298,8 @@ The targets supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `dimensions` - The monitoring dimensions for the specified resource.
 * `escalations` - The trigger conditions for alert levels.
   * `critical` - The trigger condition for Critical-level alerts.
@@ -305,6 +313,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Metric Alarm Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Metric Alarm Rule.
 * `update` - (Defaults to 5 mins) Used when update the Metric Alarm Rule.

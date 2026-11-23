@@ -54,11 +54,13 @@ resource "alicloud_oss_bucket_data_redundancy_transition" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) Storage space name.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<bucket>:<task_id>`.
 * `create_time` - Stores the creation time of the redundant transformation task.
 * `status` - Stores the state of the redundant translation task. The values are as follows:  Queueing: in the queue.  Processing: In progress.  Finished: Finished.
@@ -67,6 +69,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Data Redundancy Transition.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Data Redundancy Transition.
 

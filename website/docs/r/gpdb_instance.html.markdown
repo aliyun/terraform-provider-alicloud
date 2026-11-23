@@ -108,7 +108,7 @@ The following arguments are supported:
   -> **NOTE:** This parameter must be passed to create a storage elastic mode instance and a serverless version instance.
 
   -> **NOTE:** For `ServerlessPro` instances, `instance_spec` is a server-side placeholder (e.g. `1C8G`) returned by the API and is not user-configurable; sizing is controlled via `serverless_resource` and `cache_storage_size`. The placeholder is read into state but should not be set in the configuration.
- 
+
 * `storage_size` - (Optional, Int) The storage capacity. Unit: GB. Valid values: `50` to `4000`.
 
   -> **NOTE:** This parameter must be passed in to create a storage reservation mode instance.
@@ -189,7 +189,7 @@ The following arguments are supported:
 
 The ip_whitelist supports the following:
 
-* `ip_group_attribute` - (Optional) The value of this parameter is empty by default. The attribute of the whitelist group. 
+* `ip_group_attribute` - (Optional) The value of this parameter is empty by default. The attribute of the whitelist group.
   If the value contains `hidden`, this white list item will not output.
 * `ip_group_name` - (Optional) IP whitelist group name. Defaults to `default`, the built-in whitelist group; a group without a name is applied to the `default` group instead of creating a new one.
 * `security_ip_list` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]). System default to `["127.0.0.1"]`.

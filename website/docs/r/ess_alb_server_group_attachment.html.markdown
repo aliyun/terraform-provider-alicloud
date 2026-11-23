@@ -130,7 +130,7 @@ The following arguments are supported:
 
 * `scaling_group_id` - (Required, ForceNew) ID of the scaling group.
 * `alb_server_group_id` - (Required, ForceNew) ID of Alb Server Group.
-* `port` - (Required, ForceNew) - The port will be used for Alb Server Group backend server.
+* `port` - (Required, ForceNew) The port will be used for Alb Server Group backend server.
 * `weight` - (Required, ForceNew) The weight of an ECS instance attached to the Alb Server Group.
 * `force_attach` - (Optional) If instances of scaling group are attached/removed from slb backend server when attach/detach alb
   server group from scaling group. Default to false.
@@ -145,6 +145,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 20 mins) Used when create the Attachment.
 * `delete` - (Defaults to 20 mins) Used when delete the Attachment.
 

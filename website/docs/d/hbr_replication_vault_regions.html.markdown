@@ -7,7 +7,7 @@ description: |-
   Provides a list of HBR Replication Vault Regions to the user.
 ---
 
-# alicloud\_hbr\_replication\_vault\_regions
+# alicloud_hbr_replication_vault_regions
 
 This data source provides the HBR Replication Vault Regions of the current Alibaba Cloud user.
 

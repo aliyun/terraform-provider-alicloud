@@ -61,13 +61,12 @@ resource "alicloud_agentloop_endpoint_connector" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_agentloop_endpoint_connector&spm=docs.r.agentloop_endpoint_connector.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `agent_space` - (Required, ForceNew) The name of the Agent Space to which the Endpoint Connector belongs.
 * `alias` - (Optional) The alias of the Endpoint Connector.
 * `credential` - (Required, Sensitive, Map) The credential used to access the endpoint, e.g. `{"api_key" = "sk-..."}`. The create and update APIs accept different credential shapes: create takes the bare map as-is, while update requires a `providerType` (`plain` or `kms`) plus the key material wrapped in a JSON-encoded `sensitiveInfo` string. When the map does not contain `providerType`, the provider automatically converts the `api_key` shorthand into `{"providerType" = "plain", "sensitiveInfo" = "{\"apiKey\": \"...\"}"}` on updates. If you manage the credential through KMS, include `"providerType" = "kms"` in the map explicitly so it is passed through unchanged. **NOTE:** The Get API desensitizes the credential, so it is never read back: out-of-band credential changes cannot be detected, and `credential` cannot be recovered by `terraform import`.
@@ -85,12 +84,14 @@ The following arguments are supported:
 ### `headers`
 
 The headers supports the following:
+
 * `key` - (Optional) The key of the header.
 * `value` - (Optional) The value of the header.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Endpoint Connector. It formats as `<agent_space>:<connector_id>`.
 * `connector_id` - The ID of the Endpoint Connector.
 * `created_at` - The creation time of the Endpoint Connector, as a Unix timestamp in seconds.
@@ -100,6 +101,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Endpoint Connector.
 * `delete` - (Defaults to 5 mins) Used when delete the Endpoint Connector.
 * `update` - (Defaults to 5 mins) Used when update the Endpoint Connector.

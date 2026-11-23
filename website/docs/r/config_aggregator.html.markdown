@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cloud Config (Config) Aggregator resource.
 
-
-
 For information about Cloud Config (Config) Aggregator and how to use it, see [What is Aggregator](https://www.alibabacloud.com/help/en/cloud-config/latest/api-config-2020-09-07-createaggregator).
 
 -> **NOTE:** Available since v1.124.0.
@@ -55,6 +53,7 @@ resource "alicloud_config_aggregator" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `aggregator_accounts` - (Optional, Set) The member accounts of the account group. See [`aggregator_accounts`](#aggregator_accounts) below.
 
   -> **NOTE:** If `aggregator_type` is set to `CUSTOM`, `aggregator_accounts` is required.
@@ -69,6 +68,7 @@ The following arguments are supported:
 ### `aggregator_accounts`
 
 The aggregator_accounts supports the following:
+
 * `account_id` - (Optional) The member ID.
 * `account_name` - (Optional) The member name.
 * `account_type` - (Optional) The affiliation of the member. Valid values: `ResourceDirectory`.
@@ -76,6 +76,7 @@ The aggregator_accounts supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - (Available since v1.262.0) The timestamp when the account group was created.
 * `status` - The status of the account group.
@@ -83,6 +84,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Aggregator.
 * `delete` - (Defaults to 5 mins) Used when delete the Aggregator.
 * `update` - (Defaults to 5 mins) Used when update the Aggregator.

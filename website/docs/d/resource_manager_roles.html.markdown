@@ -7,7 +7,7 @@ description: |-
     Provides a list of Resource Manager Roles to the user.
 ---
 
-# alicloud\_resource\_manager\_roles
+# alicloud_resource_manager_roles
 
 This data source provides the Resource Manager Roles of the current Alibaba Cloud user.
 
@@ -49,4 +49,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `description`- The description of the RAM role.
   * `max_session_duration`- The maximum session duration of the RAM role.
   * `assume_role_policy_document`- (Available in v1.114.0+) The assume role policy document.
-    

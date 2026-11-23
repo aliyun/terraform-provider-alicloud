@@ -46,6 +46,7 @@ resource "alicloud_eipanycast_anycast_eip_address" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `anycast_eip_address_name` - (Optional) Anycast EIP instance name.
 * `bandwidth` - (Optional, Computed, Int)  The peak bandwidth of the Anycast EIP instance, in Mbps.
 * `description` - (Optional) Anycast EIP instance description
@@ -58,6 +59,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` -  Anycast EIP instance creation time.
 * `status` - The status of the resource.
@@ -65,6 +67,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Anycast Eip Address.
 * `delete` - (Defaults to 5 mins) Used when delete the Anycast Eip Address.
 * `update` - (Defaults to 5 mins) Used when update the Anycast Eip Address.

@@ -10,8 +10,6 @@ description: |-
 
 Provides a Resource Manager Control Policy resource.
 
-
-
 For information about Resource Manager Control Policy and how to use it, see [What is Control Policy](https://www.alibabacloud.com/help/en/resource-management/latest/api-resourcedirectorymaster-2022-04-19-createcontrolpolicy).
 
 -> **NOTE:** Available since v1.120.0.
@@ -61,6 +59,7 @@ resource "alicloud_resource_manager_control_policy" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `control_policy_name` - (Required) The new name of the access control policy.
 The name must be 1 to 128 characters in length. The name can contain letters, digits, and hyphens (-) and must start with a letter.
 * `description` - (Optional) The new description of the access control policy.
@@ -79,12 +78,14 @@ You can specify a maximum of 20 tags.
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the access control policy was created.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Control Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Control Policy.
 * `update` - (Defaults to 5 mins) Used when update the Control Policy.

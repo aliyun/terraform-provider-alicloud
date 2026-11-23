@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ecs Image Components to the user.
 ---
 
-# alicloud\_ecs\_image\_components
+# alicloud_ecs_image_components
 
 This data source provides the Ecs Image Components of the current Alibaba Cloud user.
 

@@ -10,8 +10,6 @@ description: |-
 
 Provides a PAI Workspace Dataset resource.
 
-
-
 For information about PAI Workspace Dataset and how to use it, see [What is Dataset](https://next.api.alibabacloud.com/document/AIWorkSpace/2021-02-04/CreateDataset).
 
 -> **NOTE:** Available since v1.236.0.
@@ -64,6 +62,7 @@ resource "alicloud_pai_workspace_dataset" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `accessibility` - (Optional, Computed) Workspace visibility. The following values are supported:
   - PRIVATE (default): indicates that the workspace is visible to itself and the administrator.
   - PUBLIC: The workspace is visible to all users.
@@ -115,18 +114,21 @@ The following arguments are supported:
 ### `labels`
 
 The labels supports the following:
+
 * `key` - (Optional) The key of the tag. The length is limited to 128 bytes. "=" and "," are not supported.
 * `value` - (Optional) The value of the tag. The length is limited to 128 bytes. "=" and "," are not supported.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Dataset.
 * `delete` - (Defaults to 5 mins) Used when delete the Dataset.
 * `update` - (Defaults to 5 mins) Used when update the Dataset.

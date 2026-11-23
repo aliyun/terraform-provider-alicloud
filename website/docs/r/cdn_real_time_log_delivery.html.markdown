@@ -77,6 +77,7 @@ resource "alicloud_cdn_real_time_log_delivery" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `domain` - (Required, ForceNew) The accelerated domain name for which you want to disable real-time log delivery. You can specify multiple domain names and separate them with commas (,).
 * `logstore` - (Required) The ID of the region where the Log Service project is deployed. You can specify multiple region IDs and separate them with commas (,).
 
@@ -92,11 +93,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Real Time Log Delivery.
 * `delete` - (Defaults to 5 mins) Used when delete the Real Time Log Delivery.
 * `update` - (Defaults to 5 mins) Used when update the Real Time Log Delivery.

@@ -62,28 +62,28 @@ The following arguments are supported:
 
 ### `source_resources`
 
-The source_resources supports the following: 
+The source_resources supports the following:
 
 * `resource_id` - (Required) The ID of the Source Resource.
 * `resource_type` - (Required) The type of the Source resource.
 
 ### `source_resource_group`
 
-The source_resource_group supports the following: 
+The source_resource_group supports the following:
 
 * `resource_group_id` - (Required) The ID of the Source Resource Group.
 * `resource_type_filter` - (Optional) Source resource type filter list. If the resource type list is specified, it means to scan the resources of the specified resource type and in the specified resource group; Otherwise, it means to scan all resources in the specified resource group. **NOTE:** A maximum of `20` resource type filter can be configured.
 
 ### `source_tag`
 
-The source_tag supports the following: 
+The source_tag supports the following:
 
 * `resource_tags` - (Required) Source label. **NOTE:** A maximum of 10 source labels can be configured.
 * `resource_type_filter` - (Optional) Source resource type filter list. If the resource type list is specified, it means to scan the resources of the specified resource type and in the specified resource group; Otherwise, it means to scan all resources in the specified resource group. **NOTE:** A maximum of `20` resource type filter can be configured.
 
 ### `preference_parameters`
 
-The preference_parameters supports the following: 
+The preference_parameters supports the following:
 
 * `parameter_key` - (Required) Priority parameter key. For more information about values, see [supplementary instructions for request parameters](https://www.alibabacloud.com/help/zh/doc-detail/358846.html#h2-url-4).
 * `parameter_value` - (Required) Priority parameter value. For more information about values, see [supplementary instructions for request parameters](https://www.alibabacloud.com/help/zh/doc-detail/358846.html#h2-url-4).

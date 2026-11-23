@@ -110,5 +110,3 @@ SSL-VPN server can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_ssl_vpn_server.example vss-abc123456
 ```
-
-

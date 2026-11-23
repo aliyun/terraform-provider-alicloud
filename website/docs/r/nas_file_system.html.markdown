@@ -79,12 +79,12 @@ resource "alicloud_nas_file_system" "cpfs" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_file_system&spm=docs.r.nas_file_system.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_upgrade_config` - (Optional, Computed, List, Available since v2.1.0) The automatic capacity expansion configuration. Only cpfsse file systems support this feature. See [`auto_upgrade_config`](#auto_upgrade_config) below.
 
 * `capacity` - (Optional, Computed, Int, Available since v1.140.0) File system capacity.
@@ -202,6 +202,7 @@ The following arguments are supported:
 ### `auto_upgrade_config`
 
 The auto_upgrade_config supports the following:
+
 * `capacity_used_ratio` - (Optional, Computed, Int, Available since v2.1.0) The capacity usage threshold. Valid values: 1 to 99. Unit: percent.
 
 * `enabled` - (Optional, Computed, Bool, Available since v2.1.0) Whether to enable automatic capacity expansion.
@@ -217,11 +218,13 @@ The auto_upgrade_config supports the following:
 ### `nfs_acl`
 
 The nfs_acl supports the following:
+
 * `enabled` - (Optional, Computed) Whether the NFS ACL function is enabled.
 
 ### `options`
 
 The options supports the following:
+
 * `enable_oplock` - (Optional, Computed, Available since v1.248.0) Whether to enable the OpLock function. Value:
   - true: On.
   - false: does not turn on.
@@ -231,6 +234,7 @@ The options supports the following:
 ### `recycle_bin`
 
 The recycle_bin supports the following:
+
 * `reserved_days` - (Optional, Computed, Int) Retention time of files in the Recycle Bin. Unit: days.
 
 * `status` - (Optional, Computed) Recycle Bin Status
@@ -238,6 +242,7 @@ The recycle_bin supports the following:
 ### `smb_acl`
 
 The smb_acl supports the following:
+
 * `enable_anonymous_access` - (Optional, Computed, Available since v1.248.0) Whether to allow anonymous access.
   - true: Allow anonymous access.
   - false (default): Anonymous access is not allowed.
@@ -271,6 +276,7 @@ The smb_acl supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - CreateTime
 * `recycle_bin` - Recycle Bin
@@ -283,6 +289,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the File System.
 * `delete` - (Defaults to 20 mins) Used when delete the File System.
 * `update` - (Defaults to 10 mins) Used when update the File System.

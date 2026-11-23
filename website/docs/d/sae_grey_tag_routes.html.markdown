@@ -7,7 +7,7 @@ description: |-
   Provides a list of Sae GreyTagRoutes to the user.
 ---
 
-# alicloud\_sae\_grey\_tag\_routes
+# alicloud_sae_grey_tag_routes
 
 This data source provides the Sae GreyTagRoutes of the current Alibaba Cloud user.
 

@@ -110,6 +110,7 @@ resource "alicloud_arms_environment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `aliyun_lang` - (Optional) The locale. The default is Chinese zh | en.
 * `bind_resource_id` - (Optional, ForceNew) The id or vpcId of the bound container instance.
 * `drop_metrics` - (Optional) List of abandoned indicators.
@@ -129,12 +130,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `environment_id` - The first ID of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Environment.
 * `delete` - (Defaults to 5 mins) Used when delete the Environment.
 * `update` - (Defaults to 5 mins) Used when update the Environment.

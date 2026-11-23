@@ -140,6 +140,7 @@ output "output_calicloud_fcv3_trigger_intranet" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) Description of the trigger
 * `function_name` - (Required, ForceNew) Function Name
 * `invocation_role` - (Optional) The role required by the event source (such as OSS) to call the function.
@@ -152,6 +153,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<function_name>:<trigger_name>`.
 * `create_time` - Creation time
 * `http_trigger` - (Available since v1.234.0) HTTP trigger information
@@ -165,6 +167,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Trigger.
 * `delete` - (Defaults to 5 mins) Used when delete the Trigger.
 * `update` - (Defaults to 5 mins) Used when update the Trigger.

@@ -3,26 +3,26 @@ subcategory: "Table Store (OTS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ots_tunnels"
 sidebar_current: "docs-alicloud-datasource-ots-tunnels"
-description: |- 
+description: |-
   Provides a list of ots tunnels to the user.
 ---
 
-# alicloud\_ots\_tunnels
+# alicloud_ots_tunnels
 
 This data source provides the ots tunnels of the current Alibaba Cloud user.
 
 For information about OTS tunnel and how to use it, see [Tunnel overview](https://www.alibabacloud.com/help/en/tablestore/latest/tunnel-service-overview).
 
--> **NOTE:** Available in v1.172.0+.
+-> **NOTE:** Available since v1.172.0+.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_ots_tunnels" "tunnels_ds" {
   instance_name = "sample-instance"
-  table_name = "sample-table"
-  name_regex = "sample-tunnel"
-  output_file = "tunnels.txt"
+  table_name    = "sample-table"
+  name_regex    = "sample-tunnel"
+  output_file   = "tunnels.txt"
 }
 
 output "first_tunnel_id" {

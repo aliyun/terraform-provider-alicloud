@@ -84,9 +84,9 @@ The following arguments are supported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 10 mins) Used when creating the Internet connection (until DB instance reaches the initial `Running` status). 
+* `create` - (Defaults to 10 mins) Used when creating the Internet connection (until DB instance reaches the initial `Running` status).
 * `update` - (Defaults to 10 mins) Used when activating the DB instance during update.
-* `delete` - (Defaults to 10 mins) Used when terminating the DB instance. 
+* `delete` - (Defaults to 10 mins) Used when terminating the DB instance.
 
 ## Attributes Reference
 

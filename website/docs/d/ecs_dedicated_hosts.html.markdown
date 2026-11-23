@@ -10,7 +10,7 @@ description: |-
 # alicloud_ecs_dedicated_hosts
 
 This data source provides the ECS Dedicated Hosts of the current Alibaba Cloud user.
- 
+
 -> **NOTE:** Available since v1.91.0.
 
 ## Example Usage
@@ -64,7 +64,7 @@ The following arguments are supported:
 
 ### `operation_locks`
 
-The operation_locks supports the following: 
+The operation_locks supports the following:
 
 * `lock_reason` - (Optional, ForceNew) The reason why the dedicated host resource is locked.
 

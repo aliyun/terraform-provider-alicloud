@@ -76,6 +76,7 @@ resource "alicloud_dcdn_waf_rule" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `action` - (Optional) Specifies the action of the rule. Valid values: `block`, `monitor`, `js`, `deny`.
 * `cc_status` - (Optional) Specifies whether to enable rate limiting. Valid values: `on` and `off`. **NOTE:** This parameter is required when policy is of type `custom_acl`.
 * `cn_region_list` - (Optional) The blocked regions in the Chinese mainland, separated by commas (,).
@@ -95,6 +96,7 @@ The following arguments are supported:
 ### `conditions`
 
 The conditions support the following:
+
 * `key` - (Required) The match field.
 * `op_value` - (Required) The logical symbol.
 * `sub_key` - (Optional) The match subfield.
@@ -103,6 +105,7 @@ The conditions support the following:
 ### `rate_limit`
 
 The rate_limit supports the following:
+
 * `interval` - (Optional) Statistical duration, 5-1800.
 * `status` - (Optional) Response code statistics. See [`status`](#rate_limit-status) below.
 * `sub_key` - (Optional) The subfield of the target field. If you set `target` to `Header`, `Query String Parameter`, or `Cookie Name`, you must configure `sub_key`.
@@ -113,14 +116,15 @@ The rate_limit supports the following:
 ### `rate_limit-status`
 
 The status supports the following:
+
 * `code` - (Optional) The HTTP status code returned.
 * `count` - (Optional) The number of times that the HTTP status code that was returned. Valid values: 2 to 50000. You can configure only one of the `ratio` and `count` fields.
 * `ratio` - (Optional) The percentage of HTTP status codes. Valid values: 1 to 100. You can configure only one of the `ratio` and `count` fields.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.
 * `defense_scene` - The type of protection policy. The following scenarios are supported:-waf_group:Web basic protection-custom_acl: Custom protection policy-whitelist: whitelist
 * `gmt_modified` - Revised the time. The date format is based on ISO8601 notation and uses UTC +0 time in the format of yyyy-MM-ddTHH:mm:ssZ.
@@ -128,6 +132,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Waf Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Waf Rule.
 * `update` - (Defaults to 5 mins) Used when update the Waf Rule.

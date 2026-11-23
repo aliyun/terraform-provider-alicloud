@@ -37,9 +37,7 @@ resource "alicloud_resource_manager_resource_directory_sharing" "default" {
 
 Sharing with the resource directory is enabled at the Alibaba Cloud account level, and once enabled it cannot be disabled through the underlying API. Terraform cannot destroy resource `alicloud_resource_manager_resource_directory_sharing`: removing it from your configuration only removes it from the Terraform state file, and the feature will remain enabled on the account.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_resource_directory_sharing&spm=docs.r.resource_manager_resource_directory_sharing.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
@@ -48,12 +46,14 @@ This resource has no configurable arguments.
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<Alibaba Cloud Account ID>`.
 * `enable_sharing_with_rd` - Indicates whether sharing with the resource directory is enabled.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Resource Directory Sharing.
 
 ## Import

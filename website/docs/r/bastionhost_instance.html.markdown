@@ -11,7 +11,7 @@ description: |-
 
 -> **NOTE:** Since the version 1.132.0, the resource `alicloud_yundun_bastionhost_instance` has been renamed to `alicloud_bastionhost_instance`.
 
-Cloud Bastion Host instance resource ("Yundun_bastionhost" is the short term of this product). 
+Cloud Bastion Host instance resource ("Yundun_bastionhost" is the short term of this product).
 For information about Resource Manager Resource Directory and how to use it, see [What is Bastionhost](https://www.alibabacloud.com/help/en/doc-detail/52922.htm).
 
 -> **NOTE:** The endpoint of bssopenapi used only support "business.aliyuncs.com" at present.
@@ -166,7 +166,7 @@ The following arguments are supported:
 
   -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `vswitch_id` - (Required, ForceNew) VSwitch ID configured to Bastionhost.
-* `security_group_ids` - (Required, List) security group IDs configured to Bastionhost. 
+* `security_group_ids` - (Required, List) security group IDs configured to Bastionhost.
   **NOTE:** There is a potential diff error because of the order of `security_group_ids` values indefinite.
   So, from version 1.160.0, `security_group_ids` type has been updated as `set` from `list`,
   and you can use [tolist](https://www.terraform.io/language/functions/tolist) to convert it to a list.
@@ -184,6 +184,7 @@ The following arguments are supported:
 * `public_white_list` - (Optional, Available since 1.199.0) The public IP address that you want to add to the whitelist.
 
   -> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) with `ad_auth_server` or `ldap_auth_server` to configure auth server, then ignore any changes to that `password` caused externally (e.g. Application Autoscaling).
+
 ```
   # ... ignore the change about ad_auth_server.0.password and ldap_auth_server.0.password in alicloud_bastionhost_instance
   lifecycle {

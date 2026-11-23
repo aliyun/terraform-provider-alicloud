@@ -10,8 +10,6 @@ description: |-
 
 Provides a Max Compute Quota Plan resource.
 
-
-
 For information about Max Compute Quota Plan and how to use it, see [What is Quota Plan](https://www.alibabacloud.com/help/en/).
 
 -> **NOTE:** Available since v1.242.0.
@@ -77,6 +75,7 @@ resource "alicloud_max_compute_quota_plan" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `is_effective` - (Optional) Whether to take effect immediately. “Valid values: true”  
 .-> **NOTE:** when other quota plans in the same quota group take effect, the effective quota group will become invalid. That is, IsEffective will become false. The effective quota plan cannot be deleted.
 * `nickname` - (Required, ForceNew) Quota Name
@@ -86,6 +85,7 @@ The following arguments are supported:
 ### `quota`
 
 The quota supports the following:
+
 * `parameter` - (Optional, ForceNew, List) The parameters of level-1 quota. See [`parameter`](#quota-parameter) below.
 * `sub_quota_info_list` - (Optional, ForceNew, Set) Secondary Quota list
 
@@ -95,17 +95,20 @@ The quota supports the following:
 ### `quota-parameter`
 
 The quota-parameter supports the following:
+
 * `elastic_reserved_cu` - (Required, Int) The value of elastic Reserved CUs.
 
 ### `quota-sub_quota_info_list`
 
 The quota-sub_quota_info_list supports the following:
+
 * `nick_name` - (Required, ForceNew) The nickname of the level-2 quota.
 * `parameter` - (Optional, List) Level 2 Quota CU configuration See [`parameter`](#quota-sub_quota_info_list-parameter) below.
 
 ### `quota-sub_quota_info_list-parameter`
 
 The quota-sub_quota_info_list-parameter supports the following:
+
 * `elastic_reserved_cu` - (Required, Int) The value of elastic Reserved CUs.
 
   -> **NOTE:**  The total number of elastically reserved CUs in all the level-2 quotas is equal to the number of elastically reserved CUs in the level-1 quota..
@@ -118,10 +121,10 @@ The quota-sub_quota_info_list-parameter supports the following:
 
   -> **NOTE:**  -- The total value of minCU in all the level-2 quotas is equal to the value of minCU in the level-1 quota.    -- The value of minCU must be less than or equal to the value of maxCU in the level-2 quota and less than or equal to the value of minCU in the level-1 quota that you purchased.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<nickname>:<plan_name>`.
 * `quota` - Quota property
   * `parameter` - The parameters of level-1 quota.
@@ -131,6 +134,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Quota Plan.
 * `delete` - (Defaults to 5 mins) Used when delete the Quota Plan.
 * `update` - (Defaults to 5 mins) Used when update the Quota Plan.

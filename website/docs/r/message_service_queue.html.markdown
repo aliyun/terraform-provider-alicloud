@@ -10,8 +10,6 @@ description: |-
 
 Provides a Message Service Queue resource.
 
-
-
 For information about Message Service Queue and how to use it, see [What is Queue](https://www.alibabacloud.com/help/en/message-service/latest/createqueue).
 
 -> **NOTE:** Available since v1.188.0.
@@ -46,6 +44,7 @@ resource "alicloud_message_service_queue" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `delay_seconds` - (Optional, Int) The period after which all messages sent to the queue are consumed. Default value: `0`. Valid values: `0` to `604800`. Unit: seconds.
 * `dlq_policy` - (Optional, Set, Available since v1.244.0) The dead-letter queue policy. See [`dlq_policy`](#dlq_policy) below.
 * `enable_sse` - (Optional, Bool, Available since v1.291.0) Specifies whether to enable server-side encryption (SSE) for the messages in the queue. Default value: `false`. Valid values:
@@ -76,6 +75,7 @@ The following arguments are supported:
 ### `dlq_policy`
 
 The dlq_policy supports the following:
+
 * `dead_letter_target_queue` - (Optional) The queue to which dead-letter messages are delivered.
 * `enabled` - (Optional, Bool) Specifies whether to enable the dead-letter message delivery. Valid values: `true`, `false`.
 * `max_receive_count` - (Optional, Int) The maximum number of retries.
@@ -83,6 +83,7 @@ The dlq_policy supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Queue.
 * `create_time` - (Available since v1.223.2) The time when the queue was created.
 * `encryption_enabled` - (Available since v1.291.0) Indicates whether server-side encryption is applied to the queue. The value remains `true` after server-side encryption is disabled because existing messages are still stored as encrypted.
@@ -90,6 +91,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Queue.
 * `delete` - (Defaults to 5 mins) Used when delete the Queue.
 * `update` - (Defaults to 5 mins) Used when update the Queue.

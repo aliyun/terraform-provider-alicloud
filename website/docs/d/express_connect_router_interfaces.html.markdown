@@ -7,7 +7,7 @@ description: |-
   Provides a list of Router Interface owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_express\_connect\_router\_interfaces
+# alicloud_express_connect_router_interfaces
 
 This data source provides Router Interface available to the user.[What is Router Interface](https://www.alibabacloud.com/help/en/express-connect/developer-reference/api-vpc-2016-04-28-describerouterinterfaces-efficiency-channels)
 
@@ -29,6 +29,7 @@ output "alicloud_router_interface_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Optional, ForceNew, Computed) A list of Router Interface IDs.
 * `include_reservation_data` - (Optional, ForceNew) Does it contain renewal data. Valid values: `true`, `false`.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
@@ -39,13 +40,14 @@ The following arguments are supported:
 
 More complex filters can be expressed using one or more `filter` sub-blocks,
 which take the following arguments:
+
 * `key` - (Optional) The key of the field to filter by.
 * `value` - (Optional) Set of values that are accepted for the given field.
-
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Router Interface IDs.
 * `names` - A list of name of Router Interfaces.
 * `interfaces` - A list of Router Interface Entries. Each element contains the following attributes:

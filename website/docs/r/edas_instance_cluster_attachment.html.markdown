@@ -13,7 +13,6 @@ Provides an EDAS instance cluster attachment resource, see [What is EDAS Instanc
 
 -> **NOTE:** Available since v1.82.0.
 
-
 ## Example Usage
 
 Basic Usage
@@ -100,5 +99,3 @@ The following attributes are exported:
 * `status_map` - The status map of the resource supplied above. The key is instance_id and the values are 1(running) 0(converting) -1(failed) and -2(offline).
 * `ecu_map` - The ecu map of the resource supplied above. The key is instance_id and the value is ecu_id.
 * `cluster_member_ids` - The cluster members map of the resource supplied above. The key is instance_id and the value is cluster_member_id.
-
-

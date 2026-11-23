@@ -7,7 +7,7 @@ description: |-
   Provides a list of FileSystems owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_nas_file_systems
+# alicloud_nas_file_systems
 
 This data source provides FileSystems available to the user.
 
@@ -83,4 +83,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `encrypt_type` - (Optional, Available in v1.121.2+) Whether the file system is encrypted. Valid values: `0` (The file system is not encrypted), `1` (The file system is encrypted with a managed secret key), `2` (User management key).
   * `kms_key_id` - (Optional, Available in v1.140.0+) The id of the KMS key.
   * `zone_id` - (Optional, Available in v1.140.0+) The id of the zone. Each region consists of multiple isolated locations known as zones. Each zone has an independent power supply and network.
- 

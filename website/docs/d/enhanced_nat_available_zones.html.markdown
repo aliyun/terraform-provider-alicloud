@@ -38,4 +38,3 @@ The following attributes are exported in addition to the arguments listed above:
 * `zones` - A list of available zones. Each element contains the following attributes:
   * `zone_id` - The ID of the available zone.
   * `local_name` - Name of the available zone.
-

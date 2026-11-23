@@ -30,5 +30,19 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  ResourceInstance,
 			},
 		},
+		DataSources: []conns.DataSource{
+			{
+				TypeName: "alicloud_rocketmq_instances",
+				Factory:  NewInstancesDataSource,
+			},
+			{
+				TypeName: "alicloud_rocketmq_topics",
+				Factory:  NewTopicsDataSource,
+			},
+			{
+				TypeName: "alicloud_rocketmq_consumer_groups",
+				Factory:  NewConsumerGroupsDataSource,
+			},
+		},
 	}
 }

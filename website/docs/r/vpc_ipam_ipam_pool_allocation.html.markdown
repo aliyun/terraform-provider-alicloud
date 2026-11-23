@@ -63,6 +63,7 @@ resource "alicloud_vpc_ipam_ipam_pool_allocation" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cidr` - (Optional, ForceNew) The allocated address segment.
 * `cidr_mask` - (Optional, Int) Create a custom reserved network segment from The IPAM address pool by entering a mask.
 
@@ -77,6 +78,7 @@ It must be 1 to 128 characters in length and cannot start with 'http:// 'or 'htt
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Instance creation time.
 * `region_id` - When the IPAM Pool to which CIDR is allocated has the region attribute, this attribute is the IPAM Pool region.
@@ -86,6 +88,7 @@ When the IPAM Pool to which CIDR is allocated does not have the region attribute
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ipam Pool Allocation.
 * `delete` - (Defaults to 5 mins) Used when delete the Ipam Pool Allocation.
 * `update` - (Defaults to 5 mins) Used when update the Ipam Pool Allocation.

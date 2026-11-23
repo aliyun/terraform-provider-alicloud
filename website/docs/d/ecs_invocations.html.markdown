@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ecs Invocations to the user.
 ---
 
-# alicloud\_ecs\_invocations
+# alicloud_ecs_invocations
 
 This data source provides the Ecs Invocations of the current Alibaba Cloud user.
 

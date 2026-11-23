@@ -32,9 +32,7 @@ resource "alicloud_polardb_gateway_budget_policy" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_gateway_budget_policy&spm=docs.r.polardb_gateway_budget_policy.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

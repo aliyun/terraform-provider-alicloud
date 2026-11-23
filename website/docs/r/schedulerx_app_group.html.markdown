@@ -10,8 +10,6 @@ description: |-
 
 Provides a Schedulerx App Group resource.
 
-
-
 For information about Schedulerx App Group and how to use it, see [What is App Group](https://www.alibabacloud.com/help/en/schedulerx/schedulerx-serverless/developer-reference/api-schedulerx2-2019-04-30-createappgroup).
 
 -> **NOTE:** Available since v1.240.0.
@@ -63,6 +61,7 @@ resource "alicloud_schedulerx_app_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `app_name` - (Required, ForceNew) Application Name
 * `app_type` - (Optional, Int) Application type.
   - 1, general application.
@@ -88,11 +87,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<namespace>:<group_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the App Group.
 * `delete` - (Defaults to 5 mins) Used when delete the App Group.
 * `update` - (Defaults to 5 mins) Used when update the App Group.

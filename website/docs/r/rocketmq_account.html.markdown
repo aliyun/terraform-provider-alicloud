@@ -10,8 +10,6 @@ description: |-
 
 Provides a RocketMQ Account resource.
 
-
-
 For information about RocketMQ Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/en/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/developer-reference/api-rocketmq-2022-08-01-createinstanceaccount).
 
 -> **NOTE:** Available since v1.245.0.
@@ -99,6 +97,7 @@ resource "alicloud_rocketmq_account" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_status` - (Optional) The status of the account. Valid values: `DISABLE`, `ENABLE`.
 * `instance_id` - (Required, ForceNew) The instance ID.
 * `password` - (Required) The password of the account.
@@ -107,11 +106,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Account. It formats as `<instance_id>:<username>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Account.
 * `delete` - (Defaults to 5 mins) Used when delete the Account.
 * `update` - (Defaults to 5 mins) Used when update the Account.

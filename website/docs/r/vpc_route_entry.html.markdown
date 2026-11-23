@@ -55,6 +55,7 @@ resource "alicloud_vpc_route_entry" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional, Available since v1.231.0) Description of the route entry.
 * `destination_cidr_block` - (Required, ForceNew, Available since v1.245.0) The destination network segment of the routing entry.
 * `nexthop_id` - (Optional) The ID of the next hop instance of the custom route entry.
@@ -80,6 +81,7 @@ The following arguments are supported:
 ### `next_hops`
 
 The next_hops supports the following:
+
 * `nexthop_id` - (Optional, ForceNew, Computed, Available since v1.245.0) ID of next hop
 * `nexthop_type` - (Optional, ForceNew, Computed, Available since v1.245.0) type of next hop
 * `weight` - (Optional, ForceNew, Int, Available since v1.245.0) The weight of the route entry.
@@ -87,12 +89,14 @@ The next_hops supports the following:
 ### `route_publish_targets`
 
 The route_publish_targets supports the following:
+
 * `target_instance_id` - (Optional, Available since v1.245.0) Route publish target instance id.
 * `target_type` - (Required, Available since v1.245.0) Route publish target type
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<route_table_id>:<destination_cidr_block>`.
 * `next_hops` - Next jump
   * `enabled` - Whether the route is available.
@@ -108,6 +112,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Route Entry.
 * `delete` - (Defaults to 5 mins) Used when delete the Route Entry.
 * `update` - (Defaults to 5 mins) Used when update the Route Entry.

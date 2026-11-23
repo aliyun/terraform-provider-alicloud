@@ -10,8 +10,6 @@ description: |-
 
 Provides a Event Bridge Event Source V2 resource.
 
-
-
 For information about Event Bridge Event Source V2 and how to use it, see [What is Event Source V2](https://www.alibabacloud.com/help/en/eventbridge/latest/api-eventbridge-2020-04-01-createeventsource).
 
 -> **NOTE:** Available since v1.269.0.
@@ -54,12 +52,12 @@ resource "alicloud_event_bridge_event_source_v2" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_event_bridge_event_source_v2&spm=docs.r.event_bridge_event_source_v2.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The detail describe of event source
 * `event_bus_name` - (Required, ForceNew) Name of the bus associated with the event source
 * `event_source_name` - (Required, ForceNew) The code name of event source
@@ -79,6 +77,7 @@ The following arguments are supported:
 ### `source_http_event_parameters`
 
 The source_http_event_parameters supports the following:
+
 * `ip` - (Optional, List) IP segment security configuration. This parameter must be set only when the SecurityConfig value is ip. You can enter an IP address segment or IP address.
 * `method` - (Optional, List) The HTTP request method supported by the generated Webhook. Multiple choices are available, with the following options:
   - GET
@@ -103,6 +102,7 @@ The source_http_event_parameters supports the following:
 ### `source_kafka_parameters`
 
 The source_kafka_parameters supports the following:
+
 * `consumer_group` - (Optional) The Group ID of the consumer who subscribes to the Topic.
 * `instance_id` - (Optional) The instance ID.
 * `network` - (Optional) Network configuration: Default (Default network) and public network (self-built network).
@@ -116,6 +116,7 @@ The source_kafka_parameters supports the following:
 ### `source_mns_parameters`
 
 The source_mns_parameters supports the following:
+
 * `is_base64_decode` - (Optional) Whether to enable Base64 decoding. By default, it is selected, that is, Base64 decoding is enabled.
 * `queue_name` - (Optional) The name of the Queue of the lightweight message Queue (formerly MNS).
 * `region_id` - (Optional) The region of the lightweight message queue (formerly MNS).
@@ -123,6 +124,7 @@ The source_mns_parameters supports the following:
 ### `source_oss_event_parameters`
 
 The source_oss_event_parameters supports the following:
+
 * `event_types` - (Optional, ForceNew, List) OSS event type list.
 * `match_rules` - (Optional, ForceNew, List) Matching rules. The event source will deliver OSS events that meet the matching requirements to the bus.
 * `sts_role_arn` - (Optional) The ARN of the role. EventBridge will use this role to create MNS resources and deliver events to the corresponding bus.
@@ -130,6 +132,7 @@ The source_oss_event_parameters supports the following:
 ### `source_rabbit_mq_parameters`
 
 The source_rabbit_mq_parameters supports the following:
+
 * `instance_id` - (Optional) The ID of the RabbitMQ instance. For more information, see Usage Restrictions (~~ 163289 ~~).
 * `queue_name` - (Optional) The name of the Queue of the RabbitMQ instance. For more information, see Usage Restrictions (~~ 163289 ~~).
 * `region_id` - (Optional) The region of the RabbitMQ instance.
@@ -138,6 +141,7 @@ The source_rabbit_mq_parameters supports the following:
 ### `source_rocketmq_parameters`
 
 The source_rocketmq_parameters supports the following:
+
 * `auth_type` - (Optional) ACL or not.
 * `group_id` - (Optional) The Group ID of the RocketMQ version of message queue.
 * `instance_endpoint` - (Optional) Instance access point.
@@ -162,6 +166,7 @@ Default value: `CONSUME_FROM_LAST_OFFSET`.
 ### `source_sls_parameters`
 
 The source_sls_parameters supports the following:
+
 * `consume_position` - (Optional, ForceNew) Start consumption point, which can be the earliest or latest point corresponding to begin and end respectively, or start consumption from a specified time, measured in seconds.
 * `log_store` - (Optional, ForceNew) The logstore of log service SLS.
 * `project` - (Optional, ForceNew) The log project of log service SLS.
@@ -170,6 +175,7 @@ The source_sls_parameters supports the following:
 ### `source_scheduled_event_parameters`
 
 The source_scheduled_event_parameters supports the following:
+
 * `schedule` - (Optional) Cron expression
 * `time_zone` - (Optional) The Cron execution time zone.
 * `user_data` - (Optional) JSON string
@@ -177,6 +183,7 @@ The source_scheduled_event_parameters supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `source_http_event_parameters` - The request parameter SourceHttpEventParameters.
   * `public_web_hook_url` - The public network request URL.
@@ -185,6 +192,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Event Source V2.
 * `delete` - (Defaults to 5 mins) Used when delete the Event Source V2.
 * `update` - (Defaults to 5 mins) Used when update the Event Source V2.

@@ -10,8 +10,6 @@ description: |-
 
 Provides a PAI Workspace Model Version resource.
 
-
-
 For information about PAI Workspace Model Version and how to use it, see [What is Model Version](https://next.api.alibabacloud.com/document/AIWorkSpace/2021-02-04/CreateModelVersion).
 
 -> **NOTE:** Available since v1.248.0.
@@ -100,6 +98,7 @@ resource "alicloud_pai_workspace_model_version" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `approval_status` - (Optional) The approval status. Valid values:
   - Pending: To be determined.
   - Approved: Allow to go online.
@@ -142,17 +141,20 @@ The following arguments are supported:
 ### `labels`
 
 The labels supports the following:
+
 * `key` - (Optional) label key.
 * `value` - (Optional) label value.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<model_id>:<version_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Model Version.
 * `delete` - (Defaults to 5 mins) Used when delete the Model Version.
 * `update` - (Defaults to 5 mins) Used when update the Model Version.

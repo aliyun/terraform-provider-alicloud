@@ -74,6 +74,7 @@ resource "alicloud_ens_disk_instance_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `delete_with_instance` - (Optional) Whether the cloud disk to be mounted is released with the instance  Value: true: When the instance is released, the cloud disk is released together with the instance. false: When the instance is released, the cloud disk is retained and is not released together with the instance. Empty means false by default.
 * `disk_id` - (Required, ForceNew) The ID of the cloud disk to be mounted. The Cloud Disk (DiskId) and the instance (InstanceId) must be on the same node.
 * `instance_id` - (Required, ForceNew) Instance ID.
@@ -81,11 +82,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<disk_id>:<instance_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Disk Instance Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Disk Instance Attachment.
 

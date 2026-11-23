@@ -7,11 +7,11 @@ description: |-
   Provides a list of Cen Transit Route Table Aggregations to the user.
 ---
 
-# alicloud\_cen\_transit\_route\_table\_aggregations
+# alicloud_cen_transit_route_table_aggregations
 
 This data source provides the Cen Transit Route Table Aggregations of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.202.0+.
+-> **NOTE:** Available since v1.202.0+.
 
 ## Example Usage
 
@@ -62,4 +62,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `transit_route_table_aggregation_name` - The name of the aggregate route.
   * `transit_route_table_aggregation_description` - The description of the aggregate route.
   * `status` - The status of the Transit Route Table Aggregation.
-  

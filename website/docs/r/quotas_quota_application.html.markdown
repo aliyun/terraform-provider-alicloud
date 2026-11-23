@@ -54,6 +54,7 @@ Terraform cannot destroy resource `alicloud_quotas_quota_application`. Terraform
 ## Argument Reference
 
 The following arguments are supported:
+
 * `audit_mode` - (Optional, ForceNew, Computed) This parameter is discontinued and is not recommended. The mode in which you want the application to be reviewed. Valid values:
   - Sync: The application is reviewed in a synchronous manner. Quota Center automatically reviews the application. The result is returned immediately after you submit the application. However, the chance of an approval for an application that is reviewed in Sync mode is lower than the chance of an approval for an application that is reviewed in Async mode. The validity period of the new quota value is 1 hour.
   - Async: The application is reviewed in an asynchronous manner. An Alibaba Cloud support engineer reviews the application. The chance of an approval for an application that is reviewed in Async mode is higher than the chance of an approval for an application that is reviewed in Sync mode. The validity period of the new quota value is one month.
@@ -73,17 +74,17 @@ The following arguments are supported:
   - WhiteListLabel: Equity quota.
 * `reason` - (Required, ForceNew) The reason of the quota application.
 
-
 ### `dimensions`
 
 The dimensions support the following:
+
 * `key` - (Optional, ForceNew) The key of the dimension. You must configure `dimensions.N.key` and `dimensions.N.value` at the same time. The value range of N varies based on the number of dimensions that are supported by the related Alibaba Cloud service. You can call the [ListProductQuotaDimensions](https://next.api.aliyun.com/document/quotas/2020-05-10/ListProductQuotaDimensions) operation to query the dimensions that are supported by an Alibaba Cloud service. The number of elements in the returned array is N.
 * `value` - (Optional, ForceNew) The value of the dimension. You must configure `dimensions.N.key` and `dimensions.N.value` at the same time. The value range of N varies based on the number of dimensions that are supported by the related Alibaba Cloud service. You can call the [ListProductQuotaDimensions](https://next.api.aliyun.com/document/quotas/2020-05-10/ListProductQuotaDimensions) operation to query the dimensions that are supported by an Alibaba Cloud service. The number of elements in the returned array is N.
-
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `approve_value` - The approve value of the quota application.
 * `audit_reason` - The audit reason.
@@ -100,6 +101,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Quota Application.
 
 ## Import

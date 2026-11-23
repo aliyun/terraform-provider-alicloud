@@ -6,7 +6,7 @@ description: |-
     Provides the identity of the current Alibaba Cloud user.
 ---
 
-# alicloud\_caller\_identity
+# alicloud_caller_identity
 
 This data source provides the identity of the current user.
 

@@ -64,16 +64,17 @@ output "alicloud_vpc_ipv6_cidr_block_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `vpc_id` - (Required) The ID of the VPC.
 You can specify up to 20 VPC IDs, separated by commas (,).
 * `ids` - (Optional, Computed) A list of Ipv6 Cidr Block IDs. The value is formulated as `<vpc_id>#<ipv6_cidr_block>`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Ipv6 Cidr Block IDs.
 * `blocks` - A list of Ipv6 Cidr Block Entries. Each element contains the following attributes:
-    * `ipv6_cidr_block` - The additional IPv6 CIDR block to be removed.
-    * `id` - The ID of the resource supplied above.
+  * `ipv6_cidr_block` - The additional IPv6 CIDR block to be removed.
+  * `id` - The ID of the resource supplied above.

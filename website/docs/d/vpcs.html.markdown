@@ -74,4 +74,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `secondary_cidr_blocks` - A list of secondary IPv4 CIDR blocks of the VPC.
   * `user_cidrs` - A list of user CIDRs.
   * `vpc_id` - ID of the VPC.
-  

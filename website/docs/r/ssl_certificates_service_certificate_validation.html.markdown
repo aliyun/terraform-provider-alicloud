@@ -105,19 +105,19 @@ resource "alicloud_alb_listener" "default" {
 
 Terraform cannot destroy resource `alicloud_ssl_certificates_service_certificate_validation`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_certificate_validation&spm=docs.r.ssl_certificates_service_certificate_validation.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required, ForceNew) The ID of the certificate instance whose application is being waited on.
 * `validation_record_ids` - (Optional, ForceNew, List) The IDs of the DNS records carrying the domain ownership validation information. The values themselves are never read; they exist so that Terraform creates the validation records before it starts waiting for issuance.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `certificate_id` - The ID of the issued certificate.
 * `cert_identifier` - The global certificate identifier, formatted as the certificate ID plus `-` plus the site region ID. Alibaba Cloud services such as ALB, CDN and WAF reference a certificate by this value.
@@ -128,6 +128,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 75 mins) Used when waiting for the certificate to be issued. A DV certificate is usually issued within minutes of the validation records going live. OV and EV certificates additionally go through a manual review that can take hours and exposes no progress API, so raise this timeout for them.
 * `delete` - (Defaults to 5 mins) Used when delete the Certificate Validation.
 

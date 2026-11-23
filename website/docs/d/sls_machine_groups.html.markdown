@@ -59,15 +59,16 @@ output "alicloud_sls_machine_group_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `group_name` - (ForceNew, Optional) Machine Group name
 * `project_name` - (Required, ForceNew) Project name
 * `ids` - (Optional, ForceNew, Computed) A list of Machine Group IDs. The value is formulated as `<project_name>:<group_name>`.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Machine Group IDs.
 * `groups` - A list of Machine Group Entries. Each element contains the following attributes:
   * `group_name` - Machine Group name

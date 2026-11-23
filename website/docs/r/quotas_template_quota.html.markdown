@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_quotas_template_quota
 
-Provides a Quotas Template Quota resource. 
+Provides a Quotas Template Quota resource.
 
 For information about Quotas Template Quota and how to use it, see [What is Template Quota](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-createtemplatequotaitem).
 
@@ -45,12 +45,12 @@ resource "alicloud_quotas_template_quota" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_quotas_template_quota&spm=docs.r.quotas_template_quota.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `desire_value` - (Required) Quota application value.
 * `dimensions` - (Optional) The Quota Dimensions. See [`dimensions`](#dimensions) below.
 * `effective_time` - (Optional) The UTC time when the quota takes effect.
@@ -71,18 +71,20 @@ The following arguments are supported:
 ### `dimensions`
 
 The Dimensions supports the following:
+
 * `key` - (Optional) The Key of quota_dimensions.
 * `value` - (Optional) The Value of quota_dimensions.
-
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Template Quota.
 * `delete` - (Defaults to 5 mins) Used when delete the Template Quota.
 * `update` - (Defaults to 5 mins) Used when update the Template Quota.

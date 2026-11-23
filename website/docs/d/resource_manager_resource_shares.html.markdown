@@ -7,7 +7,7 @@ description: |-
   Provides a list of Resource Manager Resource Shares to the user.
 ---
 
-# alicloud\_resource\_manager\_resource\_shares
+# alicloud_resource_manager_resource_shares
 
 This data source provides the Resource Manager Resource Shares of the current Alibaba Cloud user.
 

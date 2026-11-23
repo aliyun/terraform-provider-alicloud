@@ -86,21 +86,22 @@ resource "alicloud_alb_load_balancer_common_bandwidth_package_attachment" "defau
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bandwidth_package_id` - (Required, ForceNew) The ID of the bound shared bandwidth package.
 * `dry_run` - (Optional) Whether to PreCheck this request only. Value:-**true**: sends a check request and does not bind the shared bandwidth package to the load balancing instance. Check items include whether required parameters, request format, and business restrictions have been filled in. If the check fails, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.-**false** (default): Sends a normal request, returns the HTTP 2xx status code after the check, and directly performs the operation.
 * `load_balancer_id` - (Required, ForceNew) The ID of the applied server load balancer instance.
 
-
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.The value is formulated as `<load_balancer_id>:<bandwidth_package_id>`.
 * `status` - The status of the Application Load balancing instance. Value:-**Inactive**: Stopped, indicating that the instance listener will no longer forward traffic.-**Active**: running.-**Provisioning**: The project is being created.-**Configuring**: The configuration is being changed.-**CreateFailed**: The instance cannot be deleted without any charge.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Load Balancer Common Bandwidth Package Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Load Balancer Common Bandwidth Package Attachment.
 

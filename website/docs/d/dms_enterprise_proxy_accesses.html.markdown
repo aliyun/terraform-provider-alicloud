@@ -36,6 +36,7 @@ output "alicloud_dms_proxy_acceses_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `proxy_id` - (Required, ForceNew) The ID of the security agent.
 * `ids` - (Optional, ForceNew, Computed) A list of Proxy Access IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -43,6 +44,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Proxy Access IDs.
 * `accesses` - A list of Proxy Access Entries. Each element contains the following attributes:
     * `id` - Security Protection authorization ID.

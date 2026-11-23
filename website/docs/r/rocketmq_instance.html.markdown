@@ -10,7 +10,6 @@ description: |-
 
 Provides a RocketMQ Instance resource.
 
-
 For information about RocketMQ Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/developer-reference/api-rocketmq-2022-08-01-createinstance).
 
 -> **NOTE:** Available since v1.212.0.
@@ -97,6 +96,7 @@ resource "alicloud_rocketmq_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `acl_info` - (Optional, Set, Available since v1.245.0) The access control list for the instance. See [`acl_info`](#acl_info) below.
 * `auto_renew` - (Optional, ForceNew) Whether to enable auto-renewal. This parameter is only applicable when the payment type for the instance is Subscription (prepaid).
   - true: Enable auto-renewal
@@ -130,7 +130,7 @@ The following arguments are supported:
 
   The parameter values are as follows:
   - PayAsYouGo: Pay-as-you-go, a post-payment model where you pay after usage.
-  - Subscription: Subscription-based, a pre-payment model where you pay before usage. 
+  - Subscription: Subscription-based, a pre-payment model where you pay before usage.
 
   For more information, please refer to [Billing Methods](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/overview-2).
 * `period` - (Optional, Int) Duration of purchase. This parameter is only valid when the payment type for the instance is Subscription (prepaid).
@@ -167,6 +167,7 @@ The following arguments are supported:
 ### `acl_info`
 
 The acl_info supports the following:
+
 * `acl_types` - (Optional, List) The authentication type of the instance. Valid values:
   - `default`: Intelligent identity authentication.
   - `apache_acl`: Access control list (ACL) identity authentication.
@@ -177,12 +178,14 @@ The acl_info supports the following:
 ### `network_info`
 
 The network_info supports the following:
+
 * `internet_info` - (Required, ForceNew, Set) instance internet info. See [`internet_info`](#network_info-internet_info) below.
 * `vpc_info` - (Required, ForceNew, Set) Proprietary network information. See [`vpc_info`](#network_info-vpc_info) below.
 
 ### `network_info-internet_info`
 
 The network_info-internet_info supports the following:
+
 * `flow_out_bandwidth` - (Optional, ForceNew, Int) Public network bandwidth specification. Unit: Mb/s.  This field should only be filled when the public network billing type is set to payByBandwidth.  The value range is [1 - 1000].
 * `flow_out_type` - (Required, ForceNew) Public network billing type.  Parameter values are as follows:
   - payByBandwidth: Fixed bandwidth billing. This parameter must be set to the value when public network access is enabled.
@@ -195,6 +198,7 @@ The network_info-internet_info supports the following:
 ### `network_info-vpc_info`
 
 The network_info-vpc_info supports the following:
+
 * `security_group_ids` - (Optional, ForceNew, Available since v1.231.0) Security group id.
 * `vswitch_id` - (Optional, ForceNew, Deprecated since v1.231.0) Field `vswitch_id` has been deprecated from provider version 1.245.0. New field `vswitches` instead.
 * `vswitches` - (Optional, ForceNew, Set, Available since v1.231.0) Multiple VSwitches. At least two VSwitches are required for a serverless instance. See [`vswitches`](#network_info-vpc_info-vswitches) below.
@@ -203,11 +207,13 @@ The network_info-vpc_info supports the following:
 ### `network_info-vpc_info-vswitches`
 
 The network_info-vpc_info-vswitches supports the following:
+
 * `vswitch_id` - (Optional, ForceNew) VPC switch id.
 
 ### `product_info`
 
 The product_info supports the following:
+
 * `auto_scaling` - (Optional) is open auto scaling.
 * `message_retention_time` - (Optional, Int) Duration of message retention. Unit: hours.  For the range of values, please refer to [Usage Limits](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/usage-limits)>Resource Quotas>Limitations on Message Retention.  The message storage in AlibabaCloud RocketMQ is fully implemented in a serverless and elastic manner, with charges based on the actual storage space. You can control the storage capacity of messages by adjusting the duration of message retention. For more information, please see [Storage Fees](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/storage-fees).
 * `msg_process_spec` - (Required, ForceNew) Message sending and receiving calculation specifications. For details about the upper limit for sending and receiving messages, see [Instance Specifications](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/instance-specifications).
@@ -219,11 +225,13 @@ The product_info supports the following:
 ### `software`
 
 The software supports the following:
+
 * `maintain_time` - (Optional, Deprecated) The RocketMQ API has deprecated this maintenance-window setting. Omit it from new configurations; existing state remains readable. See [GetInstance](https://help.aliyun.com/en/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/developer-reference/api-rocketmq-2022-08-01-getinstance).
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `network_info` - Instance network configuration information
@@ -239,10 +247,10 @@ The following attributes are exported:
   * `upgrade_method` - Upgrade method.
 * `status` - The status of the instance
 
-
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 35 mins) Used when create the Instance.
 * `delete` - (Defaults to 35 mins) Used when delete the Instance.
 * `update` - (Defaults to 35 mins) Used when update the Instance.

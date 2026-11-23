@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cloud Enterprise Network (CEN) Transit Router resource.
 
-
-
 For information about Cloud Enterprise Network (CEN) Transit Router and how to use it, see [What is Transit Router](https://next.api.alibabacloud.com/document/Cbn/2017-09-12/CreateTransitRouter).
 
 -> **NOTE:** Available since v1.126.0.
@@ -47,6 +45,7 @@ resource "alicloud_cen_transit_router" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cen_id` - (Required, ForceNew) The ID of the Cloud Enterprise Network (CEN) instance.
 * `support_multicast` - (Optional, ForceNew, Bool, Available since v1.195.0) Specifies whether to enable the multicast feature for the Enterprise Edition transit router. Valid values:
   - `false` (default): no
@@ -62,6 +61,7 @@ The name must be 1 to 128 characters in length, and cannot start with http:// or
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. It formats as `<cen_id>:<transit_router_id>`.
 * `create_time` - (Available since v1.247.0) The time when the transit router was created.
 * `region_id` - (Available since v1.247.0) The ID of the region where the transit router is deployed.
@@ -72,6 +72,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Transit Router.
 * `delete` - (Defaults to 5 mins) Used when delete the Transit Router.
 * `update` - (Defaults to 5 mins) Used when update the Transit Router.

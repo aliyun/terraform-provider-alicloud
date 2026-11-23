@@ -7,7 +7,7 @@ description: |-
   Provides a list of Hybrid Backup Recovery (HBR) EcsBackupPlans to the user.
 ---
 
-# alicloud\_hbr\_ecs\_backup\_plans
+# alicloud_hbr_ecs_backup_plans
 
 This data source provides the Hbr EcsBackupPlans of the current Alibaba Cloud user.
 

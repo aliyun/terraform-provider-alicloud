@@ -10,8 +10,6 @@ description: |-
 
 Provides a Ocean Base Instance resource.
 
-
-
 For information about Ocean Base Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/apsaradb-for-oceanbase/latest/what-is-oceanbase-database).
 
 -> **NOTE:** Available since v1.203.0.
@@ -63,6 +61,7 @@ resource "alicloud_ocean_base_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_renew` - (Optional) Whether to automatically renew.
 
   It takes effect when the parameter ChargeType is PrePaid. Value range:
@@ -127,7 +126,7 @@ The following arguments are supported:
 * `node_num` - (Optional, Computed) The number of nodes in the cluster. If the deployment mode is n-n-n, the number of nodes is n * 3
 * `ob_version` - (Optional, ForceNew, Computed) The OceanBase Server version number.
 * `payment_type` - (Required, ForceNew) The payment method of the instance. Value range:
-  - Subscription: Package year and month. When you select this type of payment method, you must make sure that your account supports balance payment or credit payment. Otherwise, an InvalidPayMethod error message will be returned. 
+  - Subscription: Package year and month. When you select this type of payment method, you must make sure that your account supports balance payment or credit payment. Otherwise, an InvalidPayMethod error message will be returned.
   - PayAsYouGo (default): Pay-as-you-go (default hourly billing).
 * `period` - (Optional, Int) The duration of the resource purchase. The unit is specified by the PeriodUnit. The parameter InstanceChargeType takes effect only when the value is PrePaid and is required. Once the DedicatedHostId is specified, the value cannot exceed the subscription duration of the dedicated host. When PeriodUnit = Week, Period values: {"1", "2", "3", "4"}. When PeriodUnit = Month, Period values: {"1", "2", "3", "4", "5", "6", "7", "8", "9", "12", "24", "36", "48", "60"}.
 * `period_unit` - (Optional) The duration of the purchase of resources.
@@ -147,6 +146,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `commodity_code` - The product code of the OceanBase cluster._oceanbasepre_public_cn: Domestic station cloud database package Year-to-month package._oceanbasepost_public_cn: The domestic station cloud database is paid by the hour._obpre_public_intl: International Station Cloud Database Package Monthly Package.
 * `create_time` - The creation time of the resource
@@ -155,6 +155,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 60 mins) Used when create the Instance.
 * `delete` - (Defaults to 10 mins) Used when delete the Instance.
 * `update` - (Defaults to 80 mins) Used when update the Instance.

@@ -28,6 +28,7 @@ output "first_source_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `gateway_id` - (Optional) The ID of the gateway instance.
 * `resource_group_id` - (Optional) The ID of the resource group.
 * `type` - (Optional) The type of the source. Valid values: `K8S`, `MSE_NACOS`.
@@ -39,6 +40,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Source IDs.
 * `names` - A list of name of Sources.
 * `sources` - A list of Source Entries. Each element contains the following attributes:

@@ -7,11 +7,11 @@ description: |-
   Provides a list of Vpc Ipv6 Egress Rules to the user.
 ---
 
-# alicloud\_vpc\_ipv6\_egress\_rules
+# alicloud_vpc_ipv6_egress_rules
 
 This data source provides the Vpc Ipv6 Egress Rules of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.142.0+.
+-> **NOTE:** Available since v1.142.0+.
 
 ## Example Usage
 
@@ -64,7 +64,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `Available`, `Deleting`, `Pending`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

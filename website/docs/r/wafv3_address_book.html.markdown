@@ -47,13 +47,12 @@ resource "alicloud_wafv3_address_book" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_wafv3_address_book&spm=docs.r.wafv3_address_book.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `address_book_name` - (Optional) The name of the Address Book.
 * `address_book_type` - (Required, ForceNew) The type of the Address Book. Valid values: `ip`.
 * `address_list` - (Optional, Set) The address list of the Address Book. Each entry is a single IP address or a CIDR block, IPv4 or IPv6.
@@ -62,16 +61,17 @@ The following arguments are supported:
 
   -> **NOTE:**  You can call [DescribeInstance](https://next.api.alibabacloud.com/document/waf-openapi/2021-10-01/DescribeInstance) to view the ID of the current WAF instance.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<instance_id>:<address_book_id>`.
 * `address_book_id` - The ID of the Address Book.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Address Book.
 * `delete` - (Defaults to 5 mins) Used when delete the Address Book.
 * `update` - (Defaults to 5 mins) Used when update the Address Book.

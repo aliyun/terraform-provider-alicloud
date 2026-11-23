@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Kv resource.
 
-
-
 For information about ESA Kv and how to use it, see [What is Kv](https://next.api.alibabacloud.com/document/ESA/2024-09-10/PutKv).
 
 -> **NOTE:** Available since v1.251.0.
@@ -47,6 +45,7 @@ resource "alicloud_esa_kv" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `expiration` - (Optional, Int) The content of the key, which can be up to 2 MB (2 × 1000 × 1000). If the content is larger than 2 MB, call [PutKvWithHighCapacity](https://www.alibabacloud.com/help/en/doc-detail/2850486.html).
 * `expiration_ttl` - (Optional, Int) The time when the key-value pair expires, which cannot be earlier than the current time. The value is a timestamp in seconds. If you specify both Expiration and ExpirationTtl, only ExpirationTtl takes effect.
 * `isbase` - (Optional) The relative expiration time. Unit: seconds. If you specify both Expiration and ExpirationTtl, only ExpirationTtl takes effect.
@@ -58,11 +57,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<namespace>:<key>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Kv.
 * `delete` - (Defaults to 5 mins) Used when delete the Kv.
 * `update` - (Defaults to 5 mins) Used when update the Kv.

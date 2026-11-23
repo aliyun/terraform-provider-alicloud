@@ -93,6 +93,7 @@ resource "alicloud_nlb_loadbalancer_common_bandwidth_package_attachment" "defaul
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bandwidth_package_id` - (Required, ForceNew) Specifies whether only to precheck the request. Valid values:
   - `true`: prechecks the request but does not disassociate the NLB instance from the EIP bandwidth plan. The system prechecks the required parameters, request syntax, and limits. If the request fails the precheck, an error message is returned. If the request passes the precheck, the `DryRunOperation` error code is returned.
   - `false` (default): sends the request. If the request passes the precheck, an HTTP 2xx status code is returned and the operation is performed.
@@ -101,12 +102,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<load_balancer_id>:<bandwidth_package_id>`.
 * `status` - Network-based load balancing instance status. Value:, indicating that the instance listener will no longer forward traffic.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Loadbalancer Common Bandwidth Package Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Loadbalancer Common Bandwidth Package Attachment.
 

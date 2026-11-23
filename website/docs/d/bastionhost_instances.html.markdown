@@ -40,6 +40,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `instances` - A list of apis. Each element contains the following attributes:
   * `id` - The instance's id.
   * `description` - The instance's remark.

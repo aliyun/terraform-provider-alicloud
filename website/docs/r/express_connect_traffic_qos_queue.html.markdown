@@ -64,6 +64,7 @@ resource "alicloud_express_connect_traffic_qos_queue" "createQosQueue" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bandwidth_percent` - (Optional, Computed) QoS queue bandwidth percentage.
 
   - When the QoS queue type is `Medium`, this field must be entered. Valid values: 1 to 100.
@@ -80,10 +81,10 @@ The length is 0 to 128 characters and cannot start with 'http:// 'or 'https.
 
   -> **NOTE:**  Default priority queue cannot be created.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<qos_id>:<queue_id>`.
 * `queue_id` - The ID of the QoS queue.
 * `status` - The status of the resource
@@ -91,6 +92,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 8 mins) Used when create the Traffic Qos Queue.
 * `delete` - (Defaults to 8 mins) Used when delete the Traffic Qos Queue.
 * `update` - (Defaults to 8 mins) Used when update the Traffic Qos Queue.

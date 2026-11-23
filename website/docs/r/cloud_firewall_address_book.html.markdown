@@ -44,6 +44,7 @@ resource "alicloud_cloud_firewall_address_book" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `group_name` - (Required) The name of the Address Book.
 * `group_type` - (Required, ForceNew) The type of the Address Book. Valid values: `ip`, `ipv6`, `domain`, `port`, `tag`, `asset`, `assetIpv6`.
 **NOTE:** From version 1.213.1, `group_type` can be set to `ipv6`, `domain`, `port`. From version 1.286.0, `group_type` can be set to `asset`, `assetIpv6`.

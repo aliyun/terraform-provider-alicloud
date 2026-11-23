@@ -7,7 +7,7 @@ description: |-
   Provides a list of alarm contact owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_cms\_alarm\_contacts
+# alicloud_cms_alarm_contacts
 
 Provides a list of alarm contact owned by an Alibaba Cloud account.
 
@@ -30,11 +30,11 @@ output "first-contact" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew) A list of alarm contact IDs. 
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by alarm contact name. 
+* `ids` - (Optional, ForceNew) A list of alarm contact IDs.
+* `name_regex` - (Optional, ForceNew) A regex string to filter results by alarm contact name.
 * `chanel_type` - (Optional, ForceNew)  The alarm notification method. Alarm notifications can be sent by using `Email` or `DingWebHook`.
 * `chanel_value` - (Optional, ForceNew)  The alarm notification target.
-* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`). 
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
   -> **NOTE:** Specify at least one of the following alarm notification targets: phone number, email address, webhook URL of the DingTalk chatbot, and TradeManager ID.
 

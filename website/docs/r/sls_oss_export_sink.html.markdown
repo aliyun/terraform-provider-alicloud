@@ -88,6 +88,7 @@ resource "alicloud_sls_oss_export_sink" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `configuration` - (Required, List) OSSExportConfiguration See [`configuration`](#configuration) below.
 * `description` - (Optional) The description of the job.
 * `display_name` - (Required) The display name of the job.
@@ -97,6 +98,7 @@ The following arguments are supported:
 ### `configuration`
 
 The configuration supports the following:
+
 * `from_time` - (Required, Int) The beginning of the time range to ship data. The value 1 specifies that the data shipping job ships data from the first log in the Logstore. Example value: 1718380800
 * `logstore` - (Required) The name of the Logstore.
 * `role_arn` - (Required) The Alibaba Cloud Resource Name (ARN) of the Resource Access Management (RAM) role that is used to read data from Simple Log Service. Example value: acs:ram::1234567890:role/aliyunlogdefaultrole
@@ -107,6 +109,7 @@ The configuration supports the following:
 ### `configuration-sink`
 
 The configuration-sink supports the following:
+
 * `bucket` - (Required) The OSS bucket.
 * `buffer_interval` - (Required) The interval between two data shipping operations. Valid values: 300 to 900. Unit: seconds.
 
@@ -145,7 +148,7 @@ The configuration-sink supports the following:
   The columns parameter is the key of the log in the source Logstore and must carry the data type of the key, for example:{"columns": [{"name": "a", "type": "string"}, {"name": "B", "type": "string"}, {"name": "c", "type": "string": "string"}]}
 * `content_type` - (Required) The storage format of the OSS object. Valid values: json, parquet, csv, and orc.
 * `delay_seconds` - (Optional, Int) The latency of data shipping. The value of this parameter cannot exceed the data retention period of the source Logstore.
-* `endpoint` - (Required) The OSS Endpoint can only be an OSS intranet Endpoint and only supports the same region. Example value: https://oss-cn-hangzhou-internal.aliyuncs.com
+* `endpoint` - (Required) The OSS Endpoint can only be an OSS intranet Endpoint and only supports the same region. Example value: `https://oss-cn-hangzhou-internal.aliyuncs.com`
 * `path_format` - (Optional) The directory is dynamically generated according to the time. The default value is% Y/%m/%d/%H/%M. The corresponding generated directory is, for example, 2017/01/23/12/00. Note that the partition format cannot start and end. Example values:%Y/%m/%d
 * `path_format_type` - (Optional) The partition format type. only support time
 * `prefix` - (Optional) The prefix of the OSS object.
@@ -157,6 +160,7 @@ The configuration-sink supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<project>:<job_name>`.
 * `create_time` - Creation time. Example value: 1718787534
 * `status` - The status of the post task. Example value: RUNNING
@@ -164,6 +168,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Oss Export Sink.
 * `delete` - (Defaults to 5 mins) Used when delete the Oss Export Sink.
 * `update` - (Defaults to 5 mins) Used when update the Oss Export Sink.

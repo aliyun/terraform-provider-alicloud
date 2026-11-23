@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Cache Rule resource.
 
-
-
 For information about ESA Cache Rule and how to use it, see [What is Cache Rule](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateCacheRule).
 
 -> **NOTE:** Available since v1.244.0.
@@ -60,12 +58,12 @@ resource "alicloud_esa_cache_rule" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_cache_rule&spm=docs.r.esa_cache_rule.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `additional_cacheable_ports` - (Optional) Specifies additional ports on which caching is enabled. You can specify multiple ports, separated by commas (,). Value range: 8880, 2052, 2082, 2086, 2095, 2053, 2083, 2087, 2096.
 * `browser_cache_mode` - (Optional) Browser cache mode. Possible values:
   - `no_cache`no_cache: Do not cache.
@@ -88,7 +86,7 @@ The following arguments are supported:
   - `no_cache`: Do not cache.
   - `override_origin`: Override the origin server's cache policy.
   - `follow_origin_bypass`: Follow the origin server's cache policy (if it exists), otherwise do not cache.
-  - `follow_origin_override `: Follow the origin server's cache policy (if it exists), otherwise use custom cache TTL.
+  - `follow_origin_override`: Follow the origin server's cache policy (if it exists), otherwise use custom cache TTL.
 * `edge_cache_ttl` - (Optional) Edge cache expiration time in seconds.
 * `edge_status_code_cache_ttl` - (Optional) The status code cache TTL, in seconds.
   - You can set the cache TTL for a specific status code. For example, 404=10 caches responses with a 404 status code for 10 seconds.
@@ -136,12 +134,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<site_id>:<cache_rule_id>`.
 * `cache_rule_id` - Cache Rule Id.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Cache Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Cache Rule.
 * `update` - (Defaults to 5 mins) Used when update the Cache Rule.

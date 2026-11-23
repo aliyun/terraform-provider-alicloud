@@ -200,6 +200,7 @@ resource "alicloud_vpn_gateway_vpn_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bgp_config` - (Optional, Computed, List) Bgp configuration information.
   - This parameter is supported when you create an vpn attachment in single-tunnel mode. See [`bgp_config`](#bgp_config) below.
 * `customer_gateway_id` - (Optional, Available since v1.196.0) Customer gateway ID.
@@ -224,9 +225,9 @@ Specifies whether to enable NAT traversal. Valid values:
   - `Large`: 3 Gbps.
 * `health_check_config` - (Optional, Computed, List) This parameter is supported if you create an vpn attachment in single-tunnel mode.
 Health check configuration information. See [`health_check_config`](#health_check_config) below.
-* `ike_config` - (Optional, Computed, List) The configurations of Phase 1 negotiations. 
+* `ike_config` - (Optional, Computed, List) The configurations of Phase 1 negotiations.
   - This parameter is supported if you create an vpn attachment in single-tunnel mode. See [`ike_config`](#ike_config) below.
-* `ipsec_config` - (Optional, Computed, List) Configuration negotiated in the second stage. 
+* `ipsec_config` - (Optional, Computed, List) Configuration negotiated in the second stage.
   - This parameter is supported if you create an vpn attachment in single-tunnel mode. See [`ipsec_config`](#ipsec_config) below.
 * `local_subnet` - (Required) The CIDR block on the VPC side. The CIDR block is used in Phase 2 negotiations.Separate multiple CIDR blocks with commas (,). Example: 192.168.1.0/24,192.168.2.0/24.The following routing modes are supported:
   - If you set LocalSubnet and RemoteSubnet to 0.0.0.0/0, the routing mode of the IPsec-VPN connection is set to Destination Routing Mode.
@@ -247,6 +248,7 @@ Health check configuration information. See [`health_check_config`](#health_chec
 ### `bgp_config`
 
 The bgp_config supports the following:
+
 * `enable` - (Optional, Computed) Whether to enable the BGP function. Valid values: true or false (default).
 * `local_asn` - (Optional, Computed, Int) The autonomous system number on the Alibaba Cloud side. The value range of autonomous system number is 1~4294967295. Default value: 45104
 * `local_bgp_ip` - (Optional, Computed) The BGP address on the Alibaba Cloud side. This address is an IP address in the IPsec tunnel network segment.
@@ -257,6 +259,7 @@ The bgp_config supports the following:
 ### `health_check_config`
 
 The health_check_config supports the following:
+
 * `dip` - (Optional, Computed) Target IP.
 * `enable` - (Optional, Computed) Whether health check is enabled:-`false`: not enabled. - `true`: enabled.
 * `interval` - (Optional, Computed, Int) The health check retry interval, in seconds.
@@ -269,6 +272,7 @@ The health_check_config supports the following:
 ### `ike_config`
 
 The ike_config supports the following:
+
 * `ike_auth_alg` - (Optional, Computed) The authentication algorithm negotiated in the first stage. Valid values: md5, sha1, sha256, sha384, sha512. Default value: md5.
 * `ike_enc_alg` - (Optional, Computed) The encryption algorithm that is used in Phase 1 negotiations. Valid values: aes, aes192, aes256, des, and 3des. Default value: aes.
 * `ike_lifetime` - (Optional, Computed, Int) The SA lifetime as a result of Phase 1 negotiations. Unit: seconds. Valid values: 0 to 86400. Default value: 86400.
@@ -277,13 +281,14 @@ The ike_config supports the following:
 * `ike_version` - (Optional, Computed) The version of the IKE protocol. Value: ikev1 or ikev2. Default value: ikev1.
 * `local_id` - (Optional, Computed) The identifier on the Alibaba Cloud side of the IPsec connection. The length is limited to 100 characters. The default value is leftId-not-exist
 * `psk` - (Optional, Computed) A pre-shared key for authentication between the VPN gateway and the local data center. The key length is 1~100 characters.
-  - If you do not specify a pre-shared key, the system randomly generates a 16-bit string as the pre-shared key. 
+  - If you do not specify a pre-shared key, the system randomly generates a 16-bit string as the pre-shared key.
   - The pre-shared key of the IPsec-VPN connection must be the same as the authentication key of the on-premises data center. Otherwise, connections between the on-premises data center and the VPN gateway cannot be established.
 * `remote_id` - (Optional, Computed) The identifier of the IPsec connection to the local data center. The length is limited to 100 characters. The default value is the IP address of the user gateway.
 
 ### `ipsec_config`
 
 The ipsec_config supports the following:
+
 * `ipsec_auth_alg` - (Optional, Computed) The authentication algorithm negotiated in the second stage. Valid values: md5, sha1, sha256, sha384, sha512. Default value: MD5.
 * `ipsec_enc_alg` - (Optional, Computed) The encryption algorithm negotiated in the second stage. Valid values: aes, aes192, aes256, des, or 3des. Default value: aes.
 * `ipsec_lifetime` - (Optional, Computed, Int) The life cycle of SA negotiated in the second stage. Unit: seconds. Value range: 0~86400. Default value: 86400.
@@ -298,6 +303,7 @@ On an in-place update, existing tunnels cannot be removed and an empty nested BG
 The API can omit the `psk` value in read responses. In that case the provider retains the PSK already in state instead of storing the empty value, so an omitted read does not produce a perpetual diff. Any non-empty value returned by the API is adopted into state, including a value consisting only of `*` characters: `*` is a legal PSK character and such a value may be the result of an external rotation, which then appears as a plan diff instead of staying hidden. When the PSK is empty in state (for example after an import), an update that submits an IKE block must set `psk` explicitly; the apply fails with an explicit error otherwise, because the API generates a random 16-character key when `psk` is absent. The same rule applies to the top-level `ike_config` block.
 
 The tunnel_options_specification supports the following:
+
 * `customer_gateway_id` - (Required, Available since v1.246.0) The ID of the user gateway associated with the tunnel.
 
   -> **NOTE:**  This parameter is required when creating a dual-tunnel mode IPsec-VPN connection.
@@ -322,6 +328,7 @@ The tunnel_options_specification supports the following:
 ### `tunnel_options_specification-tunnel_bgp_config`
 
 The tunnel_options_specification-tunnel_bgp_config supports the following:
+
 * `local_asn` - (Optional, Computed, Int, Available since v1.246.0) The number of the local (Alibaba Cloud) autonomous system of the tunnel. The value range of the autonomous system number is `1` to `4294967295`. Default value: `45104`.
 
   -> **NOTE:**  We recommend that you use the private number of the autonomous system number to establish a BGP connection with Alibaba Cloud. The private number range of the autonomous system number please consult the document yourself.
@@ -331,10 +338,10 @@ The tunnel_options_specification-tunnel_bgp_config supports the following:
 
   -> **NOTE:**  the network segments of two tunnels under an IPsec connection cannot be the same.
 
-
 ### `tunnel_options_specification-tunnel_ike_config`
 
 The tunnel_options_specification-tunnel_ike_config supports the following:
+
 * `ike_auth_alg` - (Optional, Computed, Available since v1.246.0) The authentication algorithm negotiated in the first stage. Values: `md5`, `sha1`, `sha256`, `sha384`, `sha512`. Default value: `sha1`.
 * `ike_enc_alg` - (Optional, Computed, Available since v1.246.0) The encryption algorithm negotiated in the first stage. Value: `aes`, `aes192`, `aes256`, `des`, or `3des`. Default value: `aes`.
 * `ike_lifetime` - (Optional, Computed, Int, Available since v1.246.0) The life cycle of SA negotiated in the first stage. Unit: seconds.
@@ -351,7 +358,7 @@ Compared with IKEv1, IKEv2 simplifies the SA negotiation process and provides be
   - *LocalId** supports the FQDN format. If you use the FQDN format, we recommend that you select `aggressive` (barbaric mode) as the negotiation mode.
 * `psk` - (Optional, Computed, Available since v1.246.0) The pre-shared key is used for identity authentication between the tunnel and the tunnel peer.
   - The key can be 1 to 100 characters in length. It supports numbers, upper and lower case English letters, and characters on the right. It cannot contain spaces. '''~! \'@#$%^& *()_-+ ={}[]|;:',./? '''
-  - If you do not specify a pre-shared key, the system randomly generates a 16-bit string as the pre-shared key. 
+  - If you do not specify a pre-shared key, the system randomly generates a 16-bit string as the pre-shared key.
 
   -> **NOTE:**  The pre-shared key of the tunnel and the tunnel peer must be the same, otherwise the system cannot establish the tunnel normally.
 
@@ -361,6 +368,7 @@ Compared with IKEv1, IKEv2 simplifies the SA negotiation process and provides be
 ### `tunnel_options_specification-tunnel_ipsec_config`
 
 The tunnel_options_specification-tunnel_ipsec_config supports the following:
+
 * `ipsec_auth_alg` - (Optional, Computed, Available since v1.246.0) The second stage negotiated authentication algorithm.
 Values: `md5`, `sha1`, `sha256`, `sha384`, `sha512`. Default value: `sha1`.
 * `ipsec_enc_alg` - (Optional, Computed, Available since v1.246.0) The encryption algorithm negotiated in the second stage. Value: `aes`, `aes192`, `aes256`, `des`, or `3des`. Default value: `aes`.
@@ -372,6 +380,7 @@ Values: `disabled`, `group1`, `group2`, `group5`, `group14`.
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `bgp_config` - Bgp configuration information.
   * `status` - The negotiation status of Bgp.
@@ -393,6 +402,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vpn Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Vpn Attachment.
 * `update` - (Defaults to 5 mins) Used when update the Vpn Attachment.

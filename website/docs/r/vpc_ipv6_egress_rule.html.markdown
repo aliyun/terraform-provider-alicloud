@@ -107,6 +107,7 @@ resource "alicloud_vpc_ipv6_egress_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional, ForceNew) The description of the egress-only rule. The description must be `2` to `256` characters in length. It cannot start with `http://` or `https://`.
 * `instance_id` - (Required, ForceNew) The ID of the IPv6 address to which you want to apply the egress-only rule.
 * `instance_type` - (Optional, ForceNew, Computed) The type of instance to which you want to apply the egress-only rule. Valid values: `Ipv6Address`. `Ipv6Address` (default): an IPv6 address.
@@ -116,6 +117,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<ipv6_gateway_id>:<ipv6_egress_rule_id>`.
 * `ipv6_egress_rule_id` - The ID of the IPv6 EgressRule.
 * `status` - The status of the resource.
@@ -123,6 +125,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Ipv6 Egress Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Ipv6 Egress Rule.
 

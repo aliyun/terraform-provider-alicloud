@@ -75,6 +75,7 @@ locals {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `directory_id` - (Required, ForceNew) The ID of the directory.
 * `group_id` - (Required, ForceNew) The ID of the group.
 * `user_id` - (Required, ForceNew) The ID of the user.

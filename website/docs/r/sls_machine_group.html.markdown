@@ -10,8 +10,6 @@ description: |-
 
 Provides a Log Service (SLS) Machine Group resource.
 
-
-
 For information about Log Service (SLS) Machine Group and how to use it, see [What is Machine Group](https://next.api.alibabacloud.com/document/Sls/2020-12-30/CreateMachineGroup).
 
 -> **NOTE:** Available since v1.259.0.
@@ -57,12 +55,12 @@ resource "alicloud_sls_machine_group" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_machine_group&spm=docs.r.sls_machine_group.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `group_attribute` - (Optional, ForceNew, Set) Properties of machine groups. For details, please refer to the groupAttribute parameter description in the following table. See [`group_attribute`](#group_attribute) below.
 * `group_name` - (Required, ForceNew) The name of the machine group. The name must meet the following requirements:
 
@@ -83,17 +81,20 @@ The following arguments are supported:
 ### `group_attribute`
 
 The group_attribute supports the following:
+
 * `external_name` - (Optional, ForceNew) The identifier of the external management system on which the machine group depends. This parameter is empty by default.
 * `group_topic` - (Optional, ForceNew) The log topic of the machine group.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<project_name>:<group_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Machine Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Machine Group.
 

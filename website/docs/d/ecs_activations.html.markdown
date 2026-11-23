@@ -7,7 +7,7 @@ description: |-
   Provides a list of Ecs Activations to the user.
 ---
 
-# alicloud\_ecs\_activations
+# alicloud_ecs_activations
 
 This data source provides the Ecs Activations of the current Alibaba Cloud user.
 

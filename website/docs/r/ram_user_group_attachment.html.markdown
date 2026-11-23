@@ -10,8 +10,6 @@ description: |-
 
 Provides a RAM User Group Attachment resource.
 
-
-
 For information about RAM User Group Attachment and how to use it, see [What is User Group Attachment](https://next.api.alibabacloud.com/document/Ram/2015-05-01/AddUserToGroup).
 
 -> **NOTE:** Available since v1.245.0.
@@ -60,17 +58,20 @@ resource "alicloud_ram_user_group_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `group_name` - (Required, ForceNew) The name of group.
 * `user_name` - (Required, ForceNew) The name of user.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<group_name>:<user_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the User Group Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the User Group Attachment.
 

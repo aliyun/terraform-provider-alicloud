@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Custom Scene Policy resource.
 
-
-
 For information about ESA Custom Scene Policy and how to use it, see [What is Custom Scene Policy](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateCustomScenePolicy).
 
 -> **NOTE:** Available since v1.253.0.
@@ -72,11 +70,13 @@ The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The t
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Custom Scene Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Custom Scene Policy.
 * `update` - (Defaults to 5 mins) Used when update the Custom Scene Policy.

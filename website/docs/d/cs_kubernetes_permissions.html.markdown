@@ -33,6 +33,7 @@ output "permissions" {
 ## Argument Reference
 
 The following arguments are supported.
+
 * `uid` - (Required) The ID of the RAM user. If you want to query the permissions of a RAM role, specify the ID of the RAM role.
 
 ## Attributes Reference
@@ -44,7 +45,8 @@ The following arguments are supported.
 ### `permissions`
 
 The permissions mapping supports the following:
-* `resource_id` - The permission settings to manage ACK clusters. 
+
+* `resource_id` - The permission settings to manage ACK clusters.
 * `resource_type` - The authorization type. Valid values `cluster`, `namespace` and `console`.
 * `role_name` - The name of the predefined role. If a custom role is assigned, the value is the name of the assigined custom role.
 * `role_type` - The predefined role. Valid values `admin`,`ops`,`dev`,`restricted` and `custom`.

@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_fc_alias
 
-Creates a Function Compute service alias. Creates an alias that points to the specified Function Compute service version. 
+Creates a Function Compute service alias. Creates an alias that points to the specified Function Compute service version.
  For the detailed information, please refer to the [developer guide](https://www.alibabacloud.com/help/en/fc/developer-reference/api-createalias).
 
 -> **NOTE:** Available since v1.104.0.
@@ -49,7 +49,7 @@ resource "alicloud_fc_alias" "example" {
 
 The following arguments are supported:
 
-* `alias_name` - (Required, ForceNew) Name for the alias you are creating. 
+* `alias_name` - (Required, ForceNew) Name for the alias you are creating.
 * `description` - (Optional) Description of the alias.
 * `service_name` - (Required, ForceNew) The Function Compute service name.
 * `service_version` - (Required) The Function Compute service version for which you are creating the alias. Pattern: (LATEST|[0-9]+).
@@ -60,7 +60,6 @@ The following arguments are supported:
 The routing_config supports the following:
 
 * `additional_version_weights` - (Optional) A map that defines the proportion of events that should be sent to different versions of a Function Compute service.
-
 
 ## Import
 

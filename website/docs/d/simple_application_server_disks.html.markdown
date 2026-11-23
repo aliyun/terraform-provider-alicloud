@@ -7,7 +7,7 @@ description: |-
   Provides a list of Simple Application Server Disks to the user.
 ---
 
-# alicloud\_simple\_application\_server\_disks
+# alicloud_simple_application_server_disks
 
 This data source provides the Simple Application Server Disks of the current Alibaba Cloud user.
 

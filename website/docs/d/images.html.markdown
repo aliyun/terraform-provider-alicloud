@@ -103,4 +103,5 @@ The following attributes are exported in addition to the arguments listed above:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `read` - (Defaults to 5 mins) Used when read the images.

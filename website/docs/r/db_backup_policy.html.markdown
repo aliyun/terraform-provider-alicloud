@@ -11,7 +11,6 @@ description: |-
 
 Provides an RDS instance backup policy resource and used to configure instance backup policy, see [What is DB Backup Policy](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-rds-2014-08-15-modifybackuppolicy).
 
-
 -> **NOTE:** Each DB instance has a backup policy and it will be set default values when destroying the resource.
 
 -> **NOTE:** Available since v1.5.0.

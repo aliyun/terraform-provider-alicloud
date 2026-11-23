@@ -72,7 +72,7 @@ jobs:
         inputs:
           fetch-depth: '32'
       - name: CI Adapter Regression
-        run: python3 -m unittest discover -s scripts/ci -p 'test_acube_*.py'
+        run: env -u AONE_CI_SUMMARY_MD -u AONE_CI_SUMMARY python3 -m unittest discover -s scripts/ci -p 'test_acube_*.py'
       - name: Integration Test Check
         envs:
           ACUBE_PROVIDER_RUN_TOKEN: '${{secrets.ACUBE_PROVIDER_RUN_TOKEN}}'

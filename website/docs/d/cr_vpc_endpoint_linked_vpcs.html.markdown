@@ -7,11 +7,11 @@ description: |-
   Provides a list of CR Vpc Endpoint Linked Vpcs to the user.
 ---
 
-# alicloud\_cr\_vpc\_endpoint\_linked\_vpcs
+# alicloud_cr_vpc_endpoint_linked_vpcs
 
 This data source provides the CR Vpc Endpoint Linked Vpcs of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.199.0+.
+-> **NOTE:** Available since v1.199.0+.
 
 ## Example Usage
 
@@ -54,4 +54,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `ip` - IP address.
   * `default_access` - Indicates whether the default policy is used to access the instance.
   * `status` - The status of the Vpc Endpoint Linked Vpc.
-  

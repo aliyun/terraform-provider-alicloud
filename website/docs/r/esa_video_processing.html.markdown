@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Video Processing resource.
 
-
-
 For information about ESA Video Processing and how to use it, see [What is Video Processing](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateVideoProcessing).
 
 -> **NOTE:** Available since v1.251.0.
@@ -67,6 +65,7 @@ resource "alicloud_esa_video_processing" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `flv_seek_end` - (Optional) Custom FLV end parameters.
 * `flv_seek_start` - (Optional) Custom FLV start parameters.
 * `flv_video_seek_mode` - (Optional) FLV drag mode. Value range:
@@ -91,12 +90,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<config_id>`.
 * `config_id` - Config Id
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Video Processing.
 * `delete` - (Defaults to 5 mins) Used when delete the Video Processing.
 * `update` - (Defaults to 5 mins) Used when update the Video Processing.

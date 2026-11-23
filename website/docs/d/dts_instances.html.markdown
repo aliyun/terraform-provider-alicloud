@@ -29,6 +29,7 @@ output "alicloud_dts_instance_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `resource_group_id` - (Optional) Resource Group ID
 * `ids` - (Optional, ForceNew, Computed) A list of Instance IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by trail name.
@@ -37,6 +38,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Instance IDs.
 * `names` - A list of Instance names.
 * `instances` - A list of Instance Entries. Each element contains the following attributes:

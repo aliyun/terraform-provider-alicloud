@@ -62,13 +62,12 @@ resource "alicloud_oss_bucket_inventory" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_inventory&spm=docs.r.oss_bucket_inventory.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the bucket.
 * `destination` - (Optional, Set) Holds the container that holds the location of the inventory results. **Note:** The parameter is immutable after resource creation and the exported storage location cannot be modified without recreating the rule. See [`destination`](#destination) below.
 * `filter` - (Optional, Set) Container for inventory filtering rules. See [`filter`](#filter) below.
@@ -82,11 +81,13 @@ The following arguments are supported:
 ### `destination`
 
 The destination supports the following:
+
 * `oss_bucket_destination` - (Optional, Set) The Bucket information stored after the list result is exported. See [`oss_bucket_destination`](#destination-oss_bucket_destination) below.
 
 ### `destination-oss_bucket_destination`
 
 The destination-oss_bucket_destination supports the following:
+
 * `account_id` - (Optional) The account ID granted by the Bucket owner.
 * `bucket` - (Optional) The Bucket where the exported manifest file is stored.
 * `encryption` - (Optional, Set) The encryption method of the manifest file. Valid value: SSE-OSS: Use the OSS fully managed key for encryption and decryption. SSE-KMS: Use the default KMS-managed CMK(Customer Master Key) or a specified CMK for encryption and decryption. See [`encryption`](#destination-oss_bucket_destination-encryption) below.
@@ -97,17 +98,20 @@ The destination-oss_bucket_destination supports the following:
 ### `destination-oss_bucket_destination-encryption`
 
 The destination-oss_bucket_destination-encryption supports the following:
+
 * `ssekms` - (Optional, Set) The container that holds the SSE-KMS encryption key. See [`ssekms`](#destination-oss_bucket_destination-encryption-ssekms) below.
 * `sseoss` - (Optional) The container that holds the SSE-OSS encryption method. Set it to an empty string when OSS-managed keys are used.
 
 ### `destination-oss_bucket_destination-encryption-ssekms`
 
 The destination-oss_bucket_destination-encryption-ssekms supports the following:
+
 * `key_id` - (Optional) KMS key ID.
 
 ### `filter`
 
 The filter supports the following:
+
 * `last_modify_begin_time_stamp` - (Optional, Int) The start timestamp of the last modification time of the filter file, in seconds. Value range:[1262275200, 253402271999]
 * `last_modify_end_time_stamp` - (Optional, Int) The end timestamp of the last modification time of the filter file, in seconds. Value range:[1262275200, 253402271999]
 * `lower_size_bound` - (Optional, Int) The minimum size of the filter file, in B. Value range: greater than or equal to 0 B, less than or equal to 48.8 TB.
@@ -118,6 +122,7 @@ The filter supports the following:
 ### `incremental_inventory`
 
 The incremental_inventory supports the following:
+
 * `is_enabled` - (Optional) Incremental inventory enabled
 * `optional_fields` - (Optional, Set) Configuration container for incremental manifest file properties See [`optional_fields`](#incremental_inventory-optional_fields) below.
 * `schedule` - (Optional, Set) Incremental inventory export cycle container See [`schedule`](#incremental_inventory-schedule) below.
@@ -125,31 +130,37 @@ The incremental_inventory supports the following:
 ### `incremental_inventory-optional_fields`
 
 The incremental_inventory-optional_fields supports the following:
+
 * `field` - (Optional, List) Incremental inventory export field list
 
 ### `incremental_inventory-schedule`
 
 The incremental_inventory-schedule supports the following:
+
 * `frequency` - (Optional, Int) Describes the period of incremental inventory file export, in seconds, currently fixed at 10 minutes.
 
 ### `optional_fields`
 
 The optional_fields supports the following:
+
 * `field` - (Optional, List) The configuration items contained in the manifest results.
 
 ### `schedule`
 
 The schedule supports the following:
+
 * `frequency` - (Optional) Period for manifest file export.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<bucket>:<inventory_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Inventory.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Inventory.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Inventory.

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Sae Applications to the user.
 ---
 
-# alicloud\_sae\_applications
+# alicloud_sae_applications
 
 This data source provides the Sae Applications of the current Alibaba Cloud user.
 
@@ -142,4 +142,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `war_start_options` - WAR package launch application option. Application default startup command: java $JAVA_OPTS $CATALINA_OPTS [-Options] org.apache.catalina.startup.Bootstrap "$@" start.
   * `web_container` - The version of tomcat that the deployment package depends on. Image type applications are not supported.
   * `tags` - A mapping of tags to assign to the resource.
-    

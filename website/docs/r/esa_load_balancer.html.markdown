@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Load Balancer resource.
 
-
-
 For information about ESA Load Balancer and how to use it, see [What is Load Balancer](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateLoadBalancer).
 
 -> **NOTE:** Available since v1.262.0.
@@ -88,6 +86,7 @@ resource "alicloud_esa_load_balancer" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `adaptive_routing` - (Optional, List) Cross-pool origin configuration. See [`adaptive_routing`](#adaptive_routing) below.
 * `default_pools` - (Required, List) List of default pool IDs.
 * `description` - (Optional) The detailed description of the load balancer for easy management and identification.
@@ -112,6 +111,7 @@ The following arguments are supported:
 ### `adaptive_routing`
 
 The adaptive_routing supports the following:
+
 * `failover_across_pools` - (Optional) Whether to failover across pools.
   - `true`: Yes.
   - `false`: No.
@@ -119,6 +119,7 @@ The adaptive_routing supports the following:
 ### `monitor`
 
 The monitor supports the following:
+
 * `consecutive_down` - (Optional, Int) The number of consecutive failed health checks before the backend is considered down, for example, 5.
 * `consecutive_up` - (Optional, Int) The number of consecutive successful probes required to consider the target as up, e.g., 3.
 * `expected_codes` - (Optional) Expected status code, such as 200,202, successful HTTP response.
@@ -140,12 +141,14 @@ The monitor supports the following:
 ### `random_steering`
 
 The random_steering supports the following:
+
 * `default_weight` - (Optional, Int) The default round-robin weight, used for all pools that do not have individually specified weights. The value range is 0-100.
 * `pool_weights` - (Optional, Map) Weight configuration for each backend server pool, where the key is the pool ID and the value is the weight coefficient. The weight coefficient represents the proportion of relative traffic distribution.
 
 ### `rules`
 
 The rules supports the following:
+
 * `fixed_response` - (Optional, List) Executes a specified response after matching the rule. See [`fixed_response`](#rules-fixed_response) below.
 * `overrides` - (Optional) Modifies the load balancer configuration for the corresponding request after matching the rule. The fields in this configuration will override the corresponding fields in the load balancer configuration.
 * `rule` - (Optional) Rule content, using conditional expressions to match user requests. When adding global configuration, this parameter does not need to be set. There are two usage scenarios:
@@ -163,6 +166,7 @@ The rules supports the following:
 ### `rules-fixed_response`
 
 The rules-fixed_response supports the following:
+
 * `content_type` - (Optional) The Content-Type field in the HTTP Header.
 * `location` - (Optional) The location field in the http return.
 * `message_body` - (Optional) The body value of the response.
@@ -171,6 +175,7 @@ The rules-fixed_response supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<load_balancer_id>`.
 * `load_balancer_id` - The unique identifier ID of the load balancer.
 * `status` - The status of the load balancer.
@@ -178,6 +183,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Load Balancer.
 * `delete` - (Defaults to 5 mins) Used when delete the Load Balancer.
 * `update` - (Defaults to 5 mins) Used when update the Load Balancer.

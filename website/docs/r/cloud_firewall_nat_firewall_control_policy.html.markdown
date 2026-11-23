@@ -128,6 +128,7 @@ resource "alicloud_cloud_firewall_nat_firewall_control_policy" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `acl_action` - (Required) The method (action) of access traffic passing through Cloud Firewall in the security access control policy. Valid values:
   - `accept`: Release
   - `drop`: Refused
@@ -214,6 +215,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<acl_uuid>:<nat_gateway_id>:<direction>`.
 * `acl_uuid` - The unique ID of the security access control policy.
 
@@ -224,6 +226,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Nat Firewall Control Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Nat Firewall Control Policy.
 * `update` - (Defaults to 5 mins) Used when update the Nat Firewall Control Policy.

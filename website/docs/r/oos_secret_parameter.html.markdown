@@ -10,8 +10,6 @@ description: |-
 
 Provides a Operation Orchestration Service (OOS) Secret Parameter resource.
 
-
-
 For information about Operation Orchestration Service (OOS) Secret Parameter and how to use it, see [What is Secret Parameter](https://www.alibabacloud.com/help/en/doc-detail/183418.html).
 
 -> **NOTE:** Available since v1.147.0.
@@ -72,12 +70,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Parameter creation time
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Secret Parameter.
 * `delete` - (Defaults to 5 mins) Used when delete the Secret Parameter.
 * `update` - (Defaults to 5 mins) Used when update the Secret Parameter.

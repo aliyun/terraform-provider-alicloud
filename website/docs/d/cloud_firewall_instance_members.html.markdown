@@ -28,14 +28,15 @@ output "alicloud_cloud_firewall_instance_member_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `current_page` - (Optional) The current page number.
 * `ids` - (Optional, ForceNew, Computed) A list of Instance Member IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Instance Member IDs.
 * `members` - A list of Instance Member Entries. Each element contains the following attributes:
   * `id` - The instance id.

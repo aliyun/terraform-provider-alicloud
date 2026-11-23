@@ -32,6 +32,7 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew) A list of instance IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by instance name.
 * `tags` - (Optional) A map of tags assigned to the instance. It must be in the format:
+
   ```terraform
   data "alicloud_ots_instances" "instances_ds" {
     tags = {
@@ -40,6 +41,7 @@ The following arguments are supported:
     }
   }
   ```
+
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -63,4 +65,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `description` - The description of the instance.
   * `table_quota` - (Available since v1.221.0) The instance quota which indicating the maximum number of tables.
   * `tags` - The tags of the instance.
-	

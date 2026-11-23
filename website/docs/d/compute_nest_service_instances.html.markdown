@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Compute Nest Service Instances of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.205.0+.
+-> **NOTE:** Available since v1.205.0.
 
 ## Example Usage
 
@@ -42,11 +42,11 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed) A list of Service Instance IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Service Instance name.
 * `status` - (Optional, ForceNew) The status of the Service Instance. Valid Values: `Created`, `Deploying`, `DeployedFailed`, `Deployed`, `Upgrading`, `Deleting`, `Deleted`, `DeletedFailed`.
-* `filter` - (Optional, ForceNew) The conditions that are used to filter. See the following `Block filter`.
+* `filter` - (Optional, ForceNew) The conditions that are used to filter. See [`filter`](#filter) below.
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-#### Block filter
+### `filter`
 
 The filter supports the following:
 

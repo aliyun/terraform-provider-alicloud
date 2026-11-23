@@ -74,6 +74,7 @@ resource "alicloud_vpc_nat_ip" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dry_run` - (Optional, Computed) Specifies whether to only precheck the request. Valid values:
   - `true`: Sends a dry-run request without creating the NAT IP address. The check includes verifying the validity of the AccessKey, RAM user permissions, and whether all required parameters are provided. If the check fails, an error is returned. If the check passes, the error code `DryRunOperation` is returned.
   - `false` (default): Sends a normal request. If the check passes, a 2xx HTTP status code is returned and the NAT IP address is created.
@@ -89,6 +90,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<nat_gateway_id>:<nat_ip_id>`.
 * `nat_ip_id` - Ihe ID of the Nat Ip.
 * `status` - The status of the NAT IP address.
@@ -96,6 +98,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Nat Ip.
 * `delete` - (Defaults to 5 mins) Used when delete the Nat Ip.
 * `update` - (Defaults to 5 mins) Used when update the Nat Ip.

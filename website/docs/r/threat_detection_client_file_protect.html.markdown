@@ -51,6 +51,7 @@ resource "alicloud_threat_detection_client_file_protect" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `alert_level` - (Optional) 0 no alert 1 info 2 suspicious 3 critical.
 * `file_ops` - (Required) file operation.
 * `file_paths` - (Required) file path.
@@ -63,11 +64,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Client File Protect.
 * `delete` - (Defaults to 5 mins) Used when delete the Client File Protect.
 * `update` - (Defaults to 5 mins) Used when update the Client File Protect.

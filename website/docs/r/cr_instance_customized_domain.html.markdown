@@ -10,7 +10,6 @@ description: |-
 
 Provides a CR Instance Customized Domain resource.
 
-
 For information about CR Instance Customized Domain and how to use it, see [What is Instance Customized Domain](https://next.api.alibabacloud.com/document/cr/2018-12-01/CreateInstanceCustomizedDomain).
 
 -> **NOTE:** Available since v1.293.0.
@@ -56,9 +55,7 @@ resource "alicloud_cr_instance_customized_domain" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cr_instance_customized_domain&spm=docs.r.cr_instance_customized_domain.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

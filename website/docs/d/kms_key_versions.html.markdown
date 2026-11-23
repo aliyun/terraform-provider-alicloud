@@ -7,15 +7,15 @@ description: |-
     Provides a list of available KMS KeyVersions.
 ---
 
-# alicloud\_kms\_key\_versions
+# alicloud_kms_key_versions
 
 This data source provides a list of KMS KeyVersions in an Alibaba Cloud account according to the specified filters.
 
--> NOTE: Available in v1.85.0+
+-> **NOTE:** Available since v1.85.0+
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_kms_key_versions" "alicloud_kms_key_versions_ds" {
   key_id = "08438c-b4d5-4d05-928c-07b7xxxx"

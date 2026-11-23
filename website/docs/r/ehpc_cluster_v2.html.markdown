@@ -158,12 +158,12 @@ resource "alicloud_ehpc_cluster_v2" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ehpc_cluster_v2&spm=docs.r.ehpc_cluster_v2.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `additional_packages` - (Optional, ForceNew, List, Available since v1.288.0) The list of software to be installed on the cluster. The value range of N is 0 to 10. See [`additional_packages`](#additional_packages) below.
 * `addons` - (Optional, ForceNew, List) The cluster custom service component configuration. Only one component is supported. See [`addons`](#addons) below.
 * `client_version` - (Optional, Computed) The version of the E-HPC client.
@@ -216,12 +216,14 @@ You can call the [ListResourceGroups](https://www.alibabacloud.com/help/en/doc-d
 ### `additional_packages`
 
 The additional_packages supports the following:
+
 * `name` - (Optional, ForceNew) The name of the software to be installed.
 * `version` - (Optional, ForceNew) The version of the software to be installed.
 
 ### `addons`
 
 The addons supports the following:
+
 * `name` - (Required, ForceNew) Customize the specific configuration information of the service component.
 * `resources_spec` - (Optional, ForceNew) Customize the resource configuration of the service component.
 * `services_spec` - (Optional, ForceNew) Customize the service configuration of the service component.
@@ -230,18 +232,21 @@ The addons supports the following:
 ### `cluster_credentials`
 
 The cluster_credentials supports the following:
+
 * `key_pair_name` - (Optional, ForceNew, Available since v1.270.0) The SSH key of root of the cluster node.
 * `password` - (Optional, ForceNew) The root password of the cluster node. It is 8 to 20 characters in length and must contain three types of characters: uppercase and lowercase letters, numbers, and special symbols. Special symbols can be: () ~! @ # $ % ^ & * - = + { } [ ] : ; ',. ? /
 
 ### `cluster_custom_configuration`
 
 The cluster_custom_configuration supports the following:
+
 * `script` - (Optional, Available since v1.288.0) The download URL of the post-processing script.
 * `args` - (Optional, Available since v1.288.0) The execution parameters of the post-processing script.
 
 ### `manager`
 
 The manager supports the following:
+
 * `directory_service` - (Optional, ForceNew, Set) The configurations of the domain account service. See [`directory_service`](#manager-directory_service) below.
 * `dns` - (Optional, ForceNew, Set) The configurations of the domain name resolution service. See [`dns`](#manager-dns) below.
 * `manager_node` - (Optional, ForceNew, Set) The hardware configurations of the management node. See [`manager_node`](#manager-manager_node) below.
@@ -250,6 +255,7 @@ The manager supports the following:
 ### `manager-directory_service`
 
 The manager-directory_service supports the following:
+
 * `type` - (Optional, ForceNew) The type of the domain account. Valid values:
 
   - NIS
@@ -258,6 +264,7 @@ The manager-directory_service supports the following:
 ### `manager-dns`
 
 The manager-dns supports the following:
+
 * `type` - (Optional, ForceNew) The domain name resolution type. Valid values:
 
   - NIS
@@ -266,6 +273,7 @@ The manager-dns supports the following:
 ### `manager-manager_node`
 
 The manager-manager_node supports the following:
+
 * `auto_renew` - (Optional, ForceNew) Whether to automatically renew. This parameter takes effect only when the value of InstanceChargeType is PrePaid. Value range:
   - true: Automatic renewal.
   - false: Do not renew automatically (default).
@@ -274,11 +282,13 @@ The manager-manager_node supports the following:
   - When PeriodUnit = Month: 1, 2, 3, 6, 12, 24, 36, 48, 60.
 
 Default value: 1.
+
 * `duration` - (Optional, ForceNew, Computed, Int) The duration of the preemptible instance, in hours. Value:
   - : After the instance is created, Alibaba Cloud will ensure that the instance will not be automatically released after one hour of operation. After one hour, the system will compare the bid price with the market price in real time and check the resource inventory to determine the holding and recycling of the instance.
   - 0: After creation, Alibaba Cloud does not guarantee the running time of the instance. The system compares the bid price with the market price in real time and checks the resource inventory to determine the holding and recycling of the instance.
 
 Default value: 1.
+
 * `enable_ht` - (Optional, ForceNew) Specifies whether to enable hyper-threading on the management node.
 * `image_id` - (Optional, ForceNew) The ID of the image used by the management node.
 * `instance_charge_type` - (Optional, ForceNew) The instance billing method of the management node. Valid values:
@@ -302,6 +312,7 @@ Default value: 1.
 ### `manager-scheduler`
 
 The manager-scheduler supports the following:
+
 * `type` - (Optional, ForceNew) The scheduler type. Valid values:
 
   - SLURM
@@ -314,6 +325,7 @@ The manager-scheduler supports the following:
 ### `manager-manager_node-system_disk`
 
 The manager-manager_node-system_disk supports the following:
+
 * `category` - (Optional, ForceNew) Manage the system disk configuration of the node. Value range:
   - cloud_efficiency: The Ultra cloud disk.
   - cloud_ssd:SSD cloud disk.
@@ -336,6 +348,7 @@ The manager-manager_node-system_disk supports the following:
 ### `monitor_spec`
 
 The monitor_spec supports the following:
+
 * `enable_compute_load_monitor` - (Optional, Computed, Bool, Available since v1.288.0) Specifies whether to enable the monitoring component for the compute nodes. Valid values:
 
   - true
@@ -344,6 +357,7 @@ The monitor_spec supports the following:
 ### `queues`
 
 The queues supports the following:
+
 * `queue_name` - (Optional, ForceNew, Available since v1.288.0) The name of the queue. The name must be 1 to 15 characters in length. It can contain letters, digits, and periods (.).
 * `enable_scale_out` - (Optional, ForceNew, Bool, Available since v1.288.0) Specifies whether to enable auto scale-out for the queue. Valid values:
 
@@ -373,6 +387,7 @@ The queues supports the following:
 ### `queues-compute_nodes`
 
 The queues-compute_nodes supports the following:
+
 * `instance_type` - (Optional, ForceNew, Available since v1.288.0) The instance type of the compute node.
 * `image_id` - (Optional, ForceNew, Available since v1.288.0) The ID of the image used by the compute node.
 * `instance_charge_type` - (Optional, ForceNew, Available since v1.288.0) The instance billing method of the compute node. Valid values:
@@ -399,6 +414,7 @@ The queues-compute_nodes supports the following:
 ### `queues-compute_nodes-system_disk`
 
 The queues-compute_nodes-system_disk supports the following:
+
 * `category` - (Optional, ForceNew, Available since v1.288.0) The category of the system disk. Valid values:
 
   - cloud_efficiency: The Ultra cloud disk.
@@ -416,6 +432,7 @@ The queues-compute_nodes-system_disk supports the following:
 ### `scheduler_spec`
 
 The scheduler_spec supports the following:
+
 * `enable_topology_awareness` - (Optional, Computed, Bool, Available since v1.288.0) Specifies whether to enable the topology awareness feature for the cluster. Valid values:
 
   - true
@@ -424,6 +441,7 @@ The scheduler_spec supports the following:
 ### `shared_storages`
 
 The shared_storages supports the following:
+
 * `file_system_id` - (Optional, ForceNew) The ID of the mounted file system.
 * `mount_directory` - (Optional, ForceNew) The local Mount directory where the file system is mounted.
 * `mount_options` - (Optional, ForceNew) Storage mount options for the mounted file system.
@@ -436,6 +454,7 @@ The shared_storages supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `cluster_status` - (Available since v1.288.0) The status of the cluster.
 * `create_time` - The time when the cluster was created.
@@ -449,6 +468,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 8 mins) Used when create the Cluster V2.
 * `delete` - (Defaults to 5 mins) Used when delete the Cluster V2.
 * `update` - (Defaults to 5 mins) Used when update the Cluster V2.

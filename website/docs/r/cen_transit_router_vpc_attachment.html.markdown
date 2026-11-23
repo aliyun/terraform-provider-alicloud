@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cloud Enterprise Network (CEN) Transit Router Vpc Attachment resource.
 
-
-
 For information about Cloud Enterprise Network (CEN) Transit Router Vpc Attachment and how to use it, see [What is Transit Router Vpc Attachment](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createtransitroutervpcattachment).
 
 -> **NOTE:** Available since v1.126.0.
@@ -85,13 +83,12 @@ resource "alicloud_cen_transit_router_vpc_attachment" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_vpc_attachment&spm=docs.r.cen_transit_router_vpc_attachment.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_publish_route_enabled` - (Optional) Specifies whether to enable the Enterprise Edition transit router to automatically advertise routes to VPCs. Valid values:
 
   - **false:** (default)
@@ -131,6 +128,7 @@ The name must be 2 to 128 characters in length, and can contain letters, digits,
 * `resource_type` - (Optional, ForceNew) The resource type of the transit router vpc attachment. Default value: `VPC`. Valid values: `VPC`.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `transit_router_attachment_name` - (Deprecated since v1.230.1) Field 'transit_router_attachment_name' has been deprecated from provider version 1.230.1. New field 'transit_router_vpc_attachment_name' instead.
 * `route_table_association_enabled` - (Optional, Bool, Deprecated since v1.192.0) Whether to enabled route table association. **NOTE:** "Field `route_table_association_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_association` instead, [how to use alicloud_cen_transit_router_route_table_association](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_association)."
 * `route_table_propagation_enabled` - (Optional, Bool, Deprecated since v1.192.0) Whether to enabled route table propagation. **NOTE:** "Field `route_table_propagation_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_propagation` instead, [how to use alicloud_cen_transit_router_route_table_propagation](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_propagation)."
@@ -138,18 +136,21 @@ The following arguments will be discarded. Please use new fields as soon as poss
 ### `options`
 
 The options supports the following:
+
 * `appliance_mode_support` - (Optional, Computed, Available since v1.279.0) Indicates whether appliance mode is enabled.
 * `ipv6_support` - (Optional, Computed, Available since v1.279.0) Indicates whether IPv6 is supported.
 
 ### `zone_mappings`
 
 The zone_mappings supports the following:
+
 * `vswitch_id` - (Required) The ID of the vSwitch that you want to add to the VPC connection.
 
 You can specify at most 10 vSwitches in each call.
 
-  - If the VPC connection belongs to the current Alibaba Cloud account, you can call the [DescribeVSwitches](https://www.alibabacloud.com/help/en/doc-detail/35748.html) operation to query the IDs of the vSwitches and zones of the VPC.
-  - If the VPC connection belongs to another Alibaba Cloud account, you can call the [ListGrantVSwitchesToCen](https://www.alibabacloud.com/help/en/doc-detail/427599.html) operation to query the IDs of the vSwitches and zones of the VPC.
+- If the VPC connection belongs to the current Alibaba Cloud account, you can call the [DescribeVSwitches](https://www.alibabacloud.com/help/en/doc-detail/35748.html) operation to query the IDs of the vSwitches and zones of the VPC.
+- If the VPC connection belongs to another Alibaba Cloud account, you can call the [ListGrantVSwitchesToCen](https://www.alibabacloud.com/help/en/doc-detail/427599.html) operation to query the IDs of the vSwitches and zones of the VPC.
+
 * `zone_id` - (Required) The ID of the zone that supports Enterprise Edition transit routers.
 You can call the [DescribeZones](https://www.alibabacloud.com/help/en/doc-detail/36064.html) operation to query the most recent zone list.
 You can specify at most 10 zones in each call.
@@ -157,7 +158,8 @@ You can specify at most 10 zones in each call.
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `region_id` - The ID of the region where the VPC is deployed.
 * `status` - Status.
@@ -166,6 +168,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 42 mins) Used when create the Transit Router Vpc Attachment.
 * `delete` - (Defaults to 20 mins) Used when delete the Transit Router Vpc Attachment.
 * `update` - (Defaults to 8 mins) Used when update the Transit Router Vpc Attachment.

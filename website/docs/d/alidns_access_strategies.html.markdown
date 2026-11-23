@@ -7,11 +7,11 @@ description: |-
   Provides a list of Alidns Access Strategies to the user.
 ---
 
-# alicloud\_alidns\_access\_strategies
+# alicloud_alidns_access_strategies
 
 This data source provides the Alidns Access Strategies of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.152.0+.
+-> **NOTE:** Available since v1.152.0+.
 
 ## Example Usage
 
@@ -41,10 +41,10 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Access Strategy name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `strategy_mode` - (Required, ForceNew) The type of the access policy. Valid values:
-  - `GEO`: based on geographic location. 
+  - `GEO`: based on geographic location.
   - `LATENCY`: Based on delay.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

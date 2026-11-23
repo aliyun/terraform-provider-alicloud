@@ -51,6 +51,7 @@ resource "alicloud_service_catalog_provisioned_product" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `parameters` - (Optional) Template parameters entered by the user.The maximum value of N is 200.See [`parameters`](#parameters) below.
 * `portfolio_id` - (Optional) Product mix ID.> When there is a default Startup option, there is no need to fill in the portfolio. When there is no default Startup option, you must fill in the portfolio.
 * `product_id` - (Required) Product ID.
@@ -63,13 +64,14 @@ The following arguments are supported:
 ### `parameters`
 
 The parameters support the following:
+
 * `parameter_key` - (Optional) The name of the parameter defined in the template.
 * `parameter_value` - (Optional) The Template parameter value entered by the user.
-
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.
 * `create_time` - The creation time of the product instance
 * `last_provisioning_task_id` - The ID of the last instance operation task
@@ -92,6 +94,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 3 mins) Used when create the Provisioned Product.
 * `delete` - (Defaults to 24 mins) Used when delete the Provisioned Product.
 * `update` - (Defaults to 24 mins) Used when update the Provisioned Product.

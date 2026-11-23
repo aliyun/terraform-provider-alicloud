@@ -60,10 +60,10 @@ The following arguments are supported:
 * `group_id` - (Optional) The ID of the application group.
 * `apply_mode` - (Optional) The mode in which the alert template is applied. Valid values:
   - `GROUP_INSTANCE_FIRST`: The metrics in the application group take precedence.
-  - `ALARM_TEMPLATE_FIRST `: The metrics specified in the alert template take precedence.
+  - `ALARM_TEMPLATE_FIRST`: The metrics specified in the alert template take precedence.
 * `notify_level` - (Optional) The alert notification method. Valid values:
   - `2`: Alert notifications are sent by using Phone, SMS, Email, TradeManager and DingTalk chatbots.
-  - `3 `: Alert notifications are sent by using SMS, Email, TradeManager and DingTalk chatbots.
+  - `3`: Alert notifications are sent by using SMS, Email, TradeManager and DingTalk chatbots.
   - `4`: Alert notifications are sent by using TradeManager and DingTalk chatbots.
 * `silence_time` - (Optional, Int) The mute period during which notifications are not repeatedly sent for an alert. Unit: seconds. Default value: `86400`. Valid values: `0` to `86400`.
 * `webhook` - (Optional) The callback URL to which a POST request is sent when an alert is triggered based on the alert rule.
@@ -73,7 +73,7 @@ The following arguments are supported:
 
 ### `alert_templates`
 
-The alert_templates supports the following: 
+The alert_templates supports the following:
 
 * `rule_name` - (Required) The name of the alert rule.
 * `metric_name` - (Required) The name of the metric.
@@ -86,15 +86,15 @@ The alert_templates supports the following:
 
   -> **NOTE:** To obtain the abbreviation of an Alibaba Cloud service name, call the [DescribeProjectMeta](https://www.alibabacloud.com/help/en/cms/developer-reference/api-cms-2019-01-01-describeprojectmeta) operation. The metricCategory tag in the Labels response parameter indicates the abbreviation of the Alibaba Cloud service name.
 * `webhook` - (Optional) The callback URL to which a POST request is sent when an alert is triggered based on the alert rule.
-* `escalations` - (Optional, Set) The information about the trigger condition based on the alert level. See [`escalations`](#alert_templates-escalations) below. 
+* `escalations` - (Optional, Set) The information about the trigger condition based on the alert level. See [`escalations`](#alert_templates-escalations) below.
 
 ### `alert_templates-escalations`
 
-The escalations supports the following: 
+The escalations supports the following:
 
-* `critical` - (Optional, Set) The condition for triggering critical-level alerts. See [`critical`](#alert_templates-escalations-critical) below. 
-* `info` - (Optional, Set) The condition for triggering info-level alerts. See [`info`](#alert_templates-escalations-info) below. 
-* `warn` - (Optional, Set) The condition for triggering warn-level alerts. See [`warn`](#alert_templates-escalations-warn) below. 
+* `critical` - (Optional, Set) The condition for triggering critical-level alerts. See [`critical`](#alert_templates-escalations-critical) below.
+* `info` - (Optional, Set) The condition for triggering info-level alerts. See [`info`](#alert_templates-escalations-info) below.
+* `warn` - (Optional, Set) The condition for triggering warn-level alerts. See [`warn`](#alert_templates-escalations-warn) below.
 
 ### `alert_templates-escalations-critical`
 
@@ -116,7 +116,7 @@ The info supports the following:
 
 ### `alert_templates-escalations-warn`
 
-The warn supports the following: 
+The warn supports the following:
 
 * `comparison_operator` - (Optional) The comparison operator of the threshold for warn-level alerts. Valid values: `GreaterThanOrEqualToThreshold`, `GreaterThanThreshold`, `LessThanOrEqualToThreshold`, `LessThanThreshold`, `NotEqualToThreshold`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`.
 * `statistics` - (Optional) The statistical aggregation method for warn-level alerts.

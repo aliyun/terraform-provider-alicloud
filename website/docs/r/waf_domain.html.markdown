@@ -52,7 +52,7 @@ The following arguments are supported:
 * `domain_name` - (Optional, ForceNew, Available in v1.94.0+) The domain that you want to add to WAF. The `domain_name` is required when the value of the `domain`  is Empty.
 * `http2_port` - (Optional) List of the HTTP 2.0 ports.
 * `http_port` - (Optional) List of the HTTP ports.
-* `http_to_user_ip` - (Optional) Specifies whether to enable the HTTP back-to-origin feature. After this feature is enabled, the WAF instance can use HTTP to forward HTTPS requests to the origin server. 
+* `http_to_user_ip` - (Optional) Specifies whether to enable the HTTP back-to-origin feature. After this feature is enabled, the WAF instance can use HTTP to forward HTTPS requests to the origin server.
 By default, port 80 is used to forward the requests to the origin server. Valid values: `On` and `Off`. Default to `Off`.
 * `https_port` - (Optional) List of the HTTPS ports.
 * `https_redirect` - (Optional) Specifies whether to redirect HTTP requests as HTTPS requests. Valid values: "On" and `Off`. Default to `Off`.

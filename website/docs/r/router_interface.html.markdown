@@ -7,7 +7,7 @@ description: |-
   Provides a VPC router interface resource to connect two VPCs.
 ---
 
-# alicloud\_router\_interface
+# alicloud_router_interface
 
 Provides a VPC router interface resource aim to build a connection between two VPCs.
 
@@ -16,7 +16,6 @@ Provides a VPC router interface resource aim to build a connection between two V
 -> **NOTE:** Only one pair of connected router interfaces can exist between two routers. Up to 5 router interfaces can be created for each router and each account.
 
 -> **NOTE:** The router interface is not connected when it is created. It can be connected by means of resource [alicloud_router_interface_connection](https://www.terraform.io/docs/providers/alicloud/r/router_interface_connection).
-
 
 ## Example Usage
 
@@ -65,7 +64,6 @@ The following arguments are supported:
 
   -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
@@ -79,4 +77,3 @@ The router interface can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_router_interface.interface ri-abc123456
 ```
-

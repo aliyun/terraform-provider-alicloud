@@ -30,7 +30,7 @@ output "first_transit_router_peer_attachments_transit_router_attachment_resource
 The following arguments are supported:
 
 * `transit_router_route_table_id` - (Optional) The ID of the route table of the Enterprise Edition transit router.
-* `transit_router_attachment_id` - (Optional) The ID of the network instance connection. 
+* `transit_router_attachment_id` - (Optional) The ID of the network instance connection.
 * `transit_router_attachment_resource_id` - (Optional) The ID of the next hop.
 * `transit_router_attachment_resource_type` - (Optional) The type of next hop. Valid values:
   * `VPC`: virtual private cloud (VPC)
@@ -54,4 +54,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `status` - The status of the route table.
   * `transit_router_attachment_id` - ID of the transit router attachment.
   * `transit_router_route_table_id` - ID of the transit router route table.
-

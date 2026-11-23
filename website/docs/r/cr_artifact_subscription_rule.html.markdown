@@ -67,13 +67,12 @@ resource "alicloud_cr_artifact_subscription_rule" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cr_artifact_subscription_rule&spm=docs.r.cr_artifact_subscription_rule.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `accelerate` - (Optional) Whether to enable acceleration
 * `instance_id` - (Required, ForceNew) Instance ID
 * `namespace_name` - (Required) Namespace name
@@ -89,6 +88,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<instance_id>:<artifact_subscription_rule_id>`.
 * `artifact_subscription_rule_id` - The first ID of the resource.
 * `create_time` - Creation time.
@@ -98,6 +98,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Artifact Subscription Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Artifact Subscription Rule.
 * `update` - (Defaults to 5 mins) Used when update the Artifact Subscription Rule.

@@ -9,11 +9,11 @@ description: |-
 
 # alicloud_cs_kubernetes_autoscaler
 
-This resource will help you to manager cluster-autoscaler in Kubernetes Cluster. 
+This resource will help you to manager cluster-autoscaler in Kubernetes Cluster.
 
 -> **NOTE:** The scaling group must use CentOS7 or AliyunLinux2 as base image.
 
--> **NOTE:** The cluster-autoscaler can only use the same size of instanceTypes in one scaling group. 
+-> **NOTE:** The cluster-autoscaler can only use the same size of instanceTypes in one scaling group.
 
 -> **NOTE:** Add Policy to RAM role of the node to deploy cluster-autoscaler if you need.
 
@@ -108,9 +108,9 @@ The following arguments are supported:
 * `cluster_id` - (Required) The id of kubernetes cluster.
 * `nodepools` - (Optional) The list of the node pools. See [`nodepools`](#nodepools) below.
 * `utilization` - (Required) The utilization option of cluster-autoscaler.
-* `cool_down_duration` (Required) The cool_down_duration option of cluster-autoscaler.  
-* `defer_scale_in_duration` (Required) The defer_scale_in_duration option of cluster-autoscaler.
-* `use_ecs_ram_role_token` (Optional, Available since v1.88.0) Enable autoscaler access to alibabacloud service by ecs ramrole token. default: false
+* `cool_down_duration` - (Required) The cool_down_duration option of cluster-autoscaler.
+* `defer_scale_in_duration` - (Required) The defer_scale_in_duration option of cluster-autoscaler.
+* `use_ecs_ram_role_token` - (Optional, Available since v1.88.0) Enable autoscaler access to alibabacloud service by ecs ramrole token. default: false
 
 ### `nodepools`
 
@@ -123,18 +123,18 @@ The nodepools mapping supports the following:
 ## Ignoring Changes to tags and user_data
 
 -> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://www.terraform.io/docs/configuration/resources.html) with `ignore_changes` to create a  a autoscaler group, then ignore any changes to that tags and user_data caused externally (e.g. Application Autoscaling).
-```
-  # ... ignore the change about tags and user_data in alicloud_ess_scaling_configuration
-  lifecycle {
-    ignore_changes = [tags,user_data]
-  }
+
+```terraform
+# ... ignore the change about tags and user_data in alicloud_ess_scaling_configuration
+lifecycle {
+  ignore_changes = [tags, user_data]
+}
 ```
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 90 mins) Used when creating cluster-autoscaler in the kubernetes cluster (until it reaches the initial `running` status). 
+* `create` - (Defaults to 90 mins) Used when creating cluster-autoscaler in the kubernetes cluster (until it reaches the initial `running` status).
 * `update` - (Defaults to 60 mins) Used when activating the cluster-autoscaler in the kubernetes cluster when necessary during update.
-* `delete` - (Defaults to 60 mins) Used when deleting cluster-autoscaler in kubernetes cluster. 
-
+* `delete` - (Defaults to 60 mins) Used when deleting cluster-autoscaler in kubernetes cluster.

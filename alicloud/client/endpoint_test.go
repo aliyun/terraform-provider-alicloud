@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/client/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,13 +21,13 @@ func TestUnitCommonLoadEndpointFromEnv(t *testing.T) {
 	defer os.Unsetenv("ALIBABA_CLOUD_ENDPOINT_ECS")
 
 	client := &AliyunClient{
-		config: &Config{
+		config: &config.Config{
 			Endpoints: new(sync.Map),
 			RegionId:  "cn-beijing",
 		},
 	}
 
-	err := client.loadEndpoint("ecs")
+	err := client.config.LoadEndpoint("ecs", client.RegionId)
 	assert.NoError(t, err)
 
 	val, ok := client.config.Endpoints.Load("ecs")
@@ -37,7 +38,7 @@ func TestUnitCommonLoadEndpointFromEnv(t *testing.T) {
 func TestUnitCommonIrregularProductEndpoint(t *testing.T) {
 	client := &AliyunClient{
 		RegionId: "cn-hangzhou",
-		config: &Config{
+		config: &config.Config{
 			Endpoints: new(sync.Map),
 			RegionId:  "cn-hangzhou",
 		},
@@ -54,7 +55,7 @@ func TestUnitCommonIrregularProductEndpoint(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.productCode, func(t *testing.T) {
-			err := client.loadEndpoint(tc.productCode)
+			err := client.config.LoadEndpoint(tc.productCode, client.RegionId)
 			assert.NoError(t, err)
 
 			val, ok := client.config.Endpoints.Load(tc.productCode)
@@ -66,7 +67,7 @@ func TestUnitCommonIrregularProductEndpoint(t *testing.T) {
 
 func TestUnitCommonInternationalRegionEndpoint(t *testing.T) {
 	client := &AliyunClient{
-		config: &Config{
+		config: &config.Config{
 			Endpoints: new(sync.Map),
 			RegionId:  "ap-southeast-1",
 		},
@@ -82,7 +83,7 @@ func TestUnitCommonInternationalRegionEndpoint(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.productCode, func(t *testing.T) {
-			err := client.loadEndpoint(tc.productCode)
+			err := client.config.LoadEndpoint(tc.productCode, client.RegionId)
 			assert.NoError(t, err)
 
 			val, ok := client.config.Endpoints.Load(tc.productCode)
@@ -95,7 +96,7 @@ func TestUnitCommonInternationalRegionEndpoint(t *testing.T) {
 func TestUnitCommonEndpointErrorHandling(t *testing.T) {
 	client := NewTestClient(t)
 
-	err := client.loadEndpoint("invalid_product")
+	err := client.config.LoadEndpoint("invalid_product", client.RegionId)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Illegal")
 }
@@ -105,7 +106,7 @@ func TestUnitSlsEndpoint(t *testing.T) {
 	endpoints.Store("log", "cn-shanghai.log.aliyuncs.com")
 
 	client := NewTestClient(t)
-	client.config.Region = Hangzhou
+	client.config.Region = config.Hangzhou
 	client.config.RegionId = "cn-hangzhou"
 	client.config.Endpoints = &endpoints
 
@@ -138,13 +139,13 @@ func TestUnitEfloControllerEndpointFromEnv(t *testing.T) {
 	defer os.Unsetenv("ALIBABA_CLOUD_ENDPOINT_EFLO_CONTROLLER")
 
 	client := &AliyunClient{
-		config: &Config{
+		config: &config.Config{
 			Endpoints: new(sync.Map),
 			RegionId:  "us-southeast-1",
 		},
 	}
 
-	err := client.loadEndpoint("eflo_controller")
+	err := client.config.LoadEndpoint("eflo_controller", client.RegionId)
 	assert.NoError(t, err)
 
 	val, ok := client.config.Endpoints.Load("eflo_controller")
@@ -172,7 +173,7 @@ func TestUnitSlsWithoutEndpoint(t *testing.T) {
 			// A fresh endpoint cache keeps the endpoint discovered for another
 			// region out of this case.
 			client.config.Endpoints = new(sync.Map)
-			client.config.Region = Region(tc.RegionId)
+			client.config.Region = config.Region(tc.RegionId)
 			client.config.RegionId = tc.RegionId
 
 			endpoint, err := client.loadApiEndpoint(tc.productCode)
@@ -208,7 +209,7 @@ func TestUnitSlsEndpointCacheReuse(t *testing.T) {
 
 	client := &AliyunClient{
 		RegionId: "cn-hangzhou",
-		config: &Config{
+		config: &config.Config{
 			Endpoints: new(sync.Map),
 			RegionId:  "cn-hangzhou",
 			// HTTP keeps the simulated unreachable-location failure out of the
@@ -264,7 +265,7 @@ func TestUnitSlsConfiguredEndpointPriority(t *testing.T) {
 	endpoints.Store("log", "cn-shanghai.log.aliyuncs.com")
 
 	client := &AliyunClient{
-		config: &Config{
+		config: &config.Config{
 			Endpoints: &endpoints,
 			RegionId:  "cn-hangzhou",
 		},
@@ -295,7 +296,7 @@ func TestUnitProductEndpointCacheReuse(t *testing.T) {
 			t.Setenv(tc.envName, firstName)
 
 			client := &AliyunClient{
-				config: &Config{
+				config: &config.Config{
 					Endpoints: new(sync.Map),
 					RegionId:  "cn-hangzhou",
 				},
@@ -331,7 +332,7 @@ func TestUnitSlsEndpointUserConfigTakesPrecedenceOverCache(t *testing.T) {
 	endpoints.Store("sls", "cached.sls.example.com")
 
 	client := &AliyunClient{
-		config: &Config{
+		config: &config.Config{
 			Endpoints: &endpoints,
 			RegionId:  "cn-hangzhou",
 		},

@@ -42,12 +42,10 @@ The following arguments are supported:
 
   -> **NOTE:** The minimum interval for creating a Alikms key version is 7 days.
 
-
 ## Attributes Reference
 
 * `key_id` - The id of the master key (CMK).
 * `key_version_id` - The id of the Alikms key version.
-
 
 ## Import
 

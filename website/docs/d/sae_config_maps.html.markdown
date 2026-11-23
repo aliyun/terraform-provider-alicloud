@@ -7,7 +7,7 @@ description: |-
   Provides a list of Sae Config Maps to the user.
 ---
 
-# alicloud\_sae\_config\_maps
+# alicloud_sae_config_maps
 
 This data source provides the Sae Config Maps of the current Alibaba Cloud user.
 

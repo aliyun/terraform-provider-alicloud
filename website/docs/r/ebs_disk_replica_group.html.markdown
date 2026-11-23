@@ -57,6 +57,7 @@ resource "alicloud_ebs_disk_replica_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) The description of the consistent replication group.
 * `destination_region_id` - (Required, ForceNew) The ID of the region to which the disaster recovery site belongs.
 * `destination_zone_id` - (Required, ForceNew) The ID of the zone to which the disaster recovery site belongs.
@@ -67,6 +68,7 @@ The following arguments are supported:
   - false: Data Synchronization starts after the RPO time period.
 
 Default value: false.
+
 * `pair_ids` - (Optional, Set, Available since v1.245.0) List of replication pair IDs contained in a consistent replication group.
 * `rpo` - (Optional, Computed, Int) The RPO value set by the consistency group in seconds. Currently only 900 seconds are supported.
 * `resource_group_id` - (Optional, Computed, Available since v1.245.0) resource group ID of enterprise
@@ -95,16 +97,19 @@ Default value: false.
 * `tags` - (Optional, Map, Available since v1.245.0) The tag of the resource
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `group_name` - (Deprecated since v1.245.0). Field 'group_name' has been deprecated from provider version 1.245.0. New field 'disk_replica_group_name' instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Disk Replica Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Disk Replica Group.
 * `update` - (Defaults to 20 mins) Used when update the Disk Replica Group.

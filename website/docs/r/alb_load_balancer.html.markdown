@@ -88,6 +88,7 @@ resource "alicloud_alb_load_balancer" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `address_allocated_mode` - (Optional, ForceNew) The method in which IP addresses are assigned. Valid values:  Fixed: The ALB instance uses a fixed IP address. Dynamic (default): An IP address is dynamically assigned to each zone of the ALB instance.
 * `address_ip_version` - (Optional, ForceNew, Computed) The protocol version. Value:
   - `IPv4`:IPv4 type.
@@ -122,22 +123,26 @@ The access_log_config supports the following:
 ### `deletion_protection_config`
 
 The deletion_protection_config supports the following:
+
 * `enabled` - (Optional) Remove the Protection Status
 
 ### `load_balancer_billing_config`
 
 The load_balancer_billing_config supports the following:
+
 * `pay_type` - (Required, ForceNew) Pay Type
 
 ### `modification_protection_config`
 
 The modification_protection_config supports the following:
+
 * `reason` - (Optional) Managed Instance
 * `status` - (Optional) Load Balancing Modify the Protection Status
 
 ### `zone_mappings`
 
 The zone_mappings supports the following:
+
 * `allocation_id` - (Optional, Computed, Available since v1.243.0) The ID of the EIP instance.
 * `eip_type` - (Optional, Computed, Available since v1.243.0) The type of the EIP instance.
 * `intranet_address` - (Optional, Computed, Available since v1.243.0) IPv4 private network address.
@@ -147,6 +152,7 @@ The zone_mappings supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `deletion_protection_config` - Remove the Protection Configuration
@@ -171,6 +177,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Load Balancer.
 * `delete` - (Defaults to 5 mins) Used when delete the Load Balancer.
 * `update` - (Defaults to 5 mins) Used when update the Load Balancer.

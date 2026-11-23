@@ -79,6 +79,7 @@ resource "alicloud_resource_manager_auto_grouping_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `exclude_region_ids_scope` - (Optional) The IDs of regions to be excluded. Separate multiple IDs with commas (,).
 * `exclude_resource_group_ids_scope` - (Optional) The IDs of resource groups to be excluded. Separate multiple IDs with commas (,).
 * `exclude_resource_ids_scope` - (Optional) The IDs of resources to be excluded. Separate multiple IDs with commas (,).
@@ -97,17 +98,20 @@ The following arguments are supported:
 ### `rule_contents`
 
 The rule_contents supports the following:
+
 * `auto_grouping_scope_condition` - (Optional) The condition for the range of resources to be automatically transferred.
 * `target_resource_group_condition` - (Required) The condition for the destination resource group.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Auto Grouping Rule.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Auto Grouping Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Auto Grouping Rule.
 * `update` - (Defaults to 5 mins) Used when update the Auto Grouping Rule.

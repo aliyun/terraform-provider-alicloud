@@ -10,8 +10,6 @@ description: |-
 
 Provides a ECS Image Component resource.
 
-
-
 For information about ECS Image Component and how to use it, see [What is Image Component](https://www.alibabacloud.com/help/en/doc-detail/200424.htm).
 
 -> **NOTE:** Available since v1.159.0.
@@ -49,6 +47,7 @@ resource "alicloud_ecs_image_component" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `component_type` - (Optional, ForceNew, Computed) The component type. Supports mirrored build components and test components.
 
   Value range:
@@ -81,12 +80,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Component creation time.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Image Component.
 * `delete` - (Defaults to 5 mins) Used when delete the Image Component.
 * `update` - (Defaults to 5 mins) Used when update the Image Component.

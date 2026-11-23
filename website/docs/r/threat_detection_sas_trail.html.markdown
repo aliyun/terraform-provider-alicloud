@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_threat_detection_sas_trail
 
-Provides a Threat Detection Sas Trail resource. 
+Provides a Threat Detection Sas Trail resource.
 
 For information about Threat Detection Sas Trail and how to use it, see [What is Sas Trail](https://www.alibabacloud.com/help/zh/security-center/developer-reference/api-sas-2018-12-03-createservicetrail).
 
@@ -47,6 +47,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as ``.
 * `create_time` - The service trace creation timestamp, in milliseconds.
 * `service_trail` - Service trace configuration information.
@@ -58,6 +59,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Sas Trail.
 * `delete` - (Defaults to 5 mins) Used when delete the Sas Trail.
 

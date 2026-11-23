@@ -31,9 +31,7 @@ resource "alicloud_polardb_gateway_rate_limit_policy" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_gateway_rate_limit_policy&spm=docs.r.polardb_gateway_rate_limit_policy.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

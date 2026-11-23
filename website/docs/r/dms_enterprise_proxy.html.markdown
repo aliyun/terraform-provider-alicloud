@@ -148,7 +148,6 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `create` - (Defaults to 1 mins) Used when create the Proxy.
 * `delete` - (Defaults to 1 mins) Used when delete the Proxy.
 
-
 ## Import
 
 DMS Enterprise Proxy can be imported using the id, e.g.

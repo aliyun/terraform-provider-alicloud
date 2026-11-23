@@ -89,6 +89,7 @@ resource "alicloud_oss_bucket_website" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the bucket
 * `error_document` - (Optional, List) The container that holds the error page configuration information. See [`error_document`](#error_document) below.
 * `index_document` - (Optional, List) Static Website Default Home Page Configuration See [`index_document`](#index_document) below.
@@ -97,12 +98,14 @@ The following arguments are supported:
 ### `error_document`
 
 The error_document supports the following:
+
 * `http_status` - (Optional, Int) The HTTP status code when the error page is returned. The default 404.
 * `key` - (Optional) The error page file. If the Object accessed does not exist, this error page is returned.
 
 ### `index_document`
 
 The index_document supports the following:
+
 * `suffix` - (Optional) The default home page.
 * `support_sub_dir` - (Optional) Whether to jump to the default home page of a subdirectory when accessing a subdirectory.
 * `type` - (Optional) After the default homepage is set, the behavior when an Object that ends with a non-forward slash (/) is accessed and the Object does not exist.
@@ -110,11 +113,13 @@ The index_document supports the following:
 ### `routing_rules`
 
 The routing_rules supports the following:
+
 * `routing_rule` - (Optional, List) Specify a jump rule or a mirroring back-to-origin rule, with a maximum of 20 routing rules. See [`routing_rule`](#routing_rules-routing_rule) below.
 
 ### `routing_rules-routing_rule`
 
 The routing_rules-routing_rule supports the following:
+
 * `condition` - (Optional, List) Save the criteria that the rule needs to match. See [`condition`](#routing_rules-routing_rule-condition) below.
 * `lua_config` - (Optional, List) The Lua script configuration to be executed. See [`lua_config`](#routing_rules-routing_rule-lua_config) below.
 * `redirect` - (Optional, List) Specifies the action to perform after this rule is matched. See [`redirect`](#routing_rules-routing_rule-redirect) below.
@@ -123,6 +128,7 @@ The routing_rules-routing_rule supports the following:
 ### `routing_rules-routing_rule-condition`
 
 The routing_rules-routing_rule-condition supports the following:
+
 * `http_error_code_returned_equals` - (Optional) When the specified Object is accessed, this status is returned to match this rule. This field must be 404 when the jump rule is mirrored back to the source.
 * `include_headers` - (Optional, List) This rule can only be matched if the request contains the specified Header and the value is the specified value. You can specify up to 10 containers. See [`include_headers`](#routing_rules-routing_rule-condition-include_headers) below.
 * `key_prefix_equals` - (Optional) Only objects that match this prefix can match this rule.
@@ -131,11 +137,13 @@ The routing_rules-routing_rule-condition supports the following:
 ### `routing_rules-routing_rule-lua_config`
 
 The routing_rules-routing_rule-lua_config supports the following:
+
 * `script` - (Optional) The Lua script name.
 
 ### `routing_rules-routing_rule-redirect`
 
 The routing_rules-routing_rule-redirect supports the following:
+
 * `enable_replace_prefix` - (Optional) If this field is set to true, the prefix of Object is replaced with the value specified by ReplaceKeyPrefixWith. If this field is not specified or is blank, the Object prefix is truncated.
 * `host_name` - (Optional) The domain name during the jump. The domain name must comply with the domain name specification.
 * `http_redirect_code` - (Optional) The status code returned during the jump. It takes effect only when the RedirectType is set to External or AliCDN.
@@ -177,6 +185,7 @@ The routing_rules-routing_rule-redirect supports the following:
 ### `routing_rules-routing_rule-redirect-mirror_auth`
 
 The routing_rules-routing_rule-redirect-mirror_auth supports the following:
+
 * `access_key_id` - (Optional) Mirror back-to-source source Station back-to-source AK
 * `access_key_secret` - (Optional) Mirroring back to the source station back to the source SK will be automatically desensitized when obtaining the configuration.
 * `auth_type` - (Optional) Authentication type of mirror return Source
@@ -185,6 +194,7 @@ The routing_rules-routing_rule-redirect-mirror_auth supports the following:
 ### `routing_rules-routing_rule-redirect-mirror_headers`
 
 The routing_rules-routing_rule-redirect-mirror_headers supports the following:
+
 * `pass` - (Optional, List) Pass through the specified Header to the source site. It takes effect only when the RedirectType is set to Mirror. Each Header is up to 1024 bytes in length and has A character set of 0 to 9, a to Z, A to z, and dashes (-).
 * `pass_all` - (Optional) Indicates whether other headers except the following headers are transmitted to the source site. It takes effect only when the RedirectType is set to Mirror. content-length, authorization2, authorization, range, date, and other headers Headers whose names start with oss-/x-oss-/x-drs-
 * `remove` - (Optional, List) Do not pass the specified Header to the source site. It takes effect only when the RedirectType is set to Mirror. Each Header is up to 1024 bytes in length and has A character set of 0 to 9, a to Z, A to z, and dashes (-).
@@ -193,33 +203,39 @@ The routing_rules-routing_rule-redirect-mirror_headers supports the following:
 ### `routing_rules-routing_rule-redirect-mirror_multi_alternates`
 
 The routing_rules-routing_rule-redirect-mirror_multi_alternates supports the following:
+
 * `mirror_multi_alternate` - (Optional, List) Mirror back-to-source multi-source station configuration list See [`mirror_multi_alternate`](#routing_rules-routing_rule-redirect-mirror_multi_alternates-mirror_multi_alternate) below.
 
 ### `routing_rules-routing_rule-redirect-mirror_return_headers`
 
 The routing_rules-routing_rule-redirect-mirror_return_headers supports the following:
+
 * `return_header` - (Optional, List) The list of response header rules for mirroring back-to-source return. See [`return_header`](#routing_rules-routing_rule-redirect-mirror_return_headers-return_header) below.
 
 ### `routing_rules-routing_rule-redirect-mirror_taggings`
 
 The routing_rules-routing_rule-redirect-mirror_taggings supports the following:
+
 * `taggings` - (Optional, List) Image back-to-source save label rule list See [`taggings`](#routing_rules-routing_rule-redirect-mirror_taggings-taggings) below.
 
 ### `routing_rules-routing_rule-redirect-mirror_taggings-taggings`
 
 The routing_rules-routing_rule-redirect-mirror_taggings-taggings supports the following:
+
 * `key` - (Optional) The tag key corresponding to the current rule
 * `value` - (Optional) Rules for Saving Label Values
 
 ### `routing_rules-routing_rule-redirect-mirror_return_headers-return_header`
 
 The routing_rules-routing_rule-redirect-mirror_return_headers-return_header supports the following:
+
 * `key` - (Optional) Response header corresponding to the current rule
 * `value` - (Optional) Rules that return response header values
 
 ### `routing_rules-routing_rule-redirect-mirror_multi_alternates-mirror_multi_alternate`
 
 The routing_rules-routing_rule-redirect-mirror_multi_alternates-mirror_multi_alternate supports the following:
+
 * `mirror_multi_alternate_dst_region` - (Optional) Mirroring back-to-source multi-station Region
 * `mirror_multi_alternate_number` - (Optional, Int) Image back-to-source multi-source station serial number
 * `mirror_multi_alternate_url` - (Optional) Mirroring back-to-source multi-source site URL
@@ -228,12 +244,14 @@ The routing_rules-routing_rule-redirect-mirror_multi_alternates-mirror_multi_alt
 ### `routing_rules-routing_rule-redirect-mirror_headers-set`
 
 The routing_rules-routing_rule-redirect-mirror_headers-set supports the following:
+
 * `key` - (Optional) Set the key of the Header, up to 1024 bytes, and the character set is the same as that of Pass. It takes effect only when the RedirectType is set to Mirror.
 * `value` - (Optional) Set the value of the Header to 1024 bytes at most. \r\n. It takes effect only when the RedirectType is set to Mirror.
 
 ### `routing_rules-routing_rule-condition-include_headers`
 
 The routing_rules-routing_rule-condition-include_headers supports the following:
+
 * `ends_with` - (Optional) This rule can only be matched if the request contains the Header specified by Key and the value ends with this value.
 * `equals` - (Optional) This rule can only be matched if the request contains the Header specified by Key and the value is the specified value.
 * `key` - (Optional) This rule can only be matched if the request contains this Header and the value meets the conditions.
@@ -242,11 +260,13 @@ The routing_rules-routing_rule-condition-include_headers supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Website.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Website.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Website.

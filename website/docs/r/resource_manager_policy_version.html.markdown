@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_resource_manager_policy_version
 
-Provides a Resource Manager Policy Version resource. 
+Provides a Resource Manager Policy Version resource.
 For information about Resource Manager Policy Version and how to use it, see [What is Resource Manager Policy Version](https://www.alibabacloud.com/help/en/doc-detail/116817.htm).
 
 -> **NOTE:** Available since v1.84.0.
@@ -69,7 +69,7 @@ The following arguments are supported:
 
 * `policy_name` - (Required, ForceNew) The name of the policy. Name must be 1 to 128 characters in length and can contain letters, digits, and hyphens (-).
 * `policy_document` - (Required, ForceNew) The content of the policy. The content must be 1 to 2,048 characters in length.
-* `is_default_version` - (Optional, Deprecated from version 1.90.0) Specifies whether to set the policy version as the default version. Default to `false`. 
+* `is_default_version` - (Optional, Deprecated from version 1.90.0) Specifies whether to set the policy version as the default version. Default to `false`.
 
   -> **NOTE:** If set to default version, the resource cannot be deleted. You need to set the other version as the default version in policy before you delete this resource.
 

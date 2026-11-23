@@ -33,14 +33,15 @@ data "alicloud_cloud_control_resource_types" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `product` - (Required, ForceNew) Product Code.
 * `ids` - (Optional, ForceNew, Computed) A list of Resource Type IDs.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Resource Type IDs.
 * `types` - A list of Resource Type Entries. Each element contains the following attributes:
   * `create_only_properties` - Create an operation private parameter collection. The attributes are not returned in the resource query operation, but the parameters are required in the creation operation.

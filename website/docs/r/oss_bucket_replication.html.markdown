@@ -127,14 +127,13 @@ The following arguments are supported:
 * `bucket` - (Required, ForceNew) The name of the bucket.
 * `prefix_set` - (Optional, ForceNew) The prefixes used to specify the object to replicate. Only objects that match the prefix are replicated to the destination bucket. See [`prefix_set`](#prefix_set) below.
 * `destination` - (Required, ForceNew) Specifies the destination for the rule. See [`destination`](#destination) below.
-* `action` - (Optional, ForceNew) The operations that can be synchronized to the destination bucket. You can set action to one or more of the following operation types. Valid values: `ALL`(contains PUT, DELETE, and ABORT), `PUT`, `DELETE` and `ABORT`. Defaults to `ALL`.    
+* `action` - (Optional, ForceNew) The operations that can be synchronized to the destination bucket. You can set action to one or more of the following operation types. Valid values: `ALL`(contains PUT, DELETE, and ABORT), `PUT`, `DELETE` and `ABORT`. Defaults to `ALL`.
 * `historical_object_replication` - (Optional, ForceNew) Specifies whether to replicate historical data from the source bucket to the destination bucket before data replication is enabled. Can be `enabled` or `disabled`. Defaults to `enabled`.
 * `sync_role` - (Optional, ForceNew) Specifies the role that you authorize OSS to use to replicate data. If SSE-KMS is specified to encrypt the objects replicated to the destination bucket, it must be specified.
 * `source_selection_criteria` - (Optional, ForceNew) Specifies other conditions used to filter the source objects to replicate. See [`source_selection_criteria`](#source_selection_criteria) below.
 * `encryption_configuration` - (Optional, ForceNew) Specifies the encryption configuration for the objects replicated to the destination bucket. See [`encryption_configuration`](#encryption_configuration) below.
 * `progress` - (Optional) Specifies the progress for querying the progress of a data replication task of a bucket.
 * `rtc` - (Computed, Optional, Available since v1.262.0) Configures the Replication Time Control (RTC) feature for a data replication task of a bucket. See [`rtc`](#rtc) below.
-
 
 ### `prefix_set`
 
@@ -182,7 +181,6 @@ The rtc configuration block supports the following:
 * `status` - (Computed) The current status of the RTC feature. This attribute is read-only and is only populated when `enabled` is set to `true`. Possible values are:
     * `enabling` - The feature is being activated but the historical data migration is still in progress.
     * `enabled` - The feature is fully active and the historical data migration has completed (or if historical migration was not selected for the task).
-
 
 ## Attributes Reference
 

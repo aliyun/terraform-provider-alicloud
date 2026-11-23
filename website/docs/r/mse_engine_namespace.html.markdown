@@ -73,7 +73,7 @@ The following arguments are supported:
 * `accept_language` - (Optional) The language type of the returned information. Valid values: `zh`, `en`.
 * `instance_id` - (Optional, ForceNew, Computed) The instance id of the cluster. It is formatted to `mse-cn-xxxxxxxxxxx`.Available since v1.232.0.
 * `cluster_id` - (Optional, ForceNew, Computed, Available since v1.232.0) The id of the cluster.It is formatted to `mse-xxxxxxxx`.
-* `namespace_id` - (Optional, ForceNew, Computed, Available since v1.232.0) The id of Namespace. 
+* `namespace_id` - (Optional, ForceNew, Computed, Available since v1.232.0) The id of Namespace.
 * `namespace_show_name` - (Required) The name of the Engine Namespace.
 * `namespace_desc` - (Optional, Computed, Available since v1.232.0)The description of the namespace.
 

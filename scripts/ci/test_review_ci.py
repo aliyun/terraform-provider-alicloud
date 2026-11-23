@@ -1,11 +1,14 @@
+import http.client
 import importlib.util
 import io
+import itertools
+import json
 import re
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 spec = importlib.util.spec_from_file_location('review_ci', Path(__file__).with_name('review_ci.py'))
 ci = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ci)
@@ -20,11 +23,128 @@ def jarvis_failure_view(log):
     return [line[:360] for line in log.split('\n') if JARVIS_ERROR_LINE.search(line)][-8:]
 
 
+class FakeClock:
+    """Monotonic time that moves only while the check sleeps."""
+
+    def __init__(self):
+        self.now, self.sleeps = 0, []
+
+    def monotonic(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+def answer(value):
+    return io.BytesIO(json.dumps(value).encode())
+
+
+def unavailable(code):
+    return ci.urllib.error.HTTPError(ci.ORIGIN, code, 'unavailable', {}, io.BytesIO())
+
+
+class AcubeUnavailableTest(unittest.TestCase):
+    TID, HEAD = 'review_' + 'b' * 32, 'a' * 40
+    REPORT = {'taskId': TID, 'headSha': HEAD, 'status': 'completed', 'findings': [{'findingId': 'F-01', 'severity': 'p1'}]}
+
+    def run_check(self, acube, clock):
+        """Run the whole check against a fake ACube transport and return its exit code and log lines."""
+        env = {'ACUBE_REVIEW_KIND': 'formal', 'ACUBE_MR': '7', 'ACUBE_HEAD': self.HEAD, 'ACUBE_CI_RUN': '123',
+               'ACUBE_PROVIDER_RUN_TOKEN': 'x' * 32}
+        opener, out = MagicMock(), io.StringIO()
+        opener.open.side_effect = acube
+        with patch.dict(ci.os.environ, env), patch.object(ci.urllib.request, 'build_opener', return_value=opener), \
+                patch.object(ci.time, 'monotonic', clock.monotonic), patch.object(ci.time, 'sleep', clock.sleep), \
+                patch.object(ci, 'publish'), redirect_stdout(out), redirect_stderr(io.StringIO()):
+            code = ci.main()
+        return code, out.getvalue().splitlines(), opener.open.call_count
+
+    def test_outages_shorter_than_the_window_are_waited_out(self):
+        answers = [{'taskId': self.TID}, dict(self.REPORT, conclusion='pending', dispositions={'F-01': {'state': 'verifying'}}),
+                   dict(self.REPORT, conclusion='pending', dispositions={'F-01': {'state': 'verifying'}}),
+                   dict(self.REPORT, conclusion='success', dispositions={'F-01': {'state': 'rejected', 'actorType': 'AGENT'}})]
+        # Two redeploys of about four minutes: one while submitting, one between polls. Together they
+        # exceed the window, but each recovers inside its own window, so the check keeps polling.
+        outages = [(0, 240), (300, 540)]
+        failures = itertools.cycle([lambda: http.client.BadStatusLine('invalid status line'),
+                                    lambda: unavailable(502), lambda: unavailable(503),
+                                    lambda: ci.urllib.error.URLError(ConnectionRefusedError()),
+                                    lambda: ci.socket.timeout('timed out'), lambda: ConnectionResetError()])
+        clock = FakeClock()
+
+        def acube(request, timeout):
+            if clock.now == 0:
+                # Bounded reads can return a valid JSON prefix before the advertised body ends.
+                stream = b'HTTP/1.1 200 OK\r\nContent-Length: 1024\r\n\r\n' + json.dumps(answers[0]).encode()
+                connection = MagicMock()
+                connection.makefile.return_value = io.BytesIO(stream)
+                response = http.client.HTTPResponse(connection)
+                response.begin()
+                return response
+            if any(start <= clock.now < end for start, end in outages):
+                raise next(failures)()
+            return answer(answers.pop(0))
+        code, lines, calls = self.run_check(acube, clock)
+        self.assertEqual(0, code)
+        self.assertEqual('ACUBE_REVIEW_RESULT kind=PASSED', lines[-1])
+        self.assertEqual([], answers, 'polling continued after each outage until ACube concluded')
+        self.assertEqual(540, clock.now)
+        retries = [line for line in lines if line.startswith('ACube unavailable (')]
+        self.assertEqual(calls - 4, len(retries), 'every failure was retried')
+        self.assertFalse(any(line.startswith(ci.FAILURE_MARKER) for line in lines))
+
+    def test_unavailable_for_the_whole_window_fails_as_service_error(self):
+        clock, polls = FakeClock(), []
+
+        def acube(request, timeout):
+            if self.TID not in request.full_url:
+                return answer({'taskId': self.TID})
+            polls.append(clock.now)
+            raise unavailable(502)
+        code, lines, _ = self.run_check(acube, clock)
+        self.assertEqual(1, code)
+        self.assertEqual('HIGHLIGHT__[ERROR] ACUBE_REVIEW_RESULT kind=SERVICE_ERROR reason=ACube_HTTP_502__check_task_in_ACube',
+                         lines[-1])
+        self.assertEqual(5 * 60, ci.UNAVAILABLE_WINDOW_SECONDS)
+        self.assertEqual(ci.UNAVAILABLE_WINDOW_SECONDS, polls[-1] - polls[0], 'gives up exactly when the window ends')
+        self.assertGreater(len(polls), 10)
+        self.assertEqual(ci.MAX_RETRY_DELAY_SECONDS, max(clock.sleeps))
+        self.assertEqual(sorted(clock.sleeps[:4]), clock.sleeps[:4], 'delays grow before reaching the cap')
+
+        # The window never extends a wait past the seven-hour review deadline.
+        clock, opener = FakeClock(), MagicMock()
+        opener.open.side_effect = unavailable(503)
+        with patch.object(ci.urllib.request, 'build_opener', return_value=opener), \
+                patch.object(ci.time, 'monotonic', clock.monotonic), patch.object(ci.time, 'sleep', clock.sleep), \
+                redirect_stdout(io.StringIO()), self.assertRaisesRegex(RuntimeError, '^ACube HTTP 503; check task in ACube$'):
+            ci.request('/api/v1/provider_runs/ci-reviews/formal', 'x' * 32, deadline=60)
+        self.assertEqual(60, clock.now)
+
+    def test_other_failures_are_not_retried(self):
+        for name, failure, reason in [
+                ('HTTP 400', unavailable(400), 'reason=ACube_HTTP_400__check_task_in_ACube'),
+                ('HTTP 403', unavailable(403), 'reason=ACube_HTTP_403__check_task_in_ACube'),
+                ('HTTP 404', unavailable(404), 'reason=ACube_HTTP_404__check_task_in_ACube'),
+                ('redirect', RuntimeError('Unexpected ACube redirect'), 'reason=Unexpected_ACube_redirect'),
+                ('not JSON', io.BytesIO(b'<html>maintenance</html>'), 'reason=Expecting_value')]:
+            with self.subTest(name):
+                clock = FakeClock()
+                code, lines, calls = self.run_check([answer({'taskId': self.TID}), failure], clock)
+                self.assertEqual(1, code)
+                self.assertTrue(lines[-1].startswith(
+                    'HIGHLIGHT__[ERROR] ACUBE_REVIEW_RESULT kind=SERVICE_ERROR ' + reason), lines[-1])
+                self.assertEqual(2, calls)
+                self.assertEqual([], clock.sleeps)
+
+
 class ReviewCiTest(unittest.TestCase):
     def test_report_contains_findings_and_annotation_link(self):
         md = ci.render({'status':'completed','conclusion':'failure','summary':'risk', 'findings':[
             {'severity':'p0','title':'<script>x</script> [bad](https://bad)', 'description':'impact','difference':'delta'}]}, 'https://pre-acube.aliyun-inc.com', 'Formal', 'a'*40)
-        self.assertIn('打开 ACube', md)
+        self.assertIn('ACube 评审报告 ↗', md)
+        self.assertIn('在 ACube 查看本条 ↗', md)
         self.assertIn('P0 1 / P1 0 / P2 0', md)
         self.assertIn('impact', md)
         self.assertNotIn('<script>', md)
@@ -51,8 +171,29 @@ class ReviewCiTest(unittest.TestCase):
         self.assertEqual('success', gated['conclusion'])
         self.assertEqual('failure', gated['ciConclusion'])
         md = ci.render(gated, 'https://example.com', 'Formal', 'a'*40)
-        for expected in ('每个 P0/P1', 'P1 1 项', '处理指引', '新提交', '拒绝或忽略', 'ACube 原始结论'):
+        for expected in ('每个 P0/P1', 'P1 1 项', '处理指引', '新提交', '驳回 理由', '忽略 理由', '重试', 'ACube 原始结论'):
             self.assertIn(expected, md)
+
+    def test_summary_leads_with_code_replies_and_keeps_acube_secondary(self):
+        report = ci.apply_ci_gate({'status': 'completed', 'conclusion': 'failure',
+            'findings': [{'findingId': 'F-01', 'severity': 'p1', 'title': 'apply 失败'}],
+            'dispositions': {'F-01': {'state': 'needs_human', 'commentId': 99}}})
+        md = ci.render(report, 'https://example.com', 'Formal', 'a'*40)
+        self.assertEqual('## ' + ci.REPLY_GUIDE, md.split('\n\n')[1], 'the first instruction is the Code reply')
+        for command in ('`采纳`', '`驳回 理由`', '`忽略 理由`', '`重试`', '`/sonus`'):
+            self.assertIn(command, ci.REPLY_GUIDE)
+        # Anyone who can comment on the MR, the author included, may send every command.
+        self.assertIn('能在 MR 上评论的人（含 MR 作者）都可以回复', md)
+        self.assertIn('须写理由', md)
+        for restriction in ('评审人', '维护者', 'MR 作者不行'):
+            self.assertNotIn(restriction, md)
+            self.assertNotIn(restriction, report['gateMessage'])
+        self.assertLess(md.index(ci.REPLY_GUIDE), md.index('次要入口：'))
+        self.assertIn('待真人处置 · 已发到 MR 评论', md)
+        # People are no longer sent to ACube to dispose of a finding and rerun the check.
+        for stale in ('打开 ACube 评审报告并处置', '在 ACube 拒绝', '拒绝或忽略后重跑', '发起 Agent 实测 ↗', '已拒绝'):
+            self.assertNotIn(stale, md)
+        self.assertNotIn('ACube 拒绝', report['gateMessage'])
 
     def test_only_rejected_or_ignored_findings_stop_blocking(self):
         def gate(state, conclusion='success', severity='p1'):
@@ -169,7 +310,7 @@ class ReviewCiTest(unittest.TestCase):
                                       'evidenceUrl': 'https://evil.example/x'}}})
         md = ci.render(report, 'https://example.com', 'Formal', 'a'*40)
         self.assertEqual('success', report['ciConclusion'])
-        self.assertIn('已拒绝 · Agent 实测 · 实测未复现', md)
+        self.assertIn('已驳回 · Agent 实测 · 实测未复现', md)
         self.assertIn('href="' + jarvis + '"', md)
         self.assertIn('已忽略 · 辰羿', md)
         self.assertNotIn('evil.example', md)
@@ -235,32 +376,124 @@ class ReviewCiTest(unittest.TestCase):
     def test_generated_templates_wire_expected_environment(self):
         import runpy
         runpy.run_path(str(Path(__file__).with_name('build_review_ci_templates.py')))
+        headers = {}
         for kind in ('formal', 'ai'):
-            template = (Path(__file__).resolve().parents[2] / 'ci/templates' / ('acube-' + kind + '-review.yaml')).read_text()
-            self.assertIn('ACUBE_REVIEW_KIND: ' + kind, template)
-            embedded = template.split("python3 - <<'ACUBE_REVIEW_PY'\n", 1)[1].rsplit('          ACUBE_REVIEW_PY', 1)[0]
-            script = '\n'.join(line[10:] for line in embedded.splitlines())
-            compile(script, kind, 'exec')
-            source = Path(ci.__file__) if kind == 'formal' else Path(__file__).with_name('review_ci_disabled.py')
-            self.assertEqual(source.read_text().rstrip(), script.rstrip())
-            if kind == 'ai':
-                self.assertNotIn('ACUBE_PROVIDER_RUN_TOKEN', template)
-                self.assertNotIn('urllib', script)
-                self.assertNotIn('/ci-reviews/', script)
-                import os
-                import json
-                with tempfile.TemporaryDirectory() as directory:
-                    previous = os.getcwd()
-                    try:
-                        os.chdir(directory)
-                        with patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': directory + '/summary.md'}, clear=True):
-                            scope = {'__name__': 'test_disabled'}
-                            exec(compile(script, kind, 'exec'), scope)
-                            self.assertEqual(scope['main'](), 0)
-                        report = json.loads(Path('review-report.json').read_text())
-                        self.assertEqual(report['status'], 'skipped')
-                        self.assertEqual(report['conclusion'], 'success')
-                        self.assertNotIn('taskId', report)
-                        self.assertIn('本次未执行', Path('summary.md').read_text())
-                    finally:
-                        os.chdir(previous)
+            with self.subTest(kind=kind):
+                template = (Path(__file__).resolve().parents[2] / 'ci/templates' / ('acube-' + kind + '-review.yaml')).read_text()
+                header, embedded = template.split("python3 - <<'ACUBE_REVIEW_PY'\n", 1)
+                headers[kind] = header
+                self.assertIn('ACUBE_REVIEW_KIND: ' + kind, header)
+                self.assertIn('    timeout: 8h\n', header)
+                self.assertIn("ACUBE_PROVIDER_RUN_TOKEN: '${{secrets.ACUBE_PROVIDER_RUN_TOKEN}}'", header)
+                self.assertNotIn('ACUBE_PROVIDER_RUN_TOKEN', header.split('- uses: setup-env')[0],
+                                 'the release return exemption never sees the credential')
+                self.assertRegex(header, r'运行评审并生成报告\n\s+when: .*VERIFIED_RELEASE_RETURN !=')
+                script = '\n'.join(line[10:] for line in embedded.rsplit('          ACUBE_REVIEW_PY', 1)[0].splitlines())
+                compile(script, kind, 'exec')
+                self.assertEqual(Path(ci.__file__).read_text().rstrip(), script.rstrip())
+        # AI review runs the formal review's bridge with the same timeout, polling, release return
+        # exemption and credential; only its kind and names differ.
+        renamed = (headers['formal'].replace('ACube 形式化评审', 'ACube AI评审')
+                   .replace('Skipped ACube formal review', 'Skipped ACube AI review')
+                   .replace('ACUBE_REVIEW_KIND: formal', 'ACUBE_REVIEW_KIND: ai'))
+        self.assertEqual(renamed, headers['ai'])
+
+
+class AiReviewOnDemandTest(unittest.TestCase):
+    """AI review runs on every MR update; ACube decides whether Sonus runs and the bridge waits for it."""
+    TID, HEAD = 'review_' + 'c' * 32, 'a' * 40
+    TASK = {'taskId': TID, 'headSha': HEAD, 'mr': 7}
+
+    def run_ai(self, answers):
+        """Run the AI check against ACube answers; return exit code, log lines, rendered summaries and mocks."""
+        env = {'ACUBE_REVIEW_KIND': 'ai', 'ACUBE_MR': '7', 'ACUBE_HEAD': self.HEAD, 'ACUBE_CI_RUN': '123',
+               'ACUBE_PROVIDER_RUN_TOKEN': 'x' * 32}
+        summaries, out = [], io.StringIO()
+        with patch.dict(ci.os.environ, env), patch.object(ci, 'request', side_effect=answers) as request, \
+                patch.object(ci, 'publish', side_effect=lambda *args: summaries.append(ci.render(*args))), \
+                patch.object(ci.time, 'sleep') as sleep, redirect_stdout(out), redirect_stderr(io.StringIO()):
+            code = ci.main()
+        return code, out.getvalue().splitlines(), summaries, request, sleep
+
+    def test_skip_shows_the_reason_acube_gives(self):
+        receipt = {'status': 'skipped', 'conclusion': 'success', 'headSha': self.HEAD, 'mr': 7, 'findings': [],
+                   'summary': '数字人判断无需 Sonus：\nHIGHLIGHT__[ERROR] 本次只调整文档示例。'}
+        code, lines, summaries, request, _ = self.run_ai([receipt])
+        self.assertEqual(0, code)
+        self.assertEqual(1, request.call_count, 'a skip starts no task and polls nothing')
+        self.assertEqual('/api/v1/provider_runs/ci-reviews/ai', request.call_args[0][0])
+        self.assertEqual({'mr': 7, 'headSha': self.HEAD, 'runId': '123', 'contentReuseVersion': 'review-content-v1'},
+                         request.call_args[0][2])
+        # ACube's text stays on one line, so it can never start a failure or result line.
+        self.assertEqual(['数字人判断无需 Sonus： HIGHLIGHT__[ERROR] 本次只调整文档示例。', 'ACUBE_REVIEW_RESULT kind=SKIPPED'], lines)
+        md = summaries[-1]
+        self.assertIn('## 跳过原因\n\n数字人判断无需 Sonus：', md)
+        self.assertEqual(1, md.count('数字人判断无需 Sonus'), 'the reason is not repeated as the report summary')
+        self.assertIn('`/sonus`', md)
+        self.assertIn('- CI 结论：success', md)
+        self.assertIn('- 任务：未创建', md)
+        self.assertNotIn('评审发现', md, 'a skip is not a clean review')
+
+    def test_skip_while_a_reused_report_is_verified_ends_the_check(self):
+        reused = {'reused': True, 'status': 'completed', 'conclusion': 'pending', 'mr': 7, 'ciHeadSha': self.HEAD,
+                  'headSha': 'b' * 40, 'taskId': 'review_' + 'd' * 32, 'reusePolicy': 'review-content-v1',
+                  'findings': [{'findingId': 'F-01', 'severity': 'p1'}], 'dispositions': {'F-01': {'state': 'verifying'}}}
+        skipped = {'status': 'skipped', 'conclusion': 'success', 'headSha': self.HEAD, 'mr': 7, 'summary': '抽检未选中本次提交。'}
+        code, lines, _, request, _ = self.run_ai([reused, skipped])
+        self.assertEqual(0, code)
+        self.assertEqual(request.call_args_list[0], request.call_args_list[1], 'the same run asks again')
+        self.assertEqual(['抽检未选中本次提交。', 'ACUBE_REVIEW_RESULT kind=SKIPPED'], lines[-2:])
+
+    def test_skip_reason_falls_back_to_reason_code_or_a_note(self):
+        self.assertEqual('sampled-out', ci.apply_ci_gate(
+            {'status': 'skipped', 'conclusion': 'success', 'summary': ' ', 'reason': 'sampled-out'})['gateMessage'])
+        self.assertEqual('ACube 未说明跳过原因。', ci.apply_ci_gate({'status': 'skipped', 'conclusion': 'success'})['gateMessage'])
+
+    def test_waits_while_acube_decides_then_passes_on_a_skip(self):
+        # Pending while ACube waits for the formal review and for the judgment; ACube then skips Sonus.
+        stages = [{'status': 'waiting_formal', 'summary': '等待形式化评审结束'},
+                  {'status': 'judging', 'summary': '数字人判断是否需要 Sonus'}, {'status': 'pending'}]
+        polls = [dict(self.TASK, conclusion='pending', **stage) for stage in stages]
+        skipped = dict(self.TASK, status='skipped', conclusion='success', summary='数字人判断无需 Sonus：只改了只读字段。')
+        code, lines, summaries, request, sleep = self.run_ai([self.TASK] + polls + [skipped])
+        self.assertEqual(0, code)
+        self.assertEqual(len(polls) + 2, request.call_count)
+        for call in request.call_args_list[1:]:
+            self.assertEqual('/api/v1/provider_runs/ci-reviews/ai/' + self.TID + '?mr=7&headSha=' + self.HEAD, call[0][0])
+        self.assertEqual([ci.POLL_SECONDS] * len(polls), [call[0][0] for call in sleep.call_args_list])
+        self.assertEqual(['数字人判断无需 Sonus：只改了只读字段。', 'Review status=skipped conclusion=success',
+                          'ACUBE_REVIEW_RESULT kind=SKIPPED'], lines[-3:])
+        self.assertTrue(any('等待形式化评审结束' in md for md in summaries), 'pending stages show as ACube reports them')
+        self.assertIn('## 跳过原因', summaries[-1])
+
+    def test_sonus_findings_go_through_agent_verification_like_formal_review(self):
+        base = dict(self.TASK, status='completed', summary='Sonus 发现 1 个 P1',
+                    findings=[{'findingId': 'F-01', 'severity': 'p1', 'title': '删除后未等待'},
+                              {'findingId': 'F-02', 'severity': 'p2'}])
+        polls = [dict(self.TASK, status='running', conclusion='pending', summary='Sonus 评审中'),
+                 dict(base, conclusion='pending', dispositions={'F-01': {'state': 'verifying'}}),
+                 dict(base, conclusion='failure', dispositions={'F-01': {
+                     'state': 'adopted', 'actorType': 'AGENT', 'verdict': 'REPRODUCED', 'commentId': 99}})]
+        code, lines, summaries, _, _ = self.run_ai([self.TASK] + polls)
+        self.assertEqual(1, code)
+        self.assertIn('等待 Agent 实测结论：F-01。未复现会自动驳回，已复现会自动采纳并发到 MR 评论。', lines)
+        self.assertEqual(['HIGHLIGHT__[ERROR] ACUBE_FINDING id=F-01 severity=P1 state=adopted actor=AGENT verdict=REPRODUCED comment=99',
+                          'HIGHLIGHT__[ERROR] ACUBE_REVIEW_RESULT kind=FINDINGS_BLOCKED'], lines[-2:])
+        blocked = next(line for line in lines if line.startswith('评审阻断：'))
+        self.assertIn('在该问题的 MR 评论下回复 `驳回 理由`', blocked)
+        self.assertNotIn('在 ACube', blocked)
+        self.assertIn('已采纳 · Agent 实测 · 实测已复现 · 已发到 MR 评论', summaries[-1])
+
+    def test_skip_without_acube_success_fails_closed(self):
+        cases = [
+            ('poll says failure', [self.TASK, dict(self.TASK, status='skipped', conclusion='failure', summary='x')]),
+            ('poll has no conclusion', [self.TASK, dict(self.TASK, status='skipped')]),
+            ('poll for another head', [self.TASK, dict(self.TASK, headSha='b' * 40, status='skipped', conclusion='success')]),
+            ('receipt still pending', [{'status': 'skipped', 'conclusion': 'pending', 'headSha': self.HEAD, 'mr': 7}]),
+            ('receipt for another MR', [{'status': 'skipped', 'conclusion': 'success', 'headSha': self.HEAD, 'mr': 8}])]
+        for name, answers in cases:
+            with self.subTest(name):
+                code, lines, _, _, _ = self.run_ai(answers)
+                self.assertEqual(1, code)
+                self.assertTrue(lines[-1].startswith('HIGHLIGHT__[ERROR] ACUBE_REVIEW_RESULT kind=SERVICE_ERROR'), lines[-1])
+                self.assertNotIn('ACUBE_REVIEW_RESULT kind=SKIPPED', lines)

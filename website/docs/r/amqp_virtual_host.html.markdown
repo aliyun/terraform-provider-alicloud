@@ -60,12 +60,14 @@ resource "alicloud_amqp_virtual_host" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required, ForceNew) InstanceId.
 * `virtual_host_name` - (Required, ForceNew) VirtualHostName.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Sasl User. It formats as `<instance_id>:<virtual_host_name>`.
 
 ## Timeouts
@@ -73,6 +75,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.259.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Virtual Host.
 * `delete` - (Defaults to 5 mins) Used when delete the Virtual Host.
 

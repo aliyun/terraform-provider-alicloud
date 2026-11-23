@@ -60,7 +60,7 @@ The following arguments are supported:
 
 ### `param_detail`
 
-The param_detail supports the following: 
+The param_detail supports the following:
 
 * `param_name` - (Required) The name of a parameter.
 * `param_value` - (Required) The value of a parameter.

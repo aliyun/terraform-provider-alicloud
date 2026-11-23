@@ -1,7 +1,7 @@
 ---
 subcategory: "Anti-DDoS Pro (DdosBgp)"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_ddoscoo_instances"
+page_title: "Alicloud: alicloud_ddosbgp_instances"
 sidebar_current: "docs-alicloud-datasource-ddoscoo-instances"
 description: |-
   Provides a list of Anti-DDoS Advanced(Ddosbgp) instances available to the user.
@@ -11,7 +11,7 @@ description: |-
 
 This data source provides a list of Anti-DDoS Advanced instances in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in v1.183.0+ .
+-> **NOTE:** Available since v1.183.0+ .
 
 ## Example Usage
 
@@ -54,6 +54,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of instance IDs.
 * `names` - A list of instance names.
 * `instances` - A list of apis. Each element contains the following attributes:

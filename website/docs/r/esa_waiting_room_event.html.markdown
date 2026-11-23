@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Waiting Room Event resource.
 
-
-
 For information about ESA Waiting Room Event and how to use it, see [What is Waiting Room Event](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateWaitingRoomEvent).
 
 -> **NOTE:** Available since v1.244.0.
@@ -91,6 +89,7 @@ resource "alicloud_esa_waiting_room_event" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `custom_page_html` - (Optional) User-defined waiting room page content, when the waiting room type is custom type, you need to enter. The incoming content needs to be base64 encoded.
 * `description` - (Optional) Waiting room description.
 * `disable_session_renewal_enable` - (Optional) Disable session renewal. Value:
@@ -137,12 +136,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<waiting_room_id>:<waiting_room_event_id>`.
 * `waiting_room_event_id` - The waiting room event ID, which can be obtained by calling the [ListWaitingRoomEvents](https://help.aliyun.com/document_detail/2850279.html) operation.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Waiting Room Event.
 * `delete` - (Defaults to 5 mins) Used when delete the Waiting Room Event.
 * `update` - (Defaults to 5 mins) Used when update the Waiting Room Event.

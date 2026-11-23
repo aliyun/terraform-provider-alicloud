@@ -42,6 +42,7 @@ resource "alicloud_kms_network_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) Description.
 * `network_rule_name` - (Optional, ForceNew, Computed) Network Rule Name.
 * `source_private_ip` - (Required) Allowed private network addresses.
@@ -49,11 +50,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Network Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Network Rule.
 * `update` - (Defaults to 5 mins) Used when update the Network Rule.

@@ -47,13 +47,12 @@ resource "alicloud_alidns_cloud_gtm_address_pool" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_cloud_gtm_address_pool&spm=docs.r.alidns_cloud_gtm_address_pool.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `address_lb_strategy` - (Optional) Load balancing strategy among addresses in the address pool:
   - round_robin: Round robin. For any incoming DNS query, all addresses are returned, and their order is rotated with each request.
   - sequence: Sequential. For any incoming DNS query, addresses with lower sequence numbers are returned first (the sequence number indicates the priority of an address, where a lower number means higher priority). If an address with a lower sequence number is unavailable, the next available address with the next lowest sequence number is returned.
@@ -81,12 +80,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `create_time` - Creation time of the address pool.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Cloud Gtm Address Pool.
 * `delete` - (Defaults to 5 mins) Used when delete the Cloud Gtm Address Pool.
 * `update` - (Defaults to 5 mins) Used when update the Cloud Gtm Address Pool.

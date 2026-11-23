@@ -92,6 +92,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_renew_duration` - (Optional) The auto-renewal period of the subscription instance. It only takes effect when `payment_type = "Subscription"` and `renew_status = "AutoRenewal"`. Valid values: `1`, `2`, `3`, `6`, `12`. The unit is specified by `renewal_duration_unit`.
 * `duration` - (Optional) The number of subscription periods. If the payment type is PRE, this parameter is required.
 * `payment_type` - (Required, ForceNew) The payment type of the resource.
@@ -111,17 +112,20 @@ The following arguments are supported:
 ### `resource_spec`
 
 The resource_spec supports the following:
+
 * `cpu` - (Optional) CPU number.
 * `memory_gb` - (Optional) Memory size.
 
 ### `storage`
 
 The storage supports the following:
+
 * `oss` - (Required, ForceNew) OSS stores information. See [`oss`](#storage-oss) below.
 
 ### `storage-oss`
 
 The oss supports the following:
+
 * `bucket` - (Required, ForceNew) OSS Bucket name.
 
 ### `default_namespace_resource_spec`
@@ -134,6 +138,7 @@ The default_namespace_resource_spec supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `resource_id` - (Available since v1.264.0) The ID of the K8s cluster.
 * `create_time` - The creation time of the resource.
@@ -142,6 +147,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vvp Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Vvp Instance.
 * `update` - (Defaults to 5 mins) Used when update the Vvp Instance.

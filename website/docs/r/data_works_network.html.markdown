@@ -86,6 +86,7 @@ resource "alicloud_data_works_network" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dw_resource_group_id` - (Required, ForceNew) The ID of the resource group.
 * `vswitch_id` - (Required, ForceNew) The vSwitch ID of the network resource.
 * `vpc_id` - (Required, ForceNew) Virtual Private Cloud ID of network resources
@@ -93,6 +94,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Time when the network resource was created
 * `status` - Network Resource Status
@@ -100,6 +102,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Network.
 * `delete` - (Defaults to 5 mins) Used when delete the Network.
 

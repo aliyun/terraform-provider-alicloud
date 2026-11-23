@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cms Dataset resource.
 
-
-
 For information about Cms Dataset and how to use it, see [What is Dataset](https://next.api.alibabacloud.com/document/Cms/2024-03-30/CreateDataset).
 
 -> **NOTE:** Available since v1.292.0.
@@ -48,13 +46,12 @@ resource "alicloud_cms_dataset" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cms_dataset&spm=docs.r.cms_dataset.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dataset_name` - (Required, ForceNew) The name of the resource.
 * `description` - (Optional) The description of the dataset.
 * `schema` - (Required, ForceNew) The schema definition of the dataset, in JSON format.
@@ -63,6 +60,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. It is formatted as `<workspace>:<dataset_name>`.
 * `create_time` - The creation time of the resource.
 * `region_id` - The region ID of the resource.
@@ -71,6 +69,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Dataset.
 * `delete` - (Defaults to 5 mins) Used when delete the Dataset.
 * `update` - (Defaults to 5 mins) Used when update the Dataset.

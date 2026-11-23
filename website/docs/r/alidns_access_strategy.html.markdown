@@ -126,21 +126,21 @@ The following arguments are supported:
 
 ### `failover_addr_pools`
 
-The failover_addr_pools supports the following: 
+The failover_addr_pools supports the following:
 
 * `addr_pool_id` - (Optional) The ID of the address pool in the secondary address pool group.
 * `lba_weight` - (Optional) The weight of the address pool in the secondary address pool group.
 
 ### `default_addr_pools`
 
-The default_addr_pools supports the following: 
+The default_addr_pools supports the following:
 
 * `addr_pool_id` - (Required) The ID of the address pool in the primary address pool group.
 * `lba_weight` - (Optional) The weight of the address pool in the primary address pool group.
 
 ### `lines`
 
-The lines supports the following: 
+The lines supports the following:
 
 * `line_code` - (Optional) The line code of the source region.
 

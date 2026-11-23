@@ -55,6 +55,7 @@ resource "alicloud_config_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `config_rule_trigger_types` - (Optional, Required) The trigger type of the rule. Valid values:  `ConfigurationItemChangeNotification`: The rule is triggered upon configuration changes. `ScheduledNotification`: The rule is triggered as scheduled.
 * `description` - (Optional) The description of the rule.
 * `exclude_resource_ids_scope` - (Optional) The rule monitors excluded resource IDs, multiple of which are separated by commas, only applies to rules created based on managed rules, , custom rule this field is empty.
@@ -72,14 +73,15 @@ The following arguments are supported:
 * `tag_value_scope` - (Optional) The rule monitors the tag value, only applies to rules created based on managed rules.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `source_detail_message_type` - (Deprecated) Field 'source_detail_message_type' has been deprecated from provider version 1.124.1. New field 'config_rule_trigger_types' instead.
 * `source_maximum_execution_frequency` - (Deprecated) Field 'source_maximum_execution_frequency' has been deprecated from provider version 1.124.1. New field 'maximum_execution_frequency' instead.
 * `scope_compliance_resource_types` - (Deprecated) Field 'scope_compliance_resource_types' has been deprecated from provider version 1.124.1. New field 'resource_types_scope' instead.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.
 * `account_id` - The ID of Alicloud account.
 * `compliance` - compliance information.
@@ -95,6 +97,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Rule.
 * `update` - (Defaults to 5 mins) Used when update the Rule.

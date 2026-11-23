@@ -79,7 +79,7 @@ The following arguments are supported:
 
 ### `permission_policies`
 
-The permission_policies supports the following: 
+The permission_policies supports the following:
 
 * `permission_policy_type` - (Required) The type of the policy. Valid values: `System`, `Inline`.
 * `permission_policy_name` - (Required) The name of the policy.
@@ -99,7 +99,6 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `create` - (Defaults to 5 mins) Used when create the Access Configuration.
 * `update` - (Defaults to 5 mins) Used when update the Access Configuration.
 * `delete` - (Defaults to 5 mins) Used when delete the Access Configuration.
-
 
 ## Import
 

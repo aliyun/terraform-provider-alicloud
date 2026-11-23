@@ -40,29 +40,31 @@ resource "alicloud_nas_access_group" "foo" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_access_group&spm=docs.r.nas_access_group.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_group_name` - (Optional, ForceNew) The name of the permission group.
 * `access_group_type` - (Optional, ForceNew) Permission group types, including Vpc.
 * `description` - (Optional) Permission group description information.
 * `file_system_type` - (Optional, ForceNew, Computed) File system type.
 
 Value:
-  - standard (default): Universal NAS
-  - extreme: extreme NAS
 
+- standard (default): Universal NAS
+- extreme: extreme NAS
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `name` - (Deprecated since v1.218.0) Field 'name' has been deprecated from provider version 1.218.0. New field 'access_group_name' instead.
 * `type` - (Deprecated since v1.218.0) Field 'type' has been deprecated from provider version 1.218.0. New field 'access_group_type' instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<access_group_name>:<file_system_type>`.
 * `create_time` - (Available since v1.218.0) Creation time.
 * `region_id` - (Available since v1.256.0) The region ID.
@@ -70,6 +72,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Access Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Access Group.
 * `update` - (Defaults to 5 mins) Used when update the Access Group.

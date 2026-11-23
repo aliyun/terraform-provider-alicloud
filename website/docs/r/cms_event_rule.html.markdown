@@ -71,7 +71,7 @@ The following arguments are supported:
 
 ### `event_pattern`
 
-The event_pattern supports the following: 
+The event_pattern supports the following:
 
 * `product` - (Required) The type of the cloud service.
 * `sql_filter` - (Optional) The SQL condition that is used to filter events. If the content of an event meets the specified SQL condition, an alert is automatically triggered.
@@ -91,56 +91,56 @@ The event_pattern supports the following:
 
 The contact_parameters supports the following:
 
-* `contact_parameters_id` (Optional) The ID of the recipient that receives alert notifications.
-* `contact_group_name` (Optional) The name of the alert contact group.
-* `level` (Optional) The alert level and the corresponding notification methods.
+* `contact_parameters_id` - (Optional) The ID of the recipient that receives alert notifications.
+* `contact_group_name` - (Optional) The name of the alert contact group.
+* `level` - (Optional) The alert level and the corresponding notification methods.
 
 ### `webhook_parameters`
 
 The webhook_parameters supports the following:
 
-* `webhook_parameters_id` (Optional) The ID of the recipient that receives alert notifications.
-* `protocol` (Optional) The name of the protocol.
-* `method` (Optional) The HTTP request method.
-* `url` (Optional) The callback URL.
+* `webhook_parameters_id` - (Optional) The ID of the recipient that receives alert notifications.
+* `protocol` - (Optional) The name of the protocol.
+* `method` - (Optional) The HTTP request method.
+* `url` - (Optional) The callback URL.
 
 ### `fc_parameters`
 
 The fc_parameters supports the following:
 
-* `fc_parameters_id` (Optional) The ID of the recipient that receives alert notifications.
-* `service_name` (Optional) The name of the Function Compute service.
-* `function_name` (Optional) The name of the function.
-* `region` (Optional) The region where Function Compute is deployed.
+* `fc_parameters_id` - (Optional) The ID of the recipient that receives alert notifications.
+* `service_name` - (Optional) The name of the Function Compute service.
+* `function_name` - (Optional) The name of the function.
+* `region` - (Optional) The region where Function Compute is deployed.
 
 ### `sls_parameters`
 
 The sls_parameters supports the following:
 
-* `sls_parameters_id` (Optional) The ID of the recipient that receives alert notifications.
-* `project` (Optional) The name of the Simple Log Service project.
-* `log_store` (Optional) The name of the Simple Log Service Logstore.
-* `region` (Optional) The region where Simple Log Service is deployed.
+* `sls_parameters_id` - (Optional) The ID of the recipient that receives alert notifications.
+* `project` - (Optional) The name of the Simple Log Service project.
+* `log_store` - (Optional) The name of the Simple Log Service Logstore.
+* `region` - (Optional) The region where Simple Log Service is deployed.
 
 ### `mns_parameters`
 
 The mns_parameters supports the following:
 
-* `mns_parameters_id` (Optional) The ID of the recipient that receives alert notifications.
-* `queue` (Optional) The name of the MNS queue.
-* `topic` (Optional) The MNS topic.
-* `region` (Optional) The region where Message Service (MNS) is deployed.
+* `mns_parameters_id` - (Optional) The ID of the recipient that receives alert notifications.
+* `queue` - (Optional) The name of the MNS queue.
+* `topic` - (Optional) The MNS topic.
+* `region` - (Optional) The region where Message Service (MNS) is deployed.
 
 ### `open_api_parameters`
 
 The open_api_parameters supports the following:
 
-* `open_api_parameters_id` (Optional) The ID of the recipient that receives alert notifications sent by an API callback.
-* `product` (Optional) The ID of the cloud service to which the API operation belongs.
-* `action` (Optional) The API name.
-* `version` (Optional) The version of the API.
-* `role` (Optional) The name of the role.
-* `region` (Optional) The region where the resource resides.
+* `open_api_parameters_id` - (Optional) The ID of the recipient that receives alert notifications sent by an API callback.
+* `product` - (Optional) The ID of the cloud service to which the API operation belongs.
+* `action` - (Optional) The API name.
+* `version` - (Optional) The version of the API.
+* `role` - (Optional) The name of the role.
+* `region` - (Optional) The region where the resource resides.
 
 ## Attributes Reference
 

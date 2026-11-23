@@ -150,6 +150,7 @@ EOF
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account` - (Optional) The name of the database account.
 * `consistency` - (Optional) The delivery guarantee setting.
 
@@ -172,9 +173,9 @@ The following arguments are supported:
 * `match_columns` - (Optional, List) Match Field
 * `mode` - (Optional, ForceNew) The configuration mode. Valid values:
 
-  1.  basic: In basic mode, you must configure the configuration parameters.
+  1. basic: In basic mode, you must configure the configuration parameters.
 
-  2.  professional: In professional mode, you can submit a YAML configuration file.
+  2. professional: In professional mode, you can submit a YAML configuration file.
 * `password` - (Optional) The password of the database account.
 * `src_columns` - (Optional, List) Source Field
 * `try_run` - (Optional) Specifies whether to test the real-time job. Valid values:
@@ -195,6 +196,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<job_id>`.
 * `create_time` - The creation time of the resource
 * `job_id` - The job ID.
@@ -203,6 +205,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Streaming Job.
 * `delete` - (Defaults to 5 mins) Used when delete the Streaming Job.
 * `update` - (Defaults to 5 mins) Used when update the Streaming Job.

@@ -34,6 +34,7 @@ output "alicloud_threat_detection_check_item_config_example_check_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `lang` - (Optional) The language of the content within the request and response. Default value: `zh`. Valid values: `zh` (Chinese), `en` (English).
 * `page_number` - (Optional) The page number. Must be greater than 0.
 * `page_size` - (Optional) Number of records per page. Must be greater than 0.
@@ -41,10 +42,10 @@ The following arguments are supported:
 * `ids` - (Optional, Computed) A list of Check Item Config IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Check Item Config IDs.
 * `configs` - A list of Check Item Config Entries. Each element contains the following attributes:
   * `check_id` - The ID of the check item.

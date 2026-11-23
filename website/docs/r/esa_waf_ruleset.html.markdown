@@ -48,6 +48,7 @@ resource "alicloud_esa_waf_ruleset" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `name` - (Optional, ForceNew, Computed) The ruleset name.
 * `phase` - (Required, ForceNew) The WAF phase
 * `site_id` - (Required, ForceNew) The website ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) operation.
@@ -60,12 +61,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<ruleset_id>:<site_id>`.
 * `ruleset_id` - waf rule set id
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Waf Ruleset.
 * `delete` - (Defaults to 5 mins) Used when delete the Waf Ruleset.
 * `update` - (Defaults to 5 mins) Used when update the Waf Ruleset.

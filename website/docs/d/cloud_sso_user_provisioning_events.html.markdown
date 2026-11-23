@@ -53,15 +53,16 @@ output "alicloud_cloud_sso_user_provisioning_event_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `directory_id` - (Required, ForceNew) Directory ID
 * `user_provisioning_id` - (ForceNew, Optional) The ID of the User Provisioning.
 * `ids` - (Optional, ForceNew, Computed) A list of User Provisioning Event IDs. The value is formulated as `<directory_id>:<event_id>`.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of User Provisioning Event IDs.
 * `events` - A list of User Provisioning Event Entries. Each element contains the following attributes:
   * `content` - Event content

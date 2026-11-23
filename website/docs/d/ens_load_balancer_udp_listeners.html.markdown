@@ -71,15 +71,16 @@ output "udp_listener_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `load_balancer_id` - (Required) The ID of the load balancer instance.
 * `ids` - (Optional, Computed) A list of Load Balancer Udp Listener IDs. The value is formulated as `<load_balancer_id>:<listener_port>`.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Load Balancer Udp Listener IDs.
 * `listeners` - A list of Load Balancer Udp Listener Entries. Each element contains the following attributes:
   * `id` - The ID of the listener. The value is formulated as `<load_balancer_id>:<listener_port>`.

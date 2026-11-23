@@ -48,6 +48,7 @@ resource "alicloud_nas_auto_snapshot_policy" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_snapshot_policy_name` - (Optional) The name of the automatic snapshot policy. Limits:
   - The name must be `2` to `128` characters in length,
   - The name must start with a letter.
@@ -67,6 +68,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Creation time.
 * `status` - The status of the automatic snapshot policy.
@@ -74,6 +76,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Auto Snapshot Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Auto Snapshot Policy.
 * `update` - (Defaults to 5 mins) Used when update the Auto Snapshot Policy.

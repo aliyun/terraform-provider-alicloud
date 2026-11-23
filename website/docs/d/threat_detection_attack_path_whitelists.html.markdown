@@ -55,6 +55,7 @@ output "alicloud_threat_detection_attack_path_whitelist_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `lang` - (Optional) The language of the request and response. Valid values: `zh` (Chinese, default), `en` (English).
 * `path_name_desc` - (Optional) The description of the path name. You can call [ListAvailableAttackPath](https://next.api.alibabacloud.com/document/Sas/2018-12-03/ListAvailableAttackPath) to query the path name descriptions.
 * `path_type` - (Optional) The path type of the whitelist. You can call [ListAvailableAttackPath](https://next.api.alibabacloud.com/document/Sas/2018-12-03/ListAvailableAttackPath) to query the available path types.
@@ -63,10 +64,10 @@ The following arguments are supported:
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Attack Path Whitelist IDs.
 * `whitelists` - A list of Attack Path Whitelist Entries. Each element contains the following attributes:
   * `attack_path_asset_list` - **NOTE:** This field is only available when `enable_details` is `true`. The list of attack path cloud product assets.

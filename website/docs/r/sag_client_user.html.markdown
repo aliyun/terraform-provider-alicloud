@@ -77,4 +77,3 @@ The Sag ClientUser can be imported using the name, e.g.
 ```shell
 $ terraform import alicloud_sag_client_user.example sag-abc123456:tf-username-abc123456
 ```
-

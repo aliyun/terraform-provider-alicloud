@@ -10,8 +10,6 @@ description: |-
 
 Provides a Resource Manager Delegated Administrator resource.
 
-
-
 For information about Resource Manager Delegated Administrator and how to use it, see [What is Delegated Administrator](https://www.alibabacloud.com/help/en/resource-management/latest/registerdelegatedadministrator#doc-api-ResourceManager-RegisterDelegatedAdministrator).
 
 -> **NOTE:** Available since v1.181.0.
@@ -42,20 +40,22 @@ resource "alicloud_resource_manager_delegated_administrator" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_id` - (Required, ForceNew) The Alibaba Cloud account ID of the member in the resource directory.
 * `service_principal` - (Required, ForceNew) The identifier of the trusted service.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<account_id>:<service_principal>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Delegated Administrator.
 * `delete` - (Defaults to 5 mins) Used when delete the Delegated Administrator.
-
 
 ## Import
 

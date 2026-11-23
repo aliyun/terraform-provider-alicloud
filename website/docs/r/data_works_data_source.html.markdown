@@ -10,8 +10,6 @@ description: |-
 
 Provides a Data Works Data Source resource.
 
-
-
 For information about Data Works Data Source and how to use it, see [What is Data Source](https://www.alibabacloud.com/help/en/dataworks/developer-reference/api-dataworks-public-2024-05-18-createdatasource).
 
 -> **NOTE:** Available since v1.237.0.
@@ -68,6 +66,7 @@ resource "alicloud_data_works_data_source" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `connection_properties` - (Required, JsonString) Data source connection configuration information, including the connection address, access identity, and environment information. The data source environment EnvType information is a member property of this object, including DEV (Development Environment) and PROD (production environment). The value of EnvType is not case-sensitive.
 * `connection_properties_mode` - (Required) The configuration mode of the data source. Different types of data sources have different configuration modes. For example, MySQL data sources support UrlMode and InstanceMode.
 * `data_source_name` - (Required, ForceNew) The data source name. The name of a data source in a specific environment (development environment or production environment) is unique in a project.
@@ -78,6 +77,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<project_id>:<data_source_id>`.
 * `create_time` - The creation time of the resource
 * `create_user` - Creator of the data source
@@ -89,6 +89,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Data Source.
 * `delete` - (Defaults to 5 mins) Used when delete the Data Source.
 * `update` - (Defaults to 5 mins) Used when update the Data Source.

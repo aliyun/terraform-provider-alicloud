@@ -7,15 +7,15 @@ description: |-
   Operation to query the reserved keywords of an ApsaraDB RDS instance. The reserved keywords cannot be used for the usernames of accounts or the names of databases.
 ---
 
-# alicloud\_instance\_keywords
+# alicloud_instance_keywords
 
 Operation to query the reserved keywords of an ApsaraDB RDS instance. The reserved keywords cannot be used for the usernames of accounts or the names of databases.
 
--> **NOTE:** Available in v1.196.0+
+-> **NOTE:** Available since v1.196.0+
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_instance_keywords" "resources" {
   key         = "account"
   output_file = "./classes.txt"

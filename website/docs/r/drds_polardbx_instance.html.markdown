@@ -59,12 +59,12 @@ resource "alicloud_drds_polardbx_instance" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_drds_polardbx_instance&spm=docs.r.drds_polardbx_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cn_class` - (Required) Compute node (CN) specifications. Since v1.285.0 the field is mutable and supports in-place class change. Refer to the `CnClass` parameter in the [CreateDBInstance API reference](https://www.alibabacloud.com/help/en/polardb/polardb-for-xscale/api-createdbinstance-1) for the list of valid values.
 * `cn_node_count` - (Required, Int) Number of computing nodes.
 * `description` - (Optional, Available since v1.268.0) Instance remarks
@@ -107,6 +107,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `region_id` - The region ID of the resource
@@ -115,6 +116,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 61 mins) Used when create the Polardbx Instance.
 * `delete` - (Defaults to 61 mins) Used when delete the Polardbx Instance.
 * `update` - (Defaults to 61 mins) Used when update the Polardbx Instance.

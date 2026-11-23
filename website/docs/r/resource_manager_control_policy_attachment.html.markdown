@@ -74,6 +74,7 @@ resource "alicloud_resource_manager_control_policy_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `policy_id` - (Required, ForceNew) The ID of the access control policy.
 * `target_id` - (Required, ForceNew) The ID of the object from which you want to detach the access control policy. Access control policies can be attached to the following objects:
 
@@ -84,11 +85,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<policy_id>:<target_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Control Policy Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Control Policy Attachment.
 

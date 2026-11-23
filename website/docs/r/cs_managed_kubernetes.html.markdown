@@ -9,11 +9,11 @@ description: |-
 
 # alicloud_cs_managed_kubernetes
 
-This resource will help you to manage a ManagedKubernetes Cluster in Alibaba Cloud Kubernetes Service. 
+This resource will help you to manage a ManagedKubernetes Cluster in Alibaba Cloud Kubernetes Service.
 
 -> **NOTE:** Available since v1.26.0.
 
--> **NOTE:** It is recommended to create a cluster with zero worker nodes, and then use a node pool to manage the cluster nodes. 
+-> **NOTE:** It is recommended to create a cluster with zero worker nodes, and then use a node pool to manage the cluster nodes.
 
 -> **NOTE:** Kubernetes cluster only supports VPC network and it can access internet while creating kubernetes cluster.
 A Nat Gateway and configuring a SNAT for it can ensure one VPC network access internet. If there is no nat gateway in the
@@ -442,29 +442,29 @@ Global params
 * `vswitch_ids` - (Optional, Available since v1.241.0) The vSwitches of the control plane.
 
   -> **NOTE:** Please take of note before updating the `vswitch_ids`:
-  * This parameter overwrites the existing configuration. You must specify all vSwitches of the control plane. 
-  * The control plane restarts during the change process. Exercise caution when you perform this operation. 
-  * Ensure that all security groups of the cluster, including the security groups of the control plane, all node pools, and container network, are allowed to access the CIDR blocks of the new vSwitches. This ensures that the nodes and containers can connect to the API server. 
+  * This parameter overwrites the existing configuration. You must specify all vSwitches of the control plane.
+  * The control plane restarts during the change process. Exercise caution when you perform this operation.
+  * Ensure that all security groups of the cluster, including the security groups of the control plane, all node pools, and container network, are allowed to access the CIDR blocks of the new vSwitches. This ensures that the nodes and containers can connect to the API server.
   * If the new vSwitches of the control plane are configured with an ACL, ensure that the ACL allows communication between the new vSwitches and CIDR blocks such as those of the cluster nodes and the container network.
 * `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will use it to build the only cluster name. Default to "Terraform-Creation".
 * `timezone` - (Optional, Available since v1.103.2) Cluster timezone, works for control plane and Worker nodes.
 
   -> **NOTE:** Please take of note before updating the `timezone`:
-  * After modifying the timezone, cluster inspection configurations will adopt the new timezone. 
-  * During timezone updates, the cluster control plane and managed components (e.g., terway-controlplane) will restart briefly. Perform this operation during off-peak hours. 
+  * After modifying the timezone, cluster inspection configurations will adopt the new timezone.
+  * During timezone updates, the cluster control plane and managed components (e.g., terway-controlplane) will restart briefly. Perform this operation during off-peak hours.
   * After updating the timezone: Newly scaled-out nodes will automatically apply the new timezone. Existing nodes remain unaffected. Reset the node to apply changes to existing nodes.
 * `resource_group_id` - (Optional, Available since v1.101.0) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-* `version` - (Optional, Available since 1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK. Do not specify if cluster auto upgrade is enabled, see [cluster_auto_upgrade](#operation_policy-cluster_auto_upgrade) for more information. 
+* `version` - (Optional, Available since 1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK. Do not specify if cluster auto upgrade is enabled, see [cluster_auto_upgrade](#operation_policy-cluster_auto_upgrade) for more information.
 * `security_group_id` - (Optional, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 
   -> **NOTE:** Please take of note before updating the `security_group_id`:
   * If block rules are configured in the security group, ensure the security group rules allow traffic for protocols and ports required by the cluster. For recommended security group rules, see [Configure and manage security groups for an ACK cluster](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/user-guide/configure-security-group-rules-to-enforce-access-control-on-ack-clusters).
-  * During security group updates, the cluster control plane and managed components (e.g., terway-controlplane) will restart briefly. Perform this operation during off-peak hours. 
+  * During security group updates, the cluster control plane and managed components (e.g., terway-controlplane) will restart briefly. Perform this operation during off-peak hours.
   * After updating the control plane security group, the Elastic Network Interfaces (ENIs) used by the control plane and managed components will automatically join the new security group.
-* `is_enterprise_security_group` - (Optional, ForceNew, Available since v1.91.0) Enable to create advanced security group. default: false. Only works for **Create** Operation. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm). 
-* `proxy_mode` - (Optional, ForceNew) kube-proxy proxy mode. Default: `ipvs`. Options: `iptables`, `ipvs`, `nftables`. 
-  * `iptables`: A mature and stable kube-proxy mode. Kubernetes Service discovery and load balancing use iptables rules. Performance is moderate and scales poorly with large numbers of Services. Suitable for clusters with few Services. 
-  * `ipvs`: A high-performance kube-proxy mode. Kubernetes Service discovery and load balancing use the Linux IPVS module. Suitable for clusters with many Services requiring high-performance load balancing. 
+* `is_enterprise_security_group` - (Optional, ForceNew, Available since v1.91.0) Enable to create advanced security group. default: false. Only works for **Create** Operation. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
+* `proxy_mode` - (Optional, ForceNew) kube-proxy proxy mode. Default: `ipvs`. Options: `iptables`, `ipvs`, `nftables`.
+  * `iptables`: A mature and stable kube-proxy mode. Kubernetes Service discovery and load balancing use iptables rules. Performance is moderate and scales poorly with large numbers of Services. Suitable for clusters with few Services.
+  * `ipvs`: A high-performance kube-proxy mode. Kubernetes Service discovery and load balancing use the Linux IPVS module. Suitable for clusters with many Services requiring high-performance load balancing.
   * `nftables`: A next-generation kube-proxy mode based on Linux nftables for Service discovery and load balancing. It is a modern replacement for iptables, offering better network performance, rule update efficiency, and scalability for large Service counts.
 Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes community deprecated IPVS starting in version 1.35. We recommend using nftables for new clusters to ensure long-term community support.
 * `cluster_domain` - (Optional, ForceNew, Available since v1.103.2) Cluster local domain name, Default to `cluster.local`. A domain name consists of one or more sections separated by a decimal point (.), each of which is up to 63 characters long, and can be lowercase, numerals, and underscores (-), and must be lowercase or numerals at the beginning and end.
@@ -516,9 +516,9 @@ Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes com
 
 Network params
 
-* `pod_cidr` - (Optional, ForceNew) - [Flannel Specific] The CIDR block for the pod network when using Flannel.
-* `pod_vswitch_ids` - (Optional) - [Terway Specific] The vswitches for the pod network when using Terway. It is recommended that `pod_vswitch_ids` is not belong to `vswitch_ids` but must be in same availability zones. Only works for **Create** Operation. 
-* `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true. Then openapi in Alibaba Cloud are not all on intranet, So turn this option on is a good choice. Only works for **Create** Operation. 
+* `pod_cidr` - (Optional, ForceNew) [Flannel Specific] The CIDR block for the pod network when using Flannel.
+* `pod_vswitch_ids` - (Optional) [Terway Specific] The vswitches for the pod network when using Terway. It is recommended that `pod_vswitch_ids` is not belong to `vswitch_ids` but must be in same availability zones. Only works for **Create** Operation.
+* `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true. Then openapi in Alibaba Cloud are not all on intranet, So turn this option on is a good choice. Only works for **Create** Operation.
 * `service_cidr` - (Optional, ForceNew) The CIDR block for the service network. It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 * `node_cidr_mask` - (Optional, ForceNew) The node cidr block to specific how many pods can run on single node. 24-28 is allowed. 24 means 2^(32-24)-1=255 and the node can run at most 255 pods. default: 24
 * `slb_internet_enabled` - (Optional) Whether to create internet load balancer for API Server. Default to true. Only works for **Create** Operation.
@@ -636,7 +636,7 @@ The following arguments are supported in the `addons` configuration block:
 * `name` - (Optional) This parameter specifies the name of the component.
 * `config` - (Optional) If this parameter is left empty, no configurations are required. For more config information, see [cs_kubernetes_addon_metadata](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_kubernetes_addon_metadata).
 * `version` - (Optional) It specifies the version of the component.
-* `disabled` - (Optional) It specifies whether to disable automatic installation. 
+* `disabled` - (Optional) It specifies whether to disable automatic installation.
 
 It is a new field since 1.75.0. You can specific network plugin, log component,ingress component and so on.
 
@@ -837,13 +837,14 @@ The following example is the definition of tags block. The type of this field is
 ### `delete_options`
 
 The following arguments are supported in the `delete_options` configuration block:
+
 * `delete_mode` - (Optional) The deletion mode of the cluster. Different resources may have different default behavior, see `resource_type` for details. Valid values:
   - `delete`: delete resources created by the cluster.
   - `retain`: retain resources created by the cluster.
 * `resource_type` - (Optional) The type of resources that are created by cluster. Valid values:
   - `SLB`: SLB resources created by the Nginx Ingress Service, default behavior is to delete, option to retain is available.  
-  - `ALB`: ALB resources created by the ALB Ingress Controller, default behavior is to retain, option to delete is available. 
-  - `SLS_Data`: SLS Project used by the cluster logging feature, default behavior is to retain, option to delete is available. 
+  - `ALB`: ALB resources created by the ALB Ingress Controller, default behavior is to retain, option to delete is available.
+  - `SLS_Data`: SLS Project used by the cluster logging feature, default behavior is to retain, option to delete is available.
   - `SLS_ControlPlane`: SLS Project used for the managed cluster control plane logs, default behavior is to retain, option to delete is available.
 
 ```text

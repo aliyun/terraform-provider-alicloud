@@ -104,12 +104,12 @@ resource "alicloud_mongodb_node" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mongodb_node&spm=docs.r.mongodb_node.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `account_name` - (Optional) Account name, value description:
   - Begins with a lowercase letter.
   - Consists of lowercase letters, numbers, or underscores (_).
@@ -127,7 +127,6 @@ The following arguments are supported:
   - Length is 8~32 characters.
 
   -> **NOTE:**  apsaradb for MongoDB does not support resetting the account and password of the Shard node.
-
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
@@ -172,7 +171,7 @@ Value range: `10` to `2000`, with a step size of 10GB.
 
 * `readonly_replicas` - (Optional, Computed, Int) The number of read-only nodes in the Shard.
 
-Value range: `0` to `5` (integer). Default value: **0 * *.
+Value range: `0` to `5` (integer). Default value: **0**.
 
 -> **NOTE:**  This parameter is currently only supported by China Station.
 
@@ -186,10 +185,10 @@ Value range: `0` to `5` (integer). Default value: **0 * *.
 
   -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<node_id>`.
 * `node_id` - The first ID of the resource
 * `status` - Running status of node in sharded cluster
@@ -197,6 +196,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 30 mins) Used when create the Node.
 * `delete` - (Defaults to 5 mins) Used when delete the Node.
 * `update` - (Defaults to 40 mins) Used when update the Node.

@@ -58,13 +58,12 @@ resource "alicloud_agentloop_evaluator" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_agentloop_evaluator&spm=docs.r.agentloop_evaluator.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `agent_space` - (Required, ForceNew) The name of the Agent Space to which the Evaluator belongs.
 * `annotations` - (Optional, List) The annotations of the Evaluator.
 * `config` - (Optional, Map) The configuration of the Evaluator. LLM/AGENT types typically include `prompt`, `variables` and `outputSchema`; CODE types typically include `codeType`, `faasConfig`, `variables` and `parameters`. Values of the structured keys `variables`, `outputSchema`, `faasConfig` and `parameters` accept a JSON document string (e.g. `jsonencode([{ name = "input" }])`) which is sent in its parsed form; all other values are sent verbatim.
@@ -80,6 +79,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Evaluator. It formats as `<agent_space>:<name>`.
 * `created_at` - The creation time of the Evaluator, as a Unix timestamp in seconds.
 * `current_version` - The current version of the Evaluator.
@@ -88,6 +88,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Evaluator.
 * `delete` - (Defaults to 5 mins) Used when delete the Evaluator.
 * `update` - (Defaults to 5 mins) Used when update the Evaluator.

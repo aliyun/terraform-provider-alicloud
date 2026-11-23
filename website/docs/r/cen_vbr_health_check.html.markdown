@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cen_vbr_health_check
 
-This topic describes how to configure the health check feature for a Cloud Enterprise Network (CEN) instance. 
+This topic describes how to configure the health check feature for a Cloud Enterprise Network (CEN) instance.
 After you attach a Virtual Border Router (VBR) to the CEN instance and configure the health check feature, you can monitor the network conditions of the on-premises data center connected to the VBR.
 
 For information about CEN VBR HealthCheck and how to use it, see [Manage CEN VBR HealthCheck](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-enablecenvbrhealthcheck).

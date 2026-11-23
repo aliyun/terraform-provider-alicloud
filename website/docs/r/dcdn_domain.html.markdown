@@ -55,24 +55,25 @@ resource "alicloud_dcdn_domain" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cert_id` - (Optional) The certificate ID. This parameter is required and valid only when `CertType` is set to `cas`. If you specify this parameter, an existing certificate is used. 
-* `cert_name` - (Optional) The name of the new certificate. You can specify only one certificate name. This parameter is optional and valid only when `CertType` is set to `upload`. 
-* `cert_region` - (Optional, Available since v1.227.1) The region of the SSL certificate. This parameter takes effect only when `CertType` is set to `cas`. Default value: **cn-hangzhou**. Valid values: **cn-hangzhou** and **ap-southeast-1**. 
+
+* `cert_id` - (Optional) The certificate ID. This parameter is required and valid only when `CertType` is set to `cas`. If you specify this parameter, an existing certificate is used.
+* `cert_name` - (Optional) The name of the new certificate. You can specify only one certificate name. This parameter is optional and valid only when `CertType` is set to `upload`.
+* `cert_region` - (Optional, Available since v1.227.1) The region of the SSL certificate. This parameter takes effect only when `CertType` is set to `cas`. Default value: **cn-hangzhou**. Valid values: **cn-hangzhou** and **ap-southeast-1**.
 * `cert_type` - (Optional) The certificate type.
   * `upload`: a user-uploaded SSL certificate.
   * `cas`: a certificate that is acquired through Certificate Management Service.
 
   -> **NOTE:**  If the value of the `cert_type` parameter is `cas`, the `ssl_pri` parameter is not required.
 
-* `check_url` - (Optional) The URL that is used for health checks. 
-* `domain_name` - (Required, ForceNew) The accelerated domain name. You can specify multiple domain names and separate them with commas (,). You can specify up to 500 domain names in each request. The query results of multiple domain names are aggregated. If you do not specify this parameter, data of all accelerated domain names under your account is queried. 
-* `env` - (Optional, Available since v1.227.1) Specifies whether the certificate is issued in canary releases. If you set this parameter to `staging`, the certificate is issued in canary releases. If you do not specify this parameter or set this parameter to other values, the certificate is officially issued. 
+* `check_url` - (Optional) The URL that is used for health checks.
+* `domain_name` - (Required, ForceNew) The accelerated domain name. You can specify multiple domain names and separate them with commas (,). You can specify up to 500 domain names in each request. The query results of multiple domain names are aggregated. If you do not specify this parameter, data of all accelerated domain names under your account is queried.
+* `env` - (Optional, Available since v1.227.1) Specifies whether the certificate is issued in canary releases. If you set this parameter to `staging`, the certificate is issued in canary releases. If you do not specify this parameter or set this parameter to other values, the certificate is officially issued.
 * `function_type` - (Optional, ForceNew, Available since v1.227.1) Computing service type. Valid values:
   - `routine`
   - `image`
   - `cloudFunction`
 
-* `resource_group_id` - (Optional, Computed) The ID of the resource group. If you do not specify a value for this parameter, the system automatically assigns the ID of the default resource group. 
+* `resource_group_id` - (Optional, Computed) The ID of the resource group. If you do not specify a value for this parameter, the system automatically assigns the ID of the default resource group.
 * `scene` - (Optional, ForceNew, Available since v1.227.1) The Acceleration scen. Supported:
   - `apiscene`: API acceleration.
   - `webservicescene`: accelerate website business.
@@ -84,12 +85,12 @@ The following arguments are supported:
   - `global`: global
 
 * `sources` - (Optional) Source  See [`sources`](#sources) below.
-* `ssl_pri` - (Optional) The private key. Specify the private key only if you want to enable the SSL certificate. 
+* `ssl_pri` - (Optional) The private key. Specify the private key only if you want to enable the SSL certificate.
 * `ssl_protocol` - (Optional) Specifies whether to enable the SSL certificate. Valid values:
   - `on`
   - `off`
 
-* `ssl_pub` - (Optional) The content of the SSL certificate. Specify the content of the SSL certificate only if you want to enable the SSL certificate. 
+* `ssl_pub` - (Optional) The content of the SSL certificate. Specify the content of the SSL certificate only if you want to enable the SSL certificate.
 * `status` - (Optional, Computed) The status of the domain name. Valid values:
   - `online`: enabled
   - `offline`: disabled
@@ -99,11 +100,12 @@ The following arguments are supported:
   - `check_failed`: review failed
 
 * `tags` - (Optional, ForceNew, Map, Available since v1.204.1) The tag of the resource
-* `top_level_domain` - (Optional) The top-level domain. 
+* `top_level_domain` - (Optional) The top-level domain.
 
 ### `sources`
 
 The sources supports the following:
+
 * `content` - (Optional) The address of the source station.
 * `port` - (Optional, Computed) The port number. Valid values: `443` and `80`. Default to `80`.
 * `priority` - (Optional, Computed) The priority of the origin if multiple origins are specified. Default to `20`.
@@ -116,6 +118,7 @@ The sources supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. It is the same as the `domain_name`.
 * `cname` - The CNAME domain name corresponding to the accelerated domain name.
 * `create_time` - The time when the accelerated domain name was created.
@@ -123,6 +126,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 30 mins) Used when create the Domain.
 * `delete` - (Defaults to 30 mins) Used when delete the Domain.
 * `update` - (Defaults to 30 mins) Used when update the Domain.

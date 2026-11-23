@@ -131,6 +131,7 @@ EOF
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cluster_id` - (Required, ForceNew) The ID of the prometheus instance.
 * `config_yaml` - (Required) Yaml configuration for monitoring.
 * `status` - (Optional, Computed) Valid values: `stop`, `run`.
@@ -139,12 +140,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<cluster_id>:<monitoring_name>:<type>`.
 * `monitoring_name` - The name of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Prometheus Monitoring.
 * `delete` - (Defaults to 5 mins) Used when delete the Prometheus Monitoring.
 * `update` - (Defaults to 5 mins) Used when update the Prometheus Monitoring.

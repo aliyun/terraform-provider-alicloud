@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aliyun/credentials-go/credentials"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/client/config"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
@@ -53,7 +54,7 @@ func TestUnitSlsRequestHonorsClientTimeouts(t *testing.T) {
 	endpoints.Store("log", strings.TrimPrefix(server.URL, "http://"))
 
 	client := &AliyunClient{
-		config: &Config{
+		config: &config.Config{
 			RegionId:             "cn-beijing",
 			Protocol:             "HTTP",
 			Credential:           credential,

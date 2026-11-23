@@ -36,10 +36,10 @@ The following arguments are supported:
 * `network_interface_id` - (Optional, ForceNew) The ID of the ENI.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `members` - A list of Transit Router Multicast Domain Member Entries. Each element contains the following attributes:
   * `id` - The `key` of the resource supplied above.The value is formulated as `<transit_router_multicast_domain_id>:<group_ip_address>:<network_interface_id>`.
   * `group_ip_address` - The IP address of the multicast group to which the multicast member belongs. If the multicast group you specified does not exist in the current multicast domain, the system will automatically create a new multicast group for you in the current multicast domain.

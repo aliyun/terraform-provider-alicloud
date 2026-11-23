@@ -71,23 +71,24 @@ resource "alicloud_ssl_certificates_service_pca_cert_sync" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_pca_cert_sync&spm=docs.r.ssl_certificates_service_pca_cert_sync.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Required, ForceNew, List) The identifiers of the PCA client certificates to synchronize to the SSL Certificates service. Multiple identifiers are joined into a single comma-separated request.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID. The value is the comma-separated list of the synchronized PCA certificate identifiers.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the PCA Cert Sync.
 * `delete` - (Defaults to 5 mins) Used when delete the PCA Cert Sync.
 

@@ -175,14 +175,14 @@ The application supports the following:
 
 ### `post_install_script`
 
-The post_install_script supports the following: 
+The post_install_script supports the following:
 
 * `args` - (Optional) The parameter that is used to run the script after the cluster is created.
 * `url` - (Optional) The URL that is used to download the script after the cluster is created.
 
 ### `additional_volumes`
 
-The additional_volumes supports the following: 
+The additional_volumes supports the following:
 
 * `job_queue` - (Optional) The queue of the nodes to which the additional file system is attached.
 * `local_directory` - (Optional) The local directory on which the additional file system is mounted.

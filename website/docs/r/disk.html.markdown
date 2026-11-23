@@ -7,7 +7,7 @@ description: |-
   Provides a ECS Disk resource.
 ---
 
-# alicloud\_disk
+# alicloud_disk
 
 Provides a ECS disk resource.
 
@@ -69,6 +69,7 @@ If you want to delete a disk without `force_delete`, convert it to `PayAsYouGo` 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `advanced_features` - (Optional) The advanced features configured for the disk.
 * `bursting_enabled` - (Optional, Bool, Available since v1.237.0) Specifies whether to enable the performance burst feature. Valid values: `true`, `false`. **NOTE:** `bursting_enabled` is only valid when `category` is `cloud_auto`; specifying it for other categories is rejected by the API. When `category` is changed to `cloud_auto` in the same apply (for example from `cloud_essd`), the provider defers the `BurstingEnabled` update until the disk category has been confirmed as `cloud_auto` by `ModifyDiskSpec` and `WaitForState`, because the API rejects `BurstingEnabled` on a non-`cloud_auto` disk.
 * `category` - (Optional) The category of the data disk. Default value: `cloud_efficiency`. Valid Values: `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_essd_entry`, `cloud_regional_disk_auto`, `elastic_ephemeral_disk_standard`, `elastic_ephemeral_disk_premium`. **NOTE:** When `category` is `cloud_auto`, the `bursting_enabled` and `provisioned_iops` parameters become applicable; they are rejected by the API for other categories. **NOTE:** Category conversion (for example from `cloud_essd` to `cloud_auto`) is applied asynchronously by the API: the disk may report the transitional status `Modifying` while the conversion runs, and even after the status returns to `Available` the category may still report the previous value for some time. The provider therefore waits within a single `DescribeDisks` response until the status is `Available`/`In_use` and the category already equals the requested value before completing the update, and this wait is bounded by the `update` timeout (default 30 mins). Conversion duration depends on the disk (throughput, capacity and the previous category) and has no completion guarantee; set `timeouts.update` explicitly for large disks whose conversion may take longer.
@@ -128,6 +129,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Disk.
 * `create_time` - (Available since v1.237.0) The time when the disk was created.
 * `region_id` - (Available since v1.237.0) The ID of the region to which the disk belongs.
@@ -136,6 +138,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Disk.
 * `delete` - (Defaults to 5 mins) Used when delete the Disk. When `force_delete` is `true`, this timeout applies to each step of the forced sequence: converting the billing method, detaching the disk and waiting until it is available, and releasing it. Adjust it when a step needs more time, for example a slow billing method conversion.
 * `update` - (Defaults to 30 mins) Used when update the Disk.

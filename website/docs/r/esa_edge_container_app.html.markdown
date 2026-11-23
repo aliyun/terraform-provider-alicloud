@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Edge Container App resource.
 
-
-
 For information about ESA Edge Container App and how to use it, see [What is Edge Container App](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateEdgeContainerApp).
 
 -> **NOTE:** Available since v1.247.0.
@@ -54,14 +52,16 @@ resource "alicloud_esa_edge_container_app" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `edge_container_app_name` - (Required, ForceNew) The application name must start with a lowercase letter. Lowercase letters, numbers, and bars are supported. The length is limited to 6 to 128 characters.
 * `health_check_fail_times` - (Optional, ForceNew, Int) The number of consecutive successful health checks required for an application to be considered as healthy. Valid values: 1 to 10. Default value: 2.
 * `health_check_host` - (Optional, ForceNew) The health check type. By default, this parameter is left empty.
 
 Valid values:
 
-  - `l4`: Layer 4 health check.
-  - `l7`: Layer 7 health check.
+- `l4`: Layer 4 health check.
+- `l7`: Layer 7 health check.
+
 * `health_check_http_code` - (Optional, ForceNew, Computed) The domain name that is used for health checks. This parameter is empty by default.
 * `health_check_interval` - (Optional, ForceNew, Computed, Int) The timeout period of a health check response. If a backend ECS instance does not respond within the specified timeout period, the ECS instance fails the health check. Unit: seconds.
 Valid values: `1` to `100`.
@@ -85,13 +85,15 @@ Default value: `3`.
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the application was created.
-* `status` - The status of the application. 
+* `status` - The status of the application.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 6 mins) Used when create the Edge Container App.
 * `delete` - (Defaults to 5 mins) Used when delete the Edge Container App.
 

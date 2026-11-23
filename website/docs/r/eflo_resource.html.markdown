@@ -10,8 +10,6 @@ description: |-
 
 Provides a Eflo Resource resource.
 
-
-
 For information about Eflo Resource and how to use it, see [What is Resource](https://www.alibabacloud.com/help/en/pai/developer-reference/api-eflo-cnp-2023-08-28-createresource).
 
 -> **NOTE:** Available since v1.248.0.
@@ -74,6 +72,7 @@ Terraform cannot destroy resource `alicloud_eflo_resource`. Terraform will remov
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cluster_desc` - (Optional, ForceNew) Used to provide a description or comment on the compute cluster.
 * `cluster_id` - (Required, ForceNew) Used to uniquely identify a computing cluster.
 * `cluster_name` - (Required, ForceNew) Represents the name of the compute cluster, usually including the model number.
@@ -83,6 +82,7 @@ The following arguments are supported:
 ### `machine_types`
 
 The machine_types supports the following:
+
 * `bond_num` - (Optional, ForceNew, Int) This property specifies the number of network bindings, which relates to the number of physical or virtual network cards connected to the network through the network interface card (NIC). Multiple network bindings can increase bandwidth and redundancy and improve network reliability.
 * `cpu_info` - (Required, ForceNew) Provides CPU details, including the number of cores, number of threads, clock frequency, and architecture type. This information helps to evaluate the processing power and identify whether it can meet the performance requirements of a particular application.
 * `disk_info` - (Optional, ForceNew) Displays information about the storage device, including the disk type (such as SSD or HDD), capacity, and I/O performance. Storage performance is critical in data-intensive applications such as big data processing and databases.
@@ -97,6 +97,7 @@ The machine_types supports the following:
 ### `user_access_param`
 
 The user_access_param supports the following:
+
 * `access_id` - (Required) Access keys are important credentials for authentication.
 * `access_key` - (Required) A Secret Key is a Secret credential paired with an access Key to verify a user's identity and protect the security of an interface.
 * `endpoint` - (Required) An Endpoint is a network address for accessing a service or API, usually a URL to a specific service instance.
@@ -105,12 +106,14 @@ The user_access_param supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `resource_id` - The ID of the Resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Resource.
 * `update` - (Defaults to 5 mins) Used when update the Resource.
 
@@ -121,4 +124,3 @@ Eflo Resource can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_eflo_resource.example <id>
 ```
-

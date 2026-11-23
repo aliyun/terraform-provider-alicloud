@@ -7,7 +7,7 @@ description: |-
   Provides a list of Security Center Groups to the user.
 ---
 
-# alicloud\_security\_center\_groups
+# alicloud_security_center_groups
 
 This data source provides the Security Center Groups of the current Alibaba Cloud user.
 

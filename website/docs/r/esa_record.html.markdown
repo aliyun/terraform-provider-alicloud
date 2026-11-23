@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Record resource.
 
-
-
 For information about ESA Record and how to use it, see [What is Record](https://www.alibabacloud.com/help/en/edge-security-acceleration/esa/user-guide/add-parsing-record/).
 
 -> **NOTE:** Available since v1.240.0.
@@ -73,6 +71,7 @@ resource "alicloud_esa_record" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auth_conf` - (Optional, List) The origin authentication information of the CNAME record. See [`auth_conf`](#auth_conf) below.
 * `biz_name` - (Optional) The business scenario of the record for acceleration. Leave the parameter empty if your record is not proxied. Valid values:
   - `image_video`: video and image.
@@ -101,6 +100,7 @@ The following arguments are supported:
 ### `auth_conf`
 
 The auth_conf supports the following:
+
 * `access_key` - (Optional) The access key of the account to which the origin server belongs. This parameter is required when the SourceType is OSS, and AuthType is private_cross_account, or when the SourceType is S3 and AuthType is private.
 * `auth_type` - (Optional) The authentication type of the origin server. Different origins support different authentication types. The type of origin refers to the SourceType parameter in this operation. If the type of origin is OSS or S3, you must specify the authentication type of the origin. Valid values:
   - `public`: public read. Select this value when the origin type is OSS or S3 and the origin access is public read.
@@ -117,6 +117,7 @@ The auth_conf supports the following:
 ### `data`
 
 The data supports the following:
+
 * `algorithm` - (Optional, Int) The encryption algorithm used for the record, specified within the range from 0 to 255. This parameter is required when you add CERT or SSHFP records.
 * `certificate` - (Optional) The public key of the certificate. This parameter is required when you add CERT, SMIMEA, or TLSA records.
 * `fingerprint` - (Optional) The public key fingerprint of the record. This parameter is required when you add a SSHFP record.
@@ -146,12 +147,14 @@ The data supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the record was created. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Record.
 * `delete` - (Defaults to 5 mins) Used when delete the Record.
 * `update` - (Defaults to 5 mins) Used when update the Record.

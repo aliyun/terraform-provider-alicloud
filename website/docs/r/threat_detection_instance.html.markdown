@@ -67,6 +67,7 @@ Terraform cannot destroy resource `alicloud_threat_detection_instance`. Terrafor
 ## Argument Reference
 
 The following arguments are supported:
+
 * `buy_number` - (Optional) Number of servers.
 * `container_image_scan` - (Optional, Deprecated since v1.247.0) Container Image security scan. Interval type, value interval:[0,200000].
 
@@ -134,6 +135,7 @@ The following arguments are supported:
   - ManualRenewal: manual renewal.
 
 Default ManualRenewal.
+
 * `sas_anti_ransomware` - (Optional) Anti-ransomware capacity. Unit: GB. Interval type, value interval:[0,9999999999].
 
   -> **NOTE:**  The step size is 10, that is, only multiples of 10 can be filled in.
@@ -206,6 +208,7 @@ Default ManualRenewal.
 ### `post_pay_module_switch_obj`
 
 The post_pay_module_switch_obj supports the following:
+
 * `agentless` - (Optional, Int, Available since v1.269.0) Agentless Detection Module. Valid values:
   - `1`: On.
   - `0`: Off.
@@ -255,13 +258,15 @@ The post_pay_module_switch_obj supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
-* `status` - The resource attribute field representing the resource status. 
+* `status` - The resource attribute field representing the resource status.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Instance.
 * `update` - (Defaults to 5 mins) Used when update the Instance.
 

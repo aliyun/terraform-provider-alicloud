@@ -95,18 +95,18 @@ resource "alicloud_resource_manager_handshake_acceptance" "example" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_handshake_acceptance&spm=docs.r.resource_manager_handshake_acceptance.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `handshake_id` - (Required, ForceNew) The ID of the invitation.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource. The value is the same as `handshake_id`.
 * `create_time` - The time when the invitation was created. The time is displayed in UTC.
 * `expire_time` - The time when the invitation expires. The time is displayed in UTC.
@@ -124,6 +124,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when accept the Handshake.
 * `delete` - (Defaults to 5 mins) Used when delete the Handshake Acceptance.
 

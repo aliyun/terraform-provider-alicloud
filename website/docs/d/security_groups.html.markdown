@@ -7,7 +7,7 @@ description: |-
     Provides a list of Security Groups available to the user.
 ---
 
-# alicloud\_security\_groups
+# alicloud_security_groups
 
 This data source provides a list of Security Groups in an Alibaba Cloud account according to the specified filters.
 
@@ -56,7 +56,6 @@ The following arguments are supported:
     }
   }
   ```
-
 
 ## Attributes Reference
 

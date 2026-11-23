@@ -81,6 +81,7 @@ resource "alicloud_ens_eip_instance_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `allocation_id` - (Required, ForceNew) The first ID of the resource
 * `instance_id` - (Required, ForceNew) Instance ID
 * `instance_type` - (Optional, ForceNew, Computed) The type of the EIP instance. Value:
@@ -95,13 +96,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<allocation_id>:<instance_id>:<instance_type>`.
 * `status` - The status of the EIP.
-
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Eip Instance Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Eip Instance Attachment.
 

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Dts Consumer Channels to the user.
 ---
 
-# alicloud\_dts\_consumer\_channels
+# alicloud_dts_consumer_channels
 
 This data source provides the Dts Consumer Channels of the current Alibaba Cloud user.
 

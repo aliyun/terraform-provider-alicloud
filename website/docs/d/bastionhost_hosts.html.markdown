@@ -7,7 +7,7 @@ description: |-
   Provides a list of Bastionhost Hosts to the user.
 ---
 
-# alicloud\_bastionhost\_hosts
+# alicloud_bastionhost_hosts
 
 This data source provides the Bastionhost Hosts of the current Alibaba Cloud user.
 

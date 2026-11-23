@@ -85,7 +85,7 @@ The following arguments are supported:
 * `eip_instance_id` - (Optional, ForceNew) The Id of eip.
 * `enable_public_network` - (Optional, ForceNew) Whether to enable public network. **NOTE:** If `eip_instance_id` is not configured and `enable_public_network` is true, the system will create an elastic public network IP.
 * `kube_config` - (Required) The kube config for the k8s cluster. It needs to be connected after Base64 encoding.
-* `resource_group_id` - (Optional, ForceNew) The resource group ID. 
+* `resource_group_id` - (Optional, ForceNew) The resource group ID.
 * `security_group_id` - (Required, ForceNew) The security group ID.
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
 * `taints` - (Optional) The taint. See [`taints`](#taints) below.

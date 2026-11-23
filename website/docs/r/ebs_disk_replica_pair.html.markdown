@@ -10,8 +10,6 @@ description: |-
 
 Provides a Elastic Block Storage(EBS) Disk Replica Pair resource.
 
-
-
 For information about Elastic Block Storage(EBS) Disk Replica Pair and how to use it, see [What is Disk Replica Pair](https://www.alibabacloud.com/help/en/ecs/developer-reference/api-ebs-2021-07-30-creatediskreplicapair).
 
 -> **NOTE:** Available since v1.196.0.
@@ -90,6 +88,7 @@ resource "alicloud_ebs_disk_replica_pair" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bandwidth` - (Optional, ForceNew, Int) The bandwidth for asynchronous data replication between cloud disks. The unit is Kbps. Value range:
   - 10240 Kbps: equal to 10 Mbps.
   - 20480 Kbps: equal to 20 Mbps.
@@ -98,6 +97,7 @@ The following arguments are supported:
 
 Default value: 10240.
 This parameter cannot be specified when the ChargeType value is PayAsYouGo The system value is 0, which indicates that the disk is dynamically allocated according to data write changes during asynchronous replication.
+
 * `description` - (Optional) The description of the asynchronous replication relationship. 2 to 256 English or Chinese characters in length and cannot start with' http:// 'or' https.
 * `destination_disk_id` - (Required, ForceNew) The ID of the standby disk.
 * `destination_region_id` - (Required, ForceNew) The ID of the region to which the disaster recovery site belongs.
@@ -109,6 +109,7 @@ This parameter cannot be specified when the ChargeType value is PayAsYouGo The s
   - false: Data Synchronization starts after the RPO time period.
 
 Default value: false.
+
 * `payment_type` - (Optional, ForceNew, Computed) The payment type of the resource
 * `period` - (Optional, Int) The purchase duration of the asynchronous replication relationship. This parameter is required when 'ChargeType = PrePay. The duration unit is specified by'periodunit', and the value range is:
   - When 'PeriodUnit = Week', the value range of this parameter is 1, 2, 3, and 4.
@@ -118,6 +119,7 @@ Default value: false.
   - Month: Month.
 
 Default value: Month.
+
 * `rpo` - (Optional, ForceNew, Int) The RPO value set by the consistency group in seconds. Currently only 900 seconds are supported.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group
 * `reverse_replicate` - (Optional, Available since v1.245.0) Specifies whether to enable the reverse replication sub-feature. Valid values: true and false. Default value: true.
@@ -125,11 +127,13 @@ Default value: Month.
 * `tags` - (Optional, Map, Available since v1.245.0) The tag of the resource
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `pair_name` - (Deprecated since v1.245.0). Field 'pair_name' has been deprecated from provider version 1.245.0. New field 'disk_replica_pair_name' instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `region_id` - The region ID  of the resource
@@ -138,6 +142,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Disk Replica Pair.
 * `delete` - (Defaults to 5 mins) Used when delete the Disk Replica Pair.
 * `update` - (Defaults to 20 mins) Used when update the Disk Replica Pair.

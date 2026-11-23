@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_ebs_replica_group_drill
 
-Provides a EBS Replica Group Drill resource. 
+Provides a EBS Replica Group Drill resource.
 
 For information about Elastic Block Storage(EBS) Replica Group Drill and how to use it, see [What is Replica Group Drill](https://next.api.alibabacloud.com/document/ebs/2021-07-30/StartReplicaGroupDrill).
 
@@ -43,11 +43,13 @@ resource "alicloud_ebs_replica_group_drill" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `group_id` - (Required, ForceNew) The ID of the replication group. You can use the [describediskreplicaggroups](~~ 426614 ~~) interface to query the asynchronous replication group list to obtain the value of the replication group ID input parameter.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<group_id>:<replica_group_drill_id>`.
 * `replica_group_drill_id` - The first ID of the resource.
 * `status` - Walkthrough status. _failed: Execution failed._failed: Cleanup failed.
@@ -55,6 +57,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Replica Group Drill.
 * `delete` - (Defaults to 5 mins) Used when delete the Replica Group Drill.
 

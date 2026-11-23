@@ -56,6 +56,7 @@ resource "alicloud_express_connect_virtual_physical_connection" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional, ForceNew) The description of the physical connection.
 * `expect_spec` - (Optional) The estimated bandwidth value of the shared line. Valid values: `50M`, `100M`, `200M`, `300M`, `400M`, `500M`, `1G`, `2G`, `5G`, `8G`, and `10G`. **Note**: By default, the values of 2G, 5G, 8G, and 10G are unavailable. If you want to specify these values, contact your customer manager. Unit: **M** indicates Mbps, **G** indicates Gbps.
 * `order_mode` - (Required, ForceNew) The payment method of shared dedicated line. Value:
@@ -69,10 +70,10 @@ The following arguments are supported:
 * `vpconn_ali_uid` - (Required, ForceNew) The ID of the Alibaba Cloud account (primary account) of the owner of the shared line.
 * `dry_run` - (Optional) Specifies whether to precheck the API request. Valid values: `true` and `false`.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.
 * `access_point_id` - The ID of the access point of the physical connection.
 * `ad_location` - The physical location where the physical connection access device is located.
@@ -95,6 +96,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Virtual Physical Connection.
 * `delete` - (Defaults to 5 mins) Used when delete the Virtual Physical Connection.
 * `update` - (Defaults to 5 mins) Used when update the Virtual Physical Connection.

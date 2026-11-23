@@ -13,7 +13,6 @@ Provides an EDAS deploy group resource, see [What is EDAS Deploy Group](https://
 
 -> **NOTE:** Available since v1.82.0.
 
-
 ## Example Usage
 
 Basic Usage
@@ -67,7 +66,7 @@ resource "alicloud_edas_deploy_group" "default" {
 The following arguments are supported:
 
 * `app_id` - (Required, ForceNew) The ID of the application that you want to deploy.
-* `group_name` - (Required, ForceNew) The name of the instance group that you want to create. 
+* `group_name` - (Required, ForceNew) The name of the instance group that you want to create.
 * `group_type` - (ForceNew) The type of the instance group that you want to create. Valid values: 0: Default group. 1: Phased release is disabled for traffic management. 2: Phased release is enabled for traffic management.
 
 ## Attributes Reference

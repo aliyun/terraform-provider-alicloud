@@ -63,3 +63,24 @@ var (
 	Inactive       = vpc.Inactive
 	DefaultTimeout = vpc.DefaultTimeout
 )
+
+// networkAclAttachmentHasNoBinding is the Deleted-wait predicate from
+// service_alicloud_vpc.go. Re-exported so the vpc_test regression can prove the
+// UNBINDING / partial-disappearance / all-gone distinctions without cloud side
+// effects.
+var networkAclAttachmentHasNoBinding = vpc.NetworkAclAttachmentHasNoBindingForTest
+
+// networkAclAttachmentResourcesToUnbind is the delete-side binding subset from
+// service_alicloud_vpc.go. Re-exported so the vpc_test regression can prove that deleting one
+// attachment only releases its own resources without cloud side effects.
+var networkAclAttachmentResourcesToUnbind = vpc.NetworkAclAttachmentResourcesToUnbindForTest
+
+var networkAclAttachmentPresentResources = vpc.NetworkAclAttachmentPresentResourcesForTest
+
+var networkAclAttachmentAllBound = vpc.NetworkAclAttachmentAllBoundForTest
+
+var networkAclAttachmentRemaining = vpc.NetworkAclAttachmentRemainingForTest
+
+var networkAclAttachmentRetry = vpc.NetworkAclAttachmentRetryForTest
+
+var networkAclAttachmentDeleteIdempotent = vpc.NetworkAclAttachmentDeleteIdempotentForTest

@@ -7,7 +7,7 @@ description: |-
   Provides a list of Hybrid Backup Recovery (HBR) Restore Jobs to the user.
 ---
 
-# alicloud\_hbr\_restore\_jobs
+# alicloud_hbr_restore_jobs
 
 This data source provides the Hbr Restore Jobs of the current Alibaba Cloud user.
 
@@ -42,7 +42,6 @@ The following arguments are supported:
 * `target_file_system_id` - (Optional) Valid while source_type equals `NAS`. The list of destination File System IDs.
 * `target_instance_id` - (Optional) The ID of target ECS instance.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-
 
 ## Attributes Reference
 

@@ -42,6 +42,7 @@ resource "alicloud_mongodb_global_security_ip_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `global_security_ip_list` - (Required) The IP address in the whitelist template.
 
   -> **NOTE:** Separate multiple IP addresses with commas (,). You can create up to 1000 IP addresses or CIDR blocks for all IP address whitelists.
@@ -51,12 +52,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `region_id` - The region ID of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Global Security IP Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Global Security IP Group.
 * `update` - (Defaults to 5 mins) Used when update the Global Security IP Group.

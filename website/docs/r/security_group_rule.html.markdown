@@ -57,7 +57,7 @@ resource "alicloud_security_group_rule" "allow_all_tcp" {
 
 ## Module Support
 
-You can use the existing [security-group module](https://registry.terraform.io/modules/alibaba/security-group/alicloud) 
+You can use the existing [security-group module](https://registry.terraform.io/modules/alibaba/security-group/alicloud)
 to create a security group and add several rules one-click.
 
 ## Argument Reference

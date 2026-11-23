@@ -7,11 +7,11 @@ description: |-
   Provides a list of Vpc Public Ip Address Pool Cidr Blocks to the user.
 ---
 
-# alicloud\_vpc\_public\_ip\_address\_pool\_cidr\_blocks
+# alicloud_vpc_public_ip_address_pool_cidr_blocks
 
 This data source provides the Vpc Public Ip Address Pool Cidr Blocks of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.189.0+.
+-> **NOTE:** Available since v1.189.0+.
 
 -> **NOTE:** Only users who have the required permissions can use the IP address pool feature of Elastic IP Address (EIP). To apply for the required permissions, [submit a ticket](https://smartservice.console.aliyun.com/service/create-ticket).
 

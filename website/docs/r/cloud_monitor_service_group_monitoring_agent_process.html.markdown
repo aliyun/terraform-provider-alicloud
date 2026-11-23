@@ -91,24 +91,24 @@ The match_express supports the following:
 
 The alert_config supports the following:
 
-* `escalations_level` (Required) The alert level. Valid values: `critical`, `warn`, `info`.
-* `comparison_operator` (Required) The operator that is used to compare the metric value with the threshold. Valid values: `GreaterThanOrEqualToThreshold`, `GreaterThanThreshold`, `LessThanOrEqualToThreshold`, `LessThanThreshold`, `NotEqualToThreshold`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`.
-* `statistics` (Required) The statistical method for alerts. Valid values: `Average`.
-* `threshold` (Required) The alert threshold.
-* `times` (Required) The number of times for which the threshold can be consecutively exceeded.
-* `effective_interval` (Optional) The time period during which the alert rule is effective.
-* `silence_time` (Optional, Int) The mute period during which new alert notifications are not sent even if the trigger conditions are met. Unit: seconds.
-* `webhook` (Optional) The callback URL.
-* `target_list` (Optional, Set) The alert triggers. See [`target_list`](#alert_config-target_list) below.
+* `escalations_level` - (Required) The alert level. Valid values: `critical`, `warn`, `info`.
+* `comparison_operator` - (Required) The operator that is used to compare the metric value with the threshold. Valid values: `GreaterThanOrEqualToThreshold`, `GreaterThanThreshold`, `LessThanOrEqualToThreshold`, `LessThanThreshold`, `NotEqualToThreshold`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`.
+* `statistics` - (Required) The statistical method for alerts. Valid values: `Average`.
+* `threshold` - (Required) The alert threshold.
+* `times` - (Required) The number of times for which the threshold can be consecutively exceeded.
+* `effective_interval` - (Optional) The time period during which the alert rule is effective.
+* `silence_time` - (Optional, Int) The mute period during which new alert notifications are not sent even if the trigger conditions are met. Unit: seconds.
+* `webhook` - (Optional) The callback URL.
+* `target_list` - (Optional, Set) The alert triggers. See [`target_list`](#alert_config-target_list) below.
 
 ### `alert_config-target_list`
 
 The target_list supports the following:
 
-* `target_list_id` (Optional) The ID of the resource for which alerts are triggered.
-* `json_params` (Optional) The parameters of the alert callback. Specify the parameters in the JSON format.
-* `level` (Optional) The alert level. Valid values: `CRITICAL`, `WARN`, `INFO`.
-* `arn` (Optional) The Alibaba Cloud Resource Name (ARN) of the resource.
+* `target_list_id` - (Optional) The ID of the resource for which alerts are triggered.
+* `json_params` - (Optional) The parameters of the alert callback. Specify the parameters in the JSON format.
+* `level` - (Optional) The alert level. Valid values: `CRITICAL`, `WARN`, `INFO`.
+* `arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of the resource.
 
 ## Attributes Reference
 

@@ -11,7 +11,7 @@ description: |-
 
 Provides a PolarDB Zonal account resource and used to manage databases.
 
--> **NOTE:** Available since v1.262.0. 
+-> **NOTE:** Available since v1.262.0.
 
 ## Example Usage
 

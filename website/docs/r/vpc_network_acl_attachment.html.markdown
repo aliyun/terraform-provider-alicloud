@@ -59,6 +59,7 @@ resource "alicloud_vpc_network_acl_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `network_acl_id` - (Required, ForceNew) The ID of the network ACL instance.
 * `resource_id` - (Required, ForceNew) The ID of the associated  vswitch instance.
 * `resource_type` - (Required, ForceNew) The type of the associated resource. Valid values: `VSwitch`.
@@ -66,12 +67,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<network_acl_id>:<resource_id>`.
 * `status` - The status of the Network Acl Attachment.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Network Acl Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Network Acl Attachment.
 

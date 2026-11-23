@@ -91,7 +91,7 @@ The client_types supports the following:
 
 ### `authorize_security_policy_rules`
 
-The authorize_security_policy_rules supports the following: 
+The authorize_security_policy_rules supports the following:
 
 * `cidr_ip` - (Optional) The cidrip of security rules.
 * `description` - (Optional) The description of security rules.
@@ -103,7 +103,7 @@ The authorize_security_policy_rules supports the following:
 
 ### `authorize_access_policy_rules`
 
-The authorize_access_policy_rules supports the following: 
+The authorize_access_policy_rules supports the following:
 
 * `cidr_ip` - (Optional) The cidrip of authorize access rule.
 * `description` - (Optional) The description of authorize access rule.

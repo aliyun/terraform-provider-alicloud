@@ -7,7 +7,7 @@ description: |-
   Provides a list of Nlb Server Groups to the user.
 ---
 
-# alicloud\_nlb\_server\_groups
+# alicloud_nlb_server_groups
 
 This data source provides the Nlb Server Groups of the current Alibaba Cloud user.
 

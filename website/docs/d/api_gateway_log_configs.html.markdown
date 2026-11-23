@@ -7,7 +7,7 @@ description: |-
   Provides a list of Api Gateway Log Configs to the user.
 ---
 
-# alicloud\_api\_gateway\_log\_configs
+# alicloud_api_gateway_log_configs
 
 This data source provides the Api Gateway Log Configs of the current Alibaba Cloud user.
 

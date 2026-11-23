@@ -64,7 +64,7 @@ The following arguments are supported:
 
 * `application_name` - (Required) Name of your EDAS application. Only letters '-' '_' and numbers are allowed. The length cannot exceed 36 characters.
 * `package_type` - (Required, ForceNew) The type of the package for the deployment of the application that you want to create. The valid values are: WAR and JAR. We strongly recommend you to set this parameter when creating the application.
-* `cluster_id` - (Required, ForceNew) The ID of the cluster that you want to create the application. The default cluster will be used if you do not specify this parameter. 
+* `cluster_id` - (Required, ForceNew) The ID of the cluster that you want to create the application. The default cluster will be used if you do not specify this parameter.
 * `build_pack_id` - (Optional) The package ID of Enterprise Distributed Application Service (EDAS) Container, which can be retrieved by calling container version list interface ListBuildPack or the "Pack ID" column in container version list. When creating High-speed Service Framework (HSF) application, this parameter is required.
 * `descriotion` - (Optional) The description of the application that you want to create.
 * `health_check_url` - (Optional) The URL for health checking of the application.

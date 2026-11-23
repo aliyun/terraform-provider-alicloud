@@ -160,15 +160,16 @@ output "alicloud_sls_alert_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `project_name` - (Required, ForceNew) Project Name
 * `ids` - (Optional, ForceNew, Computed) A list of Alert IDs. The value is formulated as `<project_name>:<alert_name>`.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Alert IDs.
 * `names` - A list of name of Alerts.
 * `alerts` - A list of Alert Entries. Each element contains the following attributes:
@@ -180,7 +181,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `auto_annotation` - Whether to turn on automatic labeling.true (default): The automatic annotation function is enabled, and the system automatically adds information such as__county__to the alarm. For more information, see Automatic Labeling.false: Turn off the automatic annotation function.
     * `condition_configuration` - Alarm trigger condition.
       * `condition` - Data matching expression.
-      * `count_condition` - The number of data items to determine the expression, indicating the number of data items that meet the conditions. Indicates that if there is data that is satisfied, it can be set to an empty string. In other cases, you need to set it to an expression, for example,__count __> 3.
+      * `count_condition` - The number of data items to determine the expression, indicating the number of data items that meet the conditions. Indicates that if there is data that is satisfied, it can be set to an empty string. In other cases, you need to set it to an expression, for example, **count** > 3.
     * `dashboard` - The instrument cluster associated with the alarm. It is recommended to set to internal-alert-analysis.
     * `group_configuration` - Group evaluation configuration.
       * `fields` - The field used for grouping evaluation.When type is set to custom, fields must be set.
@@ -242,7 +243,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `description` - Compatible fields, set to empty strings.
   * `display_name` - Display name of the alarm rule
   * `schedule` - Check the frequency-dependent configuration
-    * `cron_expression` - Cron expression, the minimum accuracy is minutes, 24 hours. For example, 0 0/1 * * * means that the check is conducted every 1 hour from 00:00.When type is set to Cron, cronExpression must be set.
+    * `cron_expression` - Cron expression, the minimum accuracy is minutes, 24 hours. For example, 0 0/1 ** * means that the check is conducted every 1 hour from 00:00.When type is set to Cron, cronExpression must be set.
     * `delay` - Timed task execution delay (unit: s).
     * `interval` - Fixed interval for scheduling.
     * `run_immdiately` - Dispatch immediately.

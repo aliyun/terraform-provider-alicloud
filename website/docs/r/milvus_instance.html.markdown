@@ -10,8 +10,6 @@ description: |-
 
 Provides a Milvus Instance resource.
 
-
-
 For information about Milvus Instance and how to use it, see [What is Instance](https://next.api.alibabacloud.com/document/milvus/2023-10-12/CreateInstance).
 
 -> **NOTE:** Available since v1.264.0.
@@ -90,6 +88,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_backup` - (Optional, Computed) Whether to enable automatic backup
 * `auto_pay` - (Optional, Available since v1.282.0) Whether to pay automatically.
 
@@ -136,6 +135,7 @@ The following arguments are supported:
 ### `components`
 
 The components supports the following:
+
 * `cu_num` - (Required, Int) The number of CU. For example: 4
 * `cu_type` - (Optional, ForceNew, Computed) The calculation type. The default value is general, and the ram type needs to be opened with a work order.
   - general: Generic
@@ -153,6 +153,7 @@ The components supports the following:
 ### `components-data_disk`
 
 The components-data_disk supports the following:
+
 * `enabled` - (Optional, Available since v1.294.0) Whether to enable the QueryNode data disk.
 * `performance_level` - (Optional, Available since v1.294.0) The ESSD performance level. Supported values: PL0, PL1, PL2, and PL3.
 * `size` - (Optional, Int, Available since v1.294.0) The data disk size in GiB.
@@ -161,6 +162,7 @@ The components-data_disk supports the following:
 ### `vswitch_ids`
 
 The vswitch_ids supports the following:
+
 * `vsw_id` - (Optional, ForceNew) VSwitch id, which must correspond to the zone id.
 * `zone_id` - (Optional, ForceNew) The availability zone must correspond to the vswId.
 
@@ -180,6 +182,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 14 mins) Used when create the Instance.
 * `delete` - (Defaults to 14 mins) Used when delete the Instance.
 * `update` - (Defaults to 21 mins) Used when update the Instance.

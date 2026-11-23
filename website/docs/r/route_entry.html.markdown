@@ -89,7 +89,7 @@ resource "alicloud_route_entry" "default" {
 
 ## Module Support
 
-You can use to the existing [vpc module](https://registry.terraform.io/modules/alibaba/vpc/alicloud) 
+You can use to the existing [vpc module](https://registry.terraform.io/modules/alibaba/vpc/alicloud)
 to create a VPC, several VSwitches and add several route entries one-click.
 
 ## Argument Reference
@@ -128,6 +128,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.255.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Route Entry.
 * `delete` - (Defaults to 10 mins) Used when delete the Route Entry.
 

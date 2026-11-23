@@ -10,7 +10,6 @@ description: |-
 
 Provides a Ddos Coo Port resource.
 
-
 For information about Anti-DDoS Pro Port and how to use it, see [What is Port](https://www.alibabacloud.com/help/en/ddos-protection/latest/api-ddoscoo-2020-01-01-createport).
 
 -> **NOTE:** Available since v1.123.0.
@@ -58,6 +57,7 @@ resource "alicloud_ddoscoo_port" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `backend_port` - (Optional, ForceNew) The port of the origin server. Valid values: `0` to `65535`.
 
 * `config` - (Optional, List, Available since v1.230.0) Session persistence settings for port forwarding rules. Use a string representation in JSON format. The specific structure is described as follows.
@@ -77,16 +77,19 @@ The following arguments are supported:
 ### `config`
 
 The config supports the following:
+
 * `persistence_timeout` - (Optional, Int, Available since v1.230.0) The timeout period for session retention. Value range: 30~3600, unit: second. The default is 0, which means off.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<frontend_port>:<frontend_protocol>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Port.
 * `delete` - (Defaults to 5 mins) Used when delete the Port.
 * `update` - (Defaults to 5 mins) Used when update the Port.

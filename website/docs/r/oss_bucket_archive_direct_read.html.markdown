@@ -50,23 +50,25 @@ resource "alicloud_oss_bucket_archive_direct_read" "default" {
 
 Terraform cannot destroy resource `alicloud_oss_bucket_archive_direct_read`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_archive_direct_read&spm=docs.r.oss_bucket_archive_direct_read.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the bucket
 * `enabled` - (Required) Specifies whether to enable real-time access of Archive objects for a bucket. Valid values: true and false.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Archive Direct Read.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Archive Direct Read.
 

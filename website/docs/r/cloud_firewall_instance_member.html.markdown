@@ -53,12 +53,14 @@ resource "alicloud_cloud_firewall_instance_member" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `member_desc` - (Optional) Remarks of cloud firewall member accounts.
 * `member_uid` - (Required, ForceNew) The UID of the cloud firewall member account.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above. Its value same as `member_uid`.
 * `create_time` - When the cloud firewall member account was added.> use second-level timestamp format.
 * `member_display_name` - The name of the cloud firewall member account.
@@ -68,6 +70,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Instance Member.
 * `delete` - (Defaults to 1 mins) Used when delete the Instance Member.
 * `update` - (Defaults to 5 mins) Used when update the Instance Member.

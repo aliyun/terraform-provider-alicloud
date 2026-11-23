@@ -210,6 +210,7 @@ resource "alicloud_arms_synthetic_task" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `available_assertions` - (Optional) Assertion List. See [`available_assertions`](#available_assertions) below.
 * `common_setting` - (Optional) Common settings. See [`common_setting`](#common_setting) below.
 * `custom_period` - (Optional) Custom Cycle. See [`custom_period`](#custom_period) below.
@@ -226,6 +227,7 @@ The following arguments are supported:
 ### `available_assertions`
 
 The available_assertions supports the following:
+
 * `expect` - (Required) Expected value.
 * `operator` - (Required) Condition: gt: greater than; gte: greater than or equal to; lt: less than; te: less than or equal to; eq: equal to; neq: not equal to; ctn: contains; nctn: does not contain; exist: exists; n_exist: does not exist; belong: belongs to; reg_match: regular matching.
 * `target` - (Optional) Check the target. If the target is HttpResCode, HttpResBody, or httpressetime, you do not need to specify the target. If the target is HttpResHead, you need to specify the key in the header. If the target is HttpResHead, you need to use jsonPath.
@@ -234,6 +236,7 @@ The available_assertions supports the following:
 ### `common_setting`
 
 The common_setting supports the following:
+
 * `custom_host` - (Optional) Custom host. See [`custom_host`](#common_setting-custom_host) below.
 * `ip_type` - (Optional) IP Type:
   - 0: Automatic
@@ -252,6 +255,7 @@ The common_setting supports the following:
 ### `common_setting-custom_host`
 
 The common_setting-custom_host supports the following:
+
 * `hosts` - (Required) The host list. See [`hosts`](#common_setting-custom_host-hosts) below.
 * `select_type` - (Required) Selection method:
   - 0: Random
@@ -260,6 +264,7 @@ The common_setting-custom_host supports the following:
 ### `common_setting-custom_host-hosts`
 
 The common_setting-custom_host-hosts supports the following:
+
 * `domain` - (Required) Domain Name.
 * `ip_type` - (Required) IpType.
 * `ips` - (Required) The IP list.
@@ -267,12 +272,14 @@ The common_setting-custom_host-hosts supports the following:
 ### `custom_period`
 
 The custom_period supports the following:
+
 * `end_hour` - (Optional) End hours, 0-24.
 * `start_hour` - (Optional) Starting hours, 0-24.
 
 ### `monitor_conf`
 
 The monitor_conf supports the following:
+
 * `api_http` - (Optional) HTTP(S) task configuration information. See [`api_http`](#monitor_conf-api_http) below.
 * `file_download` - (Optional) File download type task configuration. See [`file_download`](#monitor_conf-file_download) below.
 * `net_dns` - (Optional) The configuration parameters of the DNS dial test. Required when TaskType is 3. See [`net_dns`](#monitor_conf-net_dns) below.
@@ -284,6 +291,7 @@ The monitor_conf supports the following:
 ### `monitor_conf-api_http`
 
 The monitor_conf-api_http supports the following:
+
 * `connect_timeout` - (Optional) Connection timeout, in ms. Default 5000. Optional range: 1000-300000ms.
 * `method` - (Optional) HTTP method, GET or POST.
 * `request_body` - (Optional) HTTP request body. See [`request_body`](#monitor_conf-api_http-request_body) below.
@@ -294,6 +302,7 @@ The monitor_conf-api_http supports the following:
 ### `monitor_conf-file_download`
 
 The monitor_conf-file_download supports the following:
+
 * `connection_timeout` - (Optional) Connection timeout time, in ms. Default 5000. Optional range: 1000-120000ms.
 * `custom_header_content` - (Optional, Map) Custom request header content, JSON Map.
 * `download_kernel` - (Optional) Download the kernel.
@@ -321,11 +330,12 @@ Default 1.
   - 0: Do not validate
   - 1: Validation string
   - 2:MD5 validation.
-* `white_list` - (Optional) DNS hijack whitelist. Match rules support IP, IP wildcard, subnet mask, and CNAME. Multiple match rules can be filled in. Multiple match rules are separated by vertical bars (|). For example, www.aliyun.com:203.0.3.55 | 203.3.44.67 indicates that all other IP addresses under the www.aliyun.com domain except 203.0.3.55 and 203.3.44.67 are hijacked.
+* `white_list` - (Optional) DNS hijack whitelist. Match rules support IP, IP wildcard, subnet mask, and CNAME. Multiple match rules can be filled in. Multiple match rules are separated by vertical bars (|). For example, <www.aliyun.com:203.0.3.55> | 203.3.44.67 indicates that all other IP addresses under the <www.aliyun.com> domain except 203.0.3.55 and 203.3.44.67 are hijacked.
 
 ### `monitor_conf-net_dns`
 
 The monitor_conf-net_dns supports the following:
+
 * `dns_server_ip_type` - (Optional) The IP address type of the DNS server.
   - 0 (default):ipv4
   - 1:ipv6
@@ -340,6 +350,7 @@ The monitor_conf-net_dns supports the following:
 ### `monitor_conf-net_icmp`
 
 The monitor_conf-net_icmp supports the following:
+
 * `interval` - (Optional) The interval at which ICMP(Ping) packets are sent. The unit is milliseconds (ms), the minimum value is 200, the maximum value is 2000, and the default value is 200.
 * `package_num` - (Optional) Number of ICMP(Ping) packets sent. The minimum value is 1, the maximum value is 50, and the default is 4.
 * `package_size` - (Optional) The size of the sent ICMP(Ping) packet. The unit is byte. The ICMP(PING) packet size is limited to 32, 64, 128, 256, 512, 1024, 1080, and 1450.
@@ -353,6 +364,7 @@ The monitor_conf-net_icmp supports the following:
 ### `monitor_conf-net_tcp`
 
 The monitor_conf-net_tcp supports the following:
+
 * `connect_times` - (Optional) The number of TCP connections established. The minimum value is 1, the maximum value is 16, and the default is 4.
 * `interval` - (Optional) The interval between TCP connections. The unit is milliseconds (ms), the minimum value is 200, the maximum value is 10000, and the default value is 200.
 * `target_url` - (Required) Dial test target address (host).
@@ -364,6 +376,7 @@ The monitor_conf-net_tcp supports the following:
 ### `monitor_conf-stream`
 
 The monitor_conf-stream supports the following:
+
 * `custom_header_content` - (Optional, Map) Custom header, in JSON Map format.
 * `player_type` - (Optional) Player, do not pass the default 12.
   - 12:VLC
@@ -374,11 +387,12 @@ The monitor_conf-stream supports the following:
 * `stream_monitor_timeout` - (Optional) Monitoring duration, in seconds, up to 60s, not 60 by default.
 * `stream_type` - (Optional) Audio and video flags: 0-video, 1-audio.
 * `target_url` - (Optional) The streaming media resource address.
-* `white_list` - (Optional) DNS hijack whitelist. Match rules support IP, IP wildcard, subnet mask, and CNAME. Multiple match rules can be filled in. Multiple match rules are separated by vertical bars (|). For example, www.aliyun.com:203.0.3.55 | 203.3.44.67 indicates that all other IP addresses under the www.aliyun.com domain except 203.0.3.55 and 203.3.44.67 are hijacked.
+* `white_list` - (Optional) DNS hijack whitelist. Match rules support IP, IP wildcard, subnet mask, and CNAME. Multiple match rules can be filled in. Multiple match rules are separated by vertical bars (|). For example, <www.aliyun.com:203.0.3.55> | 203.3.44.67 indicates that all other IP addresses under the <www.aliyun.com> domain except 203.0.3.55 and 203.3.44.67 are hijacked.
 
 ### `monitor_conf-website`
 
 The monitor_conf-website supports the following:
+
 * `automatic_scrolling` - (Optional) Whether to support automatic scrolling screen, loading page.
   - 0 (default): No
 1: Yes.
@@ -391,14 +405,14 @@ The monitor_conf-website supports the following:
   - 0: not disabled
   - 1 (default): Disabled.
 * `disable_compression` - (Optional) The Accept-Encoding field is used to determine whether to Accept compressed files. 0-do not disable, 1-disable, the default is 0.
-* `dns_hijack_whitelist` - (Optional) When a domain name (such as www.aliyun.com) is resolved, if the resolved IP address or CNAME is not in the DNS hijacking white list, the user will fail to access or return a target IP address that is not Aliyun. If the IP or CNAME in the resolution result is in the DNS white list, it will be determined that DNS hijacking has not occurred.  Fill in the format: Domain name: matching rules. Match rules support IP, IP wildcard, subnet mask, and CNAME. Multiple match rules can be filled in. Multiple match rules are separated by vertical bars (|). For example, www.aliyun.com:203.0.3.55 | 203.3.44.67 indicates that all other IP addresses under the www.aliyun.com domain except 203.0.3.55 and 203.3.44.67 are hijacked.
+* `dns_hijack_whitelist` - (Optional) When a domain name (such as <www.aliyun.com>) is resolved, if the resolved IP address or CNAME is not in the DNS hijacking white list, the user will fail to access or return a target IP address that is not Aliyun. If the IP or CNAME in the resolution result is in the DNS white list, it will be determined that DNS hijacking has not occurred.  Fill in the format: Domain name: matching rules. Match rules support IP, IP wildcard, subnet mask, and CNAME. Multiple match rules can be filled in. Multiple match rules are separated by vertical bars (|). For example, <www.aliyun.com:203.0.3.55> | 203.3.44.67 indicates that all other IP addresses under the <www.aliyun.com> domain except 203.0.3.55 and 203.3.44.67 are hijacked.
 * `element_blacklist` - (Optional) If an element configured in the element blacklist appears during page loading, the element is not requested to be loaded.
 * `filter_invalid_ip` - (Optional) Whether to filter invalid IP parameters. 0: filter, 1: do not filter. The default value is 0.
 * `flow_hijack_jump_times` - (Optional) Identify elements: Set the total number of elements on the Browse page.
 * `flow_hijack_logo` - (Optional) Hijacking ID: Set the matching key information. Enter the hijacking keyword or key element, with an asterisk (*) allowed.
 * `ignore_certificate_error` - (Optional) Whether to ignore certificate errors during certificate verification in SSL Handshake and continue browsing. 0-do not ignore, 1-ignore. The default value is 1.
 * `monitor_timeout` - (Optional) Monitoring timeout, in ms. Not required, 20000 by default.
-* `page_tamper` - (Optional) Monitoring the page appears to be tampered with elements other than the domain settings that belong to the page. Common manifestations are pop-up advertisements, floating advertisements, jumps, etc.  Fill in the format: Domain name: Element. You can fill multiple elements separated by a vertical bar (|). For example, www.aliyun.com:|/cc/bb/a.gif |/vv/bb/cc.jpg indicates that all the other elements of the www.aliyun.com domain name except the basic document,/cc/bb/a.gif, and/vv/bb/cc.jpg are tampered.
+* `page_tamper` - (Optional) Monitoring the page appears to be tampered with elements other than the domain settings that belong to the page. Common manifestations are pop-up advertisements, floating advertisements, jumps, etc.  Fill in the format: Domain name: Element. You can fill multiple elements separated by a vertical bar (|). For example, <www.aliyun.com:|/cc/bb/a.gif> |/vv/bb/cc.jpg indicates that all the other elements of the <www.aliyun.com> domain name except the basic document,/cc/bb/a.gif, and/vv/bb/cc.jpg are tampered.
 * `redirection` - (Optional) When redirection occurs, whether to continue browsing, 0-No, 1-Yes, the default is 1.
 * `slow_element_threshold` - (Optional) The slow element threshold, in ms, is 5000 by default and can be selected from 1 to 300000ms.
 * `target_url` - (Required) The target URL.
@@ -409,12 +423,14 @@ The monitor_conf-website supports the following:
 ### `monitor_conf-api_http-request_body`
 
 The monitor_conf-api_http-request_body supports the following:
+
 * `content` - (Optional) The request body content, in JSON string format. When the type is text/plain,application/json,application/xml,text/html, the content can be converted to a JSON string.
 * `type` - (Optional) The request body type. Supported parameters include text/plain, application/json, application/x-www-form-urlencoded, multipart/form-data, application/xml, and text/html.
 
 ### `monitors`
 
 The monitors supports the following:
+
 * `city_code` - (Required) The city code of monitor.
 * `client_type` - (Required) The type of monitor.
 * `operator_code` - (Required) The operator code of monitor.
@@ -422,11 +438,13 @@ The monitors supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Synthetic Task.
 * `delete` - (Defaults to 5 mins) Used when delete the Synthetic Task.
 * `update` - (Defaults to 5 mins) Used when update the Synthetic Task.

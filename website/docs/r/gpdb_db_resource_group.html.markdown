@@ -10,8 +10,6 @@ description: |-
 
 Provides a AnalyticDB for PostgreSQL (GPDB) Db Resource Group resource.
 
-
-
 For information about AnalyticDB for PostgreSQL (GPDB) Db Resource Group and how to use it, see [What is Db Resource Group](https://next.api.alibabacloud.com/document/gpdb/2016-05-03/CreateDBResourceGroup).
 
 -> **NOTE:** Available since v1.225.0.
@@ -81,6 +79,7 @@ resource "alicloud_gpdb_db_resource_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_instance_id` - (Required, ForceNew) The instance ID.> You can call the [DescribeDBInstances](~~ 86911 ~~) operation to view the instance IDs of all AnalyticDB PostgreSQL instances in the target region.
 * `resource_group_config` - (Required) Resource group configuration.
 * `resource_group_name` - (Required, ForceNew) Resource group name.
@@ -89,11 +88,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<resource_group_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Db Resource Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Db Resource Group.
 * `update` - (Defaults to 5 mins) Used when update the Db Resource Group.

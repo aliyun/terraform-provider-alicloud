@@ -7,11 +7,11 @@ description: |-
   Provides a list of Actiontrail Global Events Storage Region to the user.
 ---
 
-# alicloud\_actiontrail\_global\_events\_storage\_region
+# alicloud_actiontrail_global_events_storage_region
 
 This data source provides the Actiontrail Global Events Storage Region of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.201.0+.
+-> **NOTE:** Available since v1.201.0+.
 
 ## Example Usage
 

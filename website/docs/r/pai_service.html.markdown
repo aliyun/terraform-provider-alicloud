@@ -48,6 +48,7 @@ resource "alicloud_pai_service" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `develop` - (Optional) Specifies whether to enter development mode. Valid values: `true`, `false`.
 * `service_config` - (Required, JsonString) Service configuration information. Please refer to [Parameters of Model Services](https://www.alibabacloud.com/help/en/pai/user-guide/parameters-of-model-services).
 * `status` - (Optional, Computed) Service Current Status.
@@ -57,6 +58,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Creation time of the service
 * `region_id` - The region ID of the resource
@@ -65,6 +67,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Service.
 * `delete` - (Defaults to 5 mins) Used when delete the Service.
 * `update` - (Defaults to 16 mins) Used when update the Service.

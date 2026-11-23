@@ -34,7 +34,7 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, List) A list of resource group IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by resource group identifier.
 * `status` - (Optional, ForceNew) The status of the resource group. Valid values: `Creating`, `Deleted`, `Deleting`, `OK` and `PendingDelete`. **NOTE:** From version 1.114.0, `status` can be set to `Deleting`.
-* `enable_details` -(Optional, Available since v1.114.0) Set it to true can output more details. Default value: `false`.
+* `enable_details` - (Optional, Available since v1.114.0) Set it to true can output more details. Default value: `false`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -53,4 +53,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `region_statuses`- (Available since v1.114.0) The status of the resource group in all regions.
     * `region_id` - The region ID.
     * `status` - The status of the regional resource group.
-  

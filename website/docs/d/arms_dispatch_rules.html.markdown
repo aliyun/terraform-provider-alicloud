@@ -103,9 +103,9 @@ The following attributes are exported in addition to the arguments listed above:
       * `label_match_expressions` - Sets the dispatch rule.
         * `key` - The key of the tag of the dispatch rule.
         * `value` - The value of the tag.
-        * `operator` - The operator used in the dispatch rule. 
+        * `operator` - The operator used in the dispatch rule.
   
-  * `notify_rules` - Sets the notification rule. 
+  * `notify_rules` - Sets the notification rule.
     * `notify_channels` - A list of notification methods.
     * `notify_start_time` - (Available since v1.237.0) Start time of notification.
     * `notify_end_time` - (Available since v1.237.0) End time of notification.

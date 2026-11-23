@@ -39,12 +39,14 @@ resource "alicloud_dms_enterprise_logic_database" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `alias` - (Required) Logical Library alias.
 * `database_ids` - (Required) Sub-Database ID
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above.
 * `db_type` - Database type.
 * `env_type` - Environment type, return value is as follows:-product: production environment-dev: development environment-pre: Advance Environment-test: test environment-sit:SIT environment-uat:UAT environment-pet: Pressure measurement environment-stag:STAG environment
@@ -58,6 +60,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Logic Database.
 * `delete` - (Defaults to 5 mins) Used when delete the Logic Database.
 * `update` - (Defaults to 5 mins) Used when update the Logic Database.

@@ -58,6 +58,7 @@ output "addons" {
 ## Argument Reference
 
 The following arguments are supported.
+
 * `cluster_id` - (Required) The id of kubernetes cluster.
 * `ids` - (Optional) A list of addon IDs. The id of addon consists of the cluster id and the addon name, with the structure <cluster_ud>:<addon_name>.
 * `name_regex` - (Optional) A regex string to filter results by addon name.
@@ -67,7 +68,7 @@ The following arguments are supported.
 * `cluster_id` - The id of kubernetes cluster.
 * `names` - A list of addon names.
 * `addons` - A list of addons.
-  * `name` - The name of addon. 
+  * `name` - The name of addon.
   * `current_version` - The current version of addon, if this field is an empty string, it means that the addon is not installed.
   * `next_version` - The next version of this addon can be upgraded to.
   * `required` - Whether the addon is a system addon.

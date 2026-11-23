@@ -54,6 +54,7 @@ resource "alicloud_threat_detection_client_user_define_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `action_type` - (Required) The operation type. Value:
   - **0**: plus White
   - **1**: Plus Black.
@@ -85,12 +86,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Client User Define Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Client User Define Rule.
 * `update` - (Defaults to 5 mins) Used when update the Client User Define Rule.

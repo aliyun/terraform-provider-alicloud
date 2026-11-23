@@ -7,7 +7,7 @@ description: |-
     Provides a list of ons groups available to the user.
 ---
 
-# alicloud\_ons\_groups
+# alicloud_ons_groups
 
 This data source provides a list of ONS Groups in an Alibaba Cloud account according to the specified filters.
 
@@ -73,4 +73,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `instance_id` - ID of the ONS Instance that owns the group.
   * `remark` - Remark of the group.
   * `tags` - A map of tags assigned to the Ons group.
-

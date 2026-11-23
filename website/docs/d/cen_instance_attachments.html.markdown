@@ -7,11 +7,11 @@ description: |-
     Provides a list of CEN(Cloud Enterprise Network) Instance Attachments by an Alibaba Cloud Account.
 ---
 
-# alicloud\_cen\_instance\_attachments
+# alicloud_cen_instance_attachments
 
 This data source provides Cen Instance Attachments of the current Alibaba Cloud User.
 
--> **NOTE:** Available in v1.97.0+.
+-> **NOTE:** Available since v1.97.0+.
 
 ## Example Usage
 

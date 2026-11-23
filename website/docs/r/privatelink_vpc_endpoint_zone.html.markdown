@@ -10,8 +10,6 @@ description: |-
 
 Provides a Private Link Vpc Endpoint Zone resource.
 
-
-
 For information about Private Link Vpc Endpoint Zone and how to use it, see [What is Vpc Endpoint Zone](https://www.alibabacloud.com/help/en/privatelink/latest/api-privatelink-2020-04-15-addzonetovpcendpoint).
 
 -> **NOTE:** Available since v1.111.0.
@@ -89,6 +87,7 @@ resource "alicloud_privatelink_vpc_endpoint_zone" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `dry_run` - (Optional) Specifies whether to perform only a dry run, without performing the actual request. Valid values:
   - `true`: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the DryRunOperation error code is returned.
   - **false (default)**: performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
@@ -100,13 +99,15 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<endpoint_id>:<zone_id>`.
-* `status` - The state of the zone. 
+* `status` - The state of the zone.
 * `region_id` - (Available since v1.235.0) The ID of the region to which the endpoint service belongs.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vpc Endpoint Zone.
 * `delete` - (Defaults to 5 mins) Used when delete the Vpc Endpoint Zone.
 

@@ -81,7 +81,6 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `update` - (Defaults to 1 mins) Used when update the Editing Project.
 * `delete` - (Defaults to 1 mins) Used when delete the Editing Project.
 
-
 ## Import
 
 VOD Editing Project can be imported using the id, e.g.

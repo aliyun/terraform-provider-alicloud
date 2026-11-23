@@ -10,8 +10,6 @@ description: |-
 
 Provides a Eflo Experiment Plan Template resource.
 
-
-
 For information about Eflo Experiment Plan Template and how to use it, see [What is Experiment Plan Template](https://www.alibabacloud.com/help/en/pai/developer-reference/api-eflo-cnp-2023-08-28-createexperimentplantemplate).
 
 -> **NOTE:** Available since v1.248.0.
@@ -64,6 +62,7 @@ resource "alicloud_eflo_experiment_plan_template" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `privacy_level` - (Required, ForceNew) Used to indicate the privacy level of the content or information. It can have the following optional parameters:
   - private: Indicates that the content is private and restricted to specific users or permission groups. Private content is usually not publicly displayed, and only authorized users can view or edit it.
   - public: Indicates that the content is public and can be accessed by anyone. Public content is usually viewable by all users and is suitable for sharing information or resources
@@ -74,6 +73,7 @@ The following arguments are supported:
 ### `template_pipeline`
 
 The template_pipeline supports the following:
+
 * `env_params` - (Required, Set) Contains a series of parameters related to the environment. See [`env_params`](#template_pipeline-env_params) below.
 * `pipeline_order` - (Required, Int) Indicates the sequence number of the pipeline node.
 * `scene` - (Required) The use of the template scenario. It can have the following optional parameters:
@@ -85,6 +85,7 @@ The template_pipeline supports the following:
 ### `template_pipeline-env_params`
 
 The template_pipeline-env_params supports the following:
+
 * `cpu_per_worker` - (Required, Int) Number of central processing units (CPUs) allocated. This parameter affects the processing power of the computation, especially in tasks that require a large amount of parallel processing.
 * `cuda_version` - (Optional) The version of CUDA(Compute Unified Device Architecture) used. CUDA is a parallel computing platform and programming model provided by NVIDIA. A specific version may affect the available GPU functions and performance optimization.
 * `gpu_driver_version` - (Optional) The version of the GPU driver used. Driver version may affect GPU performance and compatibility, so it is important to ensure that the correct version is used
@@ -98,6 +99,7 @@ The template_pipeline-env_params supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `template_id` - The ID of the template.
@@ -105,6 +107,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Experiment Plan Template.
 * `delete` - (Defaults to 5 mins) Used when delete the Experiment Plan Template.
 * `update` - (Defaults to 5 mins) Used when update the Experiment Plan Template.

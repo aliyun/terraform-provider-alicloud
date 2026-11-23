@@ -78,17 +78,18 @@ resource "alicloud_forward_entry" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `external_ip` - (Required) - When querying DNAT entries of an Internet NAT gateway, this parameter indicates the Elastic IP address used in the DNAT entry to provide public network access.
+
+* `external_ip` - (Required) When querying DNAT entries of an Internet NAT gateway, this parameter indicates the Elastic IP address used in the DNAT entry to provide public network access.
   - When querying DNAT entries of a VPC NAT gateway, this parameter indicates the NAT IP address used for access from external networks.
-* `external_port` - (Required) - The external port or port range that is used for port forwarding when you query DNAT entries of Internet NAT gateways. Valid values: `1` to `65535`.
+* `external_port` - (Required) The external port or port range that is used for port forwarding when you query DNAT entries of Internet NAT gateways. Valid values: `1` to `65535`.
   - If you want to query a port range, separate the first port and last port with a forward slash (/), such as 10/20.
   - If you set ExternalPort to a port range, you must also set InternalPort to a port range, and the number of ports specified by these parameters must be the same. For example, if you set ExternalPort to 10/20, you can set InternalPort to 80/90.
 * `forward_entry_name` - (Optional) The name of the DNAT entry.
 * `forward_table_id` - (Required, ForceNew) The ID of the DNAT table to which the DNAT entry belongs.
-* `internal_ip` - (Required) - The private IP address.
+* `internal_ip` - (Required) The private IP address.
   - The private IP address of the ECS instance that uses DNAT entries to communicate with the Internet when you query DNAT entries of Internet NAT gateways.
   - The private IP address that uses DNAT entries when you query DNAT entries of VPC NAT gateways.
-* `internal_port` - (Required) - When you configure a DNAT entry for an Internet NAT gateway, this parameter specifies the internal port or port range that requires port forwarding. Valid values: `1` to `65535`.
+* `internal_port` - (Required) When you configure a DNAT entry for an Internet NAT gateway, this parameter specifies the internal port or port range that requires port forwarding. Valid values: `1` to `65535`.
   - When you configure a DNAT entry for a VPC NAT gateway, this parameter specifies the destination ECS instance port to be mapped. Valid values: `1` to `65535`.
 * `ip_protocol` - (Required) The protocol type. Valid values:
   - `tcp`: forwards TCP packets.
@@ -104,6 +105,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<forward_table_id>:<forward_entry_id>`.
 * `forward_entry_id` - (Available since v1.43.0) The id of the forward entry on the server.
 * `status` - (Available since v1.119.1) The status of forward entry.
@@ -113,6 +115,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.119.1.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Forward Entry.
 * `delete` - (Defaults to 5 mins) Used when delete the Forward Entry.
 * `update` - (Defaults to 5 mins) Used when update the Forward Entry.

@@ -47,6 +47,7 @@ data "alicloud_ens_network_route_tables" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `route_table_id` - (Optional) The ID of the routing table.
 * `route_table_name` - (Optional) The name of the routing table.
 * `network_id` - (Optional) The network ID.
@@ -57,6 +58,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `names` - A list of routing table names.
 * `ids` - A list of routing table IDs.
 * `tables` - A list of routing tables. Each element contains the following attributes:

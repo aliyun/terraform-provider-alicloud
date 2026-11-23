@@ -82,9 +82,13 @@ and appears as “超限不复用” in the CI Summary. It is not full-history c
 The 12-second query budget and storage/runner failures still fail closed.
 An existing plan with reused receipts must retain them; a skipped completion
 recheck cannot validate those receipts or silently submit replacement tasks.
-Safe lookups and fenced submissions retry transient 429/502/503/504 failures for
-up to 180 seconds (at most ten attempts), covering preproduction's single-instance
-restart window while retaining the original submission key and task receipt.
+Safe lookups and fenced submissions retry transient 429/502/503/504 failures,
+refused or dropped connections, timeouts, invalid HTTP status lines, and truncated
+response bodies until ACube has been unavailable for five minutes in a row
+(`UNAVAILABLE_WINDOW_SECONDS`), with delays growing to 20 seconds. This covers
+preproduction redeploys while retaining the original
+submission key and task receipt. Each call gets a new window; other HTTP
+statuses and unfenced submissions fail at once.
 
 Every terminal task prints a redacted result to the job log and appends the same
 evidence to the Aone Markdown summary. Failures include the remote error, HCL
@@ -154,7 +158,7 @@ local Git snapshots without cloud calls or Provider builds.
 ### Documentation scenes and source evidence
 
 The documentation job follows the workflow's
-[document example contract](https://code.alibaba-inc.com/terraflow/terraform-agent-workflow/blob/9a15deb6f798a2f46cfb8c5ff557e0eff635328e/skills/invoke-terraform-acc-test-remote/references/document-examples.md).
+[document example contract](https://code.alibaba-inc.com/terraflow/terraform-agent-workflow/blob/f614b8b7cfd0892dfb4c26325bb65347f1019a8e/skills/invoke-terraform-acc-test-remote/references/document-examples.md).
 Direct documentation changes select changed scenes, assertions and declared
 inputs. Implementation/service impact selects all scenes of the affected type.
 Unchanged HCL under a prose-only edit does not run again; the report explicitly
@@ -213,9 +217,10 @@ cases=[] and a nonempty notApplicableReason. A removed page requires scope revie
 Known unlabelled/indented HCL is blocked for explicit transcription into a
 reviewable fenced/source-file scene.
 
-The original scene must explicitly declare exactly one alicloud Provider source,
-aliyun/alicloud or registry.terraform.io/aliyun/alicloud. The adapter does not
-inject a missing declaration. Published version constraints can remain in the
+Documentation may omit the alicloud provider source. The adapter fills in
+`aliyun/alicloud` in the execution copy and records the adaptation diff. An
+explicit source must be `aliyun/alicloud` or `registry.terraform.io/aliyun/alicloud`.
+Published version constraints can remain in the
 source, while the reviewed test mainTf must omit them or pin the mirror version
 0.0.1 / = 0.0.1. Both configurations are checked separately. Extra/implicit
 Providers, modules, remote state, required variables and file-dependent or obvious

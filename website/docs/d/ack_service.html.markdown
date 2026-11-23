@@ -7,20 +7,20 @@ description: |-
     Provides a datasource to open the Container Service (CS) service automatically.
 ---
 
-# alicloud\_ack\_service
+# alicloud_ack_service
 
 Using this data source can open Container Service (CS) service automatically. If the service has been opened, it will return opened.
 
 For information about Container Service (CS) and how to use it, see [What is Container Service (CS)](https://www.alibabacloud.com/help/en/product/85222.htm).
 
--> **NOTE:** Available in v1.113.0+
+-> **NOTE:** Available since v1.113.0+
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_ack_service" "open" {
-	enable = "On"
-    type   = "propayasgo"
+  enable = "On"
+  type   = "propayasgo"
 }
 ```
 
@@ -37,4 +37,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

@@ -9,9 +9,7 @@ description: |-
 
 # alicloud_security_center_service_linked_role
 
-
 Using this resource can create SecurityCenter service-linked role : `AliyunServiceRolePolicyForSas`.  This Role is a Resource Access Management (RAM) role, which to obtain permissions to access another Alibaba Cloud service.
-
 
 For information about Security Center Service Role and how to use it, see [What is Security Center](https://www.alibabacloud.com/help/en/doc-detail/42302.htm).
 
@@ -33,13 +31,12 @@ resource "alicloud_security_center_service_linked_role" "service_linked_role" {
 
 ```
 
-
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_security_center_service_linked_role&spm=docs.r.security_center_service_linked_role.example&intl_lang=EN_US)
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the DataSource. Valid Value: `AliyunServiceRolePolicyForSas`.
 * `status` - The status of the service Associated role. Valid Values: `true`: Created. `false`: not created.
 

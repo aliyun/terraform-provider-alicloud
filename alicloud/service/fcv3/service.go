@@ -508,6 +508,14 @@ func (s *Service) TriggerStateRefreshFunc(id string, field string, failStates []
 // DescribeProvisionConfig <<< Encapsulated get interface for Fcv3 ProvisionConfig.
 
 func (s *Service) DescribeProvisionConfig(id string) (object map[string]interface{}, err error) {
+	return s.DescribeProvisionConfigWithQualifier(id, "")
+}
+
+// DescribeProvisionConfigWithQualifier reads the provision configuration of one
+// function alias. An empty qualifier keeps the historical LATEST read; callers
+// that write to a specific qualifier must pass the same value so that both
+// calls address the same object.
+func (s *Service) DescribeProvisionConfigWithQualifier(id, qualifier string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -517,6 +525,9 @@ func (s *Service) DescribeProvisionConfig(id string) (object map[string]interfac
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["functionName"] = id
+	if qualifier != "" {
+		query["qualifier"] = helper.StringPointer(qualifier)
+	}
 
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {

@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cms Prometheus Instance resource.
 
-
-
 For information about Cms Prometheus Instance and how to use it, see [What is Prometheus Instance](https://next.api.alibabacloud.com/document/Cms/2024-03-30/CreatePrometheusInstance).
 
 -> **NOTE:** Available since v1.277.0.
@@ -51,13 +49,12 @@ resource "alicloud_cms_prometheus_instance" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cms_prometheus_instance&spm=docs.r.cms_prometheus_instance.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `archive_duration` - (Optional, Int) The number of days that data is automatically archived after the storage duration expires. Valid values: `60` to `3650`.
 * `auth_free_read_policy` - (Optional) The policy for password-free read access.
 * `auth_free_write_policy` - (Optional) The policy for password-free write access.
@@ -70,7 +67,8 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `create_time` - Instance creation time, using UTC +0 time, in the format of yyyy-MM-ddTHH:mmZ.
 * `payment_type` - Payment Type.
 * `region_id` - The region ID of the resource.
@@ -78,6 +76,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Prometheus Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Prometheus Instance.
 * `update` - (Defaults to 5 mins) Used when update the Prometheus Instance.

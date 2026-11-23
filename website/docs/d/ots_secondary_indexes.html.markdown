@@ -7,7 +7,7 @@ description: |-
   Provides a list of ots secondary indexes to the user.
 ---
 
-# alicloud\_ots\_secondary\_indexes
+# alicloud_ots_secondary_indexes
 
 This data source provides the ots secondary indexes of the current Alibaba Cloud user.
 

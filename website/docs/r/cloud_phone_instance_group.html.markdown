@@ -10,8 +10,6 @@ description: |-
 
 Provides a Cloud Phone Instance Group resource.
 
-
-
 For information about Cloud Phone Instance Group and how to use it, see [What is Instance Group](https://next.api.alibabacloud.com/document/eds-aic/2023-09-30/CreateAndroidInstanceGroup).
 
 -> **NOTE:** Available since v1.243.0.
@@ -80,6 +78,7 @@ resource "alicloud_cloud_phone_instance_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `amount` - (Optional, Int) The number of instance groups. The default value is 1 and the maximum value is 100.
 * `auto_pay` - (Optional) Whether to pay automatically. The default is false.
 * `auto_renew` - (Optional) Whether to enable automatic renewal. The default is false.
@@ -87,14 +86,14 @@ The following arguments are supported:
 * `gpu_acceleration` - (Optional) Whether to enable GPU acceleration. The default value is false.
   - true: On.
   - false: closed.
-* `image_id` - (Required, ForceNew) The image ID. 
+* `image_id` - (Required, ForceNew) The image ID.
 * `instance_group_name` - (Optional) The instance group name
 
   -> **NOTE:** >
 
   -> **NOTE:** - The instance group name must be no more than 30 characters in length. Start with an uppercase/lowercase letter or Chinese. It cannot start with http:// or https://. Only Chinese, English, numbers, half-width colons (:), underscores (_), periods (.), or hyphens (-) are supported.
 
-* `instance_group_spec` - (Required, ForceNew) Instance group specifications. 
+* `instance_group_spec` - (Required, ForceNew) Instance group specifications.
 * `number_of_instances` - (Optional, ForceNew, Int) The number of instances in the instance group. The maximum value is 100.
 * `office_site_id` - (Optional) The network ID.
   - Create a shared network instance: Network ID is optional. Enter the network ID whose type is **Shared Network** on the [cloud mobile phone console> Network](https://wya.wuying.aliyun.com/network) page. If the console does not have a shared network, you can fill it in. A shared network is automatically created when the instance group is created.
@@ -102,17 +101,19 @@ The following arguments are supported:
 * `period` - (Optional, Int) The duration of the resource purchase. The unit is specified by PeriodUnit.
 * `period_unit` - (Optional) The unit of time for purchasing resources.
 * `policy_group_id` - (Optional) The policy ID. You can query the list of policies by calling [ListPolicyGroups](~~ ListPolicyGroups ~~).
-* `vswitch_id` - (Optional, Available since v1.244.0) The vSwitch ID. 
+* `vswitch_id` - (Optional, Available since v1.244.0) The vSwitch ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `status` - Instance group status
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 9 mins) Used when create the Instance Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance Group.
 * `update` - (Defaults to 5 mins) Used when update the Instance Group.

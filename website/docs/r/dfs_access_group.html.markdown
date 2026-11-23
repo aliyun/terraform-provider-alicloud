@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_dfs_access_group
 
-Provides a DFS Access Group resource. 
+Provides a DFS Access Group resource.
 
 For information about DFS Access Group and how to use it, see [What is Access Group](https://www.alibabacloud.com/help/en/aibaba-cloud-storage-services/latest/apsara-file-storage-for-hdfs).
 
@@ -41,6 +41,7 @@ resource "alicloud_dfs_access_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `access_group_name` - (Required) The permission group name. The naming rules are as follows: The length is 6~64 characters. Globally unique and cannot be an empty string. English letters are supported and can contain numbers, underscores (_), and dashes (-).
 * `description` - (Optional) The permission group description.  No more than 32 characters in length.
 * `network_type` - (Required, ForceNew) The permission group type. Only VPC (VPC) is supported.
@@ -48,12 +49,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the permission group resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Access Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Access Group.
 * `update` - (Defaults to 5 mins) Used when update the Access Group.

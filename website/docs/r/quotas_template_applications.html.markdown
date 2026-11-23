@@ -65,6 +65,7 @@ Terraform cannot destroy resource `alicloud_quotas_template_applications`. Terra
 ## Argument Reference
 
 The following arguments are supported:
+
 * `aliyun_uids` - (Required, ForceNew) The list of Alibaba Cloud accounts (primary accounts) of the resource directory members to which the quota is applied.
 
   -> **NOTE:**  Only 50 members can apply for quota increase in batch at a time. For more information about the members of the resource directory, see [Query the list of all members in the resource directory](~~ 604207 ~~).
@@ -99,18 +100,21 @@ The following arguments are supported:
 ### `dimensions`
 
 The dimensions supports the following:
+
 * `key` - (Optional, ForceNew) Quota dimension Key.
 * `value` - (Optional, ForceNew) Quota dimension Value.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `quota_application_details` - List of quota application details. Each element contains the following attributes:
 
 ### `quota_application_details`
 
 The quota_application_details supports the following attributes:
+
 * `aliyun_uid` - Alibaba Cloud account (primary account).
 * `application_id` - The ID of the quota promotion request.
 * `approve_value` - The approved quota value of the quota increase request.
@@ -133,12 +137,14 @@ The quota_application_details supports the following attributes:
 ### `quota_application_details.period`
 
 The period supports the following attributes:
+
 * `period_unit` - Quota calculation cycle unit.
 * `period_value` - The quota calculation period value.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Template Applications.
 
 ## Import

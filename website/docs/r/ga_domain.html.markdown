@@ -43,18 +43,21 @@ resource "alicloud_ga_domain" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `accelerator_id` - (Required, ForceNew) The ID of the global acceleration instance.
 * `domain` - (Required, ForceNew) The accelerated domain name to be added. only top-level domain names are supported, such as 'example.com'.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The `key` of the resource supplied above. The value is formulated as `<accelerator_id>:<domain>`.
 * `status` - The status of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Domain.
 * `delete` - (Defaults to 5 mins) Used when delete the Domain.
 

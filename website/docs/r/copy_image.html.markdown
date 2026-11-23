@@ -7,7 +7,7 @@ description: |-
   Deprecated alias of alicloud_image_copy. Copies a custom image from one region to another.
 ---
 
-# alicloud\_copy_image
+# alicloud_copy_image
 
 -> **DEPRECATED:** `alicloud_copy_image` is a deprecated alias of [alicloud_image_copy](https://www.terraform.io/docs/providers/alicloud/r/image_copy). Use `alicloud_image_copy` instead. The two resources share the same schema and backend `CopyImage` API; this page is retained only for backward compatibility and will be removed in a future release.
 
@@ -54,9 +54,7 @@ resource "alicloud_copy_image" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_copy_image&spm=docs.r.copy_image.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
@@ -75,6 +73,7 @@ The following arguments are supported:
 * `delete_auto_snapshot` - (Optional) Not the public attribute and it used to automatically delete dependence snapshots while deleting the image.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `name` - (Optional, Deprecated) Attribute 'name' has been deprecated, please use `image_name` instead.
 
 ## Timeouts

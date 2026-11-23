@@ -51,30 +51,31 @@ output "alicloud_ssl_certificates_service_company_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `company_id` - (Optional, Int) The ID of the company used to filter the results.
 * `keyword` - (Optional) The keyword used to filter the companies.
 * `ids` - (Optional, Computed) A list of Company IDs.
 * `name_regex` - (Optional) A regex string to filter results by Company name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Company IDs.
 * `names` - A list of name of Companies.
 * `companies` - A list of Company Entries. Each element contains the following attributes:
-    * `city` - The city where the company is located.
-    * `company_address` - The address of the company.
-    * `company_code` - The code of the company.
-    * `company_email` - The email address of the company.
-    * `company_id` - The ID of the company.
-    * `company_name` - The name of the company.
-    * `company_phone` - The contact phone number of the company.
-    * `company_type` - The type of the company.
-    * `country_code` - The country code of the company.
-    * `department` - The department of the company.
-    * `lang` - The natural language of the content within the request and response.
-    * `post_code` - The postal code of the company.
-    * `province` - The province where the company is located.
-    * `id` - The ID of the Company.
+  * `city` - The city where the company is located.
+  * `company_address` - The address of the company.
+  * `company_code` - The code of the company.
+  * `company_email` - The email address of the company.
+  * `company_id` - The ID of the company.
+  * `company_name` - The name of the company.
+  * `company_phone` - The contact phone number of the company.
+  * `company_type` - The type of the company.
+  * `country_code` - The country code of the company.
+  * `department` - The department of the company.
+  * `lang` - The natural language of the content within the request and response.
+  * `post_code` - The postal code of the company.
+  * `province` - The province where the company is located.
+  * `id` - The ID of the Company.

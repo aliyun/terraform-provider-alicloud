@@ -30,6 +30,7 @@ output "alicloud_gpdb_data_backup_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `backup_mode` - (ForceNew, Optional) Backup mode.Full Backup Value Description:-**Automated**: The system is automatically backed up.-**Manual**: Manual backup.Recovery point value description:-**Automated**: The recovery point after a full backup.-**Manual**: The recovery point triggered manually by the user.-**Period**: The recovery point triggered periodically because of the backup policy.
 * `db_instance_id` - (Required, ForceNew) The instance ID.
 * `data_backup_id` - (ForceNew, Optional) The first ID of the resource
@@ -42,10 +43,10 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed) A list of Databackup IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Data Backup IDs.
 * `backups` - A list of Data Backup Entries. Each element contains the following attributes:
   * `backup_end_time` - The backup end time. Format: yyyy-MM-ddTHH:mm:ssZ(UTC time).

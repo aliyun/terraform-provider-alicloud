@@ -67,9 +67,7 @@ EOF
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cms_agg_task_group&spm=docs.r.cms_agg_task_group.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 

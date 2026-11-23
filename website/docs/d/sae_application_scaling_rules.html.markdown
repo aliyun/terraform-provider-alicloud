@@ -7,7 +7,7 @@ description: |-
   Provides a list of Sae Application Scaling Rules to the user.
 ---
 
-# alicloud\_sae\_application\_scaling\_rules
+# alicloud_sae_application_scaling_rules
 
 This data source provides the Sae Application Scaling Rules of the current Alibaba Cloud user.
 
@@ -77,7 +77,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `scaling_rule_timer` - Timing elastic expansion.
     * `begin_date` - The short-term start date of the timed elastic scaling strategy.
     * `end_date` - The short-term end date of the timed elastic scaling strategy.
-    * `period` - The period in which a timed elastic scaling strategy is executed. 
+    * `period` - The period in which a timed elastic scaling strategy is executed.
     * `schedules` - Trigger point in time within a single day.
       * `at_time` - Time point. Format: `hours:minutes`.
       * `target_replicas` - The number of target instances.

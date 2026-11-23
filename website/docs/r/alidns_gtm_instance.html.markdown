@@ -86,7 +86,7 @@ The following arguments are supported:
 
 ### `alert_config`
 
-The alert_config supports the following: 
+The alert_config supports the following:
 
 * `dingtalk_notice` - (Optional) Whether to configure DingTalk notifications. Valid values: `true`, `false`.
 * `email_notice` - (Optional) Whether to configure mail notification. Valid values: `true`, `false`.

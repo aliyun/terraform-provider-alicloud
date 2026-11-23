@@ -7,7 +7,7 @@ description: |-
   Provides a ECS EIP resource.
 ---
 
-# alicloud\_eip
+# alicloud_eip
 
 Provides an elastic IP resource.
 
@@ -32,12 +32,13 @@ resource "alicloud_eip" "example" {
 
 ## Module Support
 
-You can use the existing [eip module](https://registry.terraform.io/modules/terraform-alicloud-modules/eip/alicloud) 
+You can use the existing [eip module](https://registry.terraform.io/modules/terraform-alicloud-modules/eip/alicloud)
 to create several EIP instances and associate them with other resources one-click, like ECS instances, SLB, Nat Gateway and so on.
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `activity_id` - (Optional) The promotion code. This parameter is not required.
 * `address_name` - (Optional) The EIP name.
 
@@ -94,12 +95,14 @@ The following arguments are supported:
 * `zone` - (Optional, ForceNew, Computed) The zone of the EIP.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `name` - (Deprecated since v1.126.0). Field 'name' has been deprecated from provider version 1.126.0. New field `address_name` instead.
 * `instance_charge_type` - (Deprecated since v1.126.0). Field 'instance_charge_type' has been deprecated from provider version 1.126.0. New field `payment_type` instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the EIP was created.
 * `status` - The state of the EIP.

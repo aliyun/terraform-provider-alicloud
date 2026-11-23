@@ -33,6 +33,7 @@ output "das_sql_log_config_enable" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Required) The ID of the database instance to query the SQL log configuration for.
 * `ids` - (Optional, Computed) A list of Sql Log Config IDs. Its element value is same as the instance ID.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -40,13 +41,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `configs` - A list of Sql Log Config Entries. Each element contains the following attributes:
-    * `instance_id` - The ID of the database instance.
-    * `enable` - Specifies whether SQL Explorer is enabled.
-    * `request_enable` - The requested state of SQL Explorer.
-    * `retention` - The retention period of SQL audit logs. Unit: days.
-    * `hot_retention` - The retention period of hot SQL audit logs. Unit: days.
-    * `cold_retention` - The retention period of cold SQL audit logs. Calculated as `retention - hot_retention`.
-    * `version` - The current version of SQL audit logs.
-    * `log_filter` - The configuration of log filters.
-    * `sql_log_visible_time` - The visible start time of SQL audit logs.
+  * `instance_id` - The ID of the database instance.
+  * `enable` - Specifies whether SQL Explorer is enabled.
+  * `request_enable` - The requested state of SQL Explorer.
+  * `retention` - The retention period of SQL audit logs. Unit: days.
+  * `hot_retention` - The retention period of hot SQL audit logs. Unit: days.
+  * `cold_retention` - The retention period of cold SQL audit logs. Calculated as `retention - hot_retention`.
+  * `version` - The current version of SQL audit logs.
+  * `log_filter` - The configuration of log filters.
+  * `sql_log_visible_time` - The visible start time of SQL audit logs.

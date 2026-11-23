@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Network Optimization resource.
 
-
-
 For information about ESA Network Optimization and how to use it, see [What is Network Optimization](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateNetworkOptimization).
 
 -> **NOTE:** Available since v1.244.0.
@@ -62,6 +60,7 @@ resource "alicloud_esa_network_optimization" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `grpc` - (Optional) Whether to enable GRPC, default is disabled. Value range:
   - `on`: Enabled
   - `off`: Disabled
@@ -89,12 +88,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<config_id>`.
 * `config_id` - ConfigId of the configuration, which can be obtained by calling the ListNetworkOptimizations.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Network Optimization.
 * `delete` - (Defaults to 5 mins) Used when delete the Network Optimization.
 * `update` - (Defaults to 5 mins) Used when update the Network Optimization.

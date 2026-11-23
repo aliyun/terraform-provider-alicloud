@@ -71,12 +71,14 @@ output "sharding_audit_filter_id" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `db_instance_id` - (Required) The ID of the sharding cluster instance.
 * `output_file` - (Optional) File name where to write the output of the data source invocation (when set, the file is created before the resource is applied).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the `arguments` listed above:
+
 * `id` - The ID of the data source. It is computed from `db_instance_id`.
 * `filters` - A list of Sharding Audit Filter. Each element contains the following attributes:
   * `id` - The ID of the Sharding Audit Filter, same as `db_instance_id`.

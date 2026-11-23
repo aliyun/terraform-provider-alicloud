@@ -55,13 +55,12 @@ resource "alicloud_message_service_account_logging" "default" {
 
 Terraform cannot destroy resource `alicloud_message_service_account_logging`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_message_service_account_logging&spm=docs.r.message_service_account_logging.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `log_enabled` - (Required) Whether to enable delivering the account operation logs to Simple Log Service (SLS).
 * `log_store_name` - (Optional) The name of the SLS Logstore that receives the logs. Required when `log_enabled` is `true`.
 * `project_name` - (Optional) The name of the SLS Project that the Logstore belongs to. Required when `log_enabled` is `true`.
@@ -70,11 +69,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<Alibaba Cloud Account ID>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Account Logging.
 * `update` - (Defaults to 5 mins) Used when update the Account Logging.
 

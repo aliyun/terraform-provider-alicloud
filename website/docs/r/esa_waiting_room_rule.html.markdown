@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Waiting Room Rule resource.
 
-
-
 For information about ESA Waiting Room Rule and how to use it, see [What is Waiting Room Rule](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateWaitingRoomRule).
 
 -> **NOTE:** Available since v1.244.0.
@@ -76,6 +74,7 @@ resource "alicloud_esa_waiting_room_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `rule` - (Required) The content of the rule, the implemented policy or conditional expression.
 * `status` - (Required, Available since v1.265.0) Rule switch. When adding global configuration, this parameter does not need to be set. Value range:
   - on: open.
@@ -87,12 +86,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<waiting_room_id>:<waiting_room_rule_id>`.
 * `waiting_room_rule_id` - The rule ID, which can be used to query a specific rule.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Waiting Room Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Waiting Room Rule.
 * `update` - (Defaults to 5 mins) Used when update the Waiting Room Rule.

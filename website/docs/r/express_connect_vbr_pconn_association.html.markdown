@@ -72,6 +72,7 @@ resource "alicloud_express_connect_vbr_pconn_association" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `enable_ipv6` - (Optional, ForceNew, Computed) Whether IPv6 is enabled. Value:
   - `true`: on.
   - `false` (default): Off.
@@ -93,10 +94,10 @@ The two IP addresses must be in the same subnet.
 
   -> **NOTE:**  only the owner of the physical connection can specify this parameter. The VLAN ID of two VBRs under the same physical connection cannot be the same.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<vbr_id>:<physical_connection_id>`.
 * `status` - The status of the resource
 * `circuit_code` - (Optional, ForceNew, Computed) The circuit code provided by the operator for the physical connection.
@@ -104,6 +105,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vbr Pconn Association.
 * `delete` - (Defaults to 5 mins) Used when delete the Vbr Pconn Association.
 

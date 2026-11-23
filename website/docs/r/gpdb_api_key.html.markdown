@@ -46,13 +46,12 @@ resource "alicloud_gpdb_api_key" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_gpdb_api_key&spm=docs.r.gpdb_api_key.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional, ForceNew) The description of the API key.
 * `key_name` - (Required, ForceNew) The name of the API key.
 * `service_ids` - (Optional, ForceNew) The list of SaaS service IDs that the API key is authorized to access.
@@ -61,12 +60,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<workspace_id>:<key_id>`.
 * `key_id` - The ID of the API key.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Api Key.
 * `delete` - (Defaults to 5 mins) Used when delete the Api Key.
 

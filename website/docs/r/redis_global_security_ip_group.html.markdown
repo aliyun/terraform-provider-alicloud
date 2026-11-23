@@ -10,8 +10,6 @@ description: |-
 
 Provides a Tair (Redis OSS-Compatible) And Memcache (KVStore) Global Security Ip Group resource.
 
-
-
 For information about Tair (Redis OSS-Compatible) And Memcache (KVStore) Global Security Ip Group and how to use it, see [What is Global Security Ip Group](https://next.api.alibabacloud.com/document/R-kvstore/2015-01-01/CreateGlobalSecurityIPGroup).
 
 -> **NOTE:** Available since v1.287.0.
@@ -46,6 +44,7 @@ resource "alicloud_redis_global_security_ip_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `global_ip_list` - (Required) The IP address in the whitelist template.
 * `global_ip_group_name` - (Required) The name of the IP whitelist template.
 
@@ -54,11 +53,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Global Security Ip Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Global Security Ip Group.
 * `update` - (Defaults to 5 mins) Used when update the Global Security Ip Group.

@@ -70,13 +70,12 @@ EOT
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_agentloop_evaluator_skill&spm=docs.r.agentloop_evaluator_skill.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `agent_space` - (Required, ForceNew) The name of the Agent Space to which the Evaluator belongs.
 * `description` - (Optional) The description of the Evaluator Skill. It can be updated in place.
 * `display_name` - (Optional) The display name of the Evaluator Skill. It can be updated in place.
@@ -88,6 +87,7 @@ The following arguments are supported:
 ### `files`
 
 The files supports the following:
+
 * `content` - (Required) The content of the skill file.
 * `name` - (Required) The name of the skill file.
 * `remark` - (Optional) The remark of the skill file. When the Get API returns no remark (null or an empty string) for a file, the configured value is kept in the state; therefore clearing a remark outside Terraform cannot be detected as drift, and the remark cannot be recovered by `terraform import`.
@@ -95,6 +95,7 @@ The files supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Evaluator Skill. It formats as `<agent_space>:<name>:<skill_name>`.
 * `created_at` - The creation time of the Evaluator Skill, as a Unix timestamp in seconds.
 * `updated_at` - The last update time of the Evaluator Skill, as a Unix timestamp in seconds.
@@ -102,6 +103,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Evaluator Skill.
 * `delete` - (Defaults to 5 mins) Used when delete the Evaluator Skill.
 * `update` - (Defaults to 5 mins) Used when update the Evaluator Skill.

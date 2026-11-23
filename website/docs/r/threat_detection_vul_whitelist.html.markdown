@@ -39,7 +39,7 @@ resource "alicloud_threat_detection_vul_whitelist" "default" {
 
 The following arguments are supported:
 
-* `whitelist` - (Required,ForceNew) Information about the vulnerability to be added to the whitelist. see [how to use it](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-modifycreatevulwhitelist).
+* `whitelist` - (Required, ForceNew) Information about the vulnerability to be added to the whitelist. see [how to use it](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-modifycreatevulwhitelist).
 * `target_info` - (Optional) Set the effective range of the whitelist. see [how to use it](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-modifycreatevulwhitelist).
 * `reason` - (Optional) Reason for adding whitelist.
 
@@ -52,6 +52,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 3 mins) Used when create the Vul Whitelist.
 * `update` - (Defaults to 3 mins) Used when update the Vul Whitelist.
 * `delete` - (Defaults to 3 mins) Used when delete the Vul Whitelist.

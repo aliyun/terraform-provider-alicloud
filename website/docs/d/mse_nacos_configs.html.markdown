@@ -7,7 +7,7 @@ description: |-
   Provides a list of Mse Nacos Configs to the user.
 ---
 
-# alicloud\_mse\_nacos\_configs
+# alicloud_mse_nacos_configs
 
 This data source provides the Mse Nacos Configs of the current Alibaba Cloud user.
 
@@ -75,6 +75,7 @@ data "alicloud_mse_nacos_configs" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `ids` - (Optional, ForceNew, Computed) A list of MSE Engine Configs ids. It is formatted to `<instance_id>:<namespace_id>:<data_id>:<group>`.
 * `accept_language` - (Optional) The language type of the returned information. Valid values: `zh`, `en`.
 * `instance_id` - (Required, ForceNew) The ID of the instance.
@@ -86,7 +87,8 @@ The following arguments are supported:
 * `request_pars` - (Optional) The extended request parameters. The JSON format is supported.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* 
+*
+
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
@@ -103,4 +105,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `desc` - The description of the configuration.
   * `encrypted_data_key` - The encryption key.
   * `type` - The format of the configuration. Supported formats include TEXT, JSON, and XML.
-

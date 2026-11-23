@@ -55,6 +55,7 @@ resource "alicloud_threat_detection_cycle_task" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `enable` - (Required, Int) Whether to enable. Value:
   - `1`: On
   - `0`: Closed
@@ -79,11 +80,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Cycle Task.
 * `delete` - (Defaults to 5 mins) Used when delete the Cycle Task.
 * `update` - (Defaults to 5 mins) Used when update the Cycle Task.

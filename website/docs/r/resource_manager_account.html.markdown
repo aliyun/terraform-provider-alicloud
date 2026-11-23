@@ -10,8 +10,6 @@ description: |-
 
 Provides a Resource Manager Account resource.
 
-
-
 For information about Resource Manager Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/en/doc-detail/111231.htm).
 
 -> **NOTE:** Available since v1.83.0.
@@ -54,6 +52,7 @@ resource "alicloud_resource_manager_account" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `abandonable_check_id` - (Optional, List, Available since v1.249.0) The ID of the check item that can choose to abandon and continue to perform member deletion.
 The ID is obtained from the return parameter AbandonableChecks of [GetAccountDeletionCheckResult](~~ GetAccountDeletionCheckResult ~~).
 * `account_name_prefix` - (Optional, Available since v1.114.0) Account name prefix. Empty the system randomly generated.
@@ -75,11 +74,13 @@ The account name must be unique in the resource directory.
 * `type` - (Optional, Computed) Member type. The value of ResourceAccount indicates the resource account
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `abandon_able_check_id` - (Deprecated since v1.249.0). Field 'abandon_able_check_id' has been deprecated from provider version 1.249.0. New field 'abandonable_check_id' instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `join_method` - Ways for members to join the resource directory.  invited, created
 * `join_time` - The time when the member joined the resource directory
@@ -90,6 +91,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Account.
 * `delete` - (Defaults to 5 mins) Used when delete the Account.
 * `update` - (Defaults to 5 mins) Used when update the Account.

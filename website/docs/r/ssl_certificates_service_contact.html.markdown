@@ -44,13 +44,12 @@ resource "alicloud_ssl_certificates_service_contact" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_contact&spm=docs.r.ssl_certificates_service_contact.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `name` - (Required) The name of the contact.
 * `mobile` - (Required, Sensitive) The mobile phone number of the contact.
 * `email` - (Optional, Sensitive) The email address of the contact.
@@ -62,11 +61,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Contact.
 * `delete` - (Defaults to 5 mins) Used when delete the Contact.
 * `update` - (Defaults to 5 mins) Used when update the Contact.

@@ -57,7 +57,6 @@ The following arguments are supported:
 * `database_count` - (Optional) The number of private customized RDS instances under PolarDB-X. The default value is 1. This parameter needs to be passed only when `source_endpoint_engine_name` equals `drds`.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
-
 ## Attributes Reference
 
 The following attributes are exported:

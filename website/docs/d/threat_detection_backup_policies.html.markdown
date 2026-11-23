@@ -7,7 +7,7 @@ description: |-
   Provides a list of Threat Detection Backup Policies to the user.
 ---
 
-# alicloud\_threat\_detection\_backup\_policies
+# alicloud_threat_detection_backup_policies
 
 This data source provides the Threat Detection Backup Policies of the current Alibaba Cloud user.
 

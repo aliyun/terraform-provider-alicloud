@@ -172,6 +172,7 @@ resource "alicloud_sls_collection_policy" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `centralize_config` - (Optional, Computed, Set) Centralized forwarding configuration. See [`centralize_config`](#centralize_config) below.
 * `centralize_enabled` - (Optional, Computed) Specifies whether to enable centralized forwarding. Default value: false.
 * `data_code` - (Required, ForceNew) Log type code.
@@ -190,6 +191,7 @@ The following arguments are supported:
 ### `centralize_config`
 
 The centralize_config supports the following:
+
 * `dest_logstore` - (Optional) Destination Logstore for centralized forwarding. Its region must match destRegion and it must belong to destProject.
 * `dest_project` - (Optional) Destination project for centralized forwarding. Its region must match destRegion.
 * `dest_region` - (Optional) Destination region for centralized forwarding.
@@ -198,11 +200,13 @@ The centralize_config supports the following:
 ### `data_config`
 
 The data_config supports the following:
+
 * `data_region` - (Optional, ForceNew) This parameter can be configured only when the log type is a global log type—for example, when productCode is sls. It indicates that global logs will be collected to the specified region upon initial configuration.
 
 ### `policy_config`
 
 The policy_config supports the following:
+
 * `instance_ids` - (Optional, Computed, List) The set of instance IDs. This parameter is valid only when resourceMode is set to instanceMode. Only instances whose IDs are included in this set are collected.
 * `regions` - (Optional, Computed, List) The set of regions to which instances belong. This parameter is valid only when resourceMode is set to attributeMode and supports wildcards. If the region set filter is an empty array, no region-based filtering is applied, and all instances satisfy the region condition. Otherwise, only instances whose region attribute is included in this region set are collected. The region set and resource tags work together. An instance is collected only if it satisfies both conditions.
 * `resource_mode` - (Required) Resource collection mode. If set to all, all instances under the account are collected into the default Logstore. If set to attributeMode, instances are filtered based on their region attributes and resource tags. If set to instanceMode, instances are filtered by their instance IDs.
@@ -213,19 +217,22 @@ Resource tags and the region set of the instance work together. An instance is c
 ### `resource_directory`
 
 The resource_directory supports the following:
+
 * `account_group_type` - (Optional) Supports the all (select all) mode and custom mode under this Resource Directory.
 * `members` - (Optional, Computed, List) The list of member accounts when the Resource Directory is configured in custom mode.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+
+* `id` - The ID of the resource supplied above.
 * `data_config` - This parameter can be configured only when the log type is a global log type—for example, when productCode is sls.
   * `data_project` - This setting is valid only when the log type is a global log type—for example, when productCode is sls.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Collection Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Collection Policy.
 * `update` - (Defaults to 5 mins) Used when update the Collection Policy.

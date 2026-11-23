@@ -70,17 +70,20 @@ resource "alicloud_ens_instance_security_group_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `instance_id` - (Optional, ForceNew, Computed) Instance ID.
 * `security_group_id` - (Required, ForceNew) Security group ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<security_group_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Instance Security Group Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance Security Group Attachment.
 

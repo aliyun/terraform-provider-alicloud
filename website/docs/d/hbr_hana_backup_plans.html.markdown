@@ -7,7 +7,7 @@ description: |-
   Provides a list of Hbr Hana Backup Plans to the user.
 ---
 
-# alicloud\_hbr\_hana\_backup\_plans
+# alicloud_hbr_hana_backup_plans
 
 This data source provides the Hbr Hana Backup Plans of the current Alibaba Cloud user.
 

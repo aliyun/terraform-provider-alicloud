@@ -132,6 +132,7 @@ resource "alicloud_data_works_di_job" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `description` - (Optional) Description of the integration task
 * `destination_data_source_settings` - (Required, ForceNew, List) Destination data source See [`destination_data_source_settings`](#destination_data_source_settings) below.
 * `destination_data_source_type` - (Required, ForceNew) The type of the target data source. Enumerated values: Hologres and Hive.
@@ -158,14 +159,16 @@ The following arguments are supported:
 ### `destination_data_source_settings`
 
 The destination_data_source_settings supports the following:
+
 * `data_source_name` - (Optional, ForceNew) Destination data source name
 
 ### `job_settings`
 
 The job_settings supports the following:
+
 * `channel_settings` - (Optional) Channel-related task settings, in the form of a Json String.
 
-  For example, 
+  For example,
 {"structInfo":"MANAGED","storageType":"TEXTFILE","writeMode":"APPEND","partitionColumns":[{"columnName":"pt","columnType":"STRING","comment":""}],"fieldDelimiter":""}
 * `column_data_type_settings` - (Optional, List) Column type mapping of the synchronization task See [`column_data_type_settings`](#job_settings-column_data_type_settings) below.
 * `cycle_schedule_settings` - (Optional, List) Periodic scheduling settings See [`cycle_schedule_settings`](#job_settings-cycle_schedule_settings) below.
@@ -175,12 +178,14 @@ The job_settings supports the following:
 ### `job_settings-column_data_type_settings`
 
 The job_settings-column_data_type_settings supports the following:
+
 * `destination_data_type` - (Optional) The destination type of the mapping relationship
 * `source_data_type` - (Optional) The source type of the mapping type
 
 ### `job_settings-cycle_schedule_settings`
 
 The job_settings-cycle_schedule_settings supports the following:
+
 * `cycle_migration_type` - (Optional, ForceNew) The type of synchronization that requires periodic scheduling. Value range:
 
   Full: Full
@@ -191,6 +196,7 @@ The job_settings-cycle_schedule_settings supports the following:
 ### `job_settings-ddl_handling_settings`
 
 The job_settings-ddl_handling_settings supports the following:
+
 * `action` - (Optional) Processing action, optional enumeration value:
 
   Ignore (Ignore)
@@ -213,6 +219,7 @@ The job_settings-ddl_handling_settings supports the following:
 ### `job_settings-runtime_settings`
 
 The job_settings-runtime_settings supports the following:
+
 * `name` - (Optional) Set name, optional ENUM value:
 
   runtime.offline.speed.limit.mb (valid when runtime.offline.speed.limit.enable = true)
@@ -235,6 +242,7 @@ The job_settings-runtime_settings supports the following:
 ### `resource_settings`
 
 The resource_settings supports the following:
+
 * `offline_resource_settings` - (Optional, List) Offline Resource Group configuration See [`offline_resource_settings`](#resource_settings-offline_resource_settings) below.
 * `realtime_resource_settings` - (Optional, List) Real-time Resource Group See [`realtime_resource_settings`](#resource_settings-realtime_resource_settings) below.
 * `schedule_resource_settings` - (Optional, List) Scheduling Resource Groups See [`schedule_resource_settings`](#resource_settings-schedule_resource_settings) below.
@@ -242,42 +250,49 @@ The resource_settings supports the following:
 ### `resource_settings-offline_resource_settings`
 
 The resource_settings-offline_resource_settings supports the following:
+
 * `requested_cu` - (Optional, Float) Offline resource group cu
 * `resource_group_identifier` - (Optional) Offline resource group name
 
 ### `resource_settings-realtime_resource_settings`
 
 The resource_settings-realtime_resource_settings supports the following:
+
 * `requested_cu` - (Optional, Float) Real-time resource group cu
 * `resource_group_identifier` - (Optional) Real-time resource group name
 
 ### `resource_settings-schedule_resource_settings`
 
 The resource_settings-schedule_resource_settings supports the following:
+
 * `requested_cu` - (Optional, Float) Scheduling resource group cu
 * `resource_group_identifier` - (Optional) Scheduling resource group name
 
 ### `source_data_source_settings`
 
 The source_data_source_settings supports the following:
+
 * `data_source_name` - (Optional, ForceNew) Data source name of a single source
 * `data_source_properties` - (Optional, ForceNew, List) Single Source Data Source Properties See [`data_source_properties`](#source_data_source_settings-data_source_properties) below.
 
 ### `source_data_source_settings-data_source_properties`
 
 The source_data_source_settings-data_source_properties supports the following:
+
 * `encoding` - (Optional, ForceNew) Data Source Encoding
 * `timezone` - (Optional, ForceNew) Data Source Time Zone
 
 ### `table_mappings`
 
 The table_mappings supports the following:
+
 * `source_object_selection_rules` - (Optional, List) Each rule can select different types of source objects to be synchronized, such as source database and source data table. See [`source_object_selection_rules`](#table_mappings-source_object_selection_rules) below.
 * `transformation_rules` - (Optional, List) A list of conversion rule definitions for a synchronization object. Each element in the list defines a conversion rule. See [`transformation_rules`](#table_mappings-transformation_rules) below.
 
 ### `table_mappings-source_object_selection_rules`
 
 The table_mappings-source_object_selection_rules supports the following:
+
 * `action` - (Optional) Select an action. Value range: Include/Exclude
 * `expression` - (Optional) Expression, such as mysql_table_1
 * `expression_type` - (Optional) Expression type, value range: Exact/Regex
@@ -290,6 +305,7 @@ The table_mappings-source_object_selection_rules supports the following:
 ### `table_mappings-transformation_rules`
 
 The table_mappings-transformation_rules supports the following:
+
 * `rule_action_type` - (Optional) Action type, optional enumeration value:
 
   DefinePrimaryKey (defines the primary key)
@@ -317,6 +333,7 @@ The table_mappings-transformation_rules supports the following:
 ### `transformation_rules`
 
 The transformation_rules supports the following:
+
 * `rule_action_type` - (Optional) Action type, optional enumeration value:
 
   DefinePrimaryKey (defines the primary key)
@@ -341,12 +358,14 @@ The transformation_rules supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<project_id>:<di_job_id>`.
 * `di_job_id` - Integration Task Id
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Di Job.
 * `delete` - (Defaults to 5 mins) Used when delete the Di Job.
 * `update` - (Defaults to 5 mins) Used when update the Di Job.

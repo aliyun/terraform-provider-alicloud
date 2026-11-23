@@ -7,7 +7,7 @@ description: |-
     Provides a list of ons topics available to the user.
 ---
 
-# alicloud\_ons\_topics
+# alicloud_ons_topics
 
 This data source provides a list of ONS Topics in an Alibaba Cloud account according to the specified filters.
 
@@ -57,7 +57,6 @@ The following arguments are supported:
 * `tags` - (Optional, Available in v1.97.0+) A map of tags assigned to the Ons instance.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional, Available in v1.97.0+) Default to `false`. Set it to true can output more details.
-
 
 ## Attributes Reference
 

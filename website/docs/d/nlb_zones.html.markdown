@@ -7,7 +7,7 @@ description: |-
   Provides a list of Network Load Balancer (NLB) instance available zones to the user.
 ---
 
-# alicloud\_nlb\_zones
+# alicloud_nlb_zones
 
 This data source provides the available zones with the Network Load Balancer (NLB) Instance of the current Alibaba Cloud user.
 

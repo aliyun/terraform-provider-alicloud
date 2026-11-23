@@ -205,6 +205,7 @@ resource "alicloud_vpc" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `additional_api_descriptions` - (Optional, Set) Additional OpenAPI description information that can override the default behavior of APIs, including:
   - API name  
   - Modification or removal of API parameter names  
@@ -234,8 +235,9 @@ The following arguments are supported:
 ### `additional_api_descriptions`
 
 The additional_api_descriptions supports the following:
+
 * `api_name` - (Optional) The API name, such as ListApiMcpServers.  
-* `api_override_json` - (Optional, JsonString) API structure definition information. You can use this parameter to directly modify the API description and parameter list. You can obtain the API definition information from an API endpoint such as https://api.aliyun.com/meta/v1/products/Ecs/versions/2014-05-26/apis/DescribeInstances/api.json.  
+* `api_override_json` - (Optional, JsonString) API structure definition information. You can use this parameter to directly modify the API description and parameter list. You can obtain the API definition information from an API endpoint such as <https://api.aliyun.com/meta/v1/products/Ecs/versions/2014-05-26/apis/DescribeInstances/api.json>.
 
   -> **NOTE:** Note that required parameters must not be removed; otherwise, calls by the large model will continuously fail due to missing required parameters.>
 
@@ -259,14 +261,17 @@ For tools whose single API execution exceeds 30 minutes, we recommend enabling t
 ### `additional_api_descriptions-const_parameters`
 
 The additional_api_descriptions-const_parameters supports the following:
+
 * `key` - (Optional) Parameter location. Currently, except for ROA-style body parameters (which support up to two levels), nested parameter configurations beyond two levels are not supported. If you need to configure a composite data structure, set the Value to a JSON object.  
 
 For RPC-style APIs, examples include:  
-  - Name: sets the Name parameter to a fixed value.  
+
+- Name: sets the Name parameter to a fixed value.
 
 For ROA-style APIs, examples include:  
-  - Name: sets a query or path parameter named Name to a fixed value;  
-  - body.Name: sets the Name field within the request body to a fixed value.  
+
+- Name: sets a query or path parameter named Name to a fixed value;
+- body.Name: sets the Name field within the request body to a fixed value.
 
 Configurations such as body.Name.Sub are not supported. If you need to set body.Name as a composite structure, specify the Value as a JSON object—for example, {"Sub": "xxx"}.  
 
@@ -277,6 +282,7 @@ Configurations such as body.Name.Sub are not supported. If you need to set body.
 ### `apis`
 
 The apis supports the following:
+
 * `api_version` - (Required) API version information, typically in date format—for example, the version for ECS is 2014-05-26.
 * `product` - (Required) Product code, such as Ecs.
 * `selectors` - (Required, Set) Selectors in array format, where each item is an API name—for example, GetApiDefinition or ListApiDefinitions. You can obtain the complete list of supported APIs from the Alibaba Cloud Developer Portal.
@@ -284,6 +290,7 @@ The apis supports the following:
 ### `prompts`
 
 The prompts supports the following:
+
 * `arguments` - (Optional, Set) Parameters for the prompt. See [`arguments`](#prompts-arguments) below.
 * `content` - (Optional) Full content of the prompt, supporting dynamic parameters. Parameters must be defined in Arguments, using the format {{ARG}}, where ARG supports English characters. Example: My name is: {{name}}.
 * `description` - (Optional) Description of the prompt.
@@ -292,6 +299,7 @@ The prompts supports the following:
 ### `prompts-arguments`
 
 The prompts-arguments supports the following:
+
 * `description` - (Optional) Description of the prompt parameter.
 * `name` - (Optional) Name of the prompt parameter.
 * `required` - (Optional) Indicates whether the prompt parameter is required.
@@ -299,6 +307,7 @@ The prompts-arguments supports the following:
 ### `terraform_tools`
 
 The terraform_tools supports the following:
+
 * `async` - (Optional) Specifies whether execution is asynchronous. If enabled, the system immediately proceeds to the next task after initiating a task, without waiting for each resource operation to complete.
 * `code` - (Optional) Terraform Tool code. [Overview of the HCL Language](https://help.aliyun.com/zh/terraform/terraform-configuration-and-hcl-language-overview)
 * `description` - (Optional) Description of the Terraform Tool. This description will be used as the description for the MCP tool.
@@ -311,12 +320,14 @@ The terraform_tools supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - MCP Server creation time in China Standard Time (CST), for example, 2025-12-04 19:46:52.  
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Api Mcp Server.
 * `delete` - (Defaults to 5 mins) Used when delete the Api Mcp Server.
 * `update` - (Defaults to 5 mins) Used when update the Api Mcp Server.

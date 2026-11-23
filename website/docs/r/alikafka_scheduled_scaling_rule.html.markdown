@@ -84,12 +84,12 @@ resource "alicloud_alikafka_scheduled_scaling_rule" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alikafka_scheduled_scaling_rule&spm=docs.r.alikafka_scheduled_scaling_rule.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `duration_minutes` - (Required, ForceNew, Int) The duration (unit: minutes) of a scheduled elastic task.
 
   -> **NOTE:** The parameter value must be at least 15 minutes.
@@ -114,11 +114,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above. The value is formulated as `<instance_id>:<rule_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Scheduled Scaling Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Scheduled Scaling Rule.
 * `update` - (Defaults to 5 mins) Used when update the Scheduled Scaling Rule.

@@ -55,6 +55,7 @@ The following attributes are exported in addition to the arguments listed above:
 ### `gateways`
 
 The gateways supports the following attributes:
+
 * `create_time` - The creation time of Gateway.
 * `gateway_desc` - The description of Gateway.
 * `gateway_instances` - Gateway instance List.
@@ -69,6 +70,7 @@ The gateways supports the following attributes:
 ### `gateways.gateway_instances`
 
 The gateway_instances supports the following attributes:
+
 * `current_version` - The version of Gateway instance.
 * `local_ip` - The Local IP ADDRESS of Gateway instance.
 * `output_ip` - The host of Gateway instance.

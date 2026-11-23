@@ -10,8 +10,6 @@ description: |-
 
 Provides a Log Service (SLS) Logtail Config resource.
 
-
-
 For information about Log Service (SLS) Logtail Config and how to use it, see [What is Logtail Config](https://next.api.alibabacloud.com/document/Sls/2020-12-30/CreateConfig).
 
 -> **NOTE:** Available since v1.259.0.
@@ -96,6 +94,7 @@ resource "alicloud_sls_logtail_config" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `create_time` - (Optional, ForceNew, Available since v1.255.0) The creation time of the resource
 * `input_detail` - (Optional, ForceNew) The detailed configuration entered by logtail.
 * `input_type` - (Optional, ForceNew) Method of log entry
@@ -109,6 +108,7 @@ The following arguments are supported:
 ### `output_detail`
 
 The output_detail supports the following:
+
 * `endpoint` - (Optional, ForceNew, Available since v1.255.0) The endpoint of the log project.
 * `logstore_name` - (Optional, ForceNew, Available since v1.255.0) The name of the output target logstore.
 * `region` - (Optional, ForceNew, Available since v1.255.0) Region
@@ -116,11 +116,13 @@ The output_detail supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<project_name>:<logtail_config_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Logtail Config.
 * `delete` - (Defaults to 5 mins) Used when delete the Logtail Config.
 

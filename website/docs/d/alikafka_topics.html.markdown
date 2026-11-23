@@ -7,7 +7,7 @@ description: |-
     Provides a list of alikafka topics available to the user.
 ---
 
-# alicloud\_alikafka\_topics
+# alicloud_alikafka_topics
 
 This data source provides a list of ALIKAFKA Topics in an Alibaba Cloud account according to the specified filters.
 
@@ -54,7 +54,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `compact_topic` - whether the current topic is kafka compact topic or not.
   * `partition_num` - Partition number of the topic.
   * `remark` - Remark of the topic.
-  * `status` - The current status code of the topic. There are three values to describe the topic status: 0 stands for the topic is in service, 1 stands for freezing and 2 stands for pause. 
+  * `status` - The current status code of the topic. There are three values to describe the topic status: 0 stands for the topic is in service, 1 stands for freezing and 2 stands for pause.
   * `status_name` - The status_name of the topic.
   * `instance_id` - The instance_id of the instance.
   * `tags` - A mapping of tags to assign to the topic.

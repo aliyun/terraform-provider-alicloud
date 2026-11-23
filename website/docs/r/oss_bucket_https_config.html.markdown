@@ -53,12 +53,12 @@ resource "alicloud_oss_bucket_https_config" "default" {
 
 Terraform cannot destroy resource `alicloud_oss_bucket_https_config`. Terraform will remove this resource from the state file, however resources may remain.
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_https_config&spm=docs.r.oss_bucket_https_config.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+
 * `bucket` - (Required, ForceNew) The name of the bucket
 * `cipher_suit` - (Optional, List, Available since v1.267.0.) TLS encryption algorithm suite configuration See [`cipher_suit`](#cipher_suit) below.
 * `enable` - (Required) Specifies whether to enable TLS version management for the bucket. Valid values: true, false.
@@ -67,6 +67,7 @@ The following arguments are supported:
 ### `cipher_suit`
 
 The cipher_suit supports the following:
+
 * `custom_cipher_suite` - (Optional, Set) This field is used to configure custom encryption algorithm suites for TLS 1.2.
 * `enable` - (Optional, Computed) Configures TLS encryption algorithm suites. Valid values:
 true: strong encryption algorithm suites or custom encryption algorithm suites.
@@ -79,11 +80,13 @@ false: uses custom encryption algorithm suites.
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Bucket Https Config.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Https Config.
 

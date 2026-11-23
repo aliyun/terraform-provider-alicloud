@@ -39,6 +39,7 @@ resource "alicloud_ecs_auto_snapshot_policy" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `association_type` - (Optional, Computed, ForceNew, Available since v1.293.0) The association type between the automatic snapshot policy and target resources. Valid values:
   - `AssociatedWithDisk`: The automatic snapshot policy is applied to disks.
   - `AssociatedWithInstanceTag`: The automatic snapshot policy is associated with ECS instances that have the specified `target_tags`. Changing this parameter creates a new resource.
@@ -66,23 +67,27 @@ The following arguments are supported:
   The parameter value is a JSON array that contains up to 24 points in time separated by commas (,). Example: ["0", "1", ... "23"].
 
 The following arguments will be discarded. Please use new fields as soon as possible:
+
 * `name` - (Deprecated since v1.236.0). Field `name` has been deprecated from provider version 1.236.0. New field `auto_snapshot_policy_name` instead.
 
 ### `copy_encryption_configuration`
 
 The copy_encryption_configuration supports the following:
+
 * `encrypted` - (Optional, Bool) Whether to enable encryption for cross-region snapshot replication. Default value: `false`. Valid values: `true`, `false`.
 * `kms_key_id` - (Optional) The ID of the Key Management Service (KMS) key used to encrypt snapshots in cross-region snapshot replication.
 
 ### `target_tags`
 
 The target_tags supports the following:
+
 * `tag_key` - (Optional, Available since v1.293.0) The key of target tag N. The tag key cannot be an empty string. The tag key can be up to 128 characters in length and cannot start with `acs:` or `aliyun`. Valid values of N: 1 to 10.
 * `tag_value` - (Optional, Available since v1.293.0) The value of target tag N. The tag value can be an empty string. The tag value can be up to 128 characters in length and cannot start with `acs:`.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The resource ID in terraform of Auto Snapshot Policy.
 * `create_time` - (Available since v1.236.0) The time when the automatic snapshot policy was created. The time follows the ISO 8601 standard in the yyyy-MM-ddThh:mm:ssZ format. The time is displayed in UTC.
 * `region_id` - (Available since v1.236.0) The region ID of the automatic snapshot policy.
@@ -91,6 +96,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Auto Snapshot Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Auto Snapshot Policy.
 * `update` - (Defaults to 5 mins) Used when update the Auto Snapshot Policy.

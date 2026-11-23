@@ -46,6 +46,7 @@ resource "alicloud_eflo_vpd" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `cidr` - (Required, ForceNew) The CIDR block of the VPD.
 * `resource_group_id` - (Optional) The Resource group ID. **NOTE:** From version 1.263.0, `resource_group_id` can be modified.
 * `secondary_cidr_blocks` - (Optional, List, Available since v1.263.0) The additional CIDR block.
@@ -55,6 +56,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the activation code was created.
 * `gmt_modified` - The time when the O&M task was modified.
@@ -64,6 +66,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Vpd.
 * `delete` - (Defaults to 5 mins) Used when delete the Vpd.
 * `update` - (Defaults to 5 mins) Used when update the Vpd.

@@ -10,8 +10,6 @@ description: |-
 
 Provides a ESA Compression Rule resource.
 
-
-
 For information about ESA Compression Rule and how to use it, see [What is Compression Rule](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateCompressionRule).
 
 -> **NOTE:** Available since v1.244.0.
@@ -55,6 +53,7 @@ resource "alicloud_esa_compression_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `brotli` - (Optional) Brotli compression. Value range:
   - `on`: on.
   - `off`: off.
@@ -78,12 +77,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<config_id>`.
 * `config_id` - Config Id
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Compression Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Compression Rule.
 * `update` - (Defaults to 5 mins) Used when update the Compression Rule.

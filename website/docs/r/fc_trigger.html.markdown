@@ -591,7 +591,7 @@ resource "alicloud_fc_trigger" "rabbitmq_trigger" {
 
 ## Module Support
 
-You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud) 
+You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud)
 to create several triggers quickly.
 
 ## Argument Reference

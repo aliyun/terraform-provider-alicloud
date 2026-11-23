@@ -10,8 +10,6 @@ description: |-
 
 Provides a Star Rocks Node Group resource.
 
-
-
 For information about Star Rocks Node Group and how to use it, see [What is Node Group](https://next.api.alibabacloud.com/document/starrocks/2022-10-19/CreateNodeGroup).
 
 -> **NOTE:** Available since v1.262.0.
@@ -108,6 +106,7 @@ resource "alicloud_star_rocks_node_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auto_renew` - (Optional) Whether auto-renewal is enabled.
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
@@ -160,6 +159,7 @@ This is only applicable when payType is set to PrePaid.
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<node_group_id>`.
 * `create_time` - The creation time of the node group.
 * `node_group_id` - The ID of the node group.
@@ -169,6 +169,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 20 mins) Used when create the Node Group.
 * `delete` - (Defaults to 60 mins) Used when delete the Node Group.
 * `update` - (Defaults to 20 mins) Used when update the Node Group.

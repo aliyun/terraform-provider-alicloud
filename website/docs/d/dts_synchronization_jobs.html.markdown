@@ -7,7 +7,7 @@ description: |-
   Provides a list of Dts Synchronization Jobs to the user.
 ---
 
-# alicloud\_dts\_synchronization\_jobs
+# alicloud_dts_synchronization_jobs
 
 This data source provides the Dts Synchronization Jobs of the current Alibaba Cloud user.
 

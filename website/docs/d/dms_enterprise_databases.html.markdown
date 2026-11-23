@@ -40,6 +40,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Database IDs.
 * `databases` - A list of Database Entries. Each element contains the following attributes:
   * `id` - The Database ID, same value as `database_id`.
