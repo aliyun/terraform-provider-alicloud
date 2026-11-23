@@ -67,7 +67,7 @@ func resourceAliCloudOssBucketPolicyCreate(d *schema.ResourceData, meta interfac
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.JsonXmlParam("PUT", "2019-05-17", "PutBucketPolicy", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ConcurrentUpdateBucketFailed"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
