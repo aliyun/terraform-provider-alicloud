@@ -69,6 +69,11 @@ class Repository:
 
 
 class DocumentExamplesTest(unittest.TestCase):
+    def setUp(self):
+        summary = patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': ''})
+        summary.start()
+        self.addCleanup(summary.stop)
+
     def prepared(self, *blocks):
         files = {DOC: page(*(blocks or (CONFIG,)))}
         contract(files)

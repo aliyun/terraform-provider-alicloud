@@ -18,7 +18,7 @@ import time
 import urllib.error
 import urllib.request
 
-from acube_diagnostics import (REUSE_SCAN_LIMIT, acc_execution_counts, publish_acc_summary, publish_report, redact,
+from acube_diagnostics import (REUSE_SCAN_LIMIT, acc_execution_counts, publish_acc_summary, publish_planning_failure, publish_report, redact,
                                report_directory, terminal_report)
 import doc_examples
 
@@ -296,6 +296,7 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
         target = output / 'diagnostics' / 'scope.json'
         target.write_text(json.dumps(report, indent=2))
         target.chmod(0o600)
+        publish_planning_failure(kind, frozen['head'], frozen['base'], report['diagnostics'])
         for item in report['diagnostics']:
             print(f"CI planning blocker: {item['reason']}\n  Code: {item['code']}\n"
                   f"  Repair: {item['fix']}\n  Guide: {item['guide']}", file=sys.stderr, flush=True)
@@ -492,8 +493,20 @@ def main():
     args = parser.parse_args()
     spec = importlib.util.spec_from_file_location('change_range', Path(__file__).with_name('aone-range.py'))
     ranges = importlib.util.module_from_spec(spec); spec.loader.exec_module(ranges)
-    base, head = ranges.resolve(os.environ)
-    frozen = plan(base, head, include_examples=args.kind == 'examples' or args.plan_only)
+    base = None
+    try:
+        base, head = ranges.resolve(os.environ)
+        frozen = plan(base, head, include_examples=args.kind == 'examples' or args.plan_only)
+    except (ValueError, subprocess.CalledProcessError) as error:
+        if not args.plan_only:
+            checkout = subprocess.run(['git', 'rev-parse', '--verify', 'HEAD'], capture_output=True, text=True)
+            reason = str(error) if isinstance(error, ValueError) else f'{error.cmd[0]} failed (exit {error.returncode})'
+            fix = ('Verify the checkout SHA and fetch the MR target and comparison base before retrying.'
+                   if base is None else 'Run the failed planning step at this commit with the same base. '
+                   'Inspect the planner error in the job log, correct the indicated input, and retry.')
+            publish_planning_failure(args.kind, checkout.stdout.strip() or '无法解析', base or '无法解析',
+                                     [dict(code='PLAN001', reason=reason, fix=fix)])
+        raise
     mr_id = os.environ.get('CODE_MR_ID','')
     frozen['mergeRequestId'] = None if mr_id in ('','null') else numeric_id(mr_id)
     if args.plan_only:

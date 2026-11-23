@@ -161,6 +161,19 @@ def append_summary(block):
                 stream.write(block)
 
 
+def publish_planning_failure(kind, head, base, diagnostics):
+    job = 'IntegrationTest' if kind == 'acctest' else 'DocsExampleTest'
+    lines = [f'### {job} 规划失败', '', f'- 检查提交：`{head}`', f'- 比较基线：`{base}`',
+             f'- 阻断项：{len(diagnostics)}，已提交云端任务：0', '']
+    for item in diagnostics[:20]:
+        lines.extend([f"**{item['code']}**", ''])
+        for label, key in [('失败原因', 'reason'), ('修复方法', 'fix')]:
+            lines.extend([label, '', *('    ' + line for line in redact(item[key]).splitlines()), ''])
+    if len(diagnostics) > 20:
+        lines.append('其余阻断项见 CI diagnostics/scope.json。')
+    append_summary('\n' + '\n'.join(lines) + '\n')
+
+
 def acc_execution_counts(status, requested):
     """Count distinct requested cases, never invocations or a whole-batch total."""
     cases = ((status.get('result') or {}).get('tests') or {}).get('cases') or []

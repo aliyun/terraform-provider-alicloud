@@ -75,6 +75,7 @@ jobs:
       - name: Range and release reconciliation regression
         run: |
           set -euo pipefail
+          unset AONE_CI_SUMMARY_MD AONE_CI_SUMMARY
           python3 -m unittest discover -s scripts/ci -p test_aone_range.py
           python3 -m unittest discover -s scripts/ci -p test_acube_integration.py
           python3 -m unittest discover -s scripts/ci -p test_review_ci.py

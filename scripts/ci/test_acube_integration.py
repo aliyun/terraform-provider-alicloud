@@ -278,6 +278,24 @@ class IntegrationTest(unittest.TestCase):
             self.assertEqual(report['status'], 'blocked')
             self.assertEqual(report['blockers'], scope['blocked'])
 
+    def test_summary_contains_only_blockers_for_the_requested_job(self):
+        acc = 'No AccTest cases for affected resource: data_source_demo.go. Fix: Move TestAccDemo into data_source_demo_test.go.'
+        doc = 'website/docs/d/demo.html.markdown:19: Reference is outside this HCL fence: alicloud_demo.default'
+        frozen = dict(base='1'*40, head='2'*40, packages={}, examples=[],
+                      scope=dict(blocked=[acc], coverageBlockers=[acc]), documents=dict(blocked=[doc]))
+        for kind, code, other, action in [('acctest', 'ACC001', 'DOC001', 'Move TestAccDemo'),
+                                          ('examples', 'DOC001', 'ACC001', 'declare each listed dependency')]:
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                summary = root/'summary.md'
+                with patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': str(summary)}), self.assertRaises(ValueError):
+                    m.execute(None, frozen, kind, 'run', root)
+                body = summary.read_text()
+                for expected in (frozen['head'], frozen['base'], code, action, '已提交云端任务：0'):
+                    self.assertIn(expected, body)
+                self.assertNotIn(other, body)
+                self.assertNotIn('ACube task', body)
+
     def test_acc_only_plan_does_not_load_docs_or_invoke_title_resolver(self):
         scope = dict(packages={'alicloud/service/vpc':['TestAccVpc']},
                      resourceFiles=['alicloud/service/vpc/resource_vpc.go'], blocked=[])
