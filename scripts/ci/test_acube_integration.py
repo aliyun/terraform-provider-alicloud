@@ -123,6 +123,16 @@ class IntegrationTest(unittest.TestCase):
                 self.assertIn(repair, result['fix'])
                 self.assertEqual(result['guide'], 'scripts/ci/provider-layout.md')
 
+    def test_planner_exposes_companion_repair_and_document_guide(self):
+        reason = 'No AccTest cases for affected resource: data_source_demo.go (data.alicloud_demo).'
+        fix = 'Create or update data_source_demo_test.go with a runnable TestAcc case.'
+        result = m.planning_diagnostic(reason + ' Fix: ' + fix)
+        self.assertEqual((result['code'], result['reason'], result['fix']), ('ACC001', reason, fix))
+        result = m.planning_diagnostic('website/docs/d/demo.html.markdown:19: Reference is outside this HCL fence')
+        self.assertEqual(result['code'], 'DOC001')
+        self.assertIn('missing references', result['fix'])
+        self.assertIn('README-scopes.md#documentation-scenes', result['guide'])
+
     def setUp(self):
         # Synthetic regression receipts must never appear in the real CI Summary.
         summary = patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': ''})

@@ -158,7 +158,7 @@ local Git snapshots without cloud calls or Provider builds.
 ### Documentation scenes and source evidence
 
 The documentation job follows the workflow's
-[document example contract](https://code.alibaba-inc.com/terraflow/terraform-agent-workflow/blob/9a15deb6f798a2f46cfb8c5ff557e0eff635328e/skills/invoke-terraform-acc-test-remote/references/document-examples.md).
+[document example contract](https://code.alibaba-inc.com/terraflow/terraform-agent-workflow/blob/f614b8b7cfd0892dfb4c26325bb65347f1019a8e/skills/invoke-terraform-acc-test-remote/references/document-examples.md).
 Direct documentation changes select changed scenes, assertions and declared
 inputs. Implementation/service impact selects all scenes of the affected type.
 Unchanged HCL under a prose-only edit does not run again; the report explicitly
@@ -217,9 +217,10 @@ cases=[] and a nonempty notApplicableReason. A removed page requires scope revie
 Known unlabelled/indented HCL is blocked for explicit transcription into a
 reviewable fenced/source-file scene.
 
-The original scene must explicitly declare exactly one alicloud Provider source,
-aliyun/alicloud or registry.terraform.io/aliyun/alicloud. The adapter does not
-inject a missing declaration. Published version constraints can remain in the
+Documentation may omit the alicloud provider source. The adapter fills in
+`aliyun/alicloud` in the execution copy and records the adaptation diff. An
+explicit source must be `aliyun/alicloud` or `registry.terraform.io/aliyun/alicloud`.
+Published version constraints can remain in the
 source, while the reviewed test mainTf must omit them or pin the mirror version
 0.0.1 / = 0.0.1. Both configurations are checked separately. Extra/implicit
 Providers, modules, remote state, required variables and file-dependent or obvious

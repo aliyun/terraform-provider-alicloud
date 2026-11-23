@@ -9,7 +9,7 @@ import re
 import subprocess
 
 
-def hcl_tokens(text):
+def hcl_tokens(text, *, brace_offsets=None):
     """Tokenize the static declaration subset; never interpret example templates."""
     tokens, i = [], 0
 
@@ -92,11 +92,13 @@ def hcl_tokens(text):
                 i += len(match.group())
             else:
                 tokens.append(('symbol', text[i]))
+                if brace_offsets is not None and text[i] == '{':
+                    brace_offsets[id(tokens[-1])] = i
                 i += 1
     return tokens
 
 
-def hcl_entries(tokens):
+def hcl_entries(tokens, *, openings=None):
     """Read direct attributes/blocks; nested expressions remain opaque tokens."""
     pairs = {'{': '}', '[': ']', '(': ')'}
 
@@ -137,6 +139,8 @@ def hcl_entries(tokens):
             i += 1
         if i == len(tokens) or tokens[i] != ('symbol', '{'):
             raise ValueError('Unsupported HCL block declaration')
+        if openings is not None:
+            openings.append(tokens[i])
         start, depth = i + 1, 1
         i += 1
         while i < len(tokens) and depth:
@@ -170,7 +174,7 @@ def check_provider_source(main_tf, *, snapshot=True, allow_random=False):
                     continue
                 attrs, nested = hcl_entries(providers)
                 allowed = {'alicloud', 'random'} if allow_random else {'alicloud'}
-                if nested or 'alicloud' not in attrs or not set(attrs) <= allowed:
+                if nested or not set(attrs) <= allowed:
                     raise ValueError('Require only the static alicloud Provider declaration')
                 if 'random' in attrs:
                     random = attrs['random']
@@ -180,20 +184,51 @@ def check_provider_source(main_tf, *, snapshot=True, allow_random=False):
                     if nested or values.get('source') not in ([('string', 'hashicorp/random')],
                                                               [('string', 'registry.terraform.io/hashicorp/random')]):
                         raise ValueError('Declare source = "hashicorp/random" for the bundled mirror')
+                if 'alicloud' not in attrs:
+                    if not snapshot and not declarations:
+                        declarations.append({})
+                        continue
+                    raise ValueError('Declare alicloud in the existing required_providers block')
                 declaration = attrs['alicloud']
                 if not declaration or declaration[0] != ('symbol', '{') or declaration[-1] != ('symbol', '}'):
                     raise ValueError('alicloud must use a static required_providers object with source')
                 values, nested = hcl_entries(declaration[1:-1])
-                if nested or values.get('source') not in ([('string', 'aliyun/alicloud')],
-                                                          [('string', 'registry.terraform.io/aliyun/alicloud')]):
+                allowed_sources = ([('string', 'aliyun/alicloud')], [('string', 'registry.terraform.io/aliyun/alicloud')])
+                if nested or ((snapshot or 'source' in values) and values.get('source') not in allowed_sources):
                     raise ValueError('Declare source = "aliyun/alicloud" explicitly for the snapshot mirror')
                 mirror_version(values)
                 declarations.append(values)
         elif name == 'provider' and labels == ['alicloud']:
             attrs, _ = hcl_entries(body)
             mirror_version(attrs)
-    if len(declarations) != 1:
+    if len(declarations) > 1 or snapshot and not declarations:
         raise ValueError('Require exactly one terraform.required_providers.alicloud source = "aliyun/alicloud" declaration')
+
+
+def with_snapshot_source(text):
+    """Insert only an omitted provider source, preserving all other HCL bytes."""
+    offsets = {}
+    _, root = hcl_entries(hcl_tokens(text, brace_offsets=offsets))
+    entry = 'alicloud = { source = "aliyun/alicloud" }'
+    for name, labels, body in root:
+        if name != 'terraform' or labels:
+            continue
+        openings = []
+        _, children = hcl_entries(body, openings=openings)
+        for (kind, labels, providers), opening in zip(children, openings):
+            if kind != 'required_providers' or labels:
+                continue
+            attrs, _ = hcl_entries(providers)
+            insertion = entry
+            if 'alicloud' in attrs:
+                value = attrs['alicloud']
+                if not value or value[0] != ('symbol', '{') or 'source' in hcl_entries(value[1:-1])[0]:
+                    return text
+                opening = value[0]
+                insertion = 'source = "aliyun/alicloud"'
+            pos = offsets[id(opening)] + 1
+            return text[:pos] + '\n' + insertion + '\n' + text[pos:]
+    return 'terraform {\n  required_providers {\n    ' + entry + '\n  }\n}\n' + text
 
 
 MANIFEST_ROOT = 'ci/assets/document-examples/'
@@ -368,6 +403,11 @@ def _inventory(ref, doc, read):
         main_tf = spec.get('mainTf', original + ''.join('\n' + fixture['content'] for fixture in fixtures))
         if not isinstance(main_tf, str) or not main_tf.strip():
             raise ValueError('Require a nonempty scenario mainTf')
+        try:
+            main_tf = with_snapshot_source(main_tf)
+        except ValueError:
+            # Preserve per-scene validation and historical/changed scene classification.
+            pass
         case = dict(name=doc+'#'+identifier, id=identifier, document=doc,
                     line=fragments[0]['line'] if fragments else 1,
                     sourceSpans=[{key:block[key] for key in ('index', 'line', 'heading', 'sha256')} for block in fragments],
@@ -405,6 +445,7 @@ def validate_standalone_dependencies(text):
             declared.update(('local', name) for name in hcl_entries(body)[0])
     # Check ordinary traversals. Terraform validate still checks templates
     # and dynamic expressions when the extracted scene reaches the runner.
+    missing = set()
     for index, (kind, name) in enumerate(tokens):
         if kind != 'identifier' or index and tokens[index-1] == ('symbol', '.'):
             continue
@@ -416,7 +457,9 @@ def validate_standalone_dependencies(text):
                 and all(t == ('symbol', '.') for t in parts[1::2])):
             address = tuple(value for _, value in parts[::2])
             if address not in declared:
-                raise ValueError('Reference is outside this HCL fence: ' + '.'.join(address))
+                missing.add('.'.join(address))
+    if missing:
+        raise ValueError('Reference is outside this HCL fence: ' + ', '.join(sorted(missing)))
 
 
 def validate_case(case):
@@ -434,7 +477,7 @@ def validate_case(case):
     try:
         validate_configuration(case['originalMainTf'], snapshot=False)
     except ValueError as error:
-        raise ValueError('Fix source document HCL; a test-copy declaration cannot repair it: ' + str(error)) from error
+        raise ValueError('Fix the invalid configuration in the source document: ' + str(error)) from error
     validate_configuration(case['mainTf'], snapshot=True)
 
 
@@ -516,13 +559,13 @@ def plan(base, head, full_docs, git, read):
                 except ValueError as error:
                     if implicit:
                         reason = (f'{doc}:{case["line"]}: {error}. '
-                                  f'Provide a self-contained HCL fence or review {manifest}.')
+                                  f'Declare the dependencies in this fence or compose the required inputs in {manifest}.')
                         if not direct or unchanged:
                             result['unverified'].append(dict(document=doc, scene=case['name'],
                                                              status='NOT_VERIFIED', reason=reason))
                             continue
                     else:
-                        reason = doc + ': ' + str(error)
+                        reason = f'{doc}:{case["line"]} ({case["id"]}): {error}. Review the source fence and {manifest}.'
                     result['blockedCases'].append({**case, 'error': str(error)})
                     result['blocked'].append(reason)
                     continue

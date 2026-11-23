@@ -96,6 +96,14 @@ def planning_diagnostic(reason):
                'TestAcc functions in its companion *_test.go. For a private helper, merge it into the owning '
                'resource/data source and merge its tests into the owner test file. Do not add an empty or skipped '
                'AccTest just to satisfy discovery; real coverage is required.')
+        if ' Fix: ' in reason:
+            reason, fix = reason.split(' Fix: ', 1)
+    elif reason.startswith(('website/docs/r/', 'website/docs/d/')):
+        code = 'DOC001'
+        guide = 'scripts/ci/README-scopes.md#documentation-scenes-and-source-evidence'
+        fix = ('Correct the indicated fence or scenario input at the reported location. '
+               'CI supplies an omitted aliyun/alicloud source in the execution copy. '
+               'For missing references, declare each listed dependency or group the required inputs in the scenario manifest.')
     elif 'test helper consumers' in reason:
         code = 'ACC002'
         fix = ('Find references to the named helper in both the base and head commits. For methods, inspect the '

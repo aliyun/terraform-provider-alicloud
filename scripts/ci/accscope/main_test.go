@@ -497,3 +497,41 @@ func TestAccScopeReportsIndirectCoverageGapWithoutBlockingOtherCases(t *testing.
 		t.Fatalf("expected missing coverage on directly modified legacy resource to block, got %+v", direct)
 	}
 }
+
+func TestFirstStaticListAndCompanionRepair(t *testing.T) {
+	const dir = "alicloud/service/demo/"
+	const register = dir + "register.go"
+	const impl = dir + "data_source_things.go"
+	const misplaced = dir + "resource_thing_test.go"
+	const companion = dir + "data_source_things_test.go"
+	const list = `DataSources: []conns.DataSource{{TypeName:"alicloud_things",Factory: NewThings}},`
+	files := map[string]string{
+		register:  `package demo; func ServicePackage() conns.ServicePackage { return conns.ServicePackage{Name:"Demo"} }`,
+		impl:      `package demo; import "example.invalid/datasource"; func NewThings() datasource.DataSource { return nil }`,
+		misplaced: `package demo_test; import "github.com/hashicorp/terraform-plugin-testing/helper/resource"; func TestAccThings(t *testing.T) { resource.TestCheckResourceAttr("data.alicloud_things.default","id","1") }`,
+	}
+	before := fixture(t, files)
+	original := files[register]
+	files[register] = strings.Replace(original, "Name:", list+"Name:", 1)
+	scope := selectScope(before, fixture(t, files), []string{register})
+	if len(scope.Blocked) != 1 || !strings.Contains(scope.Blocked[0], companion) || !strings.Contains(scope.Blocked[0], misplaced+":TestAccThings") || !strings.Contains(scope.Blocked[0], "data.alicloud_things") {
+		t.Fatalf("missing actionable coverage diagnostic: %+v", scope)
+	}
+	files[companion] = files[misplaced]
+	delete(files, misplaced)
+	scope = selectScope(before, fixture(t, files), []string{register})
+	if len(scope.Blocked) != 0 || !reflect.DeepEqual(scope.Packages["alicloud/service/demo"], []string{"TestAccThings"}) {
+		t.Fatalf("companion repair: %+v", scope)
+	}
+	files[register] = strings.Replace(original, "Name:", "DataSources: dynamic(), Name:", 1)
+	scope = selectScope(before, fixture(t, files), []string{register})
+	if len(scope.Blocked) == 0 || !strings.Contains(strings.Join(scope.Blocked, " "), "ServicePackage (DataSources)") {
+		t.Fatalf("dynamic field: %+v", scope)
+	}
+	files[register] = strings.Replace(original, "Name:", list+"Name:", 1)
+	files[register] = strings.Replace(files[register], `"Demo"`, `"other"`, 1)
+	scope = selectScope(before, fixture(t, files), []string{register})
+	if len(scope.Blocked) == 0 {
+		t.Fatalf("mixed edit was not blocked: %+v", scope)
+	}
+}

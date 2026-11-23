@@ -40,16 +40,18 @@ type declaration struct {
 	assets                              []string
 	test                                bool
 	acc, unit                           bool
+	assertedTypes                       []string
 	privateTestFunc                     bool
 }
 
 type snapshot struct {
-	decls         map[string]*declaration
-	files         map[string]bool
-	assets        map[string]string
-	hazards       map[string]string
-	registrations map[string]map[string]string
-	packages      map[string]string
+	decls              map[string]*declaration
+	files              map[string]bool
+	assets             map[string]string
+	hazards            map[string]string
+	registrationIssues map[string]string
+	registrations      map[string]map[string]string
+	packages           map[string]string
 }
 
 type accScope struct {
@@ -166,45 +168,55 @@ func valueType(expr ast.Expr, pkg string, imports map[string]string, depth int) 
 
 // Read the static registration slices and leave other ServicePackage logic in
 // the declaration fingerprint so mixed edits cannot pass as mapping-only changes.
-func registrationSlices(fn *ast.FuncDecl) (map[string]string, []*ast.CompositeLit) {
+func normalizeRegistration(fn *ast.FuncDecl) (map[string]string, string) {
 	if fn.Body == nil || len(fn.Body.List) != 1 {
-		return nil, nil
+		return nil, "return expression"
 	}
 	ret, ok := fn.Body.List[0].(*ast.ReturnStmt)
 	if !ok || len(ret.Results) != 1 {
-		return nil, nil
+		return nil, "return expression"
 	}
 	body, ok := ret.Results[0].(*ast.CompositeLit)
 	if !ok {
-		return nil, nil
+		return nil, "return expression"
 	}
 	mappings := map[string]string{}
-	var slices []*ast.CompositeLit
+	var remaining []ast.Expr
 	for _, entry := range body.Elts {
 		field, ok := entry.(*ast.KeyValueExpr)
 		if !ok {
-			return nil, nil
+			return nil, "return expression"
 		}
 		kind := receiverName(field.Key)
 		switch kind {
 		case "Resources", "SDKResources", "DataSources", "SDKDataSources", "EphemeralResources", "Actions", "ListResources":
 		default:
+			remaining = append(remaining, entry)
 			continue
 		}
 		list, ok := field.Value.(*ast.CompositeLit)
 		if !ok {
-			return nil, nil
+			return nil, kind
+		}
+		slice, ok := list.Type.(*ast.ArrayType)
+		if !ok || slice.Len != nil {
+			return nil, kind
+		}
+		elem, ok := slice.Elt.(*ast.SelectorExpr)
+		owner, qualified := body.Type.(*ast.SelectorExpr)
+		if !ok || !qualified || owner.Sel.Name != "ServicePackage" || receiverName(elem.X) != receiverName(owner.X) || elem.Sel.Name != strings.TrimSuffix(kind, "s") {
+			return nil, kind
 		}
 		for _, element := range list.Elts {
 			item, ok := element.(*ast.CompositeLit)
-			if !ok || len(item.Elts) != 2 {
-				return nil, nil
+			if !ok || item.Type != nil || len(item.Elts) != 2 {
+				return nil, kind
 			}
 			var name, factory string
 			for _, attr := range item.Elts {
 				pair, ok := attr.(*ast.KeyValueExpr)
 				if !ok {
-					return nil, nil
+					return nil, kind
 				}
 				switch receiverName(pair.Key) {
 				case "TypeName":
@@ -212,18 +224,50 @@ func registrationSlices(fn *ast.FuncDecl) (map[string]string, []*ast.CompositeLi
 						name, _ = strconv.Unquote(lit.Value)
 					}
 				case "Factory":
-					factory = receiverName(pair.Value)
+					if ident, ok := pair.Value.(*ast.Ident); ok {
+						factory = ident.Name
+					}
 				}
 			}
 			key := kind + ":" + name
 			if name == "" || factory == "" || mappings[key] != "" {
-				return nil, nil
+				return nil, kind
 			}
 			mappings[key] = factory
 		}
-		slices = append(slices, list)
 	}
-	return mappings, slices
+	body.Elts = remaining
+	return mappings, ""
+}
+
+// Match direct SDK assertions on literal addresses only. A match is a repair hint, never coverage.
+func checkedType(call *ast.CallExpr, imports map[string]string) string {
+	fn, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return ""
+	}
+	pkg := imports[receiverName(fn.X)]
+	if pkg != "github.com/hashicorp/terraform-plugin-testing/helper/resource" && pkg != "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource" {
+		return ""
+	}
+	switch fn.Sel.Name {
+	case "TestCheckResourceAttr", "TestCheckResourceAttrSet", "TestCheckResourceAttrPair", "TestMatchResourceAttr":
+	default:
+		return ""
+	}
+	lit, ok := call.Args[0].(*ast.BasicLit)
+	if !ok || lit.Kind != token.STRING {
+		return ""
+	}
+	addr, _ := strconv.Unquote(lit.Value)
+	parts := strings.Split(addr, ".")
+	if len(parts) == 3 && parts[0] == "data" {
+		return "data." + parts[1]
+	}
+	if len(parts) == 2 {
+		return parts[0]
+	}
+	return ""
 }
 
 func methodSignature(fset *token.FileSet, fn *ast.FuncType) string {
@@ -391,6 +435,11 @@ func parseSource(s *snapshot, file string, data []byte) error {
 					d.assets = append(d.assets, path.Clean(path.Join(path.Dir(file), value)))
 				}
 			case *ast.CallExpr:
+				if d.acc && len(x.Args) > 0 {
+					if address := checkedType(x, imports); address != "" {
+						d.assertedTypes = append(d.assertedTypes, address)
+					}
+				}
 				if fn, ok := x.Fun.(*ast.SelectorExpr); ok && len(x.Args) == 1 && d.test {
 					switch fn.Sel.Name {
 					case "NewServer", "NewTLSServer", "NewUnstartedServer":
@@ -436,15 +485,16 @@ func parseSource(s *snapshot, file string, data []byte) error {
 				receiver = receiverName(x.Recv.List[0].Type)
 			}
 			if path.Base(file) == "register.go" && x.Name.Name == "ServicePackage" && receiver == "" {
-				mappings, slices := registrationSlices(x)
-				if len(slices) > 0 {
+				if mappings, field := normalizeRegistration(x); mappings != nil {
 					if s.registrations == nil {
 						s.registrations = map[string]map[string]string{}
 					}
 					s.registrations[file] = mappings
-					for _, list := range slices {
-						list.Elts = nil
+				} else {
+					if s.registrationIssues == nil {
+						s.registrationIssues = map[string]string{}
 					}
+					s.registrationIssues[file] = field
 				}
 			}
 			add(x.Name.Name, receiver, x)
@@ -813,6 +863,7 @@ func selectScope(before, after *snapshot, files []string) accScope {
 		}
 	}
 	registered := map[string]bool{}
+	entryAddresses := map[string]map[string]bool{}
 	for _, snap := range []*snapshot{before, after} {
 		for file := range snap.files {
 			if path.Base(file) == "register.go" {
@@ -835,6 +886,16 @@ func selectScope(before, after *snapshot, files []string) accScope {
 				targets := factories[path.Dir(file)+":"+factory]
 				if len(targets) == 1 {
 					registered[targets[0]] = true
+					kind, typeName, _ := strings.Cut(name, ":")
+					if snap == after {
+						if entryAddresses[targets[0]] == nil {
+							entryAddresses[targets[0]] = map[string]bool{}
+						}
+						if strings.HasSuffix(kind, "DataSources") {
+							typeName = "data." + typeName
+						}
+						entryAddresses[targets[0]][typeName] = true
+					}
 				}
 				if !changedFiles[file] || other[name] == factory {
 					continue
@@ -964,6 +1025,9 @@ func selectScope(before, after *snapshot, files []string) accScope {
 				blocked["cannot resolve service impact for "+reason+"; manual ACC scope review required"] = true
 			}
 		} else if path.Base(d.file) == "register.go" {
+			if field := after.registrationIssues[d.file]; field != "" {
+				reason += " (" + field + ")"
+			}
 			blocked["unsupported registration change: "+reason+"; manual impact review required"] = true
 		} else if strings.HasPrefix(dir, "alicloud/service/") {
 			// Do not turn unknown helper consumers into a successful empty scope.
@@ -1011,7 +1075,24 @@ func selectScope(before, after *snapshot, files []string) accScope {
 			continue
 		}
 		message := "No AccTest cases for affected resource: " + file +
-			" (selected by " + strings.Join(sortedKeys(reasons), ", ") + "); confirm replacement/coverage"
+			" (selected by " + strings.Join(sortedKeys(reasons), ", ") + ")"
+		if addresses := entryAddresses[file]; len(addresses) > 0 {
+			expected := strings.TrimSuffix(file, ".go") + "_test.go"
+			message = "No AccTest cases for affected resource: " + file + " (" + strings.Join(sortedKeys(addresses), ", ") + "). Fix: Create or update " + expected + " with a runnable TestAcc case."
+			candidates := map[string]bool{}
+			for _, test := range after.decls {
+				if path.Dir(test.file) == path.Dir(file) {
+					for _, address := range test.assertedTypes {
+						if addresses[address] {
+							candidates[test.file+":"+test.name] = true
+						}
+					}
+				}
+			}
+			if len(candidates) > 0 {
+				message += " Existing assertions found in " + strings.Join(sortedKeys(candidates), ", ") + ". Move the applicable case into " + expected + " preserving its package, name and assertions, or split out dedicated coverage if the case also covers another entrypoint."
+			}
+		}
 		coverageBlockers[message] = true
 		blocked[message] = true
 	}
