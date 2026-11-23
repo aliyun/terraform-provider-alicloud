@@ -164,7 +164,7 @@ the vserver_group supports the following:
 ### `vserver_groups-vserver_attributes`
 
 * `vserver_group_id` - (Required) ID of VServer Group.
-* `port` - (Required) - The port will be used for VServer Group backend server.
+* `port` - (Required) The port will be used for VServer Group backend server.
 * `weight` - (Required) The weight of an ECS instance attached to the VServer Group.
 
 ## Attributes Reference

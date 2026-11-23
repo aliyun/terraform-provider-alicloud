@@ -74,35 +74,35 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Bucket Inventory IDs.
 * `inventories` - A list of Bucket Inventory Entries. Each element contains the following attributes:
-    * `destination` - Holds the container that holds the location of the inventory results.
-        * `oss_bucket_destination` - The Bucket information stored after the list result is exported.
-            * `account_id` - The account ID granted by the Bucket owner.
-            * `bucket` - The Bucket where the exported manifest file is stored.
-            * `encryption` - The encryption method of the manifest file.
-                * `ssekms` - The container that holds the SSE-KMS encryption key.
-                    * `key_id` - KMS key ID.
-                * `sseoss` - The container that holds the SSE-OSS encryption method.
-            * `format` - The file format of the manifest file.
-            * `prefix` - The storage path prefix for the manifest file.
-            * `role_arn` - The name of the role that has the permission to read all files in the source Bucket and write files to the target Bucket.
-    * `filter` - Container for inventory filtering rules.
-        * `last_modify_begin_time_stamp` - The start timestamp of the last modification time of the filter file, in seconds.
-        * `last_modify_end_time_stamp` - The end timestamp of the last modification time of the filter file, in seconds.
-        * `lower_size_bound` - The minimum size of the filter file, in B.
-        * `prefix` - The match prefix of the filter rule.
-        * `storage_class` - The storage type of the filter file.
-        * `upper_size_bound` - The maximum size of the filter file, in B.
-    * `included_object_versions` - Whether the Object version information is included in the list.
-    * `incremental_inventory` - Configuration container for incremental inventory.
-        * `is_enabled` - Incremental inventory enabled.
-        * `optional_fields` - Configuration container for incremental manifest file properties.
-            * `field` - Incremental inventory export field list.
-        * `schedule` - Incremental inventory export cycle container.
-            * `frequency` - Describes the period of incremental inventory file export, in seconds, currently fixed at 10 minutes.
-    * `inventory_id` - The ID of the inventory rule.
-    * `is_enabled` - Identification of whether the manifest feature is enabled.
-    * `optional_fields` - Sets the configuration items included in the manifest results.
-        * `field` - The configuration items contained in the manifest results.
-    * `schedule` - Container for storing inventory export cycle information.
-        * `frequency` - Period for manifest file export.
-    * `id` - The ID of the resource supplied above.
+  * `destination` - Holds the container that holds the location of the inventory results.
+    * `oss_bucket_destination` - The Bucket information stored after the list result is exported.
+      * `account_id` - The account ID granted by the Bucket owner.
+      * `bucket` - The Bucket where the exported manifest file is stored.
+      * `encryption` - The encryption method of the manifest file.
+        * `ssekms` - The container that holds the SSE-KMS encryption key.
+          * `key_id` - KMS key ID.
+        * `sseoss` - The container that holds the SSE-OSS encryption method.
+      * `format` - The file format of the manifest file.
+      * `prefix` - The storage path prefix for the manifest file.
+      * `role_arn` - The name of the role that has the permission to read all files in the source Bucket and write files to the target Bucket.
+  * `filter` - Container for inventory filtering rules.
+    * `last_modify_begin_time_stamp` - The start timestamp of the last modification time of the filter file, in seconds.
+    * `last_modify_end_time_stamp` - The end timestamp of the last modification time of the filter file, in seconds.
+    * `lower_size_bound` - The minimum size of the filter file, in B.
+    * `prefix` - The match prefix of the filter rule.
+    * `storage_class` - The storage type of the filter file.
+    * `upper_size_bound` - The maximum size of the filter file, in B.
+  * `included_object_versions` - Whether the Object version information is included in the list.
+  * `incremental_inventory` - Configuration container for incremental inventory.
+    * `is_enabled` - Incremental inventory enabled.
+    * `optional_fields` - Configuration container for incremental manifest file properties.
+      * `field` - Incremental inventory export field list.
+    * `schedule` - Incremental inventory export cycle container.
+      * `frequency` - Describes the period of incremental inventory file export, in seconds, currently fixed at 10 minutes.
+  * `inventory_id` - The ID of the inventory rule.
+  * `is_enabled` - Identification of whether the manifest feature is enabled.
+  * `optional_fields` - Sets the configuration items included in the manifest results.
+    * `field` - The configuration items contained in the manifest results.
+  * `schedule` - Container for storing inventory export cycle information.
+    * `frequency` - Period for manifest file export.
+  * `id` - The ID of the resource supplied above.

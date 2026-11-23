@@ -69,4 +69,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `target_id` - The ID of the Shared Target.
   * `resource_share_id` - The resource shared ID of resource manager.
   * `status` - The status of shared target.
-

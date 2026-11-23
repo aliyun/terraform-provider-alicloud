@@ -740,14 +740,14 @@ The following arguments are supported:
 * `force_encryption` - (Optional, Available since v1.277.0) Specifies whether to enable the forceful SSL encryption feature. This parameter is supported for ApsaraDB RDS for MySQL, PostgreSQL and SQL Server instances. Valid values:
   - 1: enables the feature.
   - 0: disables the feature.
-* `ssl_certificate` -(Optional, Available in 1.277.0) The custom certificate.
+* `ssl_certificate` - (Optional, Available in 1.277.0) The custom certificate.
   - Public endpoint: oss-<The ID of the region>.aliyuncs.com:<The name of the bucket>:<The name of the certificate file (The file name contains the extension.)>.
   - Internal endpoint: oss-<The ID of the region>-internal.aliyuncs.com:<The name of the bucket>:<The name of the certificate file (The file name contains the extension.)>.
-* `ssl_password` -(Optional, Available in 1.277.0) The password of the certificate.
-* `tde_private_key` -(Optional, Available in 1.277.0) The file that contains the private key of the certificate.<a class="workbench-show-detail toggle-down">.
-* `tde_certificate` -(Optional, Available in 1.277.0) The file that contains the certificate.<a class="workbench-show-detail toggle-down">.
-* `tde_password` -(Optional, Available in 1.277.0) The password of the certificate.
-* `tde_db_name` -(Optional, Available in 1.277.0) The name of the database for which you want to enable TDE. You can specify up to 50 database names in a single request. If you specify multiple database names, separate the database names with commas (,).
+* `ssl_password` - (Optional, Available in 1.277.0) The password of the certificate.
+* `tde_private_key` - (Optional, Available in 1.277.0) The file that contains the private key of the certificate.<a class="workbench-show-detail toggle-down">.
+* `tde_certificate` - (Optional, Available in 1.277.0) The file that contains the certificate.<a class="workbench-show-detail toggle-down">.
+* `tde_password` - (Optional, Available in 1.277.0) The password of the certificate.
+* `tde_db_name` - (Optional, Available in 1.277.0) The name of the database for which you want to enable TDE. You can specify up to 50 database names in a single request. If you specify multiple database names, separate the database names with commas (,).
 
   -> **NOTE:** This parameter is available and must be specified only when the instance runs SQL Server 2019 SE or an Enterprise Edition of SQL Server.
 

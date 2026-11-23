@@ -79,7 +79,7 @@ The entity_group supports the following:
 * `disable_policy_share` - (Optional, Bool, ForceNew, Available since v2.1.0) Specifies whether to disable unique policy binding. Default Value: `false`. Valid values: `true`, `false`.
 * `cluster_namespace` - (Optional, ForceNew, Available since v2.1.0) The cluster Namespace.
 
--> **NOTE:** If `disable_policy_share` is set to `true`, you can create multiple policies for a container cluster, and `cluster_namespace` is required.
+  -> **NOTE:** If `disable_policy_share` is set to `true`, you can create multiple policies for a container cluster, and `cluster_namespace` is required.
 
 ## Attributes Reference
 

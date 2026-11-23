@@ -160,7 +160,7 @@ The following arguments are supported:
 * `security_group_id` - (Optional) The security group ID.
 * `security_group_ids` - (Optional) The ID of security group N to which to assign the instance.
 * `spot_duration` - (Optional, Computed) The protection period of the preemptible instance. Unit: hours. Valid values: `0`, `1`, `2`, `3`, `4`, `5`, and `6`. Default to: `1`.
-* `spot_price_limit` -(Optional) Sets the maximum hourly instance price. Supports up to three decimal places.
+* `spot_price_limit` - (Optional) Sets the maximum hourly instance price. Supports up to three decimal places.
 * `spot_strategy` - (Optional) The spot strategy for a Pay-As-You-Go instance. This parameter is valid and required only when InstanceChargeType is set to PostPaid. Valid values: `NoSpot`, `SpotAsPriceGo`, `SpotWithPriceLimit`.
 * `system_disk` - (Optional) The System Disk. See [`system_disk`](#system_disk) below.
 * `template_resource_group_id` - (Optional, ForceNew) The template resource group id.

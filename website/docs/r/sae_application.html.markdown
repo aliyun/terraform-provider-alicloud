@@ -140,7 +140,7 @@ The following arguments are supported:
 * `acr_instance_id` - (Optional, Available since v1.189.0) The ID of the ACR EE instance. Only necessary if the image_url is pointing to an ACR EE instance.
 * `acr_assume_role_arn` - (Optional, Available since v1.189.0) The ARN of the RAM role required when pulling images across accounts. Only necessary if the image_url is pointing to an ACR EE instance.
 * `micro_registration` - (Optional, Available since v1.198.0) Select the Nacos registry. Valid values: `0`, `1`, `2`.
-* `envs` - (Optional) Container environment variable parameters. For example,`	[{"name":"envtmp","value":"0"}]`. The value description is as follows:
+* `envs` - (Optional) Container environment variable parameters. For example, `[{"name":"envtmp","value":"0"}]`. The value description is as follows:
   * `name` - environment variable name.
   * `value` - Environment variable value or environment variable reference.
 * `sls_configs` - (Optional, String) Configuration for log collection to SLS. Valid parameter descriptions are as follows:
@@ -191,17 +191,17 @@ The following arguments are supported:
 
 The custom_host_alias_v2 supports the following:
 
-* `host_name` (Optional) The domain name or hostname.
-* `ip` (Optional) The IP address.
+* `host_name` - (Optional) The domain name or hostname.
+* `ip` - (Optional) The IP address.
 
 ### `oss_mount_descs_v2`
 
 The oss_mount_descs_v2 supports the following:
 
-* `bucket_name` (Optional) The name of the OSS bucket.
-* `bucket_path` (Optional) The directory or object in OSS.
-* `mount_path` (Optional) The path of the container in SAE.
-* `read_only` (Optional, Bool) Specifies whether the application can use the container path to read data from or write data to resources in the directory of the OSS bucket. Valid values:
+* `bucket_name` - (Optional) The name of the OSS bucket.
+* `bucket_path` - (Optional) The directory or object in OSS.
+* `mount_path` - (Optional) The path of the container in SAE.
+* `read_only` - (Optional, Bool) Specifies whether the application can use the container path to read data from or write data to resources in the directory of the OSS bucket. Valid values:
   - `true`: The application has the read-only permissions.
   - `false`: The application has the read and write permissions.
 
@@ -209,18 +209,18 @@ The oss_mount_descs_v2 supports the following:
 
 The config_map_mount_desc_v2 supports the following:
 
-* `config_map_id` (Optional) The ID of the ConfigMap.
-* `mount_path` (Optional) The mount path.
-* `key` (Optional) The key.
+* `config_map_id` - (Optional) The ID of the ConfigMap.
+* `mount_path` - (Optional) The mount path.
+* `key` - (Optional) The key.
 
 ### `liveness_v2`
 
 The liveness_v2 supports the following:
 
-* `initial_delay_seconds` (Optional, Int) The delay of the health check.
-* `period_seconds` (Optional, Int) The interval at which the health check is performed.
-* `timeout_seconds` (Optional, Int) The timeout period of the health check.
-* `failure_threshold` (Optional, Int, Available since v1.262.0) The number of consecutive failures required before considering the container as unhealthy. Increasing this value makes the container more tolerant to transient failures.
+* `initial_delay_seconds` - (Optional, Int) The delay of the health check.
+* `period_seconds` - (Optional, Int) The interval at which the health check is performed.
+* `timeout_seconds` - (Optional, Int) The timeout period of the health check.
+* `failure_threshold` - (Optional, Int, Available since v1.262.0) The number of consecutive failures required before considering the container as unhealthy. Increasing this value makes the container more tolerant to transient failures.
 * `exec` - (Optional, Set) Execute. See [`exec`](#liveness_v2-exec) below.
 * `tcp_socket` - (Optional, Set) The liveness check settings of the container. See [`tcp_socket`](#liveness_v2-tcp_socket) below.
 * `http_get` - (Optional, Set) The liveness check settings of the container. See [`http_get`](#liveness_v2-http_get) below.
@@ -235,27 +235,27 @@ The exec supports the following:
 
 The tcp_socket supports the following:
 
-* `port` (Optional, Int) The port that is used to check the status of TCP connections.
+* `port` - (Optional, Int) The port that is used to check the status of TCP connections.
 
 ### `liveness_v2-http_get`
 
 The http_get supports the following:
 
-* `path` (Optional) The request path.
-* `port` (Optional, Int) The port.
-* `scheme` (Optional) The protocol that is used to perform the health check. Valid values: `HTTP` and `HTTPS`.
-* `key_word` (Optional) The custom keywords.
-* `is_contain_key_word` (Optional, Bool) Specifies whether the response contains keywords. Valid values: `true` and `false`. If you do not set it, the advanced settings are not used.
+* `path` - (Optional) The request path.
+* `port` - (Optional, Int) The port.
+* `scheme` - (Optional) The protocol that is used to perform the health check. Valid values: `HTTP` and `HTTPS`.
+* `key_word` - (Optional) The custom keywords.
+* `is_contain_key_word` - (Optional, Bool) Specifies whether the response contains keywords. Valid values: `true` and `false`. If you do not set it, the advanced settings are not used.
 
 ### `readiness_v2`
 
 The readiness_v2 supports the following:
 
-* `initial_delay_seconds` (Optional, Int) The delay of the health check.
-* `period_seconds` (Optional, Int) The interval at which the health check is performed.
-* `timeout_seconds` (Optional, Int) The timeout period of the health check.
-* `success_threshold` (Optional, Int, Available since v1.262.0) The number of consecutive successes required before considering the container as healthy. Increasing this value makes the container more tolerant to transient successes during recovery.
-* `failure_threshold` (Optional, Int, Available since v1.262.0) The number of consecutive failures required before considering the container as unhealthy. Increasing this value makes the container more tolerant to transient failures.
+* `initial_delay_seconds` - (Optional, Int) The delay of the health check.
+* `period_seconds` - (Optional, Int) The interval at which the health check is performed.
+* `timeout_seconds` - (Optional, Int) The timeout period of the health check.
+* `success_threshold` - (Optional, Int, Available since v1.262.0) The number of consecutive successes required before considering the container as healthy. Increasing this value makes the container more tolerant to transient successes during recovery.
+* `failure_threshold` - (Optional, Int, Available since v1.262.0) The number of consecutive failures required before considering the container as unhealthy. Increasing this value makes the container more tolerant to transient failures.
 * `exec` - (Optional, Set) Execute. See [`exec`](#readiness_v2-exec) below.
 * `tcp_socket` - (Optional, Set) The liveness check settings of the container. See [`tcp_socket`](#readiness_v2-tcp_socket) below.
 * `http_get` - (Optional, Set) The liveness check settings of the container. See [`http_get`](#readiness_v2-http_get) below.
@@ -270,17 +270,17 @@ The exec supports the following:
 
 The tcp_socket supports the following:
 
-* `port` (Optional, Int) The port that is used to check the status of TCP connections.
+* `port` - (Optional, Int) The port that is used to check the status of TCP connections.
 
 ### `readiness_v2-http_get`
 
 The http_get supports the following:
 
-* `path` (Optional) The request path.
-* `port` (Optional, Int) The port.
-* `scheme` (Optional) The protocol that is used to perform the health check. Valid values: `HTTP` and `HTTPS`.
-* `key_word` (Optional) The custom keywords.
-* `is_contain_key_word` (Optional, Bool) Specifies whether the response contains keywords. Valid values: `true` and `false`. If you do not set it, the advanced settings are not used.
+* `path` - (Optional) The request path.
+* `port` - (Optional, Int) The port.
+* `scheme` - (Optional) The protocol that is used to perform the health check. Valid values: `HTTP` and `HTTPS`.
+* `key_word` - (Optional) The custom keywords.
+* `is_contain_key_word` - (Optional, Bool) Specifies whether the response contains keywords. Valid values: `true` and `false`. If you do not set it, the advanced settings are not used.
 
 ### `post_start_v2`
 
@@ -310,17 +310,17 @@ The exec supports the following:
 
 The tomcat_config_v2 supports the following:
 
-* `port` (Optional, Int) The port.
-* `max_threads` (Optional, Int) The maximum number of connections in the connection pool.
-* `context_path` (Optional) The path.
-* `uri_encoding` (Optional) The URI encoding scheme in the Tomcat container.
-* `use_body_encoding_for_uri` (Optional) Specifies whether to use the encoding scheme that is specified by BodyEncoding for URL.
+* `port` - (Optional, Int) The port.
+* `max_threads` - (Optional, Int) The maximum number of connections in the connection pool.
+* `context_path` - (Optional) The path.
+* `uri_encoding` - (Optional) The URI encoding scheme in the Tomcat container.
+* `use_body_encoding_for_uri` - (Optional) Specifies whether to use the encoding scheme that is specified by BodyEncoding for URL.
 
 ### `update_strategy_v2`
 
 The update_strategy_v2 supports the following:
 
-* `type` (Optional) The type of the release policy. Valid values: `GrayBatchUpdate` and `BatchUpdate`.
+* `type` - (Optional) The type of the release policy. Valid values: `GrayBatchUpdate` and `BatchUpdate`.
 * `batch_update` - (Optional, Set) The phased release policy. See [`batch_update`](#update_strategy_v2-batch_update) below.
 
 ### `update_strategy_v2-batch_update`
@@ -328,25 +328,25 @@ The update_strategy_v2 supports the following:
 The batch_update supports the following:
 
 * `release_type` - (Optional) The processing method for the batches. Valid values: `auto` and `manual`.
-* `batch` (Optional, Int) The number of batches in which you want to release the instances.
-* `batch_wait_time` (Optional, Int) The time interval at which the instances in a batch are deployed. Unit: seconds.
+* `batch` - (Optional, Int) The number of batches in which you want to release the instances.
+* `batch_wait_time` - (Optional, Int) The time interval at which the instances in a batch are deployed. Unit: seconds.
 
 ### `nas_configs`
 
 The nas_configs supports the following:
 
-* `nas_id` (Optional) The ID of the NAS file system.
-* `nas_path` (Optional, Int) The directory in the NAS file system.
-* `mount_path` (Optional) The mount path of the container.
-* `mount_domain` (Optional) The domain name of the mount target.
-* `read_only` (Optional, Bool) Specifies whether the application can read data from or write data to resources in the directory of the NAS. Valid values: `true` and `false`. If you set `read_only` to `false`, the application has the read and write permissions.
+* `nas_id` - (Optional) The ID of the NAS file system.
+* `nas_path` - (Optional, Int) The directory in the NAS file system.
+* `mount_path` - (Optional) The mount path of the container.
+* `mount_domain` - (Optional) The domain name of the mount target.
+* `read_only` - (Optional, Bool) Specifies whether the application can read data from or write data to resources in the directory of the NAS. Valid values: `true` and `false`. If you set `read_only` to `false`, the application has the read and write permissions.
 
 ### `kafka_configs`
 
 The kafka_configs supports the following:
 
-* `kafka_instance_id` (Optional) The  ID of the ApsaraMQ for Kafka instance.
-* `kafka_endpoint` (Optional) The endpoint of the ApsaraMQ for Kafka API.
+* `kafka_instance_id` - (Optional) The  ID of the ApsaraMQ for Kafka instance.
+* `kafka_endpoint` - (Optional) The endpoint of the ApsaraMQ for Kafka API.
 * `kafka_configs` - (Optional, Set) One or more logging configurations of ApsaraMQ for Kafka. See [`kafka_configs`](#kafka_configs-kafka_configs) below.
 
 ### `kafka_configs-kafka_configs`
@@ -354,16 +354,16 @@ The kafka_configs supports the following:
 The kafka_configs supports the following:
 
 * `log_type` - (Optional) The type of the log.
-* `log_dir` (Optional) The path in which logs are stored.
-* `kafka_topic` (Optional) The topic of the Kafka.
+* `log_dir` - (Optional) The path in which logs are stored.
+* `kafka_topic` - (Optional) The topic of the Kafka.
 
 ### `pvtz_discovery_svc`
 
 The pvtz_discovery_svc supports the following:
 
 * `service_name` - (Optional, ForceNew) The name of the Service.
-* `namespace_id` (Optional, ForceNew) The ID of the namespace.
-* `enable` (Optional, Bool) Enables the Kubernetes Service-based registration and discovery feature.
+* `namespace_id` - (Optional, ForceNew) The ID of the namespace.
+* `enable` - (Optional, Bool) Enables the Kubernetes Service-based registration and discovery feature.
 * `port_protocols` - (Optional, Set) The port number and protocol. See [`port_protocols`](#pvtz_discovery_svc-port_protocols) below.
 
 ### `pvtz_discovery_svc-port_protocols`
@@ -371,7 +371,7 @@ The pvtz_discovery_svc supports the following:
 The port_protocols supports the following:
 
 * `port` - (Optional, Int) The port.
-* `protocol` (Optional) The protocol. Valid values: `TCP` and `UDP`.
+* `protocol` - (Optional) The protocol. Valid values: `TCP` and `UDP`.
 
 ## Attributes Reference
 

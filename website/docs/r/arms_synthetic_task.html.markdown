@@ -330,7 +330,7 @@ Default 1.
   - 0: Do not validate
   - 1: Validation string
   - 2:MD5 validation.
-* `white_list` - (Optional) DNS hijack whitelist. Match rules support IP, IP wildcard, subnet mask, and CNAME. Multiple match rules can be filled in. Multiple match rules are separated by vertical bars (|). For example, www.aliyun.com:203.0.3.55 | 203.3.44.67 indicates that all other IP addresses under the www.aliyun.com domain except 203.0.3.55 and 203.3.44.67 are hijacked.
+* `white_list` - (Optional) DNS hijack whitelist. Match rules support IP, IP wildcard, subnet mask, and CNAME. Multiple match rules can be filled in. Multiple match rules are separated by vertical bars (|). For example, <www.aliyun.com:203.0.3.55> | 203.3.44.67 indicates that all other IP addresses under the <www.aliyun.com> domain except 203.0.3.55 and 203.3.44.67 are hijacked.
 
 ### `monitor_conf-net_dns`
 
@@ -387,7 +387,7 @@ The monitor_conf-stream supports the following:
 * `stream_monitor_timeout` - (Optional) Monitoring duration, in seconds, up to 60s, not 60 by default.
 * `stream_type` - (Optional) Audio and video flags: 0-video, 1-audio.
 * `target_url` - (Optional) The streaming media resource address.
-* `white_list` - (Optional) DNS hijack whitelist. Match rules support IP, IP wildcard, subnet mask, and CNAME. Multiple match rules can be filled in. Multiple match rules are separated by vertical bars (|). For example, www.aliyun.com:203.0.3.55 | 203.3.44.67 indicates that all other IP addresses under the www.aliyun.com domain except 203.0.3.55 and 203.3.44.67 are hijacked.
+* `white_list` - (Optional) DNS hijack whitelist. Match rules support IP, IP wildcard, subnet mask, and CNAME. Multiple match rules can be filled in. Multiple match rules are separated by vertical bars (|). For example, <www.aliyun.com:203.0.3.55> | 203.3.44.67 indicates that all other IP addresses under the <www.aliyun.com> domain except 203.0.3.55 and 203.3.44.67 are hijacked.
 
 ### `monitor_conf-website`
 
@@ -405,14 +405,14 @@ The monitor_conf-website supports the following:
   - 0: not disabled
   - 1 (default): Disabled.
 * `disable_compression` - (Optional) The Accept-Encoding field is used to determine whether to Accept compressed files. 0-do not disable, 1-disable, the default is 0.
-* `dns_hijack_whitelist` - (Optional) When a domain name (such as www.aliyun.com) is resolved, if the resolved IP address or CNAME is not in the DNS hijacking white list, the user will fail to access or return a target IP address that is not Aliyun. If the IP or CNAME in the resolution result is in the DNS white list, it will be determined that DNS hijacking has not occurred.  Fill in the format: Domain name: matching rules. Match rules support IP, IP wildcard, subnet mask, and CNAME. Multiple match rules can be filled in. Multiple match rules are separated by vertical bars (|). For example, www.aliyun.com:203.0.3.55 | 203.3.44.67 indicates that all other IP addresses under the www.aliyun.com domain except 203.0.3.55 and 203.3.44.67 are hijacked.
+* `dns_hijack_whitelist` - (Optional) When a domain name (such as <www.aliyun.com>) is resolved, if the resolved IP address or CNAME is not in the DNS hijacking white list, the user will fail to access or return a target IP address that is not Aliyun. If the IP or CNAME in the resolution result is in the DNS white list, it will be determined that DNS hijacking has not occurred.  Fill in the format: Domain name: matching rules. Match rules support IP, IP wildcard, subnet mask, and CNAME. Multiple match rules can be filled in. Multiple match rules are separated by vertical bars (|). For example, <www.aliyun.com:203.0.3.55> | 203.3.44.67 indicates that all other IP addresses under the <www.aliyun.com> domain except 203.0.3.55 and 203.3.44.67 are hijacked.
 * `element_blacklist` - (Optional) If an element configured in the element blacklist appears during page loading, the element is not requested to be loaded.
 * `filter_invalid_ip` - (Optional) Whether to filter invalid IP parameters. 0: filter, 1: do not filter. The default value is 0.
 * `flow_hijack_jump_times` - (Optional) Identify elements: Set the total number of elements on the Browse page.
 * `flow_hijack_logo` - (Optional) Hijacking ID: Set the matching key information. Enter the hijacking keyword or key element, with an asterisk (*) allowed.
 * `ignore_certificate_error` - (Optional) Whether to ignore certificate errors during certificate verification in SSL Handshake and continue browsing. 0-do not ignore, 1-ignore. The default value is 1.
 * `monitor_timeout` - (Optional) Monitoring timeout, in ms. Not required, 20000 by default.
-* `page_tamper` - (Optional) Monitoring the page appears to be tampered with elements other than the domain settings that belong to the page. Common manifestations are pop-up advertisements, floating advertisements, jumps, etc.  Fill in the format: Domain name: Element. You can fill multiple elements separated by a vertical bar (|). For example, www.aliyun.com:|/cc/bb/a.gif |/vv/bb/cc.jpg indicates that all the other elements of the www.aliyun.com domain name except the basic document,/cc/bb/a.gif, and/vv/bb/cc.jpg are tampered.
+* `page_tamper` - (Optional) Monitoring the page appears to be tampered with elements other than the domain settings that belong to the page. Common manifestations are pop-up advertisements, floating advertisements, jumps, etc.  Fill in the format: Domain name: Element. You can fill multiple elements separated by a vertical bar (|). For example, <www.aliyun.com:|/cc/bb/a.gif> |/vv/bb/cc.jpg indicates that all the other elements of the <www.aliyun.com> domain name except the basic document,/cc/bb/a.gif, and/vv/bb/cc.jpg are tampered.
 * `redirection` - (Optional) When redirection occurs, whether to continue browsing, 0-No, 1-Yes, the default is 1.
 * `slow_element_threshold` - (Optional) The slow element threshold, in ms, is 5000 by default and can be selected from 1 to 300000ms.
 * `target_url` - (Required) The target URL.

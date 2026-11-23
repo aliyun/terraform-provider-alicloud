@@ -100,7 +100,7 @@ The following arguments are supported:
 
 * `ha_vip_id` - (Optional, ForceNew, Available since v1.211.0) The ID of the HaVip instance.
 * `instance_id` - (Required, ForceNew) The ID of the ECS instance bound to the HaVip instance.
-* `instance_type` - (Optional, ForceNew, Computed) The type of the instance to be associated with the HAVIP. Valid values: * `EcsInstance`: an ECS instance * `NetworkInterface`: an ENI. If you want to associate the HAVIP with an ENI, this parameter is required.
+* `instance_type` - (Optional, ForceNew, Computed) The type of the instance to be associated with the HAVIP. Valid values: *`EcsInstance`: an ECS instance* `NetworkInterface`: an ENI. If you want to associate the HAVIP with an ENI, this parameter is required.
 * `havip_id` - (Deprecated since v1.259.0). Field 'havip_id' has been deprecated from provider version 1.259.0. New field 'ha_vip_id' instead.
 * `force` - (Optional, Bool) Specifies whether to force delete the snapshot.
 

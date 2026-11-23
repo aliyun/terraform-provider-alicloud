@@ -7,11 +7,12 @@ description: |-
     Provides a list of VPN Pbr Route Entries which owned by an Alicloud account.
 ---
 
--> **NOTE:** Available since v1.162.0+.
 
 # alicloud_vpn_pbr_route_entries
 
 The data source lists a number of VPN Pbr Route Entries resource information owned by an Alicloud account.
+
+-> **NOTE:** Available since v1.162.0+.
 
 ## Example Usage
 

@@ -103,7 +103,7 @@ The following arguments are supported:
   - false (default): non-mandatory
 
 * `host_name` - (Optional, Computed, Available since v1.208.0) The host name of the instance. Example value: test-HostName
-* `image_id` - (Optional, ForceNew, Available since v1.208.0) The image ID of the instance. The arm version card cannot be filled in. Other specifications are required. Example value: m-5si16wo6simkt267p8b7h * * * *
+* `image_id` - (Optional, ForceNew, Available since v1.208.0) The image ID of the instance. The arm version card cannot be filled in. Other specifications are required. Example value: m-5si16wo6simkt267p8b7h
 * `include_data_disks` - (Optional) Whether the Payment type of the disk created with the instance is converted.
 * `instance_charge_strategy` - (Optional, Available since v1.208.0) The instance billing policy. Optional values:
   - instance: instance granularity (the subscription method does not support instance)

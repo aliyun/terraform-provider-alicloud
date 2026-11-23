@@ -95,7 +95,7 @@ The resource_change_delivery supports the following:
 
 Valid values:
 
-  - SLS
+- SLS
 
 ### `resource_change_delivery-sls_properties`
 
@@ -115,15 +115,15 @@ The resource_snapshot_delivery supports the following:
   - true
   - false
 * `sls_properties` - (Optional, List) The Simple Log Service configurations. See [`sls_properties`](#resource_snapshot_delivery-sls_properties) below.
-* `target_arn` - (Optional) - The Alibaba Cloud Resource Name (ARN) of the delivery destination.
+* `target_arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of the delivery destination.
   - If you set TargetType to`OSS`, you must set TargetArn to the ARN of a bucket whose name is prefixed with `resourcecenter-`.
   - If you set TargetType to `SLS`, you must set TargetArn to the ARN of a Logstore whose name is prefixed with `resourcecenter-`.
 * `target_type` - (Optional) The type of the delivery destination.
 
 Valid values:
 
-  - `OSS` for standard delivery
-  - `OSS` or `SLS` for custom delivery
+- `OSS` for standard delivery
+- `OSS` or `SLS` for custom delivery
 
 ### `resource_snapshot_delivery-sls_properties`
 

@@ -114,12 +114,12 @@ For the meanings of different country codes, see the **International Codes** sec
 
 The `days`, `before_time`, and `after_time` parameters cannot all be empty. Additionally, `before_time` and `after_time` must either both be set or both remain unset. The specific rules are as follows:  
 
-  - If you set the `days` parameter, you may optionally also set `before_time` and `after_time`.  
-  - If you do not set the `days` parameter, you must set both `before_time` and `after_time`.  
+- If you set the `days` parameter, you may optionally also set `before_time` and `after_time`.
+- If you do not set the `days` parameter, you must set both `before_time` and `after_time`.
 
 -> **NOTE:** - If you set `days`, `before_time`, and `after_time` simultaneously, the validity period of the client certificate is determined by the value of `days`.  
 
-  - The validity period of the client certificate cannot exceed that of the issuing subordinate CA certificate. You can call [DescribeCACertificate](https://help.aliyun.com/document_detail/465954.html) to check the validity period of the subordinate CA certificate.  
+- The validity period of the client certificate cannot exceed that of the issuing subordinate CA certificate. You can call [DescribeCACertificate](https://help.aliyun.com/document_detail/465954.html) to check the validity period of the subordinate CA certificate.
 
 * `enable_crl` - (Optional, Int) Whether to include the CRL URL. Valid values:
   - `0`: No.

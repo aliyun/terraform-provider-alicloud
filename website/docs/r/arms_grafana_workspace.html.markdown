@@ -77,7 +77,7 @@ The value of GrafanaWorkspaceEdition is advanced_edition. This parameter is inva
   - PricingCycle is set to Year, indicating annual payment. The value range is 1 to 3. Default value: 1.
 * `grafana_version` - (Optional) Grafana version
 * `grafana_workspace_edition` - (Optional, ForceNew) The edition. **Valid values:**
-  - standard: `Beta Edition(For internal testing only) `
+  - standard: `Beta Edition(For internal testing only)`
   - personal_edition: Developer Edition
   - experts_edition: Pro Edition
   - advanced_edition: Advanced Edition

@@ -108,9 +108,9 @@ The following arguments are supported:
 * `cluster_id` - (Required) The id of kubernetes cluster.
 * `nodepools` - (Optional) The list of the node pools. See [`nodepools`](#nodepools) below.
 * `utilization` - (Required) The utilization option of cluster-autoscaler.
-* `cool_down_duration` (Required) The cool_down_duration option of cluster-autoscaler.  
-* `defer_scale_in_duration` (Required) The defer_scale_in_duration option of cluster-autoscaler.
-* `use_ecs_ram_role_token` (Optional, Available since v1.88.0) Enable autoscaler access to alibabacloud service by ecs ramrole token. default: false
+* `cool_down_duration` - (Required) The cool_down_duration option of cluster-autoscaler.
+* `defer_scale_in_duration` - (Required) The defer_scale_in_duration option of cluster-autoscaler.
+* `use_ecs_ram_role_token` - (Optional, Available since v1.88.0) Enable autoscaler access to alibabacloud service by ecs ramrole token. default: false
 
 ### `nodepools`
 
@@ -123,11 +123,12 @@ The nodepools mapping supports the following:
 ## Ignoring Changes to tags and user_data
 
 -> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://www.terraform.io/docs/configuration/resources.html) with `ignore_changes` to create a  a autoscaler group, then ignore any changes to that tags and user_data caused externally (e.g. Application Autoscaling).
-```
-  # ... ignore the change about tags and user_data in alicloud_ess_scaling_configuration
-  lifecycle {
-    ignore_changes = [tags,user_data]
-  }
+
+```terraform
+# ... ignore the change about tags and user_data in alicloud_ess_scaling_configuration
+lifecycle {
+  ignore_changes = [tags, user_data]
+}
 ```
 
 ## Timeouts

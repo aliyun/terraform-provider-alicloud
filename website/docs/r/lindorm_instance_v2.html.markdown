@@ -97,9 +97,9 @@ The following arguments are supported:
 
 Enumeration value:
 
-  - **1.0**: Single Zone
-  - **2.0**: Multi-AZ Basic Edition
-  - **3.0**: Multi-AZ High Availability Edition
+- **1.0**: Single Zone
+- **2.0**: Multi-AZ Basic Edition
+- **3.0**: Multi-AZ High Availability Edition
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
@@ -129,9 +129,9 @@ The default value is false
 
 Enumeration value:
 
-  - `StandardStorage`: Standard cloud storage
-  - **Performance storage**: Performance-based cloud storage
-  - **Capacity Storage**: Capacity-based cloud storage
+- `StandardStorage`: Standard cloud storage
+- **Performance storage**: Performance-based cloud storage
+- **Capacity Storage**: Capacity-based cloud storage
 
 * `deletion_protection` - (Optional, Computed) Whether to enable deletion protection
 * `duration` - (Optional, Int, Available since v1.262.0) The specified duration when the resource is purchased. Only the subscription instances are valid.
@@ -144,8 +144,8 @@ Enumeration value:
 
 Enumeration value:
 
-  - `PREPAY`: Prepaid mode
-  - `POSTPAY`: Postpay mode
+- `PREPAY`: Prepaid mode
+- `POSTPAY`: Postpay mode
 
 * `pricing_cycle` - (Optional, Available since v1.262.0) Purchase duration unit: Month, Year
 
@@ -168,17 +168,17 @@ The engine_list supports the following:
 
 Enumeration value:
 
-  - `TABLE`: Wide table engine
-  - `TSDB`: Time series Engine
-  - `LSEARCH`: Search engine
-  - `LTS`: LTS engine
-  - `LVECTOR`: Vector engine
-  - `LCOLUMN`: Column-store engine
-  - `LAI`: AI engine
-  - `FILE`: The underlying file engine
-  - `LMESSAGE`: Message engine
-  - `LROW`: Wide table Engine 3.0
-  - `LSTREAM`: Stream engine
+- `TABLE`: Wide table engine
+- `TSDB`: Time series Engine
+- `LSEARCH`: Search engine
+- `LTS`: LTS engine
+- `LVECTOR`: Vector engine
+- `LCOLUMN`: Column-store engine
+- `LAI`: AI engine
+- `FILE`: The underlying file engine
+- `LMESSAGE`: Message engine
+- `LROW`: Wide table Engine 3.0
+- `LSTREAM`: Stream engine
 
 * `node_group` - (Optional, Set) Node Group List See [`node_group`](#engine_list-node_group) below.
 

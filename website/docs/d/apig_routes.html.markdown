@@ -146,52 +146,52 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Route IDs.
 * `names` - A list of name of Routes.
 * `routes` - A list of Route Entries. Each element contains the following attributes:
-    * `backend` - Backend service.
-        * `scene` - The backend service scenario.
-        * `services` - Backend service.
-            * `name` - The name of the service.
-            * `port` - Service port.
-            * `protocol` - Service protocol.
-            * `service_id` - Service ID.
-            * `version` - Service version.
-            * `weight` - The percentage value of the traffic ratio.
-    * `builtin` - Indicates whether the route is a built-in route.
-    * `create_time` - The creation time in UTC format: yyyy-MM-ddTHH:mm:ssZ.
-    * `description` - The description of the route.
-    * `domain_infos` - The domain name information.
-        * `domain_id` - The domain name ID.
-        * `name` - The domain name.
-        * `protocol` - The domain name protocol: HTTPS or HTTP.
-    * `environment_info` - The environment information of the route.
-        * `alias` - The alias of the environment name.
-        * `environment_id` - The environment ID.
-        * `gateway_info` - The gateway instance information corresponding to the environment.
-            * `gateway_edition` - The edition of the gateway instance.
-            * `gateway_id` - The ID of the Cloud-native API Gateway.
-            * `name` - The name of the gateway.
-        * `name` - The environment name.
-        * `sub_domains` - The default second-level domain names of the environment.
-            * `domain_id` - The ID of the second-level domain name.
-            * `name` - The name of the second-level domain name.
-            * `network_type` - The domain access type, such as Intranet or Internet.
-            * `protocol` - The domain protocol, such as HTTP or HTTPS.
-    * `gateway_status` - The publishing status of the route on each gateway.
-    * `match` - The route match rule.
-        * `headers` - The list of HTTP request header matching rules.
-            * `name` - The header name.
-            * `type` - The header matching rule type.
-            * `value` - The header value.
-        * `ignore_uri_case` - Specifies whether the path is case-sensitive.
-        * `methods` - The request method.
-        * `path` - The path rule.
-            * `type` - The path matching type.
-            * `value` - The path value.
-        * `query_params` - The matching rules for query parameters.
-            * `name` - The parameter name.
-            * `type` - The matching rule for the query parameter.
-            * `value` - The parameter value.
-    * `route_id` - The route ID.
-    * `route_name` - The name of the route.
-    * `status` - The deployment status of the route.
-    * `update_time` - The update time in Greenwich Mean Time (GMT).
-    * `id` - The ID of the resource supplied above.
+  * `backend` - Backend service.
+    * `scene` - The backend service scenario.
+    * `services` - Backend service.
+      * `name` - The name of the service.
+      * `port` - Service port.
+      * `protocol` - Service protocol.
+      * `service_id` - Service ID.
+      * `version` - Service version.
+      * `weight` - The percentage value of the traffic ratio.
+  * `builtin` - Indicates whether the route is a built-in route.
+  * `create_time` - The creation time in UTC format: yyyy-MM-ddTHH:mm:ssZ.
+  * `description` - The description of the route.
+  * `domain_infos` - The domain name information.
+    * `domain_id` - The domain name ID.
+    * `name` - The domain name.
+    * `protocol` - The domain name protocol: HTTPS or HTTP.
+  * `environment_info` - The environment information of the route.
+    * `alias` - The alias of the environment name.
+    * `environment_id` - The environment ID.
+    * `gateway_info` - The gateway instance information corresponding to the environment.
+      * `gateway_edition` - The edition of the gateway instance.
+      * `gateway_id` - The ID of the Cloud-native API Gateway.
+      * `name` - The name of the gateway.
+    * `name` - The environment name.
+    * `sub_domains` - The default second-level domain names of the environment.
+      * `domain_id` - The ID of the second-level domain name.
+      * `name` - The name of the second-level domain name.
+      * `network_type` - The domain access type, such as Intranet or Internet.
+      * `protocol` - The domain protocol, such as HTTP or HTTPS.
+  * `gateway_status` - The publishing status of the route on each gateway.
+  * `match` - The route match rule.
+    * `headers` - The list of HTTP request header matching rules.
+      * `name` - The header name.
+      * `type` - The header matching rule type.
+      * `value` - The header value.
+    * `ignore_uri_case` - Specifies whether the path is case-sensitive.
+    * `methods` - The request method.
+    * `path` - The path rule.
+      * `type` - The path matching type.
+      * `value` - The path value.
+    * `query_params` - The matching rules for query parameters.
+      * `name` - The parameter name.
+      * `type` - The matching rule for the query parameter.
+      * `value` - The parameter value.
+  * `route_id` - The route ID.
+  * `route_name` - The name of the route.
+  * `status` - The deployment status of the route.
+  * `update_time` - The update time in Greenwich Mean Time (GMT).
+  * `id` - The ID of the resource supplied above.

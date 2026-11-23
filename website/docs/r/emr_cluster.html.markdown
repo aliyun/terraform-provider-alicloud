@@ -551,23 +551,23 @@ The following arguments are supported:
 * `cluster_type` - (Required, ForceNew) EMR Cluster Type, e.g. HADOOP, KAFKA, DRUID, GATEWAY etc. You can find all valid EMR cluster type in emr web console. Supported 'GATEWAY' available in 1.61.0+.
 * `charge_type` - (Optional, ForceNew) Charge Type for this cluster. Supported value: PostPaid or PrePaid. Default value: PostPaid.
 * `zone_id` - (Required, ForceNew) Zone ID, e.g. cn-huhehaote-a
-* `security_group_id` (Optional, ForceNew) Security Group ID for Cluster, you can also specify this key for each host group.
-* `vswitch_id` (Optional, ForceNew) Global vswitch id, you can also specify it in host group.
-* `option_software_list` (Optional, ForceNew) Optional software list.
-* `high_availability_enable` (Optional, ForceNew) High Available for HDFS and YARN. If this is set true, MASTER group must have two nodes.
-* `use_local_metadb` (Optional, ForceNew) Use local metadb. Default is false.
-* `ssh_enable` (Optional, ForceNew) If this is set true, we can ssh into cluster. Default value is false.
-* `master_pwd` (Optional, ForceNew) Master ssh password.
-* `eas_enable` (Optional, ForceNew) High security cluster (true) or not. Default value is false.
-* `user_defined_emr_ecs_role` (Optional, ForceNew) Alicloud EMR uses roles to perform actions on your behalf when provisioning cluster resources, running applications, dynamically scaling resources. EMR uses the following roles when interacting with other Alicloud services. Default value is AliyunEmrEcsDefaultRole.
-* `key_pair_name` (Optional, ForceNew) Ssh key pair.
-* `deposit_type` (Optional, ForceNew) Cluster deposit type, HALF_MANAGED or FULL_MANAGED.
-* `related_cluster_id` (Optional, ForceNew) This specify the related cluster id, if this cluster is a Gateway.
+* `security_group_id` - (Optional, ForceNew) Security Group ID for Cluster, you can also specify this key for each host group.
+* `vswitch_id` - (Optional, ForceNew) Global vswitch id, you can also specify it in host group.
+* `option_software_list` - (Optional, ForceNew) Optional software list.
+* `high_availability_enable` - (Optional, ForceNew) High Available for HDFS and YARN. If this is set true, MASTER group must have two nodes.
+* `use_local_metadb` - (Optional, ForceNew) Use local metadb. Default is false.
+* `ssh_enable` - (Optional, ForceNew) If this is set true, we can ssh into cluster. Default value is false.
+* `master_pwd` - (Optional, ForceNew) Master ssh password.
+* `eas_enable` - (Optional, ForceNew) High security cluster (true) or not. Default value is false.
+* `user_defined_emr_ecs_role` - (Optional, ForceNew) Alicloud EMR uses roles to perform actions on your behalf when provisioning cluster resources, running applications, dynamically scaling resources. EMR uses the following roles when interacting with other Alicloud services. Default value is AliyunEmrEcsDefaultRole.
+* `key_pair_name` - (Optional, ForceNew) Ssh key pair.
+* `deposit_type` - (Optional, ForceNew) Cluster deposit type, HALF_MANAGED or FULL_MANAGED.
+* `related_cluster_id` - (Optional, ForceNew) This specify the related cluster id, if this cluster is a Gateway.
 * `host_group` - (Optional) Groups of Host, You can specify MASTER as a group, CORE as a group (just like the above example). See [`host_group`](#host_group) below.
 * `tags` - (Optional, Available since v1.67.0) A mapping of tags to assign to the resource.
 * `period` - (Optional, Available since v1.101.0) If charge type is PrePaid, this should be specified, unit is month. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36.
-* `is_open_public_ip` (Optional, ForceNew) Whether the MASTER node has a public IP address enabled. Default value is false.
-* `bootstrap_action` (Optional) Boot action parameters. See [`bootstrap_action`](#bootstrap_action) below.
+* `is_open_public_ip` - (Optional, ForceNew) Whether the MASTER node has a public IP address enabled. Default value is false.
+* `bootstrap_action` - (Optional) Boot action parameters. See [`bootstrap_action`](#bootstrap_action) below.
 * `resource_group_id` - (Optional, Available since v1.182.0) The Id of resource group which the emr-cluster belongs.
 * `meta_store_type` - (Optional, ForceNew, Available since v1.182.0) The type of emr-cluster service component metadata storage. ’dlf’ or ’local’ or ’user_rds’ .
 * `meta_store_conf` - (Optional, Available since v1.182.0) The configuration of emr-cluster service component metadata storage. If meta store type is ’user_rds’, this should be specified. See [`meta_store_conf`](#meta_store_conf) below.

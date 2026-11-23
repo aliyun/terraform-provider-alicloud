@@ -95,9 +95,9 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Plugin IDs.
 * `plugins` - A list of Plugin Entries. Each element contains the following attributes:
-    * `gateway_id` - The filter parameter for the gateway instance ID.
-    * `gateway_name` - The gateway name.
-    * `plugin_class_id` - The plugin class ID.
-    * `plugin_class_name` - The filter parameter for the plugin class name.
-    * `plugin_id` - The plugin ID.
-    * `id` - The ID of the resource supplied above.
+  * `gateway_id` - The filter parameter for the gateway instance ID.
+  * `gateway_name` - The gateway name.
+  * `plugin_class_id` - The plugin class ID.
+  * `plugin_class_name` - The filter parameter for the plugin class name.
+  * `plugin_id` - The plugin ID.
+  * `id` - The ID of the resource supplied above.

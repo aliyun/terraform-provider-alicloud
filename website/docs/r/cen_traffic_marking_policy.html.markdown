@@ -76,11 +76,11 @@ The flow classification rule matches the traffic of the destination port number 
 
 The current parameter supports a maximum of 2 port numbers. The input format is described as follows:
 
-  - If you only enter a port number, such as 1, the system defaults to match the traffic with the destination port of 1.
-  - If you enter 2 port numbers, such as 1 and 200, the system defaults to match the traffic of the destination port in the range of 1 to 200.
-  - If you enter 2 port numbers and one of them is - 1, the other port must also be - 1, indicating that it matches any destination port.
+- If you only enter a port number, such as 1, the system defaults to match the traffic with the destination port of 1.
+- If you enter 2 port numbers, such as 1 and 200, the system defaults to match the traffic of the destination port in the range of 1 to 200.
+- If you enter 2 port numbers and one of them is - 1, the other port must also be - 1, indicating that it matches any destination port.
 
-* `match_dscp` - (Optional, Computed, Int) The DSCP value of the traffic message. Valid values: `0` to **63 * *.
+* `match_dscp` - (Optional, Computed, Int) The DSCP value of the traffic message. Valid values: `0` to **63**.
 
 The flow classification rule matches the flow with the specified DSCP value. If the flow classification rule is not set, it means that the flow classification rule matches the flow with any DSCP value.
 
@@ -96,9 +96,9 @@ The flow classification rule matches the traffic of the source port number in th
 
 The current parameter supports entering up to two port numbers. The input format is described as follows:
 
-  - If you only enter a port number, such as 1, the system defaults to match the traffic with source port 1.
-  - If you enter two port numbers, such as 1 and 200, the system defaults to match the traffic with the source port in the range of 1 to 200.
-  - If you enter two port numbers and one of them is - 1, the other port must also be - 1, indicating that it matches any source port.
+- If you only enter a port number, such as 1, the system defaults to match the traffic with source port 1.
+- If you enter two port numbers, such as 1 and 200, the system defaults to match the traffic with the source port in the range of 1 to 200.
+- If you enter two port numbers and one of them is - 1, the other port must also be - 1, indicating that it matches any source port.
 
 * `traffic_match_rule_description` - (Optional, Computed) The description information of the stream classification rule.
 The description must be 2 to 128 characters in length and can contain numbers, dashes (-), and underscores (_).

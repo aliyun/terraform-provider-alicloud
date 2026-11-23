@@ -249,7 +249,7 @@ If it is specified to be executed once 13:15:30 June 06, 2022, China/Shanghai ti
   - The offset of the time zone relative to Greenwich Mean Time: E.G. GMT +8:00 (East Zone 8), GMT-7 (West Zone 7), etc. When using the GMT format, the hour bit does not support adding leading zeros.
   - Time zone abbreviation: Only UTC (Coordinated Universal Time) is supported.
 
-For example, in China/Shanghai time, the command will be executed once every day at 10:15 am in 2022 in the format 0 15 10? * * 2022 Asia/Shanghai; In the eastern 8th District time, it will be executed every half hour from 10:00 a.m. to 11:30 a.m. every day in 2022, in the format of 0 0/30 10-11 * *? 2022 GMT +8:00; In UTC time, starting from 2022, it will be executed every 5 minutes from 14:00 P.M. to 14:55 p. M. Every two years in October, in the format of 0 0/5 14*10? 2022/2 UTC.
+For example, in China/Shanghai time, the command will be executed once every day at 10:15 am in 2022 in the format 0 15 10? ** 2022 Asia/Shanghai; In the eastern 8th District time, it will be executed every half hour from 10:00 a.m. to 11:30 a.m. every day in 2022, in the format of 0 0/30 10-11 * *? 2022 GMT +8:00; In UTC time, starting from 2022, it will be executed every 5 minutes from 14:00 P.M. to 14:55 p. M. Every two years in October, in the format of 0 0/5 14*10? 2022/2 UTC.
 
 * `launcher` - (Optional) The bootstrapper for script execution. The length cannot exceed 1KB.
 * `name` - (Optional) The command name.
@@ -258,10 +258,10 @@ For example, in China/Shanghai time, the command will be executed once every day
 
 The number of custom parameters ranges from 0 to 10, and you need to pay attention:
 
-  - The key is not allowed to be an empty string and supports a maximum of 64 characters.
-  - The value is allowed to be an empty string.
-  - After the custom parameters and the original command content are encoded in Base64, if the command is saved, the size of the command content after Base64 encoding cannot exceed 18KB. If the command is not saved, the size of the command content after Base64 encoding cannot exceed 24KB. You can set whether to keep the command through 'KeepCommand.
-  - The set of custom parameter names must be a subset of the parameter set defined when the command is created. For parameters that are not passed in, you can use an empty string instead.
+- The key is not allowed to be an empty string and supports a maximum of 64 characters.
+- The value is allowed to be an empty string.
+- After the custom parameters and the original command content are encoded in Base64, if the command is saved, the size of the command content after Base64 encoding cannot exceed 18KB. If the command is not saved, the size of the command content after Base64 encoding cannot exceed 24KB. You can set whether to keep the command through 'KeepCommand.
+- The set of custom parameter names must be a subset of the parameter set defined when the command is created. For parameters that are not passed in, you can use an empty string instead.
 
 The default value is empty, which means that the parameter is unset and the custom parameter is disabled.
 
@@ -273,8 +273,8 @@ The default value is empty, which means that the parameter is unset and the cust
 
 Default:
 
-  - When the'frequency' parameter is not specified, the default value is'once '.
-  - When the'frequency' parameter is specified, regardless of whether the parameter value has been set or not, it will be processed according to'period.
+- When the'frequency' parameter is not specified, the default value is'once '.
+- When the'frequency' parameter is specified, regardless of whether the parameter value has been set or not, it will be processed according to'period.
 
 * `termination_mode` - (Optional) The mode when the task is stopped (manually stopped or execution time-out interrupted). Possible values:
 Process: Stops the current script Process.

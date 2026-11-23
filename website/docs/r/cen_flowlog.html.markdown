@@ -60,7 +60,7 @@ The following arguments are supported:
 * `cen_id` - (Required, ForceNew) cen id
 * `description` - (Optional) The description of the flowlog.
 * `flow_log_name` - (Optional) The name of the flowlog.
-* `interval` - (Optional, Int, Available since v1.235.0) The duration of the capture window for the flow log to capture traffic. Unit: seconds. Valid values: `60` or **600 * *. Default value: **600 * *.
+* `interval` - (Optional, Int, Available since v1.235.0) The duration of the capture window for the flow log to capture traffic. Unit: seconds. Valid values: `60` or **600**. Default value:**600**.
 * `log_format_string` - (Optional, ForceNew, Available since v1.235.0) Log Format
 * `log_store_name` - (Required, ForceNew) The LogStore that stores the flowlog.
 * `project_name` - (Required, ForceNew) The Project that stores the flowlog.

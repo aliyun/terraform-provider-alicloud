@@ -11,7 +11,7 @@ description: |-
 
 Provides a HBase instance resource supports replica set instances only. The HBase provides stable, reliable, and automatic scalable database services.
 It offers a full range of database solutions, such as disaster recovery, backup, recovery, monitoring, and alarms.
-You can see detail product introduction [here](https://www.alibabacloud.com/help/en/apsaradb-for-hbase/latest/createcluster)
+You can see detail product introduction in [ApsaraDB for HBase documentation](https://www.alibabacloud.com/help/en/apsaradb-for-hbase/latest/createcluster)
 
 -> **NOTE:** Available since v1.67.0.
 

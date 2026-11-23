@@ -44,4 +44,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `whitelist` - Information about the vulnerability to be added to the whitelist.
   * `target_info` - Set the effective range of the whitelist.
   * `reason` - Reason for adding whitelist.
-

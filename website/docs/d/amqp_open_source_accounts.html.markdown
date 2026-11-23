@@ -112,8 +112,8 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Open Source Account IDs.
 * `accounts` - A list of Open Source Account Entries. Each element contains the following attributes:
-    * `description` - Description.
-    * `instance_id` - Instance ID.
-    * `password` - User password.
-    * `user_name` - User name.
-    * `id` - The ID of the resource supplied above.
+  * `description` - Description.
+  * `instance_id` - Instance ID.
+  * `password` - User password.
+  * `user_name` - User name.
+  * `id` - The ID of the resource supplied above.

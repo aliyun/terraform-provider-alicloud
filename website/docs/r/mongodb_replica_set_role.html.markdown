@@ -91,8 +91,8 @@ The following arguments are supported:
 * `connection_prefix` - (Optional) The prefix of the connection string, will be computed if not specified.
 * `connection_port` - (Optional) The port of the connection string, will be computed if not specified.`
 * `network_type` - (Required, ForceNew) The network type of the connection string. Valid values:
-    - `VPC`: private network address.
-    - `Public`: public network address.
+  - `VPC`: private network address.
+  - `Public`: public network address.
 
 ## Attributes Reference
 

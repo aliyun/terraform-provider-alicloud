@@ -51,9 +51,9 @@ The following arguments are supported:
 
 * `name` - (Required, ForceNew) The name of the instance.
 * `network_type_acl` - (Optional, Available since v1.221.0) The set of network types that are allowed access. Valid optional values:
-    * `CLASSIC` - Classic network.
-    * `VPC` - VPC network.
-    * `INTERNET` - Public internet.
+  * `CLASSIC` - Classic network.
+  * `VPC` - VPC network.
+  * `INTERNET` - Public internet.
 
     Default to ["VPC", "CLASSIC", "INTERNET"].
 * `network_source_acl` - (Optional, Available since v1.221.0) The set of request sources that are allowed access. Valid optional values:

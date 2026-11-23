@@ -148,7 +148,7 @@ The configuration-sink supports the following:
   The columns parameter is the key of the log in the source Logstore and must carry the data type of the key, for example:{"columns": [{"name": "a", "type": "string"}, {"name": "B", "type": "string"}, {"name": "c", "type": "string": "string"}]}
 * `content_type` - (Required) The storage format of the OSS object. Valid values: json, parquet, csv, and orc.
 * `delay_seconds` - (Optional, Int) The latency of data shipping. The value of this parameter cannot exceed the data retention period of the source Logstore.
-* `endpoint` - (Required) The OSS Endpoint can only be an OSS intranet Endpoint and only supports the same region. Example value: https://oss-cn-hangzhou-internal.aliyuncs.com
+* `endpoint` - (Required) The OSS Endpoint can only be an OSS intranet Endpoint and only supports the same region. Example value: `https://oss-cn-hangzhou-internal.aliyuncs.com`
 * `path_format` - (Optional) The directory is dynamically generated according to the time. The default value is% Y/%m/%d/%H/%M. The corresponding generated directory is, for example, 2017/01/23/12/00. Note that the partition format cannot start and end. Example values:%Y/%m/%d
 * `path_format_type` - (Optional) The partition format type. only support time
 * `prefix` - (Optional) The prefix of the OSS object.

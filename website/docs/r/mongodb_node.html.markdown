@@ -171,7 +171,7 @@ Value range: `10` to `2000`, with a step size of 10GB.
 
 * `readonly_replicas` - (Optional, Computed, Int) The number of read-only nodes in the Shard.
 
-Value range: `0` to `5` (integer). Default value: **0 * *.
+Value range: `0` to `5` (integer). Default value: **0**.
 
 -> **NOTE:**  This parameter is currently only supported by China Station.
 

@@ -51,4 +51,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `endpoint` - The ID of the endpoint (vSwitch).
   * `type` - The backend service type of the endpoint.
   * `traffic_to_endpoint_policy` - The access policy of traffic for the specified endpoint.
-

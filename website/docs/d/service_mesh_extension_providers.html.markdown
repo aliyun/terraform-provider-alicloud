@@ -55,8 +55,8 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Extension Provider names.
 * `providers` - A list of Service Mesh Extension Providers. Each element contains the following attributes:
-    * `id` - The ID of the Service Mesh Extension Provider. It formats as `<service_mesh_id>:<type>:<extension_provider_name>`.
-    * `service_mesh_id` - The ID of the Service Mesh.
-    * `extension_provider_name` - The name of the Service Mesh Extension Provider.
-    * `type` - The type of the Service Mesh Extension Provider.
-    * `config` - The config of the Service Mesh Extension Provider.
+  * `id` - The ID of the Service Mesh Extension Provider. It formats as `<service_mesh_id>:<type>:<extension_provider_name>`.
+  * `service_mesh_id` - The ID of the Service Mesh.
+  * `extension_provider_name` - The name of the Service Mesh Extension Provider.
+  * `type` - The type of the Service Mesh Extension Provider.
+  * `config` - The config of the Service Mesh Extension Provider.

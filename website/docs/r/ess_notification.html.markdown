@@ -14,6 +14,7 @@ Provides a ESS notification resource. More about Ess notification, see [Autoscal
 -> **NOTE:** Available since v1.55.0.
 
 ## Example Usage
+
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ess_notification&exampleId=fe3c3b2f-ea6b-d24a-9794-0d7fa7e6b29730b47675&activeTab=example&spm=docs.r.ess_notification.0.fe3c3b2fea&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
@@ -85,9 +86,9 @@ The following arguments are supported:
 
 * `scaling_group_id` - (Required, ForceNew) The ID of the Auto Scaling group.
 * `notification_arn` - (Required, ForceNew) The Alibaba Cloud Resource Name (ARN) of the notification object, The value must be in `acs:ess:{region}:{account-id}:{resource-relative-id}` format.
-    * region: the region ID of the scaling group. For more information, see `Regions and zones`
-    * account-id: the ID of your account.
-    * resource-relative-id: the notification method. Valid values : `cloudmonitor`, MNS queue: `queue/{queuename}`, Replace the queuename with the specific MNS queue name, MNS topic: `topic/{topicname}`, Replace the topicname with the specific MNS topic name.
+  * region: the region ID of the scaling group. For more information, see `Regions and zones`
+  * account-id: the ID of your account.
+  * resource-relative-id: the notification method. Valid values : `cloudmonitor`, MNS queue: `queue/{queuename}`, Replace the queuename with the specific MNS queue name, MNS topic: `topic/{topicname}`, Replace the topicname with the specific MNS topic name.
 * `notification_types` - (Required) The notification types of Auto Scaling events and resource changes. Supported notification types: 'AUTOSCALING:SCALE_OUT_SUCCESS', 'AUTOSCALING:SCALE_IN_SUCCESS', 'AUTOSCALING:SCALE_OUT_ERROR', 'AUTOSCALING:SCALE_IN_ERROR', 'AUTOSCALING:SCALE_REJECT', 'AUTOSCALING:SCALE_OUT_START', 'AUTOSCALING:SCALE_IN_START', 'AUTOSCALING:SCHEDULE_TASK_EXPIRING'.
 * `time_zone` - (Optional, Available since v1.240.0) The time zone of the notification. Specify the value in UTC. For example, a value of UTC+8 specifies that the time is 8 hours ahead of Coordinated Universal Time, and a value of UTC-7 specifies that the time is 7 hours behind Coordinated Universal Time.
 * `message_encoding` - (Optional, Available since v1.282.0) The encoding method of the notification content. Valid values:

@@ -55,11 +55,11 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Anti Brute Force Rule IDs.
 * `names` - A list of name of Anti Brute Force Rules.
 * `rules` - A list of Anti Brute Force Rule Entries. Each element contains the following attributes:
-    * `id` - The ID of the defense rule.
-    * `anti_brute_force_rule_id` - The ID of the defense rule.
-    * `anti_brute_force_rule_name` - The name of the defense rule.
-    * `default_rule` - Specifies whether to set the defense rule as the default rule.
-    * `fail_count` - The threshold for the number of failed user logins when the brute-force defense rule takes effect.
-    * `forbidden_time` - The period of time during which logons from an account are not allowed. Unit: minutes.
-    * `span` - The period of time during which logon failures from an account are measured. Unit: minutes. If Span is set to 10, the defense rule takes effect when the logon failures measured within 10 minutes reaches the specified threshold. The IP address of attackers cannot be used to log on to the server in the specified period of time.
-    * `uuid_list` - An array consisting of the UUIDs of servers to which the defense rule is applied.
+  * `id` - The ID of the defense rule.
+  * `anti_brute_force_rule_id` - The ID of the defense rule.
+  * `anti_brute_force_rule_name` - The name of the defense rule.
+  * `default_rule` - Specifies whether to set the defense rule as the default rule.
+  * `fail_count` - The threshold for the number of failed user logins when the brute-force defense rule takes effect.
+  * `forbidden_time` - The period of time during which logons from an account are not allowed. Unit: minutes.
+  * `span` - The period of time during which logon failures from an account are measured. Unit: minutes. If Span is set to 10, the defense rule takes effect when the logon failures measured within 10 minutes reaches the specified threshold. The IP address of attackers cannot be used to log on to the server in the specified period of time.
+  * `uuid_list` - An array consisting of the UUIDs of servers to which the defense rule is applied.

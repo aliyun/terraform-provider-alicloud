@@ -53,8 +53,8 @@ The following arguments are supported:
 
 Value:
 
-  - standard (default): Universal NAS
-  - extreme: extreme NAS
+- standard (default): Universal NAS
+- extreme: extreme NAS
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 

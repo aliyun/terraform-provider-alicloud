@@ -134,7 +134,7 @@ The following arguments are supported:
 * `system_disk_name` - (Optional, Available since v1.101.0) The name of the system disk. The name must be 2 to 128 characters in length and can contain letters, digits, periods (.), colons (:), underscores (_), and hyphens (-). It must start with a letter and cannot start with http:// or https://.
 * `system_disk_description` - (Optional, Available since v1.101.0) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `system_disk_size` - (Optional) Size of the system disk, measured in GiB. Value range: [20, 500]. The specified value must be equal to or greater than max{20, Imagesize}. Default value: max{40, ImageSize}.
-* `system_disk_performance_level` (Optional) The performance level of the ESSD used as the system disk, Valid values: `PL0`, `PL1`, `PL2`, `PL3`, Default to `PL1`;For more information about ESSD, See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/122389.htm).
+* `system_disk_performance_level` - (Optional) The performance level of the ESSD used as the system disk, Valid values: `PL0`, `PL1`, `PL2`, `PL3`, Default to `PL1`;For more information about ESSD, See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/122389.htm).
 * `system_disk_auto_snapshot_policy_id` - (Optional, Available since v1.73.0, Modifiable in 1.169.0) The ID of the automatic snapshot policy applied to the system disk. **NOTE:** If you want to use `system_disk_auto_snapshot_policy_id`, We recommend you to use the resource [alicloud_ecs_auto_snapshot_policy_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_auto_snapshot_policy_attachment).
 * `system_disk_storage_cluster_id` - (Optional, ForceNew, Available since v1.177.0) The ID of the dedicated block storage cluster. If you want to use disks in a dedicated block storage cluster as system disks when you create instances, you must specify this parameter. For more information about dedicated block storage clusters.
 * `system_disk_encrypted` - (Optional, ForceNew, Available since v1.177.0) Specifies whether to encrypt the system disk. Valid values: `true`,`false`. Default value: `false`.
@@ -343,7 +343,7 @@ The data_disks supports the following:
   - `PL2`: A single ESSD can deliver up to 100,000 random read/write IOPS.
   - `PL3`: A single ESSD can deliver up to 1,000,000 random read/write IOPS.
     Default to `PL1`.
-* `encrypted` -(Optional, Bool, ForceNew) Encrypted the data in this disk. Default value: `false`.
+* `encrypted` - (Optional, Bool, ForceNew) Encrypted the data in this disk. Default value: `false`.
 * `kms_key_id` - (Optional, Available since v1.90.1) The KMS key ID corresponding to the Nth data disk.
 * `snapshot_id` - (Optional, ForceNew) The snapshot ID used to initialize the data disk. If the size specified by snapshot is greater that the size of the disk, use the size specified by snapshot as the size of the data disk.
 * `auto_snapshot_policy_id` - (Optional, ForceNew, Available since v1.73.0) The ID of the automatic snapshot policy applied to the system disk.

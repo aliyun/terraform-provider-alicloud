@@ -242,7 +242,7 @@ The configuration-annotations supports the following:
 The configuration-condition_configuration supports the following:
 
 * `condition` - (Optional) Data matching expression.
-* `count_condition` - (Optional) The number of data items to determine the expression, indicating the number of data items that meet the conditions. Indicates that if there is data that is satisfied, it can be set to an empty string. In other cases, you need to set it to an expression, for example,__count __> 3.
+* `count_condition` - (Optional) The number of data items to determine the expression, indicating the number of data items that meet the conditions. Indicates that if there is data that is satisfied, it can be set to an empty string. In other cases, you need to set it to an expression, for example, **count** > 3.
 
 ### `configuration-group_configuration`
 
@@ -342,7 +342,7 @@ The configuration-severity_configurations-eval_condition supports the following:
 
 The schedule supports the following:
 
-* `cron_expression` - (Optional) Cron expression, the minimum accuracy is minutes, 24 hours. For example, 0 0/1 * * * means that the check is conducted every 1 hour from 00:00. When type is set to Cron, cronExpression must be set.
+* `cron_expression` - (Optional) Cron expression, the minimum accuracy is minutes, 24 hours. For example, 0 0/1 ** * means that the check is conducted every 1 hour from 00:00. When type is set to Cron, cronExpression must be set.
 * `delay` - (Optional) Timed task execution delay (unit: s).
 * `interval` - (Optional) Fixed interval for scheduling.
 * `run_immdiately` - (Optional) Dispatch immediately.

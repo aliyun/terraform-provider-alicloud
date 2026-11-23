@@ -43,9 +43,9 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Api Key IDs.
 * `keys` - A list of Api Key Entries. Each element contains the following attributes:
-    * `create_time` - The creation time of the resource.
-    * `description` - The description of the API key.
-    * `key_id` - The ID of the API key.
-    * `key_name` - The name of the API key.
-    * `key_prefix` - The prefix of the API key.
-    * `id` - The ID of the resource supplied above.
+  * `create_time` - The creation time of the resource.
+  * `description` - The description of the API key.
+  * `key_id` - The ID of the API key.
+  * `key_name` - The name of the API key.
+  * `key_prefix` - The prefix of the API key.
+  * `id` - The ID of the resource supplied above.

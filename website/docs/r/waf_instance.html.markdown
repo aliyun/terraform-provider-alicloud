@@ -58,17 +58,17 @@ The following arguments are supported:
 * `log_time` - (Required, String) Log storage period. Unit: day. Valid values: [180, 360].
 * `modify_type` - (Optional) Type of configuration change. Valid value: Upgrade.
 * `package_code` - (Required, String) Subscription plan:
-    * China site customers can purchase the following versions of China Mainland region, valid values: ["version_3", "version_4", "version_5"].
-    * China site customers can purchase the following versions of International region, valid values: ["version_pro_asia", "version_business_asia", "version_enterprise_asia"]
-    * International site customers can purchase the following versions of China Mainland region: ["version_pro_china", "version_business_china", "version_enterprise_china"]
-    * International site customers can purchase the following versions of International region: ["version_pro", "version_business", "version_enterprise"].
+  * China site customers can purchase the following versions of China Mainland region, valid values: ["version_3", "version_4", "version_5"].
+  * China site customers can purchase the following versions of International region, valid values: ["version_pro_asia", "version_business_asia", "version_enterprise_asia"]
+  * International site customers can purchase the following versions of China Mainland region: ["version_pro_china", "version_business_china", "version_enterprise_china"]
+  * International site customers can purchase the following versions of International region: ["version_pro", "version_business", "version_enterprise"].
 
 * `period` - (Optional, ForceNew) Service time of Web Application Firewall.
 * `prefessional_service` - (Required, String) Specify whether professional service is supported. Valid values: ["true", "false"]
 * `renew_period` - (Optional, ForceNew) Renewal period of WAF service. Unit: month
 * `renewal_status` - (Optional, ForceNew) Renewal status of WAF service. Valid values:
-    * AutoRenewal: The service time of WAF is renewed automatically.
-    * ManualRenewal (default): The service time of WAF is renewed manually.Specifies whether to configure a Layer-7 proxy, such as Anti-DDoS Pro or CDN, to filter the inbound traffic before it is forwarded to WAF. Valid values: "On" and "Off". Default to "Off".
+  * AutoRenewal: The service time of WAF is renewed automatically.
+  * ManualRenewal (default): The service time of WAF is renewed manually.Specifies whether to configure a Layer-7 proxy, such as Anti-DDoS Pro or CDN, to filter the inbound traffic before it is forwarded to WAF. Valid values: "On" and "Off". Default to "Off".
 * `resource_group_id` - (Optional) The resource group ID.
 * `region` - (Optional, Available in 1.139.0+) The instance region ID.
 * `subscription_type` - (Required, String) Subscription of WAF service. Valid values: ["Subscription", "PayAsYouGo"].

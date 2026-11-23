@@ -83,6 +83,7 @@ resource "alicloud_cs_kubernetes_addon" "logtail-ds" {
   )
 }
 ```
+
 **Installing of addon**
 When a cluster is created, some system addons and those specified at the time of cluster creation will be installed, so when an addon resource is applied:
 

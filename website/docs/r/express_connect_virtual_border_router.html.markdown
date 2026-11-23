@@ -71,7 +71,7 @@ The following arguments are supported:
 * `description` - (Optional) The description information of the VBR.
 * `detect_multiplier` - (Optional, Computed, Int) Multiple of detection time.
 That is, the maximum number of connection packet losses allowed by the receiver to send messages, which is used to detect whether the link is normal.
-Valid values: **3 to 10 * *.
+Valid values: **3 to 10**.
 * `enable_ipv6` - (Optional) Whether IPv6 is enabled.
   - `true`: on.
   - `false`: closed.

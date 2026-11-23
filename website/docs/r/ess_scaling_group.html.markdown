@@ -124,19 +124,19 @@ The following arguments are supported:
 * `vswitch_id` - (Deprecated) It has been deprecated from version 1.7.1 and new field 'vswitch_ids' replaces it.
 * `vswitch_ids` - (Optional) List of virtual switch IDs in which the ecs instances to be launched.
 * `removal_policies` - (Optional) RemovalPolicy is used to select the ECS instances you want to remove from the scaling group when multiple candidates for removal exist. Optional values:
-    - OldestInstance: removes the ECS instance that is added to the scaling group at the earliest point in time.
-    - NewestInstance: removes the ECS instance that is added to the scaling group at the latest point in time.
-    - OldestScalingConfiguration: removes the ECS instance that is created based on the earliest scaling configuration.
-    - Default values: Default value of RemovalPolicy.1: OldestScalingConfiguration. Default value of RemovalPolicy.2: OldestInstance.
+  - OldestInstance: removes the ECS instance that is added to the scaling group at the earliest point in time.
+  - NewestInstance: removes the ECS instance that is added to the scaling group at the latest point in time.
+  - OldestScalingConfiguration: removes the ECS instance that is created based on the earliest scaling configuration.
+  - Default values: Default value of RemovalPolicy.1: OldestScalingConfiguration. Default value of RemovalPolicy.2: OldestInstance.
 * `db_instance_ids` - (Optional) If an RDS instance is specified in the scaling group, the scaling group automatically attaches the Intranet IP addresses of its ECS instances to the RDS access whitelist.
-    - The specified RDS instance must be in running status.
-    - The specified RDS instance’s whitelist must have room for more IP addresses.
+  - The specified RDS instance must be in running status.
+  - The specified RDS instance’s whitelist must have room for more IP addresses.
 * `loadbalancer_ids` - (Optional) If a Server Load Balancer instance is specified in the scaling group, the scaling group automatically attaches its ECS instances to the Server Load Balancer instance.
-    - The Server Load Balancer instance must be enabled.
-    - At least one listener must be configured for each Server Load Balancer and it HealthCheck must be on. Otherwise, creation will fail (it may be useful to add a `depends_on` argument
+  - The Server Load Balancer instance must be enabled.
+  - At least one listener must be configured for each Server Load Balancer and it HealthCheck must be on. Otherwise, creation will fail (it may be useful to add a `depends_on` argument
       targeting your `alicloud_slb_listener` in order to make sure the listener with its HealthCheck configuration is ready before creating your scaling group).
-    - The Server Load Balancer instance attached with VPC-type ECS instances cannot be attached to the scaling group.
-    - The default weight of an ECS instance attached to the Server Load Balancer instance is 50.
+  - The Server Load Balancer instance attached with VPC-type ECS instances cannot be attached to the scaling group.
+  - The default weight of an ECS instance attached to the Server Load Balancer instance is 50.
 * `multi_az_policy` - (Optional, ForceNew) Multi-AZ scaling group ECS instance expansion and contraction strategy. PRIORITY, COMPOSABLE, BALANCE or COST_OPTIMIZED(Available since v1.54.0).
 * `az_balance` - (Optional, Available since v1.225.1) Specifies whether to evenly distribute instances in the scaling group across multiple zones. This parameter takes effect only if you set MultiAZPolicy to COMPOSABLE.
 * `spot_allocation_strategy` - (Optional, Available since v1.225.1) The allocation policy of preemptible instances. You can use this parameter to individually specify the allocation policy for preemptible instances. This parameter takes effect only if you set MultiAZPolicy to COMPOSABLE.

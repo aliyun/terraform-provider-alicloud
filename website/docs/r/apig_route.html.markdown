@@ -189,20 +189,20 @@ The following attributes are exported:
 * `status` - The deployment status of the route.
 * `update_time` - The update time in Greenwich Mean Time (GMT).
 * `backend` - Backend service.
-    * `services` - Backend service.
-        * `name` - The name of the service.
+  * `services` - Backend service.
+    * `name` - The name of the service.
 * `environment_info` - The environment information of the route.
-    * `alias` - The alias of the environment name.
-    * `name` - The human-readable name of the APIG environment where this route is published.
-    * `gateway_info` - The gateway instance information corresponding to the environment.
-        * `gateway_edition` - The edition of the gateway instance.
-        * `gateway_id` - The ID of the Cloud-native API Gateway.
-        * `name` - The name of the gateway.
-    * `sub_domains` - The default second-level domain names of the environment.
-        * `domain_id` - The ID of the second-level domain name.
-        * `network_type` - The domain access type, such as Intranet or Internet.
-        * `protocol` - The domain protocol, such as HTTP or HTTPS.
-        * `name` - The name of the second-level domain name.
+  * `alias` - The alias of the environment name.
+  * `name` - The human-readable name of the APIG environment where this route is published.
+  * `gateway_info` - The gateway instance information corresponding to the environment.
+    * `gateway_edition` - The edition of the gateway instance.
+    * `gateway_id` - The ID of the Cloud-native API Gateway.
+    * `name` - The name of the gateway.
+  * `sub_domains` - The default second-level domain names of the environment.
+    * `domain_id` - The ID of the second-level domain name.
+    * `network_type` - The domain access type, such as Intranet or Internet.
+    * `protocol` - The domain protocol, such as HTTP or HTTPS.
+    * `name` - The name of the second-level domain name.
 
 ## Timeouts
 

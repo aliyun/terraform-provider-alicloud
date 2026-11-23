@@ -108,7 +108,7 @@ The following arguments are supported:
 
 The schedule supports the following:
 
-* `cron_expression` - (Optional) Cron expression with a minimum precision of minutes in 24-hour format. For example, 0 0/1 * * * means checking once every hour starting from 00:00. When type is set to Cron, cronExpression must be specified.
+* `cron_expression` - (Optional) Cron expression with a minimum precision of minutes in 24-hour format. For example, 0 0/1 ** * means checking once every hour starting from 00:00. When type is set to Cron, cronExpression must be specified.
 * `delay` - (Optional, Int) Delay duration.
 * `interval` - (Optional) Time interval, such as 5m or 1h.
 * `run_immediately` - (Optional) Specifies whether to run the OSS import job immediately after it is created.

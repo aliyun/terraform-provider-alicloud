@@ -81,9 +81,9 @@ The following arguments are supported:
 
 Limitations:
 
-  - Length is 2~128 English or Chinese characters.
-  - It must start with an uppercase or lowercase letter or Chinese, and cannot start with `http://` and `https://`.
-  - Can contain numbers, colons (:), underscores (_), or dashes (-).
+- Length is 2~128 English or Chinese characters.
+- It must start with an uppercase or lowercase letter or Chinese, and cannot start with `http://` and `https://`.
+- Can contain numbers, colons (:), underscores (_), or dashes (-).
 
 * `dry_run` - (Optional) Whether to PreCheck the creation request.
 
@@ -91,8 +91,8 @@ The pre-check operation helps you check the validity of parameters and dependenc
 
 Value:
 
-  - true: The check request is sent and the protocol service is not created. The check items include whether the required parameters, request format, and business restriction dependency conditions are filled in. If the check does not pass, the corresponding error is returned. If the check passes, the 200 HttpCode is returned, but the ProtocolServiceId is empty.
-  - false (default): Send a normal request and directly create an instance after passing the check.
+- true: The check request is sent and the protocol service is not created. The check items include whether the required parameters, request format, and business restriction dependency conditions are filled in. If the check does not pass, the corresponding error is returned. If the check passes, the 200 HttpCode is returned, but the ProtocolServiceId is empty.
+- false (default): Send a normal request and directly create an instance after passing the check.
 
 -> **NOTE:** This parameter only applies during resource creation, update or deletion. If modified in isolation without other property changes, Terraform will not trigger any action.
 
@@ -105,7 +105,7 @@ Value:
 
 Value range:
 
-  - NFS: Protocol Service supports NFS protocol access.
+- NFS: Protocol Service supports NFS protocol access.
 
 * `vswitch_id` - (Optional, ForceNew) The VSwitchId of the protocol service.
 * `vpc_id` - (Optional, ForceNew) The VpcId of the protocol service, which must be consistent with the VPC of the file system.

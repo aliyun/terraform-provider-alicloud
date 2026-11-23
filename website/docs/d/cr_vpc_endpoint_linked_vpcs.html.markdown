@@ -54,4 +54,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `ip` - IP address.
   * `default_access` - Indicates whether the default policy is used to access the instance.
   * `status` - The status of the Vpc Endpoint Linked Vpc.
-

@@ -77,7 +77,7 @@ The backend_servers supports the following:
 
 * `ip` - (Optional, Available since v1.230.0) IP address of the backend server  Example value: 192.168.0.5.
 * `port` - (Optional, Computed, Int, Available since v1.230.0) Port used by the backend server.
-* `server_id` - (Required, Available since v1.230.0) Backend server instance ID  Example value: i-5vb5h5njxiuhn48a * * * *.
+* `server_id` - (Required, Available since v1.230.0) Backend server instance ID  Example value: i-5vb5h5njxiuhn48a.
 * `type` - (Optional, Available since v1.230.0) Backend server type  Example value: ens.
 * `weight` - (Optional, Int, Available since v1.230.0) Weight of the backend server  Example value: 100.
 

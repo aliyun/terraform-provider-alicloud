@@ -40,13 +40,13 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `groups` - A list of Resource Group Entries. Each element contains the following attributes:
-    * `id` - The `key` of the resource supplied above.The value is formulated as `<db_cluster_id>:<group_name>`.
-    * `create_time` - Creation time.
-    * `db_cluster_id` - DB cluster id.
-    * `group_name` - The name of the resource pool.
-    * `group_type` - Query type, value description:
-      * **etl**: Batch query mode.
-      * **interactive**: interactive Query mode
-      * **default_type**: the default query mode.
-    * `node_num` - The number of nodes. The default number of nodes is 0. The number of nodes must be less than or equal to the number of nodes whose resource name is USER_DEFAULT.
-    * `user` - Binding User.
+  * `id` - The `key` of the resource supplied above.The value is formulated as `<db_cluster_id>:<group_name>`.
+  * `create_time` - Creation time.
+  * `db_cluster_id` - DB cluster id.
+  * `group_name` - The name of the resource pool.
+  * `group_type` - Query type, value description:
+    * **etl**: Batch query mode.
+    * **interactive**: interactive Query mode
+    * **default_type**: the default query mode.
+  * `node_num` - The number of nodes. The default number of nodes is 0. The number of nodes must be less than or equal to the number of nodes whose resource name is USER_DEFAULT.
+  * `user` - Binding User.

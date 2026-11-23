@@ -59,8 +59,8 @@ The following arguments are supported:
 
 Valid values:
 
-  - `l4`: Layer 4 health check.
-  - `l7`: Layer 7 health check.
+- `l4`: Layer 4 health check.
+- `l7`: Layer 7 health check.
 
 * `health_check_http_code` - (Optional, ForceNew, Computed) The domain name that is used for health checks. This parameter is empty by default.
 * `health_check_interval` - (Optional, ForceNew, Computed, Int) The timeout period of a health check response. If a backend ECS instance does not respond within the specified timeout period, the ECS instance fails the health check. Unit: seconds.

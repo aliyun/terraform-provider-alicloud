@@ -11,7 +11,7 @@ description: |-
 
 This data source provides a list of MNS topics in an Alibaba Cloud account according to the specified parameters.
 
--> **DEPRECATED:**  This datasource has been deprecated from version `1.188.0`. Please use new datasource [message_service_topics](https://www.terraform.io/docs/providers/alicloud/d/message_service_topics).
+-> **DEPRECATED:**  This datasource has been deprecated from version `1.188.0`. Please use new datasource [message_service_topics](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/message_service_topics).
 
 ## Example Usage
 
@@ -38,7 +38,7 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of topic names.
 * `topics` - A list of topics. Each element contains the following attributes:
-   * `id` - The id of the topic. The value is set to `name`.
-   * `name` - The name of the topic.
-   * `maximum_message_size` - This indicates the maximum length, in bytes, of any message body sent to the topic.
-   * `logging_enabled` - Whether to enable logging.
+  * `id` - The id of the topic. The value is set to `name`.
+  * `name` - The name of the topic.
+  * `maximum_message_size` - This indicates the maximum length, in bytes, of any message body sent to the topic.
+  * `logging_enabled` - Whether to enable logging.

@@ -112,7 +112,7 @@ The following arguments are supported:
 * `system_disk_description` - (Optional, ForceNew) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with `http://` or `https://`.
 * `system_disk_name` - (Optional, ForceNew) The name of the system disk.
 * `system_disk_size` - (Optional, ForceNew, Computed) The size of the system disk, measured in GiB. Valid values: `20` to `500`.
-* `system_disk_performance_level` (Optional, ForceNew, Computed) The performance level of the ESSD used as the system disk. Valid values: `PL0`, `PL1`, `PL2`, `PL3`.
+* `system_disk_performance_level` - (Optional, ForceNew, Computed) The performance level of the ESSD used as the system disk. Valid values: `PL0`, `PL1`, `PL2`, `PL3`.
 * `system_disk_auto_snapshot_policy_id` - (Optional, ForceNew) The ID of the automatic snapshot policy applied to the system disk.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch in VPC.
@@ -159,7 +159,7 @@ The `data_disks` supports the following:
   - When `disk_category` is `cloud_essd`, Valid values: `20` to `32768`.
   - When `disk_category` is `cloud`, Valid values: `5` to `200`.
 * `disk_category` - (Optional, ForceNew, Computed) The category of the disk. Valid values: `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud`.
-* `encrypted` -(Optional, Bool, ForceNew) Encrypted the data in this disk. Default value: `false`.
+* `encrypted` - (Optional, Bool, ForceNew) Encrypted the data in this disk. Default value: `false`.
 * `performance_level` - (Optional, ForceNew, Computed) The performance level of the ESSD used as data disk. Valid values: `PL0`, `PL1`, `PL2`, `PL3`.
 * `kms_key_id` - (Optional, ForceNew) The KMS key ID corresponding to the data disk.
 * `snapshot_id` - (Optional, ForceNew) The snapshot ID used to initialize the data disk. If the size specified by snapshot is greater that the size of the disk, use the size specified by snapshot as the size of the data disk.
@@ -170,7 +170,7 @@ The `data_disks` supports the following:
 
 The `network_interfaces` supports the following:
 
-* `security_group_id` -(Required, ForceNew) The ID of the security group to which to assign secondary ENI.
+* `security_group_id` - (Required, ForceNew) The ID of the security group to which to assign secondary ENI.
 * `vswitch_id` - (Optional, ForceNew) The ID of the vSwitch to which to connect ENI.
 * `description` - (Optional, ForceNew) The description of ENI.
 * `network_interface_name` - (Optional, ForceNew) The name of ENI.

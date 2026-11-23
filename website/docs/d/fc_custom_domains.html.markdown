@@ -29,7 +29,7 @@ output "first_fc_custom_domain_name" {
 
 The following arguments are supported:
 
-* `ids` (Optional) - A list of functions ids.
+* `ids` - (Optional) A list of functions ids.
 * `name_regex` - (Optional) A regex string to filter results by Function Compute custom domain name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

@@ -74,18 +74,18 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Dhcp Options Set names.
 * `sets` - A list of Vpc Dhcp Options Sets. Each element contains the following attributes:
-    * `dhcp_options_set_description` - The description of the DHCP options set. The description must be 2 to 256
+  * `dhcp_options_set_description` - The description of the DHCP options set. The description must be 2 to 256
       characters in length and cannot start with `http://` or `https://`.
-    * `dhcp_options_set_id` - The resource ID in terraform of Dhcp Options Set.
-    * `dhcp_options_set_name` - The root domain, for example, example.com. After a DHCP options set is associated with a
+  * `dhcp_options_set_id` - The resource ID in terraform of Dhcp Options Set.
+  * `dhcp_options_set_name` - The root domain, for example, example.com. After a DHCP options set is associated with a
       Virtual Private Cloud (VPC) network, the root domain in the DHCP options set is automatically synchronized to the
       ECS instances in the VPC network.
-    * `domain_name` - The root domain, for example, example.com. After a DHCP options set is associated with a Virtual
+  * `domain_name` - The root domain, for example, example.com. After a DHCP options set is associated with a Virtual
       Private Cloud (VPC) network, the root domain in the DHCP options set is automatically synchronized to the ECS
       instances in the VPC network.
-    * `domain_name_servers` - The DNS server IP addresses. Up to four DNS server IP addresses can be specified. IP
+  * `domain_name_servers` - The DNS server IP addresses. Up to four DNS server IP addresses can be specified. IP
       addresses must be separated with commas (,).
-    * `id` - The resource ID in terraform of Dhcp Options Set.
-    * `owner_id` - The ID of the account to which the DHCP options set belongs.
-    * `status` - The status of the DHCP options set. Valid values: `Available`, `InUse` or `Pending`. `Available`: The DHCP options set is available for use. `InUse`: The DHCP options set is in use. `Pending`: The DHCP options set is being configured.
-    * `associate_vpc_count` - The Number of VPCs bound by the DHCP option set.
+  * `id` - The resource ID in terraform of Dhcp Options Set.
+  * `owner_id` - The ID of the account to which the DHCP options set belongs.
+  * `status` - The status of the DHCP options set. Valid values: `Available`, `InUse` or `Pending`. `Available`: The DHCP options set is available for use. `InUse`: The DHCP options set is in use. `Pending`: The DHCP options set is being configured.
+  * `associate_vpc_count` - The Number of VPCs bound by the DHCP option set.

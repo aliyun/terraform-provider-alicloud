@@ -150,9 +150,9 @@ The following attributes are exported:
 * `health_status` - Health status.
 * `outlier_endpoints` - Outlier endpoints.
 * `ports` - Port information derived by the gateway. Each element contains:
-    * `name` - Port name.
-    * `port` - Port number.
-    * `protocol` - Protocol (`TCP` or `UDP`).
+  * `name` - Port name.
+  * `port` - Port number.
+  * `protocol` - Protocol (`TCP` or `UDP`).
 * `runtime_detail_error_code` - Runtime detail error code.
 * `runtime_detail_status` - Runtime detail status.
 * `unhealthy_endpoints` - Unhealthy endpoints.

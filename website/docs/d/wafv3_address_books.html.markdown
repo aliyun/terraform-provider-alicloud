@@ -66,9 +66,9 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Address Book IDs.
 * `names` - A list of name of Address Books.
 * `books` - A list of Address Book Entries. Each element contains the following attributes:
-    * `address_book_id` - The ID of the Address Book.
-    * `address_book_name` - The name of the Address Book.
-    * `address_book_type` - The type of the Address Book. Valid values: `ip`.
-    * `address_list` - The address list of the Address Book. **NOTE:** This field is only available when `enable_details` is `true`.
-    * `description` - The description of the Address Book.
-    * `id` - The resource ID. It is formatted as `<instance_id>:<address_book_id>`.
+  * `address_book_id` - The ID of the Address Book.
+  * `address_book_name` - The name of the Address Book.
+  * `address_book_type` - The type of the Address Book. Valid values: `ip`.
+  * `address_list` - The address list of the Address Book. **NOTE:** This field is only available when `enable_details` is `true`.
+  * `description` - The description of the Address Book.
+  * `id` - The resource ID. It is formatted as `<instance_id>:<address_book_id>`.

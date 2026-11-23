@@ -84,17 +84,17 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Artifact Lifecycle Rule IDs.
 * `rules` - A list of Artifact Lifecycle Rule Entries. Each element contains the following attributes:
-    * `artifact_lifecycle_rule_id` - The first ID of the resource.
-    * `auto` - Whether to execute automatically.
-    * `create_time` - Creation time.
-    * `enable_delete_tag` - Activate the delete tag function.
-    * `enable_delete_untagged_manifest` - Open garbage collection.
-    * `instance_id` - Instance ID.
-    * `modified_time` - Change time.
-    * `namespace_name` - Namespace name.
-    * `repo_name` - Repository Name.
-    * `retention_tag_count` - Number of Retention Tags.
-    * `schedule_time` - Execution cycle.
-    * `scope` - Scope of cleaning.
-    * `tag_regexp` - Retain regular expressions for mirrored versions.
-    * `id` - The ID of the resource supplied above.
+  * `artifact_lifecycle_rule_id` - The first ID of the resource.
+  * `auto` - Whether to execute automatically.
+  * `create_time` - Creation time.
+  * `enable_delete_tag` - Activate the delete tag function.
+  * `enable_delete_untagged_manifest` - Open garbage collection.
+  * `instance_id` - Instance ID.
+  * `modified_time` - Change time.
+  * `namespace_name` - Namespace name.
+  * `repo_name` - Repository Name.
+  * `retention_tag_count` - Number of Retention Tags.
+  * `schedule_time` - Execution cycle.
+  * `scope` - Scope of cleaning.
+  * `tag_regexp` - Retain regular expressions for mirrored versions.
+  * `id` - The ID of the resource supplied above.

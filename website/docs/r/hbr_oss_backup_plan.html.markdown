@@ -60,8 +60,8 @@ The following arguments are supported:
 * `bucket` - (Required, ForceNew) The name of OSS bucket.
 * `retention` - (Required) Backup retention days, the minimum is 1.
 * `schedule` - (Required) Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered.
-    * `startTime` Backup start time, UNIX time seconds.
-    * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
+  * `startTime` Backup start time, UNIX time seconds.
+  * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
 * `backup_type` - (Required, ForceNew) Backup type. Valid values: `COMPLETE`.
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
 * `prefix` - (Optional) Backup prefix. Once specified, only objects with matching prefixes will be backed up.

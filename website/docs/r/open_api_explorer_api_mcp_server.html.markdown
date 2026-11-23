@@ -237,7 +237,7 @@ The following arguments are supported:
 The additional_api_descriptions supports the following:
 
 * `api_name` - (Optional) The API name, such as ListApiMcpServers.  
-* `api_override_json` - (Optional, JsonString) API structure definition information. You can use this parameter to directly modify the API description and parameter list. You can obtain the API definition information from an API endpoint such as https://api.aliyun.com/meta/v1/products/Ecs/versions/2014-05-26/apis/DescribeInstances/api.json.  
+* `api_override_json` - (Optional, JsonString) API structure definition information. You can use this parameter to directly modify the API description and parameter list. You can obtain the API definition information from an API endpoint such as <https://api.aliyun.com/meta/v1/products/Ecs/versions/2014-05-26/apis/DescribeInstances/api.json>.
 
   -> **NOTE:** Note that required parameters must not be removed; otherwise, calls by the large model will continuously fail due to missing required parameters.>
 
@@ -266,12 +266,12 @@ The additional_api_descriptions-const_parameters supports the following:
 
 For RPC-style APIs, examples include:  
 
-  - Name: sets the Name parameter to a fixed value.  
+- Name: sets the Name parameter to a fixed value.
 
 For ROA-style APIs, examples include:  
 
-  - Name: sets a query or path parameter named Name to a fixed value;  
-  - body.Name: sets the Name field within the request body to a fixed value.  
+- Name: sets a query or path parameter named Name to a fixed value;
+- body.Name: sets the Name field within the request body to a fixed value.
 
 Configurations such as body.Name.Sub are not supported. If you need to set body.Name as a composite structure, specify the Value as a JSON object—for example, {"Sub": "xxx"}.  
 

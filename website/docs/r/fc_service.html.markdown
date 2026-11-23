@@ -325,7 +325,7 @@ The nas_config-mount_points supports the following:
 The tracing_config supports the following:
 
 * `type` - (Required) Tracing protocol type. Currently, only Jaeger is supported.
-* `params` - (Required) Tracing parameters, which type is map[string]string. When the protocol type is Jaeger, the key is "endpoint" and the value is your tracing intranet endpoint. For example endpoint: http://tracing-analysis-dc-hz.aliyuncs.com/adapt_xxx/api/traces.
+* `params` - (Required) Tracing parameters, which type is map[string]string. When the protocol type is Jaeger, the key is "endpoint" and the value is your tracing intranet endpoint. For example endpoint: `http://tracing-analysis-dc-hz.aliyuncs.com/adapt_xxx/api/traces`.
 
 ## Attributes Reference
 

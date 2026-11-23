@@ -60,10 +60,10 @@ The following arguments are supported:
 * `group_id` - (Optional) The ID of the application group.
 * `apply_mode` - (Optional) The mode in which the alert template is applied. Valid values:
   - `GROUP_INSTANCE_FIRST`: The metrics in the application group take precedence.
-  - `ALARM_TEMPLATE_FIRST `: The metrics specified in the alert template take precedence.
+  - `ALARM_TEMPLATE_FIRST`: The metrics specified in the alert template take precedence.
 * `notify_level` - (Optional) The alert notification method. Valid values:
   - `2`: Alert notifications are sent by using Phone, SMS, Email, TradeManager and DingTalk chatbots.
-  - `3 `: Alert notifications are sent by using SMS, Email, TradeManager and DingTalk chatbots.
+  - `3`: Alert notifications are sent by using SMS, Email, TradeManager and DingTalk chatbots.
   - `4`: Alert notifications are sent by using TradeManager and DingTalk chatbots.
 * `silence_time` - (Optional, Int) The mute period during which notifications are not repeatedly sent for an alert. Unit: seconds. Default value: `86400`. Valid values: `0` to `86400`.
 * `webhook` - (Optional) The callback URL to which a POST request is sent when an alert is triggered based on the alert rule.

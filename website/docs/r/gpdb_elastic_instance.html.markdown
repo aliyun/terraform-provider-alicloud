@@ -56,7 +56,7 @@ resource "alicloud_gpdb_elastic_instance" "adb_pg_instance" {
 
 The following arguments are supported:
 
-* `engine` (Required, ForceNew) Database engine: `gpdb`.
+* `engine` - (Required, ForceNew) Database engine: `gpdb`.
 * `engine_version` - (Required, ForceNew) Database version. Valid value is `6.0`.
 * `seg_storage_type` - (Required, ForceNew) The disk type of segment nodes. Valid values: `cloud_essd`, `cloud_efficiency`.
 * `seg_node_num` - (Required, ForceNew) The number of segment nodes. Minimum is `4`, max is `256`, step is `4`.

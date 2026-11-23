@@ -86,7 +86,7 @@ The following arguments are supported:
   - `no_cache`: Do not cache.
   - `override_origin`: Override the origin server's cache policy.
   - `follow_origin_bypass`: Follow the origin server's cache policy (if it exists), otherwise do not cache.
-  - `follow_origin_override `: Follow the origin server's cache policy (if it exists), otherwise use custom cache TTL.
+  - `follow_origin_override`: Follow the origin server's cache policy (if it exists), otherwise use custom cache TTL.
 * `edge_cache_ttl` - (Optional) Edge cache expiration time in seconds.
 * `edge_status_code_cache_ttl` - (Optional) The status code cache TTL, in seconds.
   - You can set the cache TTL for a specific status code. For example, 404=10 caches responses with a 404 status code for 10 seconds.

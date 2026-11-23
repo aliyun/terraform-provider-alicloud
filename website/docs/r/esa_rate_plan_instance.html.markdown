@@ -85,9 +85,9 @@ For China site accounts:
 
 For International site accounts:
 
-  - `entranceplan_intl`: Entrance version
-  - `basicplan_intl`: Pro version
-  - `vipplan_intl`: Premium version
+- `entranceplan_intl`: Entrance version
+- `basicplan_intl`: Pro version
+- `vipplan_intl`: Premium version
 
 * `type` - (Optional) The DNS setup option for the website. Valid values:
   - `NS`

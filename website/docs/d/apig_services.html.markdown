@@ -111,43 +111,43 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Service IDs.
 * `names` - A list of name of Services.
 * `services` - A list of Service Entries. Each element contains the following attributes:
-    * `addresses` - A list of domain names or fixed addresses.
-    * `create_timestamp` - Creation timestamp.
-    * `dns_servers` - DNS servers.
-    * `express_type` - Express type.
-    * `gateway_id` - The ID of the Cloud Native API Gateway.
-    * `health_check_config` - Health check configuration.
-        * `enable` - Whether to enable health check.
-        * `expected_statuses` - Expected HTTP status codes.
-        * `healthy_threshold` - Healthy threshold.
-        * `http_host` - Health check host (optional when protocol is HTTP).
-        * `http_path` - Health check path (required when protocol is HTTP).
-        * `interval` - Health check interval.
-        * `protocol` - Health check protocol TCP|HTTP|GRPC.
-        * `timeout` - Health check response timeout.
-        * `unhealthy_threshold` - Unhealthy threshold.
-    * `health_status` - Health status.
-    * `healthy_panic_threshold` - Healthy panic threshold.
-    * `namespace` - The namespace of the service.
-    * `outlier_detection_config` - Outlier detection configuration.
-        * `base_ejection_time` - Base ejection time.
-        * `enable` - Whether to enable outlier detection.
-        * `failure_percentage_minimum_hosts` - Failure percentage minimum hosts.
-        * `failure_percentage_threshold` - Failure percentage threshold.
-        * `interval` - Detection interval.
-    * `outlier_endpoints` - Outlier endpoints.
-    * `ports` - Port information.
-        * `name` - Port name.
-        * `port` - Port number.
-        * `protocol` - Protocol TCP|UDP.
-    * `protocol` - Service protocol.
-    * `qualifier` - The function version or alias.
-    * `resource_group_id` - The ID of the resource group.
-    * `runtime_detail_error_code` - Runtime detail error code.
-    * `runtime_detail_status` - Runtime detail status.
-    * `service_id` - service id.
-    * `service_name` - Service Name, need to fill in manually when sourceType is VIP/DNS/AI.
-    * `source_type` - service source type, optional value is K8S/MSE_NACOS/FC3/SAE_K8S_SERVICE/VIP/DNS/AI.
-    * `unhealthy_endpoints` - Unhealthy endpoints.
-    * `update_timestamp` - Update timestamp.
-    * `id` - The ID of the resource supplied above.
+  * `addresses` - A list of domain names or fixed addresses.
+  * `create_timestamp` - Creation timestamp.
+  * `dns_servers` - DNS servers.
+  * `express_type` - Express type.
+  * `gateway_id` - The ID of the Cloud Native API Gateway.
+  * `health_check_config` - Health check configuration.
+    * `enable` - Whether to enable health check.
+    * `expected_statuses` - Expected HTTP status codes.
+    * `healthy_threshold` - Healthy threshold.
+    * `http_host` - Health check host (optional when protocol is HTTP).
+    * `http_path` - Health check path (required when protocol is HTTP).
+    * `interval` - Health check interval.
+    * `protocol` - Health check protocol TCP|HTTP|GRPC.
+    * `timeout` - Health check response timeout.
+    * `unhealthy_threshold` - Unhealthy threshold.
+  * `health_status` - Health status.
+  * `healthy_panic_threshold` - Healthy panic threshold.
+  * `namespace` - The namespace of the service.
+  * `outlier_detection_config` - Outlier detection configuration.
+    * `base_ejection_time` - Base ejection time.
+    * `enable` - Whether to enable outlier detection.
+    * `failure_percentage_minimum_hosts` - Failure percentage minimum hosts.
+    * `failure_percentage_threshold` - Failure percentage threshold.
+    * `interval` - Detection interval.
+  * `outlier_endpoints` - Outlier endpoints.
+  * `ports` - Port information.
+    * `name` - Port name.
+    * `port` - Port number.
+    * `protocol` - Protocol TCP|UDP.
+  * `protocol` - Service protocol.
+  * `qualifier` - The function version or alias.
+  * `resource_group_id` - The ID of the resource group.
+  * `runtime_detail_error_code` - Runtime detail error code.
+  * `runtime_detail_status` - Runtime detail status.
+  * `service_id` - service id.
+  * `service_name` - Service Name, need to fill in manually when sourceType is VIP/DNS/AI.
+  * `source_type` - service source type, optional value is K8S/MSE_NACOS/FC3/SAE_K8S_SERVICE/VIP/DNS/AI.
+  * `unhealthy_endpoints` - Unhealthy endpoints.
+  * `update_timestamp` - Update timestamp.
+  * `id` - The ID of the resource supplied above.

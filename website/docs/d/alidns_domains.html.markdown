@@ -35,7 +35,7 @@ The following arguments are supported:
 * `ali_domain` - (Optional, Bool, ForceNew) Specifies whether the domain is from Alibaba Cloud or not.
 * `instance_id` - (Optional, ForceNew) Cloud analysis product ID.
 * `version_code` - (Optional, ForceNew) Cloud analysis version code.
-* `ids` (Optional, ForceNew) - A list of domain IDs.
+* `ids` - (Optional, ForceNew) A list of domain IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `resource_group_id` - (Optional, ForceNew, Available in 1.59.0+) The Id of resource group which the dns belongs.
 * `group_id` - (Optional, ForceNew) Domain group ID, if not filled, the default is all groups.

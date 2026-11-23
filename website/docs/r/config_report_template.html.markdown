@@ -67,15 +67,15 @@ The following arguments are supported:
 
 The format is: Seconds, time, day, month, week. The following are examples of commonly used Cron expressions:
 
-  - Execute at 0 o'clock every day: 0 0 0 * *?
-  - Every Monday at 15: 30: 0 30 15? * MON
-  - Execute at 2 o'clock on the 1st of each month: 0 0 2 1 *?
+- Execute at 0 o'clock every day: 0 0 0 **?
+- Every Monday at 15: 30: 0 30 15? * MON
+- Execute at 2 o'clock on the 1st of each month: 0 0 2 1 *?
 
 Among them:
   -"*" Indicates any value
 
-  - What-? Used for day and week fields, indicating that no specific value is specified
-  - MON means Monday
+- What-? Used for day and week fields, indicating that no specific value is specified
+- MON means Monday
 
 -> **NOTE:**  The trigger time is UTC +8, and the settings of the cron expression can be converted according to the time zone.
 

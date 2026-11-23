@@ -82,7 +82,7 @@ resource "alicloud_edas_k8s_cluster" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-https://www.alibabacloud.com/help/zh/edas/developer-reference/api-edas-2017-08-01-importk8scluster
+<https://www.alibabacloud.com/help/zh/edas/developer-reference/api-edas-2017-08-01-importk8scluster>
 
 * `cs_cluster_id` - (Required, ForceNew) The ID of the alicloud container service kubernetes cluster that you want to import.
 * `namespace_id` - (Optional, ForceNew) The ID of the namespace where you want to import. You can call the [ListUserDefineRegion](https://www.alibabacloud.com/help/en/doc-detail/149377.htm?spm=a2c63.p38356.879954.34.331054faK2yNvC#doc-api-Edas-ListUserDefineRegion) operation to query the namespace ID.

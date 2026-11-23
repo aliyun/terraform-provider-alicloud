@@ -104,7 +104,7 @@ The following arguments are supported:
   256 characters in length and cannot start with http:// or https://.
 * `security_group_id` - (Optional) ID of the security group used to create new instance. It is conflict
   with `security_group_ids`.
-* `container_group_name` - (Optional) The name series of the elastic container instances created from the scaling configuration. If you want to use an ordered instance name, specify the value for this parameter in the following format: name_prefix(AUTO_INCREMENT)[begin_number,bits]name_suffix.
+* `container_group_name` - (Optional) The name series of the elastic container instances created from the scaling configuration. If you want to use an ordered instance name, specify the value for this parameter in the following format: name_prefix\(AUTO_INCREMENT\)[begin_number,bits]name_suffix.
   name_prefix: the prefix of the hostname.
   (AUTO_INCREMENT): the sort method. This is a static field.
   begin_number: the start value of the sequential values. Valid values: 0 to 999999.
@@ -127,9 +127,9 @@ The following arguments are supported:
 * `egress_bandwidth` - (Optional) egress bandwidth.
 * `host_name` - (Optional) Hostname of an ECI instance.
 * `tags` - (Optional) A mapping of tags to assign to the resource. It will be applied for ECI instances finally.
-    - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot
+  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot
       be a null string.
-    - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be
+  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be
       a null string.
 * `image_registry_credentials` - (Optional)  The image registry credential.   See [`image_registry_credentials`](#image_registry_credentials) below for
   details.

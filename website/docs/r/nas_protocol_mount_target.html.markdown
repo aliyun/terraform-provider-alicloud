@@ -99,9 +99,9 @@ Default value: DEFAULT_VPC_GROUP_NAME
 
 Limitations:
 
-  - Length is 2~128 English or Chinese characters.
-  - It must start with an uppercase or lowercase letter or a Chinese character. It cannot start with http:// or https.
-  - Can contain numbers, colons (:), underscores (_), or dashes (-).
+- Length is 2~128 English or Chinese characters.
+- It must start with an uppercase or lowercase letter or a Chinese character. It cannot start with http:// or https.
+- Can contain numbers, colons (:), underscores (_), or dashes (-).
 
 * `dry_run` - (Optional) DryRun
 
@@ -112,23 +112,23 @@ Limitations:
 
 Limitations:
 
-  - The Fileset must already exist.
-  - A Fileset allows only one export directory to be created.
-  - Fileset and Path can and must specify only one.
+- The Fileset must already exist.
+- A Fileset allows only one export directory to be created.
+- Fileset and Path can and must specify only one.
 
 * `path` - (Optional, ForceNew) The path of the CPFS directory to be mounted.
 
 Limitations:
 
-  - The directory must be an existing directory on the CPFS.
-  - Only one export is allowed for the same directory.
-  - Fileset and Path can and must specify only one.
+- The directory must be an existing directory on the CPFS.
+- Only one export is allowed for the same directory.
+- Fileset and Path can and must specify only one.
 
 Format:
 
-  - 1~1024 characters in length.
-  - Use UTF-8 encoding.
-  - Must start and end with a forward slash (/) and root directory is/.
+- 1~1024 characters in length.
+- Use UTF-8 encoding.
+- Must start and end with a forward slash (/) and root directory is/.
 
 * `protocol_service_id` - (Required, ForceNew) Protocol Service ID
 * `vswitch_id` - (Optional, ForceNew) The vSwitch ID of the protocol service mount target.
