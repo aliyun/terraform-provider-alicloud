@@ -10,6 +10,10 @@ func ServicePackage() conns.ServicePackage {
 		Name: "PolarDB",
 		SDKDataSources: []conns.SDKDataSource{
 			{
+				TypeName: "alicloud_polardb_network_channels",
+				Factory:  DataSourceNetworkChannels,
+			},
+			{
 				TypeName: "alicloud_polardb_node_classes",
 				Factory:  DataSourceNodeClasses,
 			},
