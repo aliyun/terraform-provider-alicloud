@@ -2614,6 +2614,168 @@ func SkipAccAliCloudSAEApplication_basic3(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudSAEApplication_basic1(t *testing.T) {
+	var v map[string]interface{}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
+	resourceId := "alicloud_sae_application.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudSAEApplicationMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return sae.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSaeApplication")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tftestacc%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudSAEApplicationBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"app_name":           name,
+					"namespace_id":       "${alicloud_sae_namespace.default.namespace_id}",
+					"package_type":       "Image",
+					"app_description":    name + "desc",
+					"vswitch_id":         "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
+					"image_url":          fmt.Sprintf("registry-vpc.%s.aliyuncs.com/sae-demo-image/consumer:1.0", acctest.DefaultRegionToTest),
+					"replicas":           "5",
+					"cpu":                "500",
+					"memory":             "2048",
+					"package_version":    strconv.FormatInt(time.Now().Unix(), 10) + "create",
+					"micro_registration": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"app_name":           name,
+						"namespace_id":       acctest.CHECKSET,
+						"package_type":       "Image",
+						"app_description":    name + "desc",
+						"vswitch_id":         acctest.CHECKSET,
+						"vpc_id":             acctest.CHECKSET,
+						"image_url":          acctest.CHECKSET,
+						"replicas":           "5",
+						"cpu":                "500",
+						"memory":             "2048",
+						"micro_registration": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"oidc_role_name":  "${alicloud_ram_role.default.role_name}",
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"oidc_role_name":  acctest.CHECKSET,
+						"package_version": acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"oidc_role_name":  acctest.REMOVEKEY,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"oidc_role_name":  "",
+						"package_version": acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"oidc_role_name":  "${alicloud_ram_role.default.role_name}",
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"oidc_role_name":  acctest.CHECKSET,
+						"package_version": acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_config", "auto_enable_application_scaling_rule", "change_order_desc", "deploy"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudSAEApplication_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
+	resourceId := "alicloud_sae_application.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudSAEApplicationMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return sae.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSaeApplication")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tftestacc%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudSAEApplicationBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"app_name":           name,
+					"namespace_id":       "${alicloud_sae_namespace.default.namespace_id}",
+					"package_type":       "Image",
+					"app_description":    name + "desc",
+					"vswitch_id":         "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
+					"image_url":          fmt.Sprintf("registry-vpc.%s.aliyuncs.com/sae-demo-image/consumer:1.0", acctest.DefaultRegionToTest),
+					"replicas":           "5",
+					"cpu":                "500",
+					"memory":             "2048",
+					"package_version":    strconv.FormatInt(time.Now().Unix(), 10) + "create",
+					"micro_registration": "0",
+					"oidc_role_name":     "${alicloud_ram_role.default.role_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"app_name":           name,
+						"namespace_id":       acctest.CHECKSET,
+						"package_type":       "Image",
+						"app_description":    name + "desc",
+						"vswitch_id":         acctest.CHECKSET,
+						"vpc_id":             acctest.CHECKSET,
+						"image_url":          acctest.CHECKSET,
+						"replicas":           "5",
+						"cpu":                "500",
+						"memory":             "2048",
+						"micro_registration": "0",
+						"package_version":    acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_config", "auto_enable_application_scaling_rule", "change_order_desc", "deploy"},
+			},
+		},
+	})
+}
+
 func AliCloudSAEApplicationBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -2796,6 +2958,50 @@ func AliCloudSAEApplicationBasicDependence2(name string) string {
   		image_url = format("%%s-registry-vpc.cn-hangzhou.cr.aliyuncs.com/%%s/%%s", data.alicloud_cr_ee_instances.default.instances.0.name, alicloud_sae_namespace.default.namespace_name, alicloud_cr_ee_repo.default.name)
 	}
 `, acctest.DefaultRegionToTest, name, name)
+}
+
+func AliCloudSAEApplicationBasicDependence3(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_sae_namespace" "default" {
+  		namespace_description = var.name
+  		namespace_id          = "%s:%s"
+  		namespace_name        = var.name
+	}
+
+resource "alicloud_ram_role" "default" {
+  name     = var.name
+  document = <<EOF
+    {
+      "Statement": [
+        {
+          "Action": "sts:AssumeRole",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": [
+              "apigateway.aliyuncs.com",
+              "ecs.aliyuncs.com"
+            ]
+          }
+        }
+      ],
+      "Version": "1"
+    }
+  EOF
+  force    = true
+}
+`, name, acctest.DefaultRegionToTest, name)
 }
 
 var AliCloudSAEApplicationMap0 = map[string]string{
