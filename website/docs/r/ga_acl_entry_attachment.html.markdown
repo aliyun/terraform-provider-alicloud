@@ -50,7 +50,7 @@ The following arguments are supported:
 
 * `acl_id` - (Required, ForceNew) The ID of the Acl.
 * `entry` - (Required, ForceNew) The entry (IP address or CIDR block) that you want to add.
-* `entry_description` - (Optional, ForceNew) The description of the entry. The description must be `1` to `256` characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), and underscores (_).
+* `entry_description` - (Optional, ForceNew) The description of the entry. The description must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), underscores (_), and Chinese characters.
 
 ## Attributes Reference
 

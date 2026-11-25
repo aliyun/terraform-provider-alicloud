@@ -40,7 +40,7 @@ func ResourceAliCloudGaAcl() *schema.Resource {
 			"acl_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validators.StringMatch(regexp.MustCompile(`^[a-zA-Z][A-Za-z0-9._-]{2,128}$`), "The name must be `2` to `128` characters in length, and can contain letters, digits, periods (.), hyphens (-) and underscores (_). It must start with a letter."),
+				ValidateFunc: validators.StringMatch(regexp.MustCompile("^[\u4e00-\u9fa5a-zA-Z][\u4e00-\u9fa5a-zA-Z0-9._-]{0,127}$"), "The name must be 1 to 128 characters in length, and can contain digits, periods (.), underscores (_), and hyphens (-). It must start with a letter or a Chinese character."),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -63,7 +63,7 @@ func ResourceAliCloudGaAcl() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: validators.StringMatch(regexp.MustCompile(`^[A-Za-z0-9._/-]{1,256}$`), "The description of the IP entry. The description must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.),and underscores (_)."),
+							ValidateFunc: validators.StringMatch(regexp.MustCompile(`^[\p{Han}A-Za-z0-9._/-]{1,256}$`), "The description of the IP entry. The description must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), underscores (_), and Chinese characters."),
 						},
 					},
 				},
