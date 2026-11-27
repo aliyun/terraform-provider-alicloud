@@ -65,8 +65,10 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 )
@@ -251,10 +253,9 @@ func parseNameStatus(out string) []titleFile {
 	return files
 }
 
-// classify mirrors the classification order of the previous title gates:
-// test files first, then docs, service sources and flat sources.
+// Only tests in the provider tree contribute to a testcase-only title.
 func classify(name string) (testcase, docs, service, flat bool) {
-	if strings.HasSuffix(name, "_test.go") {
+	if strings.HasPrefix(name, "alicloud/") && strings.HasSuffix(name, "_test.go") {
 		return true, false, false, false
 	}
 	if strings.HasPrefix(name, "website/docs") {
@@ -598,7 +599,7 @@ func aggregateMarker(prTitle string) string {
 	return m[1]
 }
 
-var newDeclarationRe = regexp.MustCompile(`New (Resource|Data Source): `)
+var newDeclarationRe = regexp.MustCompile(`New (Resource/Data Source|Resource|Data Source): `)
 var newDeclarationTokenRe = regexp.MustCompile(`^[^\s;]+`)
 var newNamePrefixRe = regexp.MustCompile(`^alicloud_[a-z0-9_]+`)
 var compactNewNameRe = regexp.MustCompile(`^(alicloud_[a-z0-9_]+)\{([a-z0-9_,]*)\}$`)
@@ -618,6 +619,19 @@ func newDeclarations(prTitle string) (map[string]bool, bool) {
 		kind := prTitle[match[2]:match[3]]
 		token := strings.TrimSuffix(newDeclarationTokenRe.FindString(prTitle[match[1]:end]), ",")
 		key := "New " + kind + ": "
+		if kind == "Resource/Data Source" {
+			group := compactNewNameRe.FindStringSubmatch(token)
+			if group == nil {
+				return nil, false
+			}
+			suffixes := strings.Split(group[2], ",")
+			if len(suffixes) != 2 {
+				return nil, false
+			}
+			declared["New Resource: "+group[1]+suffixes[0]] = true
+			declared["New Data Source: "+group[1]+suffixes[1]] = true
+			continue
+		}
 		if !strings.ContainsAny(token, "{}") {
 			if name := newNamePrefixRe.FindString(token); name != "" {
 				declared[key+name] = true
@@ -652,6 +666,63 @@ func newDeclarations(prTitle string) (map[string]bool, bool) {
 // existing migration — a docs-only change must start with the docs marker, a
 // testcase-only one must carry the testcase marker, and no title may
 // truncate with an ellipsis.
+const codeTitleLimit = 128
+
+func (e entity) modifiedMarker() string {
+	if e.dataSource {
+		return "data-source/" + e.typeName + ": "
+	}
+	return "resource/" + e.typeName + ": "
+}
+
+// Measure only the mandatory markers for distinct existing entities. Neither an
+// author's description nor new declarations can inflate the threshold.
+func titleImpact(files []titleFile) (resources, dataSources, width int, rows []string) {
+	seen := map[string]bool{}
+	for _, file := range files {
+		for _, e := range file.entities {
+			marker := e.modifiedMarker()
+			if seen[marker] {
+				continue
+			}
+			seen[marker] = true
+			status := "new"
+			if e.existing {
+				status = "modified"
+				width += utf8.RuneCountInString(marker)
+				if e.dataSource {
+					dataSources++
+				} else {
+					resources++
+				}
+			}
+			product := e.product
+			if product == "" {
+				product = "root"
+			}
+			rows = append(rows, fmt.Sprintf("- `%s` — `%s` (%s)", product, strings.TrimSuffix(marker, ": "), status))
+		}
+	}
+	sort.Strings(rows)
+	return
+}
+
+func publishTitleSummary(text string) {
+	fmt.Print(text)
+	for _, key := range []string{"AONE_CI_SUMMARY_MD", "GITHUB_STEP_SUMMARY"} {
+		if path := os.Getenv(key); path != "" {
+			f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+			if err == nil {
+				_, err = f.WriteString(text)
+				f.Close()
+			}
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Could not append MR Title summary to %s: %v\n", key, err)
+			}
+		}
+	}
+}
+
 func checkTitle(prTitle string, files []titleFile) bool {
 	failed := false
 	reportError := func(format string, args ...interface{}) {
@@ -663,10 +734,24 @@ func checkTitle(prTitle string, files []titleFile) bool {
 		reportError("The PR title should not omit important infos about added or modified files. xxx... is not recommended.")
 	}
 
+	resources, dataSources, width, rows := titleImpact(files)
+	overflow := resources+dataSources > 1 && width > codeTitleLimit
+	shortTitle := overflow && strings.HasPrefix(prTitle, "provider: ")
+	missingModified := false
+	if shortTitle {
+		purpose := strings.TrimPrefix(prTitle, "provider: ")
+		purpose, _, _ = strings.Cut(purpose, ";")
+		if i := newDeclarationRe.FindStringIndex(purpose); i != nil {
+			purpose = purpose[:i[0]]
+		}
+		if strings.TrimSpace(purpose) == "" || utf8.RuneCountInString(prTitle) > codeTitleLimit {
+			reportError("Use provider: <change summary> within 128 characters. List any new declarations after the summary.")
+		}
+	}
 	agg := parseAggregate(prTitle, files)
 	declared, validDeclarations := newDeclarations(prTitle)
 	if !validDeclarations {
-		reportError("Invalid compact new-entity declaration; use one explicit suffix group, for example New Resource: alicloud_name{,_cache}.")
+		reportError("Invalid compact new-entity declaration; see scripts/title/README.md. For a resource and its data source use New Resource/Data Source: alicloud_name{,s} with exactly two ordered suffixes.")
 	}
 
 	docsOnly, testcaseOnly := true, true
@@ -686,27 +771,32 @@ func checkTitle(prTitle string, files []titleFile) bool {
 			if !e.existing {
 				if e.dataSource {
 					if !declared["New Data Source: "+e.typeName] {
-						reportError("The PR title should contains new datasource info New Data Source: %s; compact example: alicloud_name{,_cache} (scripts/title/README.md).", e.typeName)
+						reportError("Missing New Data Source: %s. A new resource and its data source can use New Resource/Data Source: alicloud_name{,s} (scripts/title/README.md).", e.typeName)
 					}
 				} else if !declared["New Resource: "+e.typeName] {
-					reportError("The PR title should contains new resource info New Resource: %s; compact example: alicloud_name{,_cache} (scripts/title/README.md).", e.typeName)
+					reportError("Missing New Resource: %s. A new resource and its data source can use New Resource/Data Source: alicloud_name{,s} (scripts/title/README.md).", e.typeName)
 				}
 				continue
 			}
-			if agg.covers(e) {
+			if shortTitle || agg.covers(e) || strings.Contains(prTitle, e.modifiedMarker()) {
 				continue
 			}
-			titleStr := "resource/"
-			if e.dataSource {
-				titleStr = "data-source/"
-			}
-			titleStr += e.typeName + ": "
-			if !strings.Contains(prTitle, titleStr) {
-				reportError("The PR title should contains modified info like %sxxx", titleStr)
+			if overflow {
+				missingModified = true
+			} else {
+				reportError("The PR title should contains modified info like %sxxx", e.modifiedMarker())
 			}
 		}
 	}
 
+	if overflow {
+		info := fmt.Sprintf("Modified entities: %d resource(s), %d data source(s). Their title markers require %d characters (Code limit: %d).", resources, dataSources, width, codeTitleLimit)
+		hint := "Use `provider: <change summary>`. Keep explicit declarations for new entities."
+		if missingModified {
+			reportError("%s %s", info, hint)
+		}
+		publishTitleSummary("### MR Title impact\n\n" + info + " " + hint + "\n\n" + strings.Join(rows, "\n") + "\n")
+	}
 	if docsChanged && docsOnly {
 		if !strings.HasPrefix(prTitle, "docs: ") {
 			reportError("The PR title should contains docs modified info like docs: xxx")

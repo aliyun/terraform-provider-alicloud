@@ -33,8 +33,8 @@ output "first_ram_saml_provider_id" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of SAML Provider IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by SAML Provider name.
+* `ids` - (Optional, Computed)  A list of SAML Provider IDs.
+* `name_regex` - (Optional) A regex string to filter results by SAML Provider name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -42,10 +42,17 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of SAML Provider names.
-* `providers` - A list of Ram Saml Providers. Each element contains the following attributes:
-	* `arn` - The Alibaba Cloud Resource Name (ARN) of the IdP.
-	* `description` - The description of SAML Provider.
-	* `encodedsaml_metadata_document` - The encodedsaml metadata document.
-	* `id` - The ID of the SAML Provider.
-	* `saml_provider_name` - The saml provider name.
-	* `update_date` - The update time.
+* `providers` - A list of Ram Saml Providers.
+
+---
+
+### `providers`
+
+The providers supports the following attributes:
+
+* `arn` - The Alibaba Cloud Resource Name (ARN) of the IdP.
+* `description` - The description of SAML Provider.
+* `encodedsaml_metadata_document` - The encodedsaml metadata document.
+* `id` - The ID of the SAML Provider.
+* `saml_provider_name` - The saml provider name.
+* `update_date` - The update time.

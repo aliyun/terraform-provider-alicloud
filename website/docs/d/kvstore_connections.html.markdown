@@ -39,15 +39,22 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` -  A list of Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance ids.
-* `connections` - Public network details of the specified resource. contains the following attributes:
-  * `id` - The ID of the instance.
-  * `instance_id` - The ID of the instance.
-  * `connection_string` - The connection string of the instance.
-  * `db_instance_net_type` - The network type of the instance.
-  * `expired_time` - The expiration time of the classic network address.
-  * `ip_address` - The IP address of the instance.
-  * `port` - The port number of the instance.
-  * `upgradeable` - The remaining validity period of the endpoint of the classic network.
-  * `vpc_id` - The ID of the VPC where the instance is deployed.
-  * `vpc_instance_id` - The ID of the instance. It is returned only when the value of the DBInstanceNetType parameter is 2 (indicating VPC).
-  * `vswitch_id` - The ID of the vSwitch.
+* `connections` - Public network details of the specified resource.
+
+---
+
+### `connections`
+
+The connections supports the following attributes:
+
+* `id` - The ID of the instance.
+* `instance_id` - The ID of the instance.
+* `connection_string` - The connection string of the instance.
+* `db_instance_net_type` - The network type of the instance.
+* `expired_time` - The expiration time of the classic network address.
+* `ip_address` - The IP address of the instance.
+* `port` - The port number of the instance.
+* `upgradeable` - The remaining validity period of the endpoint of the classic network.
+* `vpc_id` - The ID of the VPC where the instance is deployed.
+* `vpc_instance_id` - The ID of the instance. It is returned only when the value of the DBInstanceNetType parameter is 2 (indicating VPC).
+* `vswitch_id` - The ID of the vSwitch.

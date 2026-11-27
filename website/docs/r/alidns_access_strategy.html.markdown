@@ -109,8 +109,12 @@ The following arguments are supported:
 * `default_addr_pool_type` - (Required) The type of the primary address pool. Valid values: `IPV4`, `IPV6`, `DOMAIN`.
 * `default_addr_pools` - (Required) List of primary address pool collections. See [`default_addr_pools`](#default_addr_pools) below for details.
 * `default_latency_optimization` - (Optional) Specifies whether to enable scheduling optimization for latency resolution for the primary address pool group. Valid values: `OPEN`, `CLOSE`.
-* `default_lba_strategy` - (Optional) The load balancing policy of the primary address pool group. Valid values: `ALL_RR`, `RATIO`. **NOTE:** The `default_lba_strategy` is required under the condition that `strategy_mode` is `GEO`.
-* `default_max_return_addr_num` - (Optional) The maximum number of addresses returned by the primary address pool set. **NOTE:** The `default_max_return_addr_num` is required under the condition that `strategy_mode` is `LATENCY`.
+* `default_lba_strategy` - (Optional) The load balancing policy of the primary address pool group. Valid values: `ALL_RR`, `RATIO`.
+
+  -> **NOTE:** The `default_lba_strategy` is required under the condition that `strategy_mode` is `GEO`.
+* `default_max_return_addr_num` - (Optional) The maximum number of addresses returned by the primary address pool set.
+
+  -> **NOTE:** The `default_max_return_addr_num` is required under the condition that `strategy_mode` is `LATENCY`.
 * `default_min_available_addr_num` - (Required) The minimum number of available addresses for the primary address pool set.
 * `failover_addr_pool_type` - (Optional) The type of the secondary address pool. Valid values: `IPV4`, `IPV6`, `DOMAIN`.
 * `failover_addr_pools` - (Optional) List of backup address pool sets. See [`failover_addr_pools`](#failover_addr_pools) below for details.
@@ -122,7 +126,11 @@ The following arguments are supported:
 * `lang` - (Optional) The lang.
 * `strategy_mode` - (Required) The type of the access policy. Valid values: `GEO` or `LATENCY`. `GEO`: based on geographic location. `LATENCY`: Based on delay.
 * `strategy_name` - (Required) The name of the access policy.
-* `lines` - (Optional) The source regions. See [`lines`](#lines) below for details. **NOTE:** The `lines` is required under the condition that `strategy_mode` is `GEO`.
+* `lines` - (Optional) The source regions. See [`lines`](#lines) below for details.
+
+  -> **NOTE:** The `lines` is required under the condition that `strategy_mode` is `GEO`.
+
+---
 
 ### `failover_addr_pools`
 
@@ -131,12 +139,16 @@ The failover_addr_pools supports the following:
 * `addr_pool_id` - (Optional) The ID of the address pool in the secondary address pool group.
 * `lba_weight` - (Optional) The weight of the address pool in the secondary address pool group.
 
+---
+
 ### `default_addr_pools`
 
 The default_addr_pools supports the following:
 
 * `addr_pool_id` - (Required) The ID of the address pool in the primary address pool group.
 * `lba_weight` - (Optional) The weight of the address pool in the primary address pool group.
+
+---
 
 ### `lines`
 

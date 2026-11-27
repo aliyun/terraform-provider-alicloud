@@ -82,6 +82,8 @@ The following arguments are supported:
 * `traffic_mirror_filter_description` - (Optional) The description of the TrafficMirrorFilter.
 * `traffic_mirror_filter_name` - (Optional) The name of the TrafficMirrorFilter.
 
+---
+
 ### `egress_rules`
 
 The egress_rules supports the following:
@@ -104,6 +106,8 @@ The egress_rules supports the following:
 
   -> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
 * `traffic_mirror_filter_rule_status` - (Computed) The status of the traffic mirror filter rule.
+
+---
 
 ### `ingress_rules`
 
@@ -137,7 +141,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Traffic Mirror Filter.
 * `delete` - (Defaults to 5 mins) Used when delete the Traffic Mirror Filter.

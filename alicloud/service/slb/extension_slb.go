@@ -145,7 +145,7 @@ func expandMasterSlaveBackendServersToString(items []interface{}) string {
 
 		var serverId string
 		var port, weight, isBackup int
-		var stype, serveType string
+		var stype, serveType, description string
 		if v, ok := s["server_id"]; ok {
 			serverId = v.(string)
 		}
@@ -164,7 +164,14 @@ func expandMasterSlaveBackendServersToString(items []interface{}) string {
 		if v, ok := s["is_backup"]; ok {
 			isBackup = v.(int)
 		}
-		str := fmt.Sprintf("{'ServerId':'%s','Port':'%d','Weight':'%d', 'Type': '%s', 'ServerType': '%s', 'IsBackup':'%d'}", strings.Trim(serverId, " "), port, weight, strings.Trim(stype, " "), strings.Trim(serveType, " "), isBackup)
+		if v, ok := s["description"]; ok {
+			description = v.(string)
+		}
+		str := fmt.Sprintf("{'ServerId':'%s','Port':'%d','Weight':'%d', 'Type': '%s', 'ServerType': '%s', 'IsBackup':'%d'", strings.Trim(serverId, " "), port, weight, strings.Trim(stype, " "), strings.Trim(serveType, " "), isBackup)
+		if description != "" {
+			str += fmt.Sprintf(", 'Description':'%s'", description)
+		}
+		str += "}"
 		servers = append(servers, str)
 
 	}

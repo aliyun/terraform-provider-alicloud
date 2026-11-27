@@ -38,7 +38,7 @@ resource "alicloud_tag_policy" "example" {
   policy_desc    = var.name
   user_type      = "USER"
   policy_content = <<EOF
-		{"tags":{"CostCenter":{"tag_value":{"@@assign":["Beijing","Shanghai"]},"tag_key":{"@@assign":"CostCenter"}}}}
+  {"tags":{"CostCenter":{"tag_value":{"@@assign":["Beijing","Shanghai"]},"tag_key":{"@@assign":"CostCenter"}}}}
     EOF
 }
 

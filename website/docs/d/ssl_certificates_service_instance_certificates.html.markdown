@@ -33,9 +33,9 @@ output "alicloud_ssl_certificates_service_instance_certificate_example_id" {
 
 The following arguments are supported:
 
-* `instance_id` - (ForceNew, Optional) The ID of the certificate instance that issued the certificate. Use it to list the certificates a single instance has issued.
-* `certificate_status` - (ForceNew, Optional) The status of the certificate. Valid values: `issued`, `revoked`, `willExpire` and `expired`.
-* `certificate_source` - (ForceNew, Optional) The source of the certificate. Valid values: `BUY`, `UPLOAD` and `TEST`.
+* `instance_id` - (Optional) The ID of the certificate instance that issued the certificate. Use it to list the certificates a single instance has issued.
+* `certificate_status` - (Optional) The status of the certificate. Valid values: `issued`, `revoked`, `willExpire` and `expired`.
+* `certificate_source` - (Optional) The source of the certificate. Valid values: `BUY`, `UPLOAD` and `TEST`.
 * `ids` - (Optional, Computed) A list of Instance Certificate IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -44,20 +44,27 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Instance Certificate IDs.
-* `certificates` - A list of Instance Certificate Entries. Each element contains the following attributes:
-  * `certificate_id` - The ID of the certificate.
-  * `instance_id` - The ID of the certificate instance that issued this certificate.
-  * `cert_identifier` - The global certificate identifier, formatted as the certificate ID plus `-` plus the site region ID. Alibaba Cloud services such as ALB, CDN and WAF reference a certificate by this value.
-  * `certificate_name` - The name of the certificate.
-  * `certificate_status` - The status of the certificate.
-  * `certificate_source` - The source of the certificate.
-  * `common_name` - The common name of the certificate.
-  * `domain` - All domain names covered by the certificate, separated by commas.
-  * `algorithm` - The encryption algorithm of the certificate.
-  * `key_size` - The key length of the certificate algorithm.
-  * `not_before` - The start of the certificate validity period.
-  * `not_after` - The end of the certificate validity period.
-  * `issuer` - The certificate authority that issued the certificate.
-  * `finger_print` - The public key fingerprint of the certificate.
-  * `exist_private_key` - Indicates whether the private key of the certificate is held on the server side.
-  * `id` - The ID of the resource supplied above.
+* `certificates` - A list of Instance Certificate Entries.
+
+---
+
+### `certificates`
+
+The certificates supports the following attributes:
+
+* `certificate_id` - The ID of the certificate.
+* `instance_id` - The ID of the certificate instance that issued this certificate.
+* `cert_identifier` - The global certificate identifier, formatted as the certificate ID plus `-` plus the site region ID. Alibaba Cloud services such as ALB, CDN and WAF reference a certificate by this value.
+* `certificate_name` - The name of the certificate.
+* `certificate_status` - The status of the certificate.
+* `certificate_source` - The source of the certificate.
+* `common_name` - The common name of the certificate.
+* `domain` - All domain names covered by the certificate, separated by commas.
+* `algorithm` - The encryption algorithm of the certificate.
+* `key_size` - The key length of the certificate algorithm.
+* `not_before` - The start of the certificate validity period.
+* `not_after` - The end of the certificate validity period.
+* `issuer` - The certificate authority that issued the certificate.
+* `finger_print` - The public key fingerprint of the certificate.
+* `exist_private_key` - Indicates whether the private key of the certificate is held on the server side.
+* `id` - The ID of the resource supplied above.

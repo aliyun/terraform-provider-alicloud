@@ -174,6 +174,312 @@ func TestRegisterEntriesAllKinds(t *testing.T) {
 	}
 }
 
+// A register.go that registers one type name twice — once as a managed
+// resource and once as a data source, each with its own factory in its own
+// implementation file — shaped like alicloud/service/sae/register.go, whose
+// same-named pair is why the reverse lookup matches the kind as well as the
+// name.
+const sameNameResourceFirstRegisterSrc = `package sae
+
+func ServicePackage() conns.ServicePackage {
+	return conns.ServicePackage{
+		Name: "Sae",
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_sae_load_balancer_nlb",
+				Factory:  NewLoadBalancerNLBResource,
+			},
+		},
+		DataSources: []conns.DataSource{
+			{
+				TypeName: "alicloud_sae_load_balancer_nlb",
+				Factory:  NewLoadBalancerNLBDataSource,
+			},
+		},
+	}
+}
+`
+
+// The same pair with the declaration order flipped, so a lookup can be proven
+// to depend on the (kind, name) identity rather than on register order.
+const sameNameDataSourceFirstRegisterSrc = `package sae
+
+func ServicePackage() conns.ServicePackage {
+	return conns.ServicePackage{
+		Name: "Sae",
+		DataSources: []conns.DataSource{
+			{
+				TypeName: "alicloud_sae_load_balancer_nlb",
+				Factory:  NewLoadBalancerNLBDataSource,
+			},
+		},
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_sae_load_balancer_nlb",
+				Factory:  NewLoadBalancerNLBResource,
+			},
+		},
+	}
+}
+`
+
+// writeSameNameTree materializes a product directory whose register.go
+// declares the same-named resource/data-source pair and whose two
+// implementation files declare one factory each. The implementation bodies
+// are never compiled — only parsed — so stubs suffice.
+func writeSameNameTree(t *testing.T, registerSrc string) {
+	t.Helper()
+	dir := filepath.Join("alicloud", "service", "sae")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		filepath.Join(dir, "register.go"):                      registerSrc,
+		filepath.Join(dir, "resource_load_balancer_nlb.go"):    "package sae\n\nfunc NewLoadBalancerNLBResource() *nlbResource { return nil }\n",
+		filepath.Join(dir, "data_source_load_balancer_nlb.go"): "package sae\n\nfunc NewLoadBalancerNLBDataSource() *nlbDataSource { return nil }\n",
+	}
+	for path, src := range files {
+		if err := os.WriteFile(path, []byte(src), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestUnitFrameworkFindByKindAndTypeName(t *testing.T) {
+	const name = "alicloud_sae_load_balancer_nlb"
+	for _, tc := range []struct {
+		desc     string
+		register string
+	}{
+		{"resource declared first", sameNameResourceFirstRegisterSrc},
+		{"data source declared first", sameNameDataSourceFirstRegisterSrc},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			writeSameNameTree(t, tc.register)
+
+			r := FrameworkFindByKindAndTypeName(KindResource, name)
+			if r == nil {
+				t.Fatal("FrameworkFindByKindAndTypeName(resource, name) = nil, want the resource registration")
+			}
+			if r.Kind != KindResource || filepath.Base(r.ImplPath) != "resource_load_balancer_nlb.go" {
+				t.Errorf("resource lookup resolved to (%s, %s), want (resource, resource_load_balancer_nlb.go)", r.Kind, r.ImplPath)
+			}
+
+			d := FrameworkFindByKindAndTypeName(KindDataSource, name)
+			if d == nil {
+				t.Fatal("FrameworkFindByKindAndTypeName(data source, name) = nil, want the data source registration")
+			}
+			if d.Kind != KindDataSource || filepath.Base(d.ImplPath) != "data_source_load_balancer_nlb.go" {
+				t.Errorf("data source lookup resolved to (%s, %s), want (data_source, data_source_load_balancer_nlb.go)", d.Kind, d.ImplPath)
+			}
+
+			if got := FrameworkFindByKindAndTypeName(KindEphemeral, name); got != nil {
+				t.Errorf("FrameworkFindByKindAndTypeName(ephemeral, name) = %+v, want nil: the name is not registered as an ephemeral", got)
+			}
+		})
+	}
+}
+
+// TestUnitFrameworkFactoriesDeclaredIn pins the contract the file-granularity
+// guard relies on: the entries returned are exactly the registrations whose
+// factories the given source declares, scoped to the file's own product, and
+// every failure to prove that is an error the caller must fail closed on
+// rather than a silent "no conflict".
+func TestUnitFrameworkFactoriesDeclaredIn(t *testing.T) {
+	const impl = "alicloud/service/sae/data_source_load_balancer_nlb.go"
+	t.Run("one factory per file resolves its own entry", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		writeSameNameTree(t, sameNameResourceFirstRegisterSrc)
+
+		src, err := os.ReadFile(impl)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := FrameworkFactoriesDeclaredIn(impl, src)
+		if err != nil {
+			t.Fatalf("FrameworkFactoriesDeclaredIn(data source impl) errored: %s", err)
+		}
+		if len(got) != 1 || got[0].TypeName != "alicloud_sae_load_balancer_nlb" || got[0].Kind != KindDataSource || got[0].Factory != "NewLoadBalancerNLBDataSource" {
+			t.Errorf("FrameworkFactoriesDeclaredIn(data source impl) = %+v, want the pair's data source entry alone", got)
+		}
+	})
+	t.Run("a file declaring both factories of the pair reports both", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		writeSameNameTree(t, sameNameResourceFirstRegisterSrc)
+		shared := "alicloud/service/sae/load_balancer_nlb.go"
+		sharedSrc := "package sae\n\nfunc NewLoadBalancerNLBResource() *nlbResource { return nil }\n\nfunc NewLoadBalancerNLBDataSource() *nlbDataSource { return nil }\n"
+		if err := os.WriteFile(shared, []byte(sharedSrc), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := FrameworkFactoriesDeclaredIn(shared, []byte(sharedSrc))
+		if err != nil {
+			t.Fatalf("FrameworkFactoriesDeclaredIn(shared impl) errored: %s", err)
+		}
+		if len(got) != 2 {
+			t.Errorf("FrameworkFactoriesDeclaredIn(shared impl) = %+v, want both entries of the pair", got)
+		}
+	})
+	t.Run("another product's same-named factory is not this file's", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		writeSameNameTree(t, sameNameResourceFirstRegisterSrc)
+		// ecs's register references the same factory name, backed by its own
+		// same-named declaration in its own package — the only way such a
+		// register compiles.
+		ecsDir := filepath.Join("alicloud", "service", "ecs")
+		if err := os.MkdirAll(ecsDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		ecsRegister := "package ecs\n\nfunc ServicePackage() conns.ServicePackage {\n	return conns.ServicePackage{\n		Name: \"Ecs\",\n		DataSources: []conns.DataSource{\n			{\n				TypeName: \"alicloud_ecs_load_balancer_nlb\",\n				Factory:  NewLoadBalancerNLBDataSource,\n			},\n		},\n	}\n}\n"
+		if err := os.WriteFile(filepath.Join(ecsDir, "register.go"), []byte(ecsRegister), 0644); err != nil {
+			t.Fatal(err)
+		}
+		ecsImpl := "package ecs\n\nfunc NewLoadBalancerNLBDataSource() *nlbDataSource { return nil }\n"
+		if err := os.WriteFile(filepath.Join(ecsDir, "data_source_load_balancer_nlb.go"), []byte(ecsImpl), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		src, err := os.ReadFile(impl)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := FrameworkFactoriesDeclaredIn(impl, src)
+		if err != nil {
+			t.Fatalf("FrameworkFactoriesDeclaredIn(data source impl) errored: %s", err)
+		}
+		if len(got) != 1 {
+			t.Errorf("FrameworkFactoriesDeclaredIn(data source impl) = %+v, want the sae data source entry alone: the ecs entry names a factory ecs declares itself", got)
+		}
+	})
+	t.Run("a product file without its register fails closed", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		dir := filepath.Join("alicloud", "service", "sae")
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		implSrc := "package sae\n\nfunc NewLoadBalancerNLBDataSource() *nlbDataSource { return nil }\n"
+		if err := os.WriteFile(impl, []byte(implSrc), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := FrameworkFactoriesDeclaredIn(impl, []byte(implSrc))
+		if err == nil {
+			t.Fatalf("FrameworkFactoriesDeclaredIn(file without register) = (%+v, nil), want an error: the guard cannot prove what the file declares", got)
+		}
+	})
+	t.Run("an unparseable source fails closed", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		writeSameNameTree(t, sameNameResourceFirstRegisterSrc)
+
+		got, err := FrameworkFactoriesDeclaredIn(impl, []byte("package sae\n\nfunc ( {\n"))
+		if err == nil {
+			t.Fatalf("FrameworkFactoriesDeclaredIn(unparseable src) = (%+v, nil), want an error: the guard cannot prove what the file declares", got)
+		}
+	})
+	t.Run("an unparseable register fails closed, not as no entries", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		// A register that fails to parse must surface as an error: the guard
+		// counts factories off this result, and folding the parse failure
+		// into "no entries" would turn the file-granularity guard into a
+		// silent pass — exactly the fail-closed contract its error return
+		// promises.
+		writeSameNameTree(t, "package sae\n\nfunc ( {\n")
+
+		src, err := os.ReadFile(impl)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := FrameworkFactoriesDeclaredIn(impl, src)
+		if err == nil {
+			t.Fatalf("FrameworkFactoriesDeclaredIn(unparseable register) = (%+v, nil), want an error: a broken register cannot prove what the file declares", got)
+		}
+	})
+	t.Run("alias registrations return every entry that shares the factory", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		// Alias registrations reuse one factory for several type names
+		// (alicloud_disk/alicloud_ecs_disk, the sslcertificateservice legacy
+		// aliases): every entry whose factory this file declares comes back,
+		// and the caller counts distinct factories rather than entries.
+		aliasRegister := `package sae
+
+func ServicePackage() conns.ServicePackage {
+	return conns.ServicePackage{
+		Name: "Sae",
+		DataSources: []conns.DataSource{
+			{
+				TypeName: "alicloud_sae_load_balancer_nlb",
+				Factory:  NewLoadBalancerNLBDataSource,
+			},
+			{
+				TypeName: "alicloud_sae_load_balancer_nlb_alias",
+				Factory:  NewLoadBalancerNLBDataSource,
+			},
+		},
+	}
+}
+`
+		writeSameNameTree(t, aliasRegister)
+
+		src, err := os.ReadFile(impl)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := FrameworkFactoriesDeclaredIn(impl, src)
+		if err != nil {
+			t.Fatalf("FrameworkFactoriesDeclaredIn(data source impl) errored: %s", err)
+		}
+		if len(got) != 2 {
+			t.Fatalf("FrameworkFactoriesDeclaredIn(data source impl) = %+v, want both entries that share the one factory", got)
+		}
+		for _, e := range got {
+			if e.Factory != "NewLoadBalancerNLBDataSource" {
+				t.Errorf("entry %+v does not name the factory this file declares", e)
+			}
+		}
+	})
+	t.Run("a file outside the product directories scans no register", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		writeSameNameTree(t, sameNameResourceFirstRegisterSrc)
+
+		got, err := FrameworkFactoriesDeclaredIn("alicloud/resource_widget.go", []byte("package alicloud\n\nfunc NewWidgetResource() *widget { return nil }\n"))
+		if err != nil {
+			t.Fatalf("FrameworkFactoriesDeclaredIn(flat file) errored: %s", err)
+		}
+		if len(got) != 0 {
+			t.Errorf("FrameworkFactoriesDeclaredIn(flat file) = %+v, want empty: no registered framework factory can be declared outside a product package", got)
+		}
+	})
+}
+
+// TestUnitFrameworkFindByTypeNamePrefersFirstDeclaration pins the name-only
+// lookup's behavior: it returns whichever same-named entry the register
+// declares first, which is why the kind-aware caller must not fall back to it
+// when the pair is registered.
+func TestUnitFrameworkFindByTypeNamePrefersFirstDeclaration(t *testing.T) {
+	const name = "alicloud_sae_load_balancer_nlb"
+	for _, tc := range []struct {
+		desc     string
+		register string
+		want     Kind
+	}{
+		{"resource declared first", sameNameResourceFirstRegisterSrc, KindResource},
+		{"data source declared first", sameNameDataSourceFirstRegisterSrc, KindDataSource},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			writeSameNameTree(t, tc.register)
+			r := FrameworkFindByTypeName(name)
+			if r == nil {
+				t.Fatal("FrameworkFindByTypeName(name) = nil, want the first-declared registration")
+			}
+			if r.Kind != tc.want {
+				t.Errorf("FrameworkFindByTypeName(name) resolved to kind %s, want %s", r.Kind, tc.want)
+			}
+		})
+	}
+}
+
 func TestIsSplitSourceStems(t *testing.T) {
 	cases := []struct {
 		path          string

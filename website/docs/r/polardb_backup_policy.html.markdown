@@ -130,6 +130,8 @@ The following arguments are supported:
   -> **NOTE:** Note When you create a cluster, the default value of this parameter is 0.
 * `backup_retention_period` - (Optional) Cluster backup retention days, Fixed for 7 days, not modified.
 
+---
+
 ### `advanced_data_policies`
 
 The `advanced_data_policies` block supports:
@@ -159,6 +161,8 @@ The following attributes are exported:
 * `enable_backup_log` - Indicates whether the log backup feature was enabled. Valid values are `0`, `1`. `1` By default, the log backup feature is enabled and cannot be disabled.
 * `advanced_policy_option` - Whether advanced policies are supported or enabled by the cluster.
 * `auto_created_advanced_data_policies` - Service-generated advanced backup rules. Fields have the same names as `advanced_data_policies`, but are read-only.
+
+---
 
 ### `auto_created_advanced_data_policies`
 

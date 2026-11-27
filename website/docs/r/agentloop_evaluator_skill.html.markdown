@@ -80,9 +80,13 @@ The following arguments are supported:
 * `description` - (Optional) The description of the Evaluator Skill. It can be updated in place.
 * `display_name` - (Optional) The display name of the Evaluator Skill. It can be updated in place.
 * `enable` - (Optional) Whether to enable the Evaluator Skill. Defaults to `false`. It can be updated in place.
-* `files` - (Required, List) The skill files of the Evaluator Skill. Changing `files` updates the skill in place and replaces the whole file list. **NOTE:** Updates send the complete current metadata and file list because the API uses full-replacement semantics. See [`files`](#files) below.
+* `files` - (Required, List) The skill files of the Evaluator Skill. Changing `files` updates the skill in place and replaces the whole file list.
+
+  -> **NOTE:** Updates send the complete current metadata and file list because the API uses full-replacement semantics. See [`files`](#files) below.
 * `name` - (Required, ForceNew) The name of the Evaluator to which the skill belongs.
 * `skill_name` - (Required, ForceNew) The name of the Evaluator Skill.
+
+---
 
 ### `files`
 
@@ -102,7 +106,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Evaluator Skill.
 * `delete` - (Defaults to 5 mins) Used when delete the Evaluator Skill.

@@ -39,17 +39,31 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `entries` - A list of CEN Route Entries. Each element contains the following attributes:
-  * `route_table_id` - ID of the route table.
-  * `cidr_block` - The destination CIDR block of the route entry.
-  * `next_hop_id` - ID of the next hop.
-  * `next_hop_type` - Type of the next hop, including "Instance", "HaVip" and "RouterInterface".
-  * `route_type` - Type of the route entry, including "System", "Custom" and "BGP".
-  * `operational_mode` - Whether to allow the route entry to be published or removed to or from CEN.
-  * `publish_status` - The publish status of the route entry in CEN, including "Published" and "NonPublished".
-  * `conflicts` - A list of conflicted Route Entries. Each element contains the following attributes:
-    * `cidr_block` - The destination CIDR block of the conflicted route entry.
-    * `region_id` - ID of the region where the conflicted route entry is located.
-    * `instance_id` - ID of the CEN child instance.
-    * `instance_type` - The type of the CEN child instance.
-    * `status` - Reasons of exceptions.
+* `entries` - A list of CEN Route Entries.
+
+---
+
+### `entries`
+
+The entries supports the following attributes:
+
+* `route_table_id` - ID of the route table.
+* `cidr_block` - The destination CIDR block of the route entry.
+* `next_hop_id` - ID of the next hop.
+* `next_hop_type` - Type of the next hop, including "Instance", "HaVip" and "RouterInterface".
+* `route_type` - Type of the route entry, including "System", "Custom" and "BGP".
+* `operational_mode` - Whether to allow the route entry to be published or removed to or from CEN.
+* `publish_status` - The publish status of the route entry in CEN, including "Published" and "NonPublished".
+* `conflicts` - A list of conflicted Route Entries.
+
+---
+
+### `entries.conflicts`
+
+The conflicts supports the following attributes:
+
+* `cidr_block` - The destination CIDR block of the conflicted route entry.
+* `region_id` - ID of the region where the conflicted route entry is located.
+* `instance_id` - ID of the CEN child instance.
+* `instance_type` - The type of the CEN child instance.
+* `status` - Reasons of exceptions.

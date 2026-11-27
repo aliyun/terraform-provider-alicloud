@@ -112,6 +112,8 @@ The following arguments are supported:
 * `sink` - (Optional, ForceNew, List) The data sink of the Pipeline. See [`sink`](#sink) below.
 * `source` - (Optional, List) The data source of the Pipeline. The dataset source filter can be updated in place; changes to the source type, input fields, logstore source, or source dataset recreate the resource. See [`source`](#source) below.
 
+---
+
 ### `execute_policy`
 
 The execute_policy supports the following:
@@ -120,12 +122,16 @@ The execute_policy supports the following:
 * `run_once` - (Optional, ForceNew, List) The run-once policy. It is required when `mode` is `RunOnce`. See [`run_once`](#execute_policy-run_once) below.
 * `scheduled` - (Optional, ForceNew, List) The scheduled policy. It is required when `mode` is `Scheduled`. See [`scheduled`](#execute_policy-scheduled) below.
 
+---
+
 ### `execute_policy-run_once`
 
 The run_once supports the following:
 
 * `from_time` - (Optional, ForceNew, Int) The start time of the run, in Unix seconds. It must be less than `to_time`.
 * `to_time` - (Optional, ForceNew, Int) The end time of the run, in Unix seconds. It must be greater than `from_time`.
+
+---
 
 ### `execute_policy-scheduled`
 
@@ -134,11 +140,15 @@ The scheduled supports the following:
 * `from_time` - (Optional, ForceNew, Int) The start time of the schedule, in Unix milliseconds.
 * `interval` - (Optional, ForceNew) The run interval. Valid values: `1h`, `6h`, `12h`, `1d`.
 
+---
+
 ### `pipeline`
 
 The pipeline supports the following:
 
 * `nodes` - (Required, List) The processing nodes of the Pipeline. See [`nodes`](#pipeline-nodes) below.
+
+---
 
 ### `pipeline-nodes`
 
@@ -148,6 +158,8 @@ The nodes supports the following:
 * `parameters` - (Optional, Map) The parameters of the node. The parameters vary depending on the node type. A value that is a valid JSON document (e.g. `jsonencode(["a", "b"])` for an array, `"10"` for a number, `"true"` for a boolean) is sent in its parsed form; any other value is sent verbatim as a string.
 * `type` - (Optional, ForceNew) The type of the node.
 
+---
+
 ### `sink`
 
 The sink supports the following:
@@ -155,6 +167,8 @@ The sink supports the following:
 * `condition` - (Optional, ForceNew, List) The condition sink. It is valid when `type` is `condition`. See [`condition`](#sink-condition) below.
 * `dataset` - (Optional, ForceNew, List) The dataset sink. It is valid when `type` is `dataset`. See [`dataset`](#sink-dataset) below.
 * `type` - (Optional, ForceNew) The type of the sink. Valid values: `dataset`, `condition`.
+
+---
 
 ### `sink-condition`
 
@@ -164,6 +178,8 @@ The condition supports the following:
 * `match_mode` - (Optional, ForceNew) The match mode of the routes. Valid values: `all`.
 * `routes` - (Optional, ForceNew, List) The condition routes. See [`routes`](#sink-condition-routes) below.
 
+---
+
 ### `sink-condition-default_sink`
 
 The default_sink supports the following:
@@ -171,12 +187,16 @@ The default_sink supports the following:
 * `dataset` - (Optional, ForceNew, List) The dataset sink target. See [`dataset`](#sink-condition-default_sink-dataset) below.
 * `type` - (Optional, ForceNew) The type of the sink target. Valid values: `dataset`.
 
+---
+
 ### `sink-condition-default_sink-dataset`
 
 The dataset supports the following:
 
 * `agent_space` - (Optional, ForceNew) The name of the Agent Space to which the target dataset belongs.
 * `dataset` - (Optional, ForceNew) The name of the target dataset.
+
+---
 
 ### `sink-condition-routes`
 
@@ -186,12 +206,16 @@ The routes supports the following:
 * `id` - (Optional, ForceNew) The ID of the route.
 * `sink` - (Optional, ForceNew, List) The sink target of the route. See [`sink`](#sink-condition-routes-sink) below.
 
+---
+
 ### `sink-condition-routes-sink`
 
 The sink supports the following:
 
 * `dataset` - (Optional, ForceNew, List) The dataset sink target. See [`dataset`](#sink-condition-routes-sink-dataset) below.
 * `type` - (Optional, ForceNew) The type of the sink target. Valid values: `dataset`.
+
+---
 
 ### `sink-condition-routes-sink-dataset`
 
@@ -200,12 +224,16 @@ The dataset supports the following:
 * `agent_space` - (Optional, ForceNew) The name of the Agent Space to which the target dataset belongs.
 * `dataset` - (Optional, ForceNew) The name of the target dataset.
 
+---
+
 ### `sink-dataset`
 
 The dataset supports the following:
 
 * `agent_space` - (Optional, ForceNew) The name of the Agent Space to which the target dataset belongs.
 * `dataset` - (Optional, ForceNew) The name of the target dataset.
+
+---
 
 ### `source`
 
@@ -216,6 +244,8 @@ The source supports the following:
 * `logstore` - (Optional, ForceNew, List) The logstore source. It is valid when `type` is `logstore`. See [`logstore`](#source-logstore) below.
 * `type` - (Optional, ForceNew) The type of the source. Valid values: `dataset`, `logstore`.
 
+---
+
 ### `source-dataset`
 
 The dataset supports the following:
@@ -223,12 +253,16 @@ The dataset supports the following:
 * `dataset` - (Optional, ForceNew) The name of the source dataset. The dataset must belong to the Agent Space of the Pipeline.
 * `filter` - (Optional) The filter expression of the source dataset. It can be updated in place.
 
+---
+
 ### `source-input_fields`
 
 The input_fields supports the following:
 
 * `name` - (Optional, ForceNew) The name of the input field.
 * `type` - (Optional, ForceNew) The type of the input field. Valid values: `text`, `long`, `double`, `json`.
+
+---
 
 ### `source-logstore`
 
@@ -249,7 +283,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Pipeline.
 * `delete` - (Defaults to 5 mins) Used when delete the Pipeline.

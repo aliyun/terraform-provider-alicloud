@@ -39,11 +39,11 @@ output "database_gateway_gateway_id_2" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Gateway IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Gateway name.
+* `ids` - (Optional, Computed)  A list of Gateway IDs.
+* `name_regex` - (Optional) A regex string to filter results by Gateway name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `search_key` - (Optional, ForceNew) The search key.
-* `status` - (Optional, ForceNew) The status of gateway. Valid values: `EXCEPTION`, `NEW`, `RUNNING`, `STOPPED`.
+* `search_key` - (Optional) The search key.
+* `status` - (Optional) The status of gateway. Valid values: `EXCEPTION`, `NEW`, `RUNNING`, `STOPPED`.
 
 ## Attributes Reference
 
@@ -51,6 +51,8 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Gateway names.
 * `gateways` - A list of Database Gateway Gateways. Each element contains the following attributes:
+
+---
 
 ### `gateways`
 
@@ -66,6 +68,8 @@ The gateways supports the following attributes:
 * `parent_id` - The parent node Id of Gateway.
 * `status` - The status of gateway. Valid values: `EXCEPTION`, `NEW`, `RUNNING`, `STOPPED`.
 * `user_id` - The user's id.
+
+---
 
 ### `gateways.gateway_instances`
 

@@ -36,7 +36,7 @@ output "sddp_config_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Config IDs.
+* `ids` - (Optional, Computed)  A list of Config IDs.
 * `lang` - (Optional) The Request and Receive the Language of the Message Type. Valid values: `zh`, `en`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -44,10 +44,17 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `configs` - A list of Sddp Configs. Each element contains the following attributes:
-  * `code` - Abnormal Alarm General Configuration Module by Using the Encoding.Valid values: `access_failed_cnt`, `access_permission_exprie_max_days`, `log_datasize_avg_days`.
-  * `config_id` - Configure the Number.
-  * `default_value` - Default Value.
-  * `description` - Abnormal Alarm General Description of the Configuration Item.
-  * `id` - The ID of the Config.
-  * `value` - The Specified Exception Alarm Generic by Using the Value. Code Different Values for This Parameter the Specific Meaning of Different.
+* `configs` - A list of Sddp Configs.
+
+---
+
+### `configs`
+
+The configs supports the following attributes:
+
+* `code` - Abnormal Alarm General Configuration Module by Using the Encoding.Valid values: `access_failed_cnt`, `access_permission_exprie_max_days`, `log_datasize_avg_days`.
+* `config_id` - Configure the Number.
+* `default_value` - Default Value.
+* `description` - Abnormal Alarm General Description of the Configuration Item.
+* `id` - The ID of the Config.
+* `value` - The Specified Exception Alarm Generic by Using the Value. Code Different Values for This Parameter the Specific Meaning of Different.

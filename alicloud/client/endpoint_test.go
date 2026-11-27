@@ -2,16 +2,21 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/client/config"
 	"github.com/stretchr/testify/assert"
 )
@@ -349,4 +354,308 @@ func TestUnitSlsEndpointUserConfigTakesPrecedenceOverCache(t *testing.T) {
 	cached, ok := client.config.Endpoints.Load("sls")
 	assert.True(t, ok)
 	assert.Equal(t, "cached.sls.example.com", cached, "the cached sls entry must be left untouched")
+}
+
+// TestUnitEndpointDiscoveryUsesProviderProxyRules drives uncached NewCommonRequest construction
+// through local HTTP stubs. The proxied case must not fall back to a direct request, while NO_PROXY
+// must bypass the configured proxy and reach the Location stub directly.
+func TestUnitEndpointDiscoveryUsesProviderProxyRules(t *testing.T) {
+	const locationResponse = `{"RequestId":"test-request","Success":true,"Endpoints":{"Endpoint":[{"Endpoint":"cn-hangzhou.log.aliyuncs.com","Id":"cn-hangzhou","ServiceCode":"sls","Type":"openAPI"}]}}`
+
+	for _, tc := range []struct {
+		name          string
+		bypassProxy   bool
+		wantProxy     int32
+		wantDirect    int32
+		wantProxyHost bool
+	}{
+		{name: "HTTP proxy", wantProxy: 1, wantProxyHost: true},
+		{name: "NO_PROXY", bypassProxy: true, wantDirect: 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var proxyRequests int32
+			var directRequests int32
+			proxyHosts := make(chan string, 2)
+			writeLocationResponse := func(w http.ResponseWriter) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(locationResponse))
+			}
+
+			locationServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				atomic.AddInt32(&directRequests, 1)
+				writeLocationResponse(w)
+			}))
+			defer locationServer.Close()
+			proxyServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				atomic.AddInt32(&proxyRequests, 1)
+				proxyHosts <- r.URL.Host
+				writeLocationResponse(w)
+			}))
+			defer proxyServer.Close()
+
+			t.Setenv("HTTP_PROXY", proxyServer.URL)
+			t.Setenv("http_proxy", "")
+			t.Setenv("HTTPS_PROXY", "")
+			t.Setenv("https_proxy", "")
+			t.Setenv("NO_PROXY", "")
+			t.Setenv("no_proxy", "")
+			if tc.bypassProxy {
+				t.Setenv("NO_PROXY", locationServer.Listener.Addr().String())
+			}
+
+			client := &AliyunClient{
+				RegionId: "cn-hangzhou",
+				config: &config.Config{
+					Endpoints:            new(sync.Map),
+					RegionId:             "cn-hangzhou",
+					Protocol:             "HTTP",
+					LocationEndpoint:     locationServer.Listener.Addr().String(),
+					ClientReadTimeout:    1000,
+					ClientConnectTimeout: 1000,
+					AccessKey:            "test-ak",
+					SecretKey:            "test-sk",
+					Credential:           &mockCredential{err: fmt.Errorf("unit test uses the static access key")},
+				},
+			}
+			request, err := client.NewCommonRequest("sls", "log", "HTTP", config.ApiVersion("2015-06-01"))
+			if assert.NoError(t, err) && assert.NotNil(t, request) {
+				assert.Equal(t, "cn-hangzhou.log.aliyuncs.com", request.Domain)
+			}
+			assert.Equal(t, tc.wantProxy, atomic.LoadInt32(&proxyRequests))
+			assert.Equal(t, tc.wantDirect, atomic.LoadInt32(&directRequests))
+			if tc.wantProxyHost {
+				select {
+				case host := <-proxyHosts:
+					assert.Equal(t, locationServer.Listener.Addr().String(), host)
+				default:
+					t.Fatal("proxy did not receive the Location request")
+				}
+			}
+		})
+	}
+}
+
+func TestUnitEndpointRetryBackoff(t *testing.T) {
+	assert.Equal(t, 3*time.Second, endpointRetryBackoff(1))
+	assert.Equal(t, 5*time.Second, endpointRetryBackoff(2))
+	assert.Equal(t, 5*time.Second, endpointRetryBackoff(3))
+}
+
+// TestUnitEndpointRetryWaitHonoursCancellation pins that the discovery backoff stops as soon as the
+// operation is cancelled instead of sleeping out the whole pause.
+func TestUnitEndpointRetryWaitHonoursCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+	}()
+	started := time.Now()
+	err := endpointRetryWait(ctx, 5*time.Second)
+	elapsed := time.Since(started)
+	assert.ErrorIs(t, err, context.Canceled)
+	assert.Less(t, elapsed, time.Second, "the backoff must stop when the operation is cancelled")
+}
+
+// TestUnitEndpointRetryWaitHonoursDeadline pins that a near operation deadline caps the backoff and
+// reports the deadline. The capped pause ends on the context itself, so the result never depends on
+// which timer fires first.
+func TestUnitEndpointRetryWaitHonoursDeadline(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Millisecond)
+	defer cancel()
+	started := time.Now()
+	err := endpointRetryWait(ctx, 5*time.Second)
+	elapsed := time.Since(started)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Less(t, elapsed, time.Second, "the backoff must not outlast the operation deadline")
+	assert.GreaterOrEqual(t, elapsed, 50*time.Millisecond)
+}
+
+// TestUnitEndpointRetryWaitReturnsAfterBackoff keeps the pause itself in the happy path.
+func TestUnitEndpointRetryWaitReturnsAfterBackoff(t *testing.T) {
+	started := time.Now()
+	err := endpointRetryWait(context.Background(), 20*time.Millisecond)
+	assert.NoError(t, err)
+	assert.GreaterOrEqual(t, time.Since(started), 20*time.Millisecond)
+}
+
+// TestUnitEndpointDiscoveryCancelsDuringBackoff drives the real discovery path with an unreachable
+// location service: the first attempt fails with the read timeout so the retry backoff is entered,
+// then the operation is cancelled mid-backoff. Without the cancellable wait the loop sleeps its
+// full three seconds; with it the call returns promptly and no further attempt is made.
+func TestUnitEndpointDiscoveryCancelsDuringBackoff(t *testing.T) {
+	var connections int32
+	probe := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Hold the request until the client gives up, so the attempt fails with the read timeout.
+		<-r.Context().Done()
+	}))
+	probe.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			atomic.AddInt32(&connections, 1)
+		}
+	}
+	probe.Start()
+	defer probe.Close()
+
+	client := &AliyunClient{
+		RegionId: "cn-hangzhou",
+		config: &config.Config{
+			Endpoints:            new(sync.Map),
+			RegionId:             "cn-hangzhou",
+			Protocol:             "HTTP",
+			LocationEndpoint:     probe.Listener.Addr().String(),
+			ClientReadTimeout:    100,
+			ClientConnectTimeout: 100,
+			AccessKey:            "test-ak",
+			SecretKey:            "test-sk",
+			Credential:           &mockCredential{err: fmt.Errorf("unit test uses the static access key")},
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		time.Sleep(1200 * time.Millisecond)
+		cancel()
+	}()
+
+	started := time.Now()
+	_, err := client.describeEndpointForService(ctx, "sls", client.RegionId)
+	elapsed := time.Since(started)
+	assert.Error(t, err)
+	assert.GreaterOrEqual(t, elapsed, 700*time.Millisecond, "the call must still be blocked when it is cancelled")
+	assert.Less(t, elapsed, 3*time.Second, "cancelling during the backoff must return before the pause ends")
+
+	settled := atomic.LoadInt32(&connections)
+	assert.NotZero(t, settled)
+	time.Sleep(300 * time.Millisecond)
+	assert.Equal(t, settled, atomic.LoadInt32(&connections), "no discovery attempt may run after the cancellation")
+}
+
+func TestUnitEndpointDiscoveryCancellationStopsSDKRetries(t *testing.T) {
+	var requests int32
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if atomic.AddInt32(&requests, 1) == 1 {
+			cancel()
+			<-r.Context().Done()
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = w.Write([]byte(`{"Code":"ServiceUnavailable"}`))
+	}))
+	defer server.Close()
+
+	client := &AliyunClient{
+		RegionId: "cn-hangzhou",
+		config: &config.Config{
+			Endpoints:            new(sync.Map),
+			RegionId:             "cn-hangzhou",
+			Protocol:             "HTTP",
+			LocationEndpoint:     server.Listener.Addr().String(),
+			ClientReadTimeout:    5000,
+			ClientConnectTimeout: 1000,
+			AccessKey:            "test-ak",
+			SecretKey:            "test-sk",
+			Credential:           &mockCredential{err: fmt.Errorf("unit test uses the static access key")},
+		},
+	}
+	started := time.Now()
+	_, err := client.describeEndpointForService(ctx, "sls", client.RegionId)
+	assert.ErrorIs(t, err, context.Canceled)
+	assert.Less(t, time.Since(started), 2*time.Second)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&requests))
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&requests), "the SDK must not retransmit after cancellation")
+}
+
+// TestUnitEndpointDiscoveryRecalculatesAttemptTimeout makes the second attempt start after the
+// retry backoff. Its read timeout must use the then-remaining operation budget; reusing the first
+// attempt's larger timeout would let the SDK call outlive the lifecycle deadline.
+func TestUnitEndpointDiscoveryRecalculatesAttemptTimeout(t *testing.T) {
+	originalDescribe := describeLocationEndpoints
+	t.Cleanup(func() { describeLocationEndpoints = originalDescribe })
+	var readTimeouts []time.Duration
+	describeLocationEndpoints = func(_ context.Context, _ *location.Client, _ *location.DescribeEndpointsRequest, readTimeout, _ time.Duration, _ *http.Transport, _ *url.URL) (*location.DescribeEndpointsResponse, error) {
+		readTimeouts = append(readTimeouts, readTimeout)
+		if len(readTimeouts) == 1 {
+			return nil, fmt.Errorf(`Post "https://location.aliyuncs.com": i/o timeout`)
+		}
+		return nil, context.DeadlineExceeded
+	}
+
+	client := &AliyunClient{
+		RegionId: "cn-hangzhou",
+		config: &config.Config{
+			Endpoints:            new(sync.Map),
+			RegionId:             "cn-hangzhou",
+			Protocol:             "HTTP",
+			LocationEndpoint:     "location.test",
+			ClientReadTimeout:    10000,
+			ClientConnectTimeout: 10000,
+			AccessKey:            "test-ak",
+			SecretKey:            "test-sk",
+			Credential:           &mockCredential{err: fmt.Errorf("unit test uses the static access key")},
+		},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 4500*time.Millisecond)
+	defer cancel()
+	_, err := client.describeEndpointForService(ctx, "sls", client.RegionId)
+	assert.Error(t, err)
+	if !assert.Len(t, readTimeouts, 2, "the test must reach exactly one post-backoff attempt") {
+		return
+	}
+	assert.Greater(t, readTimeouts[0], 4*time.Second)
+	assert.Greater(t, readTimeouts[1], 500*time.Millisecond)
+	assert.Less(t, readTimeouts[1], 2*time.Second)
+	assert.Less(t, readTimeouts[1], readTimeouts[0], "the second attempt must use the reduced remaining budget")
+}
+
+// TestUnitEndpointDiscoveryStopsAtDeadline drives the real discovery path with an unreachable
+// location service and an operation deadline: the first attempt fails with the read timeout, the
+// pause is capped by the deadline and must report it, and no further connection may be opened after
+// the call returns. A pause that silently succeeded would sleep the full three seconds and probe
+// again, which both breaks the elapsed bound and grows the connection count.
+func TestUnitEndpointDiscoveryStopsAtDeadline(t *testing.T) {
+	var connections int32
+	probe := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	probe.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			atomic.AddInt32(&connections, 1)
+		}
+	}
+	probe.Start()
+	defer probe.Close()
+
+	client := &AliyunClient{
+		RegionId: "cn-hangzhou",
+		config: &config.Config{
+			Endpoints:            new(sync.Map),
+			RegionId:             "cn-hangzhou",
+			Protocol:             "HTTP",
+			LocationEndpoint:     probe.Listener.Addr().String(),
+			ClientReadTimeout:    100,
+			ClientConnectTimeout: 100,
+			AccessKey:            "test-ak",
+			SecretKey:            "test-sk",
+			Credential:           &mockCredential{err: fmt.Errorf("unit test uses the static access key")},
+		},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1200*time.Millisecond)
+	defer cancel()
+
+	started := time.Now()
+	_, err := client.describeEndpointForService(ctx, "sls", client.RegionId)
+	elapsed := time.Since(started)
+	assert.Error(t, err)
+	assert.GreaterOrEqual(t, elapsed, 800*time.Millisecond, "the call must reach the operation deadline")
+	assert.Less(t, elapsed, 3*time.Second, "a deadline-capped pause must not sleep the full backoff and probe again")
+
+	settled := atomic.LoadInt32(&connections)
+	assert.NotZero(t, settled)
+	time.Sleep(300 * time.Millisecond)
+	assert.Equal(t, settled, atomic.LoadInt32(&connections), "no discovery attempt may run after the deadline")
 }

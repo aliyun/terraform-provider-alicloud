@@ -232,6 +232,8 @@ The following arguments are supported:
 * `terraform_tools` - (Optional, Set) A list of Terraform Tools. The MCP Server allows using Terraform HCL code as a complete tool to improve the determinism of orchestration. See [`terraform_tools`](#terraform_tools) below.
 * `vpc_whitelists` - (Optional, Set) When public network access is disabled, this field specifies the VPC whitelist that restricts source VPCs. If not set or left empty, no restriction is applied to the source.
 
+---
+
 ### `additional_api_descriptions`
 
 The additional_api_descriptions supports the following:
@@ -258,6 +260,8 @@ For tools whose single API execution exceeds 30 minutes, we recommend enabling t
 
 * `product` - (Optional) The name of the cloud product, such as Ecs.  
 
+---
+
 ### `additional_api_descriptions-const_parameters`
 
 The additional_api_descriptions-const_parameters supports the following:
@@ -279,6 +283,8 @@ Configurations such as body.Name.Sub are not supported. If you need to set body.
 
 * `value` - (Optional) This property does not have a description in the spec, please add it before generating code.
 
+---
+
 ### `apis`
 
 The apis supports the following:
@@ -286,6 +292,8 @@ The apis supports the following:
 * `api_version` - (Required) API version information, typically in date format—for example, the version for ECS is 2014-05-26.
 * `product` - (Required) Product code, such as Ecs.
 * `selectors` - (Required, Set) Selectors in array format, where each item is an API name—for example, GetApiDefinition or ListApiDefinitions. You can obtain the complete list of supported APIs from the Alibaba Cloud Developer Portal.
+
+---
 
 ### `prompts`
 
@@ -296,6 +304,8 @@ The prompts supports the following:
 * `description` - (Optional) Description of the prompt.
 * `name` - (Optional) Name of the prompt.
 
+---
+
 ### `prompts-arguments`
 
 The prompts-arguments supports the following:
@@ -303,6 +313,8 @@ The prompts-arguments supports the following:
 * `description` - (Optional) Description of the prompt parameter.
 * `name` - (Optional) Name of the prompt parameter.
 * `required` - (Optional) Indicates whether the prompt parameter is required.
+
+---
 
 ### `terraform_tools`
 
@@ -326,7 +338,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Api Mcp Server.
 * `delete` - (Defaults to 5 mins) Used when delete the Api Mcp Server.

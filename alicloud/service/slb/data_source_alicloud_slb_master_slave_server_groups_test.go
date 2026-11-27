@@ -2,10 +2,13 @@ package slb_test
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
 	acctest "github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccAlicloudSLBMasterSlaveServerGroupsDataSource_basic(t *testing.T) {
@@ -60,6 +63,7 @@ func TestAccAlicloudSLBMasterSlaveServerGroupsDataSource_basic(t *testing.T) {
 			"groups.0.servers.#":             "2",
 			"groups.0.servers.0.weight":      "100",
 			"groups.0.servers.0.instance_id": CHECKSET,
+			"groups.0.servers.1.instance_id": CHECKSET,
 		}
 	}
 
@@ -71,13 +75,104 @@ func TestAccAlicloudSLBMasterSlaveServerGroupsDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var slbServerGroupsCheckInfo = acctest.DataSourceAttr{
-		ResourceId:   "data.alicloud_slb_master_slave_server_groups.default",
-		ExistMapFunc: existSLBMasterSlaveServerGroupsMapFunc,
-		FakeMapFunc:  fakeSLBMasterSlaveServerGroupsMapFunc,
+	const dsResourceId = "data.alicloud_slb_master_slave_server_groups.default"
+	existCheck := acctest.ResourceAttrInit(dsResourceId, existSLBMasterSlaveServerGroupsMapFunc(-1)).ResourceAttrMapUpdateSet()
+	fakeCheck := acctest.ResourceAttrInit(dsResourceId, fakeSLBMasterSlaveServerGroupsMapFunc(-1)).ResourceAttrMapUpdateSet()
+
+	existStep := func(config string) resource.TestStep {
+		return resource.TestStep{
+			Config: config,
+			Check: resource.ComposeTestCheckFunc(
+				existCheck(nil),
+				testAccCheckMasterSlaveServerGroupDescriptions(),
+			),
+		}
+	}
+	fakeStep := func(config string) resource.TestStep {
+		return resource.TestStep{
+			Config: config,
+			Check:  resource.ComposeTestCheckFunc(fakeCheck(nil)),
+		}
 	}
 
-	slbServerGroupsCheckInfo.DataSourceTestCheck(t, -1, allConf, basicConf, nameRegexConf, idsConf)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		Steps: []resource.TestStep{
+			existStep(allConf.ExistConfig),
+			fakeStep(allConf.FakeConfig),
+			existStep(basicConf.ExistConfig),
+			existStep(nameRegexConf.ExistConfig),
+			fakeStep(nameRegexConf.FakeConfig),
+			existStep(idsConf.ExistConfig),
+			fakeStep(idsConf.FakeConfig),
+		},
+	})
+}
+
+func testAccCheckMasterSlaveServerGroupDescriptions() resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		group, ok := s.RootModule().Resources["alicloud_slb_master_slave_server_group.default"]
+		if !ok {
+			return fmt.Errorf("master slave server group not found in state")
+		}
+		ds, ok := s.RootModule().Resources["data.alicloud_slb_master_slave_server_groups.default"]
+		if !ok {
+			return fmt.Errorf("master slave server groups data source not found in state")
+		}
+
+		type expectedServer struct {
+			serverType  string
+			description string
+		}
+		expectedDescriptions := map[string]string{
+			"Master": "ds-master-desc",
+			"Slave":  "ds-slave-desc",
+		}
+		expected := make(map[string]expectedServer, 2)
+		serverKeyPattern := regexp.MustCompile(`^servers\.([^.]+)\.server_id$`)
+		for key, serverId := range group.Primary.Attributes {
+			match := serverKeyPattern.FindStringSubmatch(key)
+			if match == nil {
+				continue
+			}
+			prefix := "servers." + match[1]
+			serverType := group.Primary.Attributes[prefix+".server_type"]
+			want, ok := expectedDescriptions[serverType]
+			if !ok {
+				return fmt.Errorf("unexpected configured server_type %q", serverType)
+			}
+			expected[serverId] = expectedServer{serverType: serverType, description: want}
+		}
+		if len(expected) != 2 {
+			return fmt.Errorf("expected 2 configured backend servers, got %d", len(expected))
+		}
+
+		for i := 0; i < 2; i++ {
+			serverId := ds.Primary.Attributes[fmt.Sprintf("groups.0.servers.%d.instance_id", i)]
+			gotType := ds.Primary.Attributes[fmt.Sprintf("groups.0.servers.%d.server_type", i)]
+			gotDescription := ds.Primary.Attributes[fmt.Sprintf("groups.0.servers.%d.description", i)]
+			expect, ok := expected[serverId]
+			if !ok {
+				return fmt.Errorf("data source returned unexpected backend server %q", serverId)
+			}
+			if gotType != expect.serverType || gotDescription != expect.description {
+				return fmt.Errorf("data source backend server %s: got server_type=%q description=%q, want server_type=%q description=%q",
+					serverId, gotType, gotDescription, expect.serverType, expect.description)
+			}
+			delete(expected, serverId)
+		}
+		if len(expected) != 0 {
+			missingServerIds := make([]string, 0, len(expected))
+			for serverId := range expected {
+				missingServerIds = append(missingServerIds, serverId)
+			}
+			return fmt.Errorf("data source did not return expected backend servers: %v", missingServerIds)
+		}
+		return nil
+	}
 }
 
 func testAccCheckAlicloudSlbMasterSlaveServerGroupsDataSourceConfig(attrMap map[string]string) string {
@@ -93,10 +188,11 @@ variable "name" {
 
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
-  available_disk_category     = "cloud_efficiency"
+  available_disk_category     = "cloud_essd"
 }
 
 data "alicloud_images" "default" {
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   name_regex = "^ubuntu"
   most_recent = true
   owners = "system"
@@ -105,6 +201,7 @@ data "alicloud_images" "default" {
 data "alicloud_instance_types" "default" {
   cpu_core_count = 2
   memory_size = 4
+  system_disk_category = "cloud_essd"
 }
 
 resource "alicloud_vpc" "default" {
@@ -153,7 +250,7 @@ resource "alicloud_instance" "default" {
 
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   internet_charge_type = "PayByTraffic"
-  system_disk_category = "cloud_efficiency"
+  system_disk_category = "cloud_essd"
 
   security_groups = ["${alicloud_security_group.default.id}"]
   instance_name = "${var.name}"
@@ -173,12 +270,14 @@ resource "alicloud_slb_master_slave_server_group" "default" {
       port = 80
       weight = 100
       server_type = "Master"
+      description = "ds-master-desc"
   }
   servers {
       server_id = "${alicloud_instance.default.1.id}"
       port = 80
       weight = 100
       server_type = "Slave"
+      description = "ds-slave-desc"
   }
 }
 

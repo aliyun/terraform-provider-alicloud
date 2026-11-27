@@ -7,13 +7,13 @@ description: |-
     Provides a datasource to open the DataHub service automatically.
 ---
 
-# alicloud\_datahub\_service
+# alicloud_datahub_service
 
 Using this data source can open DataHub service automatically. If the service has been opened, it will return opened.
 
-For information about DataHub and how to use it, see [What is DataHub](https://help.aliyun.com/product/53345.html).
+For information about DataHub and how to use it, see [What is DataHub](https://www.alibabacloud.com/help/product/53345.html).
 
--> **NOTE:** Available in v1.111.0+
+-> **NOTE:** Available since v1.111.0.
 
 -> **NOTE:** The DataHub service is not support in the international site.
 
@@ -37,4 +37,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

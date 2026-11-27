@@ -30,20 +30,27 @@ output "vpn_ipsec_server_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of VPN Pbr Route Entries IDs.
+* `ids` - (Optional, Computed)  A list of VPN Pbr Route Entries IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `vpn_gateway_id` - (Required, ForceNew) The ID of the VPN gateway.
+* `vpn_gateway_id` - (Required) The ID of the VPN gateway.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `entries` - A list of VPN Pbr Route Entries. Each element contains the following attributes:
-  * `create_time` - The creation time of the VPN Pbr Route Entry.
-  * `id` - The id of the vpn pbr route entry. The value formats as `<vpn_gateway_id>:<next_hop>:<route_source>:<route_dest>`.
-  * `vpn_gateway_id` - The ID of the vpn gateway.
-  * `next_hop` - The next hop of the policy-based route.
-  * `route_source` - The source CIDR block of the policy-based route.
-  * `route_dest` - The destination CIDR block of the policy-based route.
-  * `weight` - The weight of the policy-based route. Valid values: 0 and 100.
-  * `status` - The status of the VPN Pbr Route Entry.
+* `entries` - A list of VPN Pbr Route Entries.
+
+---
+
+### `entries`
+
+The entries supports the following attributes:
+
+* `create_time` - The creation time of the VPN Pbr Route Entry.
+* `id` - The id of the vpn pbr route entry. The value formats as `<vpn_gateway_id>:<next_hop>:<route_source>:<route_dest>`.
+* `vpn_gateway_id` - The ID of the vpn gateway.
+* `next_hop` - The next hop of the policy-based route.
+* `route_source` - The source CIDR block of the policy-based route.
+* `route_dest` - The destination CIDR block of the policy-based route.
+* `weight` - The weight of the policy-based route. Valid values: 0 and 100.
+* `status` - The status of the VPN Pbr Route Entry.

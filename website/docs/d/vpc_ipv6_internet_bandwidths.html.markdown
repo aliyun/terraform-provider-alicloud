@@ -51,23 +51,29 @@ output "vpc_ipv6_internet_bandwidth_id_4" {
 
 The following arguments are supported:
 
-* `ipv6_internet_bandwidth_id` - (Optional, ForceNew) The ID of the Ipv6 Internet Bandwidth.
-* `ipv6_address_id` - (Optional, ForceNew) The ID of the IPv6 address.
-* `ids` - (Optional, ForceNew, Computed)  A list of Ipv6 Internet Bandwidth IDs.
+* `ipv6_internet_bandwidth_id` - (Optional) The ID of the Ipv6 Internet Bandwidth.
+* `ipv6_address_id` - (Optional) The ID of the IPv6 address.
+* `ids` - (Optional, Computed)  A list of Ipv6 Internet Bandwidth IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid values: `Normal`, `FinancialLocked` and `SecurityLocked`.
+* `status` - (Optional) The status of the resource. Valid values: `Normal`, `FinancialLocked` and `SecurityLocked`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `names` - A list of Ipv6 Internet Bandwidth names.
-* `bandwidths` - A list of Vpc Ipv6 Internet Bandwidths. Each element contains the following attributes:
-	* `bandwidth` - The amount of Internet bandwidth resources of the IPv6 address, Unit: `Mbit/s`.
-	* `id` - The ID of the Ipv6 Internet Bandwidth.
-	* `internet_charge_type` - The metering method of the Internet bandwidth resources of the IPv6 gateway.
-	* `ipv6_address_id` - The ID of the IPv6 address.
-	* `ipv6_gateway_id` - The ID of the IPv6 gateway.
-	* `ipv6_internet_bandwidth_id` - The ID of the Ipv6 Internet Bandwidth.
-	* `payment_type` - The payment type of the resource.
-	* `status` -  The status of the resource. Valid values: `Normal`, `FinancialLocked` and `SecurityLocked`.
+* `bandwidths` - A list of Vpc Ipv6 Internet Bandwidths.
+
+---
+
+### `bandwidths`
+
+The bandwidths supports the following attributes:
+
+* `bandwidth` - The amount of Internet bandwidth resources of the IPv6 address, Unit: `Mbit/s`.
+* `id` - The ID of the Ipv6 Internet Bandwidth.
+* `internet_charge_type` - The metering method of the Internet bandwidth resources of the IPv6 gateway.
+* `ipv6_address_id` - The ID of the IPv6 address.
+* `ipv6_gateway_id` - The ID of the IPv6 gateway.
+* `ipv6_internet_bandwidth_id` - The ID of the Ipv6 Internet Bandwidth.
+* `payment_type` - The payment type of the resource.
+* `status` -  The status of the resource. Valid values: `Normal`, `FinancialLocked` and `SecurityLocked`.

@@ -14,7 +14,7 @@ Log service data delivery management, this service provides the function of deli
 
 -> **NOTE:** Available since v1.121.0.
 
--> **DEPRECATED:**  This resource has been deprecated from version `1.215.0`. Please use new resource [alicloud_log_oss_export](https://www.terraform.io/docs/providers/alicloud/r/log_oss_export).
+-> **DEPRECATED:**  This resource has been deprecated from version `1.215.0`. Please use new resource [alicloud_log_oss_export](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/log_oss_export).
 
 ## Example Usage
 
@@ -86,6 +86,8 @@ The following arguments are supported:
 * `csv_config_linefeed` - (Optional) lineFeed in csv configuration.
 * `parquet_config` - (Optional) Configure to use parquet storage format. See [`parquet_config`](#parquet_config) below.
 
+---
+
 ### `parquet_config`
 
 * `name` - (Required) The name of the key.
@@ -99,7 +101,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when Creating LogOssShipper instance.
 * `update` - (Defaults to 1 mins) Used when Updating LogOssShipper instance.

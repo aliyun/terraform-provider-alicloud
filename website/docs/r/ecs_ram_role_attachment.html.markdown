@@ -58,21 +58,21 @@ resource "random_integer" "default" {
 resource "alicloud_ram_role" "default" {
   name     = "${var.name}-${random_integer.default.result}"
   document = <<EOF
-		{
-			"Statement": [
-				{
-					"Action": "sts:AssumeRole",
-					"Effect": "Allow",
-					"Principal": {
-						"Service": [
-							"ecs.aliyuncs.com"
-						]
-					}
-				}
-		  	],
-			"Version": "1"
-		}
-	  	EOF
+  {
+   "Statement": [
+    {
+     "Action": "sts:AssumeRole",
+     "Effect": "Allow",
+     "Principal": {
+      "Service": [
+       "ecs.aliyuncs.com"
+      ]
+     }
+    }
+     ],
+   "Version": "1"
+  }
+    EOF
   force    = true
 }
 
@@ -129,7 +129,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Ram Role Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Ram Role Attachment.

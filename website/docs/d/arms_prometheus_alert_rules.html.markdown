@@ -40,34 +40,55 @@ output "arms_prometheus_alert_rule_id_2" {
 
 The following arguments are supported:
 
-* `cluster_id` - (Required, ForceNew) The ID of the cluster.
-* `ids` - (Optional, ForceNew, Computed)  A list of Prometheus Alert Rule IDs.
+* `cluster_id` - (Required) The ID of the cluster.
+* `ids` - (Optional, Computed)  A list of Prometheus Alert Rule IDs.
 * `match_expressions` - (Optional) Match expressions used to filter Prometheus alert rules.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Prometheus Alert Rule name.
+* `name_regex` - (Optional) A regex string to filter results by Prometheus Alert Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid values: `0`, `1`.
-* `type` - (Optional, ForceNew) The type of the alert rule.
+* `status` - (Optional) The status of the resource. Valid values: `0`, `1`.
+* `type` - (Optional) The type of the alert rule.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Prometheus Alert Rule names.
-* `rules` - A list of Arms Prometheus Alert Rules. Each element contains the following attributes:
-  * `annotations` - The annotations of the alert rule.
-    * `name` - The name of the annotation.
-    * `value` - The value of the annotation.
-  * `cluster_id` - The ID of the cluster.
-  * `dispatch_rule_id` - The ID of the notification policy. This parameter is required when the `notify_type` parameter is set to `DISPATCH_RULE`.
-  * `duration` -The duration of the alert.
-  * `expression` - The alert rule expression that follows the PromQL syntax..
-  * `id` - The ID of the Prometheus Alert Rule.
-  * `labels` -The labels of the resource.
-    * `name` - The name of the label.
-    * `value` - The value of the label.
-  * `message` - The message of the alert notification.
-  * `notify_type` - The method of sending the alert notification. Valid values: `ALERT_MANAGER`, `DISPATCH_RULE`.
-  * `prometheus_alert_rule_id` - The first ID of the resource.
-  * `prometheus_alert_rule_name` - The name of the resource.
-  * `status` - The status of the resource. Valid values: `0`, `1` (0=off,1=open).
-  * `type` - The type of the alert rule.
+* `rules` - A list of Arms Prometheus Alert Rules.
+
+---
+
+### `rules`
+
+The rules supports the following attributes:
+
+* `annotations` - The annotations of the alert rule.
+* `cluster_id` - The ID of the cluster.
+* `dispatch_rule_id` - The ID of the notification policy. This parameter is required when the `notify_type` parameter is set to `DISPATCH_RULE`.
+* `duration` -The duration of the alert.
+* `expression` - The alert rule expression that follows the PromQL syntax..
+* `id` - The ID of the Prometheus Alert Rule.
+* `labels` -The labels of the resource.
+* `message` - The message of the alert notification.
+* `notify_type` - The method of sending the alert notification. Valid values: `ALERT_MANAGER`, `DISPATCH_RULE`.
+* `prometheus_alert_rule_id` - The first ID of the resource.
+* `prometheus_alert_rule_name` - The name of the resource.
+* `status` - The status of the resource. Valid values: `0`, `1` (0=off,1=open).
+* `type` - The type of the alert rule.
+
+---
+
+### `rules.annotations`
+
+The annotations supports the following attributes:
+
+* `name` - The name of the annotation.
+* `value` - The value of the annotation.
+
+---
+
+### `rules.labels`
+
+The labels supports the following attributes:
+
+* `name` - The name of the label.
+* `value` - The value of the label.

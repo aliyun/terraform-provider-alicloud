@@ -46,6 +46,8 @@ You can resume managing the subscription bandwidth package via the AlibabaCloud 
 
 The following arguments are supported:
 
+-> **NOTE:** PrePaid mode will deduct fees from the account directly and the bandwidth package can't be deleted before expired time.
+
 * `bandwidth` - (Required) The bandwidth in Mbps of the bandwidth package. Cannot be less than 2Mbps.
 * `geographic_region_ids` - (Required, Deprecated from 1.98.0+) Field `geographic_region_ids` has been deprecated from version 1.97.0. Use `geographic_region_a_id` and `geographic_region_b_id` instead.
 * `name` - (Optional, Deprecated from 1.98.0+) Field `name` has been deprecated from version 1.97.0. Use `cen_bandwidth_package_name` and instead.
@@ -62,8 +64,6 @@ The following arguments are supported:
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
-->**NOTE:** PrePaid mode will deduct fees from the account directly and the bandwidth package can't be deleted before expired time.
-
 ## Attributes Reference
 
 The following attributes are exported:
@@ -76,7 +76,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.98.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 11 mins) Used when creating the CEN bandwidth package. (until it reaches the initial `Idle` status).
 * `delete` - (Defaults to 11 mins) Used when delete the CEN bandwidth package.

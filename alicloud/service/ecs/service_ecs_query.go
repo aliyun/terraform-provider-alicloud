@@ -1,10 +1,11 @@
 package ecs
 
 // Conversions, request builders and response decoding shared by the ECS query
-// data sources (alicloud_ecs_auto_provisioning_groups and
-// alicloud_reserved_instances). The ECS RPC returns the same value shapes for
-// both: a JSON number or a decimal string for a numeric member, an omitted
-// member for an absent optional value, and the same paginated success envelope.
+// data sources (alicloud_ecs_auto_provisioning_groups,
+// alicloud_ecs_image_pipeline_executions and alicloud_reserved_instances). The
+// ECS RPC returns the same value shapes for them: a JSON number or a decimal
+// string for a numeric member, an omitted member for an absent optional value,
+// and the same paginated success envelope.
 // These helpers keep that decoding, the request filters, the pagination
 // integrity checks and the retry classification in one place. Response decoding
 // tolerates the shapes the service returns without panicking on a missing key,
@@ -222,8 +223,8 @@ const ecsTagMaxLength = 128
 
 // ecsValidateTagKey enforces the key limits the ECS tag filters document: the
 // key must be present and must not use the reserved aliyun/acs: prefixes, and it
-// must not carry a URL. The two data sources differ only in what they accept as
-// a tag value, so the key rule is shared.
+// must not carry a URL. The data sources differ only in what they accept as a
+// tag value, so the key rule is shared.
 func ecsValidateTagKey(key string) string {
 	if key == "" {
 		return "A tag key must not be empty."

@@ -82,13 +82,15 @@ The following arguments are supported:
 * `version` - (Optional, Deprecated since v1.49.0) Field `version` has been deprecated from provider version 1.49.0. New field `document` instead.
 * `statement` - (Optional, List, Deprecated since v1.49.0) Field `statement` has been deprecated from provider version 1.49.0. New field `document` instead. See [`statement`](#statement) below.
 
+---
+
 ### `statement`
 
 The statement support the following:
 
-* `resource` - (Deprecated since 1.49.0, Required, Type: list) (It has been deprecated since version 1.49.0, and use field `document` to replace.) List of specific objects which will be authorized. The format of each item in this list is `acs:${service}:${region}:${account_id}:${relative_id}`, such as `acs:ecs:*:*:instance/inst-002` and `acs:oss:*:1234567890000:mybucket`. The `${service}` can be `ecs`, `oss`, `ots` and so on, the `${region}` is the region info which can use `*` replace when it is not supplied, the `${account_id}` refers to someone`s Alicloud account id or you can use`*` to replace, the `${relative_id}` is the resource description section which related to the `${service}`.
-* `action` - (Deprecated since 1.49.0, Required, Type: list) (It has been deprecated since version 1.49.0, and use field `document` to replace.) List of operations for the `resource`. The format of each item in this list is `${service}:${action_name}`, such as `oss:ListBuckets` and `ecs:Describe*`. The `${service}` can be `ecs`, `oss`, `ots` and so on, the `${action_name}` refers to the name of an api interface which related to the `${service}`.
-* `effect` - (Deprecated since 1.49.0, Required) (It has been deprecated since version 1.49.0, and use field `document` to replace.) This parameter indicates whether or not the `action` is allowed. Valid values are `Allow` and `Deny`.
+* `resource` - (Required, Type: list) List of specific objects which will be authorized. The format of each item in this list is `acs:${service}:${region}:${account_id}:${relative_id}`, such as `acs:ecs:*:*:instance/inst-002` and `acs:oss:*:1234567890000:mybucket`. The `${service}` can be `ecs`, `oss`, `ots` and so on, the `${region}` is the region info which can use `*` replace when it is not supplied, the `${account_id}` refers to someone`s Alicloud account id or you can use`*` to replace, the `${relative_id}` is the resource description section which related to the `${service}`.
+* `action` - (Required, Type: list) List of operations for the `resource`. The format of each item in this list is `${service}:${action_name}`, such as `oss:ListBuckets` and `ecs:Describe*`. The `${service}` can be `ecs`, `oss`, `ots` and so on, the `${action_name}` refers to the name of an api interface which related to the `${service}`.
+* `effect` - (Required) This parameter indicates whether or not the `action` is allowed. Valid values are `Allow` and `Deny`.
 
 ## Attributes Reference
 
@@ -103,7 +105,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Policy.

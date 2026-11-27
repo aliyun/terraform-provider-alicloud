@@ -38,17 +38,24 @@ output "data_works_folder_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Folder IDs.
+* `ids` - (Optional, Computed)  A list of Folder IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `parent_folder_path` - (Required, ForceNew) The parent folder path.
-* `project_id` - (Required, ForceNew, Available in v1.131.0+) The ID of the project.
+* `parent_folder_path` - (Required) The parent folder path.
+* `project_id` - (Required, Available in v1.131.0+) The ID of the project.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `folders` - A list of Data Works Folders. Each element contains the following attributes:
-  * `folder_id` - The ID of the Folder.
-  * `id` - The Folder ID.
-  * `folder_path` - Folder Path.
-  * `project_id` - The ID of the project.
+* `folders` - A list of Data Works Folders.
+
+---
+
+### `folders`
+
+The folders supports the following attributes:
+
+* `folder_id` - The ID of the Folder.
+* `id` - The Folder ID.
+* `folder_path` - Folder Path.
+* `project_id` - The ID of the project.

@@ -35,14 +35,21 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `instances` - A list of Sddp Instances. Each element contains the following attributes:
-  * `authed` - Whether the required RAM authorization is configured.
-  * `id` - The ID of the instance.
-  * `instance_id` - The ID of the instance.
-  * `instance_num` - The number of instances.
-  * `odps_set` - Whether the authorized MaxCompute (ODPS) assets.
-  * `oss_bucket_set` - Whether the authorized oss assets.
-  * `oss_size` - The OSS size of the instance.
-  * `payment_type` - The payment type of the resource. Valid values: `Subscription`.
-  * `rds_set` - Whether the authorized rds assets.
-  * `status` - The status of the resource.
+* `instances` - A list of Sddp Instances.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `authed` - Whether the required RAM authorization is configured.
+* `id` - The ID of the instance.
+* `instance_id` - The ID of the instance.
+* `instance_num` - The number of instances.
+* `odps_set` - Whether the authorized MaxCompute (ODPS) assets.
+* `oss_bucket_set` - Whether the authorized oss assets.
+* `oss_size` - The OSS size of the instance.
+* `payment_type` - The payment type of the resource. Valid values: `Subscription`.
+* `rds_set` - Whether the authorized rds assets.
+* `status` - The status of the resource.

@@ -72,16 +72,30 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<file_system_id>:<mount_point_id>`.
 * `mount_point_id` - VSC mount point ID, which is the unique identifier of the vsc mount point and is used to access the associated HDFS file system.
 * `instances` - The collection of ECS instances on which the HDFS file system is mounted. **The current property is not available**.
-  * `status` - The status of the ECS instance on which the HDFS file system is mounted.
-  * `instance_id` -The ID of the ECS instance to which the HDFS file system is mounted.
-  * `vscs` - The VSC list of mounted HDFS file systems.
-    * `vsc_id` - VSC Channel primary key representation, used to retrieve the specified VSC Channel.
-    * `vsc_status` - VSC Mount status.
-    * `vsc_type` - The VSC type.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `status` - The status of the ECS instance on which the HDFS file system is mounted.
+* `instance_id` -The ID of the ECS instance to which the HDFS file system is mounted.
+* `vscs` - The VSC list of mounted HDFS file systems.
+
+---
+
+### `instances.vscs`
+
+The vscs supports the following attributes:
+
+* `vsc_id` - VSC Channel primary key representation, used to retrieve the specified VSC Channel.
+* `vsc_status` - VSC Mount status.
+* `vsc_type` - The VSC type.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Vsc Mount Point.
 * `delete` - (Defaults to 5 mins) Used when delete the Vsc Mount Point.

@@ -184,6 +184,25 @@ func parseCoverageFixture(t *testing.T, src string) (ok bool, mustSet, modifySet
 	return ok, mustSet, modifySet
 }
 
+// scanCoverageFixture writes src to a temporary Go test file and runs the
+// production step scanner scanTestCaseSteps against it, returning the
+// captured per-function step state. Tests use it to assert step attribution
+// (stepPlanOnly / stepStr) directly for layouts whose plan-only flag has no
+// effect on the scored coverage sets (e.g. a helper-Config step).
+func scanCoverageFixture(t *testing.T, src string) ResourceTest {
+	t.Helper()
+	filePath := filepath.Join(t.TempDir(), "resource_test.go")
+	if err := os.WriteFile(filePath, []byte(src), 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+	ignoreSet := mapset.NewSet()
+	resourceTest, ok := scanTestCaseSteps(filePath, &ignoreSet)
+	if !ok {
+		t.Fatalf("scanner should read the fixture file")
+	}
+	return resourceTest
+}
+
 // AC1: a PlanOnly step (with an empty-map Config) must end Config capture so
 // the next (nested) Config step is segmented independently. Before the fix
 // PlanOnly was not a sentinel: the PlanOnly line, the step boundary `},`/`{`
@@ -338,6 +357,482 @@ func TestUnitScannerIllegalConfigStillBlocked(t *testing.T) {
 	ok, _, _ := parseCoverageFixture(t, illegalBracketConfigSrc)
 	if ok {
 		t.Fatalf("scanner must still block genuinely illegal (unbalanced bracket) configs after the PlanOnly fix; got parse success")
+	}
+}
+
+// PlanOnly modify-coverage semantics (Aone 88271295 residual defect): a
+// PlanOnly step only refreshes the plan, it never applies, so a field whose
+// value changes only inside a PlanOnly step must NOT enter testModifySet —
+// while real apply steps still count, PlanOnly: false stays a normal step,
+// and the plan-only values must not clobber the last applied value that
+// later apply steps are compared against.
+
+// onlyPlanNotCountedSrc — apply {a:1,b:1}; plan-only {a:9,b:1}; apply {a:1,b:1}.
+// "a" changes only inside the plan-only step and is reverted afterwards, so
+// nothing actually applied ever differs: the modify set must stay empty. The
+// plan-only step also proves adjacent Config segmentation still parses (its
+// non-empty Config is captured independently, no bracket/JSON error).
+var onlyPlanNotCountedSrc = fixtureTab(`func TestAccAliCloudOnlyPlanNotCounted_basic(t *testing.T) {
+»cases := []resource.TestStep{
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "1",
+»»»»"b": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "9",
+»»»»"b": "1",
+»»»}),
+»»»PlanOnly: true,
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "1",
+»»»»"b": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»}
+}
+`)
+
+func TestUnitScannerPlanOnlyStepExcludedFromModifyCoverage(t *testing.T) {
+	ok, mustSet, modifySet := parseCoverageFixture(t, onlyPlanNotCountedSrc)
+	if !ok {
+		t.Fatalf("scanner should parse apply/plan-only/apply steps independently; got parse failure — steps likely merged")
+	}
+	// Plan-only steps still contribute attribute (must-set) coverage.
+	for _, attr := range []string{"a", "b"} {
+		if !mustSet.Contains(attr) {
+			t.Fatalf("expected %q captured including from the plan-only step; got %v", attr, mustSet.ToSlice())
+		}
+		if modifySet.Contains(attr) {
+			t.Fatalf("field %q changed only inside a PlanOnly step must not count as modification coverage; got modify set %v", attr, modifySet.ToSlice())
+		}
+	}
+	if modifySet.Cardinality() != 0 {
+		t.Fatalf("expected empty modify set (no actually-applied field changed); got %v", modifySet.ToSlice())
+	}
+}
+
+// realApplyStillCountedSrc — apply {a:1,b:1}; plan-only {a:9,b:1}; apply {a:3,b:1}.
+// "a" differs between the two real apply steps (1 -> 3) even though the
+// plan-only step also touched it: the modification must still be counted.
+var realApplyStillCountedSrc = fixtureTab(`func TestAccAliCloudRealApplyStillCounted_basic(t *testing.T) {
+»cases := []resource.TestStep{
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "1",
+»»»»"b": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "9",
+»»»»"b": "1",
+»»»}),
+»»»PlanOnly: true,
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "3",
+»»»»"b": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»}
+}
+`)
+
+func TestUnitScannerRealApplyStillCountedAcrossPlanOnly(t *testing.T) {
+	ok, _, modifySet := parseCoverageFixture(t, realApplyStillCountedSrc)
+	if !ok {
+		t.Fatalf("scanner should parse apply/plan-only/apply steps independently; got parse failure")
+	}
+	if !modifySet.Contains("a") {
+		t.Fatalf("field 'a' changed between two real apply steps must still count as modification coverage; got %v", modifySet.ToSlice())
+	}
+	if modifySet.Contains("b") {
+		t.Fatalf("field 'b' never changed in an applied step; got %v", modifySet.ToSlice())
+	}
+}
+
+// planOnlyFalseSrc — apply {a:1}; apply {a:2} with an explicit PlanOnly: false.
+// A false flag keeps the step a normal apply step, so the change still counts.
+var planOnlyFalseSrc = fixtureTab(`func TestAccAliCloudPlanOnlyFalse_basic(t *testing.T) {
+»cases := []resource.TestStep{
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "2",
+»»»}),
+»»»PlanOnly: false,
+»»},
+»}
+}
+`)
+
+func TestUnitScannerPlanOnlyFalseStepStillCounted(t *testing.T) {
+	ok, _, modifySet := parseCoverageFixture(t, planOnlyFalseSrc)
+	if !ok {
+		t.Fatalf("scanner should parse a PlanOnly:false step like a normal step; got parse failure")
+	}
+	if !modifySet.Contains("a") {
+		t.Fatalf("explicit PlanOnly:false is a normal apply step; its field change must count as modification coverage; got %v", modifySet.ToSlice())
+	}
+}
+
+// planOnlyAfterSentinelSrc — apply {a:1,b:1}; {a:2,b:1} with ExpectNonEmptyPlan
+// closing the capture before the PlanOnly line (field order inside a TestStep
+// literal is free). The step is still plan-only: "a" changed only there must
+// not be counted.
+var planOnlyAfterSentinelSrc = fixtureTab(`func TestAccAliCloudPlanOnlyAfterSentinel_basic(t *testing.T) {
+»cases := []resource.TestStep{
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "1",
+»»»»"b": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "2",
+»»»»"b": "1",
+»»»}),
+»»»ExpectNonEmptyPlan: false,
+»»»PlanOnly: true,
+»»},
+»}
+}
+`)
+
+func TestUnitScannerPlanOnlyAfterSentinelNotCounted(t *testing.T) {
+	ok, _, modifySet := parseCoverageFixture(t, planOnlyAfterSentinelSrc)
+	if !ok {
+		t.Fatalf("scanner should parse a step whose PlanOnly line follows an ExpectNonEmptyPlan sentinel; got parse failure")
+	}
+	if modifySet.Contains("a") {
+		t.Fatalf("field 'a' changed only in a plan-only step (PlanOnly written after another sentinel) must not count; got %v", modifySet.ToSlice())
+	}
+	if modifySet.Cardinality() != 0 {
+		t.Fatalf("expected empty modify set; got %v", modifySet.ToSlice())
+	}
+}
+
+// planOnlyFirstStepSrc — plan-only {a:9,b:9}; apply {a:1,b:1}. The plan-only
+// step never applies and must not establish a value baseline either, so the
+// first real apply step is still the baseline: no field is a modification and
+// the plan-only values must not fake "first occurrence in a later step".
+var planOnlyFirstStepSrc = fixtureTab(`func TestAccAliCloudPlanOnlyFirstStep_basic(t *testing.T) {
+»cases := []resource.TestStep{
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "9",
+»»»»"b": "9",
+»»»}),
+»»»PlanOnly: true,
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "1",
+»»»»"b": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»}
+}
+`)
+
+func TestUnitScannerPlanOnlyFirstStepNotFalseBaseline(t *testing.T) {
+	ok, mustSet, modifySet := parseCoverageFixture(t, planOnlyFirstStepSrc)
+	if !ok {
+		t.Fatalf("scanner should parse a leading plan-only step independently; got parse failure")
+	}
+	for _, attr := range []string{"a", "b"} {
+		if !mustSet.Contains(attr) {
+			t.Fatalf("expected %q captured including from the leading plan-only step; got %v", attr, mustSet.ToSlice())
+		}
+		if modifySet.Contains(attr) {
+			t.Fatalf("field %q first set by the first real apply step after a leading plan-only step is a baseline, not a modification; got %v", attr, modifySet.ToSlice())
+		}
+	}
+	if modifySet.Cardinality() != 0 {
+		t.Fatalf("expected empty modify set (no apply step pair differs); got %v", modifySet.ToSlice())
+	}
+}
+
+// configlessPlanOnlySrc — apply {a:1}; a step holding only ResourceName and
+// PlanOnly (no Config, so nothing is captured for it); apply {a:3}. The
+// Config-less step must not spill its plan-only flag onto the next captured
+// step: "a" still changes between two real apply steps and must count.
+var configlessPlanOnlySrc = fixtureTab(`func TestAccAliCloudConfiglessPlanOnly_basic(t *testing.T) {
+»cases := []resource.TestStep{
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»»{
+»»»ResourceName: "alicloud_example_foo",
+»»»PlanOnly: true,
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "3",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»}
+}
+`)
+
+func TestUnitScannerConfiglessPlanOnlyStepNotSpilledForward(t *testing.T) {
+	ok, _, modifySet := parseCoverageFixture(t, configlessPlanOnlySrc)
+	if !ok {
+		t.Fatalf("scanner should parse a step without Config fields; got parse failure")
+	}
+	if !modifySet.Contains("a") {
+		t.Fatalf("a Config-less plan-only step must not spill its flag onto the next captured apply step; 'a' changed 1 -> 3 between real applies; got %v", modifySet.ToSlice())
+	}
+	if modifySet.Cardinality() != 1 {
+		t.Fatalf("expected exactly 'a' in the modify set; got %v", modifySet.ToSlice())
+	}
+}
+
+// PlanOnly written BEFORE the Config line (field order inside a TestStep
+// literal is free): the flag is deferred (planOnlyPending) until the step's
+// Config capture really closes, then lands on that same step. These fixtures
+// cover the deferral's main path and its two known layout boundaries.
+
+// planOnlyBeforeConfigSrc — apply {a:1,b:1}; plan-only {a:9,b:9} with the
+// PlanOnly line written before the Config line; apply {a:3,b:1}. The pending
+// flag must land on the plan-only step: "a" still counts (1 -> 3 between real
+// applies) while "b" (1 -> 9 -> 1, reverted only inside the plan-only step)
+// must not. If the pending attribution were lost, the plan-only step would
+// count as an apply and "b" would enter the modify set; if it landed on the
+// wrong step, "a" would stop counting.
+var planOnlyBeforeConfigSrc = fixtureTab(`func TestAccAliCloudPlanOnlyBeforeConfig_basic(t *testing.T) {
+»cases := []resource.TestStep{
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "1",
+»»»»"b": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»»{
+»»»PlanOnly: true,
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "9",
+»»»»"b": "9",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "3",
+»»»»"b": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»}
+}
+`)
+
+func TestUnitScannerPlanOnlyBeforeConfigDeferred(t *testing.T) {
+	ok, mustSet, modifySet := parseCoverageFixture(t, planOnlyBeforeConfigSrc)
+	if !ok {
+		t.Fatalf("scanner should parse a step whose PlanOnly line precedes its Config line; got parse failure — steps likely merged")
+	}
+	if !mustSet.Contains("a") || !mustSet.Contains("b") {
+		t.Fatalf("expected 'a' and 'b' captured including from the plan-only step; got %v", mustSet.ToSlice())
+	}
+	if !modifySet.Contains("a") {
+		t.Fatalf("field 'a' changed between two real apply steps around a deferred plan-only step must still count; got %v", modifySet.ToSlice())
+	}
+	if modifySet.Contains("b") {
+		t.Fatalf("field 'b' changed only inside a plan-only step (PlanOnly written before Config) must not count; got %v", modifySet.ToSlice())
+	}
+	if modifySet.Cardinality() != 1 {
+		t.Fatalf("expected exactly 'a' in the modify set; got %v", modifySet.ToSlice())
+	}
+	// Structural pin of the deferral main path: the pending flag lands on the
+	// step whose capture just closed, not on its neighbours.
+	resourceTest := scanCoverageFixture(t, planOnlyBeforeConfigSrc)
+	f := resourceTest.funcs["TestAccAliCloudPlanOnlyBeforeConfig_basic"]
+	if !f.stepPlanOnly[1] || f.stepPlanOnly[0] || f.stepPlanOnly[2] {
+		t.Fatalf("plan-only flag deferred from a PlanOnly-before-Config line must land on step 1 only; got %v", f.stepPlanOnly)
+	}
+}
+
+// planOnlyBeforeConfigSameLineOpenSrc — same body, but each step literal
+// opens on the `resource.TestStep{` line itself instead of a bare `{`
+// (repo layouts do both). The step-literal open must be recognized so the
+// PlanOnly-before-Config line defers instead of mislabeling the previous
+// step (or being dropped when it is the first step).
+var planOnlyBeforeConfigSameLineOpenSrc = fixtureTab(`func TestAccAliCloudPlanOnlySameLineOpen_basic(t *testing.T) {
+»cases := []resource.TestStep{
+»»resource.TestStep{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "1",
+»»»»"b": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»»resource.TestStep{
+»»»PlanOnly: true,
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "9",
+»»»»"b": "9",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»»resource.TestStep{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "3",
+»»»»"b": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»}
+}
+`)
+
+func TestUnitScannerPlanOnlyBeforeConfigSameLineStepOpen(t *testing.T) {
+	ok, mustSet, modifySet := parseCoverageFixture(t, planOnlyBeforeConfigSameLineOpenSrc)
+	if !ok {
+		t.Fatalf("scanner should parse steps whose literal opens on the resource.TestStep{ line; got parse failure")
+	}
+	if !mustSet.Contains("a") || !mustSet.Contains("b") {
+		t.Fatalf("expected 'a' and 'b' captured; got %v", mustSet.ToSlice())
+	}
+	if !modifySet.Contains("a") {
+		t.Fatalf("field 'a' changed between two real apply steps must still count; got %v", modifySet.ToSlice())
+	}
+	if modifySet.Contains("b") {
+		t.Fatalf("field 'b' changed only inside the plan-only step of a same-line-opened literal must not count; got %v", modifySet.ToSlice())
+	}
+	resourceTest := scanCoverageFixture(t, planOnlyBeforeConfigSameLineOpenSrc)
+	f := resourceTest.funcs["TestAccAliCloudPlanOnlySameLineOpen_basic"]
+	if !f.stepPlanOnly[1] || f.stepPlanOnly[0] || f.stepPlanOnly[2] {
+		t.Fatalf("plan-only flag must land on step 1 only when the literal opens on the resource.TestStep{ line; got %v", f.stepPlanOnly)
+	}
+}
+
+// planOnlyBeforeConfigNestedBlockSrc — same body, with a nested block
+// (ConfigPlanChecks) written between the PlanOnly line and the Config line.
+// The nested block's closing `}` must not be mistaken for the step literal's
+// own closing brace, which would drop the pending attribution.
+var planOnlyBeforeConfigNestedBlockSrc = fixtureTab(`func TestAccAliCloudPlanOnlyNestedBlock_basic(t *testing.T) {
+»cases := []resource.TestStep{
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "1",
+»»»»"b": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»»{
+»»»PlanOnly: true,
+»»»ConfigPlanChecks: resource.ConfigPlanChecks{
+»»»»PreApply: []resource.PlanCheck{
+»»»»»resource.TestCheckResourceAttr("alicloud_example_foo", "name", "test"),
+»»»»},
+»»»},
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "9",
+»»»»"b": "9",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "3",
+»»»»"b": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»}
+}
+`)
+
+func TestUnitScannerPlanOnlyBeforeConfigNestedBlockKeepsPending(t *testing.T) {
+	ok, mustSet, modifySet := parseCoverageFixture(t, planOnlyBeforeConfigNestedBlockSrc)
+	if !ok {
+		t.Fatalf("scanner should parse a plan-only step with a nested block before its Config; got parse failure")
+	}
+	if !mustSet.Contains("a") || !mustSet.Contains("b") {
+		t.Fatalf("expected 'a' and 'b' captured; got %v", mustSet.ToSlice())
+	}
+	if !modifySet.Contains("a") {
+		t.Fatalf("field 'a' changed between two real apply steps must still count; got %v", modifySet.ToSlice())
+	}
+	if modifySet.Contains("b") {
+		t.Fatalf("field 'b' changed only inside the plan-only step must not count even with a nested block before Config; got %v", modifySet.ToSlice())
+	}
+	resourceTest := scanCoverageFixture(t, planOnlyBeforeConfigNestedBlockSrc)
+	f := resourceTest.funcs["TestAccAliCloudPlanOnlyNestedBlock_basic"]
+	if !f.stepPlanOnly[1] || f.stepPlanOnly[0] || f.stepPlanOnly[2] {
+		t.Fatalf("nested block braces between the PlanOnly line and the Config line must not drop the pending plan-only flag; got %v", f.stepPlanOnly)
+	}
+}
+
+// checkFallbackPlanOnlySrc — a helper-Config step (no inline map) whose Check
+// never opens a map either: the Check-block fallback is armed and waits. A
+// `PlanOnly: true` field of that same step arrives while the fallback is
+// still waiting and must mark that step instead of being swallowed as
+// check-map text. The plan-only flag on a helper-Config step has no scoring
+// effect (its Config carries no readable attributes), so this is asserted
+// structurally against the captured step state.
+var checkFallbackPlanOnlySrc = fixtureTab(`func TestAccAliCloudCheckFallbackPlanOnly_basic(t *testing.T) {
+»cases := []resource.TestStep{
+»»{
+»»»Config: testAccConfig(map[string]interface{}{
+»»»»"a": "1",
+»»»»"b": "1",
+»»»}),
+»»»Check: resource.ComposeAggregateTestCheckFunc(),
+»»},
+»»{
+»»»Config: testAccExampleConfig(name),
+»»»Check: resource.ComposeAggregateTestCheckFunc(
+»»»»resource.TestCheckResourceAttr("alicloud_example_foo", "name", "test"),
+»»»),
+»»»PlanOnly: true,
+»»},
+»}
+}
+`)
+
+func TestUnitScannerCheckFallbackWaitingPlanOnly(t *testing.T) {
+	ok, mustSet, modifySet := parseCoverageFixture(t, checkFallbackPlanOnlySrc)
+	if !ok {
+		t.Fatalf("scanner should parse a helper-Config step with a Check fallback; got parse failure")
+	}
+	if !mustSet.Contains("a") || !mustSet.Contains("b") {
+		t.Fatalf("expected 'a' and 'b' captured from the apply step; got %v", mustSet.ToSlice())
+	}
+	if modifySet.Cardinality() != 0 {
+		t.Fatalf("expected empty modify set (helper-Config step contributes no readable attributes); got %v", modifySet.ToSlice())
+	}
+	resourceTest := scanCoverageFixture(t, checkFallbackPlanOnlySrc)
+	f := resourceTest.funcs["TestAccAliCloudCheckFallbackPlanOnly_basic"]
+	if !f.stepPlanOnly[1] {
+		t.Fatalf("a PlanOnly: true line arriving while the Check fallback is still waiting for its map must mark that step as plan-only; got %v", f.stepPlanOnly)
+	}
+	if f.stepPlanOnly[0] {
+		t.Fatalf("the leading apply step must not be mislabeled plan-only; got %v", f.stepPlanOnly)
 	}
 }
 
@@ -593,4 +1088,264 @@ func parseCoverageTestDiff(t *testing.T, path, hunks string) *diffparser.DiffFil
 		t.Fatalf("parsed %d files, want 1", len(diff.Files))
 	}
 	return diff.Files[0]
+}
+
+// ===== indexed ImportStateVerifyIgnore normalization =====
+//
+// The CI gate compares modification coverage against schema leaf paths, while
+// ImportStateVerifyIgnore entries legitimately carry the real indexed state
+// keys (e.g. "db_cluster_ip_array.0.white_list_type") the SDK import
+// comparison matches via strings.HasPrefix. normalizeIgnoreSet aligns the two
+// spellings for the CI set comparisons only — the original strings stay in
+// testIgnoreSet so runtime behavior does not change — and rejects entries
+// whose index-like segments are not legal non-negative integers.
+
+// TestUnitNormalizeIgnoreEntry — legal indexes (0, multi-digit, nested) are
+// stripped so the entry aligns with the schema leaf path; field names that
+// merely contain digits are never stripped; a signed (e.g. negative) index
+// segment makes the whole entry invalid: it is returned unnormalized and
+// reported instead of being silently aligned like a legal index.
+func TestUnitNormalizeIgnoreEntry(t *testing.T) {
+	cases := []struct {
+		entry string
+		want  string
+		valid bool
+	}{
+		{"block.0.leaf", "block.leaf", true},                // index 0
+		{"block.42.leaf", "block.leaf", true},               // multi-digit index
+		{"block.007.leaf", "block.leaf", true},              // leading zeros are digits
+		{"outer.12.inner.0.leaf", "outer.inner.leaf", true}, // nested indexes
+		{"db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.white_list_type", true},
+		{"block.leaf", "block.leaf", true},               // no index: untouched
+		{"plain", "plain", true},                         // not dotted: untouched
+		{"zones.zone_2.name", "zones.zone_2.name", true}, // field name with digit: not stripped
+		{"ip6_entry.prefix", "ip6_entry.prefix", true},   // field name with digit: not stripped
+		{"block.-1.leaf", "block.-1.leaf", false},        // negative index: rejected
+		{"block.+1.leaf", "block.+1.leaf", false},        // signed index: rejected
+		{"block.-1.0.leaf", "block.-1.0.leaf", false},    // negative among legal indexes: whole entry rejected
+	}
+	for _, c := range cases {
+		got, valid := normalizeIgnoreEntry(c.entry)
+		if got != c.want || valid != c.valid {
+			t.Errorf("normalizeIgnoreEntry(%q) = (%q, %v), want (%q, %v)", c.entry, got, valid, c.want, c.valid)
+		}
+	}
+}
+
+// TestUnitNormalizeIgnoreSetKeepsOriginalAndStripped — the CI-side view keeps
+// the original spelling (the SDK import comparison still matches it against
+// real state keys) and additionally contributes the schema leaf path for the
+// set comparisons. An invalid-index entry is returned separately and never
+// normalized. Parent paths and sibling fields are not added: an entry for
+// "block.0.leaf" contributes exactly "block.0.leaf" and "block.leaf", nothing
+// else — the exemption is not widened.
+func TestUnitNormalizeIgnoreSetKeepsOriginalAndStripped(t *testing.T) {
+	normalized, invalid := normalizeIgnoreSet(setOf("block.0.leaf", "block.-1.leaf", "plain"))
+	for _, want := range []string{"block.0.leaf", "block.leaf", "plain"} {
+		if !normalized.Contains(want) {
+			t.Errorf("normalized view should keep %q, got %v", want, normalized.ToSlice())
+		}
+	}
+	// Parent paths and sibling fields are never added: an entry for
+	// "block.0.leaf" contributes exactly "block.0.leaf" and "block.leaf",
+	// nothing else — the exemption is not widened.
+	for _, notWant := range []string{"block", "block.0", "block.sibling", "block.0.sibling"} {
+		if normalized.Contains(notWant) {
+			t.Errorf("normalized view must not add %q (exemption widening), got %v", notWant, normalized.ToSlice())
+		}
+	}
+	// The illegal entry itself stays verbatim (raw spellings are preserved so
+	// the gate fails on the flagged entry rather than silently dropping it),
+	// and it is never de-indexed: it is reported through the invalid list,
+	// where checkAttributeSet marks the ignore set illegal and fails.
+	if !normalized.Contains("block.-1.leaf") {
+		t.Errorf("normalized view keeps the raw illegal entry verbatim, missing %q, got %v", "block.-1.leaf", normalized.ToSlice())
+	}
+	if len(invalid) != 1 || invalid[0] != "block.-1.leaf" {
+		t.Errorf("expected [block.-1.leaf] reported invalid, got %v", invalid)
+	}
+}
+
+// writeCoverageImplFixture writes a stub implementation file the
+// neverReadBackAttributes scanner reads. The stub need not compile: the
+// scanner only string-scans it for d.Set("<root>" occurrences.
+func writeCoverageImplFixture(t *testing.T, setsRoots ...string) string {
+	t.Helper()
+	var b strings.Builder
+	b.WriteString("// stub impl fixture for the coverage gate end-to-end test\npackage fixture\n\nfunc setAttrs(d interface{ Set(string, interface{}) }) {\n")
+	for _, root := range setsRoots {
+		b.WriteString("\td.Set(\"" + root + "\", \"v\")\n")
+	}
+	b.WriteString("}\n")
+	implPath := filepath.Join(t.TempDir(), "resource_alicloud_coverage_fixture.go")
+	if err := os.WriteFile(implPath, []byte(b.String()), 0o644); err != nil {
+		t.Fatalf("write impl fixture: %v", err)
+	}
+	return implPath
+}
+
+// TestUnitIndexedImportIgnoreAlignsWithSchemaLeaf — END-TO-END regression
+// through the REAL production gate checkAttributeSet, not a re-derived set
+// formula. "block.leaf" is never modified in the test config; the original
+// defect reported it as missing modification coverage whenever the only
+// ImportStateVerifyIgnore entries were the real indexed state keys.
+//
+//	A: indexed ignore "block.0.leaf" offsets the schema leaf
+//	   "block.leaf" → PASS (no schema-only string needed in the ignore set).
+//	B: without any indexed ignore the leaf is still reported missing → FAIL.
+//	C: a parent-path ignore "block" does NOT offset the leaf → FAIL.
+//	D: a negative-index ignore "block.-1.leaf" is rejected, not aligned → FAIL.
+//	E: a real missing modification on another (sibling) field stays FAIL even
+//	   with the indexed ignore present → the exemption is not widened.
+func TestUnitIndexedImportIgnoreAlignsWithSchemaLeaf(t *testing.T) {
+	implPath := writeCoverageImplFixture(t, "block", "sibling", "other_leaf")
+
+	// All attrs Optional; block is a container whose leaf is only exercised
+	// through import. "other_leaf" is a real sibling field.
+	schemaAllSet := setOf("block", "block.leaf", "sibling", "other_leaf")
+	schemaMustSet := setOf("block", "block.leaf", "sibling", "other_leaf")
+	schemaModifySet := setOf("block", "block.leaf", "sibling", "other_leaf")
+	schemaForceNewSet := mapset.NewSet()
+	schemaDeprecatedSet := mapset.NewSet()
+	testMustSet := setOf("block", "block.leaf", "sibling", "other_leaf")
+
+	check := func(ignoreSet mapset.Set, testModifySet mapset.Set) bool {
+		return checkAttributeSet("coverage_fixture", "resource",
+			schemaMustSet, testMustSet, schemaModifySet, testModifySet,
+			schemaForceNewSet, schemaAllSet, ignoreSet, schemaDeprecatedSet, implPath)
+	}
+
+	leafUnmodified := setOf("block", "sibling", "other_leaf") // block.leaf never modified in config
+
+	// A: the real indexed state key alone is enough — the schema-only string
+	// the old gate demanded is no longer required.
+	t.Run("indexed_ignore_offsets_schema_leaf", func(t *testing.T) {
+		if !check(setOf("block.0.leaf", "block.1.leaf"), leafUnmodified) {
+			t.Fatalf("indexed ImportStateVerifyIgnore should offset the schema leaf path; checkAttributeSet returned FAIL")
+		}
+	})
+
+	// B: no ignore → the never-modified leaf is genuinely missing coverage.
+	t.Run("no_ignore_still_fails", func(t *testing.T) {
+		if check(mapset.NewSet(), leafUnmodified) {
+			t.Fatalf("an unmodified, unignored leaf must stay a coverage failure; checkAttributeSet returned PASS")
+		}
+	})
+
+	// C: ignoring only the parent path must not exempt the leaf.
+	t.Run("parent_path_not_widened", func(t *testing.T) {
+		if check(setOf("block"), leafUnmodified) {
+			t.Fatalf("parent-path ignore must not offset the leaf's modification coverage; checkAttributeSet returned PASS")
+		}
+	})
+
+	// D: an invalid (negative) index is rejected instead of being aligned
+	// with the legal index form.
+	t.Run("negative_index_rejected", func(t *testing.T) {
+		if check(setOf("block.-1.leaf"), leafUnmodified) {
+			t.Fatalf("negative-index ignore must be rejected, not normalized; checkAttributeSet returned PASS")
+		}
+	})
+
+	// E: with the indexed ignore present, a genuinely missing modification on
+	// a sibling field still fails.
+	t.Run("sibling_missing_still_fails", func(t *testing.T) {
+		if check(setOf("block.0.leaf"), setOf("block", "block.leaf")) {
+			t.Fatalf("a real missing modification on a sibling field must stay blocked; checkAttributeSet returned PASS")
+		}
+	})
+}
+
+// TestUnitIndexedForceNewIgnoreMatchesSchemaPath — the explicit comparison
+// between an indexed ForceNew ignore and its schema path form: both spellings
+// must produce the identical gate outcome on every side of the ForceNew
+// gate. When Read writes the container back (d.Set("block")), both the
+// indexed "block.0.fn_attr" and the schema-path "block.fn_attr" are illegal
+// in ImportStateVerifyIgnore; when the container is never read back
+// (neverReadBack), both are legitimately exempted. The indexed spelling can
+// neither escape the gate nor gain an exemption the plain spelling lacks.
+func TestUnitIndexedForceNewIgnoreMatchesSchemaPath(t *testing.T) {
+	schemaAllSet := setOf("block", "block.fn_attr")
+	schemaMustSet := setOf("block", "block.fn_attr")
+	schemaModifySet := setOf("block") // fn_attr is ForceNew: not a modification target
+	schemaForceNewSet := setOf("block.fn_attr")
+	schemaDeprecatedSet := mapset.NewSet()
+	testMustSet := setOf("block", "block.fn_attr")
+	testModifySet := setOf("block")
+
+	run := func(implRoots []string, ignoreSet mapset.Set) bool {
+		implPath := writeCoverageImplFixture(t, implRoots...)
+		return checkAttributeSet("coverage_fixture", "resource",
+			schemaMustSet, testMustSet, schemaModifySet, testModifySet,
+			schemaForceNewSet, schemaAllSet, ignoreSet, schemaDeprecatedSet, implPath)
+	}
+
+	// Read writes "block" back: a ForceNew attr inside it must not be ignored.
+	t.Run("read_back_both_spellings_illegal", func(t *testing.T) {
+		if run([]string{"block"}, setOf("block.0.fn_attr")) {
+			t.Fatalf("indexed ForceNew ignore (block.0.fn_attr) must be flagged like its schema path; checkAttributeSet returned PASS")
+		}
+		if run([]string{"block"}, setOf("block.fn_attr")) {
+			t.Fatalf("schema-path ForceNew ignore (block.fn_attr) must be flagged; checkAttributeSet returned PASS")
+		}
+	})
+
+	// Container never read back: both spellings are legitimately exempt.
+	t.Run("never_read_back_both_spellings_exempt", func(t *testing.T) {
+		if !run(nil, setOf("block.0.fn_attr")) {
+			t.Fatalf("indexed never-read-back ForceNew ignore must be exempt like its schema path; checkAttributeSet returned FAIL")
+		}
+		if !run(nil, setOf("block.fn_attr")) {
+			t.Fatalf("schema-path never-read-back ForceNew ignore must stay exempt; checkAttributeSet returned FAIL")
+		}
+	})
+}
+
+// TestUnitIndexedApiNonRoundTripIgnoreExempted — END-TO-END regression for
+// the alicloud_instance stock ACC shape. The stock test
+// TestAccAliCloudECSInstanceCpuOptionsAccelerators ignores the indexed state
+// key "cpu_options.0.accelerators" because DescribeInstances never echoes
+// CpuOptions.Accelerators while Read preserves the configured members from
+// prior state via d.Set("cpu_options", ...). Since the indexed-ignore
+// normalization aligns that key with the schema leaf path
+// "cpu_options.accelerators" (a ForceNew leaf under a read-back container),
+// only the apiNonRoundTrip registry entry clears the ForceNew gate for it.
+//
+//	A: the indexed ignore of the registered non-round-trip ForceNew leaf
+//	   → PASS (the registry exemption applies after normalization).
+//	B: an unregistered ForceNew sibling under the same read-back container
+//	   → FAIL (the exemption is not widened to the whole container).
+func TestUnitIndexedApiNonRoundTripIgnoreExempted(t *testing.T) {
+	// Read writes the cpu_options container back, so neverReadBackAttributes
+	// exempts nothing here; the registry is the only exemption path.
+	implPath := writeCoverageImplFixture(t, "cpu_options")
+
+	schemaAllSet := setOf("cpu_options", "cpu_options.core_count", "cpu_options.accelerators", "cpu_options.topology_type")
+	schemaMustSet := setOf("cpu_options", "cpu_options.core_count", "cpu_options.accelerators", "cpu_options.topology_type")
+	schemaModifySet := setOf("cpu_options", "cpu_options.core_count", "cpu_options.accelerators", "cpu_options.topology_type")
+	schemaForceNewSet := setOf("cpu_options.accelerators", "cpu_options.topology_type")
+	schemaDeprecatedSet := mapset.NewSet()
+	testMustSet := setOf("cpu_options", "cpu_options.core_count", "cpu_options.accelerators", "cpu_options.topology_type")
+	testModifySet := setOf("cpu_options", "cpu_options.core_count", "cpu_options.accelerators", "cpu_options.topology_type")
+
+	check := func(ignoreSet mapset.Set) bool {
+		return checkAttributeSet("instance", "resource",
+			schemaMustSet, testMustSet, schemaModifySet, testModifySet,
+			schemaForceNewSet, schemaAllSet, ignoreSet, schemaDeprecatedSet, implPath)
+	}
+
+	// A: the stock indexed ignore (as written in
+	// resource_alicloud_instance_test.go) normalizes onto the registered leaf.
+	t.Run("indexed_registered_ignore_legal", func(t *testing.T) {
+		if !check(setOf("cpu_options.0.accelerators")) {
+			t.Fatalf("indexed ignore of the registered non-round-trip cpu_options.accelerators must clear the ForceNew gate; checkAttributeSet returned FAIL")
+		}
+	})
+
+	// B: an unregistered ForceNew sibling under the same container stays illegal.
+	t.Run("unregistered_sibling_still_illegal", func(t *testing.T) {
+		if check(setOf("cpu_options.0.topology_type")) {
+			t.Fatalf("an unregistered ForceNew ignore under the same read-back container must stay illegal; checkAttributeSet returned PASS")
+		}
+	})
 }

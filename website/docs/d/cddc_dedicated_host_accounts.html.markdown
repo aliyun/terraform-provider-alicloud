@@ -28,9 +28,9 @@ output "cddc_dedicated_host_account_id_1" {
 
 The following arguments are supported:
 
-* `dedicated_host_id` - (Optional, ForceNew) The ID of the host.
-* `ids` - (Optional, ForceNew, Computed)  A list of Dedicated Host Account IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Account name.
+* `dedicated_host_id` - (Optional) The ID of the host.
+* `ids` - (Optional, Computed)  A list of Dedicated Host Account IDs.
+* `name_regex` - (Optional) A regex string to filter results by Account name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -38,7 +38,14 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Account names.
-* `accounts` - A list of Cddc Dedicated Host Accounts. Each element contains the following attributes:
-  * `account_name` - The name of the Dedicated host account.
-  * `dedicated_host_id` - The ID of the Dedicated host.
-  * `id` - The ID of the Dedicated Host Account. The value formats as `<dedicated_host_id>:<account_name>`.
+* `accounts` - A list of Cddc Dedicated Host Accounts.
+
+---
+
+### `accounts`
+
+The accounts supports the following attributes:
+
+* `account_name` - The name of the Dedicated host account.
+* `dedicated_host_id` - The ID of the Dedicated host.
+* `id` - The ID of the Dedicated Host Account. The value formats as `<dedicated_host_id>:<account_name>`.

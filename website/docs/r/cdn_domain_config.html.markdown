@@ -66,6 +66,8 @@ The following arguments are supported:
 * `parent_id` - (Optional, Available since v1.220.0) By configuring the function condition (rule engine) in the domain name configuration function parameters, Rule conditions can be created (Rule conditions can match and filter user requests by identifying various parameters carried in user requests). After each rule condition is created, a corresponding ConfigId will be generated, and the ConfigId can be referenced by other functions as a ParentId parameter, in this way, the rule conditions can be combined with the functional configuration to form a more flexible configuration.
 * `function_args` - (Required, Set) The args of the domain config. See [`function_args`](#function_args) below.
 
+---
+
 ### `function_args`
 
 The `function_args` block supports the following:
@@ -91,7 +93,7 @@ CDN domain config can be imported using the id, which consists of domain_name, f
 terraform import alicloud_cdn_domain_config.example <domain_name>:<function_name>:<config_id>
 ```
 
-**NOTE:** Before provider version 1.132.0, CDN domain config can be imported using the id, e.g.
+-> **NOTE:** Before provider version 1.132.0, CDN domain config can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_cdn_domain_config.example <domain_name>:<function_name>

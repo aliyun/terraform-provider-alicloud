@@ -154,6 +154,8 @@ The following arguments are supported:
 * `health_tasks` - (Optional, Set) The health-check tasks attached to this address. Each task references a Cloud GTM monitor template. See [`health_tasks`](#health_tasks) below.
 * `remark` - (Optional) The remark of the address. Passing an empty value clears the existing remark.
 
+---
+
 ### `health_tasks`
 
 The `health_tasks` block supports:

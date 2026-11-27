@@ -7,13 +7,15 @@ description: |-
     Provides a list of FC triggers to the user.
 ---
 
-# alicloud\_fc_triggers
+# alicloud_fc_triggers
 
 This data source provides the Function Compute triggers of the current Alibaba Cloud user.
 
+-> **NOTE:** Available since v1.17.0+.
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_fc_triggers" "fc_triggers_ds" {
   service_name  = "sample_service"
   function_name = "sample_function"
@@ -41,12 +43,19 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of FC triggers ids.
 * `names` - A list of FC triggers names.
-* `triggers` - A list of FC triggers. Each element contains the following attributes:
-  * `id` - FC trigger ID.
-  * `name` - FC trigger name.
-  * `source_arn` - Event source resource address. See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
-  * `type` - Type of the trigger. Valid values: `oss`, `log`, `timer`, `http`, `mns_topic`, `cdn_events` and `eventbridge`.
-  * `invocation_role` - RAM role arn attached to the Function Compute trigger. Role used by the event source to call the function. The value format is "acs:ram::$account-id:role/$role-name". See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
-  * `config` - JSON-encoded trigger configuration. See [Configure triggers and events](https://www.alibabacloud.com/help/doc-detail/70140.htm) for more details.
-  * `creation_time` - FC trigger creation time.
-  * `last_modification_time` - FC trigger last modification time.
+* `triggers` - A list of FC triggers.
+
+---
+
+### `triggers`
+
+The triggers supports the following attributes:
+
+* `id` - FC trigger ID.
+* `name` - FC trigger name.
+* `source_arn` - Event source resource address. See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
+* `type` - Type of the trigger. Valid values: `oss`, `log`, `timer`, `http`, `mns_topic`, `cdn_events` and `eventbridge`.
+* `invocation_role` - RAM role arn attached to the Function Compute trigger. Role used by the event source to call the function. The value format is "acs:ram::$account-id:role/$role-name". See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
+* `config` - JSON-encoded trigger configuration. See [Configure triggers and events](https://www.alibabacloud.com/help/doc-detail/70140.htm) for more details.
+* `creation_time` - FC trigger creation time.
+* `last_modification_time` - FC trigger last modification time.

@@ -70,7 +70,7 @@ func resourceAliCloudOssBucketDataRedundancyTransitionCreate(d *schema.ResourceD
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("POST", "2019-05-17", "CreateBucketDataRedundancyTransition", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if needOssBucketConfigRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -140,7 +140,7 @@ func resourceAliCloudOssBucketDataRedundancyTransitionDelete(d *schema.ResourceD
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("DELETE", "2019-05-17", "DeleteBucketDataRedundancyTransition", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if needOssBucketConfigRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}

@@ -145,6 +145,8 @@ When the value of> ChargeType is **PrePaid**, this parameter is available and mu
 * `ingress_vpc_owner_id` - (Optional, Available since v1.246.0) The user ID that the VpcID of `ingress_vpc_id` belongs to.
 * `ingress_vswitch_id` - (Optional, Available since v1.246.0) The VSwitch ID that belongs to the Vpc of `ingress_vpc_id`. Required when `ingress_vpc_id` is set.
 
+---
+
 ### `zone_vswitch_security_group`
 
 The zone_vswitch_security_group supports the following:
@@ -153,6 +155,8 @@ The zone_vswitch_security_group supports the following:
 * `vswitch_id` - (Required) The VSwitch ID.
 * `cidr_block` - (Required) The CIDR block of the VSwitch.
 * `security_group` - (Required) The ID of the security group.
+
+---
 
 ### `to_connect_vpc_ip_block`
 
@@ -175,7 +179,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 25 mins) Used when create the Instance.
 * `delete` - (Defaults to 25 mins) Used when delete the Instance.

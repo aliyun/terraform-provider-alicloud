@@ -30,16 +30,23 @@ output "resource_manager_delegated_administrator_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Delegated Administrator IDs.
-* `service_principal` - (Optional, ForceNew) The identification of the trusted service.
+* `ids` - (Optional, Computed) A list of Delegated Administrator IDs.
+* `service_principal` - (Optional) The identification of the trusted service.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `administrators` - A list of Resource Manager Delegated Administrators. Each element contains the following attributes:
-  * `account_id` - The ID of the member account.
-  * `delegation_enabled_time` - The time when the member was specified as a delegated administrator account.
-  * `id` - The ID of the Delegated Administrator.
-  * `service_principal` - The identity of the trusted service.
+* `administrators` - A list of Resource Manager Delegated Administrators.
+
+---
+
+### `administrators`
+
+The administrators supports the following attributes:
+
+* `account_id` - The ID of the member account.
+* `delegation_enabled_time` - The time when the member was specified as a delegated administrator account.
+* `id` - The ID of the Delegated Administrator.
+* `service_principal` - The identity of the trusted service.

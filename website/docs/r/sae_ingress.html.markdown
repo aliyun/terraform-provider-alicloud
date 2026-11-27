@@ -123,6 +123,8 @@ The following arguments are supported:
 * `rules` - (Required, Set) Forwarding rules. Forward traffic to the specified application according to the domain name and path. See [`rules`](#rules) below.
 * `default_rule` - (Optional, Set) Default Rule. See [`default_rule`](#default_rule) below.
 
+---
+
 ### `default_rule`
 
 The default_rule supports the following:
@@ -130,6 +132,8 @@ The default_rule supports the following:
 * `app_id` - (Optional) Target application ID.
 * `app_name` - (Optional) Target application name.
 * `container_port` - (Optional, Int) Application backend port.
+
+---
 
 ### `rules`
 

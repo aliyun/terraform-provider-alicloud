@@ -31,20 +31,27 @@ output "first_resource_manager_control_policy_attachment_id" {
 
 The following arguments are supported:
 
-* `language` - (Optional, ForceNew) The language. Valid value `zh-CN`, `en`, and `ja`. Default value `zh-CN`
+* `language` - (Optional) The language. Valid value `zh-CN`, `en`, and `ja`. Default value `zh-CN`
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `target_id` - (Required, ForceNew) The Id of target.
-* `policy_type` - (Optional, ForceNew) The policy type of control policy. Valid values: `Custom` and `System`.
+* `target_id` - (Required) The Id of target.
+* `policy_type` - (Optional) The policy type of control policy. Valid values: `Custom` and `System`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Control Policy Attachment IDs.
-* `attachments` - A list of Resource Manager Control Policy Attachments. Each element contains the following attributes:
-  * `attach_date` - The attach date.
-  * `description` - The description of policy.
-  * `id` - The ID of the Control Policy Attachment.
-  * `policy_id` - The ID of policy.
-  * `policy_name` - The name of policy.
-  * `policy_type` - The type of policy.
+* `attachments` - A list of Resource Manager Control Policy Attachments.
+
+---
+
+### `attachments`
+
+The attachments supports the following attributes:
+
+* `attach_date` - The attach date.
+* `description` - The description of policy.
+* `id` - The ID of the Control Policy Attachment.
+* `policy_id` - The ID of policy.
+* `policy_name` - The name of policy.
+* `policy_type` - The type of policy.

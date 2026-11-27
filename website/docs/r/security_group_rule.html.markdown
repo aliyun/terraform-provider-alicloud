@@ -68,15 +68,23 @@ The following arguments are supported:
 * `type` - (Required, ForceNew) The type of the Security Group Rule. Valid values:
   - `ingress`: inbound.
   - `egress`: outbound.
-* `ip_protocol` - (Required, ForceNew) The transport layer protocol of the Security Group Rule. Valid values: `tcp`, `udp`, `icmp`, `icmpv6`, `gre`, `all`. **NOTE:** From version 1.262.0, `ip_protocol` can be set to `icmpv6`.
+* `ip_protocol` - (Required, ForceNew) The transport layer protocol of the Security Group Rule. Valid values: `tcp`, `udp`, `icmp`, `icmpv6`, `gre`, `all`.
+
+  -> **NOTE:** From version 1.262.0, `ip_protocol` can be set to `icmpv6`.
 * `policy` - (Optional, ForceNew) The action of the Security Group Rule that determines whether to allow inbound access. Default value: `accept`. Valid values: `accept`, `drop`.
 * `priority` - (Optional, ForceNew, Int) The priority of the Security Group Rule. Default value: `1`. Valid values: `1` to `100`.
-* `cidr_ip` - (Optional, ForceNew, String) The target IPv4 CIDR address range. Other supported formats include 10.159.6.18/12. Only IPv4 is supported. The value must be a single IPv4 address or CIDR block, without leading or trailing whitespace or a trailing comma; a comma or whitespace separated list of CIDRs is rejected by the provider during plan because one rule carries exactly one CIDR — define one `alicloud_security_group_rule` resource per CIDR instead. **NOTE:** This field has no default value; leaving it empty does not open traffic to all sources but instead fails with `MissingParameter.Source` (ingress) or `MissingParameter.Dest` (egress). To allow all IPv4 traffic, set `cidr_ip = "0.0.0.0/0"` explicitly.
-* `ipv6_cidr_ip`- (Optional, ForceNew, Available since v1.174.0) Source IPv6 CIDR address block that requires access. Supports IP address ranges in CIDR format and IPv6 format. **NOTE:** This parameter cannot be set at the same time as the `cidr_ip` parameter.
+* `cidr_ip` - (Optional, ForceNew, String) The target IPv4 CIDR address range. Other supported formats include 10.159.6.18/12. Only IPv4 is supported. The value must be a single IPv4 address or CIDR block, without leading or trailing whitespace or a trailing comma; a comma or whitespace separated list of CIDRs is rejected by the provider during plan because one rule carries exactly one CIDR — define one `alicloud_security_group_rule` resource per CIDR instead.
+
+  -> **NOTE:** This field has no default value; leaving it empty does not open traffic to all sources but instead fails with `MissingParameter.Source` (ingress) or `MissingParameter.Dest` (egress). To allow all IPv4 traffic, set `cidr_ip = "0.0.0.0/0"` explicitly.
+* `ipv6_cidr_ip`- (Optional, ForceNew, Available since v1.174.0) Source IPv6 CIDR address block that requires access. Supports IP address ranges in CIDR format and IPv6 format.
+
+  -> **NOTE:** This parameter cannot be set at the same time as the `cidr_ip` parameter.
 * `source_security_group_id` - (Optional, ForceNew) The target security group ID within the same region. If this field is specified, the `nic_type` can only select `intranet`.
 * `source_group_owner_account` - (Optional, ForceNew, Deprecated) The Alibaba Cloud account of the target security group owner when security groups are authorized across accounts. This field may not take effect. Use `source_group_owner_id` instead. This parameter is invalid if `cidr_ip` has already been set.
 * `source_group_owner_id` - (Optional, ForceNew) The Alibaba Cloud account ID of the target security group owner when security groups are authorized across accounts.
-* `prefix_list_id`- (Optional, ForceNew) The ID of the source/destination prefix list to which you want to control access. **NOTE:** If you specify `cidr_ip`,`source_security_group_id`,`ipv6_cidr_ip` parameter, this parameter is ignored.
+* `prefix_list_id`- (Optional, ForceNew) The ID of the source/destination prefix list to which you want to control access.
+
+  -> **NOTE:** If you specify `cidr_ip`,`source_security_group_id`,`ipv6_cidr_ip` parameter, this parameter is ignored.
 * `port_range` - (Optional, ForceNew) The range of port numbers relevant to the IP protocol. Default to "-1/-1". When the protocol is tcp or udp, each side port number range from 1 to 65535 and '-1/-1' will be invalid.
   For example, `1/200` means that the range of the port numbers is 1-200. Other protocols' 'port_range' can only be "-1/-1", and other values will be invalid.
 * `nic_type` - (Optional, ForceNew) Network type, can be either `internet` or `intranet`, the default value is `internet`.
@@ -91,13 +99,13 @@ The following attributes are exported:
 * `security_group_rule_id` - The ID of the Security Group Rule.
 * `id` - The resource ID in terraform, which is composed by terraform provider.
 
-**NOTE:**  if `cidr_ip` is set, the `id` formats as `<security_group_id>:<type>:<ip_protocol>:<port_range>:<nic_type>:<cidr_ip>:<policy>:<priority>`.
+  -> **NOTE:** if `cidr_ip` is set, the `id` formats as `<security_group_id>:<type>:<ip_protocol>:<port_range>:<nic_type>:<cidr_ip>:<policy>:<priority>`.
 
-**NOTE:**  if `ipv6_cidr_ip` is set, the `id` formats as `<security_group_id>:<type>:<ip_protocol>:<port_range>:<nic_type>:<ipv6_cidr_ip>:<policy>:<priority>`.
+  -> **NOTE:** if `ipv6_cidr_ip` is set, the `id` formats as `<security_group_id>:<type>:<ip_protocol>:<port_range>:<nic_type>:<ipv6_cidr_ip>:<policy>:<priority>`.
 
-**NOTE:**  if `source_security_group_id` is set, the `id` formats as `<security_group_id>:<type>:<ip_protocol>:<port_range>:<nic_type>:<source_security_group_id>:<policy>:<priority>`.
+  -> **NOTE:** if `source_security_group_id` is set, the `id` formats as `<security_group_id>:<type>:<ip_protocol>:<port_range>:<nic_type>:<source_security_group_id>:<policy>:<priority>`.
 
-**NOTE:**  if `prefix_list_id` is set, the `id` formats as `<security_group_id>:<type>:<ip_protocol>:<port_range>:<nic_type>:<prefix_list_id>:<policy>:<priority>`.
+  -> **NOTE:** if `prefix_list_id` is set, the `id` formats as `<security_group_id>:<type>:<ip_protocol>:<port_range>:<nic_type>:<prefix_list_id>:<policy>:<priority>`.
 
 ## Import
 
@@ -109,4 +117,4 @@ Security Group Rule can be imported using the ID in the format `<security_group_
 $ terraform import alicloud_security_group_rule.example sg-12345678:ingress:tcp:80/80:internet:10.0.0.0/8:accept:1
 ```
 
-**NOTE:** The `<cidr_ip>` part is the source or destination of the rule: use `cidr_ip` for IPv4 rules, `source_security_group_id` when the rule references another security group, `prefix_list_id` for prefix list rules, or `ipv6_cidr_ip` for IPv6 rules — with every `:` in the IPv6 address replaced by `_`, e.g. `2408:4004:cc:400::/56` becomes `2408_4004_cc_400__/56`. Every part must match the rule exactly as shown in the console, including `nic_type` (`intranet` for security groups in a VPC). Otherwise the rule cannot be found and the import fails.
+-> **NOTE:** The `<cidr_ip>` part is the source or destination of the rule: use `cidr_ip` for IPv4 rules, `source_security_group_id` when the rule references another security group, `prefix_list_id` for prefix list rules, or `ipv6_cidr_ip` for IPv6 rules — with every `:` in the IPv6 address replaced by `_`, e.g. `2408:4004:cc:400::/56` becomes `2408_4004_cc_400__/56`. Every part must match the rule exactly as shown in the console, including `nic_type` (`intranet` for security groups in a VPC). Otherwise the rule cannot be found and the import fails.

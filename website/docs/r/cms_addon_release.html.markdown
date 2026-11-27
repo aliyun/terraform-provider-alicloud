@@ -76,6 +76,8 @@ The following arguments are supported:
 * `entity_rules` - (Optional, List, Available since v2.2.0) The entity discovery rule model. See [`entity_rules`](#entity_rules) below.
 * `dry_run` - (Deprecated since v2.2.0) Field `dry_run` has been deprecated from provider version 2.2.0.
 
+---
+
 ### `entity_rules`
 
 The entity_rules supports the following:
@@ -88,12 +90,16 @@ The entity_rules supports the following:
 * `tags` - (Optional, Set) The tag-based service discovery rules. See [`tags`](#entity_rules-tags) below.
 * `field_rules` - (Optional, Set) The property matching rules. See [`field_rules`](#entity_rules-field_rules) below.
 
+---
+
 ### `entity_rules-ip_match_rule`
 
 The entity_rules-ip_match_rule supports the following:
 
 * `ip_field_key` - (Optional) The key of the IP address field.
 * `ip_cidr` - (Optional) The CIDR block to match against.
+
+---
 
 ### `entity_rules-tags`
 
@@ -102,6 +108,8 @@ The entity_rules-tags supports the following:
 * `op` - (Optional) The operation. Valid values: `in`, `notIn`, `equals`, `startWith`, `endWith`, `inAll`, `notExist`.
 * `tag_key` - (Optional) The key of the tag.
 * `tag_values` - (Optional, Set) A collection of tag values.
+
+---
 
 ### `entity_rules-field_rules`
 
@@ -121,7 +129,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Addon Release.
 * `update` - (Defaults to 5 mins) Used when update the Addon Release.

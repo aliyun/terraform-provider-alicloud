@@ -15,7 +15,7 @@ Encrypt a given plaintext with KMS. The produced ciphertext stays stable across 
 
 -> **NOTE:** The `plaintext_wo` and `plaintext_wo_version` arguments require Terraform v1.11.0 or later. When `plaintext_wo` is in use, `plaintext` is empty in the state and plan.
 
--> **NOTE**: Using this data provider will allow you to conceal secret data within your resource definitions but does not take care of protecting that data in all Terraform logging and state output. Please take care to secure your secret data beyond just the Terraform configuration.
+-> **NOTE:** Using this data provider will allow you to conceal secret data within your resource definitions but does not take care of protecting that data in all Terraform logging and state output. Please take care to secure your secret data beyond just the Terraform configuration.
 
 ## Example Usage
 

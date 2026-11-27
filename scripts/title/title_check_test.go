@@ -144,6 +144,28 @@ func TestCheckTitleCompactNewEntitiesFitCodeLimit(t *testing.T) {
 	}
 }
 
+func TestPairedResourceAndDataSourceTitle(t *testing.T) {
+	const name = "alicloud_express_connect_router_route_map_association"
+	const prefix = "New Resource/Data Source: " + name
+	files := []titleFile{svcEntities("expressconnectrouter", entity{typeName: name}, entity{typeName: name + "s", dataSource: true})}
+	if len(prefix+"{,s}") != 83 || !checkTitle(prefix+"{,s}", files) {
+		t.Fatal("real resource/data source pair must fit the Code title limit")
+	}
+	for _, suffix := range []string{"", "{s}", "{s,}", "{,s,x}", "{,*}", "{, s}", "{,s}{,x}"} {
+		if checkTitle(prefix+suffix, files) {
+			t.Errorf("accepted wrong pair %q", suffix)
+		}
+	}
+	files[0].entities = append(files[0].entities, entity{typeName: "alicloud_other"})
+	if checkTitle(prefix+"{,s}", files) {
+		t.Error("pair covered an undeclared resource")
+	}
+	sameName := []titleFile{svcEntities("demo", entity{typeName: name}, entity{typeName: name, dataSource: true})}
+	if !checkTitle(prefix+"{,}", sameName) {
+		t.Error("same registered name should be allowed across different kinds")
+	}
+}
+
 func TestNewDeclarationsRejectMalformedGroups(t *testing.T) {
 	for _, token := range []string{
 		"alicloud_demo{,_cache", "alicloud_demo,_cache}", "alicloud_demo{,_cache}{,_extra}",
@@ -244,6 +266,7 @@ func TestCheckTitleServiceSourcesWithoutEntitiesImposeNoRequirement(t *testing.T
 func TestCheckTitleWithSharedProviderSource(t *testing.T) {
 	const docs = "M\twebsite/docs/index.html.markdown\n"
 	const tests = "M\talicloud/connectivity/client_test.go\n"
+	const tooling = "M\tscripts/ci/accscope/main.go\nM\tscripts/ci/accscope/main_test.go\n"
 
 	for _, tc := range []struct {
 		name, diff, title string
@@ -256,6 +279,10 @@ func TestCheckTitleWithSharedProviderSource(t *testing.T) {
 		{"docs prefix", docs + tests, "docs: update endpoint documentation", true},
 		{"tests only", tests, "update endpoint tests", false},
 		{"testcase prefix", tests, "testcase: update endpoint tests", true},
+		{"CI tool and its tests", tooling, "fix(ci): bound acceptance test selection to affected resources", true},
+		{"title checker tests only", "M\tscripts/title/title_check_test.go\n", "fix(ci): check title classification", true},
+		{"tooling with resource tests", tooling + "M\talicloud/service/polardb/resource_cluster_test.go\n", "fix(ci): update tests", false},
+		{"tooling with provider docs", tooling + docs, "fix(ci): update docs", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := checkTitle(tc.title, parseNameStatus(tc.diff)); got != tc.want {
@@ -1140,5 +1167,41 @@ func TestUnitCheckTitleFlatImplementationStillSatisfies(t *testing.T) {
 	}
 	if checkTitle("feat: New Resource: alicloud_demo_thing", files) {
 		t.Error("checkTitle(existing flat implementation demanded New Resource) passed, want fail")
+	}
+}
+
+func TestProviderTitleOverflow(t *testing.T) {
+	for _, width := range []int{127, 128, 129} {
+		first := ent("alicloud_demo", false, true, "demo")
+		second := ent("alicloud_", true, true, "other")
+		second.typeName += strings.Repeat("x", width-len(first.modifiedMarker())-len(second.modifiedMarker()))
+		files := []titleFile{svcEntities("demo", first, first), svcEntities("other", second)}
+		if got := checkTitle("provider: update shared signing", files); got != (width > 128) {
+			t.Fatalf("marker width %d: got %t", width, got)
+		}
+		if !checkTitle(first.modifiedMarker()+second.modifiedMarker()+"update", files) {
+			t.Fatal("explicit form rejected")
+		}
+	}
+	name := "alicloud_" + strings.Repeat("a", 55)
+	r, d := ent(name, false, true, "ecs"), ent(name, true, true, "ecs")
+	files := []titleFile{svcEntities("ecs", r, r, d, ent("alicloud_added", false, false, "ecs"))}
+	summary := filepath.Join(t.TempDir(), "summary.md")
+	t.Setenv("AONE_CI_SUMMARY_MD", summary)
+	t.Setenv("GITHUB_STEP_SUMMARY", "")
+	if !checkTitle("provider: 修复签名; New Resource: alicloud_added", files) {
+		t.Fatal("valid mixed title rejected")
+	}
+	body, err := os.ReadFile(summary)
+	if err != nil || strings.Count(string(body), "- `ecs`") != 3 || !strings.Contains(string(body), "1 resource(s), 1 data source(s)") {
+		t.Fatalf("summary: %s, %v", body, err)
+	}
+	for _, title := range []string{"provider: fix signing", "provider: ; New Resource: alicloud_added", "provider: New Resource: alicloud_added", "provider: " + strings.Repeat("a", 128) + "; New Resource: alicloud_added"} {
+		if checkTitle(title, files) {
+			t.Errorf("unexpected pass: %q", title)
+		}
+	}
+	if checkTitle("provider: fix signing", []titleFile{svcEntities("ecs", r, r)}) {
+		t.Fatal("duplicate granted shortcut")
 	}
 }

@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_dbfs_snapshots
 
-~> **NOTE:** This data source has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://www.alibabacloud.com/help/en/dbfs/).
+-> **DEPRECATED:** This data source has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://www.alibabacloud.com/help/en/dbfs/).
 
 This data source provides the Dbfs Snapshots of the current Alibaba Cloud user.
 
@@ -46,28 +46,35 @@ output "dbfs_snapshot_id_3" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Snapshot IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Snapshot name.
+* `ids` - (Optional, Computed)  A list of Snapshot IDs.
+* `name_regex` - (Optional) A regex string to filter results by Snapshot name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the snapshot. Valid values: `accomplished`, `failed`, `progressing`.
+* `status` - (Optional) The status of the snapshot. Valid values: `accomplished`, `failed`, `progressing`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Snapshot names.
-* `snapshots` - A list of Dbfs Snapshots. Each element contains the following attributes:
-  * `category` - The type of the Snapshot.
-  * `create_time` - The creation time of the snapshot.
-  * `description` - The description of the snapshot.
-  * `id` - The ID of the Snapshot.
-  * `last_modified_time` - The last modification time of the snapshot.
-  * `progress` - The progress of the snapshot.
-  * `remain_time` - The remaining completion time of the snapshot being created, in seconds.
-  * `retention_days` - The retention days of the snapshot.
-  * `snapshot_id` - The ID of the snapshot.
-  * `snapshot_name` - The name of the snapshot.
-  * `snapshot_type` - The creation of the snapshot.
-  * `instance_id` - The ID of the database file system.
-  * `source_fs_size` - Source database file system capacity.
-  * `status` - The status of the snapshot. Possible values: `progressing`, `accomplished`, `failed`.
+* `snapshots` - A list of Dbfs Snapshots.
+
+---
+
+### `snapshots`
+
+The snapshots supports the following attributes:
+
+* `category` - The type of the Snapshot.
+* `create_time` - The creation time of the snapshot.
+* `description` - The description of the snapshot.
+* `id` - The ID of the Snapshot.
+* `last_modified_time` - The last modification time of the snapshot.
+* `progress` - The progress of the snapshot.
+* `remain_time` - The remaining completion time of the snapshot being created, in seconds.
+* `retention_days` - The retention days of the snapshot.
+* `snapshot_id` - The ID of the snapshot.
+* `snapshot_name` - The name of the snapshot.
+* `snapshot_type` - The creation of the snapshot.
+* `instance_id` - The ID of the database file system.
+* `source_fs_size` - Source database file system capacity.
+* `status` - The status of the snapshot. Possible values: `progressing`, `accomplished`, `failed`.

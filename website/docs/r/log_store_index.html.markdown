@@ -71,6 +71,8 @@ to create SLS project, store and store index one-click, like ECS instances.
 
 The following arguments are supported:
 
+-> **NOTE:** At least one of the "full_text" and "field_search" should be specified.
+
 * `project` - (Required, ForceNew) The project name to the log store belongs.
 * `logstore` - (Required, ForceNew) The log store name to the query index belongs.
 * `log_reduce` - (Optional, Available since v1.263.0) Whether to enable log reduce. Default to false.
@@ -80,7 +82,7 @@ The following arguments are supported:
 * `full_text` - (Optional) The configuration of full text index. See [`full_text`](#full_text) below.
 * `field_search` - (Optional) List configurations of field search index. See [`field_search`](#field_search) below.
 
--> **Note:** At least one of the "full_text" and "field_search" should be specified.
+---
 
 ### `full_text`
 
@@ -89,6 +91,8 @@ The full_text supports the following:
 * `case_sensitive` - (Optional) Whether the case sensitive. Default to false.
 * `include_chinese` - (Optional) Whether includes the chinese. Default to false.
 * `token` - (Optional) The string of several split words, like "\r", "#"
+
+---
 
 ### `field_search`
 
@@ -103,6 +107,8 @@ The field_search supports the following:
 * `enable_analytics` - (Optional) Whether to enable field analytics. Default to true.
 * `json_keys` - (Optional, Available in 1.66.0+) Use nested index when type is json. See [`json_keys`](#field_search-json_keys) below.
 
+---
+
 ### `field_search-json_keys`
 
 The field_search-json_keys supports the following:
@@ -111,8 +117,6 @@ The field_search-json_keys supports the following:
 * `type` - (Optional) The type of one field. Valid values: ["long", "text", "double"]. Default to "long"
 * `alias` - (Optional) The alias of one field.
 * `doc_value` - (Optional) Whether to enable statistics. default to true.
-
--> **Note:** At least one of the "full_text" and "field_search" should be specified.
 
 ## Attributes Reference
 

@@ -7,9 +7,11 @@ description: |-
     Provides a list of FC functions to the user.
 ---
 
-# alicloud\_fc_functions
+# alicloud_fc_functions
 
 This data source provides the Function Compute functions of the current Alibaba Cloud user.
+
+-> **NOTE:** Available since v1.17.0.
 
 ## Example Usage
 
@@ -39,25 +41,39 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of functions ids.
 * `names` - A list of functions names.
-* `functions` - A list of functions. Each element contains the following attributes:
-  * `id` - Function ID.
-  * `name` - Function name.
-  * `description` - Function description.
-  * `runtime` - Function runtime. The list of possible values is [available here](https://www.alibabacloud.com/help/doc-detail/52077.htm).
-  * `handler` - Function [entry point](https://www.alibabacloud.com/help/doc-detail/62213.htm) in the code.
-  * `timeout` - Maximum amount of time the function can run in seconds.
-  * `memory_size` - Amount of memory in MB the function can use at runtime.
-  * `code_size` - Function code size in bytes.
-  * `code_checksum` - Checksum (crc64) of the function code.
-  * `creation_time` - Function creation time.
-  * `last_modification_time` - Function last modification time.
-  * `environment_variables` -  A map that defines environment variables for the function.
-  * `initializer` - The entry point of the function's [initialization](https://www.alibabacloud.com/help/doc-detail/157704.htm).
-  * `initialization_timeout` - The maximum length of time, in seconds, that the function's initialization should be run for.
-  * `instance_type` - The instance type of the function.
-  * `instance_concurrency` - The maximum number of requests can be executed concurrently within the single function instance.
-  * `ca_port` - The port that the function listen to, only valid for [custom runtime](https://www.alibabacloud.com/help/doc-detail/132044.htm) and [custom container runtime](https://www.alibabacloud.com/help/doc-detail/179368.htm).
-  * `custom_container_config` - (Optional, MaxItems: 1) The configuration for custom container runtime. The data source Read backfills this block from the server response when the function uses a custom container; it contains the following attributes:
-    * `image` - The container image address.
-    * `command` - The entry point of the container, which specifies the actual command run by the container.
-    * `args` - The args field specifies the arguments passed to the command.
+* `functions` - A list of functions.
+
+---
+
+### `functions`
+
+The functions supports the following attributes:
+
+* `id` - Function ID.
+* `name` - Function name.
+* `description` - Function description.
+* `runtime` - Function runtime. The list of possible values is [available here](https://www.alibabacloud.com/help/doc-detail/52077.htm).
+* `handler` - Function [entry point](https://www.alibabacloud.com/help/doc-detail/62213.htm) in the code.
+* `timeout` - Maximum amount of time the function can run in seconds.
+* `memory_size` - Amount of memory in MB the function can use at runtime.
+* `code_size` - Function code size in bytes.
+* `code_checksum` - Checksum (crc64) of the function code.
+* `creation_time` - Function creation time.
+* `last_modification_time` - Function last modification time.
+* `environment_variables` -  A map that defines environment variables for the function.
+* `initializer` - The entry point of the function's [initialization](https://www.alibabacloud.com/help/doc-detail/157704.htm).
+* `initialization_timeout` - The maximum length of time, in seconds, that the function's initialization should be run for.
+* `instance_type` - The instance type of the function.
+* `instance_concurrency` - The maximum number of requests can be executed concurrently within the single function instance.
+* `ca_port` - The port that the function listen to, only valid for [custom runtime](https://www.alibabacloud.com/help/doc-detail/132044.htm) and [custom container runtime](https://www.alibabacloud.com/help/doc-detail/179368.htm).
+* `custom_container_config` - (Optional) The configuration for custom container runtime, at most 1 item. The data source Read backfills this block from the server response when the function uses a custom container;.
+
+---
+
+### `functions.custom_container_config`
+
+The custom_container_config supports the following attributes:
+
+* `image` - The container image address.
+* `command` - The entry point of the container, which specifies the actual command run by the container.
+* `args` - The args field specifies the arguments passed to the command.

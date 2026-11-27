@@ -79,6 +79,8 @@ The following arguments are supported:
 * `match_express` - (Optional, ForceNew, Set) The expressions used to match instances. See [`match_express`](#match_express) below.
 * `alert_config` - (Required, Set) The alert rule configurations. See [`alert_config`](#alert_config) below.
 
+---
+
 ### `match_express`
 
 The match_express supports the following:
@@ -86,6 +88,8 @@ The match_express supports the following:
 * `name` - (Optional, ForceNew) The criteria based on which the instances are matched.
 * `value` - (Optional, ForceNew) The keyword used to match the instance name.
 * `function` - (Optional, ForceNew) The matching condition. Valid values: `all`, `startWith`, `endWith`, `contains`, `notContains`, `equals`.
+
+---
 
 ### `alert_config`
 
@@ -100,6 +104,8 @@ The alert_config supports the following:
 * `silence_time` - (Optional, Int) The mute period during which new alert notifications are not sent even if the trigger conditions are met. Unit: seconds.
 * `webhook` - (Optional) The callback URL.
 * `target_list` - (Optional, Set) The alert triggers. See [`target_list`](#alert_config-target_list) below.
+
+---
 
 ### `alert_config-target_list`
 
@@ -119,7 +125,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Group Monitoring Agent Process.
 * `update` - (Defaults to 5 mins) Used when update the Group Monitoring Agent Process.

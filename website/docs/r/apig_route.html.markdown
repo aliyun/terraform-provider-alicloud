@@ -117,6 +117,8 @@ The following arguments are supported:
 
   -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
+---
+
 ### `backend`
 
 The backend supports the following:
@@ -128,6 +130,8 @@ The backend supports the following:
   - Redirect: Redirect service.
 * `services` - (Optional, List) Backend service. See [`services`](#backend-services) below.
 
+---
+
 ### `backend-services`
 
 The backend-services supports the following:
@@ -138,11 +142,15 @@ The backend-services supports the following:
 * `version` - (Optional, ForceNew) The version label of the backend service used for routing and canary release scenarios.
 * `weight` - (Optional, Int) The percentage value of the traffic ratio. You can specify the weight of the service when the scenario is proportional (canary) routing. This parameter is not required in other scenarios.
 
+---
+
 ### `environment_info`
 
 The environment_info supports the following:
 
 * `environment_id` - (Optional, ForceNew) The unique identifier of the APIG environment where this route is published and deployed.
+
+---
 
 ### `match`
 
@@ -154,6 +162,8 @@ The match supports the following:
 * `path` - (Optional, Set) The path rule. See [`path`](#match-path) below.
 * `query_params` - (Optional, List) The matching rules for query parameters. See [`query_params`](#match-query_params) below.
 
+---
+
 ### `match-headers`
 
 The match-headers supports the following:
@@ -162,12 +172,16 @@ The match-headers supports the following:
 * `type` - (Optional) The header matching rule type. Valid values: Exact (exact match), Prefix (prefix match), and Regex (regular expression match).
 * `value` - (Optional) The HTTP request header value that incoming requests must supply to be routed.
 
+---
+
 ### `match-path`
 
 The match-path supports the following:
 
 * `type` - (Optional) The path matching type. Valid values: Exact (exact match), Prefix (prefix match), and Regex (regular expression match).
 * `value` - (Optional) The URI path pattern that incoming requests must match to be routed by this route.
+
+---
 
 ### `match-query_params`
 
@@ -189,24 +203,59 @@ The following attributes are exported:
 * `status` - The deployment status of the route.
 * `update_time` - The update time in Greenwich Mean Time (GMT).
 * `backend` - Backend service.
-  * `services` - Backend service.
-    * `name` - The name of the service.
 * `environment_info` - The environment information of the route.
-  * `alias` - The alias of the environment name.
-  * `name` - The human-readable name of the APIG environment where this route is published.
-  * `gateway_info` - The gateway instance information corresponding to the environment.
-    * `gateway_edition` - The edition of the gateway instance.
-    * `gateway_id` - The ID of the Cloud-native API Gateway.
-    * `name` - The name of the gateway.
-  * `sub_domains` - The default second-level domain names of the environment.
-    * `domain_id` - The ID of the second-level domain name.
-    * `network_type` - The domain access type, such as Intranet or Internet.
-    * `protocol` - The domain protocol, such as HTTP or HTTPS.
-    * `name` - The name of the second-level domain name.
+
+---
+
+### `backend`
+
+The backend supports the following attributes:
+
+* `services` - Backend service.
+
+---
+
+### `backend.services`
+
+The services supports the following attributes:
+
+* `name` - The name of the service.
+
+---
+
+### `environment_info`
+
+The environment_info supports the following attributes:
+
+* `alias` - The alias of the environment name.
+* `name` - The human-readable name of the APIG environment where this route is published.
+* `gateway_info` - The gateway instance information corresponding to the environment.
+* `sub_domains` - The default second-level domain names of the environment.
+
+---
+
+### `environment_info.gateway_info`
+
+The gateway_info supports the following attributes:
+
+* `gateway_edition` - The edition of the gateway instance.
+* `gateway_id` - The ID of the Cloud-native API Gateway.
+* `name` - The name of the gateway.
+
+---
+
+### `environment_info.sub_domains`
+
+The sub_domains supports the following attributes:
+
+* `domain_id` - The ID of the second-level domain name.
+* `network_type` - The domain access type, such as Intranet or Internet.
+* `protocol` - The domain protocol, such as HTTP or HTTPS.
+* `name` - The name of the second-level domain name.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Route.
 * `delete` - (Defaults to 5 mins) Used when delete the Route.

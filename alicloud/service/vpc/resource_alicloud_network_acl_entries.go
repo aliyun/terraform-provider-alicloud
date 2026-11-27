@@ -235,9 +235,7 @@ func resourceAliyunNetworkAclEntriesUpdate(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.UpdateNetworkAclEntries(request)
-		})
+		raw, err := client.VpcSdkRpc(request, vpc.CreateUpdateNetworkAclEntriesResponse())
 		//Waiting for deleting the network acl entries
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict"}) {
@@ -276,9 +274,7 @@ func resourceAliyunNetworkAclEntriesDelete(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.UpdateNetworkAclEntries(request)
-		})
+		raw, err := client.VpcSdkRpc(request, vpc.CreateUpdateNetworkAclEntriesResponse())
 		//Waiting for deleting the network acl entries
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict"}) {

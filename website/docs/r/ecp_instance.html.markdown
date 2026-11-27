@@ -93,11 +93,17 @@ The following arguments are supported:
 * `image_id` - (Required, ForceNew) The ID of the image.
 * `vswitch_id` - (Required, ForceNew) The ID of the vSwitch.
 * `security_group_id` - (Required, ForceNew) The ID of the security group.
-* `eip_bandwidth` - (Optional, ForceNew, Int) The bandwidth of the elastic IP address (EIP). **NOTE:** From version 1.232.0, `eip_bandwidth` cannot be modified.
-* `resolution` - (Optional) The resolution that you want to select for the ECP instance. **NOTE:** From version 1.232.0, `resolution` can be modified.
+* `eip_bandwidth` - (Optional, ForceNew, Int) The bandwidth of the elastic IP address (EIP).
+
+  -> **NOTE:** From version 1.232.0, `eip_bandwidth` cannot be modified.
+* `resolution` - (Optional) The resolution that you want to select for the ECP instance.
+
+  -> **NOTE:** From version 1.232.0, `resolution` can be modified.
 * `key_pair_name` - (Optional) The name of the key pair that you want to use to connect to the instance.
 * `vnc_password` - (Optional) The VNC password of the instance. The password must be `6` characters in length and can contain only uppercase letters, lowercase letters, and digits.
-* `payment_type` - (Optional, ForceNew) The billing method of the ECP instance. Default value: `PayAsYouGo`. Valid values: `PayAsYouGo`,`Subscription`. **NOTE:** From version 1.232.0, `payment_type` cannot be modified.
+* `payment_type` - (Optional, ForceNew) The billing method of the ECP instance. Default value: `PayAsYouGo`. Valid values: `PayAsYouGo`,`Subscription`.
+
+  -> **NOTE:** From version 1.232.0, `payment_type` cannot be modified.
 * `auto_pay` - (Optional, Bool) Specifies whether to enable the auto-payment feature. Valid values:
   - `true`: Enable.
   - `false`: Disable.
@@ -125,7 +131,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 3 mins) Used when create the Instance.
 * `update` - (Defaults to 3 mins) Used when update the Instance.

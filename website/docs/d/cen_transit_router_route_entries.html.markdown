@@ -44,13 +44,20 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of CEN Transit Router Route Entry IDs.
 * `names` - A list of CEN Transit Router Route Entry Names.
-* `entries` - A list of CEN Route Entries. Each element contains the following attributes:
-  * `id` - The ID of the CEN Transit Router Route Entry.
-  * `transit_router_route_entry_id` - The ID of the route entry.
-  * `transit_router_route_entry_name` - The name of the transit router route entry.
-  * `transit_router_route_entry_description` - The description of the transit router route entry.
-  * `transit_router_route_entry_destination_cidr_block` - The destination CIDR block of the route entry.
-  * `transit_router_route_entry_next_hop_id` - ID of the next hop.
-  * `transit_router_route_entry_next_hop_type` - Type of the next hop.
-  * `transit_router_route_entry_type` - Type of the route entry.
-  * `status` - The status of the route entry in CEN.
+* `entries` - A list of CEN Route Entries.
+
+---
+
+### `entries`
+
+The entries supports the following attributes:
+
+* `id` - The ID of the CEN Transit Router Route Entry.
+* `transit_router_route_entry_id` - The ID of the route entry.
+* `transit_router_route_entry_name` - The name of the transit router route entry.
+* `transit_router_route_entry_description` - The description of the transit router route entry.
+* `transit_router_route_entry_destination_cidr_block` - The destination CIDR block of the route entry.
+* `transit_router_route_entry_next_hop_id` - ID of the next hop.
+* `transit_router_route_entry_next_hop_type` - Type of the next hop.
+* `transit_router_route_entry_type` - Type of the route entry.
+* `status` - The status of the route entry in CEN.

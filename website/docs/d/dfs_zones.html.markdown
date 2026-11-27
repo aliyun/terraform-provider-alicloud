@@ -32,8 +32,22 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `zones` - A list of HDFS Zones And Configurations. Each element contains the following attributes:
-  * `zone_id` - The zone ID.
-  * `options` -  A list of available configurations of the Zone.
-    * `storage_type` - The storage specifications of the File system. Valid values: `PERFORMANCE`, `STANDARD`.
-    * `protocol_type` - The protocol type. Valid values: `HDFS`.
+* `zones` - A list of HDFS Zones And Configurations.
+
+---
+
+### `zones`
+
+The zones supports the following attributes:
+
+* `zone_id` - The zone ID.
+* `options` -  A list of available configurations of the Zone.
+
+---
+
+### `zones.options`
+
+The options supports the following attributes:
+
+* `storage_type` - The storage specifications of the File system. Valid values: `PERFORMANCE`, `STANDARD`.
+* `protocol_type` - The protocol type. Valid values: `HDFS`.

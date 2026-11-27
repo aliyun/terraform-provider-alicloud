@@ -38,9 +38,16 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `entries` - A list of CEN Route Entries. Each element contains the following attributes:
-  * `cidr_block` - The destination CIDR block of the route entry.
-  * `type` - Type of the route entry.
-  * `next_hop_id` - ID of the next hop.
-  * `next_hop_type` - Type of the next hop.
-  * `next_hop_region_id` - ID of the region where the next hop is located.
+* `entries` - A list of CEN Route Entries.
+
+---
+
+### `entries`
+
+The entries supports the following attributes:
+
+* `cidr_block` - The destination CIDR block of the route entry.
+* `type` - Type of the route entry.
+* `next_hop_id` - ID of the next hop.
+* `next_hop_type` - Type of the next hop.
+* `next_hop_region_id` - ID of the region where the next hop is located.

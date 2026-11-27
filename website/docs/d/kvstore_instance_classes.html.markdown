@@ -60,6 +60,13 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `instance_classes` - A list of KVStore available instance classes.
-* `classes` - A list of KVStore available instance classes when the `sorted_by` is "Price". include:
-  * `instance_class` - KVStore available instance class.
-  * `price` - The price of the instance class.
+* `classes` - A list of KVStore available instance classes when the `sorted_by` is "Price".
+
+---
+
+### `classes`
+
+The classes supports the following attributes:
+
+* `instance_class` - KVStore available instance class.
+* `price` - The price of the instance class.

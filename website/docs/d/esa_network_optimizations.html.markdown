@@ -67,17 +67,24 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Network Optimization names.
-* `optimizations` - A list of Network Optimizations. Each element contains the following attributes:
-  * `id` - The ID of the Network Optimization.
-  * `config_id` - The ID of the Configuration.
-  * `config_type` - The type of the Configuration.
-  * `site_version` - The version of the site.
-  * `rule_enable` - Rule switch.
-  * `rule_name` - Rule name.
-  * `rule` - Rule content.
-  * `sequence` - The rule execution order prioritizes lower numerical values.
-  * `smart_routing` - Whether to enable smart routing service.
-  * `grpc` - Whether to enable GRPC.
-  * `http2_origin` - Whether to enable HTTP2 origin.
-  * `websocket` - Whether to enable Websocket.
-  * `upload_max_filesize` - Maximum upload file size.
+* `optimizations` - A list of Network Optimizations.
+
+---
+
+### `optimizations`
+
+The optimizations supports the following attributes:
+
+* `id` - The ID of the Network Optimization.
+* `config_id` - The ID of the Configuration.
+* `config_type` - The type of the Configuration.
+* `site_version` - The version of the site.
+* `rule_enable` - Rule switch.
+* `rule_name` - Rule name.
+* `rule` - Rule content.
+* `sequence` - The rule execution order prioritizes lower numerical values.
+* `smart_routing` - Whether to enable smart routing service.
+* `grpc` - Whether to enable GRPC.
+* `http2_origin` - Whether to enable HTTP2 origin.
+* `websocket` - Whether to enable Websocket.
+* `upload_max_filesize` - Maximum upload file size.

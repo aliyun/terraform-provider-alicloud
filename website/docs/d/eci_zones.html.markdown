@@ -35,6 +35,13 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `zones` - A list of eci Instance zones. Each element contains the following attributes:
-	* `zone_ids` - The list of available zone ids.
-	* `region_endpoint` - The endpoint of the region.
+* `zones` - A list of eci Instance zones.
+
+---
+
+### `zones`
+
+The zones supports the following attributes:
+
+* `zone_ids` - The list of available zone ids.
+* `region_endpoint` - The endpoint of the region.

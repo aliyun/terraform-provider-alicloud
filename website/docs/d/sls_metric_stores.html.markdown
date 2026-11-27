@@ -49,15 +49,22 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of MetricStore names.
-* `metric_stores` - A list of MetricStores. Each element contains the following attributes:
-  * `id` - The ID of the MetricStore. The value is formatted as `<project_name>:<metric_store_name>`.
-  * `metric_store_name` - The name of the MetricStore.
-  * `ttl` - The data retention period in days.
-  * `shard_count` - The number of shards.
-  * `auto_split` - Whether automatic shard splitting is enabled.
-  * `max_split_shard_count` - The maximum number of shards to split.
-  * `append_meta` - Whether to record the IP address of the requester.
-  * `hot_ttl` - The data retention period in the hot storage tier, in days.
-  * `mode` - The type of the MetricStore.
-  * `create_time` - The time when the MetricStore was created.
-  * `last_modify_time` - The time when the MetricStore was last modified.
+* `metric_stores` - A list of MetricStores.
+
+---
+
+### `metric_stores`
+
+The metric_stores supports the following attributes:
+
+* `id` - The ID of the MetricStore. The value is formatted as `<project_name>:<metric_store_name>`.
+* `metric_store_name` - The name of the MetricStore.
+* `ttl` - The data retention period in days.
+* `shard_count` - The number of shards.
+* `auto_split` - Whether automatic shard splitting is enabled.
+* `max_split_shard_count` - The maximum number of shards to split.
+* `append_meta` - Whether to record the IP address of the requester.
+* `hot_ttl` - The data retention period in the hot storage tier, in days.
+* `mode` - The type of the MetricStore.
+* `create_time` - The time when the MetricStore was created.
+* `last_modify_time` - The time when the MetricStore was last modified.

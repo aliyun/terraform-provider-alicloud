@@ -127,6 +127,8 @@ The following arguments are supported:
 * `tags` - (Optional, Map) Instance tag.
 * `zone_id` - (Required, ForceNew) The zone Id. Refer to "Instructions for Use".
 
+---
+
 ### `endpoints`
 
 The endpoints supports the following:
@@ -143,14 +145,21 @@ The following attributes are exported:
 * `create_time` - The creation time of the resource.
 * `region_id` - (Available since v1.259.0) The region ID.
 * `endpoints` - List of domain names.
-  * `alternative_endpoints` - Some old instances have both AnyTunnel and SingleTunnel enabled. When switching from AnyTunnel to SingleTunnel, the endpoints of both are retained. Therefore, one more field is required to store the Endpoint.
-  * `enabled` - Whether to turn on the network.
-  * `endpoint` - Domain name.
-  * `vpc_instance_id` - The vpc instance ID.
+
+---
+
+### `endpoints`
+
+The endpoints supports the following attributes:
+
+* `alternative_endpoints` - Some old instances have both AnyTunnel and SingleTunnel enabled. When switching from AnyTunnel to SingleTunnel, the endpoints of both are retained. Therefore, one more field is required to store the Endpoint.
+* `enabled` - Whether to turn on the network.
+* `endpoint` - Domain name.
+* `vpc_instance_id` - The vpc instance ID.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.

@@ -46,21 +46,35 @@ output "cms_dynamic_tag_group_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Dynamic Tag Group IDs.
+* `ids` - (Optional, Computed)  A list of Dynamic Tag Group IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid values: `RUNNING`, `FINISH`.
-* `tag_key` - (Optional, ForceNew) The tag key of the tag.
+* `status` - (Optional) The status of the resource. Valid values: `RUNNING`, `FINISH`.
+* `tag_key` - (Optional) The tag key of the tag.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `groups` - A list of Cms Dynamic Tag Groups. Each element contains the following attributes:
-  * `dynamic_tag_rule_id` - The ID of the tag rule.
-  * `id` - The ID of the Dynamic Tag Group.
-  * `match_express_filter_relation` - The relationship between conditional expressions. Valid values: `and`, `or`.
-  * `match_express` - The label generates a matching expression that applies the grouping. See the following `Block match_express`.
-    * `tag_value` - The tag value. The Tag value must be used in conjunction with the tag value matching method TagValueMatchFunction.
-    * `tag_value_match_function` - Matching method of tag value. Valid values: `all`, `startWith`,`endWith`,`contains`,`notContains`,`equals`.
-  * `status` -  The status of the resource. Valid values: `RUNNING`, `FINISH`.
-  * `tag_key` - The tag key of the tag.
+* `groups` - A list of Cms Dynamic Tag Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `dynamic_tag_rule_id` - The ID of the tag rule.
+* `id` - The ID of the Dynamic Tag Group.
+* `match_express_filter_relation` - The relationship between conditional expressions. Valid values: `and`, `or`.
+* `match_express` - The label generates a matching expression that applies the grouping. See the following `Block match_express`.
+* `status` -  The status of the resource. Valid values: `RUNNING`, `FINISH`.
+* `tag_key` - The tag key of the tag.
+
+---
+
+### `groups.match_express`
+
+The match_express supports the following attributes:
+
+* `tag_value` - The tag value. The Tag value must be used in conjunction with the tag value matching method TagValueMatchFunction.
+* `tag_value_match_function` - Matching method of tag value. Valid values: `all`, `startWith`,`endWith`,`contains`,`notContains`,`equals`.

@@ -101,19 +101,33 @@ The following attributes are exported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Secret names.
-* `secrets` - A list of Secrets. Each element contains the following attributes:
-  * `id` - The ID of the resource supplied above.
-  * `secret_id` - The secret ID.
-  * `gateway_type` - The gateway type.
-  * `name` - The secret name.
-  * `description` - The secret description.
-  * `secret_source` - The secret source.
-  * `reference_count` - The reference count of the secret.
-  * `status` - The status of the secret.
-  * `create_timestamp` - The creation timestamp of the secret.
-  * `update_timestamp` - The update timestamp of the secret.
-  * `kms_config` - The KMS config of the secret.
-    * `kms_instance_id` - The KMS instance ID.
-    * `kms_key_id` - The KMS key ID.
-    * `kms_secret_arn` - The KMS secret arn.
-    * `version_id` - The version ID.
+* `secrets` - A list of Secrets.
+
+---
+
+### `secrets`
+
+The secrets supports the following attributes:
+
+* `id` - The ID of the resource supplied above.
+* `secret_id` - The secret ID.
+* `gateway_type` - The gateway type.
+* `name` - The secret name.
+* `description` - The secret description.
+* `secret_source` - The secret source.
+* `reference_count` - The reference count of the secret.
+* `status` - The status of the secret.
+* `create_timestamp` - The creation timestamp of the secret.
+* `update_timestamp` - The update timestamp of the secret.
+* `kms_config` - The KMS config of the secret.
+
+---
+
+### `secrets.kms_config`
+
+The kms_config supports the following attributes:
+
+* `kms_instance_id` - The KMS instance ID.
+* `kms_key_id` - The KMS key ID.
+* `kms_secret_arn` - The KMS secret arn.
+* `version_id` - The version ID.

@@ -78,11 +78,15 @@ resource "alicloud_pvtz_inbound_endpoint" "default" {
 The following arguments are supported:
 
 * `endpoint_name` - (Required, String) The name of the resource.
-* `ip_configs` - (Required, Set) The Ip Configs. See [`ip_configs`](#ip_configs) below. **NOTE:** In order to ensure high availability, add at least 2 and up to 10.
+* `ip_configs` - (Required, Set) The Ip Configs. See [`ip_configs`](#ip_configs) below.
+
+  -> **NOTE:** In order to ensure high availability, add at least 2 and up to 10.
 * `security_group_id` - (Required, ForceNew, String) The ID of the Security Group.
 * `vpc_id` - (Required, ForceNew, String) The VPC ID.
 * `vpc_region_id` - (Required, ForceNew, String) The Region of the VPC.
 * `spec_version` - (Required, ForceNew, String) The specification version. Valid values: `standard`.
+
+---
 
 ### `ip_configs`
 
@@ -106,7 +110,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions. Values use Go duration strings such as `30s`, `10m`, or `1h`.
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions. Values use Go duration strings such as `30s`, `10m`, or `1h`.
 
 * `create` - (Defaults to 10 minutes) Used when creating the Inbound Endpoint and waiting for it to reach `SUCCESS`.
 * `update` - (Defaults to 10 minutes) Used when updating the Inbound Endpoint and waiting for it to reach `SUCCESS`.

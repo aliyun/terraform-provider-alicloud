@@ -32,7 +32,7 @@ output "alicloud_nas_access_rules_id" {
 
 The following arguments are supported:
 
-* `access_group_name` - (Required ForceNew) Filter results by a specific AccessGroupName.
+* `access_group_name` - (Required) Filter results by a specific AccessGroupName.
 * `ids` - (Optional, Available in 1.53.0+) A list of rule IDs.
 * `source_cidr_ip` - (Optional) Filter results by a specific SourceCidrIp.
 * `user_access` - (Optional) Filter results by a specific UserAccess.
@@ -44,9 +44,16 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of rule IDs, Each element set to `access_rule_id` (Each element formats as `<access_group_name>:<access_rule_id>` before 1.53.0).
-* `rules` - A list of AccessRules. Each element contains the following attributes:
-  * `source_cidr_ip` - SourceCidrIp of the AccessRule.
-  * `priority` - Priority of the AccessRule.
-  * `access_rule_id` - AccessRuleId of the AccessRule.
-  * `user_access` - UserAccess of the AccessRule
-  * `rw_access` - RWAccess of the AccessRule.
+* `rules` - A list of AccessRules.
+
+---
+
+### `rules`
+
+The rules supports the following attributes:
+
+* `source_cidr_ip` - SourceCidrIp of the AccessRule.
+* `priority` - Priority of the AccessRule.
+* `access_rule_id` - AccessRuleId of the AccessRule.
+* `user_access` - UserAccess of the AccessRule
+* `rw_access` - RWAccess of the AccessRule.

@@ -17,10 +17,10 @@ func assembleProvider(p *schema.Provider) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	for name, r := range p.ResourcesMap {
-		p.ResourcesMap[name] = WrapResource(name, r, intercept.ChainOf(name, nil))
+		p.ResourcesMap[name] = WrapResource(name, r, intercept.ChainOf(name, nil), intercept.BootstrapContext(""))
 	}
 	for name, ds := range p.DataSourcesMap {
-		p.DataSourcesMap[name] = WrapDataSource(name, ds, intercept.ChainOf(name, nil))
+		p.DataSourcesMap[name] = WrapDataSource(name, ds, intercept.ChainOf(name, nil), intercept.BootstrapContext(""))
 	}
 
 	for _, sp := range providerregistry.ServicePackages() {
@@ -30,7 +30,7 @@ func assembleProvider(p *schema.Provider) diag.Diagnostics {
 				diags = append(diags, duplicateDeclaration("resource", name, sp.Name))
 				continue
 			}
-			p.ResourcesMap[name] = WrapResource(name, reg.Factory(), intercept.ChainOf(name, reg.Interceptors))
+			p.ResourcesMap[name] = WrapResource(name, reg.Factory(), intercept.ChainOf(name, reg.Interceptors), intercept.BootstrapContext(sp.Name))
 		}
 		for _, reg := range sp.SDKDataSources {
 			name := reg.TypeName
@@ -38,7 +38,7 @@ func assembleProvider(p *schema.Provider) diag.Diagnostics {
 				diags = append(diags, duplicateDeclaration("data source", name, sp.Name))
 				continue
 			}
-			p.DataSourcesMap[name] = WrapDataSource(name, reg.Factory(), intercept.ChainOf(name, reg.Interceptors))
+			p.DataSourcesMap[name] = WrapDataSource(name, reg.Factory(), intercept.ChainOf(name, reg.Interceptors), intercept.BootstrapContext(sp.Name))
 		}
 	}
 

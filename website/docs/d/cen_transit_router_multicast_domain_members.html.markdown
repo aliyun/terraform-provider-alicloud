@@ -31,19 +31,26 @@ output "alicloud_cen_transit_router_multicast_domain_member_example_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew) A list of Transit Router Multicast Domain Member IDs.
-* `transit_router_multicast_domain_id` - (Required, ForceNew) The ID of the multicast domain to which the multicast member belongs.
-* `network_interface_id` - (Optional, ForceNew) The ID of the ENI.
+* `ids` - (Optional) A list of Transit Router Multicast Domain Member IDs.
+* `transit_router_multicast_domain_id` - (Required) The ID of the multicast domain to which the multicast member belongs.
+* `network_interface_id` - (Optional) The ID of the ENI.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `members` - A list of Transit Router Multicast Domain Member Entries. Each element contains the following attributes:
-  * `id` - The `key` of the resource supplied above.The value is formulated as `<transit_router_multicast_domain_id>:<group_ip_address>:<network_interface_id>`.
-  * `group_ip_address` - The IP address of the multicast group to which the multicast member belongs. If the multicast group you specified does not exist in the current multicast domain, the system will automatically create a new multicast group for you in the current multicast domain.
-  * `network_interface_id` - ENI ID of multicast member.
-  * `status` - The status of the resource
-  * `transit_router_multicast_domain_id` - The ID of the multicast domain to which the multicast member belongs.
-  * `vpc_id` - The VPC to which the ENI of the multicast member belongs. This field is mandatory for VPCs owned by another accounts.
+* `members` - A list of Transit Router Multicast Domain Member Entries.
+
+---
+
+### `members`
+
+The members supports the following attributes:
+
+* `id` - The `key` of the resource supplied above.The value is formulated as `<transit_router_multicast_domain_id>:<group_ip_address>:<network_interface_id>`.
+* `group_ip_address` - The IP address of the multicast group to which the multicast member belongs. If the multicast group you specified does not exist in the current multicast domain, the system will automatically create a new multicast group for you in the current multicast domain.
+* `network_interface_id` - ENI ID of multicast member.
+* `status` - The status of the resource
+* `transit_router_multicast_domain_id` - The ID of the multicast domain to which the multicast member belongs.
+* `vpc_id` - The VPC to which the ENI of the multicast member belongs. This field is mandatory for VPCs owned by another accounts.

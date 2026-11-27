@@ -39,10 +39,17 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Bucket Lifecycle IDs, formatted as `<bucket_name>:<rule_id>`.
-* `rules` - A list of ENS Bucket Lifecycle rules. Each element contains the following attributes:
-  * `id` - The ID of the lifecycle rule, formatted as `<bucket_name>:<rule_id>`.
-  * `bucket_name` - The name of the ENS bucket.
-  * `rule_id` - The unique ID of the rule.
-  * `prefix` - The prefix that the rule applies to.
-  * `status` - The rule status. Valid values: `Enabled`, `Disabled`.
-  * `expiration_days` - The number of days after the last update of the object before the lifecycle rule takes effect.
+* `rules` - A list of ENS Bucket Lifecycle rules.
+
+---
+
+### `rules`
+
+The rules supports the following attributes:
+
+* `id` - The ID of the lifecycle rule, formatted as `<bucket_name>:<rule_id>`.
+* `bucket_name` - The name of the ENS bucket.
+* `rule_id` - The unique ID of the rule.
+* `prefix` - The prefix that the rule applies to.
+* `status` - The rule status. Valid values: `Enabled`, `Disabled`.
+* `expiration_days` - The number of days after the last update of the object before the lifecycle rule takes effect.

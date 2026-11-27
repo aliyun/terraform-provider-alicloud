@@ -57,14 +57,21 @@ The following attributes are exported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Site Environment names.
-* `environments` - A list of Site Environments. Each element contains the following attributes:
-  * `id` - The ID of the Site Environment.
-  * `environment_name` - The name of the environment.
-  * `rule` - The environment rule.
-  * `read_only` - Indicates whether the environment is read-only.
-  * `site_version` - The version number of the site.
-  * `pre_site_version` - The previous version number.
-  * `priority` - The priority.
-  * `is_default` - Indicates whether the environment is the default environment.
-  * `create_time` - The time when the environment was created.
-  * `update_time` - The time when the environment was updated.
+* `environments` - A list of Site Environments.
+
+---
+
+### `environments`
+
+The environments supports the following attributes:
+
+* `id` - The ID of the Site Environment.
+* `environment_name` - The name of the environment.
+* `rule` - The environment rule.
+* `read_only` - Indicates whether the environment is read-only.
+* `site_version` - The version number of the site.
+* `pre_site_version` - The previous version number.
+* `priority` - The priority.
+* `is_default` - Indicates whether the environment is the default environment.
+* `create_time` - The time when the environment was created.
+* `update_time` - The time when the environment was updated.

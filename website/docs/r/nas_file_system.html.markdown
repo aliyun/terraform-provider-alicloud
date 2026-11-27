@@ -199,6 +199,8 @@ The following arguments are supported:
 
   -> **NOTE:** We recommend that the file system and the ECS instance belong to the same zone to avoid cross-zone latency.
 
+---
+
 ### `auto_upgrade_config`
 
 The auto_upgrade_config supports the following:
@@ -215,11 +217,15 @@ The auto_upgrade_config supports the following:
 
   -> **NOTE:** This block is Optional and Computed. Removing the entire block from the configuration does **not** disable automatic capacity expansion or send a disable request to the server; the previous server value is retained as a computed value and the plan stays stable. To disable automatic capacity expansion, set `enabled = false` explicitly. When only `enabled` is configured, the other attributes (`capacity_used_ratio`, `step`, `time`) become computed and are read back from the server.
 
+---
+
 ### `nfs_acl`
 
 The nfs_acl supports the following:
 
 * `enabled` - (Optional, Computed) Whether the NFS ACL function is enabled.
+
+---
 
 ### `options`
 
@@ -231,6 +237,8 @@ The options supports the following:
 
   -> **NOTE:** Description Only file systems of the SMB protocol type are supported.
 
+---
+
 ### `recycle_bin`
 
 The recycle_bin supports the following:
@@ -238,6 +246,8 @@ The recycle_bin supports the following:
 * `reserved_days` - (Optional, Computed, Int) Retention time of files in the Recycle Bin. Unit: days.
 
 * `status` - (Optional, Computed) Recycle Bin Status
+
+---
 
 ### `smb_acl`
 
@@ -280,15 +290,22 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - CreateTime
 * `recycle_bin` - Recycle Bin
-  * `enable_time` - Recycle Bin open time
-  * `secondary_size` - Amount of low-frequency data stored in the recycle bin. Unit: Byte.
-  * `size` - The amount of files stored in the Recycle Bin. Unit: Byte.
 * `region_id` - RegionId
 * `status` - File system status. Includes:(such as creating a mount point) can only be performed when the file system is in the Running state.
 
+---
+
+### `recycle_bin`
+
+The recycle_bin supports the following attributes:
+
+* `enable_time` - Recycle Bin open time
+* `secondary_size` - Amount of low-frequency data stored in the recycle bin. Unit: Byte.
+* `size` - The amount of files stored in the Recycle Bin. Unit: Byte.
+
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the File System.
 * `delete` - (Defaults to 20 mins) Used when delete the File System.

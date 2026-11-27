@@ -126,12 +126,16 @@ The following arguments are supported:
 * `local_secondary_index` - (Optional, ForceNew) Describe an LSI on the table. See [`local_secondary_index`](#local_secondary_index) below.
 * `ttl` - (Optional) Configuration block for TTL. See [`ttl`](#ttl) below.
 
+---
+
 ### `attribute`
 
 The attribute supports the following:
 
 * `name` - (Required) The name of the attribute.
 * `type` - (Required) The attribute data type. Valid values: `S` (string), `N` (number), `B` (binary).
+
+---
 
 ### `global_secondary_index`
 
@@ -145,6 +149,8 @@ The global_secondary_index supports the following:
 * `read_capacity` - (Optional) The number of read capacity units for the index. Only valid when `billing_mode` is `PROVISIONED`.
 * `write_capacity` - (Optional) The number of write capacity units for the index. Only valid when `billing_mode` is `PROVISIONED`.
 
+---
+
 ### `local_secondary_index`
 
 The local_secondary_index supports the following:
@@ -153,6 +159,8 @@ The local_secondary_index supports the following:
 * `range_key` - (Required, ForceNew) The attribute name used as the sort key of the index.
 * `projection_type` - (Required, ForceNew) The set of attributes projected into the index. Valid values: `ALL`, `KEYS_ONLY`, `INCLUDE`.
 * `non_key_attributes` - (Optional, ForceNew) A list of non-key attribute names projected into the index. Only valid when `projection_type` is `INCLUDE`.
+
+---
 
 ### `ttl`
 

@@ -78,13 +78,13 @@ output "cen_transit_router_vpc_attachments_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of Transit Router VPC Attachment IDs.
-* `name_regex` - (Optional, ForceNew, Available since v1.224.0) A regex string to filter results by Transit Router VPC Attachment name.
-* `cen_id` - (Required, ForceNew) The ID of the CEN instance.
-* `vpc_id` - (Optional, ForceNew, Available since v1.224.0) The ID of the VPC.
-* `transit_router_id` - (Optional, ForceNew) The ID of the transit router.
-* `transit_router_attachment_id` - (Optional, ForceNew, Available since v1.224.0) The ID of the Transit Router VPC Attachment.
-* `status` - (Optional, ForceNew) The status of the Transit Router VPC Attachment. Valid Values: `Attached`, `Attaching`, `Detaching`.
+* `ids` - (Optional, List) A list of Transit Router VPC Attachment IDs.
+* `name_regex` - (Optional, Available since v1.224.0) A regex string to filter results by Transit Router VPC Attachment name.
+* `cen_id` - (Required) The ID of the CEN instance.
+* `vpc_id` - (Optional, Available since v1.224.0) The ID of the VPC.
+* `transit_router_id` - (Optional) The ID of the transit router.
+* `transit_router_attachment_id` - (Optional, Available since v1.224.0) The ID of the Transit Router VPC Attachment.
+* `status` - (Optional) The status of the Transit Router VPC Attachment. Valid Values: `Attached`, `Attaching`, `Detaching`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -92,22 +92,43 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Transit Router VPC Attachment names.
-* `attachments` - A list of Transit Router VPC Attachments. Each element contains the following attributes:
-  * `id` - The resource ID in terraform of Transit Router VPC Attachment. It formats as `<cen_id>:<transit_router_attachment_id>`.
-  * `cen_id` - (Available since v1.224.0) The ID of the CEN instance.
-  * `transit_router_attachment_id` - The ID of the Transit Router VPC Attachment.
-  * `vpc_id` - The ID of the VPC.
-  * `transit_router_id` - (Available since v1.224.0) The ID of the transit router.
-  * `resource_type` - The resource type of the Transit Router VPC Attachment.
-  * `payment_type` - The payment type of the resource.
-  * `vpc_owner_id` - The Owner ID of the VPC.
-  * `auto_publish_route_enabled` - (Available since v1.224.0) Whether the transit router is automatically published to the VPC instance.
-  * `options` - (Available since v1.279.0) A collection of feature attributes.
-    * `appliance_mode_support` - Indicates whether appliance mode is enabled.
-    * `ipv6_support` - Indicates whether IPv6 is supported.
-  * `transit_router_attachment_name` - The name of the Transit Router VPC Attachment.
-  * `transit_router_attachment_description` - The description of the Transit Router VPC Attachment.
-  * `status` - The status of the Transit Router VPC Attachment.
-  * `zone_mappings` - The list of zone mapping of the VPC.
-    * `vswitch_id` - The ID of the vSwitch.
-    * `zone_id` - The ID of the zone.
+* `attachments` - A list of Transit Router VPC Attachments.
+
+---
+
+### `attachments`
+
+The attachments supports the following attributes:
+
+* `id` - The resource ID in terraform of Transit Router VPC Attachment. It formats as `<cen_id>:<transit_router_attachment_id>`.
+* `cen_id` - (Available since v1.224.0) The ID of the CEN instance.
+* `transit_router_attachment_id` - The ID of the Transit Router VPC Attachment.
+* `vpc_id` - The ID of the VPC.
+* `transit_router_id` - (Available since v1.224.0) The ID of the transit router.
+* `resource_type` - The resource type of the Transit Router VPC Attachment.
+* `payment_type` - The payment type of the resource.
+* `vpc_owner_id` - The Owner ID of the VPC.
+* `auto_publish_route_enabled` - (Available since v1.224.0) Whether the transit router is automatically published to the VPC instance.
+* `options` - (Available since v1.279.0) A collection of feature attributes.
+* `transit_router_attachment_name` - The name of the Transit Router VPC Attachment.
+* `transit_router_attachment_description` - The description of the Transit Router VPC Attachment.
+* `status` - The status of the Transit Router VPC Attachment.
+* `zone_mappings` - The list of zone mapping of the VPC.
+
+---
+
+### `attachments.options`
+
+The options supports the following attributes:
+
+* `appliance_mode_support` - Indicates whether appliance mode is enabled.
+* `ipv6_support` - Indicates whether IPv6 is supported.
+
+---
+
+### `attachments.zone_mappings`
+
+The zone_mappings supports the following attributes:
+
+* `vswitch_id` - The ID of the vSwitch.
+* `zone_id` - The ID of the zone.

@@ -275,8 +275,12 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 
 	if e, ok := err.(*tea.SDKError); ok {
 		for _, code := range expectCodes {
-			// The second statement aims to match the tea sdk history bug
-			if *e.Code == code || strings.HasPrefix(code, *e.Code) || strings.Contains(*e.Data, code) {
+			// The second statement aims to match the tea sdk history bug.
+			// A code decoded from a body without a business code is empty, and
+			// an empty string is a prefix of every expected code; requiring a
+			// non-empty code keeps such unrelated failures from being
+			// classified as expected (not found, throttling, ...).
+			if *e.Code == code || (*e.Code != "" && strings.HasPrefix(code, *e.Code)) || strings.Contains(*e.Data, code) {
 				return true
 			}
 		}

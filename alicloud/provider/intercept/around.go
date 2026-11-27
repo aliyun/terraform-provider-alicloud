@@ -17,9 +17,6 @@ type DiagBridge[D any] struct {
 // the chain's error back in. Only a *change* is folded back: hand the error back
 // unaltered and inner's diagnostics are returned verbatim, wording intact.
 func Around[D any](ctx context.Context, chain []Interceptor, call Call, inner func() D, bridge DiagBridge[D]) D {
-	if len(chain) == 0 {
-		return inner()
-	}
 	var (
 		out      D
 		innerErr error

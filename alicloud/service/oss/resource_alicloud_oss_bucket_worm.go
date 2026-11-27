@@ -82,7 +82,7 @@ func resourceAliCloudOssBucketWormCreate(d *schema.ResourceData, meta interface{
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("POST", "2019-05-17", "InitiateBucketWorm", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if needOssBucketConfigRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -167,7 +167,7 @@ func resourceAliCloudOssBucketWormUpdate(d *schema.ResourceData, meta interface{
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.Do("Oss", helper.XmlParam("POST", "2019-05-17", "CompleteBucketWorm", action), query, body, nil, hostMap, false)
 					if err != nil {
-						if helper.NeedRetry(err) {
+						if needOssBucketConfigRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -210,7 +210,7 @@ func resourceAliCloudOssBucketWormUpdate(d *schema.ResourceData, meta interface{
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.Do("Oss", helper.XmlParam("POST", "2019-05-17", "ExtendBucketWorm", action), query, body, nil, hostMap, false)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if needOssBucketConfigRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -255,7 +255,7 @@ func resourceAliCloudOssBucketWormDelete(d *schema.ResourceData, meta interface{
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("DELETE", "2019-05-17", "AbortBucketWorm", action), query, request, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if needOssBucketConfigRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}

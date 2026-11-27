@@ -177,6 +177,8 @@ false (default): Send a normal request.
 
   -> **NOTE:**   This parameter takes effect when the `ServerGroupType` parameter is set to `Instance` or `Ip`.
 
+---
+
 ### `connection_drain_config`
 
 The connection_drain_config supports the following:
@@ -190,6 +192,8 @@ The connection_drain_config supports the following:
   Valid values: `0` to `900`.
 
   Default value: `300`.
+
+---
 
 ### `health_check_config`
 
@@ -279,6 +283,8 @@ The health_check_config supports the following:
 
   Default value: `3`.
 
+---
+
 ### `servers`
 
 The servers supports the following:
@@ -321,6 +327,8 @@ The servers supports the following:
 
   -> **NOTE:**   You do not need to set this parameter if you set `ServerType` to `Fc`.
 
+---
+
 ### `slow_start_config`
 
 The slow_start_config supports the following:
@@ -334,6 +342,8 @@ The slow_start_config supports the following:
 
   - `true`
   - `false`
+
+---
 
 ### `sticky_session_config`
 
@@ -373,6 +383,8 @@ The sticky_session_config supports the following:
 
   -> **NOTE:**  This parameter takes effect when the `StickySessionEnabled` parameter is set to `true` for the server group.
 
+---
+
 ### `uch_config`
 
 The uch_config supports the following:
@@ -387,13 +399,20 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `servers` - List of servers.
-  * `server_group_id` - The ID of the server group.
-  * `status` - The addition status of the backend server. Value:
 * `status` - The status of the resource
+
+---
+
+### `servers`
+
+The servers supports the following attributes:
+
+* `server_group_id` - The ID of the server group.
+* `status` - The addition status of the backend server. Value:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Server Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Server Group.

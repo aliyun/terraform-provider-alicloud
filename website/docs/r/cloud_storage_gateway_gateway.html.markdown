@@ -79,10 +79,18 @@ The following arguments are supported:
 * `type` - (Required, ForceNew) The type of the gateway. Valid values: `File`, `Iscsi`.
 * `location` - (Required, ForceNew) The location of the gateway. Valid values: `Cloud`, `On_Premise`.
 * `gateway_name` - (Required) The name of the gateway. The name must be `1` to `60` characters in length and can contain letters, digits, periods (.), underscores (_), and hyphens (-). It must start with a letter.
-* `gateway_class` - (Optional) The specification of the gateway. Valid values: `Basic`, `Standard`, `Enhanced`, `Advanced`. **NOTE:** If `location` is set to `Cloud`, `gateway_class` is required. Otherwise, `gateway_class` will be ignored. If `payment_type` is set to `Subscription`, `gateway_class` cannot be modified.
-* `vswitch_id` - (Optional, ForceNew) The ID of the VSwitch. **NOTE:** If `location` is set to `Cloud`, `vswitch_id` is required. Otherwise, `vswitch_id` will be ignored.
-* `public_network_bandwidth` - (Optional, Int) The public bandwidth of the gateway. Default value: `5`. Valid values: `5` to `200`. **NOTE:** `public_network_bandwidth` is only valid when `location` is `Cloud`. If `payment_type` is set to `Subscription`, `public_network_bandwidth` cannot be modified.
-* `payment_type` - (Optional, ForceNew) The Payment type of gateway. Valid values: `PayAsYouGo`, `Subscription`. **NOTE:** Since version 1.233.0, `payment_type` can be set to `Subscription`, but even after the gateway is created by Terraform, you still need to make purchases on the console.
+* `gateway_class` - (Optional) The specification of the gateway. Valid values: `Basic`, `Standard`, `Enhanced`, `Advanced`.
+
+  -> **NOTE:** If `location` is set to `Cloud`, `gateway_class` is required. Otherwise, `gateway_class` will be ignored. If `payment_type` is set to `Subscription`, `gateway_class` cannot be modified.
+* `vswitch_id` - (Optional, ForceNew) The ID of the VSwitch.
+
+  -> **NOTE:** If `location` is set to `Cloud`, `vswitch_id` is required. Otherwise, `vswitch_id` will be ignored.
+* `public_network_bandwidth` - (Optional, Int) The public bandwidth of the gateway. Default value: `5`. Valid values: `5` to `200`.
+
+  -> **NOTE:** `public_network_bandwidth` is only valid when `location` is `Cloud`. If `payment_type` is set to `Subscription`, `public_network_bandwidth` cannot be modified.
+* `payment_type` - (Optional, ForceNew) The Payment type of gateway. Valid values: `PayAsYouGo`, `Subscription`.
+
+  -> **NOTE:** Since version 1.233.0, `payment_type` can be set to `Subscription`, but even after the gateway is created by Terraform, you still need to make purchases on the console.
 * `description` - (Optional) The description of the gateway.
 * `release_after_expiration` - (Optional, Bool, ForceNew) Specifies whether to release the gateway after the subscription expires. Valid values:
   - `true`: The gateway is released after it expires. The gateway becomes unavailable seven days after the gateway expires.
@@ -101,7 +109,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Gateway.
 * `update` - (Defaults to 5 mins) Used when update the Gateway.

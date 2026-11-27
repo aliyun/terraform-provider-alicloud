@@ -132,23 +132,27 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The VPC network ID. vpc-xxx.
 * `zone_id` - (Optional, ForceNew) The zone id. When multi-zone is enabled, it represents the primary zone.
 
+---
+
 ### `components`
 
 The components supports the following:
 
 * `cu_num` - (Required, Int) The number of CU. For example: 4
-* `cu_type` - (Optional, ForceNew, Computed) The calculation type. The default value is general, and the ram type needs to be opened with a work order.
+* `cu_type` - (Optional, Computed) The calculation type. The default value is general, and the ram type needs to be opened with a work order.
   - general: Generic
   - ram: Capacity
 * `data_disk` - (Optional, Set, Available since v1.294.0) The QueryNode data disk configuration. Only Type=query is supported. See [`data_disk`](#components-data_disk) below.
 * `disk_size_type` - (Optional, ForceNew, Computed) Default Normal. The Query Node is configured with the capacity type, performance type, and capacity type Large, and the rest are configured with Normal.
-* `pay_type` - (Optional, ForceNew, Available since v1.294.0) The default is consistent with the cluster.
+* `pay_type` - (Computed, Available since v1.294.0) The default is consistent with the cluster.
 * `replica` - (Required, Int) The number of component replicas. The number of highly available replicas must be greater than or equal to 2.
 * `type` - (Required) The component type. Different types need to be configured according to different versions.
   - Starter version: Array including standalone
   - Standard Edition: The configuration is different according to the 2.5 version and 2.6 version.
 2.5: proxy ,mix_coordinator,data,query,index
 2.6 need to configure: proxy,mix_coordinator,data,query,streaming
+
+---
 
 ### `components-data_disk`
 
@@ -158,6 +162,8 @@ The components-data_disk supports the following:
 * `performance_level` - (Optional, Available since v1.294.0) The ESSD performance level. Supported values: PL0, PL1, PL2, and PL3.
 * `size` - (Optional, Int, Available since v1.294.0) The data disk size in GiB.
 * `storage_class` - (Optional, Available since v1.294.0) The data disk StorageClass. Supported values: alicloud-disk-essd-pl0, alicloud-disk-essd-pl1, alicloud-disk-essd-pl2, and alicloud-disk-essd-pl3.
+
+---
 
 ### `vswitch_ids`
 
@@ -181,7 +187,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 14 mins) Used when create the Instance.
 * `delete` - (Defaults to 14 mins) Used when delete the Instance.

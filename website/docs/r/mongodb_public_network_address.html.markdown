@@ -76,12 +76,19 @@ The following attributes are exported:
 
 * `id` - The ID of the resource. Equal to the `db_instance_id`.
 * `replica_sets` - Replica set instance information.
-  * `connection_port` - The connection port of the node.
-  * `replica_set_role` - The role of the node.
-  * `connection_domain` - The connection address of the node.
-  * `network_type` - The network type, should be always "Public".
-  * `role_id` - The id of the role.
-  * `connection_type` - The connection type.
+
+---
+
+### `replica_sets`
+
+The replica_sets supports the following attributes:
+
+* `connection_port` - The connection port of the node.
+* `replica_set_role` - The role of the node.
+* `connection_domain` - The connection address of the node.
+* `network_type` - The network type, should be always "Public".
+* `role_id` - The id of the role.
+* `connection_type` - The connection type.
 
 ## Import
 

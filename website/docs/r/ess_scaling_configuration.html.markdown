@@ -198,6 +198,8 @@ The following arguments are supported:
 
   -> **NOTE:** The last scaling configuration can't be set to inactive and deleted alone.
 
+---
+
 ### `data_disk`
 
 The datadisk mapping supports the following:
@@ -215,6 +217,8 @@ The datadisk mapping supports the following:
 * `auto_snapshot_policy_id` - (Optional, Available since v1.92.0) The id of auto snapshot policy for data disk.
 * `performance_level` - (Optional, Available since v1.124.3) The performance level of the ESSD used as data disk.
 
+---
+
 ### `network_interfaces`
 
 The networkInterfaces mapping supports the following:
@@ -224,12 +228,16 @@ The networkInterfaces mapping supports the following:
 * `ipv6_address_count` - (Optional, Int, Available since v1.235.0) The number of randomly generated IPv6 addresses that you want to assign to primary ENI N. Setting it to `0` or removing it from the configuration stops requesting IPv6 addresses: the parameter is left out of the request and the Auto Scaling service drops the previously requested count.
 * `security_group_ids` - (Optional, Available since v1.235.0) The ID of security group N to which ENI N belongs.
 
+---
+
 ### `custom_priorities`
 
 The customPriorities mapping supports the following:
 
 * `instance_type` - (Optional, Available since v1.238.0) This parameter takes effect only if you set Scaling Policy to Priority Policy and the instance type specified by CustomPriorities.N.InstanceType is contained in the scaling configuration.
 * `vswitch_id` - (Optional, Available since v1.238.0) This parameter takes effect only if you set Scaling Policy to Priority Policy and the vSwitch specified by CustomPriorities.N.VswitchId is included in the vSwitch list of your scaling group.
+
+---
 
 ### `instance_pattern_info`
 
@@ -259,6 +267,8 @@ The instancePatternInfo mapping supports the following:
 * `instance_categories` - (Optional, Available since v1.263.0) Category N of the instances type. Valid values: General-purpose, Compute-optimized, Memory-optimized, Big data, Local SSDs, Enhanced, Shared, Compute-optimized with GPU, Visual Compute-optimized, Heterogeneous Service, Compute-optimized with FPGA, Compute-optimized with NPU, ECS Bare Metal, High Performance Compute.
 * `instance_type_families` - (Optional, Available since v1.263.0) Instance family N that is queried. Valid values of N: 1 to 10.
 
+---
+
 ### `instance_type_override`
 
 The instanceTypeOverride mapping supports the following:
@@ -266,12 +276,16 @@ The instanceTypeOverride mapping supports the following:
 * `instance_type` - (Optional) The is specified for an instance type in instanceTypeOverride.
 * `weighted_capacity` - (Optional) The weight of instance type in instanceTypeOverride.
 
+---
+
 ### `spot_price_limit`
 
 The spotPriceLimit mapping supports the following:
 
 * `instance_type` - (Optional, Available since v1.151.0) Resource type of an ECS instance.
 * `price_limit` - (Optional, Available since v1.151.0) Price limit hourly of instance type, 2 decimals is allowed at most.
+
+---
 
 ### `resource_pool_options_private_pool_tags`
 

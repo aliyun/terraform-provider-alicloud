@@ -32,25 +32,32 @@ output "first_havip_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Ha Vip IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Ha Vip name.
+* `ids` - (Optional, Computed)  A list of Ha Vip IDs.
+* `name_regex` - (Optional) A regex string to filter results by Ha Vip name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of HaVip instance. Valid value: `Available`, `InUse` and `Pending`.
+* `status` - (Optional) The status of HaVip instance. Valid value: `Available`, `InUse` and `Pending`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Ha Vip names.
-* `havips` - A list of Havips. Each element contains the following attributes:
-	* `associated_eip_addresses` - EIP bound to HaVip.
-	* `associated_instances` - An ECS instance that is bound to HaVip.
-	* `description` - Dependence of a HaVip instance.
-	* `havip_id` - The  ID of the resource.
-	* `havip_name` - The name of the HaVip instance.
-	* `id` - The ID of the Ha Vip.
-	* `ip_address` - IP address of private network.
-	* `master_instance_id` - The primary instance ID bound to HaVip.
-	* `status` - The status.
-	* `vpc_id` - The VPC ID to which the HaVip instance belongs.
-	* `vswitch_id` - The vswitch id.
+* `havips` - A list of Havips.
+
+---
+
+### `havips`
+
+The havips supports the following attributes:
+
+* `associated_eip_addresses` - EIP bound to HaVip.
+* `associated_instances` - An ECS instance that is bound to HaVip.
+* `description` - Dependence of a HaVip instance.
+* `havip_id` - The  ID of the resource.
+* `havip_name` - The name of the HaVip instance.
+* `id` - The ID of the Ha Vip.
+* `ip_address` - IP address of private network.
+* `master_instance_id` - The primary instance ID bound to HaVip.
+* `status` - The status.
+* `vpc_id` - The VPC ID to which the HaVip instance belongs.
+* `vswitch_id` - The vswitch id.

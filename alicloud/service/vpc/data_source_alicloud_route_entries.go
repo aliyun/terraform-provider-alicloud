@@ -82,9 +82,7 @@ func dataSourceAlicloudRouteEntriesRead(d *schema.ResourceData, meta interface{}
 	for {
 		var raw interface{}
 		if err := invoker.Run(func() error {
-			response, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.DescribeRouteTables(request)
-			})
+			response, err := client.VpcSdkRpc(request, vpc.CreateDescribeRouteTablesResponse())
 			raw = response
 			return err
 		}); err != nil {

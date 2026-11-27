@@ -71,11 +71,15 @@ The following arguments are supported:
 * `object_worm_enabled` - (Required) Specifies whether to enable the object-level compliance retention policy configuration.  
 * `rule` - (Optional, Set) Container that stores the list of retention policies.   See [`rule`](#rule) below.
 
+---
+
 ### `rule`
 
 The rule supports the following:
 
 * `default_retention` - (Optional, List) Container for the default retention policy.   See [`default_retention`](#rule-default_retention) below.
+
+---
 
 ### `rule-default_retention`
 
@@ -93,7 +97,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Bucket Object Worm Configuration.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Object Worm Configuration.

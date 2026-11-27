@@ -275,14 +275,28 @@ class ScopeTest(unittest.TestCase):
         self.git('mv', 'website/docs/r/old.html.markdown', 'website/docs/r/renamed.html.markdown')
         self.commit()
         commands = load('run-document-checks').scoped_commands(check_scope.changed_paths())
-        for name in ['markdown-lint', 'Content', 'misspell']:
+        for name in ['markdown-link', 'markdown-lint', 'Content', 'misspell']:
             for file in ['changed.md', 'added.html.markdown', 'renamed.html.markdown']:
                 self.assertIn(file, commands[name])
             self.assertNotIn('/old.html.markdown', commands[name])
         for file in ['added.html.markdown', 'renamed.html.markdown']:
             self.assertIn(file, commands['terrafmt'])
-            self.assertIn(file, commands['markdown-link'])
-        self.assertIn('find website/docs', commands['markdown-link'])
+
+    def test_links_only_check_changed_resource_and_data_source_pages(self):
+        data = 'website/docs/d/data-source.md'
+        guide = 'website/docs/guides/changed.md'
+        self.write(data, 'new')
+        self.write(guide, 'new')
+        self.commit()
+        docs = load('run-document-checks')
+        paths = check_scope.changed_paths()
+        for full in (False, True):
+            links = docs.scoped_commands(paths, full=full)['markdown-link']
+            self.assertIn(data, links)
+            self.assertNotIn(guide, links)
+            self.assertNotIn('find website/docs', links)
+            self.assertNotIn('old.html.markdown', links)
+            self.assertNotIn('npx', docs.scoped_commands([guide], full=full)['markdown-link'])
 
     def test_dependency_files_do_not_broaden_document_checks(self):
         docs = load('run-document-checks')

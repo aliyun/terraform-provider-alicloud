@@ -112,6 +112,8 @@ The following arguments are supported:
 * `defer_scale_in_duration` - (Required) The defer_scale_in_duration option of cluster-autoscaler.
 * `use_ecs_ram_role_token` - (Optional, Available since v1.88.0) Enable autoscaler access to alibabacloud service by ecs ramrole token. default: false
 
+---
+
 ### `nodepools`
 
 The nodepools mapping supports the following:
@@ -133,7 +135,7 @@ lifecycle {
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 90 mins) Used when creating cluster-autoscaler in the kubernetes cluster (until it reaches the initial `running` status).
 * `update` - (Defaults to 60 mins) Used when activating the cluster-autoscaler in the kubernetes cluster when necessary during update.

@@ -85,9 +85,13 @@ The following arguments are supported:
 * `host_account_name` - (Required) The name of the host account. The name can be up to 128 characters in length.
 * `host_id` - (Required, ForceNew) The ID of the host for which you want to create an account.
 * `instance_id` - (Required, ForceNew) The ID of the Bastionhost instance where you want to create an account for the host.
-* `pass_phrase` - (Optional, Sensitive) The passphrase of the private key for the host account. **NOTE:** It is valid when the attribute `protocol_name` is `SSH`.
+* `pass_phrase` - (Optional, Sensitive) The passphrase of the private key for the host account.
+
+  -> **NOTE:** It is valid when the attribute `protocol_name` is `SSH`.
 * `password` - (Optional, Sensitive) The password of the host account.
-* `private_key` - (Optional, Sensitive) The private key of the host account. The value is a Base64-encoded string. **NOTE:** It is valid when the attribute `protocol_name` is `SSH`
+* `private_key` - (Optional, Sensitive) The private key of the host account. The value is a Base64-encoded string.
+
+  -> **NOTE:** It is valid when the attribute `protocol_name` is `SSH`
 * `protocol_name` - (Required, ForceNew) The protocol used by the host account. Valid values: SSH,RDP
 
 ## Attributes Reference

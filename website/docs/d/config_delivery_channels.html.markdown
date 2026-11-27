@@ -33,9 +33,9 @@ output "first_config_delivery_channel_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew) A list of Config Delivery Channel IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by delivery channel name.
-* `status` - (Optional, ForceNew) The status of the config delivery channel. Valid values `0`: Disable delivery channel, `1`: Enable delivery channel.
+* `ids` - (Optional) A list of Config Delivery Channel IDs.
+* `name_regex` - (Optional) A regex string to filter results by delivery channel name.
+* `status` - (Optional) The status of the config delivery channel. Valid values `0`: Disable delivery channel, `1`: Enable delivery channel.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -44,13 +44,20 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Config Delivery Channel IDs.
 * `names` - A list of Config Delivery Channel names.
-* `channels` - A list of Config Delivery Channels. Each element contains the following attributes:
-  * `id` - The ID of the Config Delivery Channel.
-  * `delivery_channel_assume_role_arn` - The Alibaba Cloud Resource Name (ARN) of the role assumed by delivery method.
-  * `delivery_channel_condition` - The rule attached to the delivery method. This parameter is applicable only to delivery methods of the Message Service (MNS) type.
-  * `delivery_channel_id` - The ID of the delivery channel.
-  * `delivery_channel_name` - The name of the delivery channel.
-  * `delivery_channel_target_arn` - The ARN of the delivery destination.
-  * `delivery_channel_type` - The type of the delivery channel.
-  * `description` - The description of the delivery channel.
-  * `status` - The status of the delivery channel.
+* `channels` - A list of Config Delivery Channels.
+
+---
+
+### `channels`
+
+The channels supports the following attributes:
+
+* `id` - The ID of the Config Delivery Channel.
+* `delivery_channel_assume_role_arn` - The Alibaba Cloud Resource Name (ARN) of the role assumed by delivery method.
+* `delivery_channel_condition` - The rule attached to the delivery method. This parameter is applicable only to delivery methods of the Message Service (MNS) type.
+* `delivery_channel_id` - The ID of the delivery channel.
+* `delivery_channel_name` - The name of the delivery channel.
+* `delivery_channel_target_arn` - The ARN of the delivery destination.
+* `delivery_channel_type` - The type of the delivery channel.
+* `description` - The description of the delivery channel.
+* `status` - The status of the delivery channel.

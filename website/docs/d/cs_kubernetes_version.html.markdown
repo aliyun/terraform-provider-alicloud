@@ -88,8 +88,22 @@ The following arguments are supported.
 The following attributes are exported.
 
 * `metadata` - A Set of Kubernetes version metadata.
-  * `version` - The ACK released kubernetes version.
-  * `support_policy` - (Available since v2.3.0) The support policy required by the version (`Standard` or `Extended`).
-  * `runtime` - The list of supported runtime.
-    * `name` - The runtime name.
-    * `version` - The runtime version.
+
+---
+
+### `metadata`
+
+The metadata supports the following attributes:
+
+* `version` - The ACK released kubernetes version.
+* `support_policy` - (Available since v2.3.0) The support policy required by the version (`Standard` or `Extended`).
+* `runtime` - The list of supported runtime.
+
+---
+
+### `metadata.runtime`
+
+The runtime supports the following attributes:
+
+* `name` - The runtime name.
+* `version` - The runtime version.

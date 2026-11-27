@@ -61,6 +61,17 @@ class AcubeUnavailableTest(unittest.TestCase):
             code = ci.main()
         return code, out.getvalue().splitlines(), opener.open.call_count
 
+    def test_fresh_and_reused_malformed_attribution_fail_even_with_success_receipt(self):
+        report = dict(self.REPORT, gatePolicy=ci.FORMAL_INCREMENTAL, conclusion='success')
+        receipt = dict(report, reused=True, ciHeadSha=self.HEAD, mr=7, reusePolicy='review-content-v1')
+        for responses in ([{'taskId': self.TID}, report], [receipt]):
+            with self.subTest(reused=len(responses) == 1):
+                payloads = iter(responses)
+                code, lines, calls = self.run_check(lambda *args, **kwargs: answer(next(payloads)), FakeClock())
+                self.assertEqual(1, code)
+                self.assertEqual(len(responses), calls)
+                self.assertIn('ACUBE_REVIEW_RESULT kind=MALFORMED_REPORT', lines[-1])
+
     def test_outages_shorter_than_the_window_are_waited_out(self):
         answers = [{'taskId': self.TID}, dict(self.REPORT, conclusion='pending', dispositions={'F-01': {'state': 'verifying'}}),
                    dict(self.REPORT, conclusion='pending', dispositions={'F-01': {'state': 'verifying'}}),
@@ -140,6 +151,77 @@ class AcubeUnavailableTest(unittest.TestCase):
 
 
 class ReviewCiTest(unittest.TestCase):
+    def test_formal_queue_with_three_waiting_and_one_verifying(self):
+        states = {'F-01': 'queued', 'F-02': 'queued', 'F-03': 'queued', 'F-04': 'verifying'}
+        report = {'status': 'completed', 'conclusion': 'pending',
+                  'findings': [{'findingId': fid, 'severity': 'p1'} for fid in states],
+                  'dispositions': {fid: {'state': state} for fid, state in states.items()}}
+        self.assertEqual('VERIFYING', ci.apply_ci_gate(report)['resultKind'])
+        self.assertEqual('FINDINGS_BLOCKED', ci.apply_ci_gate(report, 'ai')['resultKind'])
+        report['conclusion'] = 'failure'
+        self.assertEqual('SERVICE_ERROR', ci.apply_ci_gate(report)['resultKind'])
+
+    def test_incremental_gate_keeps_stock_results_visible(self):
+        report = {'status': 'completed', 'conclusion': 'success', 'gatePolicy': 'formal-introduced-v1',
+                  'findings': [{'findingId': fid, 'severity': level, 'prRelation': 'preexisting'}
+                               for fid, level in [('F-01', 'p0'), ('F-02', ' P1 '), ('F-03', 'p1')]],
+                  'dispositions': {'F-01': {'state': 'queued'}, 'F-02': {'state': 'ignored',
+                                   'verdict': 'REPRODUCED', 'stockVerification': 'confirmed', 'workItemId': 123},
+                                   'F-03': {'state': 'ignored', 'stockVerification': 'pending', 'trackingState': 'awaiting_source'}}}
+        result = ci.apply_ci_gate(report)
+        self.assertEqual('PASSED', result['resultKind'])
+        output = ci.render(result, 'https://acube/', '形式化评审', 'a' * 40)
+        for value in ('等待后台实测', '已确认', '待核实', '内部研发单 123', '等待确认来源工作项'):
+            self.assertIn(value, output)
+        report['findings'].append({'findingId': 'F-04', 'severity': 'p1', 'prRelation': 'introduced'})
+        report['dispositions']['F-04'] = {'state': 'verifying'}
+        report['conclusion'] = 'pending'
+        self.assertEqual('VERIFYING', ci.apply_ci_gate(report)['resultKind'])
+        report['dispositions']['F-04'] = {'state': 'adopted'}
+        report['conclusion'] = 'failure'
+        result = ci.apply_ci_gate(report)
+        self.assertEqual('FINDINGS_BLOCKED', result['resultKind'])
+        self.assertIn('纳入门禁的 P0/P1：1 项 · 存量 P0/P1：3 项', ci.render(result, '', '', 'a' * 40))
+        findings = ci.result_lines(result, result['resultKind'])
+        self.assertEqual(2, len(findings))
+        self.assertIn('id=F-04', findings[0])
+
+    def test_incremental_high_severity_requires_valid_attribution(self):
+        for fields in ({}, {'prRelation': None}, {'prRelation': ''}, {'prRelation': 'Introduced'},
+                       {'prRelation': ['introduced']}, {'carriedFrom': ''}):
+            with self.subTest(fields=fields), self.assertRaisesRegex(ci.MalformedReport, 'F-01'):
+                ci.apply_ci_gate({'gatePolicy': ci.FORMAL_INCREMENTAL, 'status': 'completed', 'conclusion': 'success',
+                                  'findings': [dict(fields, findingId='F-01', severity='p1')],
+                                  'dispositions': {'F-01': {'state': 'ignored'}}})
+
+    def test_carried_findings_and_other_attributions_have_separate_counts(self):
+        findings = [{'severity': 'p1', 'prRelation': relation} for relation in ('changed', 'expanded', 'unknown')]
+        findings += [{'severity': 'p0', 'carriedFrom': 'previous / F-01'},
+                     {'severity': 'p1', 'carriedFrom': 'previous / F-02', 'prRelation': 'preexisting'}]
+        report = ci.apply_ci_gate({'gatePolicy': ci.FORMAL_INCREMENTAL, 'status': 'completed', 'conclusion': 'success',
+                                   'findings': findings})
+        self.assertEqual('FINDINGS_BLOCKED', report['resultKind'])
+        self.assertEqual([4, 5], [index for index, _ in ci.blocking_findings(report)])
+        self.assertIn('纳入门禁的 P0/P1：2 项 · 存量 P0/P1：0 项 · 其他归因 P0/P1：3 项',
+                      ci.render(report, '', '', 'a' * 40))
+
+    def test_only_stock_high_severity_shows_tracking_and_valid_work_item_links(self):
+        mark = {'stockVerification': 'confirmed', 'trackingState': 'awaiting_source', 'workItemId': '123'}
+        report = {'gatePolicy': ci.FORMAL_INCREMENTAL, 'status': 'completed',
+                  'findings': [{'severity': 'p2', 'prRelation': 'preexisting'},
+                               {'severity': 'p3', 'prRelation': 'preexisting'}],
+                  'dispositions': {'F-01': mark, 'F-02': mark}}
+        md = ci.render(report, '', '', 'a' * 40)
+        self.assertIn('P2 1 / P3 1', md)
+        for label in ('本 MR 不阻断', '存量实测', '存量跟进', '内部研发单'):
+            self.assertNotIn(label, md)
+        report['findings'][0]['severity'] = 'p0'
+        self.assertIn('(https://aone.alibaba-inc.com/req/123)', ci.render(report, '', '', 'a' * 40))
+        for invalid in ('１２３', '²', 0, '01', '123/4', None):
+            with self.subTest(invalid=invalid):
+                mark['workItemId'] = invalid
+                self.assertNotIn('https://aone.alibaba-inc.com/req/', ci.render(report, '', '', 'a' * 40))
+
     def test_report_contains_findings_and_annotation_link(self):
         md = ci.render({'status':'completed','conclusion':'failure','summary':'risk', 'findings':[
             {'severity':'p0','title':'<script>x</script> [bad](https://bad)', 'description':'impact','difference':'delta'}]}, 'https://pre-acube.aliyun-inc.com', 'Formal', 'a'*40)
@@ -223,7 +305,7 @@ class ReviewCiTest(unittest.TestCase):
     def test_running_verification_keeps_the_check_pending_until_disposed(self):
         tid, head = 'review_'+'b'*32, 'a'*40
         base = {'taskId': tid, 'headSha': head, 'status': 'completed', 'findings': [{'findingId': 'F-01', 'severity': 'p1'}]}
-        polls = [dict(base, conclusion='pending', dispositions={'F-01': {'state': 'verifying'}}),
+        polls = [dict(base, conclusion='pending', dispositions={'F-01': {'state': 'queued'}}),
                  dict(base, conclusion='pending', dispositions={'F-01': {'state': 'verifying'}}),
                  dict(base, conclusion='success', dispositions={'F-01': {'state': 'rejected', 'actorType': 'AGENT',
                       'verdict': 'NOT_REPRODUCED', 'evidenceUrl': 'https://jarivs.alibaba.net/Jarvis/tasks/' + '2'*8 + '-2222-2222-2222-' + '2'*12 + '/'}})]
@@ -243,8 +325,8 @@ class ReviewCiTest(unittest.TestCase):
         receipt = {'reused': True, 'status': 'completed', 'mr': 7, 'ciHeadSha': head, 'headSha': 'b'*40,
                    'taskId': 'review_'+'c'*32, 'reusePolicy': 'review-content-v1',
                    'findings': [{'findingId': 'F-01', 'severity': 'p1'}, {'findingId': 'F-02', 'severity': 'p1'}]}
-        waiting = dict(receipt, conclusion='pending', dispositions={'F-01': {'state': 'verifying'}, 'F-02': {'state': 'verifying'}})
-        decided = dict(receipt, conclusion='failure', dispositions={'F-01': {'state': 'rejected', 'actorType': 'AGENT'},
+        waiting = dict(receipt, conclusion='pending', dispositions={'F-01': {'state': 'queued'}, 'F-02': {'state': 'verifying'}})
+        decided = dict(receipt, conclusion='failure', dispositions={'F-01': {'state': 'queued'},
                        'F-02': {'state': 'adopted', 'actorType': 'AGENT', 'verdict': 'REPRODUCED', 'commentId': 99}})
         env = {'ACUBE_REVIEW_KIND': 'formal', 'ACUBE_MR': '7', 'ACUBE_HEAD': head, 'ACUBE_CI_RUN': '123', 'ACUBE_PROVIDER_RUN_TOKEN': 'x'*32}
         out = io.StringIO()
@@ -256,6 +338,7 @@ class ReviewCiTest(unittest.TestCase):
         self.assertIn('ACUBE_REVIEW_RESULT kind=FINDINGS_BLOCKED', log)
         self.assertIn('id=F-02 severity=P1 state=adopted actor=AGENT verdict=REPRODUCED comment=99', log)
         self.assertIn('（F-02）', log)
+        self.assertNotIn('ACUBE_FINDING id=F-01', log)
 
     def test_failure_lines_survive_the_jarvis_ci_failure_reader(self):
         jarvis = 'https://jarivs.alibaba.net/Jarvis/tasks/' + '2'*8 + '-2222-2222-2222-' + '2'*12 + '/'

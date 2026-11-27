@@ -51,14 +51,20 @@ The following arguments are supported:
 
   -> **NOTE:** At present, only basic can be configured to enhanced, but not enhanced and advanced to other types of accelerated bandwidth.
 * `payment_type` - (Optional, ForceNew) The payment type of the bandwidth. Default value: `Subscription`. Valid values: `PayAsYouGo`, `Subscription`.
-* `billing_type` - (Optional, ForceNew) The billing type. Valid values: `PayBy95`, `PayByTraffic`. **NOTE:** `billing_type` is valid only when `payment_type` is set to `PayAsYouGo`.
-* `ratio` - (Optional, ForceNew, Int) The minimum percentage for the pay-by-95th-percentile metering method. Valid values: `30` to `100`. **NOTE:** `ratio` is valid only when `billing_type` is set to `PayBy95`.
+* `billing_type` - (Optional, ForceNew) The billing type. Valid values: `PayBy95`, `PayByTraffic`.
+
+  -> **NOTE:** `billing_type` is valid only when `payment_type` is set to `PayAsYouGo`.
+* `ratio` - (Optional, ForceNew, Int) The minimum percentage for the pay-by-95th-percentile metering method. Valid values: `30` to `100`.
+
+  -> **NOTE:** `ratio` is valid only when `billing_type` is set to `PayBy95`.
 * `cbn_geographic_region_ida` - (Optional, ForceNew) Interworking area A of cross domain acceleration package. Only international stations support returning this parameter. Default value: `China-mainland`.
 * `cbn_geographic_region_idb` - (Optional, ForceNew) Interworking area B of cross domain acceleration package. Only international stations support returning this parameter. Default value: `Global`.
 * `auto_pay` - (Optional, Bool) Whether to pay automatically. Valid values:
   - `false`: If automatic payment is not enabled, you need to go to the order center to complete the payment after the order is generated.
   - `true`: Enable automatic payment, automatic payment order.
-* `duration` - (Optional) The subscription duration. **NOTE:** The ForceNew attribute has be removed from version 1.148.0. If `payment_type` is set to `Subscription`, this parameter is required.
+* `duration` - (Optional) The subscription duration.
+
+  -> **NOTE:** The ForceNew attribute has be removed from version 1.148.0. If `payment_type` is set to `Subscription`, this parameter is required.
 * `auto_use_coupon` - (Optional, Bool) Whether use vouchers. Default value: `false`. Valid values:
   - `false`: Not used.
   - `true`: Use.
@@ -67,8 +73,12 @@ The following arguments are supported:
   - `Normal`: Disable auto renewal.
   - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
 * `auto_renew_duration` - (Optional, Int, Available since v1.169.0) Auto renewal period of a bandwidth packet, in the unit of month. Valid values: `1` to `12`.
-* `promotion_option_no` - (Optional, Available since v1.208.0) The code of the coupon. **NOTE:** The `promotion_option_no` takes effect only for accounts registered on the international site (alibabacloud.com).
-* `resource_group_id` - (Optional, Available since v1.226.0) The ID of the resource group. **Note:** Once you set a value of this property, you cannot set it to an empty string anymore.
+* `promotion_option_no` - (Optional, Available since v1.208.0) The code of the coupon.
+
+  -> **NOTE:** The `promotion_option_no` takes effect only for accounts registered on the international site (alibabacloud.com).
+* `resource_group_id` - (Optional, Available since v1.226.0) The ID of the resource group.
+
+  -> **NOTE:** Once you set a value of this property, you cannot set it to an empty string anymore.
 * `bandwidth_package_name` - (Optional) The name of the bandwidth packet.
 * `description` - (Optional) The description of bandwidth package.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
@@ -82,7 +92,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 3 mins) Used when create the Bandwidth Package.
 * `update` - (Defaults to 5 mins) Used when update the Bandwidth Package.

@@ -31,10 +31,10 @@ output "first_kvstore_account_id" {
 
 The following arguments are supported:
 
-* `account_name` - (Optional, ForceNew) The name of the account.
-* `instance_id` - (Required, ForceNew) The Id of instance in which account belongs.
-* `status` - (Optional, ForceNew) The status of Tair (Redis OSS-Compatible) And Memcache (KVStore) Account. Valid Values: `"Available` `Unavailable`
-* `name_regex` - (Optional, ForceNew) A regex string to apply to the account name.
+* `account_name` - (Optional) The name of the account.
+* `instance_id` - (Required) The Id of instance in which account belongs.
+* `status` - (Optional) The status of Tair (Redis OSS-Compatible) And Memcache (KVStore) Account. Valid Values: `"Available` `Unavailable`
+* `name_regex` - (Optional) A regex string to apply to the account name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -43,11 +43,18 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Account IDs.
 * `names` - A list of Account names.
-* `accounts` - A list of Kvstore Accounts. Each element contains the following attributes:
-  * `id` - The ID of the Account.
-  * `account_name` - The name of the account.
-  * `account_privilege` - The privilege of account access database.
-  * `account_type` - Privilege type of account.
-  * `description` - The description of account.
-  * `instance_id` - The Id of instance in which account belongs.
-  * `status` - The status of account.
+* `accounts` - A list of Kvstore Accounts.
+
+---
+
+### `accounts`
+
+The accounts supports the following attributes:
+
+* `id` - The ID of the Account.
+* `account_name` - The name of the account.
+* `account_privilege` - The privilege of account access database.
+* `account_type` - Privilege type of account.
+* `description` - The description of account.
+* `instance_id` - The Id of instance in which account belongs.
+* `status` - The status of account.

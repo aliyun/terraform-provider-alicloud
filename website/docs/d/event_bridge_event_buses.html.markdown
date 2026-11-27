@@ -36,10 +36,10 @@ output "event_bridge_event_bus_id_2" {
 
 The following arguments are supported:
 
-* `event_bus_type` - (Optional, ForceNew) The event bus type.
-* `ids` - (Optional, ForceNew, Computed)  A list of Event Bus IDs. Its element value is same as Event Bus Name.
-* `name_prefix` - (Optional, ForceNew) The name prefix.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Event Bus name.
+* `event_bus_type` - (Optional) The event bus type.
+* `ids` - (Optional, Computed)  A list of Event Bus IDs. Its element value is same as Event Bus Name.
+* `name_prefix` - (Optional) The name prefix.
+* `name_regex` - (Optional) A regex string to filter results by Event Bus name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -47,8 +47,15 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Event Bus names.
-* `buses` - A list of Event Bridge Event Buses. Each element contains the following attributes:
-  * `create_time` - The time of this bus was created.
-  * `description` - The description of event bus.
-  * `event_bus_name` - The name of event bus.
-  * `id` - The ID of the Event Bus. Its value is same as Queue Name.
+* `buses` - A list of Event Bridge Event Buses.
+
+---
+
+### `buses`
+
+The buses supports the following attributes:
+
+* `create_time` - The time of this bus was created.
+* `description` - The description of event bus.
+* `event_bus_name` - The name of event bus.
+* `id` - The ID of the Event Bus. Its value is same as Queue Name.

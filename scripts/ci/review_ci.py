@@ -12,13 +12,19 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import Counter
 from pathlib import Path
 
 ORIGIN = 'https://pre-acube.aliyun-inc.com'
 # Only Jarvis task pages are rendered as evidence links; anything else stays escaped text.
 EVIDENCE = re.compile(r'https://jarivs\.alibaba\.net/[A-Za-z0-9_-]+/tasks/[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/')
 DISMISSED = ('rejected', 'ignored')
-STATES = {'rejected': '已驳回', 'ignored': '已忽略', 'adopted': '已采纳', 'verifying': 'Agent 实测中',
+FORMAL_INCREMENTAL = 'formal-introduced-v1'
+HIGH_SEVERITIES = ('p0', 'p1')
+STOCK_VERIFICATION = {'confirmed': '已确认', 'pending': '待核实', 'rejected': '未复现'}
+STOCK_TRACKING = {'awaiting_source': '等待确认来源工作项', 'awaiting_merge': '修复 MR 合入后核对遗留项',
+                  'rechecking_merge': '正在复核合入版本'}
+STATES = {'rejected': '已驳回', 'ignored': '已忽略', 'adopted': '已采纳', 'verifying': 'Agent 实测中', 'queued': '等待后台实测',
           'needs_human': '待真人处置'}
 VERDICTS = {'NOT_REPRODUCED': '实测未复现', 'REPRODUCED': '实测已复现', 'BLOCKED': '实测受阻'}
 # People act on Code: ACube reads these replies under a finding's MR comment, answers there and reruns the check.
@@ -117,10 +123,33 @@ def disposition(report, finding, index):
     return mark if isinstance(mark, dict) else {}
 
 
+def severity(finding):
+    return str(finding.get('severity', '')).strip().lower()
+
+
+def finding_scope(report, finding):
+    if severity(finding) not in HIGH_SEVERITIES:
+        return None
+    if report.get('gatePolicy') != FORMAL_INCREMENTAL:
+        return 'gate'
+    # ACube generates carried findings from unresolved issues of this MR. They can omit prRelation.
+    carried = finding.get('carriedFrom')
+    if carried is not None:
+        return 'gate' if isinstance(carried, str) and carried.strip() else 'invalid'
+    relation = finding.get('prRelation')
+    if relation == 'introduced':
+        return 'gate'
+    if relation == 'preexisting':
+        return 'stock'
+    if relation in ('changed', 'expanded', 'unknown'):
+        return 'other'
+    return 'invalid'
+
+
 def blocking_findings(report):
-    for index, f in enumerate(report.get('findings') or [], 1):
-        if isinstance(f, dict) and str(f.get('severity', '')).strip().lower() in ('p0', 'p1'):
-            yield index, f
+    for index, finding in enumerate(report.get('findings') or [], 1):
+        if isinstance(finding, dict) and finding_scope(report, finding) == 'gate':
+            yield index, finding
 
 
 def skip_reason(report):
@@ -131,7 +160,7 @@ def skip_reason(report):
     return 'ACube 未说明跳过原因。'
 
 
-def apply_ci_gate(report):
+def apply_ci_gate(report, review_kind='formal'):
     """Apply Provider policy to raw findings, including reused reports.
 
     A skip passes only with ACube's own success. ACube skips when no service code
@@ -157,21 +186,35 @@ def apply_ci_gate(report):
     findings = report.get('findings')
     if not isinstance(findings, list) or any(
             not isinstance(f, dict) or not isinstance(f.get('severity'), str)
-            or f['severity'].strip().lower() not in ('p0', 'p1', 'p2', 'p3') for f in findings):
+            or severity(f) not in ('p0', 'p1', 'p2', 'p3') for f in findings):
         raise MalformedReport('评审报告缺少有效 findings/severity，无法判断 P0/P1；请检查 ACube 原始报告并重跑。')
     blocking, waiting, dismissed = [], [], []
-    for index, f in blocking_findings(report):
+    counts = Counter()
+    for index, f in enumerate(findings, 1):
+        scope = finding_scope(report, f)
+        if scope == 'invalid':
+            raise MalformedReport('P0/P1 发现 %s 的 prRelation 或 carriedFrom 缺失或无效，请核对原报告并重跑。'
+                                  % token(finding_id(f, index)))
+        if scope != 'gate':
+            continue
+        counts[severity(f)] += 1
         state = disposition(report, f, index).get('state')
-        (dismissed if state in DISMISSED else waiting if state == 'verifying' else blocking).append(finding_id(f, index))
-    counts = {p: sum(f['severity'].strip().lower() == p for f in findings) for p in ('p0', 'p1')}
+        fid = finding_id(f, index)
+        if state in DISMISSED:
+            dismissed.append(fid)
+        elif state == 'verifying' or (review_kind == 'formal' and state == 'queued'):
+            waiting.append(fid)
+        else:
+            blocking.append(fid)
     service = report.get('conclusion')
     if blocking:
+        result['blockingFindingIds'] = blocking
         result['ciConclusion'], result['resultKind'] = 'failure', 'FINDINGS_BLOCKED'
         result['gateMessage'] = (
             '评审阻断：P0 {p0} 项、P1 {p1} 项中有 {n} 项未驳回或忽略（{ids}）。'
             '确认是问题的，修复后推送新提交；误报在该问题的 MR 评论下回复 `驳回 理由`，'
             '本 MR 不修的回复 `忽略 理由`，实测失败或受阻的回复 `重试`。ACube 处理后会自动重跑本检查。').format(
-                n=len(blocking), ids='、'.join(blocking), **counts)
+                n=len(blocking), ids='、'.join(blocking), p0=counts['p0'], p1=counts['p1'])
     elif service == 'failure':
         result['ciConclusion'], result['resultKind'] = 'failure', 'SERVICE_ERROR'
         result['gateMessage'] = 'ACube 结论为失败，与门禁判定不一致，不能放行；请重跑本检查，仍失败请联系 ACube 维护者。'
@@ -214,9 +257,11 @@ def render(report, url, label, head):
     if report.get('taskId'):
         url += '&' + urllib.parse.urlencode({'taskId': report['taskId']})
     skipped = report.get('resultKind') == 'SKIPPED'
-    parts = ['# ' + label, '## ' + REPLY_GUIDE, REPLY_RULES,
-             '**通过条件：ACube 判定无需评审而跳过；或评审完成，且每个 P0/P1 都已驳回或忽略'
-             '（在 MR 评论下回复，或 Agent 实测未复现后自动驳回）。P2 不阻断。**',
+    policy = ('**通过条件：ACube 判定无需评审而跳过；或评审完成，且每个 P0/P1 都已驳回或忽略'
+              '（在 MR 评论下回复，或 Agent 实测未复现后自动驳回）。P2 不阻断。**')
+    if report.get('gatePolicy') == FORMAL_INCREMENTAL:
+        policy = '**通过条件：本 MR 引入的 P0/P1 已修复、驳回或忽略。存量 P0/P1 在后台实测，P2/P3 在本页展示。**'
+    parts = ['# ' + label, '## ' + REPLY_GUIDE, REPLY_RULES, policy,
              '- 提交：`' + head + '`', '- 任务：' + text(report.get('taskId', '未创建' if skipped else '待创建')),
              '- 状态：' + text(report.get('status', 'pending')),
              '- CI 结论：' + text(report.get('ciConclusion', report.get('conclusion', 'pending'))),
@@ -238,14 +283,35 @@ def render(report, url, label, head):
     # A skip reviewed nothing, so it shows no finding counts that could read as a clean review.
     if isinstance(findings, list) and not skipped:
         findings = [f for f in findings if isinstance(f, dict)]
-        counts = {p: sum(str(f.get('severity', '')).strip().lower() == p for f in findings) for p in ('p0', 'p1', 'p2')}
-        parts += ['## 评审发现 · P0 {p0} / P1 {p1} / P2 {p2}'.format(**counts)]
+        if report.get('gatePolicy') == FORMAL_INCREMENTAL:
+            scopes = Counter(finding_scope(report, f) for f in findings)
+            summary = '纳入门禁的 P0/P1：%d 项 · 存量 P0/P1：%d 项' % (scopes['gate'], scopes['stock'])
+            if scopes['other']:
+                summary += ' · 其他归因 P0/P1：%d 项' % scopes['other']
+            if scopes['invalid']:
+                summary += ' · 归因无效 P0/P1：%d 项' % scopes['invalid']
+            parts.append(summary)
+        counts = Counter(severity(f) for f in findings)
+        parts += ['## 评审发现 · P0 {p0} / P1 {p1} / P2 {p2} / P3 {p3}'.format_map(counts)]
         for index, f in enumerate(findings, 1):
             fid = finding_id(f, index)
             target = url + '&' + urllib.parse.urlencode({'finding': fid})
             link = html.escape(target, quote=True)
-            parts += ['---', '### ' + text(str(f.get('severity', '?')).upper()) + ' · ' + text(fid) + ' · ' + text(f.get('title', '未命名问题'))]
+            parts += ['---', '### ' + text(severity(f).upper() or '?') + ' · ' + text(fid) + ' · ' + text(f.get('title', '未命名问题'))]
             mark = disposition(report, f, index)
+            scope = finding_scope(report, f)
+            if scope in ('stock', 'other'):
+                parts += ['**本 MR 不阻断** · PR 关系 ' + text(f['prRelation'])]
+            if scope == 'stock':
+                verification = STOCK_VERIFICATION.get(mark.get('stockVerification'))
+                if verification:
+                    parts += ['**存量实测** · ' + verification]
+                tracking = STOCK_TRACKING.get(mark.get('trackingState'))
+                if tracking:
+                    parts += ['**存量跟进** · ' + tracking]
+                item_id = str(mark.get('workItemId', ''))
+                if re.fullmatch(r'[1-9][0-9]*', item_id):
+                    parts += ['[内部研发单 ' + item_id + '](https://aone.alibaba-inc.com/req/' + item_id + ')']
             state = describe(mark)
             if state:
                 line = '**处置**：' + text(state)
@@ -296,6 +362,8 @@ def result_lines(report, kind, reason=None):
     for index, f in blocking_findings(report):
         mark = disposition(report, f, index)
         if failed and mark.get('state') in DISMISSED:
+            continue
+        if kind == 'FINDINGS_BLOCKED' and finding_id(f, index) not in report['blockingFindingIds']:
             continue
         fields = ['id=' + token(finding_id(f, index)), 'severity=' + token(str(f.get('severity')).strip().upper()),
                   'state=' + token(mark.get('state') or 'undecided')]
@@ -363,7 +431,7 @@ def main():
         while receipt.get('reused') is True:
             if not valid_reuse(receipt, head, mr):
                 raise RuntimeError('Invalid content reuse receipt')
-            report = apply_ci_gate(receipt)
+            report = apply_ci_gate(receipt, kind)
             publish(report, url, label, head)
             message = announce(report, message)
             print('Reused review task=' + receipt['taskId'] + ' originalHead=' + receipt['headSha']
@@ -379,7 +447,7 @@ def main():
             # ACube decided at once not to run the review and started no task, e.g. no service code changed.
             if receipt.get('conclusion') != 'success' or receipt.get('headSha') != head or receipt.get('mr') != int(mr):
                 raise RuntimeError('Invalid skipped review receipt')
-            report = apply_ci_gate(receipt)
+            report = apply_ci_gate(receipt, kind)
             publish(report, url, label, head)
             announce(report, message)
             print_result(report, 'SKIPPED')
@@ -393,7 +461,7 @@ def main():
                              deadline=deadline)
             if report.get('taskId') != task_id or report.get('headSha') != head:
                 raise RuntimeError('Report identity mismatch')
-            report = apply_ci_gate(report)
+            report = apply_ci_gate(report, kind)
             publish(report, url, label, head)
             message = announce(report, message)
             conclusion = report.get('ciConclusion')

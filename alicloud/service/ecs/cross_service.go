@@ -58,9 +58,7 @@ func (s *VpcService) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributes
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVSwitchAttributes(request)
-		})
+		raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeVSwitchAttributesResponse())
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidVswitchID.NotFound"}) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -124,9 +122,7 @@ func (s *RamService) DescribeRamRoleAttachment(id string) (*ecs.DescribeInstance
 	request.InstanceIds = parts[1]
 	var raw interface{}
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err = s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeInstanceRamRole(request)
-		})
+		raw, err = s.client.EcsSdkRpc(request, ecs.CreateDescribeInstanceRamRoleResponse())
 		if err != nil {
 			if IsExpectedErrors(err, []string{"unexpected end of JSON input"}) {
 				return retry.RetryableError(WrapError(err))

@@ -94,34 +94,41 @@ output "vpc_traffic_mirror_session_id_9" {
 
 The following arguments are supported:
 
-* `enabled` - (Optional, ForceNew) Specifies whether to enable traffic mirror sessions. default to `false`.
-* `ids` - (Optional, ForceNew, Computed)  A list of Traffic Mirror Session IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Traffic Mirror Session name.
+* `enabled` - (Optional) Specifies whether to enable traffic mirror sessions. default to `false`.
+* `ids` - (Optional, Computed)  A list of Traffic Mirror Session IDs.
+* `name_regex` - (Optional) A regex string to filter results by Traffic Mirror Session name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `priority` - (Optional, ForceNew) The priority of the traffic mirror session. Valid values: `1` to `32766`. A smaller value indicates a higher priority. You cannot specify the same priority for traffic mirror sessions that are created in the same region with the same Alibaba Cloud account.
-* `status` - (Optional, ForceNew) The state of the traffic mirror session. Valid values: `Creating`, `Created`, `Modifying` and `Deleting`.
-* `traffic_mirror_filter_id` - (Optional, ForceNew) The ID of the filter.
-* `traffic_mirror_session_name` - (Optional, ForceNew) The name of the traffic mirror session. The name must be `2` to `128` characters in length and can contain digits, underscores (_), and hyphens (-). It must start with a letter.
-* `traffic_mirror_source_id` - (Optional, ForceNew) The ID of the mirror source. You can specify only an elastic network interface (ENI) as the mirror source.
-* `traffic_mirror_target_id` - (Optional, ForceNew) The ID of the mirror destination. You can specify only an ENI or a Server Load Balancer (SLB) instance as a mirror destination.
+* `priority` - (Optional) The priority of the traffic mirror session. Valid values: `1` to `32766`. A smaller value indicates a higher priority. You cannot specify the same priority for traffic mirror sessions that are created in the same region with the same Alibaba Cloud account.
+* `status` - (Optional) The state of the traffic mirror session. Valid values: `Creating`, `Created`, `Modifying` and `Deleting`.
+* `traffic_mirror_filter_id` - (Optional) The ID of the filter.
+* `traffic_mirror_session_name` - (Optional) The name of the traffic mirror session. The name must be `2` to `128` characters in length and can contain digits, underscores (_), and hyphens (-). It must start with a letter.
+* `traffic_mirror_source_id` - (Optional) The ID of the mirror source. You can specify only an elastic network interface (ENI) as the mirror source.
+* `traffic_mirror_target_id` - (Optional) The ID of the mirror destination. You can specify only an ENI or a Server Load Balancer (SLB) instance as a mirror destination.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Traffic Mirror Session names.
-* `sessions` - A list of Vpc Traffic Mirror Sessions. Each element contains the following attributes:
-  * `enabled` - Indicates whether traffic mirror sessions are enabled. default to `false`.
-  * `id` - The ID of the Traffic Mirror Session.
-  * `packet_length` - The maximum transmission unit (MTU).
-  * `priority` - The priority of the traffic mirror session. A smaller value indicates a higher priority.
-  * `status` - The state of the traffic mirror session. Valid values: `Creating`, `Created`, `Modifying` and `Deleting`.
-  * `traffic_mirror_filter_id` - The ID of the filter.
-  * `traffic_mirror_session_business_status` - The state of the traffic mirror session. Valid values: `Normal` or `FinancialLocked`. `Normal`: working as expected. `FinancialLocked`: locked due to overdue payments.
-  * `traffic_mirror_session_description` - The description of the traffic mirror session.
-  * `traffic_mirror_session_id` - The first ID of the resource.
-  * `traffic_mirror_session_name` - The name of the traffic mirror session.
-  * `traffic_mirror_source_ids` - The ID of the mirror source.
-  * `traffic_mirror_target_id` - The ID of the mirror destination. You can specify only an ENI or a Server Load Balancer (SLB) instance as a mirror destination.
-  * `traffic_mirror_target_type` - The type of the mirror destination. Valid values: `NetworkInterface` or `SLB`. `NetworkInterface`: an ENI. `SLB`: an internal-facing SLB instance
-  * `virtual_network_id` - You can specify VNIs to distinguish different mirrored traffic.
+* `sessions` - A list of Vpc Traffic Mirror Sessions.
+
+---
+
+### `sessions`
+
+The sessions supports the following attributes:
+
+* `enabled` - Indicates whether traffic mirror sessions are enabled. default to `false`.
+* `id` - The ID of the Traffic Mirror Session.
+* `packet_length` - The maximum transmission unit (MTU).
+* `priority` - The priority of the traffic mirror session. A smaller value indicates a higher priority.
+* `status` - The state of the traffic mirror session. Valid values: `Creating`, `Created`, `Modifying` and `Deleting`.
+* `traffic_mirror_filter_id` - The ID of the filter.
+* `traffic_mirror_session_business_status` - The state of the traffic mirror session. Valid values: `Normal` or `FinancialLocked`. `Normal`: working as expected. `FinancialLocked`: locked due to overdue payments.
+* `traffic_mirror_session_description` - The description of the traffic mirror session.
+* `traffic_mirror_session_id` - The first ID of the resource.
+* `traffic_mirror_session_name` - The name of the traffic mirror session.
+* `traffic_mirror_source_ids` - The ID of the mirror source.
+* `traffic_mirror_target_id` - The ID of the mirror destination. You can specify only an ENI or a Server Load Balancer (SLB) instance as a mirror destination.
+* `traffic_mirror_target_type` - The type of the mirror destination. Valid values: `NetworkInterface` or `SLB`. `NetworkInterface`: an ENI. `SLB`: an internal-facing SLB instance
+* `virtual_network_id` - You can specify VNIs to distinguish different mirrored traffic.

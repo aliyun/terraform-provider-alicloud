@@ -87,6 +87,8 @@ The following arguments are supported:
 * `vpc_id` - (Optional, Available since v1.267.0) The ID of the vpc to which the sub computing node
 * `zone_id` - (Optional, ForceNew) The zone where the hyper compute node is located
 
+---
+
 ### `data_disk`
 
 The data_disk supports the following:
@@ -112,7 +114,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Hyper Node.
 * `delete` - (Defaults to 5 mins) Used when delete the Hyper Node.

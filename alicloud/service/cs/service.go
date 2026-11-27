@@ -131,9 +131,7 @@ func (s *VpcService) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributes
 
 	invoker := helper.NewInvoker()
 	err = invoker.Run(func() error {
-		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVSwitchAttributes(request)
-		})
+		raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeVSwitchAttributesResponse())
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"InvalidVswitchID.NotFound"}) {
 				return errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
@@ -874,6 +872,11 @@ func (s *CsClient) CsKubernetesAddonStateRefreshFunc(clusterId string, addonName
 	}
 }
 
+// clusterStateUpdatingErrors is returned by the addon APIs when another
+// cluster-level change (e.g. a node pool update) keeps the cluster in the
+// updating state. The state is transient, so addon operations wait and retry.
+var clusterStateUpdatingErrors = []string{"InvalidClusterStatus.Forbidden"}
+
 func (s *CsClient) installAddon(d *schema.ResourceData) error {
 	clusterId := d.Get("cluster_id").(string)
 
@@ -898,7 +901,7 @@ func (s *CsClient) installAddon(d *schema.ResourceData) error {
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err = s.client.InstallClusterAddons(&clusterId, creationArgs)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, clusterStateUpdatingErrors) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -954,7 +957,7 @@ func (s *CsClient) upgradeAddon(d *schema.ResourceData, updateVersion, updateCon
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err = s.client.UpgradeClusterAddons(&clusterId, upgradeArgs)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, clusterStateUpdatingErrors) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1005,7 +1008,7 @@ func (s *CsClient) uninstallAddon(d *schema.ResourceData) error {
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err = s.client.UnInstallClusterAddons(&clusterId, uninstallArgs)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, clusterStateUpdatingErrors) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1044,7 +1047,7 @@ func (s *CsClient) updateAddonConfig(d *schema.ResourceData) error {
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		_, err = s.client.ModifyClusterAddon(&clusterId, &ComponentName, upgradeArgs)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, clusterStateUpdatingErrors) {
 				wait()
 				return retry.RetryableError(err)
 			}

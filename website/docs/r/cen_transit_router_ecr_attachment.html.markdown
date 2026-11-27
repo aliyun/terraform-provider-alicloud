@@ -14,6 +14,8 @@ For information about Cloud Enterprise Network (CEN) Transit Router Ecr Attachme
 
 -> **NOTE:** Available since v1.235.0.
 
+-> **NOTE:** `CreateExpressConnectRouterAssociation` is required before creating this attachment. Keep the association-to-attachment reference shown below so Terraform creates them in that order and destroys this independently managed attachment before the association. Only an association configured with `create_attachment = true` may delete its owned TR-side attachment together with the association; independently managed or unknown-ownership attachments are not automatically deleted.
+
 ## Example Usage
 
 Basic Usage
@@ -96,7 +98,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Transit Router Ecr Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Transit Router Ecr Attachment.

@@ -29,13 +29,13 @@ output "first_transit_router_peer_attachments_transit_router_attachment_resource
 
 The following arguments are supported:
 
-* `cen_id` - (Required, ForceNew) ID of the CEN instance.
-* `name_regex` - (Optional, ForceNew) A regex string to filter CEN Transit Router peer attachments by name.
-* `ids` - (Optional, ForceNew) A list of CEN Transit Router peer attachments IDs.
-* `status` - (Optional, ForceNew) The status of CEN Transit Router peer attachment. Valid values `Attached`, `Attaching` and `Detaching`.
+* `cen_id` - (Required) ID of the CEN instance.
+* `name_regex` - (Optional) A regex string to filter CEN Transit Router peer attachments by name.
+* `ids` - (Optional) A list of CEN Transit Router peer attachments IDs.
+* `status` - (Optional) The status of CEN Transit Router peer attachment. Valid values `Attached`, `Attaching` and `Detaching`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `transit_router_attachment_id` - (Optional, ForceNew) The ID of CEN Transit Router peer attachments.
-* `transit_router_id` - (Optional, ForceNew) The ID of transit router.
+* `transit_router_attachment_id` - (Optional) The ID of CEN Transit Router peer attachments.
+* `transit_router_id` - (Optional) The ID of transit router.
 
 ## Attributes Reference
 
@@ -43,18 +43,25 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of CEN Transit Router peer attachments IDs.
 * `names` - A list of CEN Transit Router peer attachments names.
-* `attachments` - A list of CEN Transit Router peer Attachments. Each element contains the following attributes:
-  * `auto_publish_route_enabled` - Auto publish route enabled.
-  * `id` - The ID of CEN Transit Router peer attachments.
-  * `transit_router_attachment_description` - The description of CEN Transit Router peer attachments.
-  * `transit_router_attachment_id` - ID of the transit router attachment.
-  * `peer_transit_router_region_id` - Region ID of the peer transit router.
-  * `peer_transit_router_owner_id` - Owner ID of the peer transit router.
-  * `peer_transit_router_id` - ID of the peer transit router.
-  * `transit_router_attachment_name` - Name of the transit router attachment.
-  * `resource_type` - Type of the resource.
-  * `status` - The status of the transit router attachment.
-  * `transit_router_id` - ID of the transit router.
-  * `bandwidth` - The bandwidth of the bandwidth package.
-  * `geographic_span_id` - ID of the geographic.
-  * `cen_bandwidth_package_id` - ID of the CEN bandwidth package.
+* `attachments` - A list of CEN Transit Router peer Attachments.
+
+---
+
+### `attachments`
+
+The attachments supports the following attributes:
+
+* `auto_publish_route_enabled` - Auto publish route enabled.
+* `id` - The ID of CEN Transit Router peer attachments.
+* `transit_router_attachment_description` - The description of CEN Transit Router peer attachments.
+* `transit_router_attachment_id` - ID of the transit router attachment.
+* `peer_transit_router_region_id` - Region ID of the peer transit router.
+* `peer_transit_router_owner_id` - Owner ID of the peer transit router.
+* `peer_transit_router_id` - ID of the peer transit router.
+* `transit_router_attachment_name` - Name of the transit router attachment.
+* `resource_type` - Type of the resource.
+* `status` - The status of the transit router attachment.
+* `transit_router_id` - ID of the transit router.
+* `bandwidth` - The bandwidth of the bandwidth package.
+* `geographic_span_id` - ID of the geographic.
+* `cen_bandwidth_package_id` - ID of the CEN bandwidth package.

@@ -123,7 +123,9 @@ The following arguments are supported:
 
 * `express_sync_id` - (Required, ForceNew) The ID of the ExpressSync.
 * `gateway_id` - (Required, ForceNew) The ID of the Gateway.
-* `share_name` - (Required, ForceNew) The name of the GatewayFileShare. **NOTE:** When GatewayFileShare is associated with a speed sync group, its reverse synchronization function will be turned off by default.
+* `share_name` - (Required, ForceNew) The name of the GatewayFileShare.
+
+  -> **NOTE:** When GatewayFileShare is associated with a speed sync group, its reverse synchronization function will be turned off by default.
 
 ## Attributes Reference
 
@@ -133,7 +135,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Express Sync Share Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Express Sync Share Attachment.

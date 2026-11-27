@@ -66,7 +66,10 @@ The following arguments are supported:
 * `proxy_protocol` - (Optional, Bool) The proxy protocol of the listener. Default value: `false`. Valid values:
   - `true`: Turn on the keep client source IP function. After it is turned on, the back-end service is supported to view the original IP address of the client.
   - `false`: Keep client source IP function is not turned on.
-* `security_policy_id` - (Optional, Available since v1.183.0) The ID of the security policy. **NOTE:** Only `HTTPS` listeners support this parameter. Valid values:
+* `security_policy_id` - (Optional, Available since v1.183.0) The ID of the security policy.
+
+  -> **NOTE:** Only `HTTPS` listeners support this parameter. Valid values:
+
   - `tls_cipher_policy_1_0`:
     - Supported TLS versions: TLS 1.0, TLS 1.1, and TLS 1.2.
     - Supported cipher suites: ECDHE-RSA-AES128-GCM-SHA256, ECDHE-RSA-AES256-GCM-SHA384, ECDHE-RSA-AES128-SHA256, ECDHE-RSA-AES256-SHA384, AES128-GCM-SHA256, AES256-GCM-SHA384, AES128-SHA256, AES256-SHA256, ECDHE-RSA-AES128-SHA, ECDHE-RSA-AES256-SHA, AES128-SHA, AES256-SHA, and DES-CBC3-SHA.
@@ -108,11 +111,15 @@ The following arguments are supported:
   -> **NOTE:** For `HTTP` or `HTTPS` protocol monitoring, only one monitoring port can be configured, that is, the start monitoring port and end monitoring port should be the same.
 * `forwarded_for_config` - (Optional, Set, Available since v1.207.0) The XForward headers. See [`forwarded_for_config`](#forwarded_for_config) below.
 
+---
+
 ### `certificates`
 
 The certificates supports the following:
 
 * `id` - (Optional) The id of the certificate.
+
+---
 
 ### `port_ranges`
 
@@ -121,25 +128,27 @@ The port_ranges supports the following:
 * `from_port` - (Required, Int) The initial listening port used to receive requests and forward them to terminal nodes.
 * `to_port` - (Required, Int) The end listening port used to receive requests and forward them to terminal nodes.
 
+---
+
 ### `forwarded_for_config`
 
 The forwarded_for_config supports the following:
 
 * `forwarded_for_ga_id_enabled` - (Optional, Bool) Specifies whether to use the GA-ID header to retrieve the ID of the GA instance. Default value: `false`. Valid values:
   - `true`: yes.
-  - `false `: no.
+  - `false`: no.
 * `forwarded_for_ga_ap_enabled` - (Optional, Bool) Specifies whether to use the GA-AP header to retrieve the information about acceleration regions. Default value: `false`. Valid values:
   - `true`: yes.
-  - `false `: no.
+  - `false`: no.
 * `forwarded_for_proto_enabled` - (Optional, Bool) Specifies whether to use the GA-X-Forward-Proto header to retrieve the listener protocol of the GA instance. Default value: `false`. Valid values:
   - `true`: yes.
-  - `false `: no.
+  - `false`: no.
 * `forwarded_for_port_enabled` - (Optional, Bool) Specifies whether to use the GA-X-Forward-Port header to retrieve the listener ports of the GA instance. Default value: `false`. Valid values:
   - `true`: yes.
-  - `false `: no.
+  - `false`: no.
 * `real_ip_enabled` - (Optional, Bool) Specifies whether to use the X-Real-IP header to retrieve client IP addresses. Default value: `false`. Valid values:
   - `true`: yes.
-  - `false `: no.
+  - `false`: no.
 
   -> **NOTE:** These `forwarded_for_ga_id_enabled`, `forwarded_for_ga_ap_enabled`, `forwarded_for_proto_enabled`, `forwarded_for_port_enabled`, `real_ip_enabled` are available only when you create an `HTTPS` or `HTTP` listener.
 
@@ -152,7 +161,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 15 mins) Used when create the Listener.
 * `update` - (Defaults to 3 mins) Used when update the Listener.

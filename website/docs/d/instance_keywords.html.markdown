@@ -30,7 +30,7 @@ output "account_keywords" {
 
 The following arguments are supported:
 
-* `key` - (Required, ForceNew) The type of reserved keyword to query. Valid values: `account`, `database`.
+* `key` - (Required) The type of reserved keyword to query. Valid values: `account`, `database`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform apply`).
 
 ## Attributes Reference

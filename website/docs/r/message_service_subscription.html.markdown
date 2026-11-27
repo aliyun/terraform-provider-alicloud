@@ -62,12 +62,14 @@ The following arguments are supported:
   - `Sms Format`: A mobile number
   - `Email Format`: An email address.
 * `sts_role_arn` - (Optional, ForceNew, Available since v1.259.0) The STS RoleArn.
-* `push_type` - (Required, ForceNew) The Push type of Subscription. The Valid values: `http`, `queue`, `mpush`, `alisms` and `email`.
+* `push_type` - (Required) The Push type of Subscription. The Valid values: `http`, `queue`, `mpush`, `alisms` and `email`.
 * `filter_tag` - (Optional, ForceNew) The tag that is used to filter messages. Only the messages that have the same tag can be pushed. A tag is a string that can be up to 16 characters in length. By default, no tag is specified to filter messages.
 * `notify_content_format` - (Optional, Computed, ForceNew) The NotifyContentFormat attribute of Subscription. This attribute specifies the content format of the messages pushed to users. Valid values: `XML`, `JSON` and `SIMPLIFIED`. Default value: `XML`.
 * `notify_strategy` - (Optional) The NotifyStrategy attribute of Subscription. This attribute specifies the retry strategy when message sending fails. Default value: `BACKOFF_RETRY`. Valid values:
   - `BACKOFF_RETRY`: retries with a fixed backoff interval.
   - `EXPONENTIAL_DECAY_RETRY`: retries with exponential backoff.
+
+---
 
 ### `dlq_policy`
 
@@ -85,7 +87,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Subscription.
 * `delete` - (Defaults to 5 mins) Used when delete the Subscription.

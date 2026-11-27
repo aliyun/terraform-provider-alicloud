@@ -54,7 +54,9 @@ resource "alicloud_ga_bandwidth_package_attachment" "default" {
 The following arguments are supported:
 
 * `accelerator_id` - (Required, ForceNew) The ID of the Global Accelerator instance.
-* `bandwidth_package_id` - (Required) The ID of the Bandwidth Package. **NOTE:** From version 1.192.0, `bandwidth_package_id` can be modified.
+* `bandwidth_package_id` - (Required) The ID of the Bandwidth Package.
+
+  -> **NOTE:** From version 1.192.0, `bandwidth_package_id` can be modified.
 
 ## Attributes Reference
 
@@ -68,7 +70,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Bandwidth Package Attachment.
 * `update` - (Defaults to 5 mins) Used when update the Bandwidth Package Attachment.

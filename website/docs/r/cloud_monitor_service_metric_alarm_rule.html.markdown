@@ -133,6 +133,8 @@ You can enter a new alert rule name or use an existing alert rule name in CloudM
 * `targets` - (Optional, Computed, Set, Available since v1.288.0) The push channels that receive the alert, in addition to the alert contact groups. Up to 5 targets are supported. See [`targets`](#targets) below.
 * `webhook` - (Optional) The URL address specified for callback when an alert is triggered. A POST request is sent to this URL.
 
+---
+
 ### `composite_expression`
 
 The composite_expression supports the following:
@@ -150,6 +152,8 @@ The composite_expression supports the following:
   - WARN: Warning.
   - INFO: Information.
 * `times` - (Optional, Int) Number of consecutive times the alert condition must be met before an alert notification is sent.
+
+---
 
 ### `composite_expression-expression_list`
 
@@ -180,6 +184,8 @@ Unit: seconds.
 
 * `threshold` - (Optional) Alert threshold.
 
+---
+
 ### `escalations`
 
 The escalations supports the following:
@@ -187,6 +193,8 @@ The escalations supports the following:
 * `critical` - (Optional, Set) The trigger condition for Critical-level alerts. See [`critical`](#escalations-critical) below.
 * `info` - (Optional, Set) Trigger conditions for Info-level alerts. See [`info`](#escalations-info) below.
 * `warn` - (Optional, Set) Trigger condition for Warn-level alerts.   See [`warn`](#escalations-warn) below.
+
+---
 
 ### `escalations-critical`
 
@@ -208,6 +216,8 @@ The escalations-critical supports the following:
 * `threshold` - (Optional) Threshold for Critical-level alerts.
 * `times` - (Optional, Int) The number of consecutive occurrences required to trigger a Critical-level alarm. An alarm is triggered only when the metric exceeds the threshold for this specified number of consecutive times.
 
+---
+
 ### `escalations-info`
 
 The escalations-info supports the following:
@@ -227,6 +237,8 @@ The escalations-info supports the following:
 * `statistics` - (Optional) Statistical method used for Info-level alerts.
 * `threshold` - (Optional) Threshold value for Info-level alerts.
 * `times` - (Optional, Int) Number of consecutive occurrences required to trigger an Info-level alert. The alert is triggered only when the metric exceeds the threshold for this specified number of consecutive times.
+
+---
 
 ### `escalations-warn`
 
@@ -248,6 +260,8 @@ The escalations-warn supports the following:
 * `threshold` - (Optional) Threshold for Warn-level alerts.
 * `times` - (Optional, Int) Number of consecutive occurrences required to trigger a Warn-level alert. The alert is triggered only if the metric exceeds the threshold for this number of consecutive times.  
 
+---
+
 ### `labels`
 
 The labels supports the following:
@@ -256,6 +270,8 @@ The labels supports the following:
 * `value` - (Optional) Label value.
 
   -> **NOTE:**  The label value supports template parameters, which are replaced with actual label values.
+
+---
 
 ### `prometheus`
 
@@ -275,12 +291,16 @@ The prometheus supports the following:
 
 * `times` - (Optional, Int) The number of times the alert condition must be met before an alert notification is sent.
 
+---
+
 ### `prometheus-annotations`
 
 The prometheus-annotations supports the following:
 
 * `key` - (Optional) The key of the annotation.
 * `value` - (Optional) The value of the annotation.
+
+---
 
 ### `targets`
 
@@ -302,17 +322,45 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `dimensions` - The monitoring dimensions for the specified resource.
 * `escalations` - The trigger conditions for alert levels.
-  * `critical` - The trigger condition for Critical-level alerts.
-    * `pre_condition` - The precondition for triggering a Critical-level alarm.
-  * `info` - Trigger conditions for Info-level alerts.
-    * `pre_condition` - Precondition for triggering an Info-level alert.
-  * `warn` - Trigger condition for Warn-level alerts.
-    * `pre_condition` - Precondition for triggering a Warn-level alert.
 * `source_type` - The type of the alarm rule.
+
+---
+
+### `escalations`
+
+The escalations supports the following attributes:
+
+* `critical` - The trigger condition for Critical-level alerts.
+* `info` - Trigger conditions for Info-level alerts.
+* `warn` - Trigger condition for Warn-level alerts.
+
+---
+
+### `escalations.critical`
+
+The critical supports the following attributes:
+
+* `pre_condition` - The precondition for triggering a Critical-level alarm.
+
+---
+
+### `escalations.info`
+
+The info supports the following attributes:
+
+* `pre_condition` - Precondition for triggering an Info-level alert.
+
+---
+
+### `escalations.warn`
+
+The warn supports the following attributes:
+
+* `pre_condition` - Precondition for triggering a Warn-level alert.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Metric Alarm Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Metric Alarm Rule.

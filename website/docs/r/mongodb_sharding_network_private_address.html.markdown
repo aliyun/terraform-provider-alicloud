@@ -99,16 +99,23 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Sharding Network Private Address. It formats as `<db_instance_id>:<node_id>`.
 * `network_address` - The endpoints of ApsaraDB for MongoDB instances.
-  * `node_id` - The ID of the `Shard`, or `ConfigServer` node.
-  * `node_type` - The type of the node.
-  * `role` - The role of the node.
-  * `vpc_id` - The ID of the VPC.
-  * `vswitch_id` - The ID of the vSwitch in the VPC.
-  * `network_type` - The network type of the instance.
-  * `network_address` - The connection string of the instance.
-  * `ip_address` - The IP address of the instance.
-  * `port` - The port that is used to connect to the instance.
-  * `expired_time` - The remaining duration of the classic network endpoint.
+
+---
+
+### `network_address`
+
+The network_address supports the following attributes:
+
+* `node_id` - The ID of the `Shard`, or `ConfigServer` node.
+* `node_type` - The type of the node.
+* `role` - The role of the node.
+* `vpc_id` - The ID of the VPC.
+* `vswitch_id` - The ID of the vSwitch in the VPC.
+* `network_type` - The network type of the instance.
+* `network_address` - The connection string of the instance.
+* `ip_address` - The IP address of the instance.
+* `port` - The port that is used to connect to the instance.
+* `expired_time` - The remaining duration of the classic network endpoint.
 
 ## Import
 

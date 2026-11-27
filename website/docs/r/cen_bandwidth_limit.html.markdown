@@ -97,17 +97,17 @@ resource "alicloud_cen_bandwidth_limit" "example" {
 
 The following arguments are supported:
 
+-> **NOTE:** The `alicloud_cen_bandwidth_limit` resource depends on the related "alicloud_cen_bandwidth_package_attachment" resource and "alicloud_cen_instance_attachment" resource.
+
 * `instance_id` - (Required, ForceNew) The ID of the CEN.
 * `region_ids` - (Required, ForceNew) List of the two regions to interconnect. Must be two different regions.
 * `bandwidth_limit` - (Required) The bandwidth configured for the interconnected regions communication.
-
-->**NOTE:** The `alicloud_cen_bandwidth_limit` resource depends on the related "alicloud_cen_bandwidth_package_attachment" resource and "alicloud_cen_instance_attachment" resource.
 
 ## Timeouts
 
 -> **NOTE:** Available since v1.48.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `update` - (Defaults to 10 mins) Used when activating the cen bandwidth limit when necessary during update - when changing bandwidth limit.
 * `delete` - (Defaults to 10 mins) Used when terminating the cen bandwidth limit.
@@ -118,7 +118,7 @@ The following attributes are exported:
 
 * `id` - ID of the resource, formatted as `<instance_id>:<region_id_1>:<region_id_2>`.
 
-->**NOTE:** The region_id_1 and region_id_2 are sorted lexicographically.
+  -> **NOTE:** The region_id_1 and region_id_2 are sorted lexicographically.
 
 ## Import
 
@@ -128,4 +128,4 @@ CEN bandwidth limit can be imported using the id, e.g.
 $ terraform import alicloud_cen_bandwidth_limit.example cen-abc123456:cn-beijing:eu-west-1
 ```
 
-->**NOTE:** The sequence of the region_id_1 and region_id_2 makes no difference when import. But the in the id of the resource, they are sorted lexicographically.
+-> **NOTE:** The sequence of the region_id_1 and region_id_2 makes no difference when import. But the in the id of the resource, they are sorted lexicographically.

@@ -88,7 +88,7 @@ The following arguments are supported:
   -> **NOTE:** `effective_time` is a per-operation modifier and is not an instance attribute, so it is not read back from the API. When `MaintainTime` is used, the upgrade executes at the next maintenance window: until the upgrade task runs, the API keeps reporting the previous values of the upgraded attributes and the provider reports a plan diff for them. The provider does not wait for the value convergence in this case and returns after the upgrade request is accepted.
 
 * `vswitch_id` - (Required, ForceNew) The vswitch id.
-* `db_instance_class` - (Optional, ForceNew) The db instance class. see [Instance specifications](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/instance-types).
+* `db_instance_class` - (Optional) The db instance class. see [Instance specifications](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/instance-types).
 
   -> **NOTE:** This parameter must be passed in to create a storage reservation mode instance.
 
@@ -116,8 +116,10 @@ The following arguments are supported:
 * `instance_network_type` - (Optional, ForceNew) The network type of the instance. Valid values: `VPC`.
 * `vpc_id` - (Optional, ForceNew) The vpc ID of the resource.
 * `zone_id` - (Optional, ForceNew) The zone ID of the instance.
-* `instance_group_count` - (Optional, ForceNew, Int) The number of nodes. Valid values: `2`, `4`, `8`, `12`, `16`, `24`, `32`, `64`, `96`, `128`.
-* `payment_type` - (Optional) The billing method of the instance. Valid values: `Subscription`, `PayAsYouGo`. **NOTE:** From provider version 1.287.0, `payment_type` can be modified in both directions between `Subscription` and `PayAsYouGo`. When modifying the billing method of an instance to `Subscription`, `period` and `used_time` are required; when modifying the billing method of an instance to `PayAsYouGo`, `period` and `used_time` are not required. See [ModifyDBInstancePayType](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-modifydbinstancepaytype).
+* `instance_group_count` - (Optional, Int) The number of nodes. Valid values: `2`, `4`, `8`, `12`, `16`, `24`, `32`, `64`, `96`, `128`.
+* `payment_type` - (Optional) The billing method of the instance. Valid values: `Subscription`, `PayAsYouGo`.
+
+  -> **NOTE:** From provider version 1.287.0, `payment_type` can be modified in both directions between `Subscription` and `PayAsYouGo`. When modifying the billing method of an instance to `Subscription`, `period` and `used_time` are required; when modifying the billing method of an instance to `PayAsYouGo`, `period` and `used_time` are not required. See [ModifyDBInstancePayType](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-modifydbinstancepaytype).
 * `period` - (Optional) The duration that you will buy the resource, in month. required when `payment_type` is `Subscription`, including when `payment_type` is modified to `Subscription`. Valid values: `Year`, `Month`.
 * `resource_group_id` - (Optional) The ID of the enterprise resource group to which the instance belongs.
 * `master_cu` - (Optional, Int, Available since v1.213.0) The amount of coordinator node resources. Valid values: `2`, `4`, `8`, `16`, `32`.
@@ -125,7 +127,9 @@ The following arguments are supported:
 
   -> **NOTE:** This parameter must be passed in to create a storage elastic mode instance and a Serverless version instance. During the public beta of the Serverless version (from 0101, 2022 to 0131, 2022), a maximum of 12 compute nodes can be created.
 
-* `seg_storage_type` - (Optional, ForceNew) The seg storage type. Valid values: `cloud_essd`. **NOTE:** If `db_instance_mode` is set to `StorageElastic`, `seg_storage_type` is required. From version 1.233.1, `seg_storage_type` cannot be modified, or set to `cloud_efficiency`. `seg_storage_type` can only be set to `cloud_essd`.
+* `seg_storage_type` - (Optional, ForceNew) The seg storage type. Valid values: `cloud_essd`.
+
+  -> **NOTE:** If `db_instance_mode` is set to `StorageElastic`, `seg_storage_type` is required. From version 1.233.1, `seg_storage_type` cannot be modified, or set to `cloud_efficiency`. `seg_storage_type` can only be set to `cloud_essd`.
 * `seg_disk_performance_level` - (Optional, Available since v1.233.1) The ESSD cloud disk performance level. Valid values: `pl0`, `pl1`, `pl2`.
 * `create_sample_data` - (Optional, Bool) Whether to load the sample dataset after the instance is created. Valid values: `true`, `false`.
 * `ssl_enabled` - (Optional, Int, Available since v1.188.0) Enable or disable SSL. Valid values: `0` and `1`.
@@ -149,9 +153,15 @@ The following arguments are supported:
 * `maintain_start_time` - (Optional) The start time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 02:00Z.
 * `maintain_end_time` - (Optional) The end time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 03:00Z. start time should be later than end time.
 * `resource_management_mode` - (Optional, Available since v1.225.0) Resource management mode. Valid values: `resourceGroup`, `resourceQueue`.
-* `serverless_mode` - (Optional, ForceNew, Available since v1.233.1) The mode of the Serverless instance. Valid values: `Manual`, `Auto`. **NOTE:** `serverless_mode` is valid only when `db_instance_mode` is set to `Serverless`.
-* `serverless_resource` - (Optional, Int, Available since v1.287.0) The computing resource threshold, in ACU. Valid values: `16` to `1024`. **NOTE:** `serverless_resource` is valid only when `db_instance_mode` is set to `ServerlessPro`. The value can be modified in place for `ServerlessPro` instances.
-* `cache_storage_size` - (Optional, Int, Available since v1.287.0) The cache storage size, in GB. Valid values: `800` to `102400`. **NOTE:** `cache_storage_size` is valid only when `db_instance_mode` is set to `ServerlessPro`. The value can be modified in place for `ServerlessPro` instances.
+* `serverless_mode` - (Optional, ForceNew, Available since v1.233.1) The mode of the Serverless instance. Valid values: `Manual`, `Auto`.
+
+  -> **NOTE:** `serverless_mode` is valid only when `db_instance_mode` is set to `Serverless`.
+* `serverless_resource` - (Optional, Int, Available since v1.287.0) The computing resource threshold, in ACU. Valid values: `16` to `1024`.
+
+  -> **NOTE:** `serverless_resource` is valid only when `db_instance_mode` is set to `ServerlessPro`. The value can be modified in place for `ServerlessPro` instances.
+* `cache_storage_size` - (Optional, Int, Available since v1.287.0) The cache storage size, in GB. Valid values: `800` to `102400`.
+
+  -> **NOTE:** `cache_storage_size` is valid only when `db_instance_mode` is set to `ServerlessPro`. The value can be modified in place for `ServerlessPro` instances.
 * `prod_type` - (Optional, ForceNew, Available since v1.233.1) The type of the product. Default value: `standard`. Valid values: `standard`, `cost-effective`.
 * `data_share_status` - (Optional, Available since v1.233.1) Specifies whether to enable or disable data sharing. Default value: `closed`. Valid values:
   - `opened`: Enables data sharing.
@@ -171,7 +181,9 @@ The following arguments are supported:
 
   -> **NOTE:** `status` does not take part in the instance creation. A new instance is always created in the running state and is paused afterwards when `status` is set to `Stopped`.
 
-* `used_time` - (Optional) The used time. When the parameter `period` is `Year`, the `used_time` value is `1` to `3`. When the parameter `period` is `Month`, the `used_time` value is `1` to `9`. **NOTE:** From provider version 1.287.0, `used_time` is required (together with `period`) when `payment_type` is modified to `Subscription`.
+* `used_time` - (Optional) The used time. When the parameter `period` is `Year`, the `used_time` value is `1` to `3`. When the parameter `period` is `Month`, the `used_time` value is `1` to `9`.
+
+  -> **NOTE:** From provider version 1.287.0, `used_time` is required (together with `period`) when `payment_type` is modified to `Subscription`.
 * `description` - (Optional) The description of the instance.
 * `backup_id` - (Optional, ForceNew, Available since v1.287.0) The ID of the backup set. If specified, the instance is created from the existing backup set. See [CreateDBInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-createdbinstance).
 * `src_db_instance_name` - (Optional, ForceNew, Available since v1.287.0) The source instance ID for creating an instance from a backup set. Must be set together with `backup_id`; the GPDB CreateDBInstance API requires `SrcDbInstanceName` and `BackupId` to be null or not null at the same time. See [CreateDBInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-createdbinstance).
@@ -182,8 +194,10 @@ The following arguments are supported:
 * `security_ip_list` - (Optional, List, Deprecated since v1.187.0) Field `security_ip_list` has been deprecated from provider version 1.187.0. New field `ip_whitelist` instead.
 * `instance_charge_type` - (Optional, ForceNew, Deprecated since v1.187.0) Field `instance_charge_type` has been deprecated from provider version 1.187.0. New field `payment_type` instead.
 * `availability_zone` - (Optional, ForceNew, Deprecated since v1.187.0) Field `availability_zone` has been deprecated from provider version 1.187.0. New field `zone_id` instead.
-* `master_node_num` - (Optional, Int, Deprecated since v1.213.0) The number of Master nodes. **NOTE:** Field `master_node_num` has been deprecated from provider version 1.213.0.
-* `private_ip_address` - (Optional, Deprecated since v1.213.0) The private ip address. **NOTE:** Field `private_ip_address` has been deprecated from provider version 1.213.0.
+* `master_node_num` - (Optional, Int, Deprecated since v1.213.0) The number of Master nodes.
+* `private_ip_address` - (Optional, Deprecated since v1.213.0) The private ip address.
+
+---
 
 ### `ip_whitelist`
 
@@ -193,6 +207,8 @@ The ip_whitelist supports the following:
   If the value contains `hidden`, this white list item will not output.
 * `ip_group_name` - (Optional) IP whitelist group name. Defaults to `default`, the built-in whitelist group; a group without a name is applied to the `default` group instead of creating a new one.
 * `security_ip_list` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]). System default to `["127.0.0.1"]`.
+
+---
 
 ### `parameters`
 
@@ -216,7 +232,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when create the DB Instance.
 * `update` - (Defaults to 60 mins) Used when update the DB Instance.

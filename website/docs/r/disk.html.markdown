@@ -11,7 +11,7 @@ description: |-
 
 Provides a ECS disk resource.
 
--> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_disk](https://www.terraform.io/docs/providers/alicloud/r/ecs_disk) from version 1.122.0.
+-> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_disk](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_disk) from version 1.122.0.
 
 -> **NOTE:** One of `size` or `snapshot_id` is required when specifying an ECS disk. If all of them be specified, `size` must more than the size of snapshot which `snapshot_id` represents. Currently, `alicloud_disk` doesn't resize disk.
 
@@ -71,8 +71,12 @@ If you want to delete a disk without `force_delete`, convert it to `PayAsYouGo` 
 The following arguments are supported:
 
 * `advanced_features` - (Optional) The advanced features configured for the disk.
-* `bursting_enabled` - (Optional, Bool, Available since v1.237.0) Specifies whether to enable the performance burst feature. Valid values: `true`, `false`. **NOTE:** `bursting_enabled` is only valid when `category` is `cloud_auto`; specifying it for other categories is rejected by the API. When `category` is changed to `cloud_auto` in the same apply (for example from `cloud_essd`), the provider defers the `BurstingEnabled` update until the disk category has been confirmed as `cloud_auto` by `ModifyDiskSpec` and `WaitForState`, because the API rejects `BurstingEnabled` on a non-`cloud_auto` disk.
-* `category` - (Optional) The category of the data disk. Default value: `cloud_efficiency`. Valid Values: `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_essd_entry`, `cloud_regional_disk_auto`, `elastic_ephemeral_disk_standard`, `elastic_ephemeral_disk_premium`. **NOTE:** When `category` is `cloud_auto`, the `bursting_enabled` and `provisioned_iops` parameters become applicable; they are rejected by the API for other categories. **NOTE:** Category conversion (for example from `cloud_essd` to `cloud_auto`) is applied asynchronously by the API: the disk may report the transitional status `Modifying` while the conversion runs, and even after the status returns to `Available` the category may still report the previous value for some time. The provider therefore waits within a single `DescribeDisks` response until the status is `Available`/`In_use` and the category already equals the requested value before completing the update, and this wait is bounded by the `update` timeout (default 30 mins). Conversion duration depends on the disk (throughput, capacity and the previous category) and has no completion guarantee; set `timeouts.update` explicitly for large disks whose conversion may take longer.
+* `bursting_enabled` - (Optional, Bool, Available since v1.237.0) Specifies whether to enable the performance burst feature. Valid values: `true`, `false`.
+
+  -> **NOTE:** `bursting_enabled` is only valid when `category` is `cloud_auto`; specifying it for other categories is rejected by the API. When `category` is changed to `cloud_auto` in the same apply (for example from `cloud_essd`), the provider defers the `BurstingEnabled` update until the disk category has been confirmed as `cloud_auto` by `ModifyDiskSpec` and `WaitForState`, because the API rejects `BurstingEnabled` on a non-`cloud_auto` disk.
+* `category` - (Optional) The category of the data disk. Default value: `cloud_efficiency`. Valid Values: `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_essd_entry`, `cloud_regional_disk_auto`, `elastic_ephemeral_disk_standard`, `elastic_ephemeral_disk_premium`.
+
+  -> **NOTE:** When `category` is `cloud_auto`, the `bursting_enabled` and `provisioned_iops` parameters become applicable; they are rejected by the API for other categories. **NOTE:** Category conversion (for example from `cloud_essd` to `cloud_auto`) is applied asynchronously by the API: the disk may report the transitional status `Modifying` while the conversion runs, and even after the status returns to `Available` the category may still report the previous value for some time. The provider therefore waits within a single `DescribeDisks` response until the status is `Available`/`In_use` and the category already equals the requested value before completing the update, and this wait is bounded by the `update` timeout (default 30 mins). Conversion duration depends on the disk (throughput, capacity and the previous category) and has no completion guarantee; set `timeouts.update` explicitly for large disks whose conversion may take longer.
 * `delete_auto_snapshot` - (Optional, Bool) Specifies whether to delete the automatic snapshots of the disk when the disk is released. Default value: `false`.
 * `delete_with_instance` - (Optional, Bool) Specifies whether to release the disk along with its associated instance. Default value: `false`.
 * `description` - (Optional) The description of the disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
@@ -80,24 +84,36 @@ The following arguments are supported:
 * `dry_run` - (Optional, Bool) Specifies whether to check the validity of the request without actually making the request.request Default value: `false`. Valid values:
   - `true`: The validity of the request is checked, but the request is not made. Check items include the required parameters, request format, service limits, and available ECS resources. If the check fails, the corresponding error message is returned. If the check succeeds, the DryRunOperation error code is returned.
   - `false`: The validity of the request is checked. If the check succeeds, a 2xx HTTP status code is returned and the request is made.
-* `enable_auto_snapshot` - (Deprecated, Optional, Bool) Specifies whether the automatic snapshot policy feature is enabled for the cloud disk. Valid values: `true` and `false`. The default value is empty, which indicates that the current value is not changed. **NOTE:** This parameter is deprecated. The automatic snapshot policy feature is enabled by default for a cloud disk after it is created. To use the automatic snapshot policy, apply one to the cloud disk.
-* `encrypt_algorithm` - (Optional) The encryption algorithm used to encrypt the disk. **NOTE:** `encrypt_algorithm` is only valid when `encrypted` is `true`.
+* `enable_auto_snapshot` - (Deprecated, Optional, Bool) Specifies whether the automatic snapshot policy feature is enabled for the cloud disk. Valid values: `true` and `false`. The default value is empty, which indicates that the current value is not changed.
+
+  -> **NOTE:** This parameter is deprecated. The automatic snapshot policy feature is enabled by default for a cloud disk after it is created. To use the automatic snapshot policy, apply one to the cloud disk.
+* `encrypt_algorithm` - (Optional) The encryption algorithm used to encrypt the disk.
+
+  -> **NOTE:** `encrypt_algorithm` is only valid when `encrypted` is `true`.
 * `encrypted` - (Optional, ForceNew, Bool) Specifies whether to encrypt the disk. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
-* `force_delete` - (Optional, Bool, Available since v2.1.1) Specifies whether to release the disk during destroy even when the default behavior cannot release it, for example a `payment_type = "Subscription"` disk. Defaults to `false`. When set to `true`, the provider converts the disk to `PayAsYouGo` (`ModifyDiskChargeType`), detaches it with `DeleteWithInstance=false`, waits until the disk is `Available` and then releases it (`DeleteDisk`). **NOTE:** `force_delete` deletes the disk and all data on it, and the release cannot be undone. It takes priority over the legacy behavior that only removes a PrePaid disk with `delete_with_instance = true` from the state. `force_delete` does not support multi-attach disks (`multi_attach = "Enabled"`); the destroy fails with an actionable error and the disk is kept. The billing method conversion requires the disk to be attached to a Subscription instance and is limited to one successful call per disk every five minutes.
+* `force_delete` - (Optional, Bool, Available since v2.1.1) Specifies whether to release the disk during destroy even when the default behavior cannot release it, for example a `payment_type = "Subscription"` disk. Defaults to `false`. When set to `true`, the provider converts the disk to `PayAsYouGo` (`ModifyDiskChargeType`), detaches it with `DeleteWithInstance=false`, waits until the disk is `Available` and then releases it (`DeleteDisk`).
+
+  -> **NOTE:** `force_delete` deletes the disk and all data on it, and the release cannot be undone. It takes priority over the legacy behavior that only removes a PrePaid disk with `delete_with_instance = true` from the state. `force_delete` does not support multi-attach disks (`multi_attach = "Enabled"`); the destroy fails with an actionable error and the disk is kept. The billing method conversion requires the disk to be attached to a Subscription instance and is limited to one successful call per disk every five minutes.
 * `instance_id` - (Optional, Computed) The ID of the instance to which the created subscription disk is automatically attached.
   * After you specify the instance ID, the specified `resource_group_id`, `tags`, and `kms_key_id` parameters are ignored.
   * For `cloud_regional_disk_auto`, `zone_id` is not required. For other disk categories, specify exactly one of `zone_id` or `instance_id`.
-* `kms_key_id` - (Optional, ForceNew) The ID of the Key Management Service (KMS) key that is used for the disk. **NOTE:** `kms_key_id` is only valid when `encrypted` is `true`.
-* `multi_attach` - (Optional, ForceNew, Available since v1.237.0) Specifies whether to enable the multi-attach feature for the disk. Default value: `Disabled`. Valid values: `Enabled`, `Disabled`. **NOTE:** Currently, `multi_attach` can only be set to `Enabled` when `category` is set to `cloud_essd`.
+* `kms_key_id` - (Optional, ForceNew) The ID of the Key Management Service (KMS) key that is used for the disk.
+
+  -> **NOTE:** `kms_key_id` is only valid when `encrypted` is `true`.
+* `multi_attach` - (Optional, ForceNew, Available since v1.237.0) Specifies whether to enable the multi-attach feature for the disk. Default value: `Disabled`. Valid values: `Enabled`, `Disabled`.
+
+  -> **NOTE:** Currently, `multi_attach` can only be set to `Enabled` when `category` is set to `cloud_essd`.
 * `payment_type` - (Optional) The payment type of the disk. Default to `PayAsYouGo`. Valid values: `PayAsYouGo`, `Subscription`. If you want to change the disk payment type, the `instance_id` is required.
 * `performance_level` - (Optional) Specifies the performance level of an ESSD when you create the ESSD. Valid values:
   - `PL0`: A single ESSD delivers up to 10,000 random read/write IOPS.
   - `PL1`: A single ESSD delivers up to 50,000 random read/write IOPS.
   - `PL2`: A single ESSD delivers up to 100,000 random read/write IOPS.
   - `PL3`: A single ESSD delivers up to 1,000,000 random read/write IOPS.
-* `provisioned_iops` - (Optional, Int, Available since v1.237.0) The provisioned read/write IOPS of the ESSD AutoPL disk. Valid values: 0 to min{50,000, 1,000 × Capacity - Baseline IOPS}. **NOTE:** `provisioned_iops` is only valid when `category` is `cloud_auto`.
+* `provisioned_iops` - (Optional, Int, Available since v1.237.0) The provisioned read/write IOPS of the ESSD AutoPL disk. Valid values: 0 to min{50,000, 1,000 × Capacity - Baseline IOPS}.
+
+  -> **NOTE:** `provisioned_iops` is only valid when `category` is `cloud_auto`.
 * `resource_group_id` - (Optional) The ID of the resource group to which to add the disk.
 * `size` - (Optional, Int) The size of the disk. Unit: GiB. This parameter is required. Valid values:
   - If `category` is set to `cloud`. Valid values: `5` to `2000`.
@@ -113,7 +129,9 @@ The following arguments are supported:
     - If `performance_level` is set to `PL1`. Valid values: `20` to `65536`.
     - If `performance_level` is set to `PL2`. Valid values: `461` to `65536`.
     - If `performance_level` is set to `PL3`. Valid values: `1261` to `65536`.
-* `snapshot_id` - (Optional, ForceNew) The ID of the snapshot to use to create the disk. **NOTE:** If the size of the snapshot specified by `snapshot_id` is larger than the value of `size`, the size of the created disk is equal to the specified snapshot size. If the size of the snapshot specified by `snapshot_id` is smaller than the value of `size`, the size of the created disk is equal to the value of `size`.
+* `snapshot_id` - (Optional, ForceNew) The ID of the snapshot to use to create the disk.
+
+  -> **NOTE:** If the size of the snapshot specified by `snapshot_id` is larger than the value of `size`, the size of the created disk is equal to the specified snapshot size. If the size of the snapshot specified by `snapshot_id` is smaller than the value of `size`, the size of the created disk is equal to the value of `size`.
 * `storage_set_id` - (Optional, ForceNew) The ID of the storage set.
 * `storage_set_partition_number` - (Optional, ForceNew) The number of partitions in the storage set.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
@@ -137,7 +155,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Disk.
 * `delete` - (Defaults to 5 mins) Used when delete the Disk. When `force_delete` is `true`, this timeout applies to each step of the forced sequence: converting the billing method, detaching the disk and waiting until it is available, and releasing it. Adjust it when a step needs more time, for example a slow billing method conversion.

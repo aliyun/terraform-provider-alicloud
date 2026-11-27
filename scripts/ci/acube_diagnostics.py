@@ -18,7 +18,7 @@ SENSITIVE = re.compile(
     r'ossaccesskeyid|signature|bearer\s|\btoken\b|\bapi[_-]?key\b')
 
 
-def redact(value, limit=8000):
+def redact(value, limit=8000, *, line_limit=1000):
     text = ANSI.sub('', str(value))
     token = os.environ.get('ACUBE_PROVIDER_RUN_TOKEN')
     if token:
@@ -31,7 +31,7 @@ def redact(value, limit=8000):
         if SENSITIVE.search(line):
             lines.append('[credential-bearing line omitted]')
         elif not re.match(r'^\s*(?:Data:|(?:GET|POST|PUT|PATCH|DELETE) /|X-Acs-)', line, re.I):
-            lines.append(re.sub(r'[\x00-\x08\x0b-\x1f\x7f]', '', line).replace('```', "'''")[:1000])
+            lines.append(re.sub(r'[\x00-\x08\x0b-\x1f\x7f]', '', line).replace('```', "'''")[:line_limit])
     return '\n'.join(lines)[:limit]
 
 
@@ -79,6 +79,21 @@ def error_excerpt(stdout):
     if request_ids:
         text += '\nRequestIds: ' + ', '.join(request_ids[-10:])
     return text
+
+
+def case_errors(stdout, failures):
+    """Scope Go test output before extracting errors, including -parallel switches."""
+    sections = {case: [] for case in failures}
+    current = None
+    for line in ANSI.sub('', stdout).splitlines():
+        marker = re.match(r'^\s*(?:=== (RUN|CONT|NAME|PAUSE)|--- (PASS|FAIL|SKIP):)\s+(\S+)', line)
+        if marker:
+            current = marker[3].split('/')[0]
+        if current in sections:
+            sections[current].append(line)
+        if marker and (marker[2] or marker[1] == 'PAUSE'):
+            current = None
+    return {case: error_excerpt('\n'.join(lines)) for case, lines in sections.items()}
 
 
 def report_directory(output):
@@ -143,20 +158,32 @@ def terminal_report(name, task_id, status, request, validation_error=None, logs=
             report['nextStep'] = 'Inspect the ACube task result and its phase evidence before retrying.'
     if validation_error and isinstance(logs, dict) and logs.get('stdout.log'):
         try:
-            report['logExcerpt'] = error_excerpt(read_stdout(logs['stdout.log'], task_id))
+            stdout = read_stdout(logs['stdout.log'], task_id)
+            report['logExcerpt'] = error_excerpt(stdout)
+            if tests:
+                report['caseErrors'] = case_errors(stdout, [c['name'] for c in tests.get('cases', [])
+                                                            if c.get('result') == 'FAIL'])
         except (ValueError, OSError, urllib.error.URLError):
             # Diagnostic transport must not mask the original validation failure.
             report['diagnosticWarning'] = 'Remote stdout unavailable; original task failure retained'
     return report
 
 
-def append_summary(block):
+def append_summary(block, *, first=False):
     summary = os.environ.get('AONE_CI_SUMMARY_MD')
     if summary:
         path = Path(summary)
         # Aone limits the complete Markdown summary to 1 MiB.
         size = path.stat().st_size if path.exists() else 0
-        if size + len(block.encode()) < 900_000:
+        if first:
+            # Statistics are computed last, after reuse validation and adjudication.
+            previous = path.read_bytes() if size else b''
+            combined = block.encode() + previous
+            if len(combined) > 990_000:
+                combined = combined[:990_000].rsplit(b'\n', 1)[0].decode(errors='ignore').encode()
+                combined += '\n\n其余诊断详见 CI 制品。\n'.encode()
+            path.write_bytes(combined)
+        elif size + len(block.encode()) < 900_000:
             with path.open('a') as stream:
                 stream.write(block)
 
@@ -209,10 +236,26 @@ def publish_acc_summary(output, commit, packages, failed=False):
               + '，失败=' + count(report['failed']) + '，跳过=' + count(report['skipped'])
               + '，结果未确认=' + count(report['unknown']))
     print('ACC 用例统计：' + totals + '，状态=' + report['status'], flush=True)
-    block = '\n### ACC 用例统计 · ' + report['status'] + '\n\n' + totals + '\n\n'
+    query_blocked = [row for row in packages if row.get('stage') == 'reuse-query']
+    if query_blocked:
+        details = '\n'.join('- ' + row['name'] + '：' + ' '.join(str(row.get('error') or '复用查询未完成').split()) for row in query_blocked)
+        notice = ('\n### ⚠️ ACC 复用查询阶段阻塞\n\n'
+                  '以下批次尚未提交补跑；执行数为 0 不代表检查通过。复用和补跑数量尚未确定。\n\n'
+                  + details + '\n\n')
+        print(notice, flush=True)
+    else:
+        notice = ''
+    heading = report['status']
+    known_failures = sum(row.get('failed') or 0 for row in packages)
+    if known_failures:
+        qualifier = '至少 ' if report['failed'] is None else ''
+        warning = f'⚠️ {qualifier}{known_failures} 条用例执行失败'
+        heading = warning + ('（门禁阻塞）' if failed else '（复核放行）')
+    block = '\n### ACC 用例统计 · ' + heading + '\n\n' + totals + '\n\n' + notice
     block += '| 包 | 总数 | 已确认复用 | 需执行（补跑） | 本次执行 | 本次通过 | 失败 | 跳过 | 结果未确认 | 复用核验 | 原任务 | 执行任务 |\n'
     block += '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |\n'
     labels = {'verified': '已通过', 'not-needed': '无需复用', 'pending': '待复核', 'unconfirmed': '未确认',
+              'query-limited': '查询提前结束，未确认命中',
               'skipped-limit': f'超限不复用（{REUSE_SCAN_LIMIT} 条）'}
     for row in packages:
         cells = [redact(row['name']).replace('|', '\\|').replace('\n', ' '), str(row['total']),
@@ -222,7 +265,14 @@ def publish_acc_summary(output, commit, packages, failed=False):
     block += ('\n复用数须完成资格复核；需执行为本轮分配数，不等于通过数。'
               '本次执行按已返回 PASS/FAIL/SKIP 的不同用例计数，包含跳过；复用不计入本次通过。'
               '结果未确认包括未返回或冲突的用例结果；接口错误不等于用例失败，也不能视为零失败。\n')
-    append_summary(block)
+    for row in packages:
+        reason = row.get('reuseQueryStatus')
+        if reason in ('time-budget', 'scan-limit'):
+            block += ('\n- ' + row['name'] + '：复用查询达到'
+                      + ('时间预算' if reason == 'time-budget' else '扫描上限')
+                      + '，最终确认复用 ' + count(row['reused']) + ' 项，仅补跑 '
+                      + count(row['toRun']) + ' 项。未命中不代表没有历史结果。\n')
+    append_summary(block, first=True)
 
 
 def publish_report(output, report):

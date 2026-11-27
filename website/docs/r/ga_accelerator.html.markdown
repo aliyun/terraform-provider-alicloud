@@ -49,13 +49,18 @@ The following arguments are supported:
 * `bandwidth_billing_type` - (Optional, ForceNew, Available since v1.205.0) The bandwidth billing method. Default value: `BandwidthPackage`. Valid values:
   - `BandwidthPackage`: billed based on bandwidth plans.
   - `CDT`: billed based on data transfer.
-* `bandwidth` - (Optional, Int, Available since v1.294.0) The bandwidth of the GA instance. Unit: Mbps. Valid values: `200` to `5000`. **NOTE:** This parameter is required only when `access_mode` in `ip_set_config` is set to `Anycast`.
+* `bandwidth` - (Optional, Int, Available since v1.294.0) The bandwidth of the GA instance. Unit: Mbps. Valid values: `200` to `5000`.
+
+  -> **NOTE:** This parameter is required only when `access_mode` in `ip_set_config` is set to `Anycast`.
 * `payment_type` - (Optional, ForceNew, Available since v1.208.1) The payment type. Default value: `Subscription`. Valid values: `PayAsYouGo`, `Subscription`.
 * `cross_border_status` - (Optional, Bool, Available since v1.208.1) Indicates whether cross-border acceleration is enabled. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
-**NOTE:** `cross_border_status` is valid only when `bandwidth_billing_type` is set to `CDT`.
-* `cross_border_mode` - (Optional, Available since v1.208.1) The type of cross-border acceleration. Default value: `bgpPro`. Valid values: `bgpPro`, `private`. **NOTE:** `cross_border_mode` is valid only when `cross_border_status` is set to `true`.
+
+  -> **NOTE:** `cross_border_status` is valid only when `bandwidth_billing_type` is set to `CDT`.
+* `cross_border_mode` - (Optional, Available since v1.208.1) The type of cross-border acceleration. Default value: `bgpPro`. Valid values: `bgpPro`, `private`.
+
+  -> **NOTE:** `cross_border_mode` is valid only when `cross_border_status` is set to `true`.
 * `duration` - (Optional, Int) The subscription duration.
   * If the `pricing_cycle` parameter is set to `Month`, the valid values for the `duration` parameter are 1 to 9.
   * If the `pricing_cycle` parameter is set to `Year`, the valid values for the `duration` parameter are 1 to 3.
@@ -70,12 +75,18 @@ The following arguments are supported:
   - `Normal`: Disable auto renewal.
   - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
 * `auto_renew_duration` - (Optional, Int, Available since v1.146.0) Auto renewal period of an instance, in the unit of month. The value range is 1-12.
-* `promotion_option_no` - (Optional, Available since v1.208.1) The code of the coupon. **NOTE:** The `promotion_option_no` takes effect only for accounts registered on the international site (alibabacloud.com).
-* `resource_group_id` - (Optional, Available since v1.226.0) The ID of the resource group. **Note:** Once you set a value of this property, you cannot set it to an empty string anymore.
+* `promotion_option_no` - (Optional, Available since v1.208.1) The code of the coupon.
+
+  -> **NOTE:** The `promotion_option_no` takes effect only for accounts registered on the international site (alibabacloud.com).
+* `resource_group_id` - (Optional, Available since v1.226.0) The ID of the resource group.
+
+  -> **NOTE:** Once you set a value of this property, you cannot set it to an empty string anymore.
 * `accelerator_name` - (Optional) The Name of the GA instance.
 * `description` - (Optional) Descriptive information of the global acceleration instance.
 * `ip_set_config` - (Optional, ForceNew, Available since v1.294.0) The configurations of the acceleration area. See [`ip_set_config`](#ip_set_config) below.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
+
+---
 
 ### `ip_set_config`
 
@@ -93,7 +104,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 3 mins) Used when creating the Ga Accelerator.
 * `update` - (Defaults to 6 mins) Used when updating the Ga Accelerator.

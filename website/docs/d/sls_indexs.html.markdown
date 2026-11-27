@@ -107,26 +107,40 @@ output "alicloud_sls_index_example_id" {
 
 The following arguments are supported:
 
-* `logstore_name` - (Required, ForceNew) Logstore name
-* `project_name` - (Required, ForceNew) Project name
-* `ids` - (Optional, ForceNew, Computed) A list of Index IDs. The value is formulated as `<project_name>:<logstore_name>`.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `logstore_name` - (Required) Logstore name
+* `project_name` - (Required) Project name
+* `ids` - (Optional, Computed) A list of Index IDs. The value is formulated as `<project_name>:<logstore_name>`.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Index IDs.
-* `indexs` - A list of Index Entries. Each element contains the following attributes:
-  * `keys` - Field index
-  * `line` - Full-text index
-    * `case_sensitive` - Is case sensitive.
-    * `chn` - Does it include Chinese.
-    * `exclude_keys` - List of excluded fields.
-    * `include_keys` - Include field list.
-    * `token` - Delimiter.
-  * `log_reduce_black_list` - The blacklist of the cluster fields of log clustering is filtered only when log clustering is enabled.
-  * `log_reduce_white_list` - The whitelist of the cluster fields for log clustering. This filter is valid only when log clustering is enabled.
-  * `max_text_len` - Maximum length of statistical field
-  * `ttl` - Log index storage time
-  * `id` - The ID of the resource supplied above.
+* `indexs` - A list of Index Entries.
+
+---
+
+### `indexs`
+
+The indexs supports the following attributes:
+
+* `keys` - Field index
+* `line` - Full-text index
+* `log_reduce_black_list` - The blacklist of the cluster fields of log clustering is filtered only when log clustering is enabled.
+* `log_reduce_white_list` - The whitelist of the cluster fields for log clustering. This filter is valid only when log clustering is enabled.
+* `max_text_len` - Maximum length of statistical field
+* `ttl` - Log index storage time
+* `id` - The ID of the resource supplied above.
+
+---
+
+### `indexs.line`
+
+The line supports the following attributes:
+
+* `case_sensitive` - Is case sensitive.
+* `chn` - Does it include Chinese.
+* `exclude_keys` - List of excluded fields.
+* `include_keys` - Include field list.
+* `token` - Delimiter.

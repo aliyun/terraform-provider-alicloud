@@ -63,13 +63,20 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Security Group IDs.
 * `names` - A list of Security Group names.
-* `groups` - A list of Security Groups. Each element contains the following attributes:
-  * `id` - The ID of the security group.
-  * `name` - The name of the security group.
-  * `description` - The description of the security group.
-  * `vpc_id` - The ID of the VPC that owns the security group.
-  * `resource_group_id` - The Id of resource group which the security_group belongs.
-  * `security_group_type` - The type of the security group.
-  * `inner_access` - Whether to allow inner network access.
-  * `creation_time` - Creation time of the security group.
-  * `tags` - (Optional) A map of tags assigned to the ECS instance.
+* `groups` - A list of Security Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `id` - The ID of the security group.
+* `name` - The name of the security group.
+* `description` - The description of the security group.
+* `vpc_id` - The ID of the VPC that owns the security group.
+* `resource_group_id` - The Id of resource group which the security_group belongs.
+* `security_group_type` - The type of the security group.
+* `inner_access` - Whether to allow inner network access.
+* `creation_time` - Creation time of the security group.
+* `tags` - (Optional) A map of tags assigned to the ECS instance.

@@ -40,11 +40,18 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `permissions` - A list of Ecs Network Interface Permissions. Each element contains the following attributes:
-  * `account_id` - Alibaba Cloud Partner (Certified ISV) account ID or individual user ID.
-  * `id` - The ID of the Network Interface Permission.
-  * `network_interface_id` - The ID of the network interface.
-  * `network_interface_permission_id` - The ID of the Network Interface Permissions.
-  * `permission` - The permissions of the Network Interface.
-  * `service_name` - Alibaba Cloud service name.
-  * `status` - The Status of the Network Interface Permissions.
+* `permissions` - A list of Ecs Network Interface Permissions.
+
+---
+
+### `permissions`
+
+The permissions supports the following attributes:
+
+* `account_id` - Alibaba Cloud Partner (Certified ISV) account ID or individual user ID.
+* `id` - The ID of the Network Interface Permission.
+* `network_interface_id` - The ID of the network interface.
+* `network_interface_permission_id` - The ID of the Network Interface Permissions.
+* `permission` - The permissions of the Network Interface.
+* `service_name` - Alibaba Cloud service name.
+* `status` - The Status of the Network Interface Permissions.

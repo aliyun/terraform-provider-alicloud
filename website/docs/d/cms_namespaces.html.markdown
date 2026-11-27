@@ -30,19 +30,26 @@ output "cms_namespace_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Namespace IDs.
-* `keyword` - (Optional, ForceNew) The keywords of the `namespace` or `description` of the namespace.
+* `ids` - (Optional, Computed) A list of Namespace IDs.
+* `keyword` - (Optional) The keywords of the `namespace` or `description` of the namespace.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `namespaces` - A list of Cms Namespaces. Each element contains the following attributes:
-  * `create_time` - Create the timestamp of the indicator warehouse.
-  * `description` - Description of indicator warehouse.
-  * `id` - The ID of the Namespace.
-  * `namespace_id` - The ID of the Namespace.
-  * `modify_time` - The timestamp of the last modification indicator warehouse.
-  * `namespace` - Indicator warehouse name.
-  * `specification` - Data storage duration.
+* `namespaces` - A list of Cms Namespaces.
+
+---
+
+### `namespaces`
+
+The namespaces supports the following attributes:
+
+* `create_time` - Create the timestamp of the indicator warehouse.
+* `description` - Description of indicator warehouse.
+* `id` - The ID of the Namespace.
+* `namespace_id` - The ID of the Namespace.
+* `modify_time` - The timestamp of the last modification indicator warehouse.
+* `namespace` - Indicator warehouse name.
+* `specification` - Data storage duration.

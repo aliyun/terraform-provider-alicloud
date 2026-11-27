@@ -412,11 +412,9 @@ func dataSourceZonesRead(d *schema.ResourceData, meta interface{}) error {
 		req.SpotStrategy = v.(string)
 	}
 
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeZones(req)
-	})
+	raw, err := client.EcsSdkRpc(req, ecs.CreateDescribeZonesResponse())
 	if err != nil {
-		return fmt.Errorf("DescribeZones got an error: %#v", err)
+		return fmt.Errorf("DescribeZones got an error: %w", err)
 	}
 	addDebug(req.GetActionName(), raw, req.RpcRequest, req)
 	resp, _ := raw.(*ecs.DescribeZonesResponse)

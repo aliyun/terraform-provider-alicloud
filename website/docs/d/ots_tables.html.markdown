@@ -42,15 +42,36 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of table IDs.
 * `names` - A list of table names.
-* `tables` - A list of tables. Each element contains the following attributes:
-  * `id` - ID of the table. The value is `<instance_name>:<table_name>`.
-  * `instance_name` - The OTS instance name.
-  * `table_name` - The table name of the OTS which could not be changed.
-  * `primary_key` - The property of `TableMeta` which indicates the structure information of a table. Each element contains the following attributes:
-    * `name` - Name for primary key.
-    * `type` - Type for primary key. `Integer`, `String` or `Binary` is allowed.
-  * `defined_column` - The property of `TableMeta` which indicates the structure information of a table. Each element contains the following attributes:
-    * `name` - Name for defined column.
-    * `type` - Type for defined column. `Integer`, `String`, `Binary`, `Double` or `Boolean` is allowed.
-  * `time_to_live` - The retention time of data stored in this table.
-  * `max_version` - The maximum number of versions stored in this table.
+* `tables` - A list of tables.
+
+---
+
+### `tables`
+
+The tables supports the following attributes:
+
+* `id` - ID of the table. The value is `<instance_name>:<table_name>`.
+* `instance_name` - The OTS instance name.
+* `table_name` - The table name of the OTS which could not be changed.
+* `primary_key` - The property of `TableMeta` which indicates the structure information of a table.
+* `defined_column` - The property of `TableMeta` which indicates the structure information of a table.
+* `time_to_live` - The retention time of data stored in this table.
+* `max_version` - The maximum number of versions stored in this table.
+
+---
+
+### `tables.primary_key`
+
+The primary_key supports the following attributes:
+
+* `name` - Name for primary key.
+* `type` - Type for primary key. `Integer`, `String` or `Binary` is allowed.
+
+---
+
+### `tables.defined_column`
+
+The defined_column supports the following attributes:
+
+* `name` - Name for defined column.
+* `type` - Type for defined column. `Integer`, `String`, `Binary`, `Double` or `Boolean` is allowed.

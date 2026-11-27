@@ -566,6 +566,45 @@ func (s *EfloServiceV2) DescribeEfloNodeGroup(id string) (object map[string]inte
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
+func (s *EfloServiceV2) DescribeEfloNodeGroupSystemDisk(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		return object, errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["NodeGroupId"] = parts[1]
+	request["RegionId"] = client.RegionId
+	action := "DescribeNodeGroup"
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	systemDisk, ok := response["SystemDisk"].(map[string]interface{})
+	if !ok {
+		return nil, nil
+	}
+	return systemDisk, nil
+}
+
 func (s *EfloServiceV2) DescribeNodeGroupListClusterNodes(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}

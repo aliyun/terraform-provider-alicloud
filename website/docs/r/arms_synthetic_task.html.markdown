@@ -224,6 +224,8 @@ The following arguments are supported:
 * `tags` - (Optional, Map) The list of tags.
 * `task_type` - (Required, ForceNew) The type of synthetic task.
 
+---
+
 ### `available_assertions`
 
 The available_assertions supports the following:
@@ -232,6 +234,8 @@ The available_assertions supports the following:
 * `operator` - (Required) Condition: gt: greater than; gte: greater than or equal to; lt: less than; te: less than or equal to; eq: equal to; neq: not equal to; ctn: contains; nctn: does not contain; exist: exists; n_exist: does not exist; belong: belongs to; reg_match: regular matching.
 * `target` - (Optional) Check the target. If the target is HttpResCode, HttpResBody, or httpressetime, you do not need to specify the target. If the target is HttpResHead, you need to specify the key in the header. If the target is HttpResHead, you need to use jsonPath.
 * `type` - (Required) Assertion type, including: httpresead, httpresead, HttpResBody, HttpResBodyJson, httpressetime, IcmpPackLoss (packet loss rate), IcmpPackMaxLatency (maximum packet delay ms), icmppackwebscreen, fmppackavglatency (average delay rendering), TraceRouteHops (number of hops), dnsarecname, websiteOnload (full load time), see the supplement below for specific use.
+
+---
 
 ### `common_setting`
 
@@ -252,6 +256,8 @@ The common_setting supports the following:
   - 2:Jaeger.
 * `xtrace_region` - (Optional) The link data is reported to the region.
 
+---
+
 ### `common_setting-custom_host`
 
 The common_setting-custom_host supports the following:
@@ -261,6 +267,8 @@ The common_setting-custom_host supports the following:
   - 0: Random
   - 1: Polling.
 
+---
+
 ### `common_setting-custom_host-hosts`
 
 The common_setting-custom_host-hosts supports the following:
@@ -269,12 +277,16 @@ The common_setting-custom_host-hosts supports the following:
 * `ip_type` - (Required) IpType.
 * `ips` - (Required) The IP list.
 
+---
+
 ### `custom_period`
 
 The custom_period supports the following:
 
 * `end_hour` - (Optional) End hours, 0-24.
 * `start_hour` - (Optional) Starting hours, 0-24.
+
+---
 
 ### `monitor_conf`
 
@@ -288,6 +300,8 @@ The monitor_conf supports the following:
 * `stream` - (Optional) Streaming Media Dial Test Configuration. See [`stream`](#monitor_conf-stream) below.
 * `website` - (Optional) Website speed measurement type task configuration. See [`website`](#monitor_conf-website) below.
 
+---
+
 ### `monitor_conf-api_http`
 
 The monitor_conf-api_http supports the following:
@@ -298,6 +312,8 @@ The monitor_conf-api_http supports the following:
 * `request_headers` - (Optional, Map) HTTP request header.
 * `target_url` - (Required) Dial test target address (request path).
 * `timeout` - (Optional) Timeout, unit: ms. Default 10000. Optional range: 1000-300000ms.
+
+---
 
 ### `monitor_conf-file_download`
 
@@ -332,6 +348,8 @@ Default 1.
   - 2:MD5 validation.
 * `white_list` - (Optional) DNS hijack whitelist. Match rules support IP, IP wildcard, subnet mask, and CNAME. Multiple match rules can be filled in. Multiple match rules are separated by vertical bars (|). For example, <www.aliyun.com:203.0.3.55> | 203.3.44.67 indicates that all other IP addresses under the <www.aliyun.com> domain except 203.0.3.55 and 203.3.44.67 are hijacked.
 
+---
+
 ### `monitor_conf-net_dns`
 
 The monitor_conf-net_dns supports the following:
@@ -347,6 +365,8 @@ The monitor_conf-net_dns supports the following:
 * `target_url` - (Required) The destination address (domain name) of the DNS dial test.
 * `timeout` - (Optional) DNS dial test timeout. The unit is milliseconds (ms), the minimum value is 1000, the maximum value is 45000, and the default value is 5000.
 
+---
+
 ### `monitor_conf-net_icmp`
 
 The monitor_conf-net_icmp supports the following:
@@ -361,6 +381,8 @@ The monitor_conf-net_icmp supports the following:
 * `tracert_num_max` - (Optional) The maximum number of hops for tracert. The minimum value is 1, the maximum value is 128, and the default value is 20.
 * `tracert_timeout` - (Optional) The time-out of tracert. The unit is milliseconds (ms), the minimum value is 1000, the maximum value is 300000, and the default value is 60000.
 
+---
+
 ### `monitor_conf-net_tcp`
 
 The monitor_conf-net_tcp supports the following:
@@ -372,6 +394,8 @@ The monitor_conf-net_tcp supports the following:
 * `tracert_enable` - (Optional) Whether to enable tracert. The default is true.
 * `tracert_num_max` - (Optional) The maximum number of hops for tracert. The minimum value is 1, the maximum value is 128, and the default value is 20.
 * `tracert_timeout` - (Optional) The time-out of tracert. The unit is milliseconds (ms), the minimum value is 1000, the maximum value is 300000, and the default value is 60000.
+
+---
 
 ### `monitor_conf-stream`
 
@@ -388,6 +412,8 @@ The monitor_conf-stream supports the following:
 * `stream_type` - (Optional) Audio and video flags: 0-video, 1-audio.
 * `target_url` - (Optional) The streaming media resource address.
 * `white_list` - (Optional) DNS hijack whitelist. Match rules support IP, IP wildcard, subnet mask, and CNAME. Multiple match rules can be filled in. Multiple match rules are separated by vertical bars (|). For example, <www.aliyun.com:203.0.3.55> | 203.3.44.67 indicates that all other IP addresses under the <www.aliyun.com> domain except 203.0.3.55 and 203.3.44.67 are hijacked.
+
+---
 
 ### `monitor_conf-website`
 
@@ -420,12 +446,16 @@ The monitor_conf-website supports the following:
 * `verify_string_whitelist` - (Optional) The verification string is an arbitrary string in the source code of the monitoring page. The source code returned by the client must contain all the strings in the whitelist. Otherwise, 650 error is returned. Multiple strings are separated by a vertical bar (|).
 * `wait_completion_time` - (Optional) The maximum waiting time, in ms, is 5000 by default and can be selected from 5000 ms to 300000ms.
 
+---
+
 ### `monitor_conf-api_http-request_body`
 
 The monitor_conf-api_http-request_body supports the following:
 
 * `content` - (Optional) The request body content, in JSON string format. When the type is text/plain,application/json,application/xml,text/html, the content can be converted to a JSON string.
 * `type` - (Optional) The request body type. Supported parameters include text/plain, application/json, application/x-www-form-urlencoded, multipart/form-data, application/xml, and text/html.
+
+---
 
 ### `monitors`
 
@@ -443,7 +473,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Synthetic Task.
 * `delete` - (Defaults to 5 mins) Used when delete the Synthetic Task.

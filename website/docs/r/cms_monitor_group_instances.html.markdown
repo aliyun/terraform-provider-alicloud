@@ -61,6 +61,8 @@ The following arguments are supported:
 * `group_id` - (Required, ForceNew) The id of Cms Group.
 * `instances` - (Required) Instance information added to the Cms Group. See [`instances`](#instances) below.
 
+---
+
 ### `instances`
 
 The instances supports the following:

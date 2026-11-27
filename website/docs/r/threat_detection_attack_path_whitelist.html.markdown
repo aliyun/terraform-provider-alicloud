@@ -66,6 +66,8 @@ The following arguments are supported:
 * `whitelist_name` - (Required) The name of the whitelist.
 * `whitelist_type` - (Required) The type of the whitelist. Valid values: `ALL_ASSET` (all assets), `PART_ASSET` (partial assets).
 
+---
+
 ### `attack_path_asset_list`
 
 The attack_path_asset_list supports the following:
@@ -85,7 +87,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Attack Path Whitelist.
 * `delete` - (Defaults to 5 mins) Used when delete the Attack Path Whitelist.

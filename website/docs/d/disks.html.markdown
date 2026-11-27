@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_disks
 
--> **DEPRECATED:** This datasource has been renamed to [alicloud_ecs_disks](https://www.terraform.io/docs/providers/alicloud/d/ecs_disks) from version 1.122.0.
+-> **DEPRECATED:** This datasource has been renamed to [alicloud_ecs_disks](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/ecs_disks) from version 1.122.0.
 
 This data source provides the disks of the current Alibaba Cloud user.
 
@@ -67,6 +67,8 @@ The following arguments are supported:
 * `zone_id` - (Optional) The zone ID.
 * `availability_zone` - (Optional, Deprecated) The availability zone. Deprecated; use `zone_id` instead.
 
+---
+
 ### `operation_locks`
 
 The `operation_locks` supports the following:
@@ -78,49 +80,70 @@ The `operation_locks` supports the following:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of disk names.
-* `disks` - A list of disks. Each element contains the following attributes:
-  * `id` - ID of the disk.
-  * `name` - Disk name.
-  * `description` - Disk description.
-  * `region_id` - Region ID the disk belongs to.
-  * `availability_zone` - Availability zone of the disk.
-  * `status` - Current status. Possible values: `In_use`, `Available`, `Attaching`, `Detaching`, `Creating` and `ReIniting`.
-  * `type` - Disk type. Possible values: `system` and `data`.
-  * `category` - Disk category. Possible values: `cloud` (basic cloud disk), `cloud_efficiency` (ultra cloud disk), `ephemeral_ssd` (local SSD cloud disk), `cloud_ssd` (SSD cloud disk), and `cloud_essd` (ESSD cloud disk).
-  * `encrypted` - Indicate whether the disk is encrypted or not. Possible values: `on` and `off`.
-  * `size` - Disk size in GiB.
-  * `image_id` - ID of the image from which the disk is created. It is null unless the disk is created using an image.
-  * `snapshot_id` - Snapshot used to create the disk. It is null if no snapshot is used to create the disk.
-  * `instance_id` - ID of the related instance. It is `null` unless the `status` is `In_use`.
-  * `creation_time` - Disk creation time.
-  * `attached_time` - Disk attachment time.
-  * `detached_time` - Disk detachment time.
-  * `expiration_time` - Disk expiration time.
-  * `tags` - A map of tags assigned to the disk.
-  * `resource_group_id` - The Id of resource group.
-  * `auto_snapshot_policy_id` - The ID of the automatic snapshot policy.
-  * `delete_auto_snapshot` - Whether to delete the automatic snapshot.
-  * `delete_with_instance` - Whether to delete the disk with the instance.
-  * `device` - The device name.
-  * `disk_id` - The ID of the disk.
-  * `disk_name` - The name of the disk.
-  * `disk_type` - The disk type.
-  * `enable_auto_snapshot` - Whether to enable the automatic snapshot.
-  * `enable_automated_snapshot_policy` - Whether to enable the automated snapshot policy.
-  * `expired_time` - The expired time of the disk.
-  * `iops` - The IOPS of the disk.
-  * `iops_read` - The read IOPS.
-  * `iops_write` - The write IOPS.
-  * `kms_key_id` - The KMS key ID.
-  * `mount_instance_num` - The number of mounted instances.
-  * `mount_instances` - A list of mounted instances.
-    * `attached_time` - The attached time.
-    * `device` - The device name.
-    * `instance_id` - The ID of the instance.
-  * `operation_locks` - Operation locks.
-    * `lock_reason` - The reason of the operation lock.
-  * `payment_type` - The payment type.
-  * `performance_level` - The performance level of the ESSD.
-  * `portable` - Whether the disk is portable.
-  * `product_code` - The product code.
-  * `zone_id` - The zone ID.
+* `disks` - A list of disks.
+
+---
+
+### `disks`
+
+The disks supports the following attributes:
+
+* `id` - ID of the disk.
+* `name` - Disk name.
+* `description` - Disk description.
+* `region_id` - Region ID the disk belongs to.
+* `availability_zone` - Availability zone of the disk.
+* `status` - Current status. Possible values: `In_use`, `Available`, `Attaching`, `Detaching`, `Creating` and `ReIniting`.
+* `type` - Disk type. Possible values: `system` and `data`.
+* `category` - Disk category. Possible values: `cloud` (basic cloud disk), `cloud_efficiency` (ultra cloud disk), `ephemeral_ssd` (local SSD cloud disk), `cloud_ssd` (SSD cloud disk), and `cloud_essd` (ESSD cloud disk).
+* `encrypted` - Indicate whether the disk is encrypted or not. Possible values: `on` and `off`.
+* `size` - Disk size in GiB.
+* `image_id` - ID of the image from which the disk is created. It is null unless the disk is created using an image.
+* `snapshot_id` - Snapshot used to create the disk. It is null if no snapshot is used to create the disk.
+* `instance_id` - ID of the related instance. It is `null` unless the `status` is `In_use`.
+* `creation_time` - Disk creation time.
+* `attached_time` - Disk attachment time.
+* `detached_time` - Disk detachment time.
+* `expiration_time` - Disk expiration time.
+* `tags` - A map of tags assigned to the disk.
+* `resource_group_id` - The Id of resource group.
+* `auto_snapshot_policy_id` - The ID of the automatic snapshot policy.
+* `delete_auto_snapshot` - Whether to delete the automatic snapshot.
+* `delete_with_instance` - Whether to delete the disk with the instance.
+* `device` - The device name.
+* `disk_id` - The ID of the disk.
+* `disk_name` - The name of the disk.
+* `disk_type` - The disk type.
+* `enable_auto_snapshot` - Whether to enable the automatic snapshot.
+* `enable_automated_snapshot_policy` - Whether to enable the automated snapshot policy.
+* `expired_time` - The expired time of the disk.
+* `iops` - The IOPS of the disk.
+* `iops_read` - The read IOPS.
+* `iops_write` - The write IOPS.
+* `kms_key_id` - The KMS key ID.
+* `mount_instance_num` - The number of mounted instances.
+* `mount_instances` - A list of mounted instances.
+* `operation_locks` - Operation locks.
+* `payment_type` - The payment type.
+* `performance_level` - The performance level of the ESSD.
+* `portable` - Whether the disk is portable.
+* `product_code` - The product code.
+* `zone_id` - The zone ID.
+
+---
+
+### `disks.mount_instances`
+
+The mount_instances supports the following attributes:
+
+* `attached_time` - The attached time.
+* `device` - The device name.
+* `instance_id` - The ID of the instance.
+
+---
+
+### `disks.operation_locks`
+
+The operation_locks supports the following attributes:
+
+* `lock_reason` - The reason of the operation lock.

@@ -182,6 +182,8 @@ In active/standby mode, the following restrictions apply to route target group m
 * `name_regex` - (Optional) A regex string to filter Route Target Groups by name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
+---
+
 ### `route_target_member_list`
 
 The route_target_member_list supports the following:
@@ -198,21 +200,35 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Route Target Group IDs.
 * `names` - A list of name of Route Target Groups.
-* `groups` - A list of Route Target Group Entries. Each element contains the following attributes:
-  * `config_mode` - The configuration mode of the route target group.
-  * `create_time` - The time when the route target group was created.
-  * `region_id` - The region ID of the VPC to which the route target group belongs.
-  * `resource_group_id` - The ID of the resource group to which the route target group belongs.
-  * `route_target_group_description` - The description of the route target group.
-  * `route_target_group_id` - The ID of the route target group.
-  * `route_target_group_name` - The name of the route target group.
-  * `route_target_member_list` - The member list of the route target group.
-    * `enable_status` - Indicates the enable status of the current route target configuration. Valid values: `Enable`, `Disable`.
-    * `health_check_status` - The health check status of the current route target configuration.
-    * `member_id` - The instance ID of the route target member.
-    * `member_type` - The instance type of the route target configuration.
-    * `weight` - Sets the weight attribute for the current route target configuration.
-  * `status` - The status of the route target group. Valid values: `Pending`, `Available`.
-  * `tags` - The tags of the route target group.
-  * `vpc_id` - The ID of the VPC to which the route target group belongs.
-  * `id` - The ID of the resource supplied above.
+* `groups` - A list of Route Target Group Entries.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `config_mode` - The configuration mode of the route target group.
+* `create_time` - The time when the route target group was created.
+* `region_id` - The region ID of the VPC to which the route target group belongs.
+* `resource_group_id` - The ID of the resource group to which the route target group belongs.
+* `route_target_group_description` - The description of the route target group.
+* `route_target_group_id` - The ID of the route target group.
+* `route_target_group_name` - The name of the route target group.
+* `route_target_member_list` - The member list of the route target group.
+* `status` - The status of the route target group. Valid values: `Pending`, `Available`.
+* `tags` - The tags of the route target group.
+* `vpc_id` - The ID of the VPC to which the route target group belongs.
+* `id` - The ID of the resource supplied above.
+
+---
+
+### `groups.route_target_member_list`
+
+The route_target_member_list supports the following attributes:
+
+* `enable_status` - Indicates the enable status of the current route target configuration. Valid values: `Enable`, `Disable`.
+* `health_check_status` - The health check status of the current route target configuration.
+* `member_id` - The instance ID of the route target member.
+* `member_type` - The instance type of the route target configuration.
+* `weight` - Sets the weight attribute for the current route target configuration.

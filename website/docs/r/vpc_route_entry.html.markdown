@@ -78,6 +78,8 @@ The following arguments are supported:
 * `route_publish_targets` - (Optional, List, Available since v1.245.0) Route publish status and publish target type See [`route_publish_targets`](#route_publish_targets) below.
 * `route_table_id` - (Required, ForceNew) Routing table ID
 
+---
+
 ### `next_hops`
 
 The next_hops supports the following:
@@ -85,6 +87,8 @@ The next_hops supports the following:
 * `nexthop_id` - (Optional, ForceNew, Computed, Available since v1.245.0) ID of next hop
 * `nexthop_type` - (Optional, ForceNew, Computed, Available since v1.245.0) type of next hop
 * `weight` - (Optional, ForceNew, Int, Available since v1.245.0) The weight of the route entry.
+
+---
 
 ### `route_publish_targets`
 
@@ -99,19 +103,40 @@ The following attributes are exported:
 
 * `id` - The ID of the resource supplied above.The value is formulated as `<route_table_id>:<destination_cidr_block>`.
 * `next_hops` - Next jump
-  * `enabled` - Whether the route is available.
-  * `next_hop_region_id` - The region of the next instance.
-  * `next_hop_related_info` - Next hop information.
-    * `instance_id` - InstanceId
-    * `instance_type` - InstanceType
-    * `region_id` - The region of the instance associated with the next hop.
 * `route_publish_targets` - Route publish status and publish target type
-  * `publish_status` - Route Publish Status
 * `status` - The status of the route entry.
+
+---
+
+### `next_hops`
+
+The next_hops supports the following attributes:
+
+* `enabled` - Whether the route is available.
+* `next_hop_region_id` - The region of the next instance.
+* `next_hop_related_info` - Next hop information.
+
+---
+
+### `next_hops.next_hop_related_info`
+
+The next_hop_related_info supports the following attributes:
+
+* `instance_id` - InstanceId
+* `instance_type` - InstanceType
+* `region_id` - The region of the instance associated with the next hop.
+
+---
+
+### `route_publish_targets`
+
+The route_publish_targets supports the following attributes:
+
+* `publish_status` - Route Publish Status
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Route Entry.
 * `delete` - (Defaults to 5 mins) Used when delete the Route Entry.

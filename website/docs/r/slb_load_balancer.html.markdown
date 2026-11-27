@@ -29,6 +29,14 @@ For more details about guaranteed-performance instance, see [Guaranteed-performa
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 # Create a intranet SLB instance
 variable "slb_load_balancer_name" {
   default = "forSlbLoadBalancer"
@@ -53,6 +61,7 @@ resource "alicloud_slb_load_balancer" "load_balancer" {
   load_balancer_name = var.slb_load_balancer_name
   address_type       = "intranet"
   load_balancer_spec = "slb.s2.small"
+  vpc_id             = alicloud_vpc.load_balancer.id
   vswitch_id         = alicloud_vswitch.load_balancer.id
   tags = {
     info = "create for internet"
@@ -81,7 +90,10 @@ Terraform will autogenerate a name beginning with `tf-lb`.
   - intranet: After an intranet SLB instance is created, the system allocates an intranet IP address so that the instance can only forward intranet requests.
 * `internet_charge_type` - (Optional) Valid values are `PayByBandwidth`, `PayByTraffic`. If this value is `PayByBandwidth`, then argument `address_type` must be `internet`. Default is `PayByTraffic`. If load balancer launched in VPC, this value must be `PayByTraffic`. Before version 1.10.1, the valid values are `paybybandwidth` and `paybytraffic`.
 * `bandwidth` - (Optional) Valid value is between 1 and 5120, If argument `internet_charge_type` is `PayByTraffic`, then this value will be ignored.
-* `vswitch_id` - (Optional, ForceNew) The VSwitch ID to launch in. **Note:** Required for a VPC SLB. If `address_type` is internet, it will be ignored.
+* `vswitch_id` - (Optional, ForceNew) The VSwitch ID to launch in.
+
+  -> **NOTE:** Required for a VPC SLB. If `address_type` is internet, it will be ignored.
+* `vpc_id` - (String, Optional, ForceNew, Available since v2.4.0) The ID of the VPC to which the SLB instance belongs. If specified, it must be the VPC that `vswitch_id` belongs to. If not specified, Terraform uses the VPC of `vswitch_id` for a VPC SLB instance. This value is read back from the API and is empty for classic network instances.
 * `load_balancer_spec` - (Optional) The specification of the Server Load Balancer instance. Default to empty string indicating it is "Shared-Performance" instance.
  Launching "Performance-guaranteed" instance, it must be specified. Valid values: `slb.s1.small`, `slb.s2.small`, `slb.s2.medium`,
  `slb.s3.small`, `slb.s3.medium`, `slb.s3.large` and `slb.s4.large`. It will be ignored when `instance_charge_type = "PayByCLCU"`.
@@ -117,7 +129,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when creating the SLB load balancer.(until it reaches the initial `active` status).
 * `delete` - (Defaults to 9 mins) Used when terminating the SLB load balancer.

@@ -31,28 +31,35 @@ output "ebs_disk_replica_group_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Disk Replica Group IDs.
+* `ids` - (Optional, Computed)  A list of Disk Replica Group IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `groups` - A list of Ebs Disk Replica Groups. Each element contains the following attributes:
-  * `description` - The description of the consistent replication group.
-  * `destination_region_id` - The ID of the region to which the disaster recovery site belongs.
-  * `destination_zone_id` - The ID of the zone to which the disaster recovery site belongs.
-  * `enable_rtc` - Whether to enable replication time control.
-  * `group_name` - Consistent replication group name.
-  * `id` - The ID of the Disk Replica Group.
-  * `last_recover_point` - The most recent recovery point time of the replication pair-consistent group.
-  * `primary_region` - The initial source region of the replication group.
-  * `primary_zone` - The initial source available area of the replication group.
-  * `replica_group_id` - The ID of the consistent replication group.
-  * `rpo` - The recovery point objective (RPO) of the replication pair-consistent group.
-  * `site` - Site information sources for replication pairs and consistent replication groups.
-  * `source_region_id` - The ID of the region to which the production site belongs.
-  * `source_zone_id` - The ID of the zone to which the production site belongs.
-  * `standby_region` - The initial destination region of the replication group.
-  * `standby_zone` - The initial destination zone of the replication group.
-  * `status` - The status of the consistent replication group. Possible values:
+* `groups` - A list of Ebs Disk Replica Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `description` - The description of the consistent replication group.
+* `destination_region_id` - The ID of the region to which the disaster recovery site belongs.
+* `destination_zone_id` - The ID of the zone to which the disaster recovery site belongs.
+* `enable_rtc` - Whether to enable replication time control.
+* `group_name` - Consistent replication group name.
+* `id` - The ID of the Disk Replica Group.
+* `last_recover_point` - The most recent recovery point time of the replication pair-consistent group.
+* `primary_region` - The initial source region of the replication group.
+* `primary_zone` - The initial source available area of the replication group.
+* `replica_group_id` - The ID of the consistent replication group.
+* `rpo` - The recovery point objective (RPO) of the replication pair-consistent group.
+* `site` - Site information sources for replication pairs and consistent replication groups.
+* `source_region_id` - The ID of the region to which the production site belongs.
+* `source_zone_id` - The ID of the zone to which the production site belongs.
+* `standby_region` - The initial destination region of the replication group.
+* `standby_zone` - The initial destination zone of the replication group.
+* `status` - The status of the consistent replication group. Possible values:

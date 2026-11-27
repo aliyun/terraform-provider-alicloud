@@ -300,7 +300,10 @@ resource "alicloud_kms_secret" "polardb" {
 The following arguments are supported:
 
 * `secret_name` - (Required, ForceNew) The name of the secret. For more information, see [How to use it](https://www.alibabacloud.com/help/en/key-management-service/latest/kms-createsecret).
-* `secret_data` - (Required) The data of the secret. **NOTE:** From version 1.204.1, `secret_data` updating diff will be ignored when `secret_type` is not `Generic`. The expected format of `secret_data` depends on `secret_type`:
+* `secret_data` - (Required) The data of the secret.
+
+  -> **NOTE:** From version 1.204.1, `secret_data` updating diff will be ignored when `secret_type` is not `Generic`. The expected format of `secret_data` depends on `secret_type`:
+
   - `Generic`: any custom string.
   - `Rds`: a JSON string in the form `{"Accounts":[{"AccountName":"<rds-account-name>","AccountPassword":"<rds-account-password>"}]}`.
   - `RAMCredentials`: a JSON string in the form `{"AccessKeys":[{"AccessKeyId":"<access-key-id>","AccessKeySecret":"<access-key-secret>"}]}`.
@@ -315,15 +318,21 @@ The following arguments are supported:
   - `ECS`: ECS secret.
   - `PolarDB`: (Available since v1.253.0) PolarDB secret.
 * `secret_data_type` - (Optional) The type of the secret value. Default value: `text`. Valid values: `text`, `binary`.
-* `encryption_key_id` - (Optional, ForceNew) The ID of the KMS key used to encrypt the secret value. The key and the secret must belong to the same KMS instance, and the key must be a symmetric key. **NOTE:** In KMS 3.0, this parameter is required.
-* `dkms_instance_id` - (Optional, ForceNew, Available since v1.183.0) The ID of the KMS instance. **NOTE:** In KMS 3.0, this parameter is required.
+* `encryption_key_id` - (Optional, ForceNew) The ID of the KMS key used to encrypt the secret value. The key and the secret must belong to the same KMS instance, and the key must be a symmetric key.
+
+  -> **NOTE:** In KMS 3.0, this parameter is required.
+* `dkms_instance_id` - (Optional, ForceNew, Available since v1.183.0) The ID of the KMS instance.
+
+  -> **NOTE:** In KMS 3.0, this parameter is required.
 * `extended_config` - (Optional, ForceNew, Available since v1.204.1) The extended configuration of the secret. This parameter is required when `secret_type` is `Rds`, `Redis`, `RAMCredentials`, `ECS` or `PolarDB`. The value is a JSON string. For more information, see [How to use it](https://www.alibabacloud.com/help/en/key-management-service/latest/kms-createsecret).
 * `enable_automatic_rotation` - (Optional, Bool, Available since v1.124.0) Specifies whether to enable automatic rotation. Default value: `false`. Valid values: `true`, `false`.
 * `rotation_interval` - (Optional, Available since v1.124.0) The interval for automatic rotation. For more information, see [How to use it](https://www.alibabacloud.com/help/en/key-management-service/latest/kms-createsecret).
 * `policy` - (Optional, Available since v1.224.0) The content of the secret policy. The value is in the JSON format. The value can be up to 32,768 bytes in length. For more information, see [How to use it](https://www.alibabacloud.com/help/en/kms/developer-reference/api-setsecretpolicy).
 * `description` - (Optional) The description of the secret.
 * `force_delete_without_recovery` - (Optional, Bool) Specifies whether to immediately delete a secret. Default value: `false`. Valid values: `true`, `false`.
-* `recovery_window_in_days` - (Optional, Int) Specifies the recovery period of the secret if you do not forcibly delete it. Unit: Days. Default value: `30`. Valid values: `7` to `30`. **NOTE:**  If `force_delete_without_recovery` is set to `true`, `recovery_window_in_days` will be ignored.
+* `recovery_window_in_days` - (Optional, Int) Specifies the recovery period of the secret if you do not forcibly delete it. Unit: Days. Default value: `30`. Valid values: `7` to `30`.
+
+  -> **NOTE:** If `force_delete_without_recovery` is set to `true`, `recovery_window_in_days` will be ignored.
 * `version_stages` - (Optional, List) The stage label that is used to mark the new version.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
@@ -340,7 +349,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.103.2.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Secret.
 * `update` - (Defaults to 5 mins) Used when update the Secret.

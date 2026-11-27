@@ -67,9 +67,9 @@ output "alicloud_cms_site_monitor_example_id" {
 
 The following arguments are supported:
 
-* `task_id` - (ForceNew, Optional) Task ID.
-* `task_type` - (ForceNew, Optional) Task Type.
-* `ids` - (Optional, ForceNew, Computed) A list of Site Monitor IDs.
+* `task_id` - (Optional) Task ID.
+* `task_type` - (Optional) Task Type.
+* `ids` - (Optional, Computed) A list of Site Monitor IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -77,10 +77,17 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Site Monitor IDs.
-* `monitors` - A list of Site Monitor Entries. Each element contains the following attributes:
-  * `address` - Address.
-  * `create_time` - CreateTime.
-  * `interval` - Monitoring frequency.
-  * `task_id` - Task Id.
-  * `task_name` - Task Name.
-  * `task_type` - Task Type.
+* `monitors` - A list of Site Monitor Entries.
+
+---
+
+### `monitors`
+
+The monitors supports the following attributes:
+
+* `address` - Address.
+* `create_time` - CreateTime.
+* `interval` - Monitoring frequency.
+* `task_id` - Task Id.
+* `task_name` - Task Name.
+* `task_type` - Task Type.

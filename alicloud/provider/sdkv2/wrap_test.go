@@ -46,11 +46,11 @@ func TestWrapResourceNilChainIsIdentity(t *testing.T) {
 	r := &schema.Resource{
 		Create: func(d *schema.ResourceData, meta interface{}) error { return nil },
 	}
-	got := WrapResource("alicloud_test", r, nil)
+	got := WrapResource("alicloud_test", r, nil, nil)
 	if got != r {
 		t.Fatalf("expected same pointer, got %p != %p", got, r)
 	}
-	got = WrapResource("alicloud_test", r, []intercept.Interceptor{})
+	got = WrapResource("alicloud_test", r, []intercept.Interceptor{}, nil)
 	if got != r {
 		t.Fatalf("expected same pointer for empty chain, got %p != %p", got, r)
 	}
@@ -64,7 +64,7 @@ func TestWrapResourceWrapsOnlyUsedFields(t *testing.T) {
 		// lintignore: S013
 		Schema: map[string]*schema.Schema{"id": {Type: schema.TypeString}},
 	}
-	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
+	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec}, nil)
 	if got == r {
 		t.Fatal("expected a shallow copy when chain is non-empty")
 	}
@@ -108,7 +108,7 @@ func TestWrapResourcePreservesNonCRUDBehaviour(t *testing.T) {
 		DeprecationMessage: "use the other one",
 		Timeouts:           &schema.ResourceTimeout{},
 	}
-	got := WrapResource("alicloud_test", r, []intercept.Interceptor{&recordInterceptor{name: "rec"}})
+	got := WrapResource("alicloud_test", r, []intercept.Interceptor{&recordInterceptor{name: "rec"}}, nil)
 
 	if got.SchemaVersion != r.SchemaVersion {
 		t.Errorf("SchemaVersion = %d, want %d", got.SchemaVersion, r.SchemaVersion)
@@ -142,7 +142,7 @@ func TestWrapDataSourceWrapsReadOnly(t *testing.T) {
 	ds := &schema.Resource{
 		Read: func(d *schema.ResourceData, meta interface{}) error { return nil },
 	}
-	got := WrapDataSource("alicloud_test", ds, []intercept.Interceptor{rec})
+	got := WrapDataSource("alicloud_test", ds, []intercept.Interceptor{rec}, nil)
 	if got.Read == nil {
 		t.Fatal("Read must be wrapped")
 	}
@@ -164,7 +164,7 @@ func TestBeforeAbortSkipsInnerAndRunsAllAfters(t *testing.T) {
 	r := &schema.Resource{
 		Create: func(d *schema.ResourceData, meta interface{}) error { innerCalled = true; return nil },
 	}
-	got := WrapResource("alicloud_test", r, chain)
+	got := WrapResource("alicloud_test", r, chain, nil)
 	err := got.Create(nil, nil)
 	if err == nil {
 		t.Fatal("expected the abort error")
@@ -185,7 +185,7 @@ func TestAfterRewritesError(t *testing.T) {
 	r := &schema.Resource{
 		Create: func(d *schema.ResourceData, meta interface{}) error { return errors.New("inner") },
 	}
-	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
+	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec}, nil)
 	if err := got.Create(nil, nil); err == nil || err.Error() != "rewritten" {
 		t.Fatalf("expected rewritten error, got %v", err)
 	}
@@ -197,7 +197,7 @@ func TestAfterSeesInnerError(t *testing.T) {
 	r := &schema.Resource{
 		Create: func(d *schema.ResourceData, meta interface{}) error { return inner },
 	}
-	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
+	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec}, nil)
 	if err := got.Create(nil, nil); err != inner {
 		t.Fatalf("expected the inner error unchanged, got %v", err)
 	}
@@ -212,7 +212,7 @@ func TestWrapResourceCreateContext(t *testing.T) {
 			return nil
 		},
 	}
-	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
+	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec}, nil)
 	if got.CreateContext == nil {
 		t.Fatal("CreateContext must be wrapped")
 	}
@@ -246,7 +246,7 @@ func TestWrapResourceCreateWithoutTimeout(t *testing.T) {
 			return nil
 		},
 	}
-	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
+	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec}, nil)
 	if got.CreateWithoutTimeout == nil {
 		t.Fatal("CreateWithoutTimeout must be wrapped")
 	}
@@ -279,7 +279,7 @@ func TestWrapResourceMixedForms(t *testing.T) {
 			return nil
 		},
 	}
-	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
+	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec}, nil)
 	if got.CreateContext == nil {
 		t.Fatal("CreateContext must be wrapped")
 	}
@@ -309,7 +309,7 @@ func TestWrapResourceContextBeforeAbort(t *testing.T) {
 			return nil
 		},
 	}
-	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
+	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec}, nil)
 	diags := got.CreateContext(context.Background(), nil, nil)
 	if !diags.HasError() {
 		t.Fatal("expected error from Before abort")
@@ -326,7 +326,7 @@ func TestContextFormDiagnosticsPassThroughVerbatim(t *testing.T) {
 			return diag.Diagnostics{{Severity: diag.Error, Summary: "the API said no", Detail: "code: Throttling"}}
 		},
 	}
-	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
+	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec}, nil)
 	diags := got.CreateContext(context.Background(), nil, nil)
 
 	if len(diags) != 1 {
@@ -344,7 +344,7 @@ func TestContextFormAfterCannotSwallowError(t *testing.T) {
 			return diag.Errorf("resource not found")
 		},
 	}
-	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
+	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec}, nil)
 	diags := got.ReadContext(context.Background(), nil, nil)
 
 	if !diags.HasError() {
@@ -362,7 +362,7 @@ func TestContextFormAfterRewritesError(t *testing.T) {
 			return diag.Errorf("inner")
 		},
 	}
-	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
+	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec}, nil)
 	diags := got.CreateContext(context.Background(), nil, nil)
 
 	if len(diags) != 2 {
@@ -393,7 +393,7 @@ func TestContextFormWrapKeepsInnerErrorsIntact(t *testing.T) {
 			}
 		},
 	}
-	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
+	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec}, nil)
 	diags := got.CreateContext(context.Background(), nil, nil)
 
 	if len(diags) != 3 {
@@ -427,7 +427,7 @@ func TestContextFormWarningsSurvive(t *testing.T) {
 					return diag.Diagnostics{warning, {Severity: diag.Error, Summary: "inner"}}
 				},
 			}
-			got := WrapResource("alicloud_test", r, []intercept.Interceptor{tc.rec})
+			got := WrapResource("alicloud_test", r, []intercept.Interceptor{tc.rec}, nil)
 			diags := got.CreateContext(context.Background(), nil, nil)
 
 			if len(diags) == 0 || diags[0].Severity != diag.Warning || diags[0].Summary != warning.Summary {
@@ -446,7 +446,7 @@ func TestWrapDataSourceReadContext(t *testing.T) {
 			return nil
 		},
 	}
-	got := WrapDataSource("alicloud_test", ds, []intercept.Interceptor{rec})
+	got := WrapDataSource("alicloud_test", ds, []intercept.Interceptor{rec}, nil)
 	if got.ReadContext == nil {
 		t.Fatal("ReadContext must be wrapped")
 	}

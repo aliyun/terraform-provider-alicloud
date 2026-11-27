@@ -28,8 +28,8 @@ output "api_gateway_backend_id_1" {
 
 The following arguments are supported:
 
-* `name_regex` - (Optional, ForceNew) A regex string to filter Api Gateway Backends by name.
-* `ids` - (Optional, ForceNew) A list of Backends IDs.
+* `name_regex` - (Optional) A regex string to filter Api Gateway Backends by name.
+* `ids` - (Optional) A list of Backends IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -37,11 +37,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Backend names.
-* `backends` - A list of Api Gateway Backends. Each element contains the following attributes:
-  * `id` - The resource ID in terraform of Backend.
-  * `backend_id` -  The id of the Backend.
-  * `backend_type` - The type of the Backend.
-  * `backend_name` - The name of the Backend.
-  * `create_time` - The created time of the Backend.
-  * `description` - The description of the Backend.
-  * `modified_time` - The modified time of the Backend.
+* `backends` - A list of Api Gateway Backends.
+
+---
+
+### `backends`
+
+The backends supports the following attributes:
+
+* `id` - The resource ID in terraform of Backend.
+* `backend_id` -  The id of the Backend.
+* `backend_type` - The type of the Backend.
+* `backend_name` - The name of the Backend.
+* `create_time` - The created time of the Backend.
+* `description` - The description of the Backend.
+* `modified_time` - The modified time of the Backend.

@@ -69,6 +69,8 @@ If you use days as the unit, valid values are 1d to 49d and 3650d to 7300d. Defa
 * `resource_group_id` - (Optional, Computed, Available since v1.207.0) The ID of the resource group to which the DHCP options set belongs.
 * `tags` - (Optional, Map) Tags of the current resource.
 
+---
+
 ### `associate_vpcs`
 
 The associate_vpcs supports the following:
@@ -81,13 +83,20 @@ The following attributes are exported:
 
 * `id` - The ID of the resource supplied above.
 * `associate_vpcs` - Field 'associate_vpcs' has been deprecated from provider version 1.153.0 and it will be removed in the future version. Please use the new resource 'alicloud_vpc_dhcp_options_set_attachment' to attach DhcpOptionsSet and Vpc.
-  * `associate_status` - The status of the VPC associated with the DHCP option set.
 * `owner_id` - The ID of the account to which the DHCP options set belongs.
 * `status` - The status of the resource.
 
+---
+
+### `associate_vpcs`
+
+The associate_vpcs supports the following attributes:
+
+* `associate_status` - The status of the VPC associated with the DHCP option set.
+
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Dhcp Options Set.
 * `delete` - (Defaults to 5 mins) Used when delete the Dhcp Options Set.

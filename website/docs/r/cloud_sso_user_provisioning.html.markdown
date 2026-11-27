@@ -102,12 +102,19 @@ The following attributes are exported:
 * `status` - The status of the resource
 * `user_provisioning_id` - The first ID of the resource
 * `user_provisioning_statistics` - User Provisioning statistics
-  * `failed_event_count` - Number of failed events
-  * `gmt_latest_sync` - Last Provisioning time
+
+---
+
+### `user_provisioning_statistics`
+
+The user_provisioning_statistics supports the following attributes:
+
+* `failed_event_count` - Number of failed events
+* `gmt_latest_sync` - Last Provisioning time
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the User Provisioning.
 * `delete` - (Defaults to 5 mins) Used when delete the User Provisioning.

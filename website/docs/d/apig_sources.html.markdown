@@ -43,20 +43,45 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Source IDs.
 * `names` - A list of name of Sources.
-* `sources` - A list of Source Entries. Each element contains the following attributes:
-  * `association_reason` - The reason for the association status.
-  * `association_status` - The association status of the source.
-  * `create_time` - The creation timestamp of the source.
-  * `gateway_id` - **NOTE:** This field is only available when `enable_details` is `true`. The ID of the gateway instance.
-  * `k8s_source_info` - The ACK cluster source information.
-    * `cluster_id` - The ID of the ACK cluster.
-  * `nacos_source_info` - The MSE Nacos source information.
-    * `address` - The access address of the Nacos instance.
-    * `cluster_id` - The ID of the Nacos cluster.
-    * `instance_id` - The ID of the MSE Nacos instance.
-  * `resource_group_id` - The ID of the resource group.
-  * `source_id` - The ID of the source.
-  * `source_name` - The name of the source.
-  * `type` - **NOTE:** This field is only available when `enable_details` is `true`. The type of the source.
-  * `update_time` - The update timestamp of the source.
-  * `id` - The ID of the resource supplied above.
+* `sources` - A list of Source Entries.
+
+---
+
+### `sources`
+
+The sources supports the following attributes:
+
+* `association_reason` - The reason for the association status.
+* `association_status` - The association status of the source.
+* `create_time` - The creation timestamp of the source.
+* `gateway_id` - The ID of the gateway instance.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `k8s_source_info` - The ACK cluster source information.
+* `nacos_source_info` - The MSE Nacos source information.
+* `resource_group_id` - The ID of the resource group.
+* `source_id` - The ID of the source.
+* `source_name` - The name of the source.
+* `type` - The type of the source.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `update_time` - The update timestamp of the source.
+* `id` - The ID of the resource supplied above.
+
+---
+
+### `sources.k8s_source_info`
+
+The k8s_source_info supports the following attributes:
+
+* `cluster_id` - The ID of the ACK cluster.
+
+---
+
+### `sources.nacos_source_info`
+
+The nacos_source_info supports the following attributes:
+
+* `address` - The access address of the Nacos instance.
+* `cluster_id` - The ID of the Nacos cluster.
+* `instance_id` - The ID of the MSE Nacos instance.

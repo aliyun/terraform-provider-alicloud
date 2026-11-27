@@ -141,6 +141,8 @@ The following arguments will be discarded. Please use new fields as soon as poss
 
 * `name` - (Deprecated since v1.227.0). Field 'name' has been deprecated from provider version 1.227.0. New field 'image_name' instead.
 
+---
+
 ### `disk_device_mapping`
 
 The disk_device_mapping supports the following:
@@ -158,6 +160,8 @@ The disk_device_mapping supports the following:
   - If a corresponding snapshot ID is specified in the value of DiskDeviceMapping.N.SnapshotId, the value of DiskDeviceMapping.N.Size must be greater than or equal to the size of the specified snapshot. The default value of DiskDeviceMapping.N.Size is the size of the specified snapshot.
 * `snapshot_id` - (Optional, ForceNew, Computed) The ID of snapshot N to use to create the custom image. .
 
+---
+
 ### `features`
 
 The features supports the following:
@@ -173,11 +177,6 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The create time
 * `disk_device_mapping` - Snapshot information for the image
-  * `format` - Image format.
-  * `import_oss_object` - Import the object of the OSS to which the image file belongs.
-  * `import_oss_bucket` - Import the bucket of the OSS to which the image belongs.
-  * `progress` - Copy the progress of the task.
-  * `remain_time` - For an image being replicated, return the remaining time of the replication task, in seconds.
 * `status` - The status of the image. By default, if you do not specify this parameter, only images in the Available state are returned.
 
   Default value: Available. You can specify multiple values for this parameter. Separate the values with commas (,).
@@ -185,9 +184,21 @@ The following attributes are exported:
   * true: The image is available and can be used to create ECS instances.
   * false: The image is unavailable and cannot be used to create ECS instances.
 
+---
+
+### `disk_device_mapping`
+
+The disk_device_mapping supports the following attributes:
+
+* `format` - Image format.
+* `import_oss_object` - Import the object of the OSS to which the image file belongs.
+* `import_oss_bucket` - Import the bucket of the OSS to which the image belongs.
+* `progress` - Copy the progress of the task.
+* `remain_time` - For an image being replicated, return the remaining time of the replication task, in seconds.
+
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the Image.
 * `delete` - (Defaults to 10 mins) Used when delete the Image.

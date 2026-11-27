@@ -75,7 +75,9 @@ The following arguments are supported:
 * `permission_policies` - (Optional, Set) The Policy List. See [`permission_policies`](#permission_policies) below.
 * `force_remove_permission_policies` - (Optional, Bool) This parameter is used to force deletion `permission_policies`. Valid Value: `true`, `false`.
 
-* **NOTE:** The `permission_policies` will be removed automatically when the resource is deleted, please operate with caution. If there are left more permission policies in the access configuration, please remove them before deleting the access configuration.
+  -> **NOTE:** The `permission_policies` will be removed automatically when the resource is deleted, please operate with caution. If there are left more permission policies in the access configuration, please remove them before deleting the access configuration.
+
+---
 
 ### `permission_policies`
 
@@ -83,7 +85,9 @@ The permission_policies supports the following:
 
 * `permission_policy_type` - (Required) The type of the policy. Valid values: `System`, `Inline`.
 * `permission_policy_name` - (Required) The name of the policy.
-* `permission_policy_document` - (Optional) The configurations of the inline policy. **NOTE:** If `permission_policy_type` is set to `Inline`, `permission_policy_document` is required.
+* `permission_policy_document` - (Optional) The configurations of the inline policy.
+
+  -> **NOTE:** If `permission_policy_type` is set to `Inline`, `permission_policy_document` is required.
 
 ## Attributes Reference
 
@@ -94,7 +98,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Access Configuration.
 * `update` - (Defaults to 5 mins) Used when update the Access Configuration.

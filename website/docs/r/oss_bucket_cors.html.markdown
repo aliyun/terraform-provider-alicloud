@@ -73,6 +73,8 @@ The following arguments are supported:
 * `cors_rule` - (Required) The Cross-Origin Resource Sharing (CORS) configuration of the Bucket. See [`cors_rule`](#cors_rule) below.
 * `response_vary` - (Optional, Computed) Specifies whether to return the Vary: Origin header. Valid values: true: returns the Vary: Origin header, regardless of whether the request is a cross-origin request or whether the cross-origin request succeeds. false: does not return the Vary: Origin header. This element is valid only when at least one CORS rule is configured.
 
+---
+
 ### `cors_rule`
 
 The cors_rule supports the following:
@@ -91,7 +93,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Bucket Cors.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Cors.

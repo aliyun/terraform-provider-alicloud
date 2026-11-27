@@ -140,6 +140,8 @@ This is only meaningful when PayType is set to PrePaid.
 * `vpc_id` - (Required, ForceNew) The VPC ID of the instance.
 * `vswitches` - (Optional, ForceNew, List) The VSwitches info of the instance. See [`vswitches`](#vswitches) below.
 
+---
+
 ### `backend_node_groups`
 
 The backend_node_groups supports the following:
@@ -162,6 +164,8 @@ The backend_node_groups supports the following:
 * `storage_size` - (Optional, ForceNew, Int) Storage size, measured in GiB.
 * `zone_id` - (Optional, ForceNew) Zone ID.
 
+---
+
 ### `frontend_node_groups`
 
 The frontend_node_groups supports the following:
@@ -181,6 +185,8 @@ The frontend_node_groups supports the following:
 * `storage_size` - (Optional, ForceNew, Int) Storage size, measured in GiB.
 * `zone_id` - (Optional, ForceNew) Zone ID.
 
+---
+
 ### `observer_node_groups`
 
 The observer_node_groups supports the following:
@@ -198,6 +204,8 @@ The observer_node_groups supports the following:
   - pl3: Maximum random read/write IOPS per disk is 1,000,000.
 * `storage_size` - (Optional, ForceNew, Int) Storage size, measured in GiB.
 * `zone_id` - (Optional, ForceNew) Zone ID.
+
+---
 
 ### `vswitches`
 
@@ -217,7 +225,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 20 mins) Used when create the Instance.
 * `delete` - (Defaults to 10 mins) Used when delete the Instance.

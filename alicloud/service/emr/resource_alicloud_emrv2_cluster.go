@@ -3218,9 +3218,7 @@ func deleteSubscriptionInstances(d *schema.ResourceData, meta interface{}, insta
 	request.DryRun = requests.NewBoolean(false)
 	request.InstanceChargeType = "PostPaid"
 	if err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyInstanceChargeType(request)
-		})
+		raw, err := client.EcsSdkRpc(request, ecs.CreateModifyInstanceChargeTypeResponse())
 		if err != nil {
 			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"InternalError"}) {
 				time.Sleep(3 * time.Second)
@@ -3241,9 +3239,7 @@ func deleteSubscriptionInstances(d *schema.ResourceData, meta interface{}, insta
 
 		wait := helper.IncrementalWait(1*time.Second, 1*time.Second)
 		err := retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DeleteInstance(deleteRequest)
-			})
+			raw, err := client.EcsSdkRpc(deleteRequest, ecs.CreateDeleteInstanceResponse())
 			if err != nil {
 				if errs.IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "DependencyViolation.RouteEntry", "IncorrectInstanceStatus.Initializing"}) {
 					return retry.RetryableError(err)
@@ -3645,9 +3641,7 @@ func (s *Service) DescribeEcsInstance(id string) (instance ecs.Instance, err err
 	var response *ecs.DescribeInstancesResponse
 	wait := helper.IncrementalWait(1*time.Second, 1*time.Second)
 	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
-		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeInstances(request)
-		})
+		raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeInstancesResponse())
 		if err != nil {
 			if helper.NeedRetry(err) {
 				wait()

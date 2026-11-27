@@ -30,7 +30,7 @@ output "first_rds_character_set_names" {
 
 The following arguments are supported:
 
-* `engine` - (Required, ForceNew) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL`, `MariaDB`.
+* `engine` - (Required) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL`, `MariaDB`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform apply`).
 
 ## Attributes Reference

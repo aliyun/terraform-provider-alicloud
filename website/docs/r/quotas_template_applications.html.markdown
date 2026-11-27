@@ -97,6 +97,8 @@ The following arguments are supported:
 
   -> **NOTE:**  The quota request is approved by the technical support of each cloud service. If you want to increase the chance of passing, please fill in a reasonable application value and detailed application reasons when applying for quota.
 
+---
+
 ### `dimensions`
 
 The dimensions supports the following:
@@ -110,6 +112,8 @@ The following attributes are exported:
 
 * `id` - The ID of the resource supplied above.
 * `quota_application_details` - List of quota application details. Each element contains the following attributes:
+
+---
 
 ### `quota_application_details`
 
@@ -134,6 +138,8 @@ The quota_application_details supports the following attributes:
   - Process: under review.
   - Cancel: Closed.
 
+---
+
 ### `quota_application_details.period`
 
 The period supports the following attributes:
@@ -143,7 +149,7 @@ The period supports the following attributes:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Template Applications.
 

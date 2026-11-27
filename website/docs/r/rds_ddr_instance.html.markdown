@@ -377,12 +377,16 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `source_region` - (Optional, ForceNew) The region ID of the source instance if you want to restore data to a point in time.
 * `source_db_instance_name` - (Optional, ForceNew) The ID of the source instance if you want to restore data to a point in time.
 
+---
+
 ### `parameters`
 
 The parameters mapping supports the following:
 
 * `name` - (Required) The parameter name.
 * `value` - (Required) The parameter value.
+
+---
 
 ### `pg_hba_conf`
 
@@ -415,7 +419,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 90 mins) Used when creating the db instance (until it reaches the initial `Running` status).
 * `update` - (Defaults to 30 mins) Used when updating the db instance (until it reaches the initial `Running` status).

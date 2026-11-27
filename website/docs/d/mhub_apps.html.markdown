@@ -46,10 +46,10 @@ output "mhub_app_id_2" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of App IDs. The value formats as `<product_id>:<app_key>`
+* `ids` - (Optional, Computed)  A list of App IDs. The value formats as `<product_id>:<app_key>`
 * `product_id` - (Required)  The ID of the Product.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by App name.
-* `os_type` - (Optional, ForceNew) The os type. Valid values: `Android` and `iOS`.
+* `name_regex` - (Optional) A regex string to filter results by App name.
+* `os_type` - (Optional) The os type. Valid values: `Android` and `iOS`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -57,14 +57,25 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of App names.
-* `apps` - A list of Mhub Apps. Each element contains the following attributes:
-  * `app_key` - Application AppKey, which uniquely identifies an application when requested by the interface
-  * `app_name` - The Name of the App.
-  * `bundle_id` - iOS application ID. Required when creating an iOS app. **NOTE:** Either `bundle_id` or `package_name` must be set.
-  * `create_time` - The CreateTime of the App.
-  * `encoded_icon` - Base64 string of picture.
-  * `id` - The ID of the App.
-  * `industry_id` - The Industry ID of the app. For information about Industry and how to use it, MHUB[Industry](https://help.aliyun.com/document_detail/201638.html).
-  * `package_name` - Android App package name.  **NOTE:** Either `bundle_id` or `package_name` must be set.
-  * `product_id` - The ID of the Product.
-  * `type` - The type of the App. Valid values: `Android` and `iOS`.
+* `apps` - A list of Mhub Apps.
+
+---
+
+### `apps`
+
+The apps supports the following attributes:
+
+* `app_key` - Application AppKey, which uniquely identifies an application when requested by the interface
+* `app_name` - The Name of the App.
+* `bundle_id` - iOS application ID. Required when creating an iOS app.
+
+  -> **NOTE:** Either `bundle_id` or `package_name` must be set.
+* `create_time` - The CreateTime of the App.
+* `encoded_icon` - Base64 string of picture.
+* `id` - The ID of the App.
+* `industry_id` - The Industry ID of the app. For information about Industry and how to use it, MHUB[Industry](https://help.aliyun.com/document_detail/201638.html).
+* `package_name` - Android App package name.
+
+  -> **NOTE:** Either `bundle_id` or `package_name` must be set.
+* `product_id` - The ID of the Product.
+* `type` - The type of the App. Valid values: `Android` and `iOS`.

@@ -43,7 +43,9 @@ resource "alicloud_msc_sub_webhook" "example" {
 The following arguments are supported:
 
 * `server_url` - (Required) The serverUrl of the Webhook. This url must start with `https://oapi.dingtalk.com/robot/send?access_token=`.
-* `webhook_name` - (Required) The name of the Webhook. **Note:** The name must be `2` to `12` characters in length, and can contain uppercase and lowercase letters.
+* `webhook_name` - (Required) The name of the Webhook.
+
+  -> **NOTE:** The name must be `2` to `12` characters in length, and can contain uppercase and lowercase letters.
 
 ## Attributes Reference
 

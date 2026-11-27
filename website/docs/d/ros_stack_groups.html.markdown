@@ -33,10 +33,10 @@ output "first_ros_stack_group_id" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Stack Group IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Stack Group name.
+* `ids` - (Optional, Computed)  A list of Stack Group IDs.
+* `name_regex` - (Optional) A regex string to filter results by Stack Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of Stack Group. Valid Values: `ACTIVE`, `DELETED`.
+* `status` - (Optional) The status of Stack Group. Valid Values: `ACTIVE`, `DELETED`.
 
 ## Attributes Reference
 
@@ -44,6 +44,8 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Stack Group names.
 * `groups` - A list of Ros Stack Groups. Each element contains the following attributes. See [`groups`](#groups) below.
+
+---
 
 ### `groups`
 
@@ -56,6 +58,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `stack_group_name` - The name of the stack group..
 * `status` - The status of Stack Group.
 * `template_body` - The structure that contains the template body.
+
+---
 
 ### `groups-parameters`
 

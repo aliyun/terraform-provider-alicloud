@@ -42,11 +42,18 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of policy IDs.
 * `names` - A list of policy names.
-* `policies` - A list of policies. Each element contains the following attributes:
-  * `id` - The ID of the policy.
-  * `policy_name`- The name of the policy.
-  * `policy_type`- The type of the policy.
-  * `description` - The description of the policy.
-  * `update_date` - The time when the policy was updated.
-  * `default_version` - The default version of the policy.
-  * `attachment_count` - The number of times the policy is referenced.
+* `policies` - A list of policies.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `id` - The ID of the policy.
+* `policy_name`- The name of the policy.
+* `policy_type`- The type of the policy.
+* `description` - The description of the policy.
+* `update_date` - The time when the policy was updated.
+* `default_version` - The default version of the policy.
+* `attachment_count` - The number of times the policy is referenced.

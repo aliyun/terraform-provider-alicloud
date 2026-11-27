@@ -89,20 +89,27 @@ output "cen_transit_router_route_table_propagation_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of Transit Router Route Table Propagation IDs.
-* `transit_router_route_table_id` - (Required, ForceNew) The ID of the route table of the Enterprise Edition transit router.
-* `transit_router_attachment_id` - (Optional, ForceNew) The ID of the network instance connection.
-* `status` - (Optional, ForceNew) The status of the route learning correlation. Valid values: `Active`, `Enabling`, `Disabling`.
+* `ids` - (Optional, List) A list of Transit Router Route Table Propagation IDs.
+* `transit_router_route_table_id` - (Required) The ID of the route table of the Enterprise Edition transit router.
+* `transit_router_attachment_id` - (Optional) The ID of the network instance connection.
+* `status` - (Optional) The status of the route learning correlation. Valid values: `Active`, `Enabling`, `Disabling`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `propagations` - A list of Transit Router Route Table Propagations. Each element contains the following attributes:
-  * `id` - The ID of the network instance connection.
-  * `transit_router_attachment_id` - The ID of the network instance connection.
-  * `transit_router_route_table_id` - The ID of the route table of the Enterprise Edition transit router.
-  * `resource_id` - The ID of the network instance.
-  * `resource_type` - The type of the network instance.
-  * `status` - The status of the route learning correlation.
+* `propagations` - A list of Transit Router Route Table Propagations.
+
+---
+
+### `propagations`
+
+The propagations supports the following attributes:
+
+* `id` - The ID of the network instance connection.
+* `transit_router_attachment_id` - The ID of the network instance connection.
+* `transit_router_route_table_id` - The ID of the route table of the Enterprise Edition transit router.
+* `resource_id` - The ID of the network instance.
+* `resource_type` - The type of the network instance.
+* `status` - The status of the route learning correlation.

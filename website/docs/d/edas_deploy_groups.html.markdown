@@ -40,12 +40,19 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of deploy group names.
 * `groups` - A list of consumer group ids.
-  * `group_id` - The ID of the instance group.
-  * `group_name` - The name of the instance group. The length cannot exceed 64 characters.
-  * `group_type` - The type of the instance group. Valid values: 0: Default group. 1: Phased release is disabled for traffic management. 2: Phased release is enabled for traffic management.
-  * `create_time` - The time when the instance group was created.
-  * `update_time` - The time when the instance group was updated.
-  * `app_id` - The ID of the application that you want to deploy.
-  * `cluster_id` - The ID of the cluster that you want to create the application.
-  * `package_version_id` - The version of the deployment package for the instance group that was created.
-  * `app_version_id` - The version of the deployment package for the application.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `group_id` - The ID of the instance group.
+* `group_name` - The name of the instance group. The length cannot exceed 64 characters.
+* `group_type` - The type of the instance group. Valid values: 0: Default group. 1: Phased release is disabled for traffic management. 2: Phased release is enabled for traffic management.
+* `create_time` - The time when the instance group was created.
+* `update_time` - The time when the instance group was updated.
+* `app_id` - The ID of the application that you want to deploy.
+* `cluster_id` - The ID of the cluster that you want to create the application.
+* `package_version_id` - The version of the deployment package for the instance group that was created.
+* `app_version_id` - The version of the deployment package for the application.

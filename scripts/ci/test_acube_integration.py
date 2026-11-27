@@ -47,6 +47,34 @@ class UnavailableTest(unittest.TestCase):
                 result = error
         return result, clock, opened.call_count
 
+    def test_integration_receipt_posts_retry_identical_requests(self):
+        for path, data in [('/integration-checks/reusable', {'reusable': False}),
+                           ('/integration-checks/results', True)]:
+            for failure in (429, 502, 503, 504, 'network'):
+                with self.subTest(path=path, failure=failure):
+                    calls = []
+                    def transport(clock):
+                        calls.append(clock.now)
+                        if len(calls) == 1:
+                            if failure == 'network': raise ConnectionResetError()
+                            raise unavailable(failure)
+                        response = io.BytesIO(json.dumps(dict(code='SUCCESS', data=data)).encode())
+                        response.headers = {}
+                        return response
+                    result, clock, attempts = self.call(transport, 'POST', path, {'runId': '99'})
+                    self.assertEqual(data, result)
+                    self.assertEqual(2, attempts)
+                    self.assertEqual([1], clock.sleeps)
+
+    def test_only_receipt_endpoints_identify_conflicts_for_recovery(self):
+        for path in ('/integration-checks/results', '/integration-checks/reusable', '/sources/import'):
+            def conflict(clock):
+                raise unavailable(409)
+            error, clock, attempts = self.call(conflict, 'POST', path, {})
+            self.assertEqual(path.startswith('/integration-checks/'),
+                             isinstance(error, m.integration_receipts.ReceiptConflict))
+            self.assertEqual(1, attempts)
+
     def test_safe_calls_wait_out_five_minutes_of_unavailability(self):
         def redeploy(clock):
             if clock.now == 0:
@@ -148,6 +176,24 @@ class IntegrationTest(unittest.TestCase):
         return dict(mode='acctest',sourceId='a'*64,checkBaseSourceId='b'*64,commitSha='c'*40,
                     baseCommitSha='d'*40,variables={'TEST':'alicloud/service/rocketmq'},testCases=['TestAccOne','TestAccTwo'])
 
+    def test_integration_receipt_scalar_response_contracts(self):
+        for path, data, valid in [('/integration-checks/environment', 'a'*64, True),
+                                  ('/integration-checks/environment', {}, False),
+                                  ('/integration-checks/results', True, True),
+                                  ('/integration-checks/results', False, False),
+                                  ('/integration-checks/results', 1, False),
+                                  ('/capabilities', True, False)]:
+            with self.subTest(path=path, data=data):
+                client = m.Client('test-token-' + 'x'*32)
+                response = io.BytesIO(json.dumps(dict(code='SUCCESS', data=data)).encode())
+                response.headers = {}
+                with patch.object(client.opener, 'open', return_value=response):
+                    if valid:
+                        self.assertEqual(client.call('GET', path), data)
+                    else:
+                        with self.assertRaisesRegex(ValueError, 'Invalid ACube response'):
+                            client.call('GET', path)
+
     def test_reuse_transport_requires_completion_proof_even_for_empty_results(self):
         for proof in (None, 'complete-v1'):
             client = m.Client('test-token-' + 'x' * 32)
@@ -157,9 +203,29 @@ class IntegrationTest(unittest.TestCase):
                 if proof:
                     self.assertEqual(m.reusable_cases(client, self.request()), {})
                 else:
-                    with self.assertRaisesRegex(ValueError, 'completion proof'):
+                    with self.assertRaisesRegex(ValueError, 'unrecognized completion status'):
                         m.reusable_cases(client, self.request())
                 self.assertEqual(opened.call_count, 1)
+
+    def test_partial_query_transport_keeps_verified_cases_and_reason(self):
+        for proof, reason in [('partial-time-budget-v1', 'time-budget'),
+                              ('partial-scan-limit-v1', 'scan-limit')]:
+            client = m.Client('test-token-' + 'x' * 32)
+            response = io.BytesIO(b'{"code":"SUCCESS","data":{"TestAccOne":42}}')
+            response.headers = {'X-AccTest-Reuse-Query': proof, 'X-AccTest-Reuse-Scan-Limit': '1024'}
+            with patch.object(client.opener, 'open', return_value=response):
+                result = m.reusable_cases(client, {**self.request(), 'testCases': ['TestAccOne']})
+            self.assertEqual(result, {'TestAccOne': '42'})
+            self.assertEqual(result.reason, reason)
+
+    def test_partial_query_rejects_unknown_cases_and_invalid_receipts(self):
+        for data in [{'TestAccOther': 42}, {'TestAccOne': 0}, {'TestAccOne': True}]:
+            client = m.Client('test-token-' + 'x' * 32)
+            response = io.BytesIO(json.dumps({'code': 'SUCCESS', 'data': data}).encode())
+            response.headers = {'X-AccTest-Reuse-Query': 'partial-time-budget-v1'}
+            with patch.object(client.opener, 'open', return_value=response):
+                with self.assertRaisesRegex(ValueError, 'Invalid ACube case reuse receipt'):
+                    m.reusable_cases(client, self.request())
 
     def test_reuse_query_recovers_beyond_old_retry_window_and_never_posts_a_task(self):
         client = m.Client('test-token-' + 'x' * 32)
@@ -335,6 +401,12 @@ class IntegrationTest(unittest.TestCase):
             for _ in range(2): m.execute(Client(),frozen,'acctest','ci-123',Path(root))
         self.assertEqual(len(keys), 1)
         self.assertEqual(len(observed), 2)
+        with tempfile.TemporaryDirectory() as root:
+            for environment in ('b'*64, 'a'*64, 'a'*64):
+                m.execute(Client(), frozen, 'acctest', 'ci-123', Path(root),
+                          environment=environment, recovery=environment == 'a'*64)
+        self.assertEqual(3, len(keys))
+        self.assertNotEqual(keys[-2], keys[-1])
     def test_packages_are_submitted_before_polling(self):
         submitted=[]
         class Client:
@@ -369,7 +441,7 @@ class IntegrationTest(unittest.TestCase):
                     return {'sourceId': request['sourceId'] if body['commitSha'] == request['commitSha']
                             else request['checkBaseSourceId']}
                 if path == '/acctest/reusable-cases':
-                    self.assertEqual(body['testCases'], ['TestAccOne', 'TestAccTwo'])
+                    self.assertEqual(body['testCases'], ['TestAccOne'] if submitted else ['TestAccOne', 'TestAccTwo'])
                     return {'TestAccOne': 42}
                 if path == '':
                     submitted.extend(body['testCases'])
@@ -502,6 +574,107 @@ class IntegrationTest(unittest.TestCase):
         self.assertEqual(report['taskStatus'], 'success')
         self.assertEqual(report['unsuccessfulCases'], [{'name': 'TestAccOne', 'result': 'SKIP'}])
 
+    def test_full_package_requires_pass_for_every_case_without_reusable_evidence(self):
+        request = self.request()
+        directory = request['variables']['TEST']
+        frozen = {'head': request['commitSha'], 'base': request['baseCommitSha'],
+                  'packages': {directory: request['testCases']},
+                  'scope': {'fullPackages': {directory: ['unresolved receiver']}}}
+        for outcome in ('PASS', 'SKIP', 'FAIL', 'missing'):
+            with self.subTest(outcome=outcome), tempfile.TemporaryDirectory() as root:
+                status = self.result()
+                cases = status['result']['tests']['cases']
+                if outcome == 'missing':
+                    cases.pop()
+                else:
+                    cases[0]['result'] = outcome
+                submitted = []
+
+                def call(method, path, body=None):
+                    if path == '/capabilities':
+                        return {'submissionIdempotency': 'oss-admission-v1', 'accTestReuseQuery': 'complete-v1',
+                                'accTestCaseReuse': 'exact-source-v1'}
+                    if path == '/sources/import':
+                        return {'sourceId': request['sourceId'] if body['commitSha'] == request['commitSha']
+                                else request['checkBaseSourceId']}
+                    if path == '/acctest/reusable-cases':
+                        return {}
+                    if (method, path) == ('POST', ''):
+                        submitted.append(body['testCases'])
+                        return {'taskId': 123}
+                    return {'/123': status, '/123/logs': {}}[path]
+
+                with patch.object(m.Client, 'call', side_effect=call):
+                    client = m.Client('test-token-' + 'x' * 32)
+                    if outcome == 'PASS':
+                        m.execute(client, frozen, 'acctest', 'run-full', Path(root))
+                    else:
+                        with self.assertRaises(ValueError):
+                            m.execute(client, frozen, 'acctest', 'run-full', Path(root))
+                self.assertEqual(submitted, [request['testCases']])
+                summary = json.loads((Path(root) / 'diagnostics/acc-summary.json').read_text())
+                self.assertEqual(summary['status'], 'success' if outcome == 'PASS' else 'blocked')
+
+    def test_large_suites_use_stable_receipts_and_the_original_test_directory(self):
+        request = self.request()
+        package = request['variables']['TEST']
+        cases = [f'TestAccDemo{i:04}' for i in range(501)]
+        self.assertEqual(list(m.acc_batches({package: cases[:500]})), [(package, package, cases[:500])])
+        frozen = {'head': request['commitSha'], 'base': request['baseCommitSha'], 'packages': {package: cases},
+                  'scope': {'fullPackages': {package: ['uncertain receiver']}}}
+        for skipped in (None, cases[0], cases[-1]):
+            with self.subTest(skipped=skipped), tempfile.TemporaryDirectory() as root:
+                submitted = {}
+
+                def call(method, path, body=None):
+                    if path == '/capabilities':
+                        return {'submissionIdempotency': 'oss-admission-v1', 'accTestReuseQuery': 'complete-v1'}
+                    if path == '/sources/import':
+                        return {'sourceId': request['sourceId'] if body['commitSha'] == frozen['head']
+                                else request['checkBaseSourceId']}
+                    if (method, path) == ('POST', ''):
+                        task = str(len(submitted) + 1)
+                        submitted[task] = body
+                        return {'taskId': task}
+                    if path.endswith('/logs'):
+                        return {}
+                    batch = submitted[path.removeprefix('/')]
+                    results = [{'name': n, 'result': 'SKIP' if n == skipped else 'PASS'} for n in batch['testCases']]
+                    return {'status': 'success', 'result': {**batch, 'exitCode': 0, 'testDirectory': package,
+                                                            'tests': {'cases': results}}}
+
+                client = Mock()
+                client.call.side_effect = call
+                output = Path(root)
+                for _ in range(2):
+                    if skipped is None:
+                        m.execute(client, frozen, 'acctest', 'batch-check', output)
+                    else:
+                        with self.assertRaisesRegex(ValueError, skipped):
+                            m.execute(client, frozen, 'acctest', 'batch-check', output)
+                self.assertEqual([b['testCases'] for b in submitted.values()], [cases[:500], cases[500:]])
+                self.assertEqual({b['variables']['TEST'] for b in submitted.values()}, {package})
+                self.assertEqual(len({b['idempotencyKey'] for b in submitted.values()}), 2)
+                for i in (1, 2):
+                    record = json.loads((output / (m.digest(f'{package}#{i}') + '.json')).read_text())
+                    self.assertEqual(record['receipt']['taskId'], str(i))
+                    self.assertEqual(record['request'], submitted[str(i)])
+
+    def test_expanded_scope_preserves_failure_diagnosis(self):
+        for outcome, expected in (('FAIL', 'failed or invalid'), (None, 'failed or invalid'),
+                                  ('SKIP', 'TestAccOne')):
+            status = self.result()
+            status['result']['tests']['cases'][0]['result'] = outcome
+            with self.subTest(outcome=outcome), self.assertRaisesRegex(ValueError, expected):
+                m.validate_result(status, self.request(), require_pass=True)
+        for problem in ({'signal': 'SIGTERM'}, {'workspaceCleanup': {'status': 'failed'}}):
+            status = self.result()
+            status['result']['tests']['cases'][0]['result'] = 'SKIP'
+            status['status'] = 'failed'
+            result = {**status['result'], 'error': 'Command or acceptance checks failed', **problem}
+            with self.subTest(problem=problem), self.assertRaisesRegex(ValueError, 'ACube task did not succeed'):
+                m.validate_result({**status, 'result': result}, self.request(), require_pass=True)
+
     def test_legacy_runner_failure_for_skip_does_not_mask_other_failures(self):
         status = self.result()
         status['status'] = 'failed'
@@ -521,6 +694,102 @@ class IntegrationTest(unittest.TestCase):
         result['tests']['cases'][1]['result'] = 'FAIL'
         with self.assertRaises(ValueError):
             m.validate_result(status, self.request())
+
+    def test_parallel_case_errors_are_not_attributed_to_a_neighbour(self):
+        stdout = ('=== RUN   TestAccFirst\n=== PAUSE TestAccFirst\n=== RUN   TestAccSecond\n'
+                  'Error: second failed\n--- FAIL: TestAccSecond\n=== CONT  TestAccFirst\n'
+                  'Error: first failed\n--- FAIL: TestAccFirst')
+        errors = diagnostics.case_errors(stdout, ['TestAccFirst', 'TestAccSecond'])
+        self.assertIn('first failed', errors['TestAccFirst'])
+        self.assertNotIn('second failed', errors['TestAccFirst'])
+        self.assertIn('second failed', errors['TestAccSecond'])
+        self.assertNotIn('first failed', errors['TestAccSecond'])
+
+    def test_partial_case_failure_review_is_bound_to_complete_batch_and_verdict(self):
+        request = self.request()
+        request['testCases'].append('TestAccThree')
+        package = request['variables']['TEST']
+        status = self.result()
+        status['status'] = 'failed'
+        result = status['result']
+        result.update(exitCode=1, timedOut=False, error='Command or acceptance checks failed',
+                      stage='complete', endedAt='2026-11-24T10:00:00Z', status='failed', executionStatus='failed',
+                      workspaceCleanup={'status': 'removed', 'rootAbsent': True})
+        result['tests']['cases'][0]['result'] = 'FAIL'
+        result['tests']['cases'].append(dict(name='TestAccThree', result='FAIL'))
+        result['tests'].update(failed=2, passed=1, skipped=0, missing=0)
+        for malformed in (True, 42, 'invalid', ['invalid'], False, []):
+            with self.subTest(cleanup=malformed):
+                result['cleanup'] = malformed
+                with self.assertRaisesRegex(ValueError, 'invalid cleanup metadata'):
+                    m.validate_result(status, request)
+        result.pop('cleanup')
+        frozen = dict(head=request['commitSha'], base=request['baseCommitSha'], mergeRequestId='31362117',
+                      packages={package: request['testCases']})
+        for decision in ('ACCEPT', 'BLOCK', 'STALE', 'MISSING', 'RELATED', 'EMPTY', 'NULL_EXECUTION'):
+            identity = []
+            def call(method, path, body=None):
+                if path == '/capabilities':
+                    return dict(submissionIdempotency='oss-admission-v1', accTestReuseQuery='complete-v1')
+                if path == '/sources/import':
+                    return {'sourceId': request['sourceId'] if body['commitSha'] == frozen['head'] else request['checkBaseSourceId']}
+                if path == '':
+                    return {'taskId': '123'}
+                if path == '/123':
+                    return status
+                if path == '/123/logs':
+                    return {'stdout.log': 'fixture'}
+                if path == '/acctest/verdicts':
+                    identity.append(body['idempotencyKey'])
+                    return {'executionId': None if decision == 'NULL_EXECUTION' else '00000000-0000-0000-0000-000000000000'}
+                self.assertTrue(path.endswith('/' + identity[0]))
+                finding = dict(taskId='123', case='TestAccOne', attribution='UNRELATED',
+                               failureStep='Create instance.', directCause='API rejected the request.',
+                               mrChange='Table attributes.', relationshipCheck='The changed path is unused.',
+                               cleanupCheck='Unchanged.', limitations='Quota usage unknown.',
+                               failureEvidence='失败步骤：Create instance.\n直接原因：API rejected the request.\n--- FAIL: TestAccOne',
+                               changeAnalysis='MR 改动：Table attributes.\n关联核查：The changed path is unused.\n清理逻辑：Unchanged.\n证据限制：Quota usage unknown.\n详细证据：' + 'a' * 1100 + ' unchanged fixture setup')
+                findings = [finding, dict(finding, case='TestAccThree',
+                                         failureEvidence='直接原因：Project quota exhausted.', directCause='Project quota exhausted.')]
+                if decision == 'RELATED':
+                    finding['attribution'] = 'RELATED'
+                if decision == 'EMPTY':
+                    finding['changeAnalysis'] = ' '
+                return dict(status='SUCCEEDED', verdict=dict(decision='BLOCK' if decision == 'BLOCK' else 'ACCEPT',
+                    evidenceId='other' if decision == 'STALE' else identity[0], reviewedFiles=['test.go'],
+                    findings=[] if decision == 'MISSING' else findings))
+            with self.subTest(decision=decision), tempfile.TemporaryDirectory() as root, \
+                    patch.object(diagnostics, 'read_stdout', return_value='=== RUN TestAccOne\nError: original incident\n--- FAIL: TestAccOne'), \
+                    patch.object(m.acctest_verdict, 'test_locations', return_value={'TestAccOne': 'test.go'}), \
+                    patch.object(m.acctest_verdict, 'change_manifest', return_value=['test.go']):
+                client = Mock()
+                client.call.side_effect = call
+                if decision == 'ACCEPT':
+                    summary_md = Path(root) / 'summary.md'
+                    with patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': str(summary_md)}):
+                        m.execute(client, frozen, 'acctest', 'run-1', Path(root))
+                    report = summary_md.read_text()
+                    self.assertTrue(report.lstrip().startswith('### ACC 用例统计 · ⚠️ 2 条用例执行失败'))
+                    start = report.index('#### ⚠️ 1. TestAccOne')
+                    self.assertLess(report.index('Error: original incident', start), report.index('**为什么失败**', start))
+                    self.assertIn('- **直接原因**　API rejected the request.', report)
+                    self.assertIn('- **关联核查**　The changed path is unused.', report)
+                    second = report[report.index('#### ⚠️ 2. TestAccThree'):]
+                    self.assertIn('- **直接原因**　Project quota exhausted.', second)
+                    self.assertIn('**复核结论**　与本次改动无关，可放行。', second)
+                    self.assertNotIn('a' * 1100, report)
+                    self.assertIn('a' * 1100, (Path(root) / 'diagnostics/acc-verdict.json').read_text())
+                else:
+                    with self.assertRaises(ValueError):
+                        m.execute(client, frozen, 'acctest', 'run-1', Path(root))
+                summary = json.loads((Path(root) / 'diagnostics/acc-summary.json').read_text())
+                self.assertEqual(('success' if decision == 'ACCEPT' else 'blocked', 1, 2),
+                                 (summary['status'], summary['passed'], summary['failed']))
+                self.assertEqual(len(identity), 1)
+                if decision == 'NULL_EXECUTION':
+                    receipt = json.loads((Path(root) / 'diagnostics/acc-verdict.json').read_text())
+                    self.assertEqual(receipt['status'], 'blocked')
+                    self.assertEqual(receipt['error'], 'Invalid reviewer execution receipt')
 
     def test_execute_passes_when_legacy_runner_only_rejected_a_skip(self):
         request = self.request()

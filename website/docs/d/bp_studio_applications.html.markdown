@@ -39,14 +39,14 @@ output "bp_studio_application_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Application IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Application name.
-* `keyword` - (Optional, ForceNew) The keyword of the Application.
-* `order_type` - (Optional, ForceNew) The order type of the Application. Valid values:
+* `ids` - (Optional, Computed)  A list of Application IDs.
+* `name_regex` - (Optional) A regex string to filter results by Application name.
+* `keyword` - (Optional) The keyword of the Application.
+* `order_type` - (Optional) The order type of the Application. Valid values:
   - `1`: The update time of the Application.
   - `2`: The create time of the Application.
-* `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
-* `status` - (Optional, ForceNew) The status of the Application. Valid values: `success`, `release`.
+* `resource_group_id` - (Optional) The ID of the resource group.
+* `status` - (Optional) The status of the Application. Valid values: `success`, `release`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -54,12 +54,19 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Application names.
-* `applications` - A list of Cloud Architect Design Tools (BPStudio) Applications. Each element contains the following attributes:
-  * `id` - The ID of the Application.
-  * `application_id` - The ID of the Application.
-  * `application_name` - The name of the Application.
-  * `resource_group_id` - The ID of the resource group.
-  * `topo_url` - (Deprecated) The topo url of the Application.
-  * `image_url` - The image url of the Application.
-  * `create_time` - The creation time of the Application.
-  * `status` - The status of the Application.
+* `applications` - A list of Cloud Architect Design Tools (BPStudio) Applications.
+
+---
+
+### `applications`
+
+The applications supports the following attributes:
+
+* `id` - The ID of the Application.
+* `application_id` - The ID of the Application.
+* `application_name` - The name of the Application.
+* `resource_group_id` - The ID of the resource group.
+* `topo_url` - (Deprecated) The topo url of the Application.
+* `image_url` - The image url of the Application.
+* `create_time` - The creation time of the Application.
+* `status` - The status of the Application.

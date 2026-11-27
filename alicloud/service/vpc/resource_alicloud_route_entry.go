@@ -152,9 +152,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 
 		args := *request
 
-		raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.CreateRouteEntry(&args)
-		})
+		raw, err = client.VpcSdkRpc(&args, vpc.CreateCreateRouteEntryResponse())
 		// Log every attempt (success or failure) instead of only the outcome of
 		// the final one. Without this, an intermediate attempt that actually
 		// succeeded on the server (e.g. after a retried "TaskConflict") leaves
@@ -319,9 +317,7 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 	var raw interface{}
 	retryTimes := 7
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
-		raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteRouteEntry(request)
-		})
+		raw, err = client.VpcSdkRpc(request, vpc.CreateDeleteRouteEntryResponse())
 		if err != nil {
 			// "InternalError" from DeleteRouteEntry is a transient server-side
 			// failure: notably when deleting the last route of a VPC peering

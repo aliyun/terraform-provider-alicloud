@@ -117,9 +117,7 @@ func resourceAlicloudLogAuditUpdate(d *schema.ResourceData, meta interface{}) er
 		request.VariableMap = string(b[:])
 	}
 	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
-		rep, err := client.WithLogPopClient(func(client *slsPop.Client) (interface{}, error) {
-			return client.AnalyzeAppLog(request)
-		})
+		rep, err := client.LegacySdkRpc(request, slsPopApiPath, slsPop.CreateAnalyzeAppLogResponse())
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{errs.LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
@@ -138,7 +136,7 @@ func resourceAlicloudLogAuditUpdate(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudLogAuditRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	logService := Service{client}
-	response, err := logService.DescribeLogAudit(d.Id())
+	body, err := logService.DescribeLogAudit(d.Id())
 	if err != nil {
 		if errs.NotFoundError(err) {
 			d.SetId("")
@@ -146,7 +144,7 @@ func resourceAlicloudLogAuditRead(d *schema.ResourceData, meta interface{}) erro
 		}
 		return errs.WrapError(err)
 	}
-	displayName, initMap, err := getInitParameter(response.GetHttpContentString())
+	displayName, initMap, err := getInitParameter(body)
 	if err != nil {
 		return errs.WrapError(err)
 	}

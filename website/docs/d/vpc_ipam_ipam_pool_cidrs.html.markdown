@@ -53,16 +53,23 @@ output "alicloud_vpc_ipam_ipam_pool_cidr_example_id" {
 
 The following arguments are supported:
 
-* `cidr` - (ForceNew, Optional) The CIDR address segment to be preset.> currently, only IPv4 address segments are supported.
-* `ipam_pool_id` - (Required, ForceNew) The ID of the IPAM pool instance.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `cidr` - (Optional) The CIDR address segment to be preset.> currently, only IPv4 address segments are supported.
+* `ipam_pool_id` - (Required) The ID of the IPAM pool instance.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `cidrs` - A list of Ipam Pool Cidr Entries. Each element contains the following attributes:
-  * `cidr` - The CIDR address segment to be preset.> currently, only IPv4 address segments are supported.
-  * `ipam_pool_id` - The ID of the IPAM pool instance.
-  * `status` - The status of the resource
-  * `id` - The ID of the resource supplied above.
+* `cidrs` - A list of Ipam Pool Cidr Entries.
+
+---
+
+### `cidrs`
+
+The cidrs supports the following attributes:
+
+* `cidr` - The CIDR address segment to be preset.> currently, only IPv4 address segments are supported.
+* `ipam_pool_id` - The ID of the IPAM pool instance.
+* `status` - The status of the resource
+* `id` - The ID of the resource supplied above.

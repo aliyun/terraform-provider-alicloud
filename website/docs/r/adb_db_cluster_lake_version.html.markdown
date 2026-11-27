@@ -66,7 +66,9 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The vpc ID of the resource.
 * `vswitch_id` - (Required, ForceNew) The ID of the vSwitch.
 * `zone_id` - (Required, ForceNew) The zone ID of the resource.
-* `payment_type` - (Required) The payment type of the resource. Valid values: `PayAsYouGo`, `Subscription`. **NOTE:** From version 1.245.0, `payment_type` can be set to `Subscription`. From version 1.272.0, `payment_type` can be modified.
+* `payment_type` - (Required) The payment type of the resource. Valid values: `PayAsYouGo`, `Subscription`.
+
+  -> **NOTE:** From version 1.245.0, `payment_type` can be set to `Subscription`. From version 1.272.0, `payment_type` can be modified.
 * `secondary_vswitch_id` - (Optional, ForceNew, Available since v1.248.0) The ID of the secondary zone.
 * `secondary_zone_id` - (Optional, ForceNew, Available since v1.248.0) The ID of the secondary vSwitch.
 * `product_form` - (Optional, ForceNew, Available since v1.245.0) The product form of the cluster. Valid values:
@@ -94,8 +96,12 @@ The following arguments are supported:
 * `source_db_cluster_id` - (Optional, Available since v1.211.1) The ID of the source AnalyticDB for MySQL Data Warehouse Edition cluster.
 * `backup_set_id` - (Optional, Available since v1.211.1) The ID of the backup set that you want to use to restore data.
 * `restore_type` - (Optional, Available since v1.211.1) The method that you want to use to restore data. Valid values:
-  - `backup`: Restores data from a backup set. **NOTE:** You must set `source_db_cluster_id` and `backup_set_id`.
-  - `timepoint `: Restores data to a point in time. **NOTE:** You must set `source_db_cluster_id` and `restore_to_time`.
+  - `backup`: Restores data from a backup set.
+  - `timepoint`: Restores data to a point in time.
+
+  -> **NOTE:** `backup` requires `source_db_cluster_id` and `backup_set_id`.
+
+  -> **NOTE:** `timepoint` requires `source_db_cluster_id` and `restore_to_time`.
 * `restore_to_time` - (Optional, Available since v1.211.1) The point in time to which you want to restore data from the backup set.
 
 ## Attributes Reference
@@ -117,7 +123,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 50 mins) Used when create the DB Cluster Lake Version.
 * `update` - (Defaults to 72 mins) Used when update the DB Cluster Lake Version.

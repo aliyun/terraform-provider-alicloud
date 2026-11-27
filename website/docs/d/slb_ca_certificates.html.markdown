@@ -39,15 +39,22 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of SLB ca certificates IDs.
 * `names` - A list of SLB ca certificates names.
-* `certificates` - A list of SLB ca certificates. Each element contains the following attributes:
-  * `id` - CA certificate ID.
-  * `ca_certificate_name` - (Available in v1.123.1+) CA certificate name.
-  * `fingerprint` - CA certificate fingerprint.
-  * `common_name` - CA certificate common name.
-  * `expired_time` - CA certificate expired time.
-  * `expired_timestamp` - CA certificate expired timestamp.
-  * `created_timestamp` - CA certificate created timestamp.
-  * `resource_group_id` - The resource group Id of CA certificate.
-  * `tags` - (Available in v1.66.0+) A mapping of tags to assign to the resource.
-  * `ca_certificate_id` - (Available in v1.123.1+) CA certificate ID.
-  * `name` - (Deprecated from v1.123.1) Deprecated and replace by `ca_certificate_name`.
+* `certificates` - A list of SLB ca certificates.
+
+---
+
+### `certificates`
+
+The certificates supports the following attributes:
+
+* `id` - CA certificate ID.
+* `ca_certificate_name` - (Available in v1.123.1+) CA certificate name.
+* `fingerprint` - CA certificate fingerprint.
+* `common_name` - CA certificate common name.
+* `expired_time` - CA certificate expired time.
+* `expired_timestamp` - CA certificate expired timestamp.
+* `created_timestamp` - CA certificate created timestamp.
+* `resource_group_id` - The resource group Id of CA certificate.
+* `tags` - (Available in v1.66.0+) A mapping of tags to assign to the resource.
+* `ca_certificate_id` - (Available in v1.123.1+) CA certificate ID.
+* `name` - The name of the CA certificate. It is the same as `ca_certificate_name`.

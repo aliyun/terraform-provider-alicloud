@@ -7,13 +7,13 @@ description: |-
     Provides a datasource to open the DCDN service automatically.
 ---
 
-# alicloud\_dcdn\_service
+# alicloud_dcdn_service
 
 Using this data source can open DCDN service automatically. If the service has been opened, it will return opened.
 
-For information about DCDN and how to use it, see [What is DCDN](https://help.aliyun.com/document_detail/197288.html).
+For information about DCDN and how to use it, see [What is DCDN](https://www.alibabacloud.com/help/document_detail/197288.html).
 
--> **NOTE:** Available in v1.111.0+
+-> **NOTE:** Available since v1.111.0.
 
 ## Example Usage
 
@@ -35,4 +35,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

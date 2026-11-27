@@ -48,17 +48,31 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of matched Kubernetes clusters' ids.
 * `names` - A list of matched Kubernetes clusters' names.
-* `clusters` - A list of matched Kubernetes clusters. Each element contains the following attributes:
-  * `id` - The ID of the container cluster.
-  * `name` - The name of the container cluster.
-  * `vswitch_id` - The ID of vSwitch where the current cluster is located.
-  * `vpc_id` - The ID of VPC where the current cluster is located.
-  * `security_group_id` - The ID of security group where the current cluster  is located.
-  * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
-  * `deletion_protection` - Whether the cluster support delete protection.  
-  * `connections` - A list of serverless cluster connection information.
-    * `api_server_internet` - API Server Internet endpoint.
-    * `api_server_intranet` - API Server Intranet endpoint.
-    * `master_public_ip` - Master node SSH IP address.
-  * `tags` - A map of tags assigned to the kubernetes cluster.
-  * `endpoint_public_access_enabled` - Whether to create internet eip for API Server.
+* `clusters` - A list of matched Kubernetes clusters.
+
+---
+
+### `clusters`
+
+The clusters supports the following attributes:
+
+* `id` - The ID of the container cluster.
+* `name` - The name of the container cluster.
+* `vswitch_id` - The ID of vSwitch where the current cluster is located.
+* `vpc_id` - The ID of VPC where the current cluster is located.
+* `security_group_id` - The ID of security group where the current cluster  is located.
+* `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
+* `deletion_protection` - Whether the cluster support delete protection.
+* `connections` - A list of serverless cluster connection information.
+* `tags` - A map of tags assigned to the kubernetes cluster.
+* `endpoint_public_access_enabled` - Whether to create internet eip for API Server.
+
+---
+
+### `clusters.connections`
+
+The connections supports the following attributes:
+
+* `api_server_internet` - API Server Internet endpoint.
+* `api_server_intranet` - API Server Intranet endpoint.
+* `master_public_ip` - Master node SSH IP address.

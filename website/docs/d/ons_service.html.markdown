@@ -7,13 +7,13 @@ description: |-
     Provides a datasource to open the ONS service automatically.
 ---
 
-# alicloud\_ons\_service
+# alicloud_ons_service
 
 Using this data source can open ONS service automatically. If the service has been opened, it will return opened.
 
-For information about ONS and how to use it, see [What is ONS](https://help.aliyun.com/product/29530.html).
+For information about ONS and how to use it, see [What is ONS](https://www.alibabacloud.com/help/product/29530.html).
 
--> **NOTE:** Available in v1.111.0+
+-> **NOTE:** Available since v1.111.0.
 
 ## Example Usage
 
@@ -35,4 +35,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

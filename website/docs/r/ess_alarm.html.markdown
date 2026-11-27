@@ -149,11 +149,8 @@ The following arguments are supported:
 * `dimensions` - (Optional) The dimension map for the alarm's associated metric. For all metrics, you can not set the dimension key as "scaling_group" or "userId", which is set by default, the second dimension for metric, such as "device" for "PackagesNetIn", need to be set by users. See [`dimensions`](#dimensions) below.
 * `expressions` - (Optional, Available since v1.225.1) Support multi alert rule. See [`expressions`](#expressions) below for details.
 * `expressions_logic_operator` - (Optional, Available since v1.225.1) The relationship between the trigger conditions in the multi-metric alert rule.
-* `state` - (Optional) The status of the event-triggered task. Valid values:
 
-- ALARM: The alert condition is met and an alert is triggered.
-- OK: The alert condition is not met.
-- INSUFFICIENT_DATA: Auto Scaling cannot determine whether the alert condition is met due to insufficient data.
+---
 
 ### `expressions`
 
@@ -164,6 +161,8 @@ The Expressions mapping supports the following:
 * `statistics` - (Optional) The statistic to apply to the alarm's associated metric. Supported value: Average, Minimum, Maximum. Defaults to Average.
 * `threshold` - (Optional) The value against which the specified statistics is compared.
 * `comparison_operator` - (Optional) The arithmetic operation to use when comparing the specified Statistic and Threshold. The specified Statistic value is used as the first operand. Supported value: >=, <=, >, <. Defaults to >=.
+
+---
 
 ### `dimensions`
 
@@ -190,11 +189,16 @@ Supported metric names and dimensions :
 
 -> **NOTE:** Dimension `user_id` and `scaling_group` is automatically filled, which means you only need to care about dimension `device` and `state` when needed.
 
-## Attribute Reference
+## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The id for ess alarm.
+* `state` - (Computed) The status of the event-triggered task. Valid values:
+
+- ALARM: The alert condition is met and an alert is triggered.
+- OK: The alert condition is not met.
+- INSUFFICIENT_DATA: Auto Scaling cannot determine whether the alert condition is met due to insufficient data.
 
 ## Import
 

@@ -32,11 +32,11 @@ output "alicloud_gwlb_zone_example_id" {
 
 The following arguments are supported:
 
-* `accept_language` - (ForceNew, Optional) The supported language. Valid values:
+* `accept_language` - (Optional) The supported language. Valid values:
   - **zh-CN**: Chinese
   - **en-US** (default): English
   - **ja**: Japanese
-* `ids` - (Optional, ForceNew, Computed) A list of Zone IDs.
+* `ids` - (Optional, Computed) A list of Zone IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -44,7 +44,14 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Zone IDs.
-* `zones` - A list of Zone Entries. Each element contains the following attributes:
-  * `local_name` - The zone name.
-  * `zone_id` - The zone ID.
-  * `id` - The zone ID.
+* `zones` - A list of Zone Entries.
+
+---
+
+### `zones`
+
+The zones supports the following attributes:
+
+* `local_name` - The zone name.
+* `zone_id` - The zone ID.
+* `id` - The zone ID.

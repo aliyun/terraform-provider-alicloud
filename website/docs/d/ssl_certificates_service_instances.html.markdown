@@ -54,17 +54,17 @@ output "alicloud_ssl_certificates_service_instance_example_id" {
 
 The following arguments are supported:
 
-* `brand` - (ForceNew, Optional) The certificate brand. Valid values: WoSign, CFCA, DigiCert, GeoTrust, GlobalSign, vTrus, and Alibaba.
-* `certificate_status` - (ForceNew, Optional) The status of the certificate.
+* `brand` - (Optional) The certificate brand. Valid values: WoSign, CFCA, DigiCert, GeoTrust, GlobalSign, vTrus, and Alibaba.
+* `certificate_status` - (Optional) The status of the certificate.
   - `issued`: Issued
   - `revoked`: Revoked
   - `willExpire`: Expiring Soon
   - `expired`: Expired
-* `certificate_type` - (ForceNew, Optional) The type of the certificate. Valid values: DV, OV, and EV.
-* `instance_type` - (ForceNew, Optional) The instance type. Valid values: BUY: official certificate; TEST: test certificate.
-* `keyword` - (ForceNew, Optional) Fuzzy search that matches domain names, instance names, or corresponding resource IDs.
-* `resource_group_id` - (ForceNew, Optional) The ID of the resource group.
-* `status` - (ForceNew, Optional) The instance status.
+* `certificate_type` - (Optional) The type of the certificate. Valid values: DV, OV, and EV.
+* `instance_type` - (Optional) The instance type. Valid values: BUY: official certificate; TEST: test certificate.
+* `keyword` - (Optional) Fuzzy search that matches domain names, instance names, or corresponding resource IDs.
+* `resource_group_id` - (Optional) The ID of the resource group.
+* `status` - (Optional) The instance status.
   - `inactive`: Pending use
   - `pending`: Under review. The latest certificate has been submitted for review.
   - `willExpire`: The instance is about to expire.
@@ -81,33 +81,94 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Instance IDs.
-* `instances` - A list of Instance Entries. Each element contains the following attributes:
-  * `auto_reissue` - **NOTE:** This field is only available when `enable_details` is `true`. Specifies whether to enable managed renewal.
-  * `average_waiting_time` - **NOTE:** This field is only available when `enable_details` is `true`. Average waiting time for issuing a certificate of this specification, in seconds.
-  * `brand` - **NOTE:** This field is only available when `enable_details` is `true`. The certificate brand.
-  * `certificate_type` - **NOTE:** This field is only available when `enable_details` is `true`. The type of the certificate.
-  * `city` - **NOTE:** This field is only available when `enable_details` is `true`. The city where the company or organization to which the certificate purchaser belongs is located.
-  * `company_id` - **NOTE:** This field is only available when `enable_details` is `true`. The company information ID.
-  * `contact_id_list` - **NOTE:** This field is only available when `enable_details` is `true`. The list of contact IDs.
-  * `country_code` - **NOTE:** This field is only available when `enable_details` is `true`. The code of the country or region where the certificate organization is located.
-  * `csr` - **NOTE:** This field is only available when `enable_details` is `true`. The CSR content.
-  * `domain` - **NOTE:** This field is only available when `enable_details` is `true`. The domain names to be bound to the certificate.
-  * `full_domain_count` - **NOTE:** This field is only available when `enable_details` is `true`. The number of single domain names included in the instance.
-  * `generate_csr_method` - **NOTE:** This field is only available when `enable_details` is `true`. The method used to generate the Certificate Signing Request (CSR).
-  * `instance_end_time` - **NOTE:** This field is only available when `enable_details` is `true`. Instance expiration time, a UNIX timestamp in seconds.
-  * `instance_id` - The instance ID.
-  * `instance_name` - **NOTE:** This field is only available when `enable_details` is `true`. The name of the instance.
-  * `instance_start_time` - **NOTE:** This field is only available when `enable_details` is `true`. Instance start time, a UNIX timestamp in seconds.
-  * `instance_type` - **NOTE:** This field is only available when `enable_details` is `true`. The instance type.
-  * `key_algorithm` - **NOTE:** This field is only available when `enable_details` is `true`. The certificate algorithm.
-  * `order_end_time` - **NOTE:** This field is only available when `enable_details` is `true`. Order end time, a UNIX timestamp in seconds.
-  * `order_start_time` - **NOTE:** This field is only available when `enable_details` is `true`. Order start time, a UNIX timestamp in seconds.
-  * `province` - **NOTE:** This field is only available when `enable_details` is `true`. The province or region where the company is located.
-  * `resource_group_id` - **NOTE:** This field is only available when `enable_details` is `true`. The ID of the resource group.
-  * `spec` - **NOTE:** This field is only available when `enable_details` is `true`. The specification of the purchased instance.
-  * `status` - **NOTE:** This field is only available when `enable_details` is `true`. The instance status.
-  * `upgrade_status` - **NOTE:** This field is only available when `enable_details` is `true`. The upgrade status of the instance.
-  * `validation_method` - **NOTE:** This field is only available when `enable_details` is `true`. The verification method for the certificate application.
-  * `wildcard_domain_count` - **NOTE:** This field is only available when `enable_details` is `true`. The number of wildcard domain names included in the instance.
-  * `tags` - **NOTE:** This field is only available when `enable_details` is `true`. The tags of the instance.
-  * `id` - The ID of the resource supplied above.
+* `instances` - A list of Instance Entries.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `auto_reissue` - Specifies whether to enable managed renewal.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `average_waiting_time` - Average waiting time for issuing a certificate of this specification, in seconds.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `brand` - The certificate brand.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `certificate_type` - The type of the certificate.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `city` - The city where the company or organization to which the certificate purchaser belongs is located.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `company_id` - The company information ID.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `contact_id_list` - The list of contact IDs.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `country_code` - The code of the country or region where the certificate organization is located.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `csr` - The CSR content.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `domain` - The domain names to be bound to the certificate.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `full_domain_count` - The number of single domain names included in the instance.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `generate_csr_method` - The method used to generate the Certificate Signing Request (CSR).
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `instance_end_time` - Instance expiration time, a UNIX timestamp in seconds.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `instance_id` - The instance ID.
+* `instance_name` - The name of the instance.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `instance_start_time` - Instance start time, a UNIX timestamp in seconds.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `instance_type` - The instance type.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `key_algorithm` - The certificate algorithm.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `order_end_time` - Order end time, a UNIX timestamp in seconds.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `order_start_time` - Order start time, a UNIX timestamp in seconds.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `province` - The province or region where the company is located.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `resource_group_id` - The ID of the resource group.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `spec` - The specification of the purchased instance.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `status` - The instance status.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `upgrade_status` - The upgrade status of the instance.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `validation_method` - The verification method for the certificate application.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `wildcard_domain_count` - The number of wildcard domain names included in the instance.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `tags` - The tags of the instance.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `id` - The ID of the resource supplied above.

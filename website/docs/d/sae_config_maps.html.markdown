@@ -44,9 +44,9 @@ output "sae_config_map_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Config Map IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Config Map name.
-* `namespace_id` - (Required, ForceNew) The NamespaceId of Config Maps. The Id of Namespace.It can contain 2 to 32 characters.The value is in format {RegionId}:{namespace}.
+* `ids` - (Optional, Computed)  A list of Config Map IDs.
+* `name_regex` - (Optional) A regex string to filter results by Config Map name.
+* `namespace_id` - (Required) The NamespaceId of Config Maps. The Id of Namespace.It can contain 2 to 32 characters.The value is in format {RegionId}:{namespace}.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -54,11 +54,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Config Map names.
-* `maps` - A list of Sae Config Maps. Each element contains the following attributes:
-  * `config_map_id` - The first ID of the resource.
-  * `create_time` - The Creation Time of the ConfigMap.
-  * `data` - ConfigMap instance data. The value's format is a `json` string
-  * `description` - The Description of Config Map.
-  * `id` - The ID of the Config Map.
-  * `name` - ConfigMap instance name.
-  * `namespace_id` - The NamespaceId of Config Maps.
+* `maps` - A list of Sae Config Maps.
+
+---
+
+### `maps`
+
+The maps supports the following attributes:
+
+* `config_map_id` - The first ID of the resource.
+* `create_time` - The Creation Time of the ConfigMap.
+* `data` - ConfigMap instance data. The value's format is a `json` string
+* `description` - The Description of Config Map.
+* `id` - The ID of the Config Map.
+* `name` - ConfigMap instance name.
+* `namespace_id` - The NamespaceId of Config Maps.

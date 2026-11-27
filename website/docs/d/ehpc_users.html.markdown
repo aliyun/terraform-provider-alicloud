@@ -179,10 +179,17 @@ The following attributes are exported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of User names.
-* `users` - A list of Users. Each element contains the following attributes:
-  * `id` - The ID of the User.
-  * `cluster_id` - The cluster ID.
-  * `user_name` - The username.
-  * `user_id` - The user ID.
-  * `group` - The name of the permission group.
-  * `group_id` - The permission group ID.
+* `users` - A list of Users.
+
+---
+
+### `users`
+
+The users supports the following attributes:
+
+* `id` - The ID of the User.
+* `cluster_id` - The cluster ID.
+* `user_name` - The username.
+* `user_id` - The user ID.
+* `group` - The name of the permission group.
+* `group_id` - The permission group ID.

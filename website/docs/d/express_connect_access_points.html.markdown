@@ -38,26 +38,40 @@ output "express_connect_access_point_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Access Point IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Access Point name.
+* `ids` - (Optional, Computed)  A list of Access Point IDs.
+* `name_regex` - (Optional) A regex string to filter results by Access Point name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The Physical Connection to Which the Access Point State. Valid values: `disabled`, `full`, `hot`, `recommended`.
+* `status` - (Optional) The Physical Connection to Which the Access Point State. Valid values: `disabled`, `full`, `hot`, `recommended`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Access Point names.
-* `points` - A list of Express Connect Access Points. Each element contains the following attributes:
-  * `access_point_feature_models` - Query to the Access Point Feature Model.
-    * `feature_key` - The Access Point Properties.
-    * `feature_value` - The Access Point Characteristic Value.
-  * `access_point_id` - The Access Point ID.
-  * `access_point_name` - Access Point Name.
-  * `attached_region_no` - The Access Point Is Located an ID.
-  * `description` - The Access Point Description.
-  * `host_operator` - The Access Point Belongs to the Operator.
-  * `id` - The ID of the Access Point.
-  * `location` - The Location of the Access Point.
-  * `status` - The Physical Connection to Which the Access Point State.
-  * `type` - The Physical Connection to Which the Network Type.
+* `points` - A list of Express Connect Access Points.
+
+---
+
+### `points`
+
+The points supports the following attributes:
+
+* `access_point_feature_models` - Query to the Access Point Feature Model.
+* `access_point_id` - The Access Point ID.
+* `access_point_name` - Access Point Name.
+* `attached_region_no` - The Access Point Is Located an ID.
+* `description` - The Access Point Description.
+* `host_operator` - The Access Point Belongs to the Operator.
+* `id` - The ID of the Access Point.
+* `location` - The Location of the Access Point.
+* `status` - The Physical Connection to Which the Access Point State.
+* `type` - The Physical Connection to Which the Network Type.
+
+---
+
+### `points.access_point_feature_models`
+
+The access_point_feature_models supports the following attributes:
+
+* `feature_key` - The Access Point Properties.
+* `feature_value` - The Access Point Characteristic Value.

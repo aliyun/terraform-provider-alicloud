@@ -33,15 +33,22 @@ data "alicloud_polardb_gateway_model_services" "example" {
 
 ## Attributes Reference
 
-* `services` - A list of model services. Each item contains the following attributes:
-  * `id` - The model service ID.
-  * `name` - The model service name.
-  * `model_category` - The model category.
-  * `protocol` - The upstream protocol.
-  * `status` - The model service status.
-  * `base_url` - The upstream service URL.
-  * `vendor` - The model service vendor.
-  * `create_time` - The creation time.
-  * `input_cost_points_per_million` - The input cost points.
-  * `output_cost_points_per_million` - The output cost points.
-  * `request_cost_points` - The per-request cost points.
+* `services` - A list of model services.
+
+---
+
+### `services`
+
+The services supports the following attributes:
+
+* `id` - The model service ID.
+* `name` - The model service name.
+* `model_category` - The model category.
+* `protocol` - The upstream protocol.
+* `status` - The model service status.
+* `base_url` - The upstream service URL.
+* `vendor` - The model service vendor.
+* `create_time` - The creation time.
+* `input_cost_points_per_million` - The input cost points.
+* `output_cost_points_per_million` - The output cost points.
+* `request_cost_points` - The per-request cost points.

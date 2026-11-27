@@ -34,16 +34,23 @@ data "alicloud_polardb_gateway_model_apis" "example" {
 
 ## Attributes Reference
 
-* `apis` - A list of model APIs. Each item contains the following attributes:
-  * `id` - The model API ID.
-  * `name` - The model API name.
-  * `model_category` - The model category.
-  * `path_prefix` - The API path prefix.
-  * `protocol` - The model API protocol.
-  * `status` - The model API status.
-  * `record_input` - The input recording configuration.
-  * `record_output` - The output recording configuration.
-  * `route_rules` - The routing rules as JSON.
-  * `force_model` - The forced model.
-  * `invoke_endpoint` - The invocation endpoint.
-  * `create_time` - The creation time.
+* `apis` - A list of model APIs.
+
+---
+
+### `apis`
+
+The apis supports the following attributes:
+
+* `id` - The model API ID.
+* `name` - The model API name.
+* `model_category` - The model category.
+* `path_prefix` - The API path prefix.
+* `protocol` - The model API protocol.
+* `status` - The model API status.
+* `record_input` - The input recording configuration.
+* `record_output` - The output recording configuration.
+* `route_rules` - The routing rules as JSON.
+* `force_model` - The forced model.
+* `invoke_endpoint` - The invocation endpoint.
+* `create_time` - The creation time.

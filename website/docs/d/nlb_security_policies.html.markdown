@@ -35,12 +35,12 @@ output "nlb_security_policy_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Security Policy IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Security Policy name.
+* `ids` - (Optional, Computed)  A list of Security Policy IDs.
+* `name_regex` - (Optional) A regex string to filter results by Security Policy name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
-* `security_policy_names` - (Optional, ForceNew) The names of the TLS security policies.
-* `status` - (Optional, ForceNew) The status of the resource. Valid values: `Available`, `Configuring`.
+* `resource_group_id` - (Optional) The ID of the resource group.
+* `security_policy_names` - (Optional) The names of the TLS security policies.
+* `status` - (Optional) The status of the resource. Valid values: `Available`, `Configuring`.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
@@ -48,11 +48,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Security Policy names.
-* `policies` - A list of Nlb Security Policies. Each element contains the following attributes:
-  * `ciphers` - The supported cipher suites, which are determined by the TLS protocol version.
-  * `status` - The status of the resource.
-  * `tls_versions` - The TLS protocol versions that are supported.
-  * `resource_group_id` - The ID of the resource group.
-  * `security_policy_name` - The name of the TLS security policy.
-  * `tags` - A mapping of tags to assign to the resource.
-  * `id` - The id of the TLS security policy.
+* `policies` - A list of Nlb Security Policies.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `ciphers` - The supported cipher suites, which are determined by the TLS protocol version.
+* `status` - The status of the resource.
+* `tls_versions` - The TLS protocol versions that are supported.
+* `resource_group_id` - The ID of the resource group.
+* `security_policy_name` - The name of the TLS security policy.
+* `tags` - A mapping of tags to assign to the resource.
+* `id` - The id of the TLS security policy.

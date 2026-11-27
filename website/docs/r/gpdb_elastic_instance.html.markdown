@@ -12,7 +12,7 @@ description: |-
 Provides a AnalyticDB for PostgreSQL instance resource which storage type is flexible. Compared to the reserved storage ADB PG instance, you can scale up each disk and smoothly scale out nodes online.  
 For more detail product introduction, see [AnalyticDB for PostgreSQL documentation](https://www.alibabacloud.com/help/doc-detail/141368.htm).
 
--> **DEPRECATED:**  This resource  has been deprecated from version `1.147.0`. Please use new resource [alicloud_gpdb_instance](https://www.terraform.io/docs/providers/alicloud/r/alicloud_gpdb_instance).
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.147.0`. Please use new resource [alicloud_gpdb_instance](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/gpdb_instance).
 
 ## Example Usage
 
@@ -69,15 +69,21 @@ The following arguments are supported:
 * `instance_network_type` - (Optional, ForceNew) The network type of ADB PG instance. Only `VPC` supported now.
 * `payment_type` - (Optional, ForceNew) Valid values are `PayAsYouGo`, `Subscription`. Default to `PayAsYouGo`.
 * `payment_duration_unit` - (Optional) The unit of the subscription period. Valid values: `Month`, `Year`. It is valid when payment_type is `Subscription`.  
-  **NOTE:** Will not take effect after modifying `payment_duration_unit` for now, if you want to renew a PayAsYouGo instance, need to do in on aliyun console.
+
+  -> **NOTE:** Will not take effect after modifying `payment_duration_unit` for now, if you want to renew a PayAsYouGo instance, need to do in on aliyun console.
 * `payment_duration` - (Optional) The subscription period. Valid values: [1~12]. It is valid when payment_type is `Subscription`.  
-  **NOTE:** Will not take effect after modifying `payment_duration` for now, if you want to renew a PayAsYouGo instance, need to do in on aliyun console.
+
+  -> **NOTE:** Will not take effect after modifying `payment_duration` for now, if you want to renew a PayAsYouGo instance, need to do in on aliyun console.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the ADB PG instance. If specified, must be consistent with the zone where the vswitch is located.
 * `vswitch_id` - (Required, ForceNew) The virtual switch ID to launch ADB PG instances in one VPC.
 * `security_ip_list` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `tags` - (Optional, Available since v1.158.0) A mapping of tags to assign to the resource.
-* `encryption_key` - (Optional, ForceNew, Available since v1.158.0) The ID of the encryption key. **Note:** If the `encryption_type` parameter is set to `CloudDisk`, you must specify this parameter to the encryption key that is in the same region as the disk that is specified by the EncryptionType parameter. Otherwise, leave this parameter empty.
-* `encryption_type` - (Optional, ForceNew, Available since v1.158.0)  The type of the encryption. Valid values: `CloudDisk`. **Note:** Disk encryption cannot be disabled after it is enabled.
+* `encryption_key` - (Optional, ForceNew, Available since v1.158.0) The ID of the encryption key.
+
+  -> **NOTE:** If the `encryption_type` parameter is set to `CloudDisk`, you must specify this parameter to the encryption key that is in the same region as the disk that is specified by the EncryptionType parameter. Otherwise, leave this parameter empty.
+* `encryption_type` - (Optional, ForceNew, Available since v1.158.0)  The type of the encryption. Valid values: `CloudDisk`.
+
+  -> **NOTE:** Disk encryption cannot be disabled after it is enabled.
 
 ## Attributes Reference
 
@@ -92,7 +98,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.127.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when creating the ADB PG instance (until it reaches the initial `Running` status).
 * `update` - (Defaults to 30 mins) Used when updating the ADB PG instance (until it reaches the initial `Running` status).

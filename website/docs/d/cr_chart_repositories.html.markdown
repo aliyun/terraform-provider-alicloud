@@ -32,9 +32,9 @@ output "cr_chart_repository_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Chart Repository IDs.
-* `instance_id` - (Required, ForceNew) InstanceId.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by repository name.
+* `ids` - (Optional, Computed)  A list of Chart Repository IDs.
+* `instance_id` - (Required) InstanceId.
+* `name_regex` - (Optional) A regex string to filter results by repository name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -43,12 +43,19 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of matched Container Registry Enterprise Edition repositories.
 * `names` - A list of repository names.
-* `repositories` - A list of Cr Chart Repositories. Each element contains the following attributes:
-	* `chart_repository_id` - The first ID of the resource.
-	* `create_time` - The creation time of the resource.
-	* `id` - The ID of the Chart Repository.
-	* `instance_id` - The ID of the Container Registry instance.
-	* `repo_name` - The name of the repository.
-	* `repo_namespace_name` - The namespace to which the repository belongs.
-	* `repo_type` - The type of the repository. Valid values: `PUBLIC`,`PRIVATE`.
-	* `summary` - The summary about the repository.
+* `repositories` - A list of Cr Chart Repositories.
+
+---
+
+### `repositories`
+
+The repositories supports the following attributes:
+
+* `chart_repository_id` - The first ID of the resource.
+* `create_time` - The creation time of the resource.
+* `id` - The ID of the Chart Repository.
+* `instance_id` - The ID of the Container Registry instance.
+* `repo_name` - The name of the repository.
+* `repo_namespace_name` - The namespace to which the repository belongs.
+* `repo_type` - The type of the repository. Valid values: `PUBLIC`,`PRIVATE`.
+* `summary` - The summary about the repository.

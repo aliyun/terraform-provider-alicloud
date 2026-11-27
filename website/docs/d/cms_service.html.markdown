@@ -7,21 +7,21 @@ description: |-
     Provides a datasource to open the CMS service automatically.
 ---
 
-# alicloud\_cms\_service
+# alicloud_cms_service
 
 Using this data source can open CMS service automatically. If the service has been opened, it will return opened.
 
-For information about CMS and how to use it, see [What is CMS](https://help.aliyun.com/product/28572.html).
+For information about CMS and how to use it, see [What is CMS](https://www.alibabacloud.com/help/product/28572.html).
 
--> **NOTE:** Available in v1.111.0+
+-> **NOTE:** Available since v1.111.0+
 
 -> **DEPRECATED:**  This data source has been deprecated from version `1.219.0`. The Cloud Monitor Service is no longer needed to open in the product dimension and the OpenAPI has been taken [offline](https://api.alibabacloud.com/api/Cms/2019-01-01/OpenCmsService).
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cms_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 
@@ -37,4 +37,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

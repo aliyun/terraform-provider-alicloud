@@ -668,60 +668,67 @@ func (s *Service) DescribeExpressConnectRouterExpressConnectRouterTrAssociation(
 	request["ClientToken"] = helper.BuildClientToken(action)
 
 	request["AssociationNodeType"] = "TR"
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
-		request["ClientToken"] = helper.BuildClientToken(action)
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
+			request["ClientToken"] = helper.BuildClientToken(action)
 
-		if err != nil {
-			if helper.NeedRetry(err) {
-				wait()
-				return retry.RetryableError(err)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
 			}
-			return retry.NonRetryableError(err)
+			logs.AddDebug(action, response, request)
+			return nil
+		})
+		code, _ := jsonpath.Get("$.Code", response)
+		if helper.InArray(fmt.Sprint(code), []string{"ResourceNotFound.EcrId"}) || trAssociationBusinessCode(err) == "ResourceNotFound.EcrId" {
+			return object, errs.WrapErrorf(errs.NotFoundErr("ExpressConnectRouterTrAssociation", id), errs.NotFoundMsg, response)
 		}
-		logs.AddDebug(action, response, request)
-		return nil
-	})
-	code, _ := jsonpath.Get("$.Code", response)
-	if helper.InArray(fmt.Sprint(code), []string{"ResourceNotFound.EcrId"}) {
-		return object, errs.WrapErrorf(errs.NotFoundErr("ExpressConnectRouterTrAssociation", id), errs.NotFoundMsg, response)
+		if err != nil {
+			return object, fmt.Errorf("%s failed: %w", action, err)
+		}
+		if trAssociationEmptyBusinessObject(response) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("ExpressConnectRouterTrAssociation", id), errs.NotFoundMsg, response)
+		}
+		result, ok := response["AssociationList"].([]interface{})
+		if !ok {
+			return object, errs.WrapErrorf(fmt.Errorf("expected AssociationList to be an array, got %T", response["AssociationList"]), errs.FailedGetAttributeMsg, id, "$.AssociationList[*]", response)
+		}
+		for _, v := range result {
+			item, ok := v.(map[string]interface{})
+			if !ok {
+				return object, errs.WrapErrorf(fmt.Errorf("expected AssociationList item to be an object, got %T", v), errs.FailedGetAttributeMsg, id, "$.AssociationList[*]", response)
+			}
+			matches, matchErr := trAssociationMatches(item, parts)
+			if matchErr != nil {
+				return object, errs.WrapErrorf(matchErr, errs.FailedGetAttributeMsg, id, "$.AssociationList[*]", response)
+			}
+			if !matches {
+				continue
+			}
+			return item, nil
+		}
+		rawNextToken, present := response["NextToken"]
+		nextToken, ok := rawNextToken.(string)
+		if present && !ok {
+			return object, errs.WrapErrorf(fmt.Errorf("expected NextToken to be a string, got %T", rawNextToken), errs.FailedGetAttributeMsg, id, "$.NextToken", response)
+		}
+		if nextToken == "" {
+			return object, errs.WrapErrorf(errs.NotFoundErr("ExpressConnectRouterTrAssociation", id), errs.NotFoundMsg, response)
+		}
+		request["NextToken"] = nextToken
 	}
-
-	v, err := jsonpath.Get("$.AssociationList[*]", response)
-	if err != nil {
-		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.AssociationList[*]", response)
-	}
-
-	if len(v.([]interface{})) == 0 {
-		return object, errs.WrapErrorf(errs.NotFoundErr("ExpressConnectRouterTrAssociation", id), errs.NotFoundMsg, response)
-	}
-
-	result, _ := v.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-		if item["AssociationId"] != parts[1] {
-			continue
-		}
-		if item["AssociationNodeType"] != "TR" {
-			continue
-		}
-		if item["EcrId"] != parts[0] {
-			continue
-		}
-		if item["TransitRouterId"] != parts[2] {
-			continue
-		}
-		return item, nil
-	}
-	return object, errs.WrapErrorf(errs.NotFoundErr("ExpressConnectRouterTrAssociation", id), errs.NotFoundMsg, response)
 }
 
 func (s *Service) ExpressConnectRouterExpressConnectRouterTrAssociationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectRouterExpressConnectRouterTrAssociation(id)
 		if err != nil {
-			if errs.NotFoundError(err) {
+			if trAssociationNotFound(err) {
 				return nil, "", nil
 			}
 			return nil, "", errs.WrapError(err)

@@ -7,13 +7,13 @@ description: |-
   Provides a list of Video Surveillance System service to the user.
 ---
 
-# alicloud\_vs\_service
+# alicloud_vs_service
 
 Using this data source can open Video Surveillance System service automatically. If the service has been opened, it will return opened.
 
-For information about Video Surveillance System and how to use it, see [What is VS](https://help.aliyun.com/product/108765.html).
+For information about Video Surveillance System and how to use it, see [What is VS](https://www.alibabacloud.com/help/product/108765.html).
 
--> **NOTE:** Available in v1.116.0+
+-> **NOTE:** Available since v1.116.0.
 
 -> **NOTE:** The Video Surveillance System service is not support in the international site.
 
@@ -37,4 +37,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

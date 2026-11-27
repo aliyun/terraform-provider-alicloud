@@ -65,6 +65,8 @@ By default, port 80 is used to forward the requests to the origin server. Valid 
 * `source_ips` - (Optional) List of the IP address or domain of the origin server to which the specified domain points.
 * `write_time` - (Optional) The timeout period for a WAF exclusive cluster write connection. Unit: seconds.
 
+---
+
 ### `log_headers`
 
 * `key` - (Optional) The key of label.

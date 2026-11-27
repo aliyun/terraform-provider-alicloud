@@ -97,9 +97,9 @@ output "alicloud_apig_service_example_id" {
 
 The following arguments are supported:
 
-* `gateway_id` - (ForceNew, Optional) The ID of the Cloud Native API Gateway.
-* `resource_group_id` - (ForceNew, Optional) The ID of the resource group
-* `source_type` - (ForceNew, Optional) service source type, optional value is K8S/MSE_NACOS/FC3/SAE_K8S_SERVICE/VIP/DNS/AI
+* `gateway_id` - (Optional) The ID of the Cloud Native API Gateway.
+* `resource_group_id` - (Optional) The ID of the resource group
+* `source_type` - (Optional) service source type, optional value is K8S/MSE_NACOS/FC3/SAE_K8S_SERVICE/VIP/DNS/AI
 * `ids` - (Optional, Computed) A list of Service IDs.
 * `name_regex` - (Optional) A regex string to filter results by APIG Service name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -110,44 +110,72 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Service IDs.
 * `names` - A list of name of Services.
-* `services` - A list of Service Entries. Each element contains the following attributes:
-  * `addresses` - A list of domain names or fixed addresses.
-  * `create_timestamp` - Creation timestamp.
-  * `dns_servers` - DNS servers.
-  * `express_type` - Express type.
-  * `gateway_id` - The ID of the Cloud Native API Gateway.
-  * `health_check_config` - Health check configuration.
-    * `enable` - Whether to enable health check.
-    * `expected_statuses` - Expected HTTP status codes.
-    * `healthy_threshold` - Healthy threshold.
-    * `http_host` - Health check host (optional when protocol is HTTP).
-    * `http_path` - Health check path (required when protocol is HTTP).
-    * `interval` - Health check interval.
-    * `protocol` - Health check protocol TCP|HTTP|GRPC.
-    * `timeout` - Health check response timeout.
-    * `unhealthy_threshold` - Unhealthy threshold.
-  * `health_status` - Health status.
-  * `healthy_panic_threshold` - Healthy panic threshold.
-  * `namespace` - The namespace of the service.
-  * `outlier_detection_config` - Outlier detection configuration.
-    * `base_ejection_time` - Base ejection time.
-    * `enable` - Whether to enable outlier detection.
-    * `failure_percentage_minimum_hosts` - Failure percentage minimum hosts.
-    * `failure_percentage_threshold` - Failure percentage threshold.
-    * `interval` - Detection interval.
-  * `outlier_endpoints` - Outlier endpoints.
-  * `ports` - Port information.
-    * `name` - Port name.
-    * `port` - Port number.
-    * `protocol` - Protocol TCP|UDP.
-  * `protocol` - Service protocol.
-  * `qualifier` - The function version or alias.
-  * `resource_group_id` - The ID of the resource group.
-  * `runtime_detail_error_code` - Runtime detail error code.
-  * `runtime_detail_status` - Runtime detail status.
-  * `service_id` - service id.
-  * `service_name` - Service Name, need to fill in manually when sourceType is VIP/DNS/AI.
-  * `source_type` - service source type, optional value is K8S/MSE_NACOS/FC3/SAE_K8S_SERVICE/VIP/DNS/AI.
-  * `unhealthy_endpoints` - Unhealthy endpoints.
-  * `update_timestamp` - Update timestamp.
-  * `id` - The ID of the resource supplied above.
+* `services` - A list of Service Entries.
+
+---
+
+### `services`
+
+The services supports the following attributes:
+
+* `addresses` - A list of domain names or fixed addresses.
+* `create_timestamp` - Creation timestamp.
+* `dns_servers` - DNS servers.
+* `express_type` - Express type.
+* `gateway_id` - The ID of the Cloud Native API Gateway.
+* `health_check_config` - Health check configuration.
+* `health_status` - Health status.
+* `healthy_panic_threshold` - Healthy panic threshold.
+* `namespace` - The namespace of the service.
+* `outlier_detection_config` - Outlier detection configuration.
+* `outlier_endpoints` - Outlier endpoints.
+* `ports` - Port information.
+* `protocol` - Service protocol.
+* `qualifier` - The function version or alias.
+* `resource_group_id` - The ID of the resource group.
+* `runtime_detail_error_code` - Runtime detail error code.
+* `runtime_detail_status` - Runtime detail status.
+* `service_id` - service id.
+* `service_name` - Service Name, need to fill in manually when sourceType is VIP/DNS/AI.
+* `source_type` - service source type, optional value is K8S/MSE_NACOS/FC3/SAE_K8S_SERVICE/VIP/DNS/AI.
+* `unhealthy_endpoints` - Unhealthy endpoints.
+* `update_timestamp` - Update timestamp.
+* `id` - The ID of the resource supplied above.
+
+---
+
+### `services.health_check_config`
+
+The health_check_config supports the following attributes:
+
+* `enable` - Whether to enable health check.
+* `expected_statuses` - Expected HTTP status codes.
+* `healthy_threshold` - Healthy threshold.
+* `http_host` - Health check host (optional when protocol is HTTP).
+* `http_path` - Health check path (required when protocol is HTTP).
+* `interval` - Health check interval.
+* `protocol` - Health check protocol TCP|HTTP|GRPC.
+* `timeout` - Health check response timeout.
+* `unhealthy_threshold` - Unhealthy threshold.
+
+---
+
+### `services.outlier_detection_config`
+
+The outlier_detection_config supports the following attributes:
+
+* `base_ejection_time` - Base ejection time.
+* `enable` - Whether to enable outlier detection.
+* `failure_percentage_minimum_hosts` - Failure percentage minimum hosts.
+* `failure_percentage_threshold` - Failure percentage threshold.
+* `interval` - Detection interval.
+
+---
+
+### `services.ports`
+
+The ports supports the following attributes:
+
+* `name` - Port name.
+* `port` - Port number.
+* `protocol` - Protocol TCP|UDP.

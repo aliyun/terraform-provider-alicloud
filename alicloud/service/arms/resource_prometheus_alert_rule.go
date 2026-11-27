@@ -88,8 +88,19 @@ func ResourcePrometheusAlertRule() *schema.Resource {
 				ForceNew: true,
 			},
 			"notify_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
+				Type:     schema.TypeString,
+				Optional: true,
+				// The server always materializes a notify type (default
+				// ALERT_MANAGER), and UpdatePrometheusAlertRule is a
+				// full-overwrite API: an update request that omits NotifyType
+				// resets the server-side value to the default instead of
+				// preserving it (verified against the live API, see the
+				// unconfiguredNotifyType acceptance test). Marking the
+				// attribute Computed keeps the state value authoritative when
+				// the configuration leaves it unset, so Update carries it in
+				// full and the plan stays converged; the same pattern is
+				// already used for "type" above.
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ALERT_MANAGER", "DISPATCH_RULE"}, false),
 			},
 			"prometheus_alert_rule_name": {
@@ -115,23 +126,28 @@ func ResourcePrometheusAlertRule() *schema.Resource {
 	}
 }
 
+// setAsJsonString serializes a TypeSet of {name, value} elements into the
+// JSON string the ARMS alert rule APIs expect ("[]" for an empty set).
+func setAsJsonString(d *schema.ResourceData, key string) (string, error) {
+	items := make([]map[string]interface{}, 0)
+	for _, item := range d.Get(key).(*schema.Set).List() {
+		items = append(items, item.(map[string]interface{}))
+	}
+	return convert.ConvertArrayObjectToJsonString(items)
+}
+
 func ResourcePrometheusAlertRuleCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreatePrometheusAlertRule"
 	request := make(map[string]interface{})
 	var err error
-	if v, ok := d.GetOk("annotations"); ok {
-		annotationsMaps := make([]map[string]interface{}, 0)
-		for _, annotations := range v.(*schema.Set).List() {
-			annotationsMap := annotations.(map[string]interface{})
-			annotationsMaps = append(annotationsMaps, annotationsMap)
-		}
-		if v, err := convert.ConvertArrayObjectToJsonString(annotationsMaps); err == nil {
-			request["Annotations"] = v
-		} else {
+	if _, ok := d.GetOk("annotations"); ok {
+		annotations, err := setAsJsonString(d, "annotations")
+		if err != nil {
 			return errs.WrapError(err)
 		}
+		request["Annotations"] = annotations
 	}
 	request["ClusterId"] = d.Get("cluster_id")
 	if v, ok := d.GetOk("dispatch_rule_id"); ok {
@@ -139,17 +155,12 @@ func ResourcePrometheusAlertRuleCreate(d *schema.ResourceData, meta interface{})
 	}
 	request["Duration"] = d.Get("duration")
 	request["Expression"] = d.Get("expression")
-	if v, ok := d.GetOk("labels"); ok {
-		labelsMaps := make([]map[string]interface{}, 0)
-		for _, labels := range v.(*schema.Set).List() {
-			labelsMap := labels.(map[string]interface{})
-			labelsMaps = append(labelsMaps, labelsMap)
-		}
-		if v, err := convert.ConvertArrayObjectToJsonString(labelsMaps); err == nil {
-			request["Labels"] = v
-		} else {
+	if _, ok := d.GetOk("labels"); ok {
+		labels, err := setAsJsonString(d, "labels")
+		if err != nil {
 			return errs.WrapError(err)
 		}
+		request["Labels"] = labels
 	}
 	request["Message"] = d.Get("message")
 	if v, ok := d.GetOk("notify_type"); ok {
@@ -198,7 +209,14 @@ func ResourcePrometheusAlertRuleRead(d *schema.ResourceData, meta interface{}) e
 		return errs.WrapError(err)
 	}
 	d.Set("cluster_id", parts[0])
-	d.Set("prometheus_alert_rule_id", parts[1])
+	// prometheus_alert_rule_id is declared as an int in the schema, so the
+	// string alert id parsed from the resource id must be converted before Set,
+	// otherwise a successful create/update panics in ResourceData.Set.
+	prometheusAlertRuleId, err := convert.FormatInt(parts[1])
+	if err != nil {
+		return err
+	}
+	d.Set("prometheus_alert_rule_id", prometheusAlertRuleId)
 	if v, ok := object["Annotations"].([]interface{}); ok {
 		annotations := make([]map[string]interface{}, 0)
 		for _, val := range v {
@@ -247,7 +265,7 @@ func ResourcePrometheusAlertRuleRead(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return err
 	}
-	d.Set("status", fmt.Sprint(actualStatus))
+	d.Set("status", actualStatus)
 	d.Set("type", object["Type"])
 	return nil
 }
@@ -282,47 +300,52 @@ func ResourcePrometheusAlertRuleUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 	}
 	request["RegionId"] = client.RegionId
+	// UpdatePrometheusAlertRule is a full-overwrite API: fields omitted from
+	// the request are cleared or reset on the server side (observed for
+	// NotifyType against the live API, see the unconfiguredNotifyType
+	// acceptance test), so labels, annotations, notify_type and type must
+	// always be carried in full instead of only when they changed; otherwise
+	// an update triggered by another field wipes them and the next plan
+	// shows a permanent diff. DispatchRuleId is the exception the API
+	// contract itself defines: the parameter is only meaningful for
+	// notify_type = DISPATCH_RULE (the ListPrometheusAlertRules response
+	// only reports it then), and Read stores the placeholder "0" for rules
+	// without a dispatch rule, so it must not be sent otherwise.
 	if d.HasChange("annotations") {
 		update = true
-		if v, ok := d.GetOk("annotations"); ok {
-			annotationsMaps := make([]map[string]interface{}, 0)
-			for _, annotations := range v.(*schema.Set).List() {
-				annotationsMap := annotations.(map[string]interface{})
-				annotationsMaps = append(annotationsMaps, annotationsMap)
-			}
-			if v, err := convert.ConvertArrayObjectToJsonString(annotationsMaps); err == nil {
-				request["Annotations"] = v
-			} else {
-				return errs.WrapError(err)
-			}
-		}
 	}
+	annotations, err := setAsJsonString(d, "annotations")
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	request["Annotations"] = annotations
 	if d.HasChange("dispatch_rule_id") {
 		update = true
-		if v, ok := d.GetOk("dispatch_rule_id"); ok {
-			request["DispatchRuleId"] = v
-		}
+	}
+	if v, ok := d.GetOk("dispatch_rule_id"); ok && d.Get("notify_type").(string) == "DISPATCH_RULE" {
+		request["DispatchRuleId"] = v
 	}
 	if d.HasChange("labels") {
 		update = true
-		if v, ok := d.GetOk("labels"); ok {
-			labelsMaps := make([]map[string]interface{}, 0)
-			for _, labels := range v.(*schema.Set).List() {
-				labelsMap := labels.(map[string]interface{})
-				labelsMaps = append(labelsMaps, labelsMap)
-			}
-			if v, err := convert.ConvertArrayObjectToJsonString(labelsMaps); err == nil {
-				request["Labels"] = v
-			} else {
-				return errs.WrapError(err)
-			}
-		}
 	}
+	labels, err := setAsJsonString(d, "labels")
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	request["Labels"] = labels
 	if d.HasChange("notify_type") {
 		update = true
-		if v, ok := d.GetOk("notify_type"); ok {
-			request["NotifyType"] = v
-		}
+	}
+	// notify_type is Optional+Computed, so the state value (the server
+	// default ALERT_MANAGER when the configuration leaves it unset) is
+	// authoritative; it is always carried, never conditionally omitted.
+	request["NotifyType"] = d.Get("notify_type")
+	// type is ForceNew, so its value cannot change in place: carrying the
+	// Computed state value (populated by Read from the server response)
+	// keeps the server-side type intact across updates instead of relying
+	// on the undocumented omit-preservation behavior.
+	if v, ok := d.GetOk("type"); ok {
+		request["Type"] = v
 	}
 
 	if update {

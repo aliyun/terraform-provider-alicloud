@@ -112,6 +112,8 @@ The following arguments are supported:
 * `max_receive_tps` - (Optional, Int, Available since v1.247.0) Maximum received message tps.
 * `remark` - (Optional) Custom remarks.
 
+---
+
 ### `consume_retry_policy`
 
 The consume_retry_policy supports the following:
@@ -131,7 +133,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Consumer Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Consumer Group.

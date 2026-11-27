@@ -1,6 +1,7 @@
 package sdkv2
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -18,6 +19,9 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/intercept"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-log/tflogtest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/mitchellh/go-homedir"
@@ -280,6 +284,55 @@ func TestProviderConfigure(t *testing.T) {
 	}
 }
 
+func TestProviderDefaultV4RequiresSigningRegion(t *testing.T) {
+	clearCredentialEnv(t)
+	t.Setenv("ALICLOUD_REGION", "")
+	t.Setenv("ALIBABA_CLOUD_REGION", "")
+	for _, region := range []string{"", "  "} {
+		raw := map[string]interface{}{
+			"access_key": "test-ak", "secret_key": "test-secret",
+			"sign_version": []interface{}{map[string]interface{}{"default": "v4"}},
+		}
+		if region != "" {
+			raw["region"] = region
+		}
+		p, d := providerResourceData(t, raw)
+		_, diags := providerConfigure(context.Background(), d, p)
+		if !diags.HasError() || !strings.Contains(diags[0].Summary, "requires a physical signing region") {
+			t.Fatalf("region %q: expected signing region diagnostic, got %v", region, diags)
+		}
+	}
+}
+
+func TestProviderDefaultSignatureEOEndpoint(t *testing.T) {
+	const host = "ecs.ap-jakarta-idpt-2.idptcloud02api.alibaba"
+	var requests atomic.Int32
+	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		auth := r.Header.Get("Authorization")
+		if r.Host != host || !strings.HasPrefix(auth, "ACS4-HMAC-SHA256 Credential=test-ak/") ||
+			!strings.Contains(auth, "/ap-jakarta-idpt-2/ecs/aliyun_v4_request,") {
+			t.Error("expected an ECS V4 request for the configured EO hostname and signing region")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"RequestId":"local-verification"}`)
+	}))
+	defer proxy.Close()
+	t.Setenv("HTTP_PROXY", proxy.URL)
+	t.Setenv("NO_PROXY", "")
+	t.Setenv("no_proxy", "")
+	c := configureProvider(t, map[string]interface{}{
+		"access_key": "test-ak", "secret_key": "test-secret", "protocol": "HTTP",
+		"account_type": "International", "region": "ap-jakarta-idpt-2", "skip_region_validation": true,
+		"sign_version": []interface{}{map[string]interface{}{"default": "v4"}},
+		"endpoints":    []interface{}{map[string]interface{}{"ecs": host}},
+	})
+	got, err := c.RpcPost("Ecs", "2014-05-26", "DescribeInstances", nil, nil, false)
+	if err != nil || got["RequestId"] != "local-verification" || requests.Load() != 1 {
+		t.Fatalf("EO request via local test proxy: result=%v requests=%d err=%v", got, requests.Load(), err)
+	}
+}
+
 func TestProviderConfigureCredentialErrors(t *testing.T) {
 	for _, testCase := range []struct {
 		name        string
@@ -394,6 +447,114 @@ func TestProviderConfigure_AssumeRoleConfig(t *testing.T) {
 	assumeRole := assumeRoles[0].(map[string]interface{})
 	if assumeRole["role_arn"] != "acs:ram::123456789012:role/test-role" || assumeRole["session_name"] != "test-session" || assumeRole["session_expiration"] != 3600 {
 		t.Fatalf("unexpected assume_role config: %#v", assumeRole)
+	}
+}
+
+func TestProviderConfigureCanceledContext(t *testing.T) {
+	for _, expired := range []bool{false, true} {
+		ctx, cancel := context.WithCancel(context.Background())
+		want := context.Canceled
+		if expired {
+			cancel()
+			ctx, cancel = context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
+			want = context.DeadlineExceeded
+		}
+		cancel()
+		provider, data := providerResourceData(t, map[string]interface{}{
+			"profile": "missing", "shared_credentials_file": filepath.Join(t.TempDir(), "missing.json"),
+		})
+		meta, diags := providerConfigure(ctx, data, provider)
+		if meta != nil || !diags.HasError() || !strings.Contains(diagnosticsText(diags), want.Error()) {
+			t.Fatalf("取消必须先于配置读取返回：meta=%T diags=%v", meta, diags)
+		}
+	}
+}
+
+func TestProviderConfigureCredentialsURICancellation(t *testing.T) {
+	clearCredentialEnv(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stopped := make(chan bool, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cancel()
+		select {
+		case <-r.Context().Done():
+			stopped <- true
+		case <-time.After(2 * time.Second):
+			stopped <- false
+			http.Error(w, "未传播取消", http.StatusServiceUnavailable)
+		}
+	}))
+	defer server.Close()
+	profileFile := filepath.Join(t.TempDir(), "config.json")
+	writeTestConfig(t, profileFile, nil, "")
+	provider, data := providerResourceData(t, map[string]interface{}{
+		"credentials_uri": server.URL, "shared_credentials_file": profileFile, "region": "cn-hangzhou",
+	})
+	meta, diags := providerConfigure(ctx, data, provider)
+	if meta != nil || !diags.HasError() || !strings.Contains(diagnosticsText(diags), context.Canceled.Error()) {
+		t.Fatalf("初始化取消未返回诊断：meta=%T diags=%v", meta, diags)
+	}
+	if !<-stopped {
+		t.Fatal("credentials_uri HTTP 请求没有响应取消")
+	}
+}
+
+func TestProviderConfigurePublicContext(t *testing.T) {
+	clearCredentialEnv(t)
+	profileFile := filepath.Join(t.TempDir(), "config.json")
+	writeTestConfig(t, profileFile, nil, "")
+	var traces []string
+	for _, region := range []string{"cn-hangzhou", "cn-beijing"} {
+		var output bytes.Buffer
+		configureCtx, cancel := context.WithCancel(tflogtest.RootLogger(context.Background(), &output))
+		configureCtx = tflog.SetField(configureCtx, "tf_req_id", "configure")
+		provider, data := providerResourceData(t, map[string]interface{}{
+			"access_key": "test-ak", "secret_key": "test-sk", "region": region,
+			"account_type": "Domestic", "shared_credentials_file": profileFile,
+		})
+		meta, diags := providerConfigure(configureCtx, data, provider)
+		cancel()
+		if diags.HasError() {
+			t.Fatal(diags)
+		}
+		entries, err := tflogtest.MultilineJSONDecode(&output)
+		if err != nil || len(entries) == 0 {
+			t.Fatalf("缺少初始化上下文日志：%v", err)
+		}
+		trace, _ := entries[0]["alicloud_trace_id"].(string)
+		if trace == "" || entries[0]["tf_req_id"] != "configure" {
+			t.Fatalf("初始化公共字段缺失：%v", entries[0])
+		}
+		traces = append(traces, trace)
+		output.Reset()
+		incoming := tflogtest.RootLogger(context.Background(), &output)
+		incoming = tflog.SetField(incoming, "tf_req_id", "crud")
+		ctx := intercept.BootstrapContext("Arms")(incoming, intercept.Call{
+			Name: "alicloud_test", Op: intercept.OpRead, Meta: meta,
+		})
+		if ctx.Err() != nil {
+			t.Fatalf("保存了已取消的 Configure ctx：%v", ctx.Err())
+		}
+		if _, ok := ctx.Deadline(); ok {
+			t.Fatal("公共补充不应新增 deadline")
+		}
+		tflog.Info(ctx, "crud")
+		tflog.Info(incoming, "parent")
+		entries, err = tflogtest.MultilineJSONDecode(&output)
+		if err != nil || len(entries) != 2 {
+			t.Fatalf("请求日志异常：%v", err)
+		}
+		entry := entries[0]
+		if entry["alicloud_trace_id"] != trace || entry["alicloud_region"] != region || entry["tf_req_id"] != "crud" || entry["alicloud_operation"] != "Read" {
+			t.Fatalf("公共信息未通过 meta 承接：%v", entry)
+		}
+		if _, ok := entries[1]["alicloud_trace_id"]; ok {
+			t.Fatal("公共字段污染父 ctx")
+		}
+	}
+	if traces[0] == traces[1] {
+		t.Fatal("不同 Provider 实例复用了 trace ID")
 	}
 }
 
@@ -779,5 +940,19 @@ func TestProviderConfigure_AssumeRoleWithOIDCTokenFileConsumed(t *testing.T) {
 	defer mu.Unlock()
 	if len(durations) != 1 || durations[0] != "1800" {
 		t.Fatalf("DurationSeconds = %v, want [1800]", durations)
+	}
+}
+
+func TestUnitOtsV4RequiresV4Default(t *testing.T) {
+	clearCredentialEnv(t)
+	p, d := providerResourceData(t, map[string]interface{}{
+		"region":       "cn-hangzhou",
+		"access_key":   "test-ak",
+		"secret_key":   "test-secret",
+		"sign_version": []interface{}{map[string]interface{}{"ots": "v4"}},
+	})
+	_, diags := providerConfigure(context.Background(), d, p)
+	if !diags.HasError() || !strings.Contains(diags[0].Summary, "ots = v4 requires sign_version.default = v4") {
+		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
 }

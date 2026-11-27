@@ -38,19 +38,19 @@ output "sddp_rule_id" {
 
 The following arguments are supported:
 
-* `category` - (Optional, ForceNew) Sensitive Data Identification Rules for the Type of. Valid values:
+* `category` - (Optional) Sensitive Data Identification Rules for the Type of. Valid values:
   * `0`: Keyword.
   * `2`: Regular expression.
-* `content_category` - (Optional, ForceNew) The Content Classification.
-* `custom_type` - (Optional, ForceNew)  Sensitive Data Identification Rules of Type. Valid values:
+* `content_category` - (Optional) The Content Classification.
+* `custom_type` - (Optional)  Sensitive Data Identification Rules of Type. Valid values:
   * `0`: the Built-in.
   * `1`: The User-Defined.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Rule IDs.
-* `name` - (Optional, ForceNew) The name of rule.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Rule name.
+* `ids` - (Optional, Computed)  A list of Rule IDs.
+* `name` - (Optional) The name of rule.
+* `name_regex` - (Optional) A regex string to filter results by Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `product_id` - (Optional, ForceNew) Product ID. Valid values:
+* `product_id` - (Optional) Product ID. Valid values:
   * `1`:MaxCompute.
   * `2`:OSS.
   * `5`:RDS.
@@ -59,8 +59,8 @@ The following arguments are supported:
   * `3`:S2, Medium Risk Level.
   * `4`:S3 High Risk Level.
   * `5`:S4, the Highest Risk Level.
-* `rule_type` - (Optional, ForceNew) Rule Type.
-* `status` - (Optional, ForceNew) Sensitive Data Identification Rules Detection State of.
+* `rule_type` - (Optional) Rule Type.
+* `status` - (Optional) Sensitive Data Identification Rules Detection State of.
 * `warn_level` - (Optional) The Level of Risk. Valid values:
   * `1`: Weak warn Level.
   * `2`: Medium Risk Level.
@@ -71,27 +71,34 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Rule names.
-* `rules` - A list of Sddp Rules. Each element contains the following attributes:
-  * `category` - Sensitive Data Identification Rules for the Type of.
-  * `category_name` - Sensitive Data Identification Rules Belongs Type Name.
-  * `content` - Sensitive Data Identification Rules the Content.
-  * `content_category` - The Content Classification.
-  * `create_time` - Sensitive Data Identification Rules the Creation Time of the Number of Milliseconds.
-  * `custom_type` - Sensitive Data Identification Rules of Type. 0: the Built-in 1: The User-Defined.
-  * `description` - Sensitive Data Identification a Description of the Rule Information.
-  * `display_name` - Sensitive Data Identification Rules, Founder of Account Display Name.
-  * `gmt_modified` - Sensitive Data Identification Rules to the Modified Time of the Number of Milliseconds.
-  * `id` - The ID of the Rule.
-  * `login_name` - Sensitive Data Identification Rules, Founder Of Account Login.
-  * `major_key` - The Primary Key.
-  * `name` - The name of rule.
-  * `product_code` - Product Code.
-  * `product_id` - Product ID.
-  * `risk_level_id` - Sensitive Data Identification Rules of Risk Level ID. Valid values:1:S1, Weak Risk Level. 2:S2, Medium Risk Level. 3:S3 High Risk Level. 4:S4, the Highest Risk Level.
-  * `risk_level_name` - Sensitive Data Identification Rules the Risk Level of. S1: Weak Risk Level S2: Moderate Risk Level S3: High Risk Level S4: the Highest Risk Level.
-  * `rule_id` - The first ID of the resource.
-  * `stat_express` - Triggered the Alarm Conditions.
-  * `status` - Sensitive Data Identification Rules Detection State of.
-  * `target` - The Target.
-  * `user_id` - The User ID.
-  * `warn_level` - The Level of Risk.
+* `rules` - A list of Sddp Rules.
+
+---
+
+### `rules`
+
+The rules supports the following attributes:
+
+* `category` - Sensitive Data Identification Rules for the Type of.
+* `category_name` - Sensitive Data Identification Rules Belongs Type Name.
+* `content` - Sensitive Data Identification Rules the Content.
+* `content_category` - The Content Classification.
+* `create_time` - Sensitive Data Identification Rules the Creation Time of the Number of Milliseconds.
+* `custom_type` - Sensitive Data Identification Rules of Type. 0: the Built-in 1: The User-Defined.
+* `description` - Sensitive Data Identification a Description of the Rule Information.
+* `display_name` - Sensitive Data Identification Rules, Founder of Account Display Name.
+* `gmt_modified` - Sensitive Data Identification Rules to the Modified Time of the Number of Milliseconds.
+* `id` - The ID of the Rule.
+* `login_name` - Sensitive Data Identification Rules, Founder Of Account Login.
+* `major_key` - The Primary Key.
+* `name` - The name of rule.
+* `product_code` - Product Code.
+* `product_id` - Product ID.
+* `risk_level_id` - Sensitive Data Identification Rules of Risk Level ID. Valid values:1:S1, Weak Risk Level. 2:S2, Medium Risk Level. 3:S3 High Risk Level. 4:S4, the Highest Risk Level.
+* `risk_level_name` - Sensitive Data Identification Rules the Risk Level of. S1: Weak Risk Level S2: Moderate Risk Level S3: High Risk Level S4: the Highest Risk Level.
+* `rule_id` - The first ID of the resource.
+* `stat_express` - Triggered the Alarm Conditions.
+* `status` - Sensitive Data Identification Rules Detection State of.
+* `target` - The Target.
+* `user_id` - The User ID.
+* `warn_level` - The Level of Risk.

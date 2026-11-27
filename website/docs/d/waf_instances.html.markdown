@@ -46,12 +46,19 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - (Optional) A list of WAF instance IDs.
-* `instances` - A list of WAF instances. Each element contains the following attributes:
-  * `id` - The ID of the WAF instance.
-  * `instance_id` - The ID of WAF the instance.
-  * `end_date` - The timestamp (in seconds) indicating when the WAF instance expires.
-  * `in_debt` - Indicates whether the WAF instance has overdue payments.
-  * `remain_day` - The number of days before the trial period of the WAF instance expires.
-  * `trial` - Indicates whether this is a trial instance.
-  * `status` - Indicates whether the WAF instance has expired.
-  * `subscription_type` - The billing method of the WAF instance.
+* `instances` - A list of WAF instances.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `id` - The ID of the WAF instance.
+* `instance_id` - The ID of WAF the instance.
+* `end_date` - The timestamp (in seconds) indicating when the WAF instance expires.
+* `in_debt` - Indicates whether the WAF instance has overdue payments.
+* `remain_day` - The number of days before the trial period of the WAF instance expires.
+* `trial` - Indicates whether this is a trial instance.
+* `status` - Indicates whether the WAF instance has expired.
+* `subscription_type` - The billing method of the WAF instance.

@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_snapshot_policy
 
--> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_auto_snapshot_policy](https://www.terraform.io/docs/providers/alicloud/r/ecs_auto_snapshot_policy) from version 1.117.0.
+-> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_auto_snapshot_policy](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_auto_snapshot_policy) from version 1.117.0.
 
 Provides an ECS snapshot policy resource.
 
@@ -56,12 +56,16 @@ The following arguments are supported:
   - A maximum of 24 time points can be selected.
   - The format is  an JSON array of ["0", "1", … "23"] and the time points are separated by commas (,).
 
+---
+
 ### `copy_encryption_configuration`
 
 The copy_encryption_configuration supports the following:
 
 * `encrypted` - (Optional) Whether to encrypt the snapshot.
 * `kms_key_id` - (Optional) The KMS key ID used for encryption.
+
+---
 
 ### `target_tags`
 

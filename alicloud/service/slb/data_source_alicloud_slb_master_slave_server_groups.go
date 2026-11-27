@@ -77,6 +77,10 @@ func DataSourceMasterSlaveServerGroups() *schema.Resource {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
+									"description": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
 								},
 							},
 						},
@@ -171,6 +175,7 @@ func slbMasterSlaveServerGroupsDescriptionAttributes(d *schema.ResourceData, ser
 					"instance_id": backendServer.ServerId,
 					"weight":      backendServer.Weight,
 					"server_type": backendServer.ServerType,
+					"description": backendServer.Description,
 				}
 				backendServerMappings = append(backendServerMappings, backendServerMapping)
 			}

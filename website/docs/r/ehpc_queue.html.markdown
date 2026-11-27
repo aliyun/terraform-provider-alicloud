@@ -89,7 +89,6 @@ resource "alicloud_nas_access_rule" "queue_minimal_example_access_rule" {
 }
 
 resource "alicloud_ehpc_cluster_v2" "queue_minimal_cluster_example" {
-  depends_on = [alicloud_nas_access_rule.queue_minimal_example_access_rule]
   cluster_credentials {
     password = "aliHPC123"
   }
@@ -227,7 +226,6 @@ resource "alicloud_ehpc_queue" "default" {
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ehpc_queue&spm=docs.r.ehpc_queue.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -253,6 +251,8 @@ You can call the [ListClusters](~~87116~~) operation to query the cluster ID.
 * `queue_name` - (Optional, ForceNew, Computed) The queue name.
 * `vswitch_ids` - (Optional, List) The vSwitches available for use by compute nodes in the queue.
 
+---
+
 ### `compute_nodes`
 
 The compute_nodes supports the following:
@@ -268,6 +268,8 @@ The compute_nodes supports the following:
 * `spot_price_limit` - (Optional, Float) SpotPriceLimit
 * `spot_strategy` - (Optional) SpotStrategy
 * `system_disk` - (Optional, List) SystemDisk See [`system_disk`](#compute_nodes-system_disk) below.
+
+---
 
 ### `compute_nodes-system_disk`
 

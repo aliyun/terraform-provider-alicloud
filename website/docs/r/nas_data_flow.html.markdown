@@ -109,7 +109,9 @@ The following arguments are supported:
     - Use UTF-8 coding.
     - Cannot start with `http://` and `https://`.
 * `status` - (Optional) The status of the Data flow. Valid values: `Running`, `Stopped`.
-* `throughput` - (Required) The maximum transmission bandwidth of data flow, unit: `MB/s`. Valid values: `1200`, `1500`, `600`. **NOTE:** The transmission bandwidth of data flow must be less than the IO bandwidth of the file system.
+* `throughput` - (Required) The maximum transmission bandwidth of data flow, unit: `MB/s`. Valid values: `1200`, `1500`, `600`.
+
+  -> **NOTE:** The transmission bandwidth of data flow must be less than the IO bandwidth of the file system.
 
 ## Attributes Reference
 
@@ -120,7 +122,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the Data Flow.
 * `update` - (Defaults to 10 mins) Used when update the Data Flow.

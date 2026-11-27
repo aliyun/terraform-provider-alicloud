@@ -574,6 +574,8 @@ The following arguments are supported:
 * `configs` - (Optional, Available since v1.182.0) The custom configurations of emr-cluster service. See [`configs`](#configs) below.
 * `modify_cluster_service_config` - (Optional, Available since v1.182.0) The configurations of emr-cluster service modification after cluster created. See [`modify_cluster_service_config`](#modify_cluster_service_config) below.
 
+---
+
 ### `host_group`
 
 The host_group mapping supports the following:
@@ -595,6 +597,8 @@ The host_group mapping supports the following:
 * `enable_graceful_decommission` - (Optional, Available since v1.168.0) Enable hadoop cluster of task node graceful decommission, ’true’ or ‘false’ . Default value: false.
 * `decommission_timeout` - (Optional, Available since v1.168.0) Graceful decommission timeout, unit: seconds.
 
+---
+
 ### `bootstrap_action`
 
 The bootstrap_action mapping supports the following:
@@ -606,6 +610,8 @@ The bootstrap_action mapping supports the following:
 * `execution_moment` - (Optional, Available since v1.173.0) bootstrap action execution moment, ’BEFORE_INSTALL’ or ‘AFTER_STARTED’ . Default value: "BEFORE_INSTALL".
 * `execution_fail_strategy` - (Optional, Available since v1.173.0) bootstrap action execution fail strategy, ’FAILED_BLOCKED’ or ‘FAILED_CONTINUE’ . Default value: "FAILED_BLOCKED
 
+---
+
 ### `meta_store_conf`
 
 The meta_store_conf mapping supports the following:
@@ -613,6 +619,8 @@ The meta_store_conf mapping supports the following:
 * `db_url` - (Required, Available since v1.182.0) Custom rds database connection url.
 * `db_user_name` - (Required, Available since v1.182.0) Custom rds database user name.
 * `db_password` - (Required, Available since v1.182.0) Custom rds database password.
+
+---
 
 ### `configs`
 
@@ -622,6 +630,8 @@ The configs mapping supports the following:
 * `file_name` - (Required, Available since v1.182.0) Custom configuration service file name, e.g. ’hdfs-site’.
 * `config_key` - (Required, Available since v1.182.0) Custom configuration service config key, e.g. ’dfs.replication’.
 * `config_value` - (Required, Available since v1.182.0) Custom configuration service config value, e.g. ’3’.
+
+---
 
 ### `modify_cluster_service_config`
 
@@ -639,7 +649,7 @@ The configs mapping supports the following:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 20 mins) Used when creating the cluster (until it reaches the initial `IDLE` status).
 * `delete` - (Defaults to 10 mins) Used when terminating the instance.

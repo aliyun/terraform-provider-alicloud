@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_actiontrails
 
--> **DEPRECATED:**  This datasource has been renamed to [alicloud_actiontrail_trails](https://www.terraform.io/docs/providers/alicloud/d/actiontrail_trails) from version 1.95.0.
+-> **DEPRECATED:**  This datasource has been renamed to [alicloud_actiontrail_trails](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/actiontrail_trails) from version 1.95.0.
 
 This data source provides a list of ActionTrail Trails in an Alibaba Cloud account according to the specified filters.
 
@@ -47,6 +47,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `actiontrails` - (Deprecated since v1.95.0) Field `actiontrails` has been deprecated from version 1.95.0. Use `trails` instead. Each element contains the following attributes:
 * `trails` - A list of ActionTrail Trails. Each element contains the following attributes:
 
+---
+
 ### `actiontrails`
 
 The actiontrails supports the following attributes:
@@ -62,6 +64,8 @@ The actiontrails supports the following attributes:
 * `status` - The status of the ActionTrail Trail.
 * `id` - The id of the ActionTrail Trail. It is the same as trail name.
 * `trail_region` - The regions to which the trail is applied.
+
+---
 
 ### `trails`
 

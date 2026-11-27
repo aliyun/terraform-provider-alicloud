@@ -67,7 +67,6 @@ resource "alicloud_polardb_global_database_network" "default" {
 The following arguments are supported:
 
 * `db_cluster_id` - (Required, ForceNew) The ID of the primary cluster.
-* `status` - (Computed) The status of the Global Database Network.
 * `description` - (Optional, Computed) The description of the Global Database Network.
 
 ## Attributes Reference

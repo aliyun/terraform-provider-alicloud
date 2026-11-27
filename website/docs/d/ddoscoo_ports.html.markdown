@@ -32,20 +32,27 @@ output "first_ddoscoo_port_id" {
 
 The following arguments are supported:
 
-* `frontend_port` - (Optional, ForceNew) The forwarding port.
-* `frontend_protocol` - (Optional, ForceNew) The forwarding protocol. Valid values `tcp` and `udp`.
-* `ids` - (Optional, ForceNew, Computed)  A list of Port IDs.
-* `instance_id` - (Required, ForceNew) The DdosCoo instance ID.
+* `frontend_port` - (Optional) The forwarding port.
+* `frontend_protocol` - (Optional) The forwarding protocol. Valid values `tcp` and `udp`.
+* `ids` - (Optional, Computed)  A list of Port IDs.
+* `instance_id` - (Required) The DdosCoo instance ID.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ports` - A list of DdosCoo Ports. Each element contains the following attributes:
-  * `backend_port` - The source station port.
-  * `frontend_port` - The forwarding port.
-  * `frontend_protocol` - The forwarding protocol.
-  * `instance_id` - The Ddoscoo instance ID.
-  * `id` - The ID of the Port.
-  * `real_servers` - List of source IP addresses.
+* `ports` - A list of DdosCoo Ports.
+
+---
+
+### `ports`
+
+The ports supports the following attributes:
+
+* `backend_port` - The source station port.
+* `frontend_port` - The forwarding port.
+* `frontend_protocol` - The forwarding protocol.
+* `instance_id` - The Ddoscoo instance ID.
+* `id` - The ID of the Port.
+* `real_servers` - List of source IP addresses.

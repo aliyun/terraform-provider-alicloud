@@ -3,25 +3,7 @@ triggers:
   push:
     branches:
       - master
-  merge_request:
-    paths:
-      - 'scripts/ci/**'
-      - 'scripts/release/**'
-      - 'scripts/collection-order/**'
-      - 'GNUmakefile'
-      - 'scripts/internal/**'
-      - '.aoneci/**'
-      - 'go.mod'
-      - 'go.sum'
-      - '.go-version'
-      - '.aoneci/document-check.yml'
-      - 'website/docs/**'
-      - 'scripts/document/**'
-      - 'scripts/basic-check.sh'
-      - '.markdown-link-check.json'
-      - '.github/markdownlint/**'
-      - 'alicloud/*.go'
-      - 'alicloud/service/**/*.go'
+  merge_request: {}
 
 envs:
   VERIFIED_RELEASE_RETURN: >-
@@ -32,7 +14,7 @@ envs:
     secrets.PROVIDER_RELEASE_RETURN == 'v1:' + #string(git.merge_request.id) + ':' +
     git.merge_request.sourceBranch + ':' + git.merge_request.title + ':' + git.commitId ? 'yes' : 'no' }}
   # Pushes run on master; manual runs also retain the full documentation checks.
-  DOCUMENT_CHECK_FULL: '${{git.merge_request.id ? "false" : "true"}}'
+  DOCUMENT_CHECK_FULL: '${{git.merge_request.id != null ? "false" : "true"}}'
   CODE_CI_SHALLOW_RANGE: '1'
   CODE_HEAD: '${{git.commitId}}'
   CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
@@ -43,13 +25,31 @@ envs:
   CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
 
 jobs:
+  CheckScope:
+    outputs:
+      docs: ${{ steps.scope.outputs.docs }}
+      provider: ${{ steps.scope.outputs.provider }}
+      framework: ${{ steps.scope.outputs.framework }}
+    steps:
+      - uses: checkout
+        inputs:
+          fetch-depth: '32'
+      - id: scope
+        name: Select applicable documentation and Go checks
+        run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          python3 -m unittest discover -s scripts/ci -p test_document_scope.py
+          python3 scripts/ci/document_scope.py
   ReleaseReturn:
     when: ${{ envs.VERIFIED_RELEASE_RETURN == 'yes' }}
     steps:
       - name: Record release return exemption
         run: echo "Verified release return MR $CODE_MR_ID at $CODE_HEAD. Skipped MarkdownQuality by policy."
   MarkdownQuality:
-    when: ${{ envs.VERIFIED_RELEASE_RETURN != 'yes' }}
+    needs: CheckScope
+    when: ${{ envs.VERIFIED_RELEASE_RETURN != 'yes' && jobs.CheckScope.outputs.docs == 'yes' }}
     steps:
       - uses: checkout
         inputs:
@@ -68,6 +68,8 @@ jobs:
           python3 scripts/ci/run-document-checks.py --group node
 
   terrafmt:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.docs == 'yes' }}
     steps:
       - uses: checkout
         inputs:
@@ -87,6 +89,8 @@ jobs:
           python3 scripts/ci/run-document-checks.py --group format
 
   basic-check:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.provider == 'yes' }}
     steps:
       - uses: checkout
         inputs:
@@ -98,6 +102,8 @@ jobs:
           bash scripts/basic-check.sh
 
   TestFrameworkGuard:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.framework == 'yes' }}
     steps:
       - uses: checkout
         inputs:
@@ -110,6 +116,8 @@ jobs:
           bash scripts/ci/test-framework-guard.sh
 
   Content:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.docs == 'yes' }}
     steps:
       - uses: checkout
         inputs:
@@ -125,6 +133,12 @@ jobs:
           eval "$range"
           checker_dir=$(mktemp -d)
           trap 'rm -rf "$checker_dir"' EXIT
+          # scripts/document/document_check.go classifies pages by directory
+          # (r, d, actions, ephemeral-resources, functions, guides) and only
+          # applies the generated-name title template to object pages; both CI
+          # entries share that classification. The provider index page stays
+          # excluded because its argument notes and shell examples do not fit
+          # the page sections the checker walks.
           while IFS= read -r -d '' doc; do
             if [[ -f "$doc" && "$doc" != website/docs/index.html.markdown ]]; then
               if [[ ! -x "$checker_dir/document-check" ]]; then
@@ -148,6 +162,8 @@ jobs:
 
   # Single owner of the attribute consistency gate, including Basic-only paths.
   Consistency:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.provider == 'yes' }}
     steps:
       - name: Setup Go
         uses: setup-env
@@ -156,6 +172,10 @@ jobs:
       - uses: checkout
         inputs:
           fetch-depth: '32'
+      # The checker is code: its parsing regressions must fail before the run,
+      # otherwise a broken parser silently reports PASS for every entity.
+      - name: Consistency checker unit tests
+        run: go test ./scripts/consistency/
       - name: Attribute Consistency Check
         run: |
           set -euo pipefail

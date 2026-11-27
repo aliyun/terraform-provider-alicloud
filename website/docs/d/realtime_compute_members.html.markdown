@@ -98,9 +98,16 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `members` - A list of Members. Each element contains the following attributes:
-  * `id` - The ID of the Member.
-  * `resource_id` - The workspace ID.
-  * `namespace` - The name of the namespace.
-  * `member` - The member UID.
-  * `role` - The member role.
+* `members` - A list of Members.
+
+---
+
+### `members`
+
+The members supports the following attributes:
+
+* `id` - The ID of the Member.
+* `resource_id` - The workspace ID.
+* `namespace` - The name of the namespace.
+* `member` - The member UID.
+* `role` - The member role.

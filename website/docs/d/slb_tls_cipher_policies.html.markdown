@@ -51,6 +51,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `names` - A list of Tls Cipher Policy names.
 * `policies` - A list of Slb Tls Cipher Policies. Each element contains the following attributes:
 
+---
+
 ### `policies`
 
 * `ciphers` - The encryption algorithms supported. It depends on the value of `tls_versions`.
@@ -61,6 +63,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `tls_cipher_policy_id` - The ID of TLS cipher policy.
 * `tls_cipher_policy_name` - TLS policy name. Length is from 2 to 128, or in both the English and Chinese characters must be with an uppercase/lowercase letter or a Chinese character and the beginning, may contain numbers, in dot `.`, underscore `_` or dash `-`.
 * `tls_versions` - The version of TLS protocol.
+
+---
 
 ### `policies-relate_listeners`
 

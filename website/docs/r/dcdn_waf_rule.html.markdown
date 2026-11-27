@@ -78,9 +78,13 @@ resource "alicloud_dcdn_waf_rule" "example" {
 The following arguments are supported:
 
 * `action` - (Optional) Specifies the action of the rule. Valid values: `block`, `monitor`, `js`, `deny`.
-* `cc_status` - (Optional) Specifies whether to enable rate limiting. Valid values: `on` and `off`. **NOTE:** This parameter is required when policy is of type `custom_acl`.
+* `cc_status` - (Optional) Specifies whether to enable rate limiting. Valid values: `on` and `off`.
+
+  -> **NOTE:** This parameter is required when policy is of type `custom_acl`.
 * `cn_region_list` - (Optional) The blocked regions in the Chinese mainland, separated by commas (,).
-* `conditions` - (Optional) Conditions that trigger the rule. See [`conditions`](#conditions) below. **NOTE:** This parameter is required when policy is of type `custom_acl` or `whitelist`.
+* `conditions` - (Optional) Conditions that trigger the rule. See [`conditions`](#conditions) below.
+
+  -> **NOTE:** This parameter is required when policy is of type `custom_acl` or `whitelist`.
 * `effect` - (Optional) The effective scope of the rate limiting blacklist. If you set ccStatus to on, you must configure this parameter. Valid values: `rule` (takes effect for the current rule) and `service` (takes effect globally).
 * `other_region_list` - (Optional) Blocked regions outside the Chinese mainland, separated by commas (,).
 * `policy_id` - (Required, ForceNew) The protection policy ID.
@@ -88,10 +92,16 @@ The following arguments are supported:
 * `regular_rules` - (Optional) The regular expression.e, when waf_group appears in tags, this value can be filled in, and only one list of six digits in string format can appear with regultypes.
 * `regular_types` - (Optional) Regular rule type, when waf_group appears in tags, this value can be filled in, optional values:["sqli", "xss", "code_exec", "crlf", "lfileii", "rfileii", "webshell", "vvip", "other"]
 * `remote_addr` - (Optional) Filter by IP address.
-* `rule_name` - (Required) The name of the protection rule. The name can be up to 64 characters in length and can contain letters, digits, and underscores (_). **NOTE:** This parameter cannot be modified when policy is of type `region_block`.
+* `rule_name` - (Required) The name of the protection rule. The name can be up to 64 characters in length and can contain letters, digits, and underscores (_).
+
+  -> **NOTE:** This parameter cannot be modified when policy is of type `region_block`.
 * `scenes` - (Optional) The types of the protection policies.
 * `status` - (Optional) The status of the waf rule. Valid values: `on` and `off`. Default value: on.
-* `waf_group_ids` - (Optional) The id of the waf rule group. The default value is "1012". Multiple rules are separated by commas. **NOTE:** This parameter is valid only when policy is of type `waf_group`.
+* `waf_group_ids` - (Optional) The id of the waf rule group. The default value is "1012". Multiple rules are separated by commas.
+
+  -> **NOTE:** This parameter is valid only when policy is of type `waf_group`.
+
+---
 
 ### `conditions`
 
@@ -101,6 +111,8 @@ The conditions support the following:
 * `op_value` - (Required) The logical symbol.
 * `sub_key` - (Optional) The match subfield.
 * `values` - (Optional) The match content. Separate multiple values with commas (,).
+
+---
 
 ### `rate_limit`
 
@@ -112,6 +124,8 @@ The rate_limit supports the following:
 * `target` - (Optional) The statistical field for frequency control. Currently, `IP`, `Header`, `Query String Parameter`, `Cookie Name`, `Session` is supported.
 * `threshold` - (Optional) The trigger threshold of rate limiting. Valid values: 2 to 500000. Unit: requests.
 * `ttl` - (Optional) The validity period of the blacklist. Valid values: 60 to 86400. Unit: seconds.
+
+---
 
 ### `rate_limit-status`
 
@@ -131,7 +145,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Waf Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Waf Rule.

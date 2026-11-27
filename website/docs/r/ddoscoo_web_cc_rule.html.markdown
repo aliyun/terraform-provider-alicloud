@@ -110,6 +110,8 @@ The following arguments are supported:
 * `name` - (Required, ForceNew) Rule name.
 * `rule_detail` - (Required, Set) Rule details.   See [`rule_detail`](#rule_detail) below.
 
+---
+
 ### `rule_detail`
 
 The rule_detail supports the following:
@@ -124,6 +126,8 @@ The rule_detail supports the following:
 * `statistics` - (Optional, Set) Deduplicated statistics. This parameter is optional. If omitted, deduplication is not applied. See [`statistics`](#rule_detail-statistics) below.
 * `status_code` - (Optional, Set) The HTTP status code. See [`status_code`](#rule_detail-status_code) below.
 
+---
+
 ### `rule_detail-condition`
 
 The rule_detail-condition supports the following:
@@ -135,6 +139,8 @@ The rule_detail-condition supports the following:
   -> **NOTE:**  Valid only when `Field` is set to `header`.
 
 * `match_method` - (Required) Matching method.  
+
+---
 
 ### `rule_detail-rate_limit`
 
@@ -148,6 +154,8 @@ The rule_detail-rate_limit supports the following:
 * `threshold` - (Required, Int) The trigger threshold.
 * `ttl` - (Required, Int) Block duration. Unit: seconds.
 
+---
+
 ### `rule_detail-statistics`
 
 The rule_detail-statistics supports the following:
@@ -160,6 +168,8 @@ The rule_detail-statistics supports the following:
 * `mode` - (Required) The deduplication mode. Valid values:
   - `count`: No deduplication
   - `distinct`: Deduplicated count
+
+---
 
 ### `rule_detail-status_code`
 
@@ -183,7 +193,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Web Cc Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Web Cc Rule.

@@ -138,6 +138,8 @@ The following arguments are supported:
 * `version_description` - (Optional) The version descriptions.
 * `version_name` - (Optional, ForceNew, Computed) The Model version.
 
+---
+
 ### `labels`
 
 The labels supports the following:

@@ -45,7 +45,7 @@ resource "alicloud_resource_manager_role" "example" {
           ],
           "Version": "1"
      }
-	 EOF
+  EOF
 }
 
 ```

@@ -69,18 +69,34 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Attack Path Whitelist IDs.
-* `whitelists` - A list of Attack Path Whitelist Entries. Each element contains the following attributes:
-  * `attack_path_asset_list` - **NOTE:** This field is only available when `enable_details` is `true`. The list of attack path cloud product assets.
-    * `asset_sub_type` - The subtype of the cloud product asset.
-    * `asset_type` - The type of the cloud product asset.
-    * `instance_id` - The instance ID of the cloud product asset.
-    * `node_type` - The type of the whitelist node.
-    * `region_id` - The region ID of the cloud product asset instance.
-    * `vendor` - The vendor of the cloud product asset.
-  * `attack_path_whitelist_id` - The ID of the attack path whitelist.
-  * `path_name` - The path name of the whitelist.
-  * `path_type` - The path type of the whitelist.
-  * `remark` - The remarks of the whitelist.
-  * `whitelist_name` - The name of the whitelist.
-  * `whitelist_type` - The type of the whitelist.
-  * `id` - The ID of the resource supplied above.
+* `whitelists` - A list of Attack Path Whitelist Entries.
+
+---
+
+### `whitelists`
+
+The whitelists supports the following attributes:
+
+* `attack_path_asset_list` - The list of attack path cloud product assets.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `attack_path_whitelist_id` - The ID of the attack path whitelist.
+* `path_name` - The path name of the whitelist.
+* `path_type` - The path type of the whitelist.
+* `remark` - The remarks of the whitelist.
+* `whitelist_name` - The name of the whitelist.
+* `whitelist_type` - The type of the whitelist.
+* `id` - The ID of the resource supplied above.
+
+---
+
+### `whitelists.attack_path_asset_list`
+
+The attack_path_asset_list supports the following attributes:
+
+* `asset_sub_type` - The subtype of the cloud product asset.
+* `asset_type` - The type of the cloud product asset.
+* `instance_id` - The instance ID of the cloud product asset.
+* `node_type` - The type of the whitelist node.
+* `region_id` - The region ID of the cloud product asset instance.
+* `vendor` - The vendor of the cloud product asset.

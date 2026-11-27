@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_dbfs_instance
 
-~> **NOTE:** This resource has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://help.aliyun.com/en/dbfs/).
+-> **DEPRECATED:** This resource has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://www.alibabacloud.com/help/en/dbfs/).
 
 Provides a DBFS Dbfs Instance resource. An instance of a database file system is equivalent to a file system and can store data of file types.
 
@@ -75,11 +75,15 @@ The following arguments are supported:
   - PostgreSQL
   - MongoDB.
 * `zone_id` - (Required, ForceNew) The ID of the zone to which the database file system belongs.
-* `ecs_list` - (Optional, Deprecated from v1.156.0) The collection of ECS instances mounted to the Database file system. See [`ecs_list`](#ecs_list) below.  **NOTE:** Field 'ecs_list' has been deprecated from provider version 1.156.0 and it will be removed in the future version. Please use the new resource 'alicloud_dbfs_instance_attachment' to attach ECS and DBFS. See [`ecs_list`](#ecs_list) below.
+* `ecs_list` - (Optional, Deprecated from v1.156.0) The collection of ECS instances mounted to the Database file system. See [`ecs_list`](#ecs_list) below.
+
+  -> **NOTE:** Field 'ecs_list' has been deprecated from provider version 1.156.0 and it will be removed in the future version. Please use the new resource 'alicloud_dbfs_instance_attachment' to attach ECS and DBFS. See [`ecs_list`](#ecs_list) below.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `instance_name` - (Deprecated since v1.212.0). Field 'instance_name' has been deprecated from provider version 1.212.0. New field 'fs_name' instead.
+
+---
 
 ### `ecs_list`
 
@@ -95,7 +99,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Dbfs Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Dbfs Instance.
 * `update` - (Defaults to 5 mins) Used when update the Dbfs Instance.

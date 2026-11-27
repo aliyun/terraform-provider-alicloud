@@ -132,9 +132,7 @@ func resourceAlicloudRouterInterfaceConnectionCreate(d *schema.ResourceData, met
 		request.OppositeInterfaceOwnerId = requests.Integer(owner)
 	}
 
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.ModifyRouterInterfaceAttribute(request)
-	})
+	raw, err := client.VpcSdkRpc(request, vpc.CreateModifyRouterInterfaceAttributeResponse())
 	if err != nil {
 		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_router_interface_connection", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
@@ -150,9 +148,7 @@ func resourceAlicloudRouterInterfaceConnectionCreate(d *schema.ResourceData, met
 		connectRequest.RegionId = client.RegionId
 		connectRequest.RouterInterfaceId = interfaceId
 		if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
-			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.ConnectRouterInterface(connectRequest)
-			})
+			raw, err := client.VpcSdkRpc(connectRequest, vpc.CreateConnectRouterInterfaceResponse())
 			if err != nil {
 				if errs.IsExpectedErrors(err, []string{"IncorrectOppositeInterfaceInfo.NotSet"}) {
 					return retry.RetryableError(err)

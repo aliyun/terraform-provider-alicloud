@@ -40,6 +40,8 @@ The following arguments are supported:
 * `name_regex` - (Optional) A regex string to filter results by secondary index name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
+---
+
 ### `indexes`
 
 See [`indexes`](#indexes) below for the structure of each index entry.
@@ -52,11 +54,18 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of secondary index IDs.
 * `names` - A list of secondary index  names.
-* `indexes` - A list of indexes. Each element contains the following attributes:
-  * `id` - The resource ID. The value is `<instance_name>:<table_name>:<indexName>:<indexType>`.
-  * `instance_name` - The OTS instance name.
-  * `table_name` - The table name of the OTS which could not be changed.
-  * `index_name` - The index name of the OTS Table which could not be changed.
-  * `index_type` - The index type of the OTS Table which could not be changed.
-  * `primary_keys` - A list of primary keys for index, referenced from Table's primary keys or predefined columns.
-  * `defined_columns` - A list of defined column for index, referenced from Table's primary keys or predefined columns.
+* `indexes` - A list of indexes.
+
+---
+
+### `indexes`
+
+The indexes supports the following attributes:
+
+* `id` - The resource ID. The value is `<instance_name>:<table_name>:<indexName>:<indexType>`.
+* `instance_name` - The OTS instance name.
+* `table_name` - The table name of the OTS which could not be changed.
+* `index_name` - The index name of the OTS Table which could not be changed.
+* `index_type` - The index type of the OTS Table which could not be changed.
+* `primary_keys` - A list of primary keys for index, referenced from Table's primary keys or predefined columns.
+* `defined_columns` - A list of defined column for index, referenced from Table's primary keys or predefined columns.

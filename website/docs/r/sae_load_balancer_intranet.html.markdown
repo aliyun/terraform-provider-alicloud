@@ -111,6 +111,8 @@ The following arguments are supported:
 * `intranet_slb_id` - (Optional) The intranet SLB ID.
 * `intranet` - (Required) The bound private network SLB. See [`intranet`](#intranet) below.
 
+---
+
 ### `intranet`
 
 The intranet supports the following:

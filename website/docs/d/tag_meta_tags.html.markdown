@@ -31,13 +31,20 @@ output "tag_meta_tag_default_1" {
 The following arguments are supported:
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `key_name` - (Optional, ForceNew) The name of the key.
+* `key_name` - (Optional) The name of the key.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `tags` - A list of Meta Tags. Each element contains the following attributes:
-  * `value_name` - The name of the value.
-  * `key_name` - The name of the key.
-  * `category` - The type of the resource tags.
+* `tags` - A list of Meta Tags.
+
+---
+
+### `tags`
+
+The tags supports the following attributes:
+
+* `value_name` - The name of the value.
+* `key_name` - The name of the key.
+* `category` - The type of the resource tags.

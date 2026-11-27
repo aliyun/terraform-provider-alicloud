@@ -1,11 +1,16 @@
 package intercept
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-log/tflogtest"
 )
 
 type fakeDiags []string
@@ -121,5 +126,93 @@ func TestAroundEmptyChainIsIdentity(t *testing.T) {
 		func() fakeDiags { return inner }, fakeBridge)
 	if fmt.Sprint(got) != fmt.Sprint(inner) {
 		t.Fatalf("got %v, want %v", got, inner)
+	}
+}
+
+func TestAroundCanceledEntry(t *testing.T) {
+	for _, withChain := range []bool{false, true} {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		var chain []Interceptor
+		if withChain {
+			chain = []Interceptor{&funcInterceptor{
+				before: func() error { t.Fatal("预取消不应进入 Before"); return nil },
+				after:  func(err error) error { t.Fatal("未进入的链不应执行 After"); return err },
+			}}
+		}
+		got := Around(ctx, chain, testCall, func() fakeDiags {
+			t.Fatal("预取消不应调用 inner")
+			return nil
+		}, fakeBridge)
+		if !slices.Equal(got, fakeDiags{"E:context canceled"}) {
+			t.Fatalf("取消诊断丢失：%v", got)
+		}
+	}
+}
+
+func TestAroundCancellationDuringBefore(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var stages []string
+	chain := []Interceptor{
+		&funcInterceptor{before: func() error {
+			stages = append(stages, "before-1")
+			cancel()
+			return nil
+		}, after: func(err error) error {
+			stages = append(stages, "after-1")
+			if !errors.Is(err, context.Canceled) {
+				t.Fatalf("After 未收到取消：%v", err)
+			}
+			return nil
+		}},
+		&funcInterceptor{before: func() error {
+			t.Fatal("取消后不应继续 Before")
+			return nil
+		}, after: func(err error) error {
+			stages = append(stages, "after-2")
+			return err
+		}},
+	}
+	got := Around(ctx, chain, testCall, func() fakeDiags {
+		t.Fatal("Before 中取消不应启动 CRUD")
+		return nil
+	}, fakeBridge)
+	if !slices.Equal(stages, []string{"before-1", "after-2", "after-1"}) || !slices.Equal(got, fakeDiags{"E:context canceled"}) {
+		t.Fatalf("取消后的收尾语义错误：stages=%v diags=%v", stages, got)
+	}
+}
+
+func TestAroundCancellationDoesNotRewriteCompletedInner(t *testing.T) {
+	for _, chain := range [][]Interceptor{nil, {&funcInterceptor{}}} {
+		ctx, cancel := context.WithCancel(context.Background())
+		got := Around(ctx, chain, testCall, func() fakeDiags {
+			cancel()
+			return fakeDiags{"W:completed"}
+		}, fakeBridge)
+		cancel()
+		if !slices.Equal(got, fakeDiags{"W:completed"}) {
+			t.Fatalf("完成后的取消不应重写 CRUD 结果：%v", got)
+		}
+	}
+}
+
+func TestBootstrapContextUsesDeclaredService(t *testing.T) {
+	bootstrap := BootstrapContext("DeclaredService")
+	for _, op := range []Op{OpCreate, OpRead, OpUpdate, OpDelete} {
+		t.Run(string(op), func(t *testing.T) {
+			var output bytes.Buffer
+			ctx := bootstrap(tflogtest.RootLogger(context.Background(), &output), Call{
+				Name: "alicloud_different_prefix", Op: op,
+			})
+			tflog.Info(ctx, "inner")
+			entries, err := tflogtest.MultilineJSONDecode(&output)
+			if err != nil || len(entries) != 1 {
+				t.Fatalf("日志条目 = %v，错误 = %v", entries, err)
+			}
+			if entries[0]["alicloud_service"] != "DeclaredService" || entries[0]["alicloud_operation"] != string(op) {
+				t.Fatalf("声明的 service 或操作字段丢失：%v", entries[0])
+			}
+		})
 	}
 }

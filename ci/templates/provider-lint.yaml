@@ -1,0 +1,229 @@
+# Generated from .aoneci/acctest-terraform-lint.yml by ci/provider-gates/render.py.
+name: Golangci-Lint
+triggers:
+  merge_request:
+    target-branches:
+    - master
+envs:
+  CODE_CI_SHALLOW_RANGE: '1'
+  CODE_HEAD: ${{git.commitId}}
+  CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
+  CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
+  CODE_PUSH_BEFORE: '${{git.push.beforeSha256 ?: ""}}'
+  CODE_TARGET: '${{git.merge_request.targetBranch ?: ""}}'
+  CODE_DEFAULT_BRANCH: ${{git.defaultBranch}}
+  CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
+jobs:
+  PinChecker:
+    steps:
+    - uses: checkout
+      inputs:
+        repository-url: https://gitlab.alibaba-inc.com/opensource-tools/terraform-provider-alicloud.git
+        ref: '${{ ''refs/heads/'' + (git.merge_request.targetBranch ?: git.defaultBranch) }}'
+        commit: '${{ git.merge_request.targetBranch ?: git.defaultBranch }}'
+        path: .
+        fetch-depth: '1'
+    - name: Record target checker revision
+      run: |
+        set -eu
+        sha=$(git rev-parse HEAD)
+        echo "Provider checker=$sha candidate=$CODE_HEAD"
+        printf "%s\n" "$sha" > provider-checker.sha
+    - uses: upload-artifact
+      inputs:
+        name: provider-checker.sha
+        path: provider-checker.sha
+        if-no-files-found: error
+  CheckScope:
+    outputs:
+      applicable: ${{ steps.scope.outputs.applicable }}
+    steps:
+    - uses: checkout
+      inputs:
+        fetch-depth: '32'
+    - uses: download-artifact
+      inputs:
+        name: provider-checker.sha
+        path: .git/provider-pin
+    - id: checker_pin
+      name: Load pinned checker revision
+      run: |
+        set -euo pipefail
+        if ! IFS= read -r CHECKER_SHA < .git/provider-pin/provider-checker.sha || [[ ! "$CHECKER_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "Missing or invalid checker revision. Start a new pipeline run to regenerate the PinChecker artifact." >&2
+          exit 1
+        fi
+        printf %s "$CHECKER_SHA" > "$AONE_CI_OUTPUTS/sha"
+    - uses: checkout
+      inputs:
+        repository-url: https://gitlab.alibaba-inc.com/opensource-tools/terraform-provider-alicloud.git
+        ref: '${{ ''refs/heads/'' + (git.merge_request.targetBranch ?: git.defaultBranch) }}'
+        commit: ${{ steps.checker_pin.outputs.sha }}
+        path: .git/provider-checker
+        fetch-depth: '1'
+    - name: Verify checker and candidate revisions
+      run: |
+        set -euo pipefail
+        if ! IFS= read -r CHECKER_SHA < .git/provider-pin/provider-checker.sha || [[ ! "$CHECKER_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "Missing or invalid checker revision. Start a new pipeline run to regenerate the PinChecker artifact." >&2
+          exit 1
+        fi
+        test "$(git rev-parse HEAD)" = "$CODE_HEAD"
+        actual=$(git -C .git/provider-checker rev-parse HEAD)
+        if [[ "$actual" != "$CHECKER_SHA" ]]; then
+          echo "Checker checkout is $actual, expected $CHECKER_SHA from PinChecker. Start a new pipeline run." >&2
+          exit 1
+        fi
+    - id: scope
+      name: Check whether this pipeline applies
+      run: |
+        set -euo pipefail
+        range=$(python3 .git/provider-checker/scripts/ci/aone-range.py)
+        eval "$range"
+        result=0
+        git diff --quiet --no-ext-diff "$DIFF_BASE" "$DIFF_HEAD" -- \
+          ':(glob)scripts/ci/**' \
+          ':(glob)scripts/internal/**' \
+          ':(glob)scripts/run-tflint.sh' \
+          ':(glob)scripts/local-ci-check.sh' \
+          ':(glob)go.mod' \
+          ':(glob)go.sum' \
+          ':(glob).go-version' \
+          ':(glob).golangci.yml' \
+          ':(glob).golangci.yaml' \
+          ':(glob)**/*.go' \
+          ':(glob).aoneci/**' || result=$?
+        case "$result" in
+          0)
+            echo 'No files in scope; this check passes without running Go jobs.'
+            printf '%s' no > "$AONE_CI_OUTPUTS/applicable"
+            ;;
+          1) printf '%s' yes > "$AONE_CI_OUTPUTS/applicable" ;;
+          *) exit "$result" ;;
+        esac
+    needs:
+    - PinChecker
+  errcheck:
+    needs:
+    - PinChecker
+    - CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
+    steps:
+    - uses: setup-env
+      inputs:
+        go-version: 1.25.8
+    - uses: checkout
+      inputs:
+        fetch-depth: '32'
+    - uses: download-artifact
+      inputs:
+        name: provider-checker.sha
+        path: .git/provider-pin
+    - id: checker_pin
+      name: Load pinned checker revision
+      run: |
+        set -euo pipefail
+        if ! IFS= read -r CHECKER_SHA < .git/provider-pin/provider-checker.sha || [[ ! "$CHECKER_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "Missing or invalid checker revision. Start a new pipeline run to regenerate the PinChecker artifact." >&2
+          exit 1
+        fi
+        printf %s "$CHECKER_SHA" > "$AONE_CI_OUTPUTS/sha"
+    - uses: checkout
+      inputs:
+        repository-url: https://gitlab.alibaba-inc.com/opensource-tools/terraform-provider-alicloud.git
+        ref: '${{ ''refs/heads/'' + (git.merge_request.targetBranch ?: git.defaultBranch) }}'
+        commit: ${{ steps.checker_pin.outputs.sha }}
+        path: .git/provider-checker
+        fetch-depth: '1'
+    - name: Verify checker and candidate revisions
+      run: |
+        set -euo pipefail
+        if ! IFS= read -r CHECKER_SHA < .git/provider-pin/provider-checker.sha || [[ ! "$CHECKER_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "Missing or invalid checker revision. Start a new pipeline run to regenerate the PinChecker artifact." >&2
+          exit 1
+        fi
+        test "$(git rev-parse HEAD)" = "$CODE_HEAD"
+        actual=$(git -C .git/provider-checker rev-parse HEAD)
+        if [[ "$actual" != "$CHECKER_SHA" ]]; then
+          echo "Checker checkout is $actual, expected $CHECKER_SHA from PinChecker. Start a new pipeline run." >&2
+          exit 1
+        fi
+        export GIT_ALTERNATE_OBJECT_DIRECTORIES="$(git -C .git/provider-checker rev-parse --absolute-git-dir)/objects"
+        git restore --worktree --no-overlay --source="$CHECKER_SHA" -- .golangci.yml
+    - name: Install the GitHub errcheck version
+      run: |
+        set -euo pipefail
+        # Keep the installed tool on the source volume across steps.
+        mkdir -p .ci-tools/bin
+        GOBIN="$PWD/.ci-tools/bin" go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+    - name: Verify Go check failure handling
+      run: |
+        set -euo pipefail
+        export PATH="$PWD/.ci-tools/bin:$PATH"
+        golangci-lint version
+        (cd .git/provider-checker && python3 -m unittest discover -s scripts/ci -p test_aone_go_checks.py)
+    - name: Check changed Go packages
+      run: |
+        set -euo pipefail
+        range=$(python3 .git/provider-checker/scripts/ci/aone-range.py)
+        eval "$range"
+        export PATH="$PWD/.ci-tools/bin:$PATH"
+        python3 .git/provider-checker/scripts/ci/run-errcheck.py
+  ProviderLint:
+    needs:
+    - PinChecker
+    - CheckScope
+    when: ${{ jobs.CheckScope.outputs.applicable == 'yes' }}
+    steps:
+    - uses: setup-env
+      inputs:
+        go-version: 1.25.8
+    - uses: checkout
+      inputs:
+        fetch-depth: '0'
+    - uses: download-artifact
+      inputs:
+        name: provider-checker.sha
+        path: .git/provider-pin
+    - id: checker_pin
+      name: Load pinned checker revision
+      run: |
+        set -euo pipefail
+        if ! IFS= read -r CHECKER_SHA < .git/provider-pin/provider-checker.sha || [[ ! "$CHECKER_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "Missing or invalid checker revision. Start a new pipeline run to regenerate the PinChecker artifact." >&2
+          exit 1
+        fi
+        printf %s "$CHECKER_SHA" > "$AONE_CI_OUTPUTS/sha"
+    - uses: checkout
+      inputs:
+        repository-url: https://gitlab.alibaba-inc.com/opensource-tools/terraform-provider-alicloud.git
+        ref: '${{ ''refs/heads/'' + (git.merge_request.targetBranch ?: git.defaultBranch) }}'
+        commit: ${{ steps.checker_pin.outputs.sha }}
+        path: .git/provider-checker
+        fetch-depth: '1'
+    - name: Verify checker and candidate revisions
+      run: |
+        set -euo pipefail
+        if ! IFS= read -r CHECKER_SHA < .git/provider-pin/provider-checker.sha || [[ ! "$CHECKER_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "Missing or invalid checker revision. Start a new pipeline run to regenerate the PinChecker artifact." >&2
+          exit 1
+        fi
+        test "$(git rev-parse HEAD)" = "$CODE_HEAD"
+        actual=$(git -C .git/provider-checker rev-parse HEAD)
+        if [[ "$actual" != "$CHECKER_SHA" ]]; then
+          echo "Checker checkout is $actual, expected $CHECKER_SHA from PinChecker. Start a new pipeline run." >&2
+          exit 1
+        fi
+    - name: Test change range and lint scoping
+      run: |
+        set -euo pipefail
+        range=$(python3 .git/provider-checker/scripts/ci/aone-range.py)
+        eval "$range"
+        python3 .git/provider-checker/scripts/ci/run-ci-fixtures.py lint
+    - run: |
+        set -euo pipefail
+        range=$(python3 .git/provider-checker/scripts/ci/aone-range.py)
+        eval "$range"
+        GOTOOLCHAIN=go1.26.10 go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@v0.31.0
+        export PATH="$(go env GOPATH)/bin:$PATH"
+        .git/provider-checker/scripts/run-tflint.sh

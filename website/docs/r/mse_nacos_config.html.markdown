@@ -101,7 +101,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when creating the Nacos Config.
 * `update` - (Defaults to 1 mins) Used when updating the Nacos Config.
@@ -111,7 +111,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 Microservice Engine (MSE) Nacos Config can be imported using the id, e.g.
 
-**Note**: If instance_id, namespace_id, data_id, and group contain ":", please replace it with "\\\\:", available since v1.243.0
+-> **NOTE:** If instance_id, namespace_id, data_id, and group contain ":", please replace it with "\\\\:", available since v1.243.0
 
 ```shell
 $ terraform import alicloud_mse_nacos_config.example <instance_id>:<namespace_id>:<data_id>:<group>

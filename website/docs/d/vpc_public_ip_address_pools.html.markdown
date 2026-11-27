@@ -39,12 +39,12 @@ output "vpc_public_ip_address_pool_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Vpc Public Ip Address Pool IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Vpc Public Ip Address Pool name.
-* `public_ip_address_pool_ids` - (Optional, ForceNew) The IDs of the Vpc Public IP address pools.
-* `public_ip_address_pool_name` - (Optional, ForceNew) The name of the VPC Public IP address pool.
-* `isp` - (Optional, ForceNew) The Internet service provider. Valid values: `BGP`, `BGP_PRO`, `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2`, `BGP_FinanceCloud`.
-* `status` - (Optional, ForceNew) The status of the Vpc Public Ip Address Pool. Valid values: `Created`, `Deleting`, `Modifying`.
+* `ids` - (Optional, Computed) A list of Vpc Public Ip Address Pool IDs.
+* `name_regex` - (Optional) A regex string to filter results by Vpc Public Ip Address Pool name.
+* `public_ip_address_pool_ids` - (Optional) The IDs of the Vpc Public IP address pools.
+* `public_ip_address_pool_name` - (Optional) The name of the VPC Public IP address pool.
+* `isp` - (Optional) The Internet service provider. Valid values: `BGP`, `BGP_PRO`, `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2`, `BGP_FinanceCloud`.
+* `status` - (Optional) The status of the Vpc Public Ip Address Pool. Valid values: `Created`, `Deleting`, `Modifying`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -52,16 +52,23 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Public Ip Address Pool names.
-* `pools` - A list of Vpc Public Ip Address Pools. Each element contains the following attributes:
-  * `id` - The ID of the Vpc Public Ip Address Pool.
-  * `public_ip_address_pool_id` - The ID of the Vpc Public Ip Address Pool.
-  * `public_ip_address_pool_name` - The name of the Vpc Public Ip Address Pool.
-  * `isp` - The Internet service provider.
-  * `description` - The description of the Vpc Public Ip Address Pool.
-  * `status` - The status of the Vpc Public Ip Address Pool.
-  * `region_id` - The region ID of the Vpc Public Ip Address Pool.
-  * `user_type` - The user type.
-  * `total_ip_num` - The total number of IP addresses in the Vpc Public Ip Address Pool.
-  * `used_ip_num` - The number of occupied IP addresses in the Vpc Public Ip Address Pool.
-  * `create_time` - The time when the Vpc Public Ip Address Pool was created. The time is displayed in YYYY-MM-DDThh:mm:ssZ format.
-  * `ip_address_remaining` - Indicates whether the Vpc Public Ip Address Pool has idle IP addresses.
+* `pools` - A list of Vpc Public Ip Address Pools.
+
+---
+
+### `pools`
+
+The pools supports the following attributes:
+
+* `id` - The ID of the Vpc Public Ip Address Pool.
+* `public_ip_address_pool_id` - The ID of the Vpc Public Ip Address Pool.
+* `public_ip_address_pool_name` - The name of the Vpc Public Ip Address Pool.
+* `isp` - The Internet service provider.
+* `description` - The description of the Vpc Public Ip Address Pool.
+* `status` - The status of the Vpc Public Ip Address Pool.
+* `region_id` - The region ID of the Vpc Public Ip Address Pool.
+* `user_type` - The user type.
+* `total_ip_num` - The total number of IP addresses in the Vpc Public Ip Address Pool.
+* `used_ip_num` - The number of occupied IP addresses in the Vpc Public Ip Address Pool.
+* `create_time` - The time when the Vpc Public Ip Address Pool was created. The time is displayed in YYYY-MM-DDThh:mm:ssZ format.
+* `ip_address_remaining` - Indicates whether the Vpc Public Ip Address Pool has idle IP addresses.

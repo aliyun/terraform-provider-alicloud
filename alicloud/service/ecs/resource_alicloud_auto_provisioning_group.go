@@ -175,11 +175,12 @@ func resourceAutoProvisioningGroupCreate(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 
 	if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.CreateAutoProvisioningGroup(request)
-		})
+		raw, err := client.EcsSdkRpc(request, ecs.CreateCreateAutoProvisioningGroupResponse())
 		if NeedRetry(err) {
 			return retry.RetryableError(err)
+		}
+		if err != nil {
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ecs.CreateAutoProvisioningGroupResponse)
@@ -291,9 +292,7 @@ func resourceAutoProvisioningGroupUpdate(d *schema.ResourceData, meta interface{
 		}
 	}
 
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.ModifyAutoProvisioningGroup(request)
-	})
+	raw, err := client.EcsSdkRpc(request, ecs.CreateModifyAutoProvisioningGroupResponse())
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -312,9 +311,7 @@ func resourceAutoProvisioningGroupDelete(d *schema.ResourceData, meta interface{
 	request.AutoProvisioningGroupId = d.Id()
 	request.TerminateInstances = requests.NewBoolean(d.Get("terminate_instances").(bool))
 
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DeleteAutoProvisioningGroup(request)
-	})
+	raw, err := client.EcsSdkRpc(request, ecs.CreateDeleteAutoProvisioningGroupResponse())
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidAutoProvisioningGroupId.NotFound"}) {

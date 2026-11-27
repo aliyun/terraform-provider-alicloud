@@ -35,9 +35,7 @@ func (s *VpcService) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributes
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVSwitchAttributes(request)
-		})
+		raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeVSwitchAttributesResponse())
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidVswitchID.NotFound"}) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)

@@ -112,7 +112,9 @@ The following arguments are supported:
 * `domain` - (Optional) The domain name of the on-premises cluster. This parameter takes effect only when the AccoutType parameter is set to Idap.
 * `ecs_charge_type` - (Optional, ForceNew) The billing method of the nodes.
 * `ehpc_version` - (Optional) The version of E-HPC. By default, the parameter is set to the latest version number.
-* `ha_enable` - (Optional, ForceNew) Specifies whether to enable the high availability feature. Default value: `false`.  **Note:** If high availability is enabled, a primary management node and a secondary management node are used.
+* `ha_enable` - (Optional, ForceNew) Specifies whether to enable the high availability feature. Default value: `false`.
+
+  -> **NOTE:** If high availability is enabled, a primary management node and a secondary management node are used.
 * `image_id` - (Optional) The ID of the image.
 * `image_owner_alias` - (Optional) The type of the image. Valid values: `others`, `self`, `system`, `marketplace`. Default value: `system`.
 * `input_file_url` - (Optional) The URL of the job files that are uploaded to an Object Storage Service (OSS) bucket.
@@ -167,11 +169,15 @@ The following arguments are supported:
 * `zone_id` - (Optional, ForceNew) The ID of the zone.
 * `vpc_id` - (Optional, ForceNew) The ID of the virtual private cloud (VPC) to which the cluster belongs.
 
+---
+
 ### `application`
 
 The application supports the following:
 
 * `tag` - (Optional) The tag of the software.
+
+---
 
 ### `post_install_script`
 
@@ -179,6 +185,8 @@ The post_install_script supports the following:
 
 * `args` - (Optional) The parameter that is used to run the script after the cluster is created.
 * `url` - (Optional) The URL that is used to download the script after the cluster is created.
+
+---
 
 ### `additional_volumes`
 
@@ -195,6 +203,8 @@ The additional_volumes supports the following:
 * `volume_protocol` - (Optional) The type of the protocol that is used by the additional file system. Valid values: `NFS`, `SMB`. Default value: `NFS`
 * `volume_type` - (Optional) The type of the additional shared storage. Only NAS file systems are supported.
 
+---
+
 ### `additional_volumes-roles`
 
 The roles supports the following:
@@ -210,7 +220,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 20 mins) Used when create the Cluster.
 * `delete` - (Defaults to 5 mins) Used when delete the Cluster.

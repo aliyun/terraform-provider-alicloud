@@ -32,14 +32,21 @@ output "first_privatelink_vpc_endpoint_service_resource_id" {
 The following arguments are supported:
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `service_id` - (Required, ForceNew) The ID of Vpc Endpoint Service.
+* `service_id` - (Required) The ID of Vpc Endpoint Service.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Vpc Endpoint Service Resource IDs.
-* `resources` - A list of Privatelink Vpc Endpoint Service Resources. Each element contains the following attributes:
-  * `id` - The ID of the Vpc Endpoint Service Resource.
-  * `resource_id` - The ID of Resource.
-  * `resource_type` - The type of Resource.
+* `resources` - A list of Privatelink Vpc Endpoint Service Resources.
+
+---
+
+### `resources`
+
+The resources supports the following attributes:
+
+* `id` - The ID of the Vpc Endpoint Service Resource.
+* `resource_id` - The ID of Resource.
+* `resource_type` - The type of Resource.

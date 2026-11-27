@@ -93,7 +93,7 @@ The following arguments are supported:
 * `auto_propagate` - (Optional) Whether to automatically propagate the BGP route to the VPC. Value:  true: Propagate automatically.  false: does not propagate automatically.
 * `bandwidth` - (Required, ForceNew) The Bandwidth specification of the VPN gateway. Unit: Mbps.  If you want to create a public VPN gateway, the value is 5, 10, 20, 50, 100, 200, 500, or 1000. If you want to create a private VPN gateway, the value is 200 or 1000.
 * `description` - (Optional) The description of the VPN gateway.
-* `disaster_recovery_vswitch_id` - (Optional, ForceNew) The ID of the backup VSwitch to which the VPN gateway is attached.
+* `disaster_recovery_vswitch_id` - (Optional) The ID of the backup VSwitch to which the VPN gateway is attached.
 * `network_type` - (Optional, ForceNew) The network type of the VPN gateway. Value:  public (default): public VPN gateway. private: private network VPN gateway.
 * `payment_type` - (Optional, ForceNew, Computed) Type of payment. Value: Subscription: prepaid PayAsYouGo: Post-paid.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group.
@@ -126,7 +126,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the vpn gateway.
 * `delete` - (Defaults to 10 mins) Used when delete the vpn gateway.

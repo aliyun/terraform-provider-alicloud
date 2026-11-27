@@ -287,6 +287,8 @@ Default value: `NoSpot`.
 
 * `create_extra_param` - (Optional, Available since v1.252.0) Reserved parameters are not supported.
 
+---
+
 ### `data_disk`
 
 The data_disk supports the following:
@@ -311,6 +313,8 @@ The data_disk supports the following:
   - PL2: 461 to 65,536.
   - PL3: 1,261 to 65,536.
 
+---
+
 ### `system_disk`
 
 The system_disk supports the following:
@@ -332,7 +336,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Custom.
 * `delete` - (Defaults to 5 mins) Used when delete the Custom.

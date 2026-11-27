@@ -91,7 +91,11 @@ resource "alicloud_service_mesh_user_permission" "default" {
 The following arguments are supported:
 
 * `sub_account_user_id` - (Required, ForceNew) The configuration of the Load Balancer. See the following `Block load_balancer`.
-* `permissions` - (Optional) List of permissions. **Warning:** The list requires the full amount of permission information to be passed. Adding permissions means adding items to the list, and deleting them or inputting nothing means removing items. See [`permissions`](#permissions) below.
+* `permissions` - (Optional) List of permissions.
+
+  ~> **WARNING:** The list requires the full amount of permission information to be passed. Adding permissions means adding items to the list, and deleting them or inputting nothing means removing items. See [`permissions`](#permissions) below.
+
+---
 
 ### `permissions`
 
@@ -114,7 +118,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 15 mins) Used when create the Service Mesh User Permission.
 * `update` - (Defaults to 15 mins) Used when update the Service Mesh User Permission.

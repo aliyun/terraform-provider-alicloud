@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_key_pair_attachment
 
--> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_key_pair_attachment](https://www.terraform.io/docs/providers/alicloud/r/ecs_key_pair_attachment) from version 1.121.0.
+-> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_key_pair_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_key_pair_attachment) from version 1.121.0.
 
 Provides a key pair attachment resource to bind key pair for several ECS instances.
 

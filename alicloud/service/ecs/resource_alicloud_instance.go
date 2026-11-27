@@ -1471,9 +1471,7 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	dataRequest := ecs.CreateDescribeUserDataRequest()
 	dataRequest.RegionId = client.RegionId
 	dataRequest.InstanceId = d.Id()
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeUserData(dataRequest)
-	})
+	raw, err := client.EcsSdkRpc(dataRequest, ecs.CreateDescribeUserDataResponse())
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), dataRequest.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -1499,9 +1497,7 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		request := ecs.CreateDescribeInstanceRamRoleRequest()
 		request.RegionId = client.RegionId
 		request.InstanceIds = convertListToJsonString([]interface{}{d.Id()})
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeInstanceRamRole(request)
-		})
+		raw, err := client.EcsSdkRpc(request, ecs.CreateDescribeInstanceRamRoleResponse())
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -1672,9 +1668,7 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		var err error
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-			raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DescribeInstanceAutoRenewAttribute(request)
-			})
+			raw, err = client.EcsSdkRpc(request, ecs.CreateDescribeInstanceAutoRenewAttributeResponse())
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidParameter"}) {
 					wait()
@@ -1908,9 +1902,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 				request.Type = "online"
 			}
 			request.DiskId = disk["DiskId"].(string)
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.ResizeDisk(request)
-			})
+			raw, err := client.EcsSdkRpc(request, ecs.CreateResizeDiskResponse())
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
@@ -1996,9 +1988,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		request.InstanceId = d.Id()
 		request.RegionId = client.RegionId
 		request.AutoReleaseTime = d.Get("auto_release_time").(string)
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyInstanceAutoReleaseTime(request)
-		})
+		_, err := client.EcsSdkRpc(request, ecs.CreateModifyInstanceAutoReleaseTimeResponse())
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -2038,9 +2028,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 				stopRequest.StoppedMode = v.(string)
 			}
 			err := retry.Retry(5*time.Minute, func() *retry.RetryError {
-				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-					return ecsClient.StopInstance(stopRequest)
-				})
+				raw, err := client.EcsSdkRpc(stopRequest, ecs.CreateStopInstanceResponse())
 				if err != nil {
 					if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) {
 						time.Sleep(time.Second)
@@ -2081,9 +2069,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			startRequest.InstanceId = d.Id()
 
 			err := retry.Retry(5*time.Minute, func() *retry.RetryError {
-				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-					return ecsClient.StartInstance(startRequest)
-				})
+				raw, err := client.EcsSdkRpc(startRequest, ecs.CreateStartInstanceResponse())
 				if err != nil {
 					if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "InvalidOperation.Conflict"}) || NeedRetry(err) {
 						time.Sleep(time.Second)
@@ -2136,9 +2122,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		// can transiently fail; retry until the change is accepted.
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.ModifyInstanceAutoRenewAttribute(request)
-			})
+			raw, err := client.EcsSdkRpc(request, ecs.CreateModifyInstanceAutoRenewAttributeResponse())
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"ChargeTypeViolation", "IncorrectInstanceStatus"}) {
 					wait()
@@ -2735,9 +2719,7 @@ func resourceAliCloudInstanceDelete(d *schema.ResourceData, meta interface{}) er
 
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err := retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DeleteInstance(deleteRequest)
-		})
+		raw, err := client.EcsSdkRpc(deleteRequest, ecs.CreateDeleteInstanceResponse())
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "DependencyViolation.RouteEntry", "IncorrectInstanceStatus.Initializing"}) {
 				return retry.RetryableError(err)
@@ -2834,9 +2816,7 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDel
 		}
 		request.InstanceChargeType = chargeType
 		if err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.ModifyInstanceChargeType(request)
-			})
+			raw, err := client.EcsSdkRpc(request, ecs.CreateModifyInstanceChargeTypeResponse())
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
 					time.Sleep(3 * time.Second)
@@ -2908,9 +2888,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 			request.KMSKeyId = v.(string)
 		}
 		request.ClientToken = buildClientToken(request.GetActionName())
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ReplaceSystemDisk(request)
-		})
+		raw, err := client.EcsSdkRpc(request, ecs.CreateReplaceSystemDiskResponse())
 		if err != nil {
 			return update, WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -3115,9 +3093,7 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 	if update {
 		client := meta.(*connectivity.AliyunClient)
 		err := retry.Retry(1*time.Minute, func() *retry.RetryError {
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.ModifyInstanceVpcAttribute(request)
-			})
+			raw, err := client.EcsSdkRpc(request, ecs.CreateModifyInstanceVpcAttributeResponse())
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationConflict"}) {
 					time.Sleep(1 * time.Second)
@@ -3175,9 +3151,7 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 			}
 
 			err := retry.Retry(6*time.Minute, func() *retry.RetryError {
-				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-					return ecsClient.ModifyPrepayInstanceSpec(request)
-				})
+				raw, err := client.EcsSdkRpc(request, ecs.CreateModifyPrepayInstanceSpecResponse())
 				if err != nil {
 					if IsExpectedErrors(err, []string{Throttling}) {
 						time.Sleep(5 * time.Second)
@@ -3200,9 +3174,7 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 
 			err := retry.Retry(6*time.Minute, func() *retry.RetryError {
 				args := *request
-				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-					return ecsClient.ModifyInstanceSpec(&args)
-				})
+				raw, err := client.EcsSdkRpc(&args, ecs.CreateModifyInstanceSpecResponse())
 				if err != nil {
 					if IsExpectedErrors(err, []string{Throttling}) {
 						time.Sleep(10 * time.Second)
@@ -3346,9 +3318,7 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	if update {
 		if err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.ModifyInstanceNetworkSpec(request)
-			})
+			raw, err := client.EcsSdkRpc(request, ecs.CreateModifyInstanceNetworkSpecResponse())
 			if err != nil {
 				if IsExpectedErrors(err, []string{Throttling, "LastOrderProcessing", "LastRequestProcessing", "LastTokenProcessing"}) {
 					wait()
@@ -3417,9 +3387,7 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 		if allocate && d.Get("instance_charge_type").(string) == string(PostPaid) {
 			request := ecs.CreateAllocatePublicIpAddressRequest()
 			request.InstanceId = d.Id()
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.AllocatePublicIpAddress(request)
-			})
+			raw, err := client.EcsSdkRpc(request, ecs.CreateAllocatePublicIpAddressResponse())
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}

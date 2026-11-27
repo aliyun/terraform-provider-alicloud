@@ -81,6 +81,8 @@ The following arguments are supported:
 * `bucket` - (Required, ForceNew) The name of the bucket
 * `rule` - (Optional, List) Forbid overwrite rule See [`rule`](#rule) below.
 
+---
+
 ### `rule`
 
 The rule supports the following:
@@ -90,6 +92,8 @@ The rule supports the following:
 * `prefix` - (Optional) The prefix of the Object name, which is used to filter objects to be processed.
 * `principals` - (Optional, Set) A collection of authorized principals. The usage is similar to that of the Principal of the Bucket Policy. You can enter the primary account, sub-account, or role. If this parameter is empty or not configured, overwriting is not allowed for objects that meet the preceding and suffix conditions. See [`principals`](#rule-principals) below.
 * `suffix` - (Optional) The suffix of the Object name, which is used to filter objects to be processed.
+
+---
 
 ### `rule-principals`
 
@@ -105,7 +109,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Bucket Overwrite Config.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Overwrite Config.

@@ -32,11 +32,11 @@ output "alicloud_service_catalog_provisioned_product_example_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew) A list of Provisioned Product IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Product name.
-* `access_level_filter` - (Optional, ForceNew) The access filter.
-* `sort_by` - (Optional, ForceNew) The field that is used to sort the queried data.
-* `sort_order` - (Optional, ForceNew) The sorting method.
+* `ids` - (Optional) A list of Provisioned Product IDs.
+* `name_regex` - (Optional) A regex string to filter results by Product name.
+* `access_level_filter` - (Optional) The access filter.
+* `sort_by` - (Optional) The field that is used to sort the queried data.
+* `sort_order` - (Optional) The sorting method.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -46,61 +46,103 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Provisioned Product IDs.
 * `names` - A list of name of Provisioned Products.
-* `provisioned_products` - (Available since v1.197.0) A list of Provisioned Product Entries. Each element contains the following attributes:
-  * `id` - The ID of the provisioned product.
-  * `create_time` - The creation time of the product instance
-  * `last_provisioning_task_id` - The ID of the last instance operation task
-  * `last_successful_provisioning_task_id` - The ID of the last successful instance operation task
-  * `last_task_id` - The ID of the last task
-  * `outputs` - The output value of the template.
-    * `description` - Description of the output value defined in the template.
-    * `output_key` - The name of the output value defined in the template.
-    * `output_value` - The content of the output value defined in the template.
-  * `owner_principal_id` - The RAM entity ID of the owner
-  * `owner_principal_type` - The RAM entity type of the owner
-  * `parameters` - The template parameters entered by the user.
-    * `parameter_key` - The name of the parameter defined in the template.
-    * `parameter_value` - The Template parameter value entered by the user.
-  * `portfolio_id` - Product mix ID.
-  * `product_id` - Product ID.
-  * `product_name` - The name of the product
-  * `product_version_id` - Product version ID.
-  * `product_version_name` - The name of the product version
-  * `provisioned_product_arn` - The ARN of the product instance
-  * `provisioned_product_id` - The ID of the instance.
-  * `provisioned_product_name` - The name of the instance.
-  * `provisioned_product_type` - Instance type.
-  * `stack_id` - The ID of the ROS stack
-  * `stack_region_id` - The ID of the region to which the resource stack belongs.
-  * `status` - Instance status
-  * `status_message` - The status message of the product instance
-  * `tags` - A mapping of tags of the provisioned product.
-* `products` - (Deprecated since v1.197.0) A list of Provisioned Product Entries. Each element contains the following attributes:
-  * `id` - The ID of the provisioned product.
-  * `create_time` - The creation time of the product instance
-  * `last_provisioning_task_id` - The ID of the last instance operation task
-  * `last_successful_provisioning_task_id` - The ID of the last successful instance operation task
-  * `last_task_id` - The ID of the last task
-  * `outputs` - The output value of the template.
-    * `description` - Description of the output value defined in the template.
-    * `output_key` - The name of the output value defined in the template.
-    * `output_value` - The content of the output value defined in the template.
-  * `owner_principal_id` - The RAM entity ID of the owner
-  * `owner_principal_type` - The RAM entity type of the owner
-  * `parameters` - The template parameters entered by the user.
-    * `parameter_key` - The name of the parameter defined in the template.
-    * `parameter_value` - The Template parameter value entered by the user.
-  * `portfolio_id` - Product mix ID.
-  * `product_id` - Product ID.
-  * `product_name` - The name of the product
-  * `product_version_id` - Product version ID.
-  * `product_version_name` - The name of the product version
-  * `provisioned_product_arn` - The ARN of the product instance
-  * `provisioned_product_id` - The ID of the instance.
-  * `provisioned_product_name` - The name of the instance.
-  * `provisioned_product_type` - Instance type.
-  * `stack_id` - The ID of the ROS stack
-  * `stack_region_id` - The ID of the region to which the resource stack belongs.
-  * `status` - Instance status
-  * `status_message` - The status message of the product instance
-  * `tags` - A mapping of tags of the provisioned product.
+* `provisioned_products` - (Available since v1.197.0) A list of Provisioned Product Entries.
+* `products` - (Deprecated since v1.197.0) A list of Provisioned Product Entries.
+
+---
+
+### `provisioned_products`
+
+The provisioned_products supports the following attributes:
+
+* `id` - The ID of the provisioned product.
+* `create_time` - The creation time of the product instance
+* `last_provisioning_task_id` - The ID of the last instance operation task
+* `last_successful_provisioning_task_id` - The ID of the last successful instance operation task
+* `last_task_id` - The ID of the last task
+* `outputs` - The output value of the template.
+* `owner_principal_id` - The RAM entity ID of the owner
+* `owner_principal_type` - The RAM entity type of the owner
+* `parameters` - The template parameters entered by the user.
+* `portfolio_id` - Product mix ID.
+* `product_id` - Product ID.
+* `product_name` - The name of the product
+* `product_version_id` - Product version ID.
+* `product_version_name` - The name of the product version
+* `provisioned_product_arn` - The ARN of the product instance
+* `provisioned_product_id` - The ID of the instance.
+* `provisioned_product_name` - The name of the instance.
+* `provisioned_product_type` - Instance type.
+* `stack_id` - The ID of the ROS stack
+* `stack_region_id` - The ID of the region to which the resource stack belongs.
+* `status` - Instance status
+* `status_message` - The status message of the product instance
+* `tags` - A mapping of tags of the provisioned product.
+
+---
+
+### `provisioned_products.outputs`
+
+The outputs supports the following attributes:
+
+* `description` - Description of the output value defined in the template.
+* `output_key` - The name of the output value defined in the template.
+* `output_value` - The content of the output value defined in the template.
+
+---
+
+### `provisioned_products.parameters`
+
+The parameters supports the following attributes:
+
+* `parameter_key` - The name of the parameter defined in the template.
+* `parameter_value` - The Template parameter value entered by the user.
+
+---
+
+### `products`
+
+The products supports the following attributes:
+
+* `id` - The ID of the provisioned product.
+* `create_time` - The creation time of the product instance
+* `last_provisioning_task_id` - The ID of the last instance operation task
+* `last_successful_provisioning_task_id` - The ID of the last successful instance operation task
+* `last_task_id` - The ID of the last task
+* `outputs` - The output value of the template.
+* `owner_principal_id` - The RAM entity ID of the owner
+* `owner_principal_type` - The RAM entity type of the owner
+* `parameters` - The template parameters entered by the user.
+* `portfolio_id` - Product mix ID.
+* `product_id` - Product ID.
+* `product_name` - The name of the product
+* `product_version_id` - Product version ID.
+* `product_version_name` - The name of the product version
+* `provisioned_product_arn` - The ARN of the product instance
+* `provisioned_product_id` - The ID of the instance.
+* `provisioned_product_name` - The name of the instance.
+* `provisioned_product_type` - Instance type.
+* `stack_id` - The ID of the ROS stack
+* `stack_region_id` - The ID of the region to which the resource stack belongs.
+* `status` - Instance status
+* `status_message` - The status message of the product instance
+* `tags` - A mapping of tags of the provisioned product.
+
+---
+
+### `products.outputs`
+
+The outputs supports the following attributes:
+
+* `description` - Description of the output value defined in the template.
+* `output_key` - The name of the output value defined in the template.
+* `output_value` - The content of the output value defined in the template.
+
+---
+
+### `products.parameters`
+
+The parameters supports the following attributes:
+
+* `parameter_key` - The name of the parameter defined in the template.
+* `parameter_value` - The Template parameter value entered by the user.

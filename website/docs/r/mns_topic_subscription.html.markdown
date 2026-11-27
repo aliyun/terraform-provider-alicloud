@@ -13,7 +13,7 @@ Provides a MNS topic subscription resource.
 
 -> **NOTE:** Terraform will auto build a mns topic subscription  while it uses `alicloud_mns_topic_subscription` to build a mns topic subscription resource.
 
--> **DEPRECATED:**  This resource has been deprecated from version `1.188.0`. Please use new resource [message_service_subscription](https://www.terraform.io/docs/providers/alicloud/r/message_service_subscription).
+-> **DEPRECATED:**  This resource has been deprecated from version `1.188.0`. Please use new resource [message_service_subscription](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/message_service_subscription).
 
 ## Example Usage
 

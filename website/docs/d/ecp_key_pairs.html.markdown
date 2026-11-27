@@ -36,9 +36,9 @@ output "ecp_key_pair_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Key Pair IDs. Its element value is same as Key Pair Name.
-* `key_pair_finger_print` - (Optional, ForceNew) The Private Key of the Fingerprint.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Key Pair name.
+* `ids` - (Optional, Computed)  A list of Key Pair IDs. Its element value is same as Key Pair Name.
+* `key_pair_finger_print` - (Optional) The Private Key of the Fingerprint.
+* `name_regex` - (Optional) A regex string to filter results by Key Pair name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -46,7 +46,14 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Key Pair names.
-* `pairs` - A list of Ecp Key Pairs. Each element contains the following attributes:
-  * `id` - The ID of the Key Pair. Its value is same as Queue Name.
-  * `key_pair_finger_print` - The Private Key of the Fingerprint.
-  * `key_pair_name` - The Key Name.
+* `pairs` - A list of Ecp Key Pairs.
+
+---
+
+### `pairs`
+
+The pairs supports the following attributes:
+
+* `id` - The ID of the Key Pair. Its value is same as Queue Name.
+* `key_pair_finger_print` - The Private Key of the Fingerprint.
+* `key_pair_name` - The Key Name.

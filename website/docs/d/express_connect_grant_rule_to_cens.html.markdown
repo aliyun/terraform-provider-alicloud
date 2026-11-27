@@ -32,16 +32,23 @@ output "express_connect_grant_rule_to_cen_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Grant Rule To Cen IDs.
-* `instance_id` - (Required, ForceNew) The ID of the VBR.
+* `ids` - (Optional, Computed)  A list of Grant Rule To Cen IDs.
+* `instance_id` - (Required) The ID of the VBR.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `cens` - A list of Express Connect Grant Rule To Cens. Each element contains the following attributes:
-	* `id` - The ID of the Grant Rule To Cen. It formats as `<cen_id>:<cen_owner_id>:<instance_id>`.
-	* `cen_id` - The ID of the authorized CEN instance.
-	* `cen_owner_id` - The user ID (UID) of the Alibaba Cloud account to which the CEN instance belongs.
-	* `create_time` - The time when the instance was created.
+* `cens` - A list of Express Connect Grant Rule To Cens.
+
+---
+
+### `cens`
+
+The cens supports the following attributes:
+
+* `id` - The ID of the Grant Rule To Cen. It formats as `<cen_id>:<cen_owner_id>:<instance_id>`.
+* `cen_id` - The ID of the authorized CEN instance.
+* `cen_owner_id` - The user ID (UID) of the Alibaba Cloud account to which the CEN instance belongs.
+* `create_time` - The time when the instance was created.

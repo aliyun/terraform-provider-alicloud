@@ -30,23 +30,30 @@ output "alicloud_adb_resource_group_example_id" {
 
 The following arguments are supported:
 
-* `db_cluster_id` - (Required, ForceNew) DBClusterId
-* `group_name` - (Optional, ForceNew) The name of the resource pool, which cannot exceed 64 bytes in length.
+* `db_cluster_id` - (Required) DBClusterId
+* `group_name` - (Optional) The name of the resource pool, which cannot exceed 64 bytes in length.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `ids` - (Optional, ForceNew, Computed)  A list of AnalyticDB for MySQL (ADB) Resource Group IDs.
+* `ids` - (Optional, Computed)  A list of AnalyticDB for MySQL (ADB) Resource Group IDs.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `groups` - A list of Resource Group Entries. Each element contains the following attributes:
-  * `id` - The `key` of the resource supplied above.The value is formulated as `<db_cluster_id>:<group_name>`.
-  * `create_time` - Creation time.
-  * `db_cluster_id` - DB cluster id.
-  * `group_name` - The name of the resource pool.
-  * `group_type` - Query type, value description:
-    * **etl**: Batch query mode.
-    * **interactive**: interactive Query mode
-    * **default_type**: the default query mode.
-  * `node_num` - The number of nodes. The default number of nodes is 0. The number of nodes must be less than or equal to the number of nodes whose resource name is USER_DEFAULT.
-  * `user` - Binding User.
+* `groups` - A list of Resource Group Entries.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `id` - The `key` of the resource supplied above.The value is formulated as `<db_cluster_id>:<group_name>`.
+* `create_time` - Creation time.
+* `db_cluster_id` - DB cluster id.
+* `group_name` - The name of the resource pool.
+* `group_type` - Query type, value description:
+  * **etl**: Batch query mode.
+  * **interactive**: interactive Query mode
+  * **default_type**: the default query mode.
+* `node_num` - The number of nodes. The default number of nodes is 0. The number of nodes must be less than or equal to the number of nodes whose resource name is USER_DEFAULT.
+* `user` - Binding User.

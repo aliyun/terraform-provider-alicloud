@@ -33,21 +33,28 @@ output "first_resource_manager_resource_share_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Resource Share IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Resource Share name.
+* `ids` - (Optional, Computed)  A list of Resource Share IDs.
+* `name_regex` - (Optional) A regex string to filter results by Resource Share name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_share_name` - (Optional, ForceNew) The name of resource share.
-* `resource_share_owner` - (Required, ForceNew) The owner of resource share, Valid values: `Self` and `OtherAccounts`.
-* `status` - (Optional, ForceNew) The status of resource share. Valid values: `Active`,`Deleted` and `Deleting`.
+* `resource_share_name` - (Optional) The name of resource share.
+* `resource_share_owner` - (Required) The owner of resource share, Valid values: `Self` and `OtherAccounts`.
+* `status` - (Optional) The status of resource share. Valid values: `Active`,`Deleted` and `Deleting`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Resource Share names.
-* `shares` - A list of Resource Manager Resource Shares. Each element contains the following attributes:
-  * `id` - The ID of the Resource Share.
-  * `resource_share_id` - The ID of the resource share.
-  * `resource_share_name` - The name of resource share.
-  * `resource_share_owner` - The owner of resource share.
-  * `status` - The status of resource share.
+* `shares` - A list of Resource Manager Resource Shares.
+
+---
+
+### `shares`
+
+The shares supports the following attributes:
+
+* `id` - The ID of the Resource Share.
+* `resource_share_id` - The ID of the resource share.
+* `resource_share_name` - The name of resource share.
+* `resource_share_owner` - The owner of resource share.
+* `status` - The status of resource share.

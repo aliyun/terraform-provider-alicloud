@@ -75,6 +75,8 @@ The following arguments are supported:
 * `local_vpc` - (Required, ForceNew, Set) The details of the local VPC. See [`local_vpc`](#local_vpc) below.
 * `peer_vpc` - (Required, ForceNew, Set) The details of the peer VPC. See [`peer_vpc`](#peer_vpc) below.
 
+---
+
 ### `local_vpc`
 
 The local_vpc supports the following:
@@ -83,6 +85,8 @@ The local_vpc supports the following:
 * `region_no` - (Required, ForceNew) The region ID of the local VPC.
 * `local_vpc_cidr_table_list` - (Required, ForceNew, Set) The network segment list of the local VPC. See [`local_vpc_cidr_table_list`](#local_vpc-local_vpc_cidr_table_list) below.
 
+---
+
 ### `local_vpc-local_vpc_cidr_table_list`
 
 The local_vpc_cidr_table_list supports the following:
@@ -90,12 +94,16 @@ The local_vpc_cidr_table_list supports the following:
 * `local_route_table_id` - (Required, ForceNew) The ID of the route table of the local VPC.
 * `local_route_entry_list` - (Required, ForceNew, Set) The list of route entries of the local VPC. See [`local_route_entry_list`](#local_vpc-local_vpc_cidr_table_list-local_route_entry_list) below.
 
+---
+
 ### `local_vpc-local_vpc_cidr_table_list-local_route_entry_list`
 
 The local_route_entry_list supports the following:
 
 * `local_next_hop_instance_id` - (Required, ForceNew) The ID of the next-hop instance in the local VPC.
 * `local_destination_cidr` - (Required, ForceNew) The target network segment of the local VPC.
+
+---
 
 ### `peer_vpc`
 
@@ -105,12 +113,16 @@ The peer_vpc supports the following:
 * `region_no` - (Required, ForceNew) The region ID of the peer VPC.
 * `peer_vpc_cidr_table_list` - (Required, ForceNew, Set) The network segment list of the peer VPC. See [`peer_vpc_cidr_table_list`](#peer_vpc-peer_vpc_cidr_table_list) below.
 
+---
+
 ### `peer_vpc-peer_vpc_cidr_table_list`
 
 The peer_vpc_cidr_table_list supports the following:
 
 * `peer_route_table_id` - (Required, ForceNew) The ID of the route table of the peer VPC.
 * `peer_route_entry_list` - (Required, ForceNew, Set) Peer VPC route entry list information. See [`peer_route_entry_list`](#peer_vpc-peer_vpc_cidr_table_list-peer_route_entry_list) below.
+
+---
 
 ### `peer_vpc-peer_vpc_cidr_table_list-peer_route_entry_list`
 
@@ -129,19 +141,33 @@ The following attributes are exported:
 * `bandwidth` - Bandwidth specifications for high-speed channels. Unit: Mbps.
 * `region_status` - The region is open.
 * `local_vpc` - The details of the Local VPC.
-  * `vpc_name` - The instance name of the local VPC.
-  * `eni_id` - The ID of the instance of the Eni in the local VPC.
-  * `eni_private_ip_address` - The private IP address of the elastic network card in the local VPC.
-  * `router_interface_id` - The ID of the router interface in the local VPC.
 * `peer_vpc` - The details of the Peer VPC.
-  * `vpc_name` - The instance name of the peer VPC.
-  * `eni_id` - The ID of the instance of the ENI in the peer VPC.
-  * `eni_private_ip_address` - The private IP address of the elastic network card in the peer VPC.
-  * `router_interface_id` - The ID of the router interface in the peer VPC.
+
+---
+
+### `local_vpc`
+
+The local_vpc supports the following attributes:
+
+* `vpc_name` - The instance name of the local VPC.
+* `eni_id` - The ID of the instance of the Eni in the local VPC.
+* `eni_private_ip_address` - The private IP address of the elastic network card in the local VPC.
+* `router_interface_id` - The ID of the router interface in the local VPC.
+
+---
+
+### `peer_vpc`
+
+The peer_vpc supports the following attributes:
+
+* `vpc_name` - The instance name of the peer VPC.
+* `eni_id` - The ID of the instance of the ENI in the peer VPC.
+* `eni_private_ip_address` - The private IP address of the elastic network card in the peer VPC.
+* `router_interface_id` - The ID of the router interface in the peer VPC.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 31 mins) Used when create the Vpc Firewall.
 * `update` - (Defaults to 31 mins) Used when update the Vpc Firewall.

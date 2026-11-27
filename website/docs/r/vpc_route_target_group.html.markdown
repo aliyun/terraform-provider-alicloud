@@ -190,6 +190,8 @@ In active/standby mode, the following restrictions apply to route target group m
 * `tags` - (Optional, Map) The tags of the route target group.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC to which the route target group belongs.
 
+---
+
 ### `route_target_member_list`
 
 The route_target_member_list supports the following:
@@ -211,13 +213,20 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the route target group was created.
 * `route_target_member_list` - The member list of the route target group.
-  * `enable_status` - Indicates the enable status of the current route target configuration. Valid values: `Enable`, `Disable`.
-  * `health_check_status` - The health check status of the current route target configuration.
 * `status` - The status of the route target group. Valid values: `Pending`, `Available`.
+
+---
+
+### `route_target_member_list`
+
+The route_target_member_list supports the following attributes:
+
+* `enable_status` - Indicates the enable status of the current route target configuration. Valid values: `Enable`, `Disable`.
+* `health_check_status` - The health check status of the current route target configuration.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Route Target Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Route Target Group.

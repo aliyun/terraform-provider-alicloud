@@ -31,17 +31,24 @@ output "mongodb_audit_policy_id_1" {
 
 The following arguments are supported:
 
-* `db_instance_id` - (Required, ForceNew) The id of the db instance.
+* `db_instance_id` - (Required) The id of the db instance.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `policies` - A list of Mongodb Audit Policies. Each element contains the following attributes:
-  * `db_instance_id` - The ID of the instance.
-  * `id` - The ID of the Audit Policy.
-  * `audit_status` - The status of the log audit feature.
-  * `service_type` - (Available since v1.284.0) The edition of the audit log, e.g. `Standard` or `V2_Standard`.
-  * `storage_period` - (Available since v1.284.0) The audit log retention duration, in days. For `V2_Standard` this is the cold storage duration.
-  * `hot_storage_period` - (Available since v1.284.0) The hot storage duration (days) of the V2 audit log.
+* `policies` - A list of Mongodb Audit Policies.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `db_instance_id` - The ID of the instance.
+* `id` - The ID of the Audit Policy.
+* `audit_status` - The status of the log audit feature.
+* `service_type` - (Available since v1.284.0) The edition of the audit log, e.g. `Standard` or `V2_Standard`.
+* `storage_period` - (Available since v1.284.0) The audit log retention duration, in days. For `V2_Standard` this is the cold storage duration.
+* `hot_storage_period` - (Available since v1.284.0) The hot storage duration (days) of the V2 audit log.

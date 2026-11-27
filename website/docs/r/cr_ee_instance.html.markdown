@@ -130,17 +130,51 @@ The following attributes are exported:
 * `create_time` - The creation time of the resource
 * `end_time` - Expiration Time
 * `instance_endpoints` - (Available since v1.240.0) Instance Network Access Endpoint List
-  * `domains` - Domain List
-    * `domain` - Domain
-    * `type` - Domain Type
-  * `enable` - enable
-  * `endpoint_type` - Network Access Endpoint Type
 * `region_id` - RegionId
 * `status` - Instance Status
 
+---
+
+### `instance_endpoints`
+
+The instance_endpoints supports the following attributes:
+
+* `acl_enable` - (Bool, Available since v2.3.0) Whether ACL is enabled for the endpoint. It is only returned for the `internet` endpoint type.
+* `acl_entries` - (List, Available since v2.3.0) The ACL entries of the endpoint. It is only returned after the ACL is configured.
+* `domains` - Domain List
+* `enable` - enable
+* `endpoint_type` - Network Access Endpoint Type
+* `linked_vpcs` - (List, Available since v2.3.0) The VPCs linked to the endpoint.
+* `status` - (String, Available since v2.3.0) The status of the endpoint, e.g. `RUNNING`. It may be empty for newly created instances.
+
+---
+
+### `instance_endpoints.acl_entries`
+
+The acl_entries supports the following attributes:
+
+* `entry` - (String) The ACL entry, e.g. an IP address or CIDR block.
+
+---
+
+### `instance_endpoints.domains`
+
+The domains supports the following attributes:
+
+* `domain` - Domain
+* `type` - Domain Type
+
+---
+
+### `instance_endpoints.linked_vpcs`
+
+The linked_vpcs supports the following attributes:
+
+* `vpc_id` - (String) The ID of the linked VPC.
+
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 6 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.

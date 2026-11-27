@@ -15,7 +15,7 @@ Provides a network acl entries resource to create ingress and egress entries.
 
 -> **NOTE:** It doesn't support concurrency and the order of the ingress and egress entries determines the priority.
 
--> **DEPRECATED:**  This resource  has been deprecated from version `1.122.0`. Replace by `ingress_acl_entries` and `egress_acl_entries` with the resource [alicloud_network_acl](https://www.terraform.io/docs/providers/alicloud/r/network_acl).
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.122.0`. Replace by `ingress_acl_entries` and `egress_acl_entries` with the resource [alicloud_network_acl](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/network_acl).
 
 ## Example Usage
 
@@ -88,6 +88,8 @@ The following arguments are supported:
 * `ingress` - (Optional) List of the ingress entries of the network acl. The order of the ingress entries determines the priority. See [`ingress`](#ingress) below.
 * `egress` - (Optional) List of the egress entries of the network acl. The order of the egress entries determines the priority. See [`egress`](#egress) below.
 
+---
+
 ### `ingress`
 
 The resources mapping supports the following:
@@ -99,6 +101,8 @@ The resources mapping supports the following:
 * `policy` - (Optional) The policy of the ingress entry. It must be `accept` or `drop`.
 * `port` - (Optional) The port of the ingress entry.
 * `protocol` - (Optional) The protocol of the ingress entry.
+
+---
 
 ### `egress`
 

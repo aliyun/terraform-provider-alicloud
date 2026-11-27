@@ -52,14 +52,14 @@ output "cen_transit_router_route_table_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of Transit Router Route Table IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Transit Router Route Table name.
-* `transit_router_id` - (Required, ForceNew) The ID of the Enterprise Edition transit router.
-* `transit_router_route_table_type` - (Optional, ForceNew, Available since v1.229.1.) The type of the route table. Valid values: `System`, `Custom`.
-* `transit_router_route_table_status` - (Optional, ForceNew) The status of the route table. Valid values: `Creating`, `Active`, `Deleting`.
-* `status` - (Optional, ForceNew) The status of the route table. Valid values: `Creating`, `Active`, `Deleting`.
-* `transit_router_route_table_ids` - (Optional, ForceNew, List) A list of ID of the CEN Transit Router Route Table.
-* `transit_router_route_table_names` - (Optional, ForceNew, List) A list of name of the CEN Transit Router Route Table.
+* `ids` - (Optional, List) A list of Transit Router Route Table IDs.
+* `name_regex` - (Optional) A regex string to filter results by Transit Router Route Table name.
+* `transit_router_id` - (Required) The ID of the Enterprise Edition transit router.
+* `transit_router_route_table_type` - (Optional, Available since v1.229.1.) The type of the route table. Valid values: `System`, `Custom`.
+* `transit_router_route_table_status` - (Optional) The status of the route table. Valid values: `Creating`, `Active`, `Deleting`.
+* `status` - (Optional) The status of the route table. Valid values: `Creating`, `Active`, `Deleting`.
+* `transit_router_route_table_ids` - (Optional, List) A list of ID of the CEN Transit Router Route Table.
+* `transit_router_route_table_names` - (Optional, List) A list of name of the CEN Transit Router Route Table.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -67,10 +67,17 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Transit Router Route Table names.
-* `tables` - A list of Transit Router Route Tables. Each element contains the following attributes:
-  * `id` - The ID of the Transit Router Route Table.
-  * `transit_router_route_table_id` - The ID of the Transit Router Route Table.
-  * `transit_router_route_table_type` - The type of the route table.
-  * `transit_router_route_table_name` - The name of the route table.
-  * `transit_router_route_table_description` - The description of the route table.
-  * `status` - The status of the route table.
+* `tables` - A list of Transit Router Route Tables.
+
+---
+
+### `tables`
+
+The tables supports the following attributes:
+
+* `id` - The ID of the Transit Router Route Table.
+* `transit_router_route_table_id` - The ID of the Transit Router Route Table.
+* `transit_router_route_table_type` - The type of the route table.
+* `transit_router_route_table_name` - The name of the route table.
+* `transit_router_route_table_description` - The description of the route table.
+* `status` - The status of the route table.

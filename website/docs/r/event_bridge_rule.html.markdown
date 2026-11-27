@@ -89,13 +89,16 @@ The following arguments are supported:
 * `status` - (Optional) The status of the event rule. Valid values: `ENABLE`, `DISABLE`.
 * `targets` - (Required, Set) The targets of rule. See [`targets`](#targets) below.
 
+---
+
 ### `targets`
 
 The targets supports the following:
 
 * `target_id` - (Required, ForceNew) The ID of the custom event target.
 * `type` - (Required) The type of the event target. Valid values: `acs.alikafka`, `acs.api.destination`, `acs.arms.loki`, `acs.datahub`, `acs.dingtalk`, `acs.eventbridge`, `acs.eventbridge.olap`, `acs.eventbus.SLSCloudLens`, `acs.fc.function`, `acs.fnf`, `acs.k8s`, `acs.mail`, `acs.mns.queue`, `acs.mns.topic`, `acs.openapi`, `acs.rabbitmq`, `acs.rds.mysql`, `acs.rocketmq`, `acs.sae`, `acs.sls`, `acs.sms`, `ApacheKafkaSelf`, `http`,`https` and `mysql`.
-  **NOTE:** From version 1.208.1, `type` can be set to `acs.alikafka`, `acs.api.destination`, `acs.arms.loki`, `acs.datahub`, `acs.eventbridge.olap`, `acs.eventbus.SLSCloudLens`, `acs.fnf`, `acs.k8s`, `acs.openapi`, `acs.rds.mysql`, `acs.sae`, `acs.sls`, `mysql`.
+
+  -> **NOTE:** From version 1.208.1, `type` can be set to `acs.alikafka`, `acs.api.destination`, `acs.arms.loki`, `acs.datahub`, `acs.eventbridge.olap`, `acs.eventbus.SLSCloudLens`, `acs.fnf`, `acs.k8s`, `acs.openapi`, `acs.rds.mysql`, `acs.sae`, `acs.sls`, `mysql`.
 * `endpoint` - (Required) The endpoint of the event target.
 * `push_retry_strategy` - (Optional, Available since v1.184.0) The retry policy that is used to push the event. Valid values:
   - `BACKOFF_RETRY`: Backoff retry. The request can be retried up to three times. The interval between two consecutive retries is a random value between 10 and 20 seconds.
@@ -103,11 +106,15 @@ The targets supports the following:
 * `dead_letter_queue` - (Optional, Set, Available since v1.184.0) The dead letter queue. Events that are not processed or exceed the number of retries will be written to the dead letter. Support message service MNS and message queue RocketMQ. See [`dead_letter_queue`](#targets-dead_letter_queue) below.
 * `param_list` - (Required, Set) The parameters that are configured for the event target. See [`param_list`](#targets-param_list) below.
 
+---
+
 ### `targets-dead_letter_queue`
 
 The dead_letter_queue supports the following:
 
 * `arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of the dead letter queue. Events that are not processed or whose maximum retries are exceeded are written to the dead-letter queue. The ARN feature is supported by the following queue types: MNS and Message Queue for Apache RocketMQ.
+
+---
 
 ### `targets-param_list`
 
@@ -120,7 +127,7 @@ The param_list supports the following:
 
   -> **NOTE:** There exists a potential diff error that the backend service will return a default param as following:
 
-```
+```terraform
 param_list {
   resource_key = "IsBase64Encode"
   form         = "CONSTANT"
@@ -140,7 +147,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the Rule.
 * `update` - (Defaults to 10 mins) Used when update the Rule.

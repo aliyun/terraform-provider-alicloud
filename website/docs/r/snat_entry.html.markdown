@@ -79,7 +79,9 @@ The following arguments are supported:
   - `0`: Disable.
   - `1`: Enable.
 * `snat_entry_name` - (Optional, Available since v1.71.2) The name of the SNAT entry. The name must be `2` to `128` characters in length. It must start with a letter but cannot start with `http://` or `https://`.
-* `snat_ip` - (Required) The IP of a SNAT entry. Separate multiple EIP or NAT IP addresses with commas (,). **NOTE:** From version 1.241.0, `snat_ip` can be modified.
+* `snat_ip` - (Required) The IP of a SNAT entry. Separate multiple EIP or NAT IP addresses with commas (,).
+
+  -> **NOTE:** From version 1.241.0, `snat_ip` can be modified.
 * `snat_table_id` - (Required, ForceNew) The ID of the SNAT table.
 * `source_cidr` - (Optional, ForceNew, Available since v1.71.1) The source CIDR block specified in the SNAT entry.
 * `source_vswitch_id` - (Optional, ForceNew) The ID of the vSwitch.
@@ -98,7 +100,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.119.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Snat Entry.
 * `delete` - (Defaults to 5 mins) Used when delete the Snat Entry.
@@ -112,7 +114,7 @@ NAT Gateway Snat Entry can be imported using the id, which consists of snat_tabl
 $ terraform import alicloud_snat_entry.example <snat_table_id>:<snat_entry_id>
 ```
 
-**NOTE:** Before provider version 1.37.0, NAT Gateway Snat Entry can be imported using the id, e.g.
+-> **NOTE:** Before provider version 1.37.0, NAT Gateway Snat Entry can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_snat_entry.example <snat_entry_id>

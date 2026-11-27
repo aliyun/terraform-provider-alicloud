@@ -101,7 +101,9 @@ The following arguments are supported:
 * `replicas` - (Required, Int) Initial number of instances.
 * `namespace_id` - (Optional, ForceNew) SAE namespace ID. Only namespaces whose names are lowercase letters and dashes (-) are supported, and must start with a letter. The namespace can be obtained by calling the DescribeNamespaceList interface.
 * `vpc_id` - (Optional, ForceNew) The vpc id.
-* `vswitch_id` - (Optional) The vswitch id. **NOTE:** From version 1.211.0, `vswitch_id` can be modified.
+* `vswitch_id` - (Optional) The vswitch id.
+
+  -> **NOTE:** From version 1.211.0, `vswitch_id` can be modified.
 * `package_version` - (Optional) The version number of the deployment package. Required when the Package Type is War and FatJar.
 * `package_url` - (Optional) Deployment package address. Only FatJar or War type applications can configure the deployment package address.
 * `image_url` - (Optional) Mirror address. Only Image type applications can configure the mirror address.
@@ -112,7 +114,9 @@ The following arguments are supported:
 * `jdk` - (Optional) The JDK version that the deployment package depends on. Image type applications are not supported.
 * `jar_start_options` - (Optional) The JAR package starts the application option. Application default startup command: $JAVA_HOME/bin/java $JarStartOptions -jar $CATALINA_OPTS "$package_path" $JarStartArgs.
 * `jar_start_args` - (Optional) The JAR package starts application parameters. Application default startup command: $JAVA_HOME/bin/java $JarStartOptions -jar $CATALINA_OPTS "$package_path" $JarStartArgs.
-* `app_description` - (Optional) Application description information. No more than 1024 characters. **NOTE:** From version 1.211.0, `app_description` can be modified.
+* `app_description` - (Optional) Application description information. No more than 1024 characters.
+
+  -> **NOTE:** From version 1.211.0, `app_description` can be modified.
 * `auto_config` - (Optional, Bool) The auto config. Valid values: `true`, `false`.
 * `auto_enable_application_scaling_rule` - (Optional, Bool) The auto enable application scaling rule. Valid values: `true`, `false`.
 * `batch_wait_time` - (Optional, Int) The batch wait time.
@@ -123,9 +127,13 @@ The following arguments are supported:
 * `enable_grey_tag_route` - (Optional, Bool) The enable grey tag route. Default value: `false`. Valid values:
   - `true`: The canary release rule is enabled.
   - `false`: The canary release rule is disabled.
-    **NOTE:** Currently, `enable_grey_tag_route` can only be set to `false`, and if you want to set it to `true`, you must operate on the web console.
+
+  -> **NOTE:** Currently, `enable_grey_tag_route` can only be set to `false`, and if you want to set it to `true`, you must operate on the web console.
 * `min_ready_instances` - (Optional, Int) The Minimum Available Instance. On the Change Had Promised during the Available Number of Instances to Be.
-* `min_ready_instance_ratio` - (Optional, Int) Minimum Survival Instance Percentage. **NOTE:** When `min_ready_instances` and `min_ready_instance_ratio` are passed at the same time, and the value of `min_ready_instance_ratio` is not -1, the `min_ready_instance_ratio` parameter shall prevail. Assuming that `min_ready_instances` is 5 and `min_ready_instance_ratio` is 50, 50 is used to calculate the minimum number of surviving instances.The value description is as follows:
+* `min_ready_instance_ratio` - (Optional, Int) Minimum Survival Instance Percentage.
+
+  -> **NOTE:** When `min_ready_instances` and `min_ready_instance_ratio` are passed at the same time, and the value of `min_ready_instance_ratio` is not -1, the `min_ready_instance_ratio` parameter shall prevail. Assuming that `min_ready_instances` is 5 and `min_ready_instance_ratio` is 50, 50 is used to calculate the minimum number of surviving instances.The value description is as follows:
+
   * `-1`: Initialization value, indicating that percentages are not used.
   * `0~100`: The unit is percentage, rounded up. For example, if it is set to 50%, if there are currently 5 instances, the minimum number of surviving instances is 3.
 * `oss_ak_id` - (Optional, Sensitive) OSS AccessKey ID.
@@ -140,9 +148,7 @@ The following arguments are supported:
 * `acr_instance_id` - (Optional, Available since v1.189.0) The ID of the ACR EE instance. Only necessary if the image_url is pointing to an ACR EE instance.
 * `acr_assume_role_arn` - (Optional, Available since v1.189.0) The ARN of the RAM role required when pulling images across accounts. Only necessary if the image_url is pointing to an ACR EE instance.
 * `micro_registration` - (Optional, Available since v1.198.0) Select the Nacos registry. Valid values: `0`, `1`, `2`.
-* `envs` - (Optional) Container environment variable parameters. For example, `[{"name":"envtmp","value":"0"}]`. The value description is as follows:
-  * `name` - environment variable name.
-  * `value` - Environment variable value or environment variable reference.
+* `envs` - (Optional) Container environment variable parameters. For example, `[{"name":"envtmp","value":"0"}]`. See [`envs`](#envs) below.
 * `sls_configs` - (Optional, String) Configuration for log collection to SLS. Valid parameter descriptions are as follows:
   * `projectName`: Configures the project name on SLS.
   * `logDir`: Path to the logs.
@@ -154,7 +160,7 @@ The following arguments are supported:
   - Using SAE automatically created SLS resources: [{"logDir":"","logType":"stdout"},{"logDir":"/tmp/a.log"}].
   - Using custom SLS resources: [{"projectName":"test-sls","logType":"stdout","logDir":"","logstoreName":"sae","logtailName":""},{"projectName":"test","logDir":"/tmp/a.log","logstoreName":"sae","logtailName":""}].
 
-  **NOTE:** Projects that are automatically created with applications will be deleted along with the application deletion. Therefore, when selecting existing projects, you cannot choose projects automatically created by SAE.
+  -> **NOTE:** Projects that are automatically created with applications will be deleted along with the application deletion. Therefore, when selecting existing projects, you cannot choose projects automatically created by SAE.
 * `php` - (Optional, Available since v1.211.0) The Php environment.
 * `image_pull_secrets` - (Optional, Available since v1.211.0) The ID of the corresponding Secret.
 * `programming_language` - (Optional, ForceNew, Available since v1.211.0) The programming language that is used to create the application. Valid values: `java`, `php`, `other`.
@@ -173,19 +179,27 @@ The following arguments are supported:
 * `pvtz_discovery_svc` - (Optional, Set, Available since v1.211.0) The configurations of Kubernetes Service-based service registration and discovery. See [`pvtz_discovery_svc`](#pvtz_discovery_svc) below.
 * `tags` - (Optional, Available since v1.167.0) A mapping of tags to assign to the resource.
 * `status` - (Optional) The status of the resource. Valid values: `RUNNING`, `STOPPED`, `UNKNOWN`.
-* `command_args` - (Deprecated since v1.211.0) Mirror startup command parameters. The parameters required for the above start command. For example: 1d. **NOTE:** Field `command_args` has been deprecated from provider version 1.211.0. New field `command_args_v2` instead.
-* `custom_host_alias` - (Deprecated since v1.211.0) Custom host mapping in the container. For example: [{`hostName`:`samplehost`,`ip`:`127.0.0.1`}]. **NOTE:** Field `custom_host_alias` has been deprecated from provider version 1.211.0. New field `custom_host_alias_v2` instead.
-* `oss_mount_descs` - (Deprecated since v1.211.0) OSS mount description information. **NOTE:** Field `oss_mount_descs` has been deprecated from provider version 1.211.0. New field `oss_mount_descs_v2` instead.
-* `config_map_mount_desc` - (Deprecated since v1.211.0) ConfigMap mount description. **NOTE:** Field `config_map_mount_desc` has been deprecated from provider version 1.211.0. New field `config_map_mount_desc_v2` instead.
-* `liveness` - (Deprecated since v1.211.0) Container health check. Containers that fail the health check will be shut down and restored. Currently, only the method of issuing commands in the container is supported.
-  **NOTE:** Field `liveness` has been deprecated from provider version 1.211.0. New field `liveness_v2` instead.
-* `readiness` - (Deprecated since v1.211.0) Application startup status checks, containers that fail multiple health checks will be shut down and restarted. Containers that do not pass the health check will not receive SLB traffic. For example: {`exec`:{`command`:[`sh`,"-c","cat /home/admin/start.sh"]},`initialDelaySeconds`:30,`periodSeconds`:30,"timeoutSeconds ":2}. Valid values: `command`, `initialDelaySeconds`, `periodSeconds`, `timeoutSeconds`.
-  **NOTE:** Field `readiness` has been deprecated from provider version 1.211.0. New field `readiness_v2` instead.
-* `post_start` - (Deprecated since v1.211.0) Execute the script after startup, the format is like: {`exec`:{`command`:[`cat`,"/etc/group"]}}. **NOTE:** Field `post_start` has been deprecated from provider version 1.211.0. New field `post_start_v2` instead.
-* `pre_stop` - (Deprecated since v1.211.0) Execute the script before stopping, the format is like: {`exec`:{`command`:[`cat`,"/etc/group"]}}. **NOTE:** Field `pre_stop` has been deprecated from provider version 1.211.0. New field `pre_stop_v2` instead.
-* `tomcat_config` - (Deprecated since v1.211.0) Tomcat file configuration, set to "{}" means to delete the configuration:  useDefaultConfig: Whether to use a custom configuration, if it is true, it means that the custom configuration is not used; if it is false, it means that the custom configuration is used. If you do not use custom configuration, the following parameter configuration will not take effect.  contextInputType: Select the access path of the application.  war: No need to fill in the custom path, the access path of the application is the WAR package name. root: No need to fill in the custom path, the access path of the application is /. custom: You need to fill in the custom path in the custom path below. contextPath: custom path, this parameter only needs to be configured when the contextInputType type is custom.  httpPort: The port range is 1024~65535. Ports less than 1024 need Root permission to operate. Because the container is configured with Admin permissions, please fill in a port greater than 1024. If not configured, the default is 8080. maxThreads: Configure the number of connections in the connection pool, the default size is 400. uriEncoding: Tomcat encoding format, including UTF-8, ISO-8859-1, GBK and GB2312. If not set, the default is ISO-8859-1. useBodyEncoding: Whether to use BodyEncoding for URL. Valid values: `contextInputType`, `contextPath`, `httpPort`, `maxThreads`, `uriEncoding`, `useBodyEncoding`, `useDefaultConfig`.
-  **NOTE:** Field `tomcat_config` has been deprecated from provider version 1.211.0. New field `tomcat_config_v2` instead.
-* `update_strategy` - (Deprecated since v1.211.0) The update strategy. **NOTE:** Field `update_strategy` has been deprecated from provider version 1.211.0. New field `update_strategy_v2` instead.
+* `command_args` - (Deprecated since v1.211.0) Mirror startup command parameters. The parameters required for the above start command. For example: 1d. Use `command_args_v2` instead.
+* `custom_host_alias` - (Deprecated since v1.211.0) Custom host mapping in the container. For example: [{`hostName`:`samplehost`,`ip`:`127.0.0.1`}]. Use `custom_host_alias_v2` instead.
+* `oss_mount_descs` - (Deprecated since v1.211.0) OSS mount description information. Use `oss_mount_descs_v2` instead.
+* `config_map_mount_desc` - (Deprecated since v1.211.0) ConfigMap mount description. Use `config_map_mount_desc_v2` instead.
+* `liveness` - (Deprecated since v1.211.0) Container health check. Containers that fail the health check will be shut down and restored. Currently, only the method of issuing commands in the container is supported. Use `liveness_v2` instead.
+* `readiness` - (Deprecated since v1.211.0) Application startup status checks, containers that fail multiple health checks will be shut down and restarted. Containers that do not pass the health check will not receive SLB traffic. For example: {`exec`:{`command`:[`sh`,"-c","cat /home/admin/start.sh"]},`initialDelaySeconds`:30,`periodSeconds`:30,"timeoutSeconds ":2}. Valid values: `command`, `initialDelaySeconds`, `periodSeconds`, `timeoutSeconds`. Use `readiness_v2` instead.
+* `post_start` - (Deprecated since v1.211.0) Execute the script after startup, the format is like: {`exec`:{`command`:[`cat`,"/etc/group"]}}. Use `post_start_v2` instead.
+* `pre_stop` - (Deprecated since v1.211.0) Execute the script before stopping, the format is like: {`exec`:{`command`:[`cat`,"/etc/group"]}}. Use `pre_stop_v2` instead.
+* `tomcat_config` - (Deprecated since v1.211.0) Tomcat file configuration, set to "{}" means to delete the configuration:  useDefaultConfig: Whether to use a custom configuration, if it is true, it means that the custom configuration is not used; if it is false, it means that the custom configuration is used. If you do not use custom configuration, the following parameter configuration will not take effect.  contextInputType: Select the access path of the application.  war: No need to fill in the custom path, the access path of the application is the WAR package name. root: No need to fill in the custom path, the access path of the application is /. custom: You need to fill in the custom path in the custom path below. contextPath: custom path, this parameter only needs to be configured when the contextInputType type is custom.  httpPort: The port range is 1024~65535. Ports less than 1024 need Root permission to operate. Because the container is configured with Admin permissions, please fill in a port greater than 1024. If not configured, the default is 8080. maxThreads: Configure the number of connections in the connection pool, the default size is 400. uriEncoding: Tomcat encoding format, including UTF-8, ISO-8859-1, GBK and GB2312. If not set, the default is ISO-8859-1. useBodyEncoding: Whether to use BodyEncoding for URL. Valid values: `contextInputType`, `contextPath`, `httpPort`, `maxThreads`, `uriEncoding`, `useBodyEncoding`, `useDefaultConfig`. Use `tomcat_config_v2` instead.
+* `update_strategy` - (Deprecated since v1.211.0) The update strategy. Use `update_strategy_v2` instead.
+
+---
+
+### `envs`
+
+The envs mapping supports the following:
+
+* `name` - environment variable name.
+* `value` - Environment variable value or environment variable reference.
+
+---
 
 ### `custom_host_alias_v2`
 
@@ -193,6 +207,8 @@ The custom_host_alias_v2 supports the following:
 
 * `host_name` - (Optional) The domain name or hostname.
 * `ip` - (Optional) The IP address.
+
+---
 
 ### `oss_mount_descs_v2`
 
@@ -205,6 +221,8 @@ The oss_mount_descs_v2 supports the following:
   - `true`: The application has the read-only permissions.
   - `false`: The application has the read and write permissions.
 
+---
+
 ### `config_map_mount_desc_v2`
 
 The config_map_mount_desc_v2 supports the following:
@@ -212,6 +230,8 @@ The config_map_mount_desc_v2 supports the following:
 * `config_map_id` - (Optional) The ID of the ConfigMap.
 * `mount_path` - (Optional) The mount path.
 * `key` - (Optional) The key.
+
+---
 
 ### `liveness_v2`
 
@@ -225,17 +245,23 @@ The liveness_v2 supports the following:
 * `tcp_socket` - (Optional, Set) The liveness check settings of the container. See [`tcp_socket`](#liveness_v2-tcp_socket) below.
 * `http_get` - (Optional, Set) The liveness check settings of the container. See [`http_get`](#liveness_v2-http_get) below.
 
+---
+
 ### `liveness_v2-exec`
 
 The exec supports the following:
 
 * `command` - (Optional, List) The health check command.
 
+---
+
 ### `liveness_v2-tcp_socket`
 
 The tcp_socket supports the following:
 
 * `port` - (Optional, Int) The port that is used to check the status of TCP connections.
+
+---
 
 ### `liveness_v2-http_get`
 
@@ -246,6 +272,8 @@ The http_get supports the following:
 * `scheme` - (Optional) The protocol that is used to perform the health check. Valid values: `HTTP` and `HTTPS`.
 * `key_word` - (Optional) The custom keywords.
 * `is_contain_key_word` - (Optional, Bool) Specifies whether the response contains keywords. Valid values: `true` and `false`. If you do not set it, the advanced settings are not used.
+
+---
 
 ### `readiness_v2`
 
@@ -260,17 +288,23 @@ The readiness_v2 supports the following:
 * `tcp_socket` - (Optional, Set) The liveness check settings of the container. See [`tcp_socket`](#readiness_v2-tcp_socket) below.
 * `http_get` - (Optional, Set) The liveness check settings of the container. See [`http_get`](#readiness_v2-http_get) below.
 
+---
+
 ### `readiness_v2-exec`
 
 The exec supports the following:
 
 * `command` - (Optional, List) The health check command.
 
+---
+
 ### `readiness_v2-tcp_socket`
 
 The tcp_socket supports the following:
 
 * `port` - (Optional, Int) The port that is used to check the status of TCP connections.
+
+---
 
 ### `readiness_v2-http_get`
 
@@ -282,11 +316,15 @@ The http_get supports the following:
 * `key_word` - (Optional) The custom keywords.
 * `is_contain_key_word` - (Optional, Bool) Specifies whether the response contains keywords. Valid values: `true` and `false`. If you do not set it, the advanced settings are not used.
 
+---
+
 ### `post_start_v2`
 
 The post_start_v2 supports the following:
 
 * `exec` - (Optional, Set) Execute. See [`exec`](#post_start_v2-exec) below.
+
+---
 
 ### `post_start_v2-exec`
 
@@ -294,17 +332,23 @@ The exec supports the following:
 
 * `command` - (Optional, List) The command.
 
+---
+
 ### `pre_stop_v2`
 
 The pre_stop_v2 supports the following:
 
 * `exec` - (Optional, Set) Execute. See [`exec`](#pre_stop_v2-exec) below.
 
+---
+
 ### `pre_stop_v2-exec`
 
 The exec supports the following:
 
 * `command` - (Optional, List) The command.
+
+---
 
 ### `tomcat_config_v2`
 
@@ -316,12 +360,16 @@ The tomcat_config_v2 supports the following:
 * `uri_encoding` - (Optional) The URI encoding scheme in the Tomcat container.
 * `use_body_encoding_for_uri` - (Optional) Specifies whether to use the encoding scheme that is specified by BodyEncoding for URL.
 
+---
+
 ### `update_strategy_v2`
 
 The update_strategy_v2 supports the following:
 
 * `type` - (Optional) The type of the release policy. Valid values: `GrayBatchUpdate` and `BatchUpdate`.
 * `batch_update` - (Optional, Set) The phased release policy. See [`batch_update`](#update_strategy_v2-batch_update) below.
+
+---
 
 ### `update_strategy_v2-batch_update`
 
@@ -330,6 +378,8 @@ The batch_update supports the following:
 * `release_type` - (Optional) The processing method for the batches. Valid values: `auto` and `manual`.
 * `batch` - (Optional, Int) The number of batches in which you want to release the instances.
 * `batch_wait_time` - (Optional, Int) The time interval at which the instances in a batch are deployed. Unit: seconds.
+
+---
 
 ### `nas_configs`
 
@@ -341,6 +391,8 @@ The nas_configs supports the following:
 * `mount_domain` - (Optional) The domain name of the mount target.
 * `read_only` - (Optional, Bool) Specifies whether the application can read data from or write data to resources in the directory of the NAS. Valid values: `true` and `false`. If you set `read_only` to `false`, the application has the read and write permissions.
 
+---
+
 ### `kafka_configs`
 
 The kafka_configs supports the following:
@@ -348,6 +400,8 @@ The kafka_configs supports the following:
 * `kafka_instance_id` - (Optional) The  ID of the ApsaraMQ for Kafka instance.
 * `kafka_endpoint` - (Optional) The endpoint of the ApsaraMQ for Kafka API.
 * `kafka_configs` - (Optional, Set) One or more logging configurations of ApsaraMQ for Kafka. See [`kafka_configs`](#kafka_configs-kafka_configs) below.
+
+---
 
 ### `kafka_configs-kafka_configs`
 
@@ -357,6 +411,8 @@ The kafka_configs supports the following:
 * `log_dir` - (Optional) The path in which logs are stored.
 * `kafka_topic` - (Optional) The topic of the Kafka.
 
+---
+
 ### `pvtz_discovery_svc`
 
 The pvtz_discovery_svc supports the following:
@@ -365,6 +421,8 @@ The pvtz_discovery_svc supports the following:
 * `namespace_id` - (Optional, ForceNew) The ID of the namespace.
 * `enable` - (Optional, Bool) Enables the Kubernetes Service-based registration and discovery feature.
 * `port_protocols` - (Optional, Set) The port number and protocol. See [`port_protocols`](#pvtz_discovery_svc-port_protocols) below.
+
+---
 
 ### `pvtz_discovery_svc-port_protocols`
 

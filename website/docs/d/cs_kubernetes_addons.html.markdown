@@ -68,9 +68,16 @@ The following arguments are supported.
 * `cluster_id` - The id of kubernetes cluster.
 * `names` - A list of addon names.
 * `addons` - A list of addons.
-  * `name` - The name of addon.
-  * `current_version` - The current version of addon, if this field is an empty string, it means that the addon is not installed.
-  * `next_version` - The next version of this addon can be upgraded to.
-  * `required` - Whether the addon is a system addon.
-  * `current_config` - The current custom configuration of the addon. **Note:** Available in v1.166.0+
-  * `supported_actions` - (Available since v1.274.0) A set of actions supported by the addon, such as `Install`, `Upgrade`, `Modify`, `Uninstall`.
+
+---
+
+### `addons`
+
+The addons supports the following attributes:
+
+* `name` - The name of addon.
+* `current_version` - The current version of addon, if this field is an empty string, it means that the addon is not installed.
+* `next_version` - The next version of this addon can be upgraded to.
+* `required` - Whether the addon is a system addon.
+* `current_config` - (Available since v1.166.0) The current custom configuration of the addon.
+* `supported_actions` - (Available since v1.274.0) A set of actions supported by the addon, such as `Install`, `Upgrade`, `Modify`, `Uninstall`.

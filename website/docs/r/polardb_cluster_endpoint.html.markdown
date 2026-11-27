@@ -73,7 +73,8 @@ The following arguments are supported:
 * `ssl_enabled` - (Optional) Specifies how to modify the SSL encryption status. Valid values: `Disable`, `Enable`, `Update`.
 * `net_type` - (Optional) The network type of the endpoint address.
 * `ssl_auto_rotate` - (Optional) Specifies whether automatic rotation of SSL certificates is enabled. Valid values: `Enable`,`Disable`.
-  **NOTE:** For a PolarDB for MySQL cluster, this parameter is required, and only one connection string in each endpoint can enable the ssl, for other notes, see [Configure SSL encryption](https://www.alibabacloud.com/help/doc-detail/153182.htm).  
+
+  -> **NOTE:** For a PolarDB for MySQL cluster, this parameter is required, and only one connection string in each endpoint can enable the ssl, for other notes, see [Configure SSL encryption](https://www.alibabacloud.com/help/doc-detail/153182.htm).
   For a PolarDB for PostgreSQL cluster or a PolarDB-O cluster, this parameter is not required, by default, SSL encryption is enabled for all endpoints.
 * `db_endpoint_description` - (Optional) The name of the endpoint.
 * `connection_prefix` - (Optional) Prefix of the specified endpoint. The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter.

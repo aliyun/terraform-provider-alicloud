@@ -60,13 +60,13 @@ output "alicloud_vpc_ipam_ipam_pool_allocation_example_id" {
 
 The following arguments are supported:
 
-* `cidr` - (ForceNew, Optional) The allocated address segment.
-* `ipam_pool_allocation_id` - (ForceNew, Optional) The instance ID of the ipam pool allocation.
-* `ipam_pool_allocation_name` - (ForceNew, Optional) The name of the ipam pool allocation.It must be 1 to 128 characters in length and cannot start with 'http:// 'or 'https.
-* `ipam_pool_id` - (Required, ForceNew) The ID of the IPAM Pool.
-* `ids` - (Optional, ForceNew, Computed) A list of Ipam Pool Allocation IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `cidr` - (Optional) The allocated address segment.
+* `ipam_pool_allocation_id` - (Optional) The instance ID of the ipam pool allocation.
+* `ipam_pool_allocation_name` - (Optional) The name of the ipam pool allocation.It must be 1 to 128 characters in length and cannot start with 'http:// 'or 'https.
+* `ipam_pool_id` - (Required) The ID of the IPAM Pool.
+* `ids` - (Optional, Computed) A list of Ipam Pool Allocation IDs.
+* `name_regex` - (Optional) A regex string to filter results by Group Metric Rule name.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
@@ -74,19 +74,26 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Ipam Pool Allocation IDs.
 * `names` - A list of name of Ipam Pool Allocations.
-* `allocations` - A list of Ipam Pool Allocation Entries. Each element contains the following attributes:
-  * `cidr` - The allocated address segment.
-  * `create_time` - Instance creation time.
-  * `ipam_pool_allocation_description` - The description of the ipam pool alloctaion.It must be 1 to 256 characters in length and must start with an English letter or Chinese character, but cannot start with 'http:// 'or 'https. If it is not filled in, it is empty. The default value is empty.
-  * `ipam_pool_allocation_id` - The instance ID of the ipam pool allocation.
-  * `ipam_pool_allocation_name` - The name of the ipam pool allocation.It must be 1 to 128 characters in length and cannot start with 'http:// 'or 'https.
-  * `ipam_pool_id` - The ID of the IPAM Pool.
-  * `region_id` - When the IPAM Pool to which CIDR is allocated has the region attribute, this attribute is the IPAM Pool region.When the IPAM Pool to which CIDR is allocated does not have the region attribute, this attribute is the IPAM region.
-  * `resource_id` - The ID of the resource.
-  * `resource_owner_id` - The ID of the Alibaba Cloud account (primary account) to which the resource belongs.
-  * `resource_region_id` - The region of the resource.
-  * `resource_type` - The type of resource. Value:-**VPC**: indicates that the resource type is VPC.-**IpamPool**: indicates that the resource type is a child address pool.-**Custom**: indicates that the resource type is a Custom reserved CIDR block.
-  * `source_cidr` - The source address segment.
-  * `status` - The status of the instance. Value:-**Created**: indicates that the creation is complete.
-  * `total_count` - Total number of records.
-  * `id` - The ID of the resource supplied above.
+* `allocations` - A list of Ipam Pool Allocation Entries.
+
+---
+
+### `allocations`
+
+The allocations supports the following attributes:
+
+* `cidr` - The allocated address segment.
+* `create_time` - Instance creation time.
+* `ipam_pool_allocation_description` - The description of the ipam pool alloctaion.It must be 1 to 256 characters in length and must start with an English letter or Chinese character, but cannot start with 'http:// 'or 'https. If it is not filled in, it is empty. The default value is empty.
+* `ipam_pool_allocation_id` - The instance ID of the ipam pool allocation.
+* `ipam_pool_allocation_name` - The name of the ipam pool allocation.It must be 1 to 128 characters in length and cannot start with 'http:// 'or 'https.
+* `ipam_pool_id` - The ID of the IPAM Pool.
+* `region_id` - When the IPAM Pool to which CIDR is allocated has the region attribute, this attribute is the IPAM Pool region.When the IPAM Pool to which CIDR is allocated does not have the region attribute, this attribute is the IPAM region.
+* `resource_id` - The ID of the resource.
+* `resource_owner_id` - The ID of the Alibaba Cloud account (primary account) to which the resource belongs.
+* `resource_region_id` - The region of the resource.
+* `resource_type` - The type of resource. Value:-**VPC**: indicates that the resource type is VPC.-**IpamPool**: indicates that the resource type is a child address pool.-**Custom**: indicates that the resource type is a Custom reserved CIDR block.
+* `source_cidr` - The source address segment.
+* `status` - The status of the instance. Value:-**Created**: indicates that the creation is complete.
+* `total_count` - Total number of records.
+* `id` - The ID of the resource supplied above.

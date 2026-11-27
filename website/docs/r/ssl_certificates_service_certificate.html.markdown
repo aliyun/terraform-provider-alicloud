@@ -105,7 +105,9 @@ The following arguments are supported:
 * `encrypt_private_key` - (Optional, ForceNew, Available since v1.260.1) The private key of an SM encryption certificate in PEM format.
 * `sign_cert` - (Optional, ForceNew, Available since v1.260.1) The content of an SM signing certificate in PEM format.
 * `sign_private_key` - (Optional, ForceNew, Available since v1.260.1) The private key of an SM signing certificate in PEM format.
-* `certificate_name` - (Optional) A custom name for the certificate. The name can be up to 64 characters long and can contain any character type, such as letters, numbers, and underscores. **NOTE:** From version 1.260.1, `certificate_name` can be modified.
+* `certificate_name` - (Optional) A custom name for the certificate. The name can be up to 64 characters long and can contain any character type, such as letters, numbers, and underscores.
+
+  -> **NOTE:** From version 1.260.1, `certificate_name` can be modified.
 * `resource_group_id` - (Optional, Available since v1.260.1) The ID of the resource group.
 * `tags` - (Optional, Map, Available since v1.260.1) The tag of the resource.
 * `name` - (Optional, Deprecated since v1.129.0) Field `name` has been deprecated from provider version 1.129.0 and it will be removed in the future version. Please use the new attribute `certificate_name` instead.
@@ -122,7 +124,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since 1.260.1.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Certificate.
 * `delete` - (Defaults to 5 mins) Used when delete the Certificate.

@@ -76,6 +76,8 @@ The following arguments are supported:
 * `tags` - (Optional, Map) The tag of the resource.
 * `target_type` - (Required, ForceNew) Represents the target type of resource binding.
 
+---
+
 ### `cross_region_copy_info`
 
 The cross_region_copy_info supports the following:
@@ -83,12 +85,16 @@ The cross_region_copy_info supports the following:
 * `enabled` - (Optional) Enable Snapshot replication.
 * `regions` - (Optional) Destination region for Snapshot replication. See [`regions`](#cross_region_copy_info-regions) below.
 
+---
+
 ### `cross_region_copy_info-regions`
 
 The cross_region_copy_info-regions supports the following:
 
 * `region_id` - (Optional) Destination region ID.
 * `retain_days` - (Optional) Number of days of snapshot retention for replication.
+
+---
 
 ### `retain_rule`
 
@@ -98,11 +104,15 @@ The retain_rule supports the following:
 * `time_interval` - (Optional) Time unit.
 * `time_unit` - (Optional) Time-based retention.
 
+---
+
 ### `schedule`
 
 The schedule supports the following:
 
 * `cron_expression` - (Required) CronTab expression.
+
+---
 
 ### `special_retain_rules`
 
@@ -112,6 +122,8 @@ The special_retain_rules supports the following:
   - true
   - false.
 * `rules` - (Optional) List of special retention rules. See [`rules`](#special_retain_rules-rules) below.
+
+---
 
 ### `special_retain_rules-rules`
 
@@ -125,6 +137,8 @@ The special_retain_rules-rules supports the following:
 * `time_unit` - (Optional) The retention time unit for a particular snapshot. Value range:
   - DAYS
   - WEEKS.
+
+---
 
 ### `storage_rule`
 
@@ -141,7 +155,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Enterprise Snapshot Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Enterprise Snapshot Policy.

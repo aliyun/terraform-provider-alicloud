@@ -7,18 +7,18 @@ description: |-
     Provides the generation of txt records to realize the retrieval and verification of domain names.
 ---
 
-# alicloud\_dns\_domain\_txt\_guid
+# alicloud_dns_domain_txt_guid
 
 Provides the generation of txt records to realize the retrieval and verification of domain names.
 
--> **NOTE:** Available in v1.80.0+.
+-> **NOTE:** Available since v1.80.0+
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_dns_domain_txt_guid" "this" {
-  domain_name = "test111.abc"
-  type = "ADD_SUB_DOMAIN"
+  domain_name = "example111.abc"
+  type        = "ADD_SUB_DOMAIN"
 }
 
 output "rr" {
@@ -45,5 +45,3 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `rr` - Host record.
 * `value` - Record the value.
-
-  

@@ -37,49 +37,70 @@ output "ecd_ram_directory_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Ram Directory IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Ram Directory name.
+* `ids` - (Optional, Computed)  A list of Ram Directory IDs.
+* `name_regex` - (Optional) A regex string to filter results by Ram Directory name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of directory. Valid values: `REGISTERING`, `REGISTERED`, `DEREGISTERING`, `NEEDCONFIGTRUST`, `CONFIGTRUSTFAILED`, `DEREGISTERED`, `ERROR`, `CONFIGTRUSTING`, `NEEDCONFIGUSER`.
+* `status` - (Optional) The status of directory. Valid values: `REGISTERING`, `REGISTERED`, `DEREGISTERING`, `NEEDCONFIGTRUST`, `CONFIGTRUSTFAILED`, `DEREGISTERED`, `ERROR`, `CONFIGTRUSTING`, `NEEDCONFIGUSER`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Ram Directory names.
-* `directories` - A list of Ecd Ram Directories. Each element contains the following attributes:
-  * `ad_connectors` - The AD connectors.
-    * `ad_connector_address` - The address of AD connector.
-    * `connector_status` - The status of connector.
-    * `network_interface_id` - The ID of the network interface.
-    * `vswitch_id` - The ID of vSwitch.
-  * `create_time` - The CreateTime of resource.
-  * `custom_security_group_id` - The id of the custom security group.
-  * `desktop_access_type` - The desktop access type.
-  * `desktop_vpc_endpoint` - The desktop vpc endpoint.
-  * `directory_type` - The directory type.
-  * `dns_address` - The address of DNSAddress.
-  * `dns_user_name` - The username of DNS.
-  * `domain_name` - The name of the domain.
-  * `domain_password` - The domain password.
-  * `domain_user_name` - The username of the domain.
-  * `enable_admin_access` - Whether to enable admin access.
-  * `enable_cross_desktop_access` - Whether to enable cross desktop access.
-  * `enable_internet_access` - Whether enable internet access.
-  * `file_system_ids` - The ids of filesystem.
-  * `id` - The ID of the Ram Directory.
-  * `logs` - The register log information.
-    * `level` - The level of log.
-    * `message` - The message of log.
-    * `step` - The step of log.
-    * `time_stamp` - The time stamp of log.
-  * `mfa_enabled` - Whether to enable MFA.
-  * `ram_directory_id` - The ID of ram directory.
-  * `ram_directory_name` - The name of directory.
-  * `sso_enabled` - Whether to enable SSO.
-  * `status` - The status of directory.
-  * `sub_dns_address` - The address of sub DNS.
-  * `sub_domain_name` - The Name of the sub-domain.
-  * `trust_password` - The trust password.
-  * `vpc_id` - The ID of the vpc.
-  * `vswitch_ids` - List of vSwitch IDs in the directory.
+* `directories` - A list of Ecd Ram Directories.
+
+---
+
+### `directories`
+
+The directories supports the following attributes:
+
+* `ad_connectors` - The AD connectors.
+* `create_time` - The CreateTime of resource.
+* `custom_security_group_id` - The id of the custom security group.
+* `desktop_access_type` - The desktop access type.
+* `desktop_vpc_endpoint` - The desktop vpc endpoint.
+* `directory_type` - The directory type.
+* `dns_address` - The address of DNSAddress.
+* `dns_user_name` - The username of DNS.
+* `domain_name` - The name of the domain.
+* `domain_password` - The domain password.
+* `domain_user_name` - The username of the domain.
+* `enable_admin_access` - Whether to enable admin access.
+* `enable_cross_desktop_access` - Whether to enable cross desktop access.
+* `enable_internet_access` - Whether enable internet access.
+* `file_system_ids` - The ids of filesystem.
+* `id` - The ID of the Ram Directory.
+* `logs` - The register log information.
+* `mfa_enabled` - Whether to enable MFA.
+* `ram_directory_id` - The ID of ram directory.
+* `ram_directory_name` - The name of directory.
+* `sso_enabled` - Whether to enable SSO.
+* `status` - The status of directory.
+* `sub_dns_address` - The address of sub DNS.
+* `sub_domain_name` - The Name of the sub-domain.
+* `trust_password` - The trust password.
+* `vpc_id` - The ID of the vpc.
+* `vswitch_ids` - List of vSwitch IDs in the directory.
+
+---
+
+### `directories.ad_connectors`
+
+The ad_connectors supports the following attributes:
+
+* `ad_connector_address` - The address of AD connector.
+* `connector_status` - The status of connector.
+* `network_interface_id` - The ID of the network interface.
+* `vswitch_id` - The ID of vSwitch.
+
+---
+
+### `directories.logs`
+
+The logs supports the following attributes:
+
+* `level` - The level of log.
+* `message` - The message of log.
+* `step` - The step of log.
+* `time_stamp` - The time stamp of log.

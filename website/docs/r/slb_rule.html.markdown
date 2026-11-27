@@ -148,12 +148,18 @@ and wildcard characters. The following two domain name formats are supported:
   - Wildcard domain name: *.test.com. wildcard (*) must be the first character in the format of (*.)
 * `url` - (Optional, ForceNew) Domain of the forwarding rule. It must be 2-80 characters in length. Only letters a-z, numbers 0-9, and characters '-' '/' '?' '%' '#' and '&' are allowed. URLs must be started with the character '/', but cannot be '/' alone.
 * `server_group_id` - (Required) ID of a virtual server group that will be forwarded.
-* `scheduler` - (Optional, Available since v1.51.0) Scheduling algorithm. Valid values: `wrr`, `rr` and `wlc`. Default value: `wrr`. **NOTE:** `scheduler` is required and takes effect only when `listener_sync` is set to `off`.
-* `sticky_session` - (Optional, Available since v1.51.0) Whether to enable session persistence. Valid values: `on` and `off`. Default value: `off`. **NOTE:** `sticky_session` is required and takes effect only when `listener_sync` is set to `off`.
+* `scheduler` - (Optional, Available since v1.51.0) Scheduling algorithm. Valid values: `wrr`, `rr` and `wlc`. Default value: `wrr`.
+
+  -> **NOTE:** `scheduler` is required and takes effect only when `listener_sync` is set to `off`.
+* `sticky_session` - (Optional, Available since v1.51.0) Whether to enable session persistence. Valid values: `on` and `off`. Default value: `off`.
+
+  -> **NOTE:** `sticky_session` is required and takes effect only when `listener_sync` is set to `off`.
 * `sticky_session_type` - (Optional, Available since v1.51.0) Mode for handling the cookie. If `sticky_session` is `on`, it is mandatory. Otherwise, it will be ignored. Valid values: `insert` and `server`. `insert` means it is inserted from Server Load Balancer; `server` means the Server Load Balancer learns from the backend server.
 * `cookie_timeout` - (Optional, Int, Available since v1.51.0) Cookie timeout. It is mandatory when `sticky_session` is `on` and `sticky_session_type` is `insert`. Otherwise, it will be ignored. Valid values: [1-86400] in seconds.
 * `cookie` - (Optional, Available since v1.51.0) The cookie configured on the server. It is mandatory when `sticky_session` is `on` and `sticky_session_type` is `server`. Otherwise, it will be ignored. Valid value：String in line with RFC 2965, with length being `1` - `200`. It only contains characters such as ASCII codes, English letters and digits instead of the comma, semicolon or spacing, and it cannot start with $.
-* `health_check` - (Optional, Available since v1.51.0) Whether to enable health check. Valid values: `on` and `off`. `TCP` and `UDP` listener's `health_check` is always `on`, so it will be ignore when launching `TCP` or `UDP` listener. **NOTE:** `health_check` is required and takes effect only when `listener_sync` is set to `off`.
+* `health_check` - (Optional, Available since v1.51.0) Whether to enable health check. Valid values: `on` and `off`. `TCP` and `UDP` listener's `health_check` is always `on`, so it will be ignore when launching `TCP` or `UDP` listener.
+
+  -> **NOTE:** `health_check` is required and takes effect only when `listener_sync` is set to `off`.
 * `health_check_domain` - (Optional, Available since v1.51.0) Domain name used for health check. When it used to launch TCP listener, `health_check_type` must be `http`. Its length is limited to 1-80 and only characters such as letters, digits, ‘-‘ and ‘.’ are allowed. When it is not set or empty, Server Load Balancer uses the private network IP address of each backend server as Domain used for health check.
 * `health_check_uri` - (Optional, Available since v1.51.0) URI used for health check. When it used to launch TCP listener, `health_check_type` must be `http`. Its length is limited to 1-80 and it must start with /. Only characters such as letters, digits, ‘-’, ‘/’, ‘.’, ‘%’, ‘?’, #’ and ‘&’ are allowed.
 * `health_check_connect_port` - (Optional, Int, Available since v1.51.0) Port used for health check. Valid values: [1-65535]. Default value: `None` means the backend server port is used.
@@ -175,7 +181,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.163.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the forwarding rule.
 * `update` - (Defaults to 1 mins) Used when update the forwarding rule.

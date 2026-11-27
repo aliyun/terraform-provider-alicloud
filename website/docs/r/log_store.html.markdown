@@ -159,6 +159,8 @@ The following arguments will be discarded. Please use new fields as soon as poss
 * `project` - (Deprecated since v1.215.0). Field 'project' has been deprecated from provider version 1.215.0. New field 'project_name' instead.
 * `name` - (Deprecated since v1.215.0). Field 'name' has been deprecated from provider version 1.215.0. New field 'logstore_name' instead.
 
+---
+
 ### `encrypt_conf`
 
 The encrypt_conf supports the following:
@@ -166,6 +168,8 @@ The encrypt_conf supports the following:
 * `enable` - (Optional, Computed) Enable encryption. Default false.
 * `encrypt_type` - (Optional, ForceNew, Computed) Supported encryption type, only supports `default`(AES), `m4`.
 * `user_cmk_info` - (Optional, ForceNew, Computed, List) User bring your own key (BYOK) encryption Refer to details, the format is as follows. See user_cmk_info below. `{ "cmk_key_id": "your_cmk_key_id", "arn": "your_role_arn", "region_id": "you_cmk_region_id" }`. See [`user_cmk_info`](#encrypt_conf-user_cmk_info) below.
+
+---
 
 ### `encrypt_conf-user_cmk_info`
 
@@ -181,15 +185,22 @@ The following attributes are exported:
 
 * `id` - The ID of the resource supplied above.The value is formulated as `<project_name>:<logstore_name>`.
 * `shards` - The shard attribute.
-  * `id` - The ID of the shard.
-  * `status` - Shard status, only two status of `readwrite` and `readonly`.
-  * `begin_key` - The begin value of the shard range(MD5), included in the shard range.
-  * `end_key` - The end value of the shard range(MD5), not included in shard range.
 * `create_time` - Log library creation time. Unix timestamp format that represents the number of seconds from 1970-1-1 00:00:00 UTC calculation.
+
+---
+
+### `shards`
+
+The shards supports the following attributes:
+
+* `id` - The ID of the shard.
+* `status` - Shard status, only two status of `readwrite` and `readonly`.
+* `begin_key` - The begin value of the shard range(MD5), included in the shard range.
+* `end_key` - The end value of the shard range(MD5), not included in shard range.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Log Store.
 * `delete` - (Defaults to 5 mins) Used when delete the Log Store.

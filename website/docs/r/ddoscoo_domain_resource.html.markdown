@@ -156,6 +156,8 @@ The following arguments are supported:
 * `tls13_custom_ciphers` - (Optional, List, Available since v1.281.0) A custom list of cipher suites for TLS 1.3.
 * `white_list` - (Optional, List, Available since v1.270.0) IP whitelist list.
 
+---
+
 ### `proxy_types`
 
 The proxy_types supports the following:
@@ -177,7 +179,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Domain Resource.
 * `delete` - (Defaults to 5 mins) Used when delete the Domain Resource.

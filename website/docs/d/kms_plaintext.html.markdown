@@ -7,18 +7,20 @@ description: |-
     Decrypt a ciphertext encrypted with KMS.
 ---
 
-# alicloud\_kms\_plaintext
+# alicloud_kms_plaintext
 
 Decrypt a given ciphertext with KMS to use the resulting plaintext in resources.
 
 ~> **NOTE**: Using this data provider will allow you to conceal secret data within your resource definitions but does not take care of protecting that data in all Terraform logging and state output. Please take care to secure your secret data beyond just the Terraform configuration.
 
+-> **NOTE:** Available since v1.63.0+.
+
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_kms_key" "key" {
-  description             = "example key"
-  is_enabled              = true
+  description = "example key"
+  is_enabled  = true
 }
 
 # Encrypt plaintext 'example'
@@ -42,9 +44,8 @@ output "decrypted" {
 
 The following arguments are supported:
 
-* `encryption_context` -
-  (Optional) The Encryption context. If you specify this parameter in the Encrypt or GenerateDataKey API operation, it is also required when you call the Decrypt API operation. For more information, see [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm).
-* `ciphertext_blob` - The ciphertext to be decrypted.
+* `encryption_context` - (Optional) The Encryption context. If you specify this parameter in the Encrypt or GenerateDataKey API operation, it is also required when you call the Decrypt API operation. For more information, see [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm).
+* `ciphertext_blob` - (Required) The ciphertext to be decrypted.
 
 ## Attributes Reference
 

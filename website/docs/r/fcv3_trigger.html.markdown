@@ -157,16 +157,23 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<function_name>:<trigger_name>`.
 * `create_time` - Creation time
 * `http_trigger` - (Available since v1.234.0) HTTP trigger information
-  * `url_internet` - The public domain name address. On the Internet, you can access the HTTP Trigger through the HTTP protocol or HTTPS protocol.
-  * `url_intranet` - The private domain name address. In a VPC, you can access the HTTP Trigger through HTTP or HTTPS.
 * `last_modified_time` - (Available since v1.234.0) The last modified time of the trigger
 * `status` - The state of the trigger
 * `target_arn` - (Available since v1.234.0) Resource identity of the function
 * `trigger_id` - (Available since v1.234.0) Trigger ID
 
+---
+
+### `http_trigger`
+
+The http_trigger supports the following attributes:
+
+* `url_internet` - The public domain name address. On the Internet, you can access the HTTP Trigger through the HTTP protocol or HTTPS protocol.
+* `url_intranet` - The private domain name address. In a VPC, you can access the HTTP Trigger through HTTP or HTTPS.
+
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Trigger.
 * `delete` - (Defaults to 5 mins) Used when delete the Trigger.

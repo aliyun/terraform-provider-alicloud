@@ -10,6 +10,7 @@ import (
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/dara"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/search"
@@ -294,7 +295,26 @@ func (s *Service) DescribeOtsInstance(instanceName string) (inst RestOtsInstance
 	return inst, nil
 }
 
-func (s *Service) DescribeOtsInstanceAttachment(id string) (inst ots.VpcInfo, err error) {
+// listVpcInfoByInstance calls the OTS control-plane ListVpcInfoByInstance API
+// and returns the legacy POP SDK response struct both describe paths consume.
+// Under sign_version.default = v4 the legacy POP client cannot sign, so the
+// request goes through the common V4 RPC path instead and the raw response is
+// converted into the same struct.
+func (s *Service) listVpcInfoByInstance(id string) (*ots.ListVpcInfoByInstanceResponse, error) {
+	if s.client.UseOtsV4() {
+		data, err := s.client.OtsPopV4("GET", "ListVpcInfoByInstance", map[string]interface{}{
+			"InstanceName": id,
+		})
+		if err != nil {
+			return nil, err
+		}
+		logs.AddDebug("ListVpcInfoByInstance", data)
+		resp := ots.CreateListVpcInfoByInstanceResponse()
+		if err := dara.Convert(data, resp); err != nil {
+			return nil, err
+		}
+		return resp, nil
+	}
 	request := ots.CreateListVpcInfoByInstanceRequest()
 	request.RegionId = s.client.RegionId
 	request.Method = "GET"
@@ -303,13 +323,21 @@ func (s *Service) DescribeOtsInstanceAttachment(id string) (inst ots.VpcInfo, er
 		return otsClient.ListVpcInfoByInstance(request)
 	})
 	if err != nil {
-		if errs.NotFoundError(err) {
-			return inst, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
-		}
-		return inst, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+		return nil, err
 	}
 	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ots.ListVpcInfoByInstanceResponse)
+	return resp, nil
+}
+
+func (s *Service) DescribeOtsInstanceAttachment(id string) (inst ots.VpcInfo, err error) {
+	resp, err := s.listVpcInfoByInstance(id)
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return inst, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
+		}
+		return inst, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "ListVpcInfoByInstance", errs.AlibabaCloudSdkGoERROR)
+	}
 	if resp.TotalCount < 1 {
 		return inst, errs.WrapErrorf(errs.NotFoundErr("OtsInstanceAttachment", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
@@ -341,18 +369,10 @@ func (s *Service) WaitForOtsInstanceVpc(id string, status Status, timeout int) e
 }
 
 func (s *Service) ListOtsInstanceVpc(id string) (inst []ots.VpcInfo, err error) {
-	request := ots.CreateListVpcInfoByInstanceRequest()
-	request.RegionId = s.client.RegionId
-	request.Method = "GET"
-	request.InstanceName = id
-	raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-		return otsClient.ListVpcInfoByInstance(request)
-	})
+	resp, err := s.listVpcInfoByInstance(id)
 	if err != nil {
-		return inst, errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ots_instance_attachments", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+		return inst, errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ots_instance_attachments", "ListVpcInfoByInstance", errs.AlibabaCloudSdkGoERROR)
 	}
-	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	resp, _ := raw.(*ots.ListVpcInfoByInstanceResponse)
 	if resp.TotalCount < 1 {
 		return inst, errs.WrapErrorf(errs.NotFoundErr("OtsInstanceAttachment", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
@@ -1005,13 +1025,33 @@ func OtsRestApiGetWithRetry(client *connectivity.AliyunClient, product string, v
 
 func invokeOtsRestApiWithRetry(client *connectivity.AliyunClient, product string, version string, actionPath string, httpMethod string, urlQuery map[string]*string, headers map[string]*string, requestBody map[string]interface{}) (map[string]interface{}, error) {
 	var response map[string]interface{}
-	otsClient, err := client.NewOtsRoaClient(product)
-	if err != nil {
-		return nil, errs.WrapError(err)
+	// sign_version.default = v4 signs the REST data plane through the common
+	// V4 layer; otherwise the legacy ROA client is constructed once outside
+	// the retry loop, exactly as before.
+	var invoke func() (map[string]interface{}, error)
+	if client.UseOtsV4() {
+		invoke = func() (map[string]interface{}, error) {
+			body, err := client.OtsRestV4(product, version, actionPath, httpMethod, urlQuery, headers, requestBody)
+			if err != nil {
+				return nil, err
+			}
+			// OtsRestV4/commonV4 already unwraps the Tea response; re-wrap it so the
+			// callers keep reading resp["body"] as with the legacy ROA client.
+			return map[string]interface{}{"body": body}, nil
+		}
+	} else {
+		otsClient, err := client.NewOtsRoaClient(product)
+		if err != nil {
+			return nil, errs.WrapError(err)
+		}
+		invoke = func() (map[string]interface{}, error) {
+			return otsClient.DoRequest(helper.StringPointer(version), nil, helper.StringPointer(httpMethod), helper.StringPointer("AK"), helper.StringPointer(actionPath), urlQuery, headers, requestBody, &util.RuntimeOptions{})
+		}
 	}
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	err = retry.Retry(20*time.Minute, func() *retry.RetryError {
-		response, err = otsClient.DoRequest(helper.StringPointer(version), nil, helper.StringPointer(httpMethod), helper.StringPointer("AK"), helper.StringPointer(actionPath), urlQuery, headers, requestBody, &util.RuntimeOptions{})
+	err := retry.Retry(20*time.Minute, func() *retry.RetryError {
+		var err error
+		response, err = invoke()
 		if err != nil {
 			if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) ||
 				errs.IsExpectedErrors(err, errs.OtsTunnelIsTemporarilyUnavailable) ||

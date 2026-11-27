@@ -40,10 +40,10 @@ output "api_gateway_model_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Model IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Model name.
-* `group_id` - (Required, ForceNew) The ID of the api group.
-* `model_name` - (Optional, ForceNew) The name of the Model.
+* `ids` - (Optional, Computed)  A list of Model IDs.
+* `name_regex` - (Optional) A regex string to filter results by Model name.
+* `group_id` - (Required) The ID of the api group.
+* `model_name` - (Optional) The name of the Model.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -51,13 +51,20 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Model names.
-* `models` - A list of Api Gateway Models. Each element contains the following attributes:
-  * `id` - The ID of the Api Gateway Model.
-  * `group_id` - The group of the model belongs to.
-  * `model_name` - The name of the Model.
-  * `schema` - The schema of the model.
-  * `description` - The description of the model.
-  * `model_id` - The id of the model.
-  * `model_ref` - The reference of the model.
-  * `modified_time` - The modified time of the model.
-  * `create_time` - The creation time of the model.
+* `models` - A list of Api Gateway Models.
+
+---
+
+### `models`
+
+The models supports the following attributes:
+
+* `id` - The ID of the Api Gateway Model.
+* `group_id` - The group of the model belongs to.
+* `model_name` - The name of the Model.
+* `schema` - The schema of the model.
+* `description` - The description of the model.
+* `model_id` - The id of the model.
+* `model_ref` - The reference of the model.
+* `modified_time` - The modified time of the model.
+* `create_time` - The creation time of the model.

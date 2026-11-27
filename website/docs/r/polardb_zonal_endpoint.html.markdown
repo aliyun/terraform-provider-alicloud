@@ -89,15 +89,12 @@ The following arguments are supported:
 * `db_cluster_id` - (Required, ForceNew) The Id of cluster that can run database.
 * `endpoint_type` - (Optional, Computed, ForceNew) Type of the endpoint. Valid values are `Custom`, `Cluster`, `Primary`, default to `Custom`. However when creating a new endpoint, it also only can be `Custom`.
 * `read_write_mode` - (Optional) Read or write mode. Valid values are `ReadWrite`, `ReadOnly`. When creating a new custom endpoint, default to `ReadOnly`.
-* `nodes` - (Computed) Node id list for endpoint configuration.
 * `db_cluster_nodes_ids` - (Required) referenced from the db_cluster_nodes_ids attribute of alicloud_polardb_zonal_db_cluster..
 * `nodes_key` - (Optional) The list of backend nodes for the endpoint, with the attribute values derived from the map key of db_cluster_nodes_ids.
 * `auto_add_new_nodes` - (Optional, Computed) Whether the new node automatically joins the default cluster address. Valid values are `Enable`, `Disable`. When creating a new custom endpoint, default to `Enable`.
 * `endpoint_config` - (Optional) The advanced settings of the endpoint of Apsara PolarDB clusters are in JSON format. Including the settings of consistency level, transaction splitting, connection pool, and offload reads from primary node. For more details, see the [description of EndpointConfig in the Request parameters table for details](https://www.alibabacloud.com/help/doc-detail/116593.htm).
-* `connection_prefix` - (Computed) Prefix of the specified endpoint. The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter.
 * `net_type` - (Optional, Computed, ForceNew) The network type of the endpoint address.
 * `db_endpoint_description` - (Optional) The name of the endpoint.
-* `port` - (Computed) Port of the specified endpoint. Valid values: 3000 to 5999.
 * `vpc_id` - (Optional, ForceNew, Computed) The ID of ENS VPC where to use the DB.  
 * `vswitch_id` - (Optional, ForceNew, Computed) The ID of ENS virtual switch where to use the DB.
 
@@ -107,6 +104,9 @@ The following attributes are exported:
 
 * `id` - The current instance connection resource ID. Composed of instance ID and connection string with format `<db_cluster_id>:<db_endpoint_id>`.
 * `db_endpoint_id` - The ID of the cluster endpoint.
+* `nodes` - (Computed) Node id list for endpoint configuration.
+* `connection_prefix` - (Computed) Prefix of the specified endpoint. The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter.
+* `port` - (Computed) Port of the specified endpoint. Valid values: 3000 to 5999.
 
 ## Import
 

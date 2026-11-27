@@ -61,6 +61,8 @@ The following arguments are supported:
 * `stack_region_id` - (Required, ForceNew) The ID of the region to which the resource stack of the Alibaba Cloud resource orchestration service (ROS) belongs.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
+---
+
 ### `parameters`
 
 The parameters support the following:
@@ -78,9 +80,6 @@ The following attributes are exported:
 * `last_successful_provisioning_task_id` - The ID of the last successful instance operation task
 * `last_task_id` - The ID of the last task
 * `outputs` - The output value of the template.
-  * `description` - Description of the output value defined in the template.
-  * `output_key` - The name of the output value defined in the template.
-  * `output_value` - The content of the output value defined in the template.
 * `owner_principal_id` - The RAM entity ID of the owner
 * `owner_principal_type` - The RAM entity type of the owner
 * `product_name` - The name of the product
@@ -91,9 +90,19 @@ The following attributes are exported:
 * `status` - Instance status
 * `status_message` - The status message of the product instance
 
+---
+
+### `outputs`
+
+The outputs supports the following attributes:
+
+* `description` - Description of the output value defined in the template.
+* `output_key` - The name of the output value defined in the template.
+* `output_value` - The content of the output value defined in the template.
+
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 3 mins) Used when create the Provisioned Product.
 * `delete` - (Defaults to 24 mins) Used when delete the Provisioned Product.

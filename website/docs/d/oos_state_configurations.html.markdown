@@ -28,28 +28,35 @@ output "oos_state_configuration_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of State Configuration IDs.
+* `ids` - (Optional, Computed)  A list of State Configuration IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
+* `resource_group_id` - (Optional) The ID of the resource group.
 * `tags` - (Optional, Computed) The tag of the resource.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `configurations` - A list of Oos State Configurations. Each element contains the following attributes:
-  * `configure_mode` - The configuration mode.
-  * `create_time` - The creation time.
-  * `update_time` - The time when the configuration is updated.
-  * `description` - The description.
-  * `id` - The ID of the State Configuration.
-  * `parameters` - The parameters.
-  * `resource_group_id` - The ID of the resource group.
-  * `schedule_expression` - The schedule expression.
-  * `schedule_type` - The schedule type.
-  * `state_configuration_id` - The ID of the final state configuration.
-  * `tags` - The tag of the resource.
-  * `targets` - The target resource.
-  * `template_id` - The ID of the template.
-  * `template_name` - The name of the template.
-  * `template_version` - The version of the template.
+* `configurations` - A list of Oos State Configurations.
+
+---
+
+### `configurations`
+
+The configurations supports the following attributes:
+
+* `configure_mode` - The configuration mode.
+* `create_time` - The creation time.
+* `update_time` - The time when the configuration is updated.
+* `description` - The description.
+* `id` - The ID of the State Configuration.
+* `parameters` - The parameters.
+* `resource_group_id` - The ID of the resource group.
+* `schedule_expression` - The schedule expression.
+* `schedule_type` - The schedule type.
+* `state_configuration_id` - The ID of the final state configuration.
+* `tags` - The tag of the resource.
+* `targets` - The target resource.
+* `template_id` - The ID of the template.
+* `template_name` - The name of the template.
+* `template_version` - The version of the template.

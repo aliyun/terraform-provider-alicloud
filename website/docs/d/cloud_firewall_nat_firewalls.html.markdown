@@ -104,38 +104,52 @@ output "alicloud_cloud_firewall_nat_firewall_example_id" {
 
 The following arguments are supported:
 
-* `lang` - (ForceNew, Optional) Lang
-* `member_uid` - (ForceNew, Optional) Member Account ID
-* `nat_gateway_id` - (ForceNew, Optional) NAT gateway ID
-* `page_number` - (ForceNew, Optional) Page No
-* `page_size` - (ForceNew, Optional) Page Size
-* `proxy_id` - (ForceNew, Optional) NAT firewall ID
-* `proxy_name` - (ForceNew, Optional) NAT firewall name
-* `region_no` - (ForceNew, Optional) Region
-* `status` - (ForceNew, Optional) The status of the resource
-* `vpc_id` - (ForceNew, Optional) The ID of the VPC instance.
-* `ids` - (Optional, ForceNew, Computed) A list of Nat Firewall IDs.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `lang` - (Optional) Lang
+* `member_uid` - (Optional) Member Account ID
+* `nat_gateway_id` - (Optional) NAT gateway ID
+* `page_number` - (Optional) Page No
+* `page_size` - (Optional) Page Size
+* `proxy_id` - (Optional) NAT firewall ID
+* `proxy_name` - (Optional) NAT firewall name
+* `region_no` - (Optional) Region
+* `status` - (Optional) The status of the resource
+* `vpc_id` - (Optional) The ID of the VPC instance.
+* `ids` - (Optional, Computed) A list of Nat Firewall IDs.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Nat Firewall IDs.
-* `firewalls` - A list of Nat Firewall Entries. Each element contains the following attributes:
-  * `ali_uid` - Alibaba Cloud account ID
-  * `member_uid` - Member Account ID
-  * `nat_gateway_id` - NAT gateway ID
-  * `nat_gateway_name` - NAT Gateway name
-  * `nat_route_entry_list` - The list of routes to be switched by the NAT gateway.
-    * `destination_cidr` - The destination network segment of the default route.
-    * `nexthop_id` - The next hop address of the original NAT gateway.
-    * `nexthop_type` - The network type of the next hop. Value: NatGateway : NAT Gateway.
-    * `route_table_id` - The route table where the default route of the NAT gateway is located.
-  * `proxy_id` - NAT firewall ID
-  * `proxy_name` - NAT firewall name
-  * `region_no` - The region ID of the NAT firewall.
-  * `strict_mode` - Whether strict mode is enabled1-Enable strict mode0-Disable strict mode
-  * `status` - The status of the NAT firewall.
-  * `vpc_id` - The ID of the VPC instance.
-  * `id` - The ID of the resource supplied above.
+* `firewalls` - A list of Nat Firewall Entries.
+
+---
+
+### `firewalls`
+
+The firewalls supports the following attributes:
+
+* `ali_uid` - Alibaba Cloud account ID
+* `member_uid` - Member Account ID
+* `nat_gateway_id` - NAT gateway ID
+* `nat_gateway_name` - NAT Gateway name
+* `nat_route_entry_list` - The list of routes to be switched by the NAT gateway.
+* `proxy_id` - NAT firewall ID
+* `proxy_name` - NAT firewall name
+* `region_no` - The region ID of the NAT firewall.
+* `strict_mode` - Whether strict mode is enabled1-Enable strict mode0-Disable strict mode
+* `status` - The status of the NAT firewall.
+* `vpc_id` - The ID of the VPC instance.
+* `id` - The ID of the resource supplied above.
+
+---
+
+### `firewalls.nat_route_entry_list`
+
+The nat_route_entry_list supports the following attributes:
+
+* `destination_cidr` - The destination network segment of the default route.
+* `nexthop_id` - The next hop address of the original NAT gateway.
+* `nexthop_type` - The network type of the next hop. Value: NatGateway : NAT Gateway.
+* `route_table_id` - The route table where the default route of the NAT gateway is located.

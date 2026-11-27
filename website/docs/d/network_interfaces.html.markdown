@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_network_interfaces
 
--> **DEPRECATED:** This datasource has been renamed to [alicloud_ecs_network_interfaces](https://www.terraform.io/docs/providers/alicloud/d/ecs_network_interfaces) from version 1.123.1.
+-> **DEPRECATED:** This datasource has been renamed to [alicloud_ecs_network_interfaces](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/ecs_network_interfaces) from version 1.123.1.
 
 Use this data source to get a list of elastic network interfaces according to the specified filters in an Alibaba Cloud account.
 
@@ -118,33 +118,47 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of ENI names.
-* `interfaces` - A list of ENIs. Each element contains the following attributes:
-  * `id` - ID of the ENI.
-  * `status` - Current status of the ENI.
-  * `vpc_id` - ID of the VPC that the ENI belongs to.
-  * `vswitch_id` - ID of the vSwitch that the ENI is linked to.
-  * `zone_id` - ID of the availability zone that the ENI belongs to.
-  * `private_ip` - Primary private IP of the ENI.
-  * `private_ips` - A list of secondary private IP address that is assigned to the ENI.
-  * `mac` - MAC address of the ENI.
-  * `security_groups` - A list of security group that the ENI belongs to.
-  * `name` - Name of the ENI.
-  * `description` - Description of the ENI.
-  * `instance_id` - ID of the instance that the ENI is attached to.
-  * `creation_time` - Creation time of the ENI.
-  * `tags` - A map of tags assigned to the ENI.
-  * `resource_group_id` - The Id of resource group.
-  * `network_interface_id` - The ID of the ENI.
-  * `network_interface_name` - The name of the ENI.
-  * `primary_ip_address` - The primary private IP address.
-  * `private_ip_addresses` - A list of private IP addresses.
-  * `queue_number` - The queue number.
-  * `security_group_ids` - A list of security group IDs.
-  * `service_id` - The service ID.
-  * `service_managed` - Whether the ENI is service managed.
-  * `type` - The type of the ENI.
-  * `network_interface_traffic_mode` - The traffic mode.
-  * `owner_id` - The owner ID.
-  * `associated_public_ip` - The associated public IP.
-    * `public_ip_address` - The public IP address.
-  * `ipv6_sets` - A list of IPv6 addresses.
+* `interfaces` - A list of ENIs.
+
+---
+
+### `interfaces`
+
+The interfaces supports the following attributes:
+
+* `id` - ID of the ENI.
+* `status` - Current status of the ENI.
+* `vpc_id` - ID of the VPC that the ENI belongs to.
+* `vswitch_id` - ID of the vSwitch that the ENI is linked to.
+* `zone_id` - ID of the availability zone that the ENI belongs to.
+* `private_ip` - Primary private IP of the ENI.
+* `private_ips` - A list of secondary private IP address that is assigned to the ENI.
+* `mac` - MAC address of the ENI.
+* `security_groups` - A list of security group that the ENI belongs to.
+* `name` - Name of the ENI.
+* `description` - Description of the ENI.
+* `instance_id` - ID of the instance that the ENI is attached to.
+* `creation_time` - Creation time of the ENI.
+* `tags` - A map of tags assigned to the ENI.
+* `resource_group_id` - The Id of resource group.
+* `network_interface_id` - The ID of the ENI.
+* `network_interface_name` - The name of the ENI.
+* `primary_ip_address` - The primary private IP address.
+* `private_ip_addresses` - A list of private IP addresses.
+* `queue_number` - The queue number.
+* `security_group_ids` - A list of security group IDs.
+* `service_id` - The service ID.
+* `service_managed` - Whether the ENI is service managed.
+* `type` - The type of the ENI.
+* `network_interface_traffic_mode` - The traffic mode.
+* `owner_id` - The owner ID.
+* `associated_public_ip` - The associated public IP.
+* `ipv6_sets` - A list of IPv6 addresses.
+
+---
+
+### `interfaces.associated_public_ip`
+
+The associated_public_ip supports the following attributes:
+
+* `public_ip_address` - The public IP address.

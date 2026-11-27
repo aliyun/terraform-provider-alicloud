@@ -31,11 +31,11 @@ output "ddosbgp_ip_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Ip IDs.
-* `instance_id` - (Required, ForceNew) The ID of the native protection enterprise instance to be operated.
+* `ids` - (Optional, Computed)  A list of Ip IDs.
+* `instance_id` - (Required) The ID of the native protection enterprise instance to be operated.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `product_name` - (Optional, ForceNew) The product name. Valid Value:`ECS`, `SLB`, `EIP`, `WAF`.
-* `status` - (Optional, ForceNew) The current state of the IP address. Valid Value:
+* `product_name` - (Optional) The product name. Valid Value:`ECS`, `SLB`, `EIP`, `WAF`.
+* `status` - (Optional) The current state of the IP address. Valid Value:
   - normal: indicates normal (not attacked).
   - hole_begin: indicates that you are in a black hole state.
 
@@ -43,9 +43,16 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ips` - A list of Ddos Bgp Ips. Each element contains the following attributes:
-  * `id` - The ID of the Ip. The value formats as `<instance_id>:<ip>`.
-  * `instance_id` - The ID of the native protection enterprise instance to be operated.
-  * `ip` - The IP address.
-  * `product` - The type of cloud asset to which the IP address belongs.
-  * `status` - The current state of the IP address.
+* `ips` - A list of Ddos Bgp Ips.
+
+---
+
+### `ips`
+
+The ips supports the following attributes:
+
+* `id` - The ID of the Ip. The value formats as `<instance_id>:<ip>`.
+* `instance_id` - The ID of the native protection enterprise instance to be operated.
+* `ip` - The IP address.
+* `product` - The type of cloud asset to which the IP address belongs.
+* `status` - The current state of the IP address.

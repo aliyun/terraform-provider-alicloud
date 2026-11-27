@@ -35,5 +35,12 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of region IDs.
-* `regions` - The list of destination regions that support cross-region backup. Each element contains the following attributes:
-  * `id` - ID of the region.
+* `regions` - The list of destination regions that support cross-region backup.
+
+---
+
+### `regions`
+
+The regions supports the following attributes:
+
+* `id` - ID of the region.

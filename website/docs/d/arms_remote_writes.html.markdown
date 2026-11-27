@@ -43,9 +43,9 @@ output "arms_remote_writes_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Remote Write IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Remote Write name.
-* `cluster_id` - (Required, ForceNew) The ID of the Prometheus instance.
+* `ids` - (Optional, Computed) A list of Remote Write IDs.
+* `name_regex` - (Optional) A regex string to filter results by Remote Write name.
+* `cluster_id` - (Required) The ID of the Prometheus instance.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -53,8 +53,15 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Remote Write names.
-* `remote_writes` - A list of Remote Writes. Each element contains the following attributes:
-  * `id` - The ID of the Remote Write. It formats as `<cluster_id>:<remote_write_name>`.
-  * `cluster_id` - The ID of the Prometheus instance.
-  * `remote_write_name` - The name of the Remote Write configuration item.
-  * `remote_write_yaml` - The details of the Remote Write configuration item. The value is in the YAML format.
+* `remote_writes` - A list of Remote Writes.
+
+---
+
+### `remote_writes`
+
+The remote_writes supports the following attributes:
+
+* `id` - The ID of the Remote Write. It formats as `<cluster_id>:<remote_write_name>`.
+* `cluster_id` - The ID of the Prometheus instance.
+* `remote_write_name` - The name of the Remote Write configuration item.
+* `remote_write_yaml` - The details of the Remote Write configuration item. The value is in the YAML format.

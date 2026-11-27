@@ -77,8 +77,12 @@ The following arguments are supported:
 * `group_id` - (Required, ForceNew) Application ID
 * `max_concurrency` - (Optional, Int) The maximum number of instances running at the same time. The default value is 1, that is, the last trigger is not completed, and the next trigger will not be performed even at the running time.
 * `max_jobs` - (Optional, ForceNew, Int) Application Grouping Configurable Maximum Number of Tasks
-* `monitor_config_json` - (Optional) Alarm configuration JSON field. Supported keys include `sendChannel` (alarm channels, e.g. `"sms,ding"`), `alarmType` (alarm type, e.g. `"Contacts"` or `"CustomContacts"`), and `webhookIsAtAll` (whether webhook @all). **Note:** When `monitor_contacts_json` is specified, `alarmType` must be explicitly included in `monitor_config_json` (typically `"CustomContacts"` for custom contacts or `"Contacts"` for contact groups); otherwise the API will automatically append `alarmType` which causes configuration drift on subsequent plans.
-* `monitor_contacts_json` - (Optional) Alarm contact JSON format. **Note:** This field only takes effect when `monitor_config_json` contains an `alarmType` value (e.g. `"CustomContacts"` or `"Contacts"`). The format depends on `alarmType`: for `"CustomContacts"`, use `[{"userName":"name","userPhone":"phone","ding":"webhook_url"}]`; for `"Contacts"`, use `[{"name":"contact_group_name"}]`.
+* `monitor_config_json` - (Optional) Alarm configuration JSON field. Supported keys include `sendChannel` (alarm channels, e.g. `"sms,ding"`), `alarmType` (alarm type, e.g. `"Contacts"` or `"CustomContacts"`), and `webhookIsAtAll` (whether webhook @all).
+
+  -> **NOTE:** When `monitor_contacts_json` is specified, `alarmType` must be explicitly included in `monitor_config_json` (typically `"CustomContacts"` for custom contacts or `"Contacts"` for contact groups); otherwise the API will automatically append `alarmType` which causes configuration drift on subsequent plans.
+* `monitor_contacts_json` - (Optional) Alarm contact JSON format.
+
+  -> **NOTE:** This field only takes effect when `monitor_config_json` contains an `alarmType` value (e.g. `"CustomContacts"` or `"Contacts"`). The format depends on `alarmType`: for `"CustomContacts"`, use `[{"userName":"name","userPhone":"phone","ding":"webhook_url"}]`; for `"Contacts"`, use `[{"name":"contact_group_name"}]`.
 * `namespace` - (Required, ForceNew) The namespace ID, which is obtained on the namespace page of the console.
 * `namespace_name` - (Required) The namespace name.
 * `namespace_source` - (Optional) Not supported for the time being, no need to fill in.
@@ -92,7 +96,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the App Group.
 * `delete` - (Defaults to 5 mins) Used when delete the App Group.

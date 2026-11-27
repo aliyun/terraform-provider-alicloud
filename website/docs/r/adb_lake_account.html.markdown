@@ -124,6 +124,8 @@ The following arguments are supported:
 * `db_cluster_id` - (Required, ForceNew) The DBCluster ID.
 * `ram_user_list` - (Optional, List, Available since v1.274.0) List of Alibaba Cloud RAM user IDs to bind.
 
+---
+
 ### `account_privileges`
 
 The account_privileges supports the following:
@@ -131,6 +133,8 @@ The account_privileges supports the following:
 * `privilege_object` - (Optional) Object associated to privileges. See [`privilege_object`](#account_privileges-privilege_object) below.
 * `privilege_type` - (Optional) The type of privileges.
 * `privileges` - (Optional) privilege list.
+
+---
 
 ### `account_privileges-privilege_object`
 
@@ -149,7 +153,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Lake Account.
 * `delete` - (Defaults to 5 mins) Used when delete the Lake Account.

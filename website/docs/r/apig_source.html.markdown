@@ -98,11 +98,15 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, Computed) The ID of the resource group.
 * `type` - (Required, ForceNew) The type of the source. Valid values: `K8S` (Container Service for Kubernetes), `MSE_NACOS` (MSE Nacos).
 
+---
+
 ### `k8s_source_info`
 
 The k8s_source_info supports the following:
 
 * `cluster_id` - (Optional, ForceNew) The ID of the ACK cluster.
+
+---
 
 ### `nacos_source_info`
 
@@ -119,14 +123,21 @@ The following attributes are exported:
 * `association_status` - The association status of the source.
 * `create_time` - The creation timestamp of the source.
 * `nacos_source_info` - The MSE Nacos source information.
-  * `address` - The access address of the Nacos instance.
-  * `cluster_id` - The ID of the Nacos cluster.
 * `source_name` - The name of the source.
 * `update_time` - The update timestamp of the source.
 
+---
+
+### `nacos_source_info`
+
+The nacos_source_info supports the following attributes:
+
+* `address` - The access address of the Nacos instance.
+* `cluster_id` - The ID of the Nacos cluster.
+
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax/operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Source.
 * `delete` - (Defaults to 5 mins) Used when delete the Source.

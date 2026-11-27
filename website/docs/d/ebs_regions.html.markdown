@@ -38,7 +38,21 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `regions` - A list of Ebs Regions. Each element contains the following attributes:
-  * `region_id` - The ID of the region.
-  * `zones` - A list of Ebs Zones.
-    * `zone_id` - The ID of the zone.
+* `regions` - A list of Ebs Regions.
+
+---
+
+### `regions`
+
+The regions supports the following attributes:
+
+* `region_id` - The ID of the region.
+* `zones` - A list of Ebs Zones.
+
+---
+
+### `regions.zones`
+
+The zones supports the following attributes:
+
+* `zone_id` - The ID of the zone.

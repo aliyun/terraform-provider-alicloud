@@ -156,10 +156,12 @@ The following arguments are supported:
   - SpotAsPriceGo: The system automatically bids, following the actual price in the current market.
 * `status` - (Optional, Computed) Status of the instance
 * `system_disk` - (Optional, ForceNew, List, Available since v1.208.0) System Disk Specification. SystemDisk is a non-required parameter when InstanceType is x86_pm,x86_bmi,x86_bm,pc_bmi, or arm_bmi. SystemDisk is a required parameter when instanceType is other specification families. See [`system_disk`](#system_disk) below.
-* `tags` - (Optional, ForceNew, Map, Available since v1.230.0) The tag bound to the instance
+* `tags` - (Optional, Map, Available since v1.230.0) The tag bound to the instance
 * `unique_suffix` - (Optional, Available since v1.208.0) Indicates whether to add an ordered suffix to HostName and InstanceName. The ordered suffix starts from 001 and cannot exceed 999.
 * `user_data` - (Optional, Available since v1.208.0) User-defined data, maximum support 16KB. You can pass in the UserData information. The UserData is encoded in Base64 format.
 * `vswitch_id` - (Optional, ForceNew) The ID of the vSwitch to which the instance belongs. Can only be used in node-level scheduling
+
+---
 
 ### `data_disk`
 
@@ -173,6 +175,8 @@ The data_disk supports the following:
 * `encrypt_key_id` - (Optional, ForceNew, Available since v1.230.0) The ID of the KMS key used by the cloud disk.
 * `encrypted` - (Optional, ForceNew, Available since v1.230.0) Whether to encrypt the cloud disk. Value range:  true: Yes  false (default): No.
 * `size` - (Optional, ForceNew, Int) Data disk size, unit: GB.
+
+---
 
 ### `system_disk`
 
@@ -191,11 +195,18 @@ The following attributes are exported:
 
 * `id` - The ID of the resource supplied above.
 * `data_disk` - Data disk specifications
-  * `disk_id` - Cloud Disk ID.
+
+---
+
+### `data_disk`
+
+The data_disk supports the following attributes:
+
+* `disk_id` - Cloud Disk ID.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.

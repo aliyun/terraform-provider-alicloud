@@ -131,7 +131,7 @@ The following arguments are supported:
 * `database_password` - (Required) Database access password.
 * `sell_trust` - (Required, Available since v1.273.0) Whether to enable the security hosting feature for the database instance. Possible values: `true`, `false`.
 
- ~>**NOTE:** The `database_user` will be encrypted if `sell_trust` set to `false`.
+  ~> **NOTE:** The `database_user` will be encrypted if `sell_trust` set to `false`.
 
 * `instance_alias` - It has been deprecated from provider version 1.100.0 and 'instance_name' instead.
 * `instance_name` - (Optional, Available since v1.100.0) Instance name, to help users quickly distinguish positioning.
@@ -165,7 +165,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.100.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when creating the DMS enterprise instance.
 * `update` - (Defaults to 30 mins) Used when updating the DMS enterprise instance.

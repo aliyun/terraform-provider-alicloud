@@ -246,9 +246,7 @@ func UpdateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 
 				wait := helper.IncrementalWait(1*time.Second, 1*time.Second)
 				err := retry.Retry(10*time.Minute, func() *retry.RetryError {
-					raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-						return ecsClient.UntagResources(request)
-					})
+					raw, err := client.EcsSdkRpc(request, ecs.CreateUntagResourcesResponse())
 					if err != nil {
 						if helper.NeedRetry(err) {
 							wait()
@@ -273,9 +271,7 @@ func UpdateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 
 				wait := helper.IncrementalWait(1*time.Second, 1*time.Second)
 				err := retry.Retry(10*time.Minute, func() *retry.RetryError {
-					raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-						return ecsClient.UntagResources(request)
-					})
+					raw, err := client.EcsSdkRpc(request, ecs.CreateUntagResourcesResponse())
 					if err != nil {
 						if helper.NeedRetry(err) {
 							wait()
@@ -316,9 +312,7 @@ func UpdateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 
 				wait := helper.IncrementalWait(1*time.Second, 1*time.Second)
 				err := retry.Retry(10*time.Minute, func() *retry.RetryError {
-					raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-						return ecsClient.TagResources(request)
-					})
+					raw, err := client.EcsSdkRpc(request, ecs.CreateTagResourcesResponse())
 					if err != nil {
 						if helper.NeedRetry(err) {
 							wait()
@@ -346,9 +340,7 @@ func UpdateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 
 				wait := helper.IncrementalWait(1*time.Second, 1*time.Second)
 				err := retry.Retry(10*time.Minute, func() *retry.RetryError {
-					raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-						return ecsClient.TagResources(request)
-					})
+					raw, err := client.EcsSdkRpc(request, ecs.CreateTagResourcesResponse())
 					if err != nil {
 						if helper.NeedRetry(err) {
 							wait()

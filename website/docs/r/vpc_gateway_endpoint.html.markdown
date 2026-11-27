@@ -78,7 +78,9 @@ The length of the description information is between 1 and 255 characters.
 * `gateway_endpoint_name` - (Optional) The name of the VPC gateway endpoint.
 * `policy_document` - (Optional, JsonString) Access control policies for cloud services. This parameter is required when the cloud service is oss. For details about the syntax and structure of access policies, see [syntax and structure of permission Policies](https://help.aliyun.com/document_detail/93739.html).
 * `resource_group_id` - (Optional, Computed) The ID of the resource group to which the instance belongs.
-* `route_tables` - (Optional, Computed, Set, Available since v1.244.0) The ID list of the route table associated with the VPC gateway endpoint. **NOTE:** this argument cannot be set at the same time as `alicloud_vpc_gateway_endpoint_route_table_attachment`.
+* `route_tables` - (Optional, Computed, Set, Available since v1.244.0) The ID list of the route table associated with the VPC gateway endpoint.
+
+  -> **NOTE:** this argument cannot be set at the same time as `alicloud_vpc_gateway_endpoint_route_table_attachment`.
 * `service_name` - (Required, ForceNew) The endpoint service name.
 * `tags` - (Optional, Map) The tags of the resource.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC.
@@ -93,7 +95,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 8 mins) Used when create the Gateway Endpoint.
 * `delete` - (Defaults to 10 mins) Used when delete the Gateway Endpoint.

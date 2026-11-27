@@ -1,12 +1,9 @@
 package sls
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
-	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
-	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
@@ -41,36 +38,9 @@ func dataSourceAlicloudLogAlertResourceRead(d *schema.ResourceData, meta interfa
 	resourceType := d.Get("type").(string)
 	lang := d.Get("lang").(string)
 	project := d.Get("project").(string)
+	logService := Service{client}
 	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
-		_, err := client.WithLogPopClient(func(slsPopClient *slsPop.Client) (interface{}, error) {
-			switch resourceType {
-			case "user":
-				request := slsPop.CreateInitUserAlertResourceRequest()
-				request.Region = client.RegionId
-				request.App = "none"
-				request.Language = lang
-				return slsPopClient.InitUserAlertResource(request)
-			case "project":
-				_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-					return slsClient.GetLogStore(project, "internal-alert-history")
-				})
-				if err != nil {
-					if errs.IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
-						request := slsPop.CreateAnalyzeProductLogRequest()
-						request.CloudProduct = "sls.alert"
-						request.Project = project
-						request.Logstore = "internal-alert-history"
-						request.Overwrite = "true"
-						request.Region = client.RegionId
-						return slsPopClient.AnalyzeProductLog(request)
-					}
-					return nil, err
-				}
-				return nil, nil
-			default:
-				return nil, errs.WrapErrorf(errors.New("type error"), errs.DefaultErrorMsg, "alicloud_log_alert_resource", "CreateAlertResource", errs.AliyunLogGoSdkERROR)
-			}
-		})
+		err := logService.InitLogAlertResource(resourceType, lang, project)
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{errs.LogClientTimeout}) {
 				time.Sleep(5 * time.Second)

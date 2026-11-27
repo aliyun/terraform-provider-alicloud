@@ -67,17 +67,31 @@ The following attributes are exported in addition to the arguments listed above:
 * `latest_version` - (Available since v1.290.0) The latest available gateway version.
 * `current_version` - (Available since v1.290.0) The current gateway version.
 * `running_version` - (Available since v1.290.0) The running gateway version.
-* `endpoints` - (Available since v1.290.0) The endpoints of the PolarDB gateway. Each item contains the following attributes:
-  * `address` - The endpoint address.
-  * `endpoint_id` - The endpoint ID.
-  * `gateway_id` - The gateway ID.
-  * `port` - The endpoint port.
-  * `tunnel_id` - The tunnel ID.
-  * `vpc_id` - The VPC ID.
-  * `network_type` - The network type. Valid values: `Private`, `Public`.
-* `security_ip_arrays` - (Available since v1.290.0) The IP whitelist groups of the PolarDB gateway. Each item contains the following attributes:
-  * `name` - The whitelist group name.
-  * `ip_list` - The IP addresses in the whitelist group.
+* `endpoints` - (Available since v1.290.0) The endpoints of the PolarDB gateway.
+* `security_ip_arrays` - (Available since v1.290.0) The IP whitelist groups of the PolarDB gateway.
+
+---
+
+### `endpoints`
+
+The endpoints supports the following attributes:
+
+* `address` - The endpoint address.
+* `endpoint_id` - The endpoint ID.
+* `gateway_id` - The gateway ID.
+* `port` - The endpoint port.
+* `tunnel_id` - The tunnel ID.
+* `vpc_id` - The VPC ID.
+* `network_type` - The network type. Valid values: `Private`, `Public`.
+
+---
+
+### `security_ip_arrays`
+
+The security_ip_arrays supports the following attributes:
+
+* `name` - The whitelist group name.
+* `ip_list` - The IP addresses in the whitelist group.
 
 ## Timeouts
 

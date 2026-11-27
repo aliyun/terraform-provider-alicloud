@@ -72,21 +72,42 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Dedicated Host Cluster names.
-* `clusters` - A list of Ecs Dedicated Host Clusters. Each element contains the following attributes:
-  * `dedicated_host_cluster_id` - The ID of the dedicated host cluster.
-  * `dedicated_host_cluster_name` - The name of the dedicated host cluster.
-  * `description` - The description of the dedicated host cluster.
-  * `id` - The ID of the Dedicated Host Cluster.
-  * `resource_group_id` - The ID of the resource group to which the dedicated host cluster belongs.
-  * `zone_id` - The zone ID of the dedicated host cluster.
-  * `tags` - A mapping of tags to assign to the resource.
-  * `dedicated_host_ids` - The IDs of dedicated hosts in the dedicated host cluster.
-  * `dedicated_host_cluster_capacity` - The capacity of the dedicated host cluster.
-    * `available_memory` - The available memory size. Unit: `GiB`.
-    * `available_vcpus` - The number of available vCPUs.
-    * `total_memory` - The total memory size. Unit: `GiB`.
-    * `total_vcpus` - The total number of vCPUs.
-    * `local_storage_capacities` - The local storage.
-      * `available_disk` - The available capacity of the local disk. Unit: `GiB`.
-      * `data_disk_category` - The category of the data disk. Valid values:`cloud`, `cloud_efficiency`, `cloud_ssd`, `ephemeral_ssd`, `cloud_essd`.
-      * `total_disk` - The total capacity of the local disk. Unit: `GiB`.
+* `clusters` - A list of Ecs Dedicated Host Clusters.
+
+---
+
+### `clusters`
+
+The clusters supports the following attributes:
+
+* `dedicated_host_cluster_id` - The ID of the dedicated host cluster.
+* `dedicated_host_cluster_name` - The name of the dedicated host cluster.
+* `description` - The description of the dedicated host cluster.
+* `id` - The ID of the Dedicated Host Cluster.
+* `resource_group_id` - The ID of the resource group to which the dedicated host cluster belongs.
+* `zone_id` - The zone ID of the dedicated host cluster.
+* `tags` - A mapping of tags to assign to the resource.
+* `dedicated_host_ids` - The IDs of dedicated hosts in the dedicated host cluster.
+* `dedicated_host_cluster_capacity` - The capacity of the dedicated host cluster.
+
+---
+
+### `clusters.dedicated_host_cluster_capacity`
+
+The dedicated_host_cluster_capacity supports the following attributes:
+
+* `available_memory` - The available memory size. Unit: `GiB`.
+* `available_vcpus` - The number of available vCPUs.
+* `total_memory` - The total memory size. Unit: `GiB`.
+* `total_vcpus` - The total number of vCPUs.
+* `local_storage_capacities` - The local storage.
+
+---
+
+### `clusters.dedicated_host_cluster_capacity.local_storage_capacities`
+
+The local_storage_capacities supports the following attributes:
+
+* `available_disk` - The available capacity of the local disk. Unit: `GiB`.
+* `data_disk_category` - The category of the data disk. Valid values:`cloud`, `cloud_efficiency`, `cloud_ssd`, `ephemeral_ssd`, `cloud_essd`.
+* `total_disk` - The total capacity of the local disk. Unit: `GiB`.

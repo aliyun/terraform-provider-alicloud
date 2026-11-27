@@ -19,7 +19,7 @@ For information about SSL Certificates Certificate and how to use it, see [What 
 
 -> **NOTE:** The Cas Certificate region only support cn-hangzhou, me-east-1, eu-central-1, ap-northeast-1.
 
--> **DEPRECATED:** This resource has been deprecated from version `1.129.0`. Please use new resource [alicloud_ssl_certificates_service_certificate](https://www.terraform.io/docs/providers/alicloud/r/ssl_certificates_service_certificate).
+-> **DEPRECATED:** This resource has been deprecated from version `1.129.0`. Please use new resource [alicloud_ssl_certificates_service_certificate](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ssl_certificates_service_certificate).
 
 ## Example Usage
 
@@ -96,7 +96,7 @@ EOF
 
 The following arguments are supported:
 
--> **NOTE:** `alicloud_cas_certificate` is a deprecated alias of [alicloud_ssl_certificates_service_certificate](https://www.terraform.io/docs/providers/alicloud/r/ssl_certificates_service_certificate). The alias exposes the same schema; the arguments below mirror that resource.
+-> **NOTE:** `alicloud_cas_certificate` is a deprecated alias of [alicloud_ssl_certificates_service_certificate](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ssl_certificates_service_certificate). The alias exposes the same schema; the arguments below mirror that resource.
 
 * `cert` - (Optional, ForceNew) The content of a non-SM certificate in PEM format.
 * `key` - (Optional, ForceNew) The private key of a non-SM certificate in PEM format. It conflicts with `key_wo`.
@@ -106,7 +106,9 @@ The following arguments are supported:
 * `encrypt_private_key` - (Optional, ForceNew, Available since v1.260.1) The private key of an SM encryption certificate in PEM format.
 * `sign_cert` - (Optional, ForceNew, Available since v1.260.1) The content of an SM signing certificate in PEM format.
 * `sign_private_key` - (Optional, ForceNew, Available since v1.260.1) The private key of an SM signing certificate in PEM format.
-* `certificate_name` - (Optional) A custom name for the certificate. The name can be up to 64 characters long and can contain any character type, such as letters, numbers, and underscores. **NOTE:** From version 1.260.1, `certificate_name` can be modified.
+* `certificate_name` - (Optional) A custom name for the certificate. The name can be up to 64 characters long and can contain any character type, such as letters, numbers, and underscores.
+
+  -> **NOTE:** From version 1.260.1, `certificate_name` can be modified.
 * `resource_group_id` - (Optional, Available since v1.260.1) The ID of the resource group.
 * `tags` - (Optional, Map, Available since v1.260.1) The tag of the resource.
 * `name` - (Optional, Deprecated since v1.129.0) Field `name` has been deprecated from provider version 1.129.0 and it will be removed in the future version. Please use the new attribute `certificate_name` instead.

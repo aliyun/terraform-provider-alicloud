@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_dns_instances
 
--> **DEPRECATED:**  This resource has been renamed to [alicloud_alidns_instances](https://www.terraform.io/docs/providers/alicloud/d/alidns_instances) from version 1.95.0.
+-> **DEPRECATED:**  This resource has been renamed to [alicloud_alidns_instances](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/alidns_instances) from version 1.95.0.
 
 This data source provides a list of DNS instances in an Alibaba Cloud account according to the specified filters.
 
@@ -31,6 +31,9 @@ output "first_instance_id" {
 The following arguments are supported:
 
 * `ids` - (Optional) A list of instance IDs.
+* `domain_type` - (Optional) The type of the domain name.
+* `lang` - (Optional) The language of the user.
+* `user_client_ip` - (Optional) The IP address of the user client.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -38,10 +41,19 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of instance IDs.
-* `instances` - A list of instances. Each element contains the following attributes:
-  * `id` - Id of the instance.
-  * `domain_numbers` - Number of domain names bound.
-  * `dns_security` - DNS security level.
-  * `instance_id` - Id of the instance resource.
-  * `version_code` - Paid package version.
-  * `version_name` - Paid package version name.
+* `instances` - A list of instances.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `id` - Id of the instance.
+* `domain_numbers` - Number of domain names bound.
+* `dns_security` - DNS security level.
+* `domain` - The domain name bound to the instance.
+* `instance_id` - Id of the instance resource.
+* `payment_type` - The billing method of the instance.
+* `version_code` - Paid package version.
+* `version_name` - Paid package version name.

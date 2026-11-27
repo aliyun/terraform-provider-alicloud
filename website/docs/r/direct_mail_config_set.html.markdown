@@ -81,6 +81,8 @@ The following arguments are supported:
 * `name` - (Required, String, Available since v2.2.0) The name of the configuration set. The name can be up to 50 characters long and must be unique.
 * `validation_option` - (Optional, List, Available since v2.2.0) Address validation options. See [`validation_option`](#validation_option) below.
 
+---
+
 ### `validation_option`
 
 The validation_option supports the following:
@@ -98,7 +100,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Config Set.
 * `delete` - (Defaults to 5 mins) Used when delete the Config Set.

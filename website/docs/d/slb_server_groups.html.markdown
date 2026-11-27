@@ -70,9 +70,23 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of SLB VServer groups IDs.
 * `names` - A list of SLB VServer groups names.
-* `slb_server_groups` - A list of SLB VServer groups. Each element contains the following attributes:
-  * `id` - VServer group ID.
-  * `name` - VServer group name.
-  * `servers` - ECS instances associated to the group. Each element contains the following attributes:
-    * `instance_id` - ID of the attached ECS instance.
-    * `weight` - Weight associated to the ECS instance.
+* `slb_server_groups` - A list of SLB VServer groups.
+
+---
+
+### `slb_server_groups`
+
+The slb_server_groups supports the following attributes:
+
+* `id` - VServer group ID.
+* `name` - VServer group name.
+* `servers` - ECS instances associated to the group.
+
+---
+
+### `slb_server_groups.servers`
+
+The servers supports the following attributes:
+
+* `instance_id` - ID of the attached ECS instance.
+* `weight` - Weight associated to the ECS instance.

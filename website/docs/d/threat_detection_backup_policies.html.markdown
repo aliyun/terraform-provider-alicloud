@@ -39,11 +39,11 @@ output "threat_detection_backup_policies_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Threat Detection Backup Policies IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Threat Detection Backup Policies name.
-* `name` - (Optional, ForceNew) The name of the anti-ransomware policy that you want to query.
-* `machine_remark` - (Optional, ForceNew) The information that you want to use to identify the servers protected by the anti-ransomware policy. You can enter the IP address or ID of a server.
-* `status` - (Optional, ForceNew) The status of the anti-ransomware policy. Valid Value: `enabled`, `disabled`, `closed`.
+* `ids` - (Optional, Computed) A list of Threat Detection Backup Policies IDs.
+* `name_regex` - (Optional) A regex string to filter results by Threat Detection Backup Policies name.
+* `name` - (Optional) The name of the anti-ransomware policy that you want to query.
+* `machine_remark` - (Optional) The information that you want to use to identify the servers protected by the anti-ransomware policy. You can enter the IP address or ID of a server.
+* `status` - (Optional) The status of the anti-ransomware policy. Valid Value: `enabled`, `disabled`, `closed`.
 * `current_page` - (Optional) The page number. Must be greater than 0.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -52,12 +52,19 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Threat Detection Backup Policy names.
-* `policies` - A list of Threat Detection Backup policies. Each element contains the following attributes:
-  * `id` - The ID of the anti-ransomware policy.
-  * `backup_policy_id` - The ID of the anti-ransomware policy.
-  * `backup_policy_name` - The name of the anti-ransomware policy.
-  * `policy` - The configurations of the anti-ransomware policy.
-  * `policy_region_id` - The ID of the region that you specified for data backup when you installed the anti-ransomware agent for the server not deployed on Alibaba Cloud.
-  * `policy_version` - The version of the anti-ransomware policy.
-  * `uuid_list` - The UUIDs of the servers to which the anti-ransomware policy is applied.
-  * `status` - The status of the anti-ransomware policy.
+* `policies` - A list of Threat Detection Backup policies.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `id` - The ID of the anti-ransomware policy.
+* `backup_policy_id` - The ID of the anti-ransomware policy.
+* `backup_policy_name` - The name of the anti-ransomware policy.
+* `policy` - The configurations of the anti-ransomware policy.
+* `policy_region_id` - The ID of the region that you specified for data backup when you installed the anti-ransomware agent for the server not deployed on Alibaba Cloud.
+* `policy_version` - The version of the anti-ransomware policy.
+* `uuid_list` - The UUIDs of the servers to which the anti-ransomware policy is applied.
+* `status` - The status of the anti-ransomware policy.

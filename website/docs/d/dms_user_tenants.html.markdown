@@ -7,11 +7,11 @@ description: |-
     Provides a list of available DMS Enterprise User Tenants.
 ---
 
-# alicloud\_dms\_user\_tenants
+# alicloud_dms_user_tenants
 
 This data source provides a list of DMS User Tenants in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.161.0+
+-> **NOTE:** Available since v1.161.0.
 
 ## Example Usage
 
@@ -40,8 +40,15 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of DMS User Tenant IDs (UID).
 * `names` - A list of DMS User Tenant names.
-* `tenants` - A list of DMS User Tenants. Each element contains the following attributes:
-  * `id` - The user tenant id.
-  * `tid` - The user tenant id. Same as id.
-  * `tenant_name` - The name of the user tenant.
-  * `status` - The status of the user tenant.
+* `tenants` - A list of DMS User Tenants.
+
+---
+
+### `tenants`
+
+The tenants supports the following attributes:
+
+* `id` - The user tenant id.
+* `tid` - The user tenant id. Same as id.
+* `tenant_name` - The name of the user tenant.
+* `status` - The status of the user tenant.

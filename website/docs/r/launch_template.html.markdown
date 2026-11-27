@@ -13,7 +13,7 @@ Provides an ECS Launch Template resource.
 
 For information about Launch Template and how to use it, see [Launch Template](https://www.alibabacloud.com/help/doc-detail/73916.html).
 
--> **DEPRECATED:**  This resource  has been deprecated from version `1.120.0`. Please use new resource [alicloud_ecs_launch_template](https://www.terraform.io/docs/providers/alicloud/r/ecs_launch_template).
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.120.0`. Please use new resource [alicloud_ecs_launch_template](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_launch_template).
 
 ## Example Usage
 
@@ -172,6 +172,8 @@ The following arguments are supported:
 * `data_disks` - (Optional) The list of data disks created with instance. See [`data_disks`](#data_disks) below.
 * `image_options` - (Optional) The options of images. See [`image_options`](#image_options) below.
 
+---
+
 ### `system_disk`
 
 The system_disk supports the following:
@@ -186,6 +188,8 @@ The system_disk supports the following:
 * `encrypted` - (Optional) Whether the system disk is encrypted.
 * `kms_key_id` - (Optional) The ID of the KMS key to use for the system disk.
 
+---
+
 ### `network_interfaces`
 
 The network_interfaces supports the following:
@@ -196,6 +200,8 @@ The network_interfaces supports the following:
 * `security_group_id` - (Optional) The security group ID must be one in the same VPC.
 * `vswitch_id` - (Optional) The VSwitch ID for ENI. The instance must be in the same zone of the same VPC network as the ENI, but they may belong to different VSwitches.
 * `delete_on_release` - (Optional) Whether to release the ENI when the instance is released.
+
+---
 
 ### `data_disks`
 
@@ -211,6 +217,8 @@ The data_disks supports the following:
 * `snapshot_id` - (Optional) The snapshot ID used to initialize the data disk.
 * `device` - (Optional) The mount point of the data disk.
 * `kms_key_id` - (Optional) The ID of the KMS key used for the data disk.
+
+---
 
 ### `image_options`
 

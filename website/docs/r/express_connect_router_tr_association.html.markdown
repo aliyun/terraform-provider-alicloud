@@ -14,6 +14,10 @@ For information about Express Connect Router Express Connect Router Tr Associati
 
 -> **NOTE:** Available since v1.224.0.
 
+-> **NOTE:** When an association is created with `create_attachment = true`, destroying it also deletes the TR-side attachment created by that request. When `create_attachment` is `false` or unavailable after import, the provider does not send `DeleteAttachment` and does not inspect or delete independently managed attachments. If deletion returns `OperationDenied.EcrAttachmentExisted`, the attachment manager must delete the TR-side attachment before the association destroy is retried; the provider does not retry that error with `DeleteAttachment = true`. No pre-delete `cen:ListTransitRouterEcrAttachments` permission is required.
+
+-> **NOTE:** The TR-side ECR attachment can also be managed by [`alicloud_cen_transit_router_ecr_attachment`](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_ecr_attachment). `CreateTransitRouterEcrAttachment` requires the association to exist first. When the two resources are used together, preserve the association-to-attachment reference shown in the CEN attachment example so Terraform creates the association first and destroys the independently managed attachment before the association. The association resource does not automatically delete an independently managed or unknown-ownership attachment.
+
 ## Example Usage
 
 Basic Usage
@@ -25,6 +29,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -79,6 +91,9 @@ resource "alicloud_express_connect_router_tr_association" "default" {
   ]
   transit_router_id     = alicloud_cen_transit_router.defaultRYcjsc.transit_router_id
   association_region_id = "cn-hangzhou"
+  create_attachment     = true
+  allowed_prefixes_mode = "MatchMode"
+  description           = "tf-testacc-description"
 }
 ```
 
@@ -89,8 +104,11 @@ resource "alicloud_express_connect_router_tr_association" "default" {
 The following arguments are supported:
 
 * `allowed_prefixes` - (Optional) List of allowed route prefixes.
+* `allowed_prefixes_mode` - (Optional, String, Computed, Available since v2.4.0) The prefix routing mode. Valid values: `MatchMode` and `IncrementalMode`. Configuring this argument requires a non-empty `allowed_prefixes` list; otherwise Terraform rejects the configuration during plan. To clear a non-empty prefix list, remove `allowed_prefixes_mode` together with setting `allowed_prefixes = []` or removing both arguments. `MatchMode` advertises only the configured `allowed_prefixes` to the data center and withdraws the detailed routes that were advertised before; `IncrementalMode` advertises the configured `allowed_prefixes` and withdraws only the detailed routes inside them, while detailed routes outside the configured prefixes stay advertised. When omitted, the value returned by the API is kept in state.
 * `association_region_id` - (Required, ForceNew) The region to which the VPC or TR belongs.
 * `cen_id` - (Optional, ForceNew) The ID of the CEN instance.
+* `create_attachment` - (Optional, Bool, ForceNew, Computed, Available since v2.4.0) Whether the ECR side initiates the association when the ECR binds the TR. `true` means the association does not need to be initiated on the transit router side; `false` means it must be initiated from the transit router side. Changing this argument replaces the association. The value is only sent when the association is created and is not returned by the API, so it is not restored after import.
+* `description` - (Optional, String, Available since v2.4.0) The description of the association resource. The length is 0-128 characters. Removing the argument clears the description.
 * `ecr_id` - (Required, ForceNew) The ID of the leased line gateway instance.
 * `transit_router_id` - (Optional, ForceNew, Computed) The ID of the forwarding router instance.
 * `transit_router_owner_id` - (Optional, ForceNew) The ID of the Alibaba Cloud account to which the forwarding router belongs.
@@ -106,7 +124,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Express Connect Router Tr Association.
 * `delete` - (Defaults to 5 mins) Used when delete the Express Connect Router Tr Association.
@@ -119,3 +137,5 @@ Express Connect Router Express Connect Router Tr Association can be imported usi
 ```shell
 $ terraform import alicloud_express_connect_router_tr_association.example <ecr_id>:<association_id>:<transit_router_id>
 ```
+
+`create_attachment` is create-only and is not returned by the API, so it is not restored on import. An imported association has unknown attachment ownership: the provider omits `DeleteAttachment`, does not inspect the TR side, and does not escalate `OperationDenied.EcrAttachmentExisted` into a cascading delete. The attachment manager must remove an independently managed or unknown-ownership attachment before the association can be destroyed. Only an association configured with `create_attachment = true` may use `DeleteAttachment = true`. Other transient errors (`IncorrectStatus.EcrAssociation`, `Conflict.Lock`, `IncorrectStatus.Ecr`, `OperationDenied.ForceDeleting`) are retried without changing the delete scope.

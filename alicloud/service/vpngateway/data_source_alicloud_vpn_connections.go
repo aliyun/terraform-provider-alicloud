@@ -420,9 +420,7 @@ func dataSourceAlicloudVpnConnectionsRead(d *schema.ResourceData, meta interface
 	}
 
 	for {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVpnConnections(request)
-		})
+		raw, err := client.VpcSdkRpc(request, vpc.CreateDescribeVpnConnectionsResponse())
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_vpn_connections", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}

@@ -25,7 +25,7 @@ data "alicloud_dcdn_kv_account" "status" {
 
 The following arguments are supported:
 
-* `status` - (Optional, Computed, ForceNew) The status of the KV feature for your account. Valid values: `online`, `offline`.
+* `status` - (Optional, Computed) The status of the KV feature for your account. Valid values: `online`, `offline`.
 
 ## Attributes Reference
 

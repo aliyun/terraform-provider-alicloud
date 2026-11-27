@@ -22,9 +22,7 @@ import (
 func (s *Service) JudgeRegionValidation(key, region string) error {
 	request := ecs.CreateDescribeRegionsRequest()
 	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeRegions(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeRegionsResponse())
 	if err != nil {
 		return fmt.Errorf("DescribeRegions got an error: %#v", err)
 	}
@@ -83,9 +81,7 @@ func (s *Service) DescribeZones(d *schema.ResourceData) (zones []ecs.Zone, err e
 	request.RegionId = s.client.RegionId
 	request.InstanceChargeType = d.Get("instance_charge_type").(string)
 	request.SpotStrategy = d.Get("spot_strategy").(string)
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeZones(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeZonesResponse())
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, "alicloud_instance_type_families", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
@@ -139,9 +135,7 @@ func (s *Service) DescribeInstance(id string, additionalAttributes ...string) (i
 	var response *ecs.DescribeInstancesResponse
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
-		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeInstances(request)
-		})
+		raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeInstancesResponse())
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -200,9 +194,7 @@ func (s *Service) DescribeInstanceSystemDisk(instanceId, rg, diskId string) (dis
 	var response *ecs.DescribeDisksResponse
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
-		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeDisks(request)
-		})
+		raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeDisksResponse())
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -249,9 +241,7 @@ func (s *Service) JoinSecurityGroups(instanceId string, securityGroupIds []strin
 	request.RegionId = s.client.RegionId
 	for _, sid := range securityGroupIds {
 		request.SecurityGroupId = sid
-		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.JoinSecurityGroup(request)
-		})
+		raw, err := s.client.EcsSdkRpc(request, ecs.CreateJoinSecurityGroupResponse())
 		if err != nil && IsExpectedErrors(err, []string{"InvalidInstanceId.AlreadyExists"}) {
 			return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -267,9 +257,7 @@ func (s *Service) LeaveSecurityGroups(instanceId string, securityGroupIds []stri
 	request.RegionId = s.client.RegionId
 	for _, sid := range securityGroupIds {
 		request.SecurityGroupId = sid
-		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.LeaveSecurityGroup(request)
-		})
+		raw, err := s.client.EcsSdkRpc(request, ecs.CreateLeaveSecurityGroupResponse())
 		if err != nil && IsExpectedErrors(err, []string{"InvalidSecurityGroupId.NotFound"}) {
 			return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -284,9 +272,7 @@ func (s *Service) DescribeSecurityGroup(id string) (group ecs.DescribeSecurityGr
 	request.SecurityGroupId = id
 	request.RegionId = s.client.RegionId
 
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeSecurityGroupAttribute(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeSecurityGroupAttributeResponse())
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if err != nil {
@@ -376,9 +362,7 @@ func (s *Service) DescribeSecurityGroupRule(id string) (rule ecs.Permission, err
 		var raw interface{}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-			raw, err = s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DescribeSecurityGroupAttribute(request)
-			})
+			raw, err = s.client.EcsSdkRpc(request, ecs.CreateDescribeSecurityGroupAttributeResponse())
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -394,7 +378,11 @@ func (s *Service) DescribeSecurityGroupRule(id string) (rule ecs.Permission, err
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidSecurityGroupId.NotFound"}) {
-				return rule, WrapErrorf(NotFoundErr("SecurityGroup:Rule", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
+				requestID := ""
+				if response != nil {
+					requestID = response.RequestId
+				}
+				return rule, WrapErrorf(NotFoundErr("SecurityGroup:Rule", id), NotFoundMsg, ProviderERROR, requestID)
 			}
 			return rule, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -494,9 +482,7 @@ func (s *Service) DescribeAvailableResources(d *schema.ResourceData, meta interf
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	var response *ecs.DescribeAvailableResourceResponse
 	if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeAvailableResource(request)
-		})
+		raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeAvailableResourceResponse())
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -627,9 +613,7 @@ func (s *Service) DescribeKeyPair(id string) (keyPair ecs.KeyPair, err error) {
 	request := ecs.CreateDescribeKeyPairsRequest()
 	request.RegionId = s.client.RegionId
 	request.KeyPairName = id
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeKeyPairs(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeKeyPairsResponse())
 	if err != nil {
 		return keyPair, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -747,9 +731,7 @@ func (s *Service) DescribeDisksByType(instanceId string, diskType DiskType) (dis
 	}
 	request.DiskType = string(diskType)
 
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeDisks(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeDisksResponse())
 	if err != nil {
 		return
 	}
@@ -766,9 +748,7 @@ func (s *Service) DescribeTags(resourceId string, resourceType TagResourceType) 
 	request.RegionId = s.client.RegionId
 	request.ResourceType = string(resourceType)
 	request.ResourceId = resourceId
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeTags(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeTagsResponse())
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
@@ -788,9 +768,7 @@ func (s *Service) DescribeImageById(id string) (image ecs.Image, err error) {
 	request.RegionId = s.client.RegionId
 	request.ImageId = id
 	request.Status = fmt.Sprintf("%s,%s,%s,%s,%s", "Creating", "Waiting", "Available", "UnAvailable", "CreateFailed")
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeImages(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeImagesResponse())
 	if err != nil {
 		return
 	}
@@ -820,9 +798,7 @@ func (s *Service) deleteImage(d *schema.ResourceData) error {
 	request.RegionId = s.client.RegionId
 	request.ImageId = object.ImageId
 
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DeleteImage(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDeleteImageResponse())
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -844,9 +820,7 @@ func (s *Service) deleteImage(d *schema.ResourceData) error {
 			request.RegionId = s.client.RegionId
 			request.SnapshotId = item.SnapshotId
 			request.Force = requests.NewBoolean(true)
-			raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DeleteSnapshot(request)
-			})
+			raw, err := s.client.EcsSdkRpc(request, ecs.CreateDeleteSnapshotResponse())
 			if err != nil {
 				errs[item.SnapshotId] = err
 			}
@@ -892,9 +866,7 @@ func (s *Service) updateImage(d *schema.ResourceData) error {
 		if nvmeSupport, ok := d.GetOk("features.0.nvme_support"); ok {
 			request.Features.NvmeSupport = nvmeSupport.(string)
 		}
-		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyImageAttribute(request)
-		})
+		raw, err := s.client.EcsSdkRpc(request, ecs.CreateModifyImageAttributeResponse())
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		if err != nil {
@@ -911,9 +883,7 @@ func (s *Service) DescribeNetworkInterface(id string) (networkInterface ecs.Netw
 	request.RegionId = s.client.RegionId
 	eniIds := []string{id}
 	request.NetworkInterfaceId = &eniIds
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeNetworkInterfaces(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeNetworkInterfacesResponse())
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
@@ -1243,9 +1213,7 @@ func (s *Service) AttachKeyPair(keyName string, instanceIds []interface{}) error
 	request.KeyPairName = keyName
 	request.InstanceIds = convertListToJsonString(instanceIds)
 	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.AttachKeyPair(request)
-		})
+		raw, err := s.client.EcsSdkRpc(request, ecs.CreateAttachKeyPairResponse())
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ServiceUnavailable"}) {
 				return retry.RetryableError(err)
@@ -1324,9 +1292,7 @@ func (s *Service) DescribeTaskById(id string) (task *ecs.DescribeTaskAttributeRe
 	request := ecs.CreateDescribeTaskAttributeRequest()
 	request.TaskId = id
 
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeTaskAttribute(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeTaskAttributeResponse())
 	if err != nil {
 		return task, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -1344,9 +1310,7 @@ func (s *Service) DescribeSnapshot(id string) (*ecs.Snapshot, error) {
 	request := ecs.CreateDescribeSnapshotsRequest()
 	request.RegionId = s.client.RegionId
 	request.SnapshotIds = fmt.Sprintf("[\"%s\"]", id)
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeSnapshots(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeSnapshotsResponse())
 	if err != nil {
 		return snapshot, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -1363,9 +1327,7 @@ func (s *Service) DescribeSnapshotPolicy(id string) (*ecs.AutoSnapshotPolicy, er
 	request := ecs.CreateDescribeAutoSnapshotPolicyExRequest()
 	request.AutoSnapshotPolicyId = id
 	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeAutoSnapshotPolicyEx(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeAutoSnapshotPolicyExResponse())
 	if err != nil {
 		return policy, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -1385,9 +1347,7 @@ func (s *Service) DescribeReservedInstance(id string) (reservedInstance ecs.Rese
 	var balance = &[]string{id}
 	request.ReservedInstanceId = balance
 	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeReservedInstances(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeReservedInstancesResponse())
 	if err != nil {
 		return reservedInstance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -1407,9 +1367,7 @@ func (s *Service) DescribeLaunchTemplate(id string) (set ecs.LaunchTemplateSet, 
 	request.RegionId = s.client.RegionId
 	request.LaunchTemplateId = &[]string{id}
 
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeLaunchTemplates(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeLaunchTemplatesResponse())
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
@@ -1432,9 +1390,7 @@ func (s *Service) DescribeLaunchTemplateVersion(id string, version int) (set ecs
 	request.RegionId = s.client.RegionId
 	request.LaunchTemplateId = id
 	request.LaunchTemplateVersion = &[]string{strconv.FormatInt(int64(version), 10)}
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeLaunchTemplateVersions(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeLaunchTemplateVersionsResponse())
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidLaunchTemplate.NotFound"}) {
 			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -1487,9 +1443,7 @@ func (s *Service) DescribeImageShareByImageId(id string) (imageShare *ecs.Descri
 		return imageShare, WrapError(err)
 	}
 	request.ImageId = parts[0]
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeImageSharePermission(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeImageSharePermissionResponse())
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidImageId.NotFound"}) {
 			return imageShare, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -1509,9 +1463,7 @@ func (s *Service) DescribeAutoProvisioningGroup(id string) (group ecs.AutoProvis
 	ids := []string{id}
 	request.AutoProvisioningGroupId = &ids
 	request.RegionId = s.client.RegionId
-	raw, e := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeAutoProvisioningGroups(request)
-	})
+	raw, e := s.client.EcsSdkRpc(request, ecs.CreateDescribeAutoProvisioningGroupsResponse())
 	if e != nil {
 		err = WrapErrorf(e, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
@@ -2263,9 +2215,7 @@ func (s *Service) SweepSecurityGroup(id string) error {
 	log.Printf("[DEBUG] Deleting Security Group %s ...", id)
 	request := ecs.CreateDeleteSecurityGroupRequest()
 	request.SecurityGroupId = id
-	_, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DeleteSecurityGroup(request)
-	})
+	_, err := s.client.EcsSdkRpc(request, ecs.CreateDeleteSecurityGroupResponse())
 	if err == nil {
 		time.Sleep(1 * time.Second)
 	}

@@ -86,21 +86,33 @@ to create a MongoDB Sharding Instance resource one-click.
 
 The following arguments are supported:
 
-* `engine_version` - (Required) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/en/doc-detail/61884.htm) `EngineVersion`. **NOTE:** From version 1.225.1, `engine_version` can be modified.
+* `engine_version` - (Required) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/en/doc-detail/61884.htm) `EngineVersion`.
+
+  -> **NOTE:** From version 1.225.1, `engine_version` can be modified.
 * `storage_engine` - (Optional, ForceNew) The storage engine of the instance. Default value: `WiredTiger`. Valid values: `WiredTiger`, `RocksDB`.
-* `storage_type` - (Optional, Available since v1.225.1) The storage type of the instance. Valid values: `cloud_essd1`, `cloud_essd2`, `cloud_essd3`, `cloud_auto`, `local_ssd`. **NOTE:** From version 1.229.0, `storage_type` can be modified. However, `storage_type` can only be modified to `cloud_auto`.
+* `storage_type` - (Optional, Available since v1.225.1) The storage type of the instance. Valid values: `cloud_essd1`, `cloud_essd2`, `cloud_essd3`, `cloud_auto`, `local_ssd`.
+
+  -> **NOTE:** From version 1.229.0, `storage_type` can be modified. However, `storage_type` can only be modified to `cloud_auto`.
 * `provisioned_iops` - (Optional, Int, Available since v1.229.0) The provisioned IOPS. Valid values: `0` to `50000`.
 * `protocol_type` - (Optional, ForceNew, Available since v1.161.0) The type of the access protocol. Valid values: `mongodb` or `dynamodb`.
-* `vpc_id` - (Optional, ForceNew, Available since v1.161.0) The ID of the VPC. -> **NOTE:** `vpc_id` is valid only when `network_type` is set to `VPC`.
+* `vpc_id` - (Optional, ForceNew, Available since v1.161.0) The ID of the VPC. ->
+
+  -> **NOTE:** `vpc_id` is valid only when `network_type` is set to `VPC`.
 * `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance. MongoDB Sharding Instance does not support multiple-zone.
   If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of them.
-* `secondary_zone_id` - (Optional, Available since v1.253.0) Configure the available area where the slave node (Secondary node) is located to realize multi-available area deployment. **NOTE:** This parameter value cannot be the same as `zone_id` and `hidden_zone_id` parameter values.
-* `hidden_zone_id` - (Optional, Available since v1.253.0) Configure the zone where the hidden node is located to deploy multiple zones. **NOTE:** This parameter value cannot be the same as `zone_id` and `secondary_zone_id` parameter values.
+* `secondary_zone_id` - (Optional, Available since v1.253.0) Configure the available area where the slave node (Secondary node) is located to realize multi-available area deployment.
+
+  -> **NOTE:** This parameter value cannot be the same as `zone_id` and `hidden_zone_id` parameter values.
+* `hidden_zone_id` - (Optional, Available since v1.253.0) Configure the zone where the hidden node is located to deploy multiple zones.
+
+  -> **NOTE:** This parameter value cannot be the same as `zone_id` and `secondary_zone_id` parameter values.
 * `security_group_id` - (Optional, Available since v1.76.0) The Security Group ID of ECS.
 * `network_type` - (Optional, ForceNew, Available since v1.161.0) The network type of the instance. Valid values:`Classic` or `VPC`.
 * `name` - (Optional) The name of DB instance. It must be 2 to 256 characters in length.
-* `instance_charge_type` - (Optional) The billing method of the instance. Default value: `PostPaid`. Valid values: `PrePaid`, `PostPaid`. **NOTE:** It can be modified from `PostPaid` to `PrePaid` after version v1.141.0.
+* `instance_charge_type` - (Optional) The billing method of the instance. Default value: `PostPaid`. Valid values: `PrePaid`, `PostPaid`.
+
+  -> **NOTE:** It can be modified from `PostPaid` to `PrePaid` after version v1.141.0.
 * `period` - (Optional, Int) The duration that you will buy DB instance (in month). It is valid when `instance_charge_type` is `PrePaid`. Default value: `1`. Valid values: [1~9], 12, 24, 36.
 * `security_ip_list` - (Optional, List) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]). System default to `["127.0.0.1"]`.
 * `security_ip_groups` - (Optional, Set) The list of named security IP groups. Each element represents a separate IP whitelist group managed independently from `security_ip_list` (which manages the `default` group). See [`security_ip_groups`](#security_ip_groups) below.
@@ -129,7 +141,9 @@ The following arguments are supported:
   - `2`: Automatic backup is performed when the instance is released and all backup sets are retained for a long period of time.
 * `enable_backup_log` - (Optional, Int, Available since v1.259.0) Specifies whether to enable the log backup feature. Valid values:
   - `1`: The log backup feature is enabled.
-* `log_backup_retention_period` - (Optional, Int, Available since v1.259.0) The number of days for which log backups are retained. Valid values: `7` to `730`. **NOTE:** `log_backup_retention_period` is valid only when `enable_backup_log` is set to `1`.
+* `log_backup_retention_period` - (Optional, Int, Available since v1.259.0) The number of days for which log backups are retained. Valid values: `7` to `730`.
+
+  -> **NOTE:** `log_backup_retention_period` is valid only when `enable_backup_log` is set to `1`.
 * `snapshot_backup_type` - (Optional, Available since v1.253.0) The snapshot backup type. Default value: `Standard`. Valid values:
   - `Standard`: Standard backup.
   - `Flash`: Single-digit second backup.
@@ -148,7 +162,9 @@ The following arguments are supported:
 * `maintain_start_time` - (Optional, Available since v1.259.0) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available since v1.259.0) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `tde_status` - (Optional, Available since v1.76.0) The TDE(Transparent Data Encryption) status. It can be updated from version 1.160.0.
-* `encryptor_name` - (Optional, Available since v1.260.0) The encryption method. **NOTE:** `encryptor_name` is valid only when `tde_status` is set to `enabled`.
+* `encryptor_name` - (Optional, Available since v1.260.0) The encryption method.
+
+  -> **NOTE:** `encryptor_name` is valid only when `tde_status` is set to `enabled`.
 * `encryption_key` - (Optional, Available since v1.260.0) The ID of the custom key.
 * `role_arn` - (Optional, Available since v1.260.0) The Alibaba Cloud Resource Name (ARN) of the specified Resource Access Management (RAM) role.
 * `db_instance_release_protection` - (Optional, Bool, Available since v1.253.0) Indicates whether release protection is enabled for the instance. Valid values: `true`, `false`.
@@ -161,7 +177,10 @@ The following arguments are supported:
 * `order_type` - (Optional, Available since v1.134.0) The type of configuration changes performed. Default value: `DOWNGRADE`. Valid values:
   - `UPGRADE`: The specifications are upgraded.
   - `DOWNGRADE`: The specifications are downgraded.
-**NOTE:** `order_type` is only applicable to instances when `instance_charge_type` is `PrePaid`.
+
+  -> **NOTE:** `order_type` is only applicable to instances when `instance_charge_type` is `PrePaid`.
+
+---
 
 ### `security_ip_groups`
 
@@ -171,6 +190,8 @@ The security_ip_groups supports the following:
 * `security_ip_list` - (Optional) The IP addresses in the security IP group. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `security_ip_group_attribute` - (Optional) The attribute of the security IP group. It must be 1 to 120 characters in length and can contain letters and digits. Do not set this attribute to `hidden`; otherwise the group will be ignored by Read.
 
+---
+
 ### `parameters`
 
 The parameters supports the following:
@@ -178,11 +199,15 @@ The parameters supports the following:
 * `name` - (Required) The name of the parameter.
 * `value` - (Required) The value of the parameter.
 
+---
+
 ### `mongo_list`
 
 The mongo_list supports the following:
 
 * `node_class` - (Required) The instance type of the mongo node. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/57141.htm).
+
+---
 
 ### `shard_list`
 
@@ -193,6 +218,8 @@ The shard_list supports the following:
   - Custom storage space; value range: [10, 1,000]
   - 10-GB increments. Unit: GB.
 * `readonly_replicas` - (Optional, Int, Available since v1.126.0) The number of read-only nodes in shard node Default value: `0`. Valid values: `0` to `5`.
+
+---
 
 ### `config_server_list`
 
@@ -210,30 +237,58 @@ The following attributes are exported:
 * `ssl_status` - (Available since v1.259.0) The status of the SSL feature.
 * `key_ids` - (Available since v1.271.0) A list of instance keys.
 * `mongo_list` - The mongo nodes of the instance.
-  * `node_id` - The ID of the mongo node.
-  * `connect_string` - The endpoint of the mongo node.
-  * `port` - The port number that is used to connect to the mongo node.
 * `shard_list` - The information of the shard node.
-  * `node_id` - The ID of the shard node.
 * `config_server_list` - The information of the ConfigServer nodes.
-  * `node_id` - The ID of the Config Server node.
-  * `connect_string` - The connection address of the Config Server node.
-  * `port` - The connection port of the Config Server node.
-  * `max_connections` - The max connections of the Config Server node.
-  * `max_iops` - The maximum IOPS of the Config Server node.
-  * `node_description` - The description of the Config Server node.
 * `zone_infos` - (Available since v1.271.0) The information of nodes in the zone.
-  * `ins_name` - The ID of the node.
-  * `node_type` - The type of the node.
-  * `role_id` - The role ID.
-  * `role_type` - The role of the node.
-  * `zone_id` - The zone ID of the node.
+
+---
+
+### `mongo_list`
+
+The mongo_list supports the following attributes:
+
+* `node_id` - The ID of the mongo node.
+* `connect_string` - The endpoint of the mongo node.
+* `port` - The port number that is used to connect to the mongo node.
+
+---
+
+### `shard_list`
+
+The shard_list supports the following attributes:
+
+* `node_id` - The ID of the shard node.
+
+---
+
+### `config_server_list`
+
+The config_server_list supports the following attributes:
+
+* `node_id` - The ID of the Config Server node.
+* `connect_string` - The connection address of the Config Server node.
+* `port` - The connection port of the Config Server node.
+* `max_connections` - The max connections of the Config Server node.
+* `max_iops` - The maximum IOPS of the Config Server node.
+* `node_description` - The description of the Config Server node.
+
+---
+
+### `zone_infos`
+
+The zone_infos supports the following attributes:
+
+* `ins_name` - The ID of the node.
+* `node_type` - The type of the node.
+* `role_id` - The role ID.
+* `role_type` - The role of the node.
+* `zone_id` - The zone ID of the node.
 
 ## Timeouts
 
 -> **NOTE:** Available since v1.126.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when creating the Sharding Instance (until it reaches the initial `Running` status).
 * `update` - (Defaults to 120 mins) Used when updating the Sharding Instance (until it reaches the initial `Running` status).

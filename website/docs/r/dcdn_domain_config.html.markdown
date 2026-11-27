@@ -90,6 +90,8 @@ The following arguments are supported:
 * `parent_id` - (Optional, Available since v1.221.0) By configuring the function condition (rule engine) in the domain name configuration function parameters, Rule conditions can be created (Rule conditions can match and filter user requests by identifying various parameters carried in user requests). After each rule condition is created, a corresponding ConfigId will be generated, and the ConfigId can be referenced by other functions as a ParentId parameter, in this way, the rule conditions can be combined with the functional configuration to form a more flexible configuration.
 * `function_args` - (Required, Set) The args of the domain config. See [`function_args`](#function_args) below.
 
+---
+
 ### `function_args`
 
 The function_args block supports the following:

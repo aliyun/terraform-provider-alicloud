@@ -71,6 +71,8 @@ The following arguments are supported:
 * `payment_type` - (Required, ForceNew) Server Load Balancer Instance Payment Type. Value:PayAsYouGo
 * `vswitch_id` - (Required, ForceNew) The ID of the vSwitch to which the VPC instance belongs.
 
+---
+
 ### `backend_servers`
 
 The backend_servers supports the following:
@@ -91,7 +93,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Load Balancer.
 * `delete` - (Defaults to 5 mins) Used when delete the Load Balancer.

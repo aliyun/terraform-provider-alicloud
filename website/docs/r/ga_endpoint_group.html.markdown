@@ -227,6 +227,8 @@ The following arguments are supported:
   -> **NOTE:** Port mapping is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. The listening port in the port map must be consistent with the listening port of the current listening instance.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
 
+---
+
 ### `endpoint_configurations`
 
 The endpoint_configurations supports the following:
@@ -258,6 +260,8 @@ The endpoint_configurations supports the following:
 * `vpc_id` - (Optional, Available since v1.262.0) The ID of the Virtual Private Cloud (VPC). This parameter is required only when the endpoint type is set to IpTarget.
 * `vswitch_ids` - (Optional, List, Available since v1.262.0) A list of vSwitches in the VPC. You can specify a maximum of two vSwitch IDs for an endpoint group of an intelligent routing listener. This parameter is required when the endpoint type is IpTarget. The vSwitch must belong to the VPC specified by the VpcId parameter.
 
+---
+
 ### `port_overrides`
 
 The port_overrides supports the following:
@@ -275,7 +279,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 15 mins) Used when create the Endpoint Group.
 * `update` - (Defaults to 3 mins) Used when update the Endpoint Group.

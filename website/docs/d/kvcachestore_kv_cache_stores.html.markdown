@@ -41,15 +41,24 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `stores` - A list of Kv Cache Store entries. Each element contains the following attributes:
-  * `id` - The ID of the instance. The value is the same as `kvcs_id`.
-  * `kvcs_id` - The ID of the instance.
-  * `capacity` - The storage capacity of the instance. Unit: GiB.
-  * `create_time` - The creation time of the instance (ISO 8601).
-  * `description` - The description of the instance.
-  * `hpn_zone` - The cluster ID (HPN zone) of the instance.
-  * `name` - The name of the instance.
-  * `payment_type` - The payment type of the instance.
-  * `region_id` - The region ID of the instance.
-  * `status` - The status of the instance. **NOTE:** This field is only available when `enable_details` is `true`.
-  * `zone_id` - The zone ID of the instance.
+* `stores` - A list of Kv Cache Store entries.
+
+---
+
+### `stores`
+
+The stores supports the following attributes:
+
+* `id` - The ID of the instance. The value is the same as `kvcs_id`.
+* `kvcs_id` - The ID of the instance.
+* `capacity` - The storage capacity of the instance. Unit: GiB.
+* `create_time` - The creation time of the instance (ISO 8601).
+* `description` - The description of the instance.
+* `hpn_zone` - The cluster ID (HPN zone) of the instance.
+* `name` - The name of the instance.
+* `payment_type` - The payment type of the instance.
+* `region_id` - The region ID of the instance.
+* `status` - The status of the instance.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `zone_id` - The zone ID of the instance.

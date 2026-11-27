@@ -213,12 +213,16 @@ You can call the [ListResourceGroups](https://www.alibabacloud.com/help/en/doc-d
 * `shared_storages` - (Required, ForceNew, Set) List of cluster shared storage configurations. See [`shared_storages`](#shared_storages) below.
 * `tags` - (Optional, ForceNew, Map, Available since v1.288.0) A mapping of tags to assign to the resource.
 
+---
+
 ### `additional_packages`
 
 The additional_packages supports the following:
 
 * `name` - (Optional, ForceNew) The name of the software to be installed.
 * `version` - (Optional, ForceNew) The version of the software to be installed.
+
+---
 
 ### `addons`
 
@@ -229,6 +233,8 @@ The addons supports the following:
 * `services_spec` - (Optional, ForceNew) Customize the service configuration of the service component.
 * `version` - (Required, ForceNew) Customize the service component version.
 
+---
+
 ### `cluster_credentials`
 
 The cluster_credentials supports the following:
@@ -236,12 +242,16 @@ The cluster_credentials supports the following:
 * `key_pair_name` - (Optional, ForceNew, Available since v1.270.0) The SSH key of root of the cluster node.
 * `password` - (Optional, ForceNew) The root password of the cluster node. It is 8 to 20 characters in length and must contain three types of characters: uppercase and lowercase letters, numbers, and special symbols. Special symbols can be: () ~! @ # $ % ^ & * - = + { } [ ] : ; ',. ? /
 
+---
+
 ### `cluster_custom_configuration`
 
 The cluster_custom_configuration supports the following:
 
 * `script` - (Optional, Available since v1.288.0) The download URL of the post-processing script.
 * `args` - (Optional, Available since v1.288.0) The execution parameters of the post-processing script.
+
+---
 
 ### `manager`
 
@@ -252,6 +262,8 @@ The manager supports the following:
 * `manager_node` - (Optional, ForceNew, Set) The hardware configurations of the management node. See [`manager_node`](#manager-manager_node) below.
 * `scheduler` - (Optional, ForceNew, Set) The configurations of the scheduler service. See [`scheduler`](#manager-scheduler) below.
 
+---
+
 ### `manager-directory_service`
 
 The manager-directory_service supports the following:
@@ -261,6 +273,8 @@ The manager-directory_service supports the following:
   - NIS
 * `version` - (Optional, ForceNew) The version of the domain account service.
 
+---
+
 ### `manager-dns`
 
 The manager-dns supports the following:
@@ -269,6 +283,8 @@ The manager-dns supports the following:
 
   - NIS
 * `version` - (Optional, ForceNew) The version of the domain name resolution service.
+
+---
 
 ### `manager-manager_node`
 
@@ -309,6 +325,8 @@ Default value: 1.
   - SpotAsPriceGo: The system automatically bids, following the actual price of the current market.
 * `system_disk` - (Optional, ForceNew, Set) System disk configuration of the management node. See [`system_disk`](#manager-manager_node-system_disk) below.
 
+---
+
 ### `manager-scheduler`
 
 The manager-scheduler supports the following:
@@ -321,6 +339,8 @@ The manager-scheduler supports the following:
   - LSF_PLUGIN
   - PBS_PLUGIN
 * `version` - (Optional, ForceNew) The scheduler version.
+
+---
 
 ### `manager-manager_node-system_disk`
 
@@ -345,6 +365,8 @@ The manager-manager_node-system_disk supports the following:
   - PL3:1261~2048.
   - Other cloud disk types: 20~2048.
 
+---
+
 ### `monitor_spec`
 
 The monitor_spec supports the following:
@@ -353,6 +375,8 @@ The monitor_spec supports the following:
 
   - true
   - false
+
+---
 
 ### `queues`
 
@@ -384,6 +408,8 @@ The queues supports the following:
 * `max_count_per_cycle` - (Optional, ForceNew, Int, Available since v1.288.0) The maximum number of compute nodes that the queue can scale out in each scale-out cycle.
 * `reserved_node_pool_id` - (Optional, ForceNew, Available since v1.288.0) The ID of the reserved node pool used by the queue.
 
+---
+
 ### `queues-compute_nodes`
 
 The queues-compute_nodes supports the following:
@@ -411,6 +437,8 @@ The queues-compute_nodes supports the following:
 * `enable_ht` - (Optional, ForceNew, Bool, Available since v1.288.0) Specifies whether to enable hyper-threading on the compute node.
 * `system_disk` - (Optional, ForceNew, List, Available since v1.288.0) The system disk configuration of the compute node. See [`system_disk`](#queues-compute_nodes-system_disk) below.
 
+---
+
 ### `queues-compute_nodes-system_disk`
 
 The queues-compute_nodes-system_disk supports the following:
@@ -429,6 +457,8 @@ The queues-compute_nodes-system_disk supports the following:
   - PL2
   - PL3
 
+---
+
 ### `scheduler_spec`
 
 The scheduler_spec supports the following:
@@ -437,6 +467,8 @@ The scheduler_spec supports the following:
 
   - true
   - false
+
+---
 
 ### `shared_storages`
 
@@ -461,13 +493,27 @@ The following attributes are exported:
 * `ehpc_version` - (Available since v1.288.0) The version of the E-HPC cluster.
 * `modify_time` - (Available since v1.288.0) The time when the cluster was modified.
 * `manager` - The configurations of the cluster management node.
-  * `manager_node` - The hardware configurations of the management node.
-    * `expired_time` - The expiration time of the management node.
-    * `instance_id` - The instance ID of the management node.
+
+---
+
+### `manager`
+
+The manager supports the following attributes:
+
+* `manager_node` - The hardware configurations of the management node.
+
+---
+
+### `manager.manager_node`
+
+The manager_node supports the following attributes:
+
+* `expired_time` - The expiration time of the management node.
+* `instance_id` - The instance ID of the management node.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 8 mins) Used when create the Cluster V2.
 * `delete` - (Defaults to 5 mins) Used when delete the Cluster V2.

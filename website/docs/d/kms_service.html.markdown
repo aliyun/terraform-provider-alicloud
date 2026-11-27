@@ -7,19 +7,19 @@ description: |-
     Provides a datasource to open the KMS service automatically.
 ---
 
-# alicloud\_kms\_service
+# alicloud_kms_service
 
 Using this data source can open KMS service automatically. If the service has been opened, it will return opened.
 
-For information about KMS and how to use it, see [What is KMS](https://help.aliyun.com/document_detail/186020.html).
+For information about KMS and how to use it, see [What is KMS](https://www.alibabacloud.com/help/doc-detail/186020.htm).
 
--> **NOTE:** Available in v1.108.0+
+-> **NOTE:** Available since v1.108.0+
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_kms_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 
@@ -35,4 +35,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

@@ -336,7 +336,7 @@ func (v recordingDataSourceValidator) ValidateDataSource(ctx context.Context, re
 func TestUnitProviderMaximalFrameworkWrapKeepsEveryCapability(t *testing.T) {
 	log := &hookLog{}
 	inner := newMaximalFrameworkResource(log)
-	wrapped := fwadapt.WrapResource(maximalFrameworkName, inner, []intercept.Interceptor{&chainRecorder{}})
+	wrapped := fwadapt.WrapResource(maximalFrameworkName, inner, []intercept.Interceptor{&chainRecorder{}}, nil)
 
 	if wrapped == resource.Resource(inner) {
 		t.Fatal("WrapResource returned the input: nothing would be intercepted")
@@ -374,7 +374,7 @@ func TestUnitProviderMaximalFrameworkWrapKeepsEveryCapability(t *testing.T) {
 func TestUnitProviderMaximalFrameworkWrapForwardsEveryCapability(t *testing.T) {
 	ctx := context.Background()
 	log := &hookLog{}
-	wrapped := fwadapt.WrapResource(maximalFrameworkName, newMaximalFrameworkResource(log), []intercept.Interceptor{&chainRecorder{}})
+	wrapped := fwadapt.WrapResource(maximalFrameworkName, newMaximalFrameworkResource(log), []intercept.Interceptor{&chainRecorder{}}, nil)
 
 	t.Run("Metadata", func(t *testing.T) {
 		var resp resource.MetadataResponse
@@ -494,7 +494,7 @@ func TestUnitProviderMaximalFrameworkWrapRunsChainOnlyOnCRUD(t *testing.T) {
 	log := &hookLog{}
 	rec := &chainRecorder{}
 	client := &connectivity.AliyunClient{}
-	wrapped := fwadapt.WrapResource(maximalFrameworkName, newMaximalFrameworkResource(log), []intercept.Interceptor{rec})
+	wrapped := fwadapt.WrapResource(maximalFrameworkName, newMaximalFrameworkResource(log), []intercept.Interceptor{rec}, nil)
 
 	var configureResp resource.ConfigureResponse
 	wrapped.(resource.ResourceWithConfigure).Configure(ctx, resource.ConfigureRequest{ProviderData: client}, &configureResp)
@@ -571,7 +571,7 @@ func TestUnitProviderMaximalFrameworkDataSourceWrap(t *testing.T) {
 	log := &hookLog{}
 	rec := &chainRecorder{}
 	client := &connectivity.AliyunClient{}
-	wrapped := fwadapt.WrapDataSource(maximalFrameworkDataSourceName, newMaximalFrameworkDataSource(log), []intercept.Interceptor{rec})
+	wrapped := fwadapt.WrapDataSource(maximalFrameworkDataSourceName, newMaximalFrameworkDataSource(log), []intercept.Interceptor{rec}, nil)
 
 	var metadataResp datasource.MetadataResponse
 	wrapped.Metadata(ctx, datasource.MetadataRequest{ProviderTypeName: "alicloud"}, &metadataResp)

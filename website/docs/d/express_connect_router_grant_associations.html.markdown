@@ -80,16 +80,23 @@ The following attributes are exported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `associations` - A list of Grant Associations. Each element contains the following attributes:
-  * `id` - The ID of the Grant Association.
-  * `ecr_id` - The ID of the Express Connect Router instance.
-  * `instance_id` - The ID of the authorized instance.
-  * `instance_region_id` - The ID of the region to which the authorized instance belongs.
-  * `owner_id` - The ID of the Alibaba Cloud account that owns the Express Connect Router instance.
-  * `instance_type` - The type of the network instance.
-  * `grant_id` - The authorization ID.
-  * `instance_owner_id` - The ID of the Alibaba Cloud account to which the instance belongs.
-  * `instance_owner_bid` - The ID of the enterprise account to which the instance belongs.
-  * `status` - The status of the authorized network instance.
-  * `create_time` - The time when the instance was created.
-  * `modify_time` - The time when the instance was modified.
+* `associations` - A list of Grant Associations.
+
+---
+
+### `associations`
+
+The associations supports the following attributes:
+
+* `id` - The ID of the Grant Association.
+* `ecr_id` - The ID of the Express Connect Router instance.
+* `instance_id` - The ID of the authorized instance.
+* `instance_region_id` - The ID of the region to which the authorized instance belongs.
+* `owner_id` - The ID of the Alibaba Cloud account that owns the Express Connect Router instance.
+* `instance_type` - The type of the network instance.
+* `grant_id` - The authorization ID.
+* `instance_owner_id` - The ID of the Alibaba Cloud account to which the instance belongs.
+* `instance_owner_bid` - The ID of the enterprise account to which the instance belongs.
+* `status` - The status of the authorized network instance.
+* `create_time` - The time when the instance was created.
+* `modify_time` - The time when the instance was modified.

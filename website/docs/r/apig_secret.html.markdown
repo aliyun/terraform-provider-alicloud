@@ -99,6 +99,8 @@ The following arguments are supported:
 * `secret_data` - (Required) The KMS credential value.
 * `secret_source` - (Required, ForceNew) The source of the key.
 
+---
+
 ### `kms_config`
 
 The kms_config supports the following.
@@ -118,7 +120,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Secret.
 * `update` - (Defaults to 5 mins) Used when update the Secret.

@@ -139,15 +139,17 @@ The following arguments are supported:
 * `cluster_description` - (Optional, ForceNew) cluster description
 * `cluster_name` - (Optional, ForceNew) ClusterName
 * `cluster_type` - (Optional, ForceNew) cluster type
-* `components` - (Optional, List) Component (software instance) See [`components`](#components) below.
+* `components` - (Optional, List) Component (software instance) See [`components`](#components) below. **Note: The parameter is immutable after resource creation.** It is applied only when the cluster is created; this resource does not update it for an existing cluster, and a change to this argument is not applied.
 * `hpn_zone` - (Optional) Cluster Number
 * `ignore_failed_node_tasks` - (Optional) Whether to allow skipping failed nodes. Default value: False
-* `networks` - (Optional, List) Network Information See [`networks`](#networks) below.
+* `networks` - (Optional, List) Network Information See [`networks`](#networks) below. **Note: The parameter is immutable after resource creation.** It is applied only when the cluster is created; this resource does not update it for an existing cluster, and a change to this argument is not applied.
 * `nimiz_vswitches` - (Optional, List) Node virtual switch
-* `node_groups` - (Optional, List) Node Group List See [`node_groups`](#node_groups) below.
+* `node_groups` - (Optional, List) Node Group List See [`node_groups`](#node_groups) below. **Note: The parameter is immutable after resource creation.** It is applied only when the cluster is created; this resource does not update it for an existing cluster, and a change to this argument is not applied.
 * `open_eni_jumbo_frame` - (Optional) Whether the network interface supports jumbo frames
 * `resource_group_id` - (Optional, Computed) The ID of the resource group
 * `tags` - (Optional, Map) tag
+
+---
 
 ### `components`
 
@@ -156,6 +158,8 @@ The components supports the following:
 * `component_config` - (Optional, List) Component Configuration See [`component_config`](#components-component_config) below.
 * `component_type` - (Optional) Component Type
 
+---
+
 ### `components-component_config`
 
 The components-component_config supports the following:
@@ -163,6 +167,8 @@ The components-component_config supports the following:
 * `basic_args` - (Optional) Component Basic Parameters
 * `node_units` - (Optional, List) Node pool configuration, and is used to establish the corresponding relationship between node groups and node pools. When
 ComponentType = "ACKEdge" is required. Other values are empty.
+
+---
 
 ### `networks`
 
@@ -177,6 +183,8 @@ The networks supports the following:
 * `vpc_id` - (Optional) VPC ID
 * `vpd_info` - (Optional, List) Multiplexing VPD information See [`vpd_info`](#networks-vpd_info) below.
 
+---
+
 ### `networks-ip_allocation_policy`
 
 The networks-ip_allocation_policy supports the following:
@@ -184,6 +192,8 @@ The networks-ip_allocation_policy supports the following:
 * `bond_policy` - (Optional, List) Bond policy See [`bond_policy`](#networks-ip_allocation_policy-bond_policy) below.
 * `machine_type_policy` - (Optional, List) Model Assignment Policy See [`machine_type_policy`](#networks-ip_allocation_policy-machine_type_policy) below.
 * `node_policy` - (Optional, List) Node allocation policy See [`node_policy`](#networks-ip_allocation_policy-node_policy) below.
+
+---
 
 ### `networks-new_vpd_info`
 
@@ -197,12 +207,16 @@ The networks-new_vpd_info supports the following:
 * `vpd_cidr` - (Optional) Cluster network segment
 * `vpd_subnets` - (Optional, List) Cluster Subnet See [`vpd_subnets`](#networks-new_vpd_info-vpd_subnets) below.
 
+---
+
 ### `networks-vpd_info`
 
 The networks-vpd_info supports the following:
 
 * `vpd_id` - (Optional) VPC ID
 * `vpd_subnets` - (Optional, List) List of cluster subnet ID
+
+---
 
 ### `networks-new_vpd_info-vpd_subnets`
 
@@ -212,12 +226,16 @@ The networks-new_vpd_info-vpd_subnets supports the following:
 * `subnet_type` - (Optional) Subnet Type
 * `zone_id` - (Optional) Zone ID
 
+---
+
 ### `networks-ip_allocation_policy-bond_policy`
 
 The networks-ip_allocation_policy-bond_policy supports the following:
 
 * `bond_default_subnet` - (Optional) Default bond cluster subnet
 * `bonds` - (Optional, List) Bond information See [`bonds`](#networks-ip_allocation_policy-bond_policy-bonds) below.
+
+---
 
 ### `networks-ip_allocation_policy-machine_type_policy`
 
@@ -226,12 +244,16 @@ The networks-ip_allocation_policy-machine_type_policy supports the following:
 * `bonds` - (Optional, List) Bond information See [`bonds`](#networks-ip_allocation_policy-machine_type_policy-bonds) below.
 * `machine_type` - (Optional) Model
 
+---
+
 ### `networks-ip_allocation_policy-node_policy`
 
 The networks-ip_allocation_policy-node_policy supports the following:
 
 * `bonds` - (Optional, List) Bond information See [`bonds`](#networks-ip_allocation_policy-node_policy-bonds) below.
 * `node_id` - (Optional) Node ID
+
+---
 
 ### `networks-ip_allocation_policy-node_policy-bonds`
 
@@ -240,12 +262,16 @@ The networks-ip_allocation_policy-node_policy-bonds supports the following:
 * `name` - (Optional) The bond name
 * `subnet` - (Optional) IP source cluster subnet
 
+---
+
 ### `networks-ip_allocation_policy-machine_type_policy-bonds`
 
 The networks-ip_allocation_policy-machine_type_policy-bonds supports the following:
 
 * `name` - (Optional) The bond name
 * `subnet` - (Optional) IP source cluster subnet
+
+---
 
 ### `networks-ip_allocation_policy-bond_policy-bonds`
 
@@ -254,17 +280,27 @@ The networks-ip_allocation_policy-bond_policy-bonds supports the following:
 * `name` - (Optional) The bond name
 * `subnet` - (Optional) IP source cluster subnet
 
+---
+
 ### `node_groups`
 
 The node_groups supports the following:
 
+* `file_system_mount_enabled` - (Optional, Bool, Available since v1.295.0) Whether to enable file system mounting.
 * `image_id` - (Optional) System Image ID
+* `key_pair_name` - (Optional, Available since v1.295.0) The name of the key pair.
+* `login_password` - (Optional, Sensitive, Available since v1.295.0) The login password for the node group.
 * `machine_type` - (Optional) Model
 * `node_group_description` - (Optional) Node Group Description
 * `node_group_name` - (Optional) Node Group Name
 * `nodes` - (Optional, List) Node List See [`nodes`](#node_groups-nodes) below.
+* `ram_role_name` - (Optional, Available since v1.295.0) The RAM role name of the node.
+* `system_disk` - (Optional, List, Available since v1.295.0) System disk configuration. See [`system_disk`](#node_groups-system_disk) below.
 * `user_data` - (Optional) Instance custom data. It needs to be encoded in Base64 mode, and the original data is at most 16KB.
+* `virtual_gpu_enabled` - (Optional, Bool, Available since v1.295.0) Whether to enable GPU splitting.
 * `zone_id` - (Optional) Zone ID
+
+---
 
 ### `node_groups-nodes`
 
@@ -276,6 +312,13 @@ The node_groups-nodes supports the following:
 * `vswitch_id` - (Optional) Virtual Switch ID
 * `vpc_id` - (Optional) VPC ID
 
+### `node_groups-system_disk`
+
+The node_groups-system_disk supports the following:
+* `category` - (Optional, Available since v1.295.0) The category of the system disk. Valid values: `cloud_essd`.
+* `performance_level` - (Optional, Available since v1.295.0) The performance level of the system disk. Valid values: `PL0`, `PL1`, `PL2`, `PL3`.
+* `size` - (Optional, Int, Available since v1.295.0) The size of the system disk, in GB.
+
 ## Attributes Reference
 
 The following attributes are exported:
@@ -286,7 +329,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Cluster.
 * `delete` - (Defaults to 5 mins) Used when delete the Cluster.

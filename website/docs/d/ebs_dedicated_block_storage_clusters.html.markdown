@@ -30,8 +30,8 @@ output "alicloud_ebs_dedicated_block_storage_cluster_example_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Dedicated Block Storage Cluster IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
+* `ids` - (Optional, Computed) A list of Dedicated Block Storage Cluster IDs.
+* `name_regex` - (Optional) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -40,21 +40,28 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Dedicated Block Storage Cluster IDs.
 * `names` - A list of name of Dedicated Block Storage Clusters.
-* `clusters` - A list of Dedicated Block Storage Cluster Entries. Each element contains the following attributes:
-  * `id` - The first ID of the Dedicated Block Storage Cluster.
-  * `available_capacity` - The available capacity of the dedicated block storage cluster. Unit: GiB.
-  * `category` - The type of cloud disk that can be created by a dedicated block storage cluster.
-  * `create_time` - The creation time of the resource
-  * `dedicated_block_storage_cluster_id` - The first ID of the resource
-  * `dedicated_block_storage_cluster_name` - The name of the resource
-  * `delivery_capacity` - Capacity to be delivered in GB.
-  * `description` - The description of the dedicated block storage cluster.
-  * `expired_time` - The expiration time of the dedicated block storage cluster, in the Unix timestamp format, in seconds.
-  * `performance_level` - Cloud disk performance level, possible values:-PL0.-PL1.-PL2.-PL3.> Only valid in SupportedCategory = cloud_essd.
-  * `resource_group_id` - The ID of the resource group
-  * `status` - The status of the resource
-  * `supported_category` - This parameter is not supported.
-  * `total_capacity` - The total capacity of the dedicated block storage cluster. Unit: GiB.
-  * `type` - The dedicated block storage cluster performance type. Possible values:-Standard: Basic type. This type of dedicated block storage cluster can create an ESSD PL0 cloud disk.-Premium: performance type. This type of dedicated block storage cluster can create an ESSD PL1 cloud disk.
-  * `used_capacity` - The used (created disk) capacity of the current cluster, in GB
-  * `zone_id` - The zone ID  of the resource
+* `clusters` - A list of Dedicated Block Storage Cluster Entries.
+
+---
+
+### `clusters`
+
+The clusters supports the following attributes:
+
+* `id` - The first ID of the Dedicated Block Storage Cluster.
+* `available_capacity` - The available capacity of the dedicated block storage cluster. Unit: GiB.
+* `category` - The type of cloud disk that can be created by a dedicated block storage cluster.
+* `create_time` - The creation time of the resource
+* `dedicated_block_storage_cluster_id` - The first ID of the resource
+* `dedicated_block_storage_cluster_name` - The name of the resource
+* `delivery_capacity` - Capacity to be delivered in GB.
+* `description` - The description of the dedicated block storage cluster.
+* `expired_time` - The expiration time of the dedicated block storage cluster, in the Unix timestamp format, in seconds.
+* `performance_level` - Cloud disk performance level, possible values:-PL0.-PL1.-PL2.-PL3.> Only valid in SupportedCategory = cloud_essd.
+* `resource_group_id` - The ID of the resource group
+* `status` - The status of the resource
+* `supported_category` - This parameter is not supported.
+* `total_capacity` - The total capacity of the dedicated block storage cluster. Unit: GiB.
+* `type` - The dedicated block storage cluster performance type. Possible values:-Standard: Basic type. This type of dedicated block storage cluster can create an ESSD PL0 cloud disk.-Premium: performance type. This type of dedicated block storage cluster can create an ESSD PL1 cloud disk.
+* `used_capacity` - The used (created disk) capacity of the current cluster, in GB
+* `zone_id` - The zone ID  of the resource

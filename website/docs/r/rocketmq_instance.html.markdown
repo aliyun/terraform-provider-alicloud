@@ -98,10 +98,10 @@ resource "alicloud_rocketmq_instance" "default" {
 The following arguments are supported:
 
 * `acl_info` - (Optional, Set, Available since v1.245.0) The access control list for the instance. See [`acl_info`](#acl_info) below.
-* `auto_renew` - (Optional, ForceNew) Whether to enable auto-renewal. This parameter is only applicable when the payment type for the instance is Subscription (prepaid).
+* `auto_renew` - (Optional) Whether to enable auto-renewal. This parameter is only applicable when the payment type for the instance is Subscription (prepaid).
   - true: Enable auto-renewal
   - false: Disable auto-renewal
-* `auto_renew_period` - (Optional, ForceNew, Int) Auto-renewal period. This parameter is only valid when auto-renewal is enabled. Unit: months.
+* `auto_renew_period` - (Optional, Int) Auto-renewal period. This parameter is only valid when auto-renewal is enabled. Unit: months.
 
   The values can be as follows:
   - Monthly renewal: 1, 2, 3, 6, 12
@@ -160,9 +160,12 @@ The following arguments are supported:
   - cluster_ha: Cluster High Availability Edition
   - single_node: Single Node Testing Edition
   - serverless：Serverless instance
- **NOTE:** From version 1.245.0, `sub_series_code` can be set to `serverless`.
+
+  -> **NOTE:** From version 1.245.0, `sub_series_code` can be set to `serverless`.
   When selecting the primary series as ultimate (Platinum Edition), the sub-series can only be chosen as cluster_ha (Cluster High Availability Edition).
 * `tags` - (Optional, Map) The resource label.
+
+---
 
 ### `acl_info`
 
@@ -175,12 +178,16 @@ The acl_info supports the following:
   - `true`: Enable secret-free access.
   - `false`: Turn off secret-free access.
 
+---
+
 ### `network_info`
 
 The network_info supports the following:
 
 * `internet_info` - (Required, ForceNew, Set) instance internet info. See [`internet_info`](#network_info-internet_info) below.
 * `vpc_info` - (Required, ForceNew, Set) Proprietary network information. See [`vpc_info`](#network_info-vpc_info) below.
+
+---
 
 ### `network_info-internet_info`
 
@@ -195,6 +202,8 @@ The network_info-internet_info supports the following:
   - disable: Disable public network access   Instances by default support VPC access. If public network access is enabled, Alibaba Cloud Message Queue RocketMQ version will incur charges for public network outbound bandwidth. For specific billing information, please refer to [Public Network Access Fees](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/internet-access-fee).
 * `ip_whitelist` - (Optional, List, Deprecated since v1.245.0) Field `ip_whitelist` has been deprecated from provider version 1.245.0. New field `ip_whitelists` instead.
 
+---
+
 ### `network_info-vpc_info`
 
 The network_info-vpc_info supports the following:
@@ -204,11 +213,15 @@ The network_info-vpc_info supports the following:
 * `vswitches` - (Optional, ForceNew, Set, Available since v1.231.0) Multiple VSwitches. At least two VSwitches are required for a serverless instance. See [`vswitches`](#network_info-vpc_info-vswitches) below.
 * `vpc_id` - (Required, ForceNew) Proprietary Network.
 
+---
+
 ### `network_info-vpc_info-vswitches`
 
 The network_info-vpc_info-vswitches supports the following:
 
 * `vswitch_id` - (Optional, ForceNew) VPC switch id.
+
+---
 
 ### `product_info`
 
@@ -221,6 +234,8 @@ The product_info supports the following:
 * `storage_encryption` - (Optional, ForceNew, Bool, Available since v1.245.0) Specifies whether to enable the encryption at rest feature. Valid values: `true`, `false`.
 * `storage_secret_key` - (Optional, ForceNew, Available since v1.245.0) The key for encryption at rest.
 * `trace_on` - (Optional, Bool, Available since v1.245.0) Whether to enable the message trace function. Valid values: `true`, `false`.
+
+---
 
 ### `software`
 
@@ -235,21 +250,49 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `network_info` - Instance network configuration information
-  * `endpoints` - Access point list.
-    * `endpoint_type` - Access point type.
-    * `endpoint_url` - Access point address.
-    * `ip_white_list` - White list of access addresses.
 * `product_info` - product info
-  * `support_auto_scaling` - is support auto scaling.
 * `region_id` - (Available since v1.245.0) The ID of the region in which the instance resides.
 * `software` - Instance software information.
-  * `software_version` - Software version.
-  * `upgrade_method` - Upgrade method.
 * `status` - The status of the instance
+
+---
+
+### `network_info`
+
+The network_info supports the following attributes:
+
+* `endpoints` - Access point list.
+
+---
+
+### `network_info.endpoints`
+
+The endpoints supports the following attributes:
+
+* `endpoint_type` - Access point type.
+* `endpoint_url` - Access point address.
+* `ip_white_list` - White list of access addresses.
+
+---
+
+### `product_info`
+
+The product_info supports the following attributes:
+
+* `support_auto_scaling` - is support auto scaling.
+
+---
+
+### `software`
+
+The software supports the following attributes:
+
+* `software_version` - Software version.
+* `upgrade_method` - Upgrade method.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 35 mins) Used when create the Instance.
 * `delete` - (Defaults to 35 mins) Used when delete the Instance.

@@ -34,8 +34,16 @@ A master slave server group contains two ECS instances. The master slave server 
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_zones" "ms_server_group" {
-  available_disk_category     = "cloud_efficiency"
+  available_disk_category     = "cloud_essd"
   available_resource_creation = "VSwitch"
 }
 
@@ -44,12 +52,14 @@ data "alicloud_instance_types" "ms_server_group" {
   cpu_core_count       = 2
   memory_size          = 8
   instance_type_family = "ecs.g6"
+  system_disk_category = "cloud_essd"
 }
 
 data "alicloud_images" "image" {
-  name_regex  = "^ubuntu_18.*64"
-  most_recent = true
-  owners      = "system"
+  instance_type = data.alicloud_instance_types.ms_server_group.instance_types[0].id
+  name_regex    = "^ubuntu_18.*64"
+  most_recent   = true
+  owners        = "system"
 }
 
 variable "slb_master_slave_server_group" {
@@ -83,7 +93,7 @@ resource "alicloud_instance" "ms_server_group" {
   internet_max_bandwidth_out = "10"
   availability_zone          = data.alicloud_zones.ms_server_group.zones[0].id
   instance_charge_type       = "PostPaid"
-  system_disk_category       = "cloud_efficiency"
+  system_disk_category       = "cloud_essd"
   vswitch_id                 = alicloud_vswitch.main.id
 }
 
@@ -113,6 +123,7 @@ resource "alicloud_slb_master_slave_server_group" "group" {
     port        = 100
     weight      = 100
     server_type = "Master"
+    description = "master-server"
   }
 
   servers {
@@ -120,6 +131,7 @@ resource "alicloud_slb_master_slave_server_group" "group" {
     port        = 100
     weight      = 100
     server_type = "Slave"
+    description = "slave-server"
   }
 }
 
@@ -151,7 +163,11 @@ The following arguments are supported:
 * `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch a new master slave server group.
 * `name` - (Required, ForceNew) Name of the master slave server group.
 * `servers` - (Optional, ForceNew) A list of ECS instances to be added. Only two ECS instances can be supported in one resource. See [`servers`](#servers) below.
+
+  -> **NOTE:** The parameter is immutable after resource creation. Changing any value in `servers`, including `description`, forces the master slave server group to be replaced (destroyed and recreated).
 * `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
+
+---
 
 ### `servers`
 
@@ -162,6 +178,7 @@ The servers mapping supports the following:
 * `weight` - (Optional) Weight of the backend server. Valid value range: [0-100]. Default to 100.
 * `type` - (Optional, Available in 1.51.0+) Type of the backend server. Valid value ecs, eni. Default to eni.
 * `server_type` - (Optional) The server type of the backend server. Valid value Master, Slave.
+* `description` - (Optional, ForceNew, String) The description of the backend server. It must be 1 to 80 characters in length and can contain Chinese characters, letters, digits, hyphens (-), forward slashes (/), periods (.) and underscores (_). Available since v2.4.0.
 
 ## Attributes Reference
 

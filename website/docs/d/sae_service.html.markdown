@@ -7,21 +7,21 @@ description: |-
     Provides a datasource to open the SAE service automatically.
 ---
 
-# alicloud\_sae\_service
+# alicloud_sae_service
 
 Using this data source can open SAE service automatically. If the service has been opened, it will return opened.
 
-For information about SAE and how to use it, see [What is SAE](https://help.aliyun.com/document_detail/125720.html).
-
--> **NOTE:** Available in v1.120.0+
+For information about SAE and how to use it, see [What is SAE](https://www.alibabacloud.com/help/doc-detail/125720.htm).
 
 -> **NOTE:** The SAE service is not support in the international site.
 
+-> **NOTE:** Available since v1.120.0+
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_sae_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 
@@ -37,4 +37,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

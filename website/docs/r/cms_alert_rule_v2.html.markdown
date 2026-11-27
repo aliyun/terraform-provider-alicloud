@@ -94,7 +94,6 @@ resource "alicloud_cms_alert_rule_v2" "default" {
 The following arguments are supported:
 
 * `action_integration_config` - (Optional, Set) Action integration configuration. See [`action_integration_config`](#action_integration_config) below.
-* `alert_rule_v2_id` - (Computed) The unique identifier of the alert rule, mapped to a UUID (system-generated).
 * `annotations` - (Optional, Map) Annotations.
 * `arms_integration_config` - (Optional, Set) ARMS integration configuration. See [`arms_integration_config`](#arms_integration_config) below.
 * `condition_config` - (Optional, Set) Unified alert condition configuration. See [`condition_config`](#condition_config) below.
@@ -108,6 +107,8 @@ The following arguments are supported:
 * `schedule_config` - (Optional, Set) Unified scheduling configuration. See [`schedule_config`](#schedule_config) below.
 * `workspace` - (Optional, ForceNew) Workspace.
 
+---
+
 ### `action_integration_config`
 
 The action_integration_config supports the following:
@@ -115,11 +116,15 @@ The action_integration_config supports the following:
 * `actions` - (Optional, ForceNew, List) List of actions
 * `enabled` - (Optional, ForceNew) Indicates whether action integration is enabled
 
+---
+
 ### `arms_integration_config`
 
 The arms_integration_config supports the following:
 
 * `enabled` - (Optional, ForceNew) Specifies whether to enable ARMS integration.
+
+---
 
 ### `condition_config`
 
@@ -145,6 +150,8 @@ The condition_config supports the following:
 * `yoy_time_unit` - (Optional, ForceNew) Year-over-year time unit. This parameter takes effect only when type is set to APM_SIMPLE and operator is set to YOY_UP or YOY_DOWN. Valid values: minute, hour, day, week, and month
 * `yoy_time_value` - (Optional, ForceNew, Int) Year-over-Year Time Value (Effective only when type=APM_SIMPLE and operator=YOY_UP or YOY_DOWN)
 
+---
+
 ### `condition_config-compare_list`
 
 The condition_config-compare_list supports the following:
@@ -155,6 +162,8 @@ The condition_config-compare_list supports the following:
 * `yoy_time_unit` - (Optional, ForceNew) Year-over-year time unit. This parameter takes effect only when operator=YOY_UP or YOY_DOWN.
 * `yoy_time_value` - (Optional, ForceNew, Int) Year-over-year time value. This parameter takes effect only when operator=YOY_UP or YOY_DOWN.
 
+---
+
 ### `condition_config-composite_escalation`
 
 The condition_config-composite_escalation supports the following:
@@ -164,6 +173,8 @@ The condition_config-composite_escalation supports the following:
 * `severity` - (Computed) Severity Level
 * `times` - (Computed) Consecutive Trigger Count
 
+---
+
 ### `condition_config-express_escalation`
 
 The condition_config-express_escalation supports the following:
@@ -171,6 +182,8 @@ The condition_config-express_escalation supports the following:
 * `raw_expression` - (Computed) Raw Expression
 * `severity` - (Computed) Severity Level
 * `times` - (Computed) Consecutive Trigger Count
+
+---
 
 ### `condition_config-prometheus`
 
@@ -180,6 +193,8 @@ The condition_config-prometheus supports the following:
 * `severity` - (Computed) Severity Level
 * `times` - (Computed) Consecutive Trigger Count
 
+---
+
 ### `condition_config-simple_escalation`
 
 The condition_config-simple_escalation supports the following:
@@ -188,12 +203,16 @@ The condition_config-simple_escalation supports the following:
 * `metric_name` - (Computed) Metric Name
 * `period` - (Computed) Collection Period (Seconds)
 
+---
+
 ### `condition_config-threshold_list`
 
 The condition_config-threshold_list supports the following:
 
 * `severity` - (Optional, ForceNew) Severity Level
 * `threshold` - (Optional, ForceNew, Float) Threshold
+
+---
 
 ### `condition_config-simple_escalation-escalations`
 
@@ -206,6 +225,8 @@ The condition_config-simple_escalation-escalations supports the following:
 * `threshold` - (Computed) Threshold
 * `times` - (Computed) Consecutive Trigger Count
 
+---
+
 ### `condition_config-composite_escalation-escalations`
 
 The condition_config-composite_escalation-escalations supports the following:
@@ -217,6 +238,8 @@ The condition_config-composite_escalation-escalations supports the following:
 * `statistics` - (Computed) Statistical Method
 * `threshold` - (Computed) Threshold
 
+---
+
 ### `datasource_config`
 
 The datasource_config supports the following:
@@ -227,6 +250,8 @@ The datasource_config supports the following:
 * `product_category` - (Computed) The cloud service category. This parameter is used when type=CLOUD_MONITORING. If this parameter is not specified, unknown is returned.
 * `region_id` - (Optional, ForceNew) The region ID. This parameter is available for all types. By default, the value is the same as the region where the rule resides.
 * `type` - (Required, ForceNew) The data source type. Valid values: PROMETHEUS, UMODEL, APM, CLOUD_MONITORING, and UNKNOWN.
+
+---
 
 ### `notify_config`
 
@@ -241,12 +266,16 @@ The notify_config supports the following:
 * `type` - (Required, ForceNew) Notification configuration type. Valid values: DIRECT_NOTIFY and NOTIFY_POLICY
 * `utc_offset` - (Optional, ForceNew) UTC time zone offset (type=DIRECT_NOTIFY). Default: +08:00
 
+---
+
 ### `notify_config-channels`
 
 The notify_config-channels supports the following:
 
 * `identifiers` - (Optional, ForceNew, List) List of channel identifiers
 * `type` - (Optional, ForceNew) Notification Channel Type
+
+---
 
 ### `query_config`
 
@@ -273,9 +302,13 @@ The query_config supports the following:
 * `service_id_list` - (Optional, ForceNew, List) Application Service ID List (type=APM_MULTI_QUERY)
 * `type` - (Required, ForceNew) Query type. Valid values: PROMETHEUS_SINGLE_QUERY, UMODEL_METRICSET_QUERY, APM_MULTI_QUERY, CLOUD_MONITORING_QUERY, and UNKNOWN_QUERY.
 
+---
+
 ### `query_config-dimensions`
 
 The query_config-dimensions supports the following:
+
+---
 
 ### `query_config-entity_fields`
 
@@ -283,6 +316,8 @@ The query_config-entity_fields supports the following:
 
 * `field` - (Optional, ForceNew) Entity Field Name
 * `value` - (Optional, ForceNew) Entity Field Value
+
+---
 
 ### `query_config-entity_filters`
 
@@ -292,6 +327,8 @@ The query_config-entity_filters supports the following:
 * `operator` - (Optional, ForceNew) The entity filter operator. Valid values: = and !=.
 * `value` - (Optional, ForceNew) The entity filter value.
 
+---
+
 ### `query_config-filter_list`
 
 The query_config-filter_list supports the following:
@@ -299,6 +336,8 @@ The query_config-filter_list supports the following:
 * `key` - (Optional, ForceNew) APM filter dimension key
 * `type` - (Optional, ForceNew) The APM filter type. Valid values: ALL, EQ, NE, and DISABLED.
 * `value` - (Optional, ForceNew) APM filter value (can be empty when type=ALL/DISABLED)
+
+---
 
 ### `query_config-label_filters`
 
@@ -308,6 +347,8 @@ The query_config-label_filters supports the following:
 * `operator` - (Optional, ForceNew) Label filter operator. Valid values: = / !=
 * `value` - (Optional, ForceNew) Label value
 
+---
+
 ### `query_config-measure_list`
 
 The query_config-measure_list supports the following:
@@ -315,6 +356,8 @@ The query_config-measure_list supports the following:
 * `group_by` - (Optional, ForceNew, List) Grouping dimension list
 * `measure_code` - (Optional, ForceNew) APM metric code
 * `window_secs` - (Optional, ForceNew, Int) Query Time Window (Seconds)
+
+---
 
 ### `schedule_config`
 
@@ -337,10 +380,11 @@ The following attributes are exported:
 * `severity_levels` - The severity levels covered by this rule, separated by commas (read-only derived).
 * `status` - Alert status (read-only).
 * `updated_at` - The update time (read-only), in ISO 8601 format.
+* `alert_rule_v2_id` - (Computed) The unique identifier of the alert rule, mapped to a UUID (system-generated).
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Alert Rule V2.
 * `delete` - (Defaults to 5 mins) Used when delete the Alert Rule V2.

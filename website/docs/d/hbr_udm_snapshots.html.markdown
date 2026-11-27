@@ -54,12 +54,19 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Udm Snapshot IDs.
-* `snapshots` - A list of Udm Snapshot Entries. Each element contains the following attributes:
-  * `create_time` - The creation time of the resource
-  * `disk_id` - Cloud disk ID. This field is valid only when SourceType = UDM_ECS_DISK.
-  * `instance_id` - ECS instance ID
-  * `job_id` - The ID of the backup job that creates the snapshot.
-  * `source_type` - Data source type. Only UDM_ECS and UDM_ECS_DISK are supported.
-  * `start_time` - Start Time
-  * `udm_snapshot_id` - The first ID of the resource
-  * `id` - The ID of the resource supplied above.
+* `snapshots` - A list of Udm Snapshot Entries.
+
+---
+
+### `snapshots`
+
+The snapshots supports the following attributes:
+
+* `create_time` - The creation time of the resource
+* `disk_id` - Cloud disk ID. This field is valid only when SourceType = UDM_ECS_DISK.
+* `instance_id` - ECS instance ID
+* `job_id` - The ID of the backup job that creates the snapshot.
+* `source_type` - Data source type. Only UDM_ECS and UDM_ECS_DISK are supported.
+* `start_time` - Start Time
+* `udm_snapshot_id` - The first ID of the resource
+* `id` - The ID of the resource supplied above.

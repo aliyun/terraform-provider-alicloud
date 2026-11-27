@@ -117,27 +117,50 @@ The following attributes are exported in addition to the arguments listed above:
 * `id` - (String) The ID of the data source, derived from the filters so that it stays stable across refreshes.
 * `ids` - (List) When configured, the configured values, order, and unmatched entries are preserved in state. When omitted, this list contains the matched instance IDs sorted by instance ID.
 * `names` - (List) A list of names of the instances that match the configured filters.
-* `instances` - (List) A list of instances that match the configured filters. Each element contains the following attributes:
-  * `instance_id` - (String) The ID of the instance.
-  * `instance_name` - (String) The name of the instance.
-  * `status` - (String) The status of the instance. Valid values: `CREATING`, `CHANGING`, `RUNNING`, `STOPPED` and `RELEASED`.
-  * `region_id` - (String) The region ID of the instance.
-  * `series_code` - (String) The series code of the instance.
-  * `sub_series_code` - (String) The sub-series code of the instance. Valid values: `cluster_ha` (cluster high-availability), `single_node` (single node) and `serverless` (serverless).
-  * `payment_type` - (String) The payment type of the instance. Valid values: `Subscription` and `PayAsYouGo`.
-  * `commodity_code` - (String) The commodity code of the instance.
-  * `service_code` - (String) The service code of the instance.
-  * `resource_group_id` - (String) The ID of the resource group that the instance belongs to.
-  * `user_id` - (String) The ID of the user that owns the instance.
-  * `remark` - (String) The remark of the instance.
-  * `topic_count` - (Int) The number of topics in the instance.
-  * `group_count` - (Int) The number of consumer groups in the instance.
-  * `create_time` - (String) The time when the instance was created.
-  * `update_time` - (String) The time when the instance was last updated.
-  * `start_time` - (String) The time when the instance was started.
-  * `expire_time` - (String) The time when the instance expires.
-  * `release_time` - (String) The time when the instance was released.
-  * `tags` - (List) A list of tags assigned to the instance. Each element contains `key` and `value`.
-  * `product_info` - (List) A list with one element that contains the product information of the instance. Each element contains the following attributes:
-    * `trace_on` - (Bool) Whether the message trace feature is enabled.
-    * `capacity_type` - (String) The capacity mode of the instance. Valid values: `provisioned` (reserved capacity plus elastic capacity) and `ondemand` (pay-as-you-go).
+* `instances` - (List) A list of instances that match the configured filters.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `instance_id` - (String) The ID of the instance.
+* `instance_name` - (String) The name of the instance.
+* `status` - (String) The status of the instance. Valid values: `CREATING`, `CHANGING`, `RUNNING`, `STOPPED` and `RELEASED`.
+* `region_id` - (String) The region ID of the instance.
+* `series_code` - (String) The series code of the instance.
+* `sub_series_code` - (String) The sub-series code of the instance. Valid values: `cluster_ha` (cluster high-availability), `single_node` (single node) and `serverless` (serverless).
+* `payment_type` - (String) The payment type of the instance. Valid values: `Subscription` and `PayAsYouGo`.
+* `commodity_code` - (String) The commodity code of the instance.
+* `service_code` - (String) The service code of the instance.
+* `resource_group_id` - (String) The ID of the resource group that the instance belongs to.
+* `user_id` - (String) The ID of the user that owns the instance.
+* `remark` - (String) The remark of the instance.
+* `topic_count` - (Int) The number of topics in the instance.
+* `group_count` - (Int) The number of consumer groups in the instance.
+* `create_time` - (String) The time when the instance was created.
+* `update_time` - (String) The time when the instance was last updated.
+* `start_time` - (String) The time when the instance was started.
+* `expire_time` - (String) The time when the instance expires.
+* `release_time` - (String) The time when the instance was released.
+* `tags` - (List) A list of tags assigned to the instance.
+* `product_info` - (List) A list with one element that contains the product information of the instance.
+
+---
+
+### `instances.tags`
+
+The tags supports the following attributes:
+
+* `key` - (String) The key of the tag.
+* `value` - (String) The value of the tag.
+
+---
+
+### `instances.product_info`
+
+The product_info supports the following attributes:
+
+* `trace_on` - (Bool) Whether the message trace feature is enabled.
+* `capacity_type` - (String) The capacity mode of the instance. Valid values: `provisioned` (reserved capacity plus elastic capacity) and `ondemand` (pay-as-you-go).

@@ -86,8 +86,12 @@ resource "alicloud_redis_tair_instance" "default" {
 
 The following arguments are supported:
 
-* `additional_bandwidth` - (Optional, Set, Available since v2.2.0) The additional bandwidth to add to each data shard of the instance. Unit: MB/s. Setting this block adjusts the shard bandwidth to the specification default plus the configured value, which also changes the total `bandwidth` of the instance. See [`additional_bandwidth`](#additional_bandwidth) below. **NOTE:** The purchased bandwidth is read back from the `DescribeRoleZoneInfo` API as each data node's `CurrentBandWidth` minus its `DefaultBandWidth` (the specification default) for the shards managed by this resource, so bandwidth changed outside Terraform is detected on refresh. Removing a block does not release the purchased bandwidth of that shard; set its `bandwidth` to `0` explicitly to release it. **NOTE:** The additional bandwidth is purchased for a limited order duration (the API default is 1 day) and must be renewed with the `RenewAdditionalBandwidth` operation before it expires; this resource does not manage the renewal or the order duration. The additional bandwidth is charged on a pay-as-you-go basis.
-* `bandwidth_burst` - (Optional, Bool, Available since v2.2.0) Specifies whether to enable Elastic Burst for the instance. After it is enabled, the instance can temporarily burst beyond the default bandwidth limit during bandwidth auto scaling. **NOTE:** This attribute is write-only and cannot be read back; Terraform keeps the configured value in the state.
+* `additional_bandwidth` - (Optional, Set, Available since v2.2.0) The additional bandwidth to add to each data shard of the instance. Unit: MB/s. Setting this block adjusts the shard bandwidth to the specification default plus the configured value, which also changes the total `bandwidth` of the instance. See [`additional_bandwidth`](#additional_bandwidth) below.
+
+  -> **NOTE:** The purchased bandwidth is read back from the `DescribeRoleZoneInfo` API as each data node's `CurrentBandWidth` minus its `DefaultBandWidth` (the specification default) for the shards managed by this resource, so bandwidth changed outside Terraform is detected on refresh. Removing a block does not release the purchased bandwidth of that shard; set its `bandwidth` to `0` explicitly to release it. **NOTE:** The additional bandwidth is purchased for a limited order duration (the API default is 1 day) and must be renewed with the `RenewAdditionalBandwidth` operation before it expires; this resource does not manage the renewal or the order duration. The additional bandwidth is charged on a pay-as-you-go basis.
+* `bandwidth_burst` - (Optional, Bool, Available since v2.2.0) Specifies whether to enable Elastic Burst for the instance. After it is enabled, the instance can temporarily burst beyond the default bandwidth limit during bandwidth auto scaling.
+
+  -> **NOTE:** This attribute is write-only and cannot be read back; Terraform keeps the configured value in the state.
 * `auto_renew` - (Optional) Specifies whether to enable auto-renewal for the instance. Default value: false. Valid values: true(enables auto-renewal), false(disables auto-renewal).
 * `auto_renew_period` - (Optional) The subscription duration that is supported by auto-renewal. Unit: months. Valid values: 1, 2, 3, 6, and 12. This parameter is required only if the AutoRenew parameter is set to true.
 * `backup_id` - (Optional, Available since v1.233.1) You can set the BackupId parameter to the backup set ID of the source instance. The system uses the data stored in the backup set to create an instance. You can call the DescribeBackups operation to query backup set IDs. If the source instance is a cluster instance, set the BackupId parameter to the backup set IDs of all shards of the source instance, separated by commas (,).
@@ -188,6 +192,8 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC).
 * `zone_id` - (Required, ForceNew) Zone ID
 
+---
+
 ### `additional_bandwidth`
 
 The `additional_bandwidth` block supports the following:
@@ -209,12 +215,16 @@ The following attributes are exported:
 * `status` - The status of the resource
 * `tair_instance_id` - The ID of the resource.
 * `ca_cert_download_url` - The download URL of the CA certificate. This attribute is populated when `ssl_enabled` is set to `Enable`.
-* `ca_cert_common_name` - The common name of the CA certificate. **NOTE:** This is a best-effort attribute and may be empty when the upstream API does not return it.
-* `ssl_expired_time` - The expiration time of the SSL certificate. **NOTE:** This is a best-effort attribute and may be empty when the upstream API does not return it.
+* `ca_cert_common_name` - The common name of the CA certificate.
+
+  -> **NOTE:** This is a best-effort attribute and may be empty when the upstream API does not return it.
+* `ssl_expired_time` - The expiration time of the SSL certificate.
+
+  -> **NOTE:** This is a best-effort attribute and may be empty when the upstream API does not return it.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when create the Tair Instance.
 * `delete` - (Defaults to 30 mins) Used when delete the Tair Instance.

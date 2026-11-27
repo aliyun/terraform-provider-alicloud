@@ -7,17 +7,19 @@ description: |-
     Provides a list of VPN customer gateways which owned by an Alicloud account.
 ---
 
-# alicloud\_vpn_customer_gateways
+# alicloud_vpn_customer_gateways
 
 The VPN customers gateways data source lists a number of VPN customer gateways resource information owned by an Alicloud account.
 
+-> **NOTE:** Available since v1.18.0+.
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_vpn_customer_gateways" "foo" {
-  name_regex          = "testAcc*"
-  ids                 = ["fake-id1", "fake-id2"] 
-  output_file         = "/tmp/cgws"
+  name_regex  = "testAcc*"
+  ids         = ["fake-id1", "fake-id2"]
+  output_file = "/tmp/cgws"
 }
 
 ```
@@ -36,11 +38,17 @@ The following attributes are exported:
 
 * `ids` IDs of VPN customer gateway.
 * `names` names of VPN customer gateway.
-* `gateways` - A list of VPN customer gateways. Each element contains the following attributes:
-  * `id` - ID of the VPN customer gateway .
-  * `name` - The name of the VPN customer gateway.
-  * `description` - The description of the VPN customer gateway.
-  * `ip_address` - The ip address of the VPN customer gateway.
-  * `create_time` - The creation time of the VPN customer gateway.
-  * `asn` - The autonomous system number of the local data center gateway device of the VPN customer gateway.
+* `gateways` - A list of VPN customer gateways.
 
+---
+
+### `gateways`
+
+The gateways supports the following attributes:
+
+* `id` - ID of the VPN customer gateway .
+* `name` - The name of the VPN customer gateway.
+* `description` - The description of the VPN customer gateway.
+* `ip_address` - The ip address of the VPN customer gateway.
+* `create_time` - The creation time of the VPN customer gateway.
+* `asn` - The autonomous system number of the local data center gateway device of the VPN customer gateway.

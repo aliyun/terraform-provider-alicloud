@@ -66,7 +66,9 @@ The following arguments are supported:
 * `prefix_list_id` - (Required, ForceNew) The ID of the prefix list.
 * `transit_router_id` - (Required, ForceNew) The ID of the transit router.
 * `transit_router_table_id` - (Required, ForceNew) The ID of the route table of the transit router.
-* `next_hop` - (Required, ForceNew) The ID of the next hop. **NOTE:** If `next_hop` is set to `BlackHole`, you must set this parameter to `BlackHole`.
+* `next_hop` - (Required, ForceNew) The ID of the next hop.
+
+  -> **NOTE:** If `next_hop` is set to `BlackHole`, you must set this parameter to `BlackHole`.
 * `next_hop_type` - (Optional, ForceNew) The type of the next hop. Valid values:
   - `BlackHole`: Specifies that all the CIDR blocks in the prefix list are blackhole routes. Packets destined for the CIDR blocks are dropped.
   - `VPC`: Specifies that the next hop of the CIDR blocks in the prefix list is a virtual private cloud (VPC) connection.
@@ -83,7 +85,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 6 mins) Used when create the Transit Router Prefix List Association.
 * `delete` - (Defaults to 3 mins) Used when delete the Transit Router Prefix List Association.

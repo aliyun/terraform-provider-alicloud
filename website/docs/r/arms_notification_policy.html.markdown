@@ -148,6 +148,8 @@ The following arguments are supported:
 * `directed_mode` - (Optional, Computed, ForceNew, Bool) Specifies whether to enable the directed mode. An explicit `false` is sent to the API; when the argument is omitted the API value is returned in state. Available since v2.2.0.
 * `state` - (Optional, ForceNew, String) Specifies whether the notification policy is enabled. Valid values: `enable`, `disable`. Defaults to `enable`. Available since v2.2.0.
 
+---
+
 ### `notify_rule`
 
 The `notify_rule` block supports:
@@ -156,6 +158,8 @@ The `notify_rule` block supports:
 * `notify_end_time` - (Optional, ForceNew, String) The end time of the notification window, in `HH:mm` format. Available since v2.2.0.
 * `notify_channels` - (Optional, ForceNew, List of String) The notification channels. Valid values: `dingTalk`, `email`, `sms`, `tts`, `webhook`. Available since v2.2.0.
 * `notify_objects` - (Optional, ForceNew, List) The notification objects. See [`notify_objects`](#notify_rule-notify_objects) below. Available since v2.2.0.
+
+---
 
 ### `notify_rule-notify_objects`
 
@@ -166,11 +170,15 @@ The `notify_objects` block supports:
 * `notify_object_name` - (Optional, ForceNew, String) The name of the notification object. Available since v2.2.0.
 * `notify_channels` - (Optional, Computed, ForceNew, List of String) The notification channels of the notification object (when the object is a contact). When omitted, the effective channels are returned in state. Valid values: `email`, `sms`, `tts`. Available since v2.2.0.
 
+---
+
 ### `matching_rules`
 
 The `matching_rules` block supports:
 
 * `matching_conditions` - (Required, ForceNew, List) The matching conditions. See [`matching_conditions`](#matching_rules-matching_conditions) below. Available since v2.2.0.
+
+---
 
 ### `matching_rules-matching_conditions`
 
@@ -180,6 +188,8 @@ The `matching_conditions` block supports:
 * `value` - (Required, ForceNew, String) The value of the matching condition. Available since v2.2.0.
 * `operator` - (Required, ForceNew, String) The operator of the matching condition. Valid values: `eq`, `neq`, `in`, `nin`, `re`, `nre`. Available since v2.2.0.
 
+---
+
 ### `group_rule`
 
 The `group_rule` block supports:
@@ -187,6 +197,8 @@ The `group_rule` block supports:
 * `grouping_fields` - (Optional, ForceNew, List of String) The grouping fields. An empty list is sent as an empty grouping array; omit the entire `group_rule` block to use the service's `alertname` grouping. Available since v2.2.0.
 * `group_wait` - (Optional, ForceNew, Int) The group wait time, in seconds. Defaults to `5`. Available since v2.2.0.
 * `group_interval` - (Optional, ForceNew, Int) The group interval, in seconds. Defaults to `30`. Available since v2.2.0.
+
+---
 
 ### `notify_template`
 

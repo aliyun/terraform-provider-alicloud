@@ -126,6 +126,8 @@ When the protection rule type `DefenseType` is set to `resource`, the value is a
   - `1`: indicates open.
 * `template_id` - (Optional, ForceNew, Int) The protection template ID of the protection rule to be created.
 
+---
+
 ### `config`
 
 The config supports the following:
@@ -232,6 +234,8 @@ The config supports the following:
 * `url` - (Optional) The address of the cached page.
 * `waf_base_config` - (Optional, List) The configuration of the Web core protection rules to be modified. See [`waf_base_config`](#config-waf_base_config) below.
 
+---
+
 ### `config-account_identifiers`
 
 The config-account_identifiers supports the following:
@@ -244,6 +248,8 @@ The config-account_identifiers supports the following:
 * `position` - (Optional) The field that stores the decoded account information.
 * `priority` - (Optional, Int) The priority of the current extraction configuration. Each traffic can match at most one extraction policy. Valid values: [0,20]. A smaller value indicates a higher priority. The priority value must be unique.
 * `sub_key` - (Optional) The child match field.
+
+---
 
 ### `config-conditions`
 
@@ -291,6 +297,8 @@ The config-conditions supports the following:
 
   -> **NOTE:**  The value range of the logical (opValue) and matching content (values) parameters in the matching condition parameter is related to the specified matching field (key).
 
+---
+
 ### `config-gray_config`
 
 The config-gray_config supports the following:
@@ -303,6 +311,8 @@ The config-gray_config supports the following:
   - `header`: Custom header. If you select this value, you must specify the header in the `GraySubKey` parameter.
   - `queryarg`: Custom parameter. If you select this value, you must specify the custom parameter in the `GraySubKey` parameter.
   - `cookie`: Custom cookie. If you select this value, you must specify the cookie in the `GraySubKey` parameter.
+
+---
 
 ### `config-rate_limit`
 
@@ -322,6 +332,8 @@ Valid values: 1 to 1800 seconds.
 * `ttl` - (Optional, Int) The period of time during which you want the specified action to be valid. Unit: seconds.
 Valid values: 60 to 86400.
 
+---
+
 ### `config-time_config`
 
 The config-time_config supports the following:
@@ -333,6 +345,8 @@ The config-time_config supports the following:
   - `cycle`: The rule is effective periodically.
 * `time_zone` - (Optional, Computed, Int) The time zone in which the rule is effective. The default value is `8`. The value must be in the range of - 12 to 12. `0` indicates UTC. `8` indicates UTC+8. **-8** indicates UTC-8.
 * `week_time_periods` - (Optional, List) The periodic time period during which the rule is effective. This parameter is required when you set the `TimeScope` parameter to `cycle`. A maximum of five time periods can be set. See [`week_time_periods`](#config-time_config-week_time_periods) below.
+
+---
 
 ### `config-waf_base_config`
 
@@ -349,6 +363,8 @@ The config-waf_base_config supports the following:
   - `system`: a system rule for basic protection.
   - `custom`: a custom regular expression rule for basic protection.
 
+---
+
 ### `config-waf_base_config-rule_detail`
 
 The config-waf_base_config-rule_detail supports the following:
@@ -359,12 +375,16 @@ The config-waf_base_config-rule_detail supports the following:
 * `rule_id` - (Optional, Available since v1.269.0) The ID of the core Web protection rule.
 * `rule_status` - (Optional, Int) The status of Web core protection rules.
 
+---
+
 ### `config-time_config-time_periods`
 
 The config-time_config-time_periods supports the following:
 
 * `end` - (Optional, Int) The end time of the rule. This is a UNIX timestamp in milliseconds.
 * `start` - (Optional, Int) The start time of the rule. This is a UNIX timestamp in milliseconds.
+
+---
 
 ### `config-time_config-week_time_periods`
 
@@ -373,12 +393,16 @@ The config-time_config-week_time_periods supports the following:
 * `day` - (Optional) The time period of each day when the rule is effective. It includes the start time start and end time end. You can specify multiple time periods.
 * `day_periods` - (Optional, List) The time period of each day when the rule is effective.  See [`day_periods`](#config-time_config-week_time_periods-day_periods) below.
 
+---
+
 ### `config-time_config-week_time_periods-day_periods`
 
 The config-time_config-week_time_periods-day_periods supports the following:
 
 * `end` - (Optional, Int) The end time of each day when the rule is effective. This is a millisecond-level timestamp relative to 00:00 of the day. The value must be in the range of [0-86400000).
 * `start` - (Optional, Int) The start time of each day when the rule is effective. This is a millisecond-level timestamp relative to 00:00 of the day. The value must be in the range of [0-86400000).
+
+---
 
 ### `config-rate_limit-status`
 
@@ -398,7 +422,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Defense Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Defense Rule.

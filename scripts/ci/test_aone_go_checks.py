@@ -37,7 +37,8 @@ class GoChecksTest(unittest.TestCase):
         self.git('config', 'commit.gpgsign', 'false')
         self.git('config', 'user.name', 'CI Regression')
         self.git('config', 'user.email', 'ci@example.invalid')
-        for name in ['aone-range.py', 'check_scope.py', 'run-vet-check.py', 'run-errcheck.py']:
+        for name in ['aone-range.py', 'check_scope.py', 'run-vet-check.py', 'run-errcheck.py',
+                     'changed-unit-tests.go']:
             self.write('scripts/ci/' + name, (ROOT / 'scripts/ci' / name).read_text())
         for name in ['GNUmakefile', '.golangci.yml']:
             self.write(name, (ROOT / name).read_text())
@@ -64,7 +65,7 @@ class GoChecksTest(unittest.TestCase):
 
     def run_job(self, job):
         workflow, step = {
-            'Compile': ('acctest-terraform-basic.yml', 'Vet changed Go packages'),
+            'Compile': ('acctest-terraform-basic.yml', 'Vet and run changed unit tests'),
             'ProductionBuild': ('acctest-terraform-basic.yml', 'Build root provider main'),
             'errcheck': ('acctest-terraform-lint.yml', 'Check changed Go packages'),
         }[job]
@@ -88,6 +89,18 @@ class GoChecksTest(unittest.TestCase):
         result = self.run_job('Compile')
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertIn('./alicloud/service/sample', result.stdout)
+
+    def test_compile_fails_on_changed_unit_from_earlier_commit(self):
+        self.write('alicloud/service/sample/value_test.go',
+                   'package sample\n\nimport "testing"\n\n'
+                   'func TestUnitValue(t *testing.T) { t.Fatal("unexpected value") }\n')
+        self.commit()
+        self.write('README.md', 'Later commit without Go changes.\n')
+        self.commit()
+        result = self.run_job('Compile')
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn('unexpected value', result.stdout)
+        self.assertIn('"failed":1', result.stdout)
 
     def test_missing_base_fails_before_vet_or_lint_can_skip(self):
         self.env['CODE_MR_BASE'] = 'f' * 40

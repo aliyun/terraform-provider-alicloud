@@ -32,18 +32,18 @@ output "alicloud_eflo_subnet_example_id" {
 
 The following arguments are supported:
 
-* `resource_group_id` - (ForceNew, Optional) Resource Group ID.
-* `status` - (ForceNew, Optional) The status of the resource.
-* `subnet_id` - (ForceNew, Optional) Primary key ID.
-* `subnet_name` - (ForceNew, Optional) The Subnet name.
-* `type` - (ForceNew, Optional) Eflo subnet usage type, optional value:
+* `resource_group_id` - (Optional) Resource Group ID.
+* `status` - (Optional) The status of the resource.
+* `subnet_id` - (Optional) Primary key ID.
+* `subnet_name` - (Optional) The Subnet name.
+* `type` - (Optional) Eflo subnet usage type, optional value:
   - General type is not filled in
   - OOB:OOB type
   - LB: LB type
-* `vpd_id` - (ForceNew, Optional) The Eflo VPD ID.
-* `zone_id` - (ForceNew, Optional) The zone ID of the resource.
+* `vpd_id` - (Optional) The Eflo VPD ID.
+* `zone_id` - (Optional) The zone ID of the resource.
 * `ids` - (Optional, Computed) A list of Subnet IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
+* `name_regex` - (Optional) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -52,16 +52,23 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Subnet IDs.
 * `names` - A list of name of Subnets.
-* `subnets` - A list of Subnet Entries. Each element contains the following attributes:
-  * `cidr` - Network segment
-  * `create_time` - The creation time of the resource
-  * `gmt_modified` - Modification time
-  * `message` - Error message
-  * `resource_group_id` - Resource Group ID.
-  * `status` - The status of the resource.
-  * `subnet_id` - The Eflo subnet ID.
-  * `subnet_name` - The Subnet name.
-  * `type` - Eflo subnet usage type.
-  * `vpd_id` - Eflo VPD ID.
-  * `id` - The ID of the resource.
-  * `zone_id` - The zone ID of the resource.
+* `subnets` - A list of Subnet Entries.
+
+---
+
+### `subnets`
+
+The subnets supports the following attributes:
+
+* `cidr` - Network segment
+* `create_time` - The creation time of the resource
+* `gmt_modified` - Modification time
+* `message` - Error message
+* `resource_group_id` - Resource Group ID.
+* `status` - The status of the resource.
+* `subnet_id` - The Eflo subnet ID.
+* `subnet_name` - The Subnet name.
+* `type` - Eflo subnet usage type.
+* `vpd_id` - Eflo VPD ID.
+* `id` - The ID of the resource.
+* `zone_id` - The zone ID of the resource.

@@ -32,11 +32,11 @@ output "first_rds_account_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew) A list of rds account IDs.
-* `db_instance_id` - (Required, ForceNew) The db instance id.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Account name.
+* `ids` - (Optional) A list of rds account IDs.
+* `db_instance_id` - (Required) The db instance id.
+* `name_regex` - (Optional) A regex string to filter results by Account name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid values: `Available`, `Unavailable`.
+* `status` - (Optional) The status of the resource. Valid values: `Available`, `Unavailable`.
 
 ## Attributes Reference
 
@@ -44,14 +44,28 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Account IDs.
 * `names` - A list of Account names.
-* `accounts` - A list of Rds Accounts. Each element contains the following attributes:
-  * `account_description` - Database description.
-  * `account_name` - Name of database account.
-  * `account_type` - Privilege type of account.
-  * `database_privileges` - A list of database permissions the account has.
-    * `account_privilege` - The type of permission for the account.
-    * `account_privilege_detail` - The specific permissions corresponding to the type of account permissions.
-    * `db_name` - Database name.
-  * `id` - The ID of the Account.
-  * `priv_exceeded` - Whether the maximum number of databases managed by the account is exceeded.
-  * `status` - The status of the resource.
+* `accounts` - A list of Rds Accounts.
+
+---
+
+### `accounts`
+
+The accounts supports the following attributes:
+
+* `account_description` - Database description.
+* `account_name` - Name of database account.
+* `account_type` - Privilege type of account.
+* `database_privileges` - A list of database permissions the account has.
+* `id` - The ID of the Account.
+* `priv_exceeded` - Whether the maximum number of databases managed by the account is exceeded.
+* `status` - The status of the resource.
+
+---
+
+### `accounts.database_privileges`
+
+The database_privileges supports the following attributes:
+
+* `account_privilege` - The type of permission for the account.
+* `account_privilege_detail` - The specific permissions corresponding to the type of account permissions.
+* `db_name` - Database name.

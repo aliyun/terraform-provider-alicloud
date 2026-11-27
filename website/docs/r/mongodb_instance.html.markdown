@@ -79,28 +79,40 @@ to create a MongoDB instance resource one-click.
 
 The following arguments are supported:
 
-* `engine_version` - (Required) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/61763.htm) `EngineVersion`. **NOTE:** From version 1.225.0, `engine_version` can be modified.
+* `engine_version` - (Required) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/61763.htm) `EngineVersion`.
+
+  -> **NOTE:** From version 1.225.0, `engine_version` can be modified.
 * `db_instance_class` - (Required) Instance specification. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/57141.htm).
 * `db_instance_storage` - (Required, Int) User-defined DB instance storage space.Unit: GB. Value range:
   - Custom storage space.
   - 10-GB increments.
 * `storage_engine` - (Optional, ForceNew) The storage engine of the instance. Default value: `WiredTiger`. Valid values: `WiredTiger`, `RocksDB`.
-* `storage_type` - (Optional, Available since v1.199.0) The storage type of the instance. Valid values: `cloud_essd1`, `cloud_essd2`, `cloud_essd3`, `cloud_auto`, `local_ssd`. **NOTE:** From version 1.229.0, `storage_type` can be modified. However, `storage_type` can only be modified to `cloud_auto`.
+* `storage_type` - (Optional, Available since v1.199.0) The storage type of the instance. Valid values: `cloud_essd1`, `cloud_essd2`, `cloud_essd3`, `cloud_auto`, `local_ssd`.
+
+  -> **NOTE:** From version 1.229.0, `storage_type` can be modified. However, `storage_type` can only be modified to `cloud_auto`.
 * `provisioned_iops` - (Optional, Int, Available since v1.229.0) The provisioned IOPS. Valid values: `0` to `50000`.
-* `vpc_id` - (Optional, ForceNew, Available since v1.161.0) The ID of the VPC. -> **NOTE:** `vpc_id` is valid only when `network_type` is set to `VPC`.
+* `vpc_id` - (Optional, ForceNew, Available since v1.161.0) The ID of the VPC. ->
+
+  -> **NOTE:** `vpc_id` is valid only when `network_type` is set to `VPC`.
 * `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance. it supports multiple zone.
   If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of them.
   The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
-* `secondary_zone_id` - (Optional, Available since v1.199.0) Configure the available area where the slave node (Secondary node) is located to realize multi-available area deployment. **NOTE:** This parameter value cannot be the same as `zone_id` and `hidden_zone_id` parameter values. From version 1.253.0, `secondary_zone_id` can be modified.
-* `hidden_zone_id` - (Optional, Available since v1.199.0) Configure the zone where the hidden node is located to deploy multiple zones. **NOTE:** This parameter value cannot be the same as `zone_id` and `secondary_zone_id` parameter values. From version 1.253.0, `hidden_zone_id` can be modified.
+* `secondary_zone_id` - (Optional, Available since v1.199.0) Configure the available area where the slave node (Secondary node) is located to realize multi-available area deployment.
+
+  -> **NOTE:** This parameter value cannot be the same as `zone_id` and `hidden_zone_id` parameter values. From version 1.253.0, `secondary_zone_id` can be modified.
+* `hidden_zone_id` - (Optional, Available since v1.199.0) Configure the zone where the hidden node is located to deploy multiple zones.
+
+  -> **NOTE:** This parameter value cannot be the same as `zone_id` and `secondary_zone_id` parameter values. From version 1.253.0, `hidden_zone_id` can be modified.
 * `security_group_id` - (Optional, Available since v1.73.0) The Security Group ID of ECS.
 * `replication_factor` - (Optional, Int) Number of replica set nodes. Valid values: `1`, `3`, `5`, `7`.
 * `network_type` - (Optional, ForceNew, Available since v1.161.0) The network type of the instance. Valid values: `VPC`.
 
   -> **NOTE:** From 2022.2.21, `network_type` cannot be set to `Classic`. For more information, see[Product Notification](https://www.alibabacloud.com/help/en/mongodb/product-overview/eol-notice-for-apsaradb-for-mongodb-instances-in-the-classic-network)
 * `name` - (Optional) The name of DB instance. It must be 2 to 256 characters in length.
-* `instance_charge_type` - (Optional) The billing method of the instance. Default value: `PostPaid`. Valid values: `PrePaid`, `PostPaid`. **NOTE:** It can be modified from `PostPaid` to `PrePaid` after version 1.63.0.
+* `instance_charge_type` - (Optional) The billing method of the instance. Default value: `PostPaid`. Valid values: `PrePaid`, `PostPaid`.
+
+  -> **NOTE:** It can be modified from `PostPaid` to `PrePaid` after version 1.63.0.
 * `period` - (Optional, Int) The duration that you will buy DB instance (in month). It is valid when `instance_charge_type` is `PrePaid`. Default value: `1`. Valid values: [1~9], 12, 24, 36.
 * `security_ip_list` - (Optional, List) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `security_ip_groups` - (Optional, Set) The list of named security IP groups. Each element represents a separate IP whitelist group managed independently from `security_ip_list` (which manages the `default` group). See [`security_ip_groups`](#security_ip_groups) below.
@@ -131,7 +143,9 @@ The following arguments are supported:
 * `enable_backup_log` - (Optional, Int, Available since v1.230.1) Specifies whether to enable the log backup feature. Valid values:
   - `0`: The log backup feature is disabled.
   - `1`: The log backup feature is enabled.
-* `log_backup_retention_period` - (Optional, Int, Available since v1.230.1) The number of days for which log backups are retained. Valid values: `7` to `730`. **NOTE:** `log_backup_retention_period` is valid only when `enable_backup_log` is set to `1`.
+* `log_backup_retention_period` - (Optional, Int, Available since v1.230.1) The number of days for which log backups are retained. Valid values: `7` to `730`.
+
+  -> **NOTE:** `log_backup_retention_period` is valid only when `enable_backup_log` is set to `1`.
 * `snapshot_backup_type` - (Optional, Available since v1.212.0) The snapshot backup type. Default value: `Standard`. Valid values:
   - `Standard`: standard backup.
   - `Flash`: single-digit second backup.
@@ -158,13 +172,17 @@ The following arguments are supported:
 
   -> **NOTE:** `order_type` is only applicable to instances when `instance_charge_type` is `PrePaid`.
 * `tde_status` - (Optional, Available since v1.73.0) The TDE(Transparent Data Encryption) status. Note: `tde_status` cannot be set to `disabled` after it is enabled, see [Transparent Data Encryption](https://www.alibabacloud.com/help/en/mongodb/user-guide/configure-tde-for-an-apsaradb-for-mongodb-instance) for more details.
-* `encryptor_name` - (Optional, Available since v1.212.0) The encryption method. **NOTE:** `encryptor_name` is valid only when `tde_status` is set to `enabled`.
+* `encryptor_name` - (Optional, Available since v1.212.0) The encryption method.
+
+  -> **NOTE:** `encryptor_name` is valid only when `tde_status` is set to `enabled`.
 * `encryption_key` - (Optional, Available since v1.212.0) The ID of the custom key.
 * `role_arn` - (Optional, Available since v1.212.0) The Alibaba Cloud Resource Name (ARN) of the specified Resource Access Management (RAM) role.
 * `db_instance_release_protection` - (Optional, Bool, Available since v1.253.0) Indicates whether release protection is enabled for the instance. Valid values: `true`, `false`.
 * `parameters` - (Optional, Set, Available since v1.203.0) Set of parameters needs to be set after mongodb instance was launched. See [`parameters`](#parameters) below.
 * `global_security_group_list` - (Optional, List, Available since v1.257.0) The list of Global Security Group Ids.
 * `tags` - (Optional, Available since v1.66.0) A mapping of tags to assign to the resource.
+
+---
 
 ### `security_ip_groups`
 
@@ -173,6 +191,8 @@ The security_ip_groups supports the following:
 * `security_ip_group_name` - (Optional) The name of the security IP group. If not specified, the default group name `default` is used. Each named group is managed independently from `security_ip_list` (which manages the `default` group).
 * `security_ip_list` - (Optional) The IP addresses in the security IP group. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `security_ip_group_attribute` - (Optional) The attribute of the security IP group. It must be 1 to 120 characters in length and can contain letters and digits. Do not set this attribute to `hidden`; otherwise the group will be ignored by Read.
+
+---
 
 ### `parameters`
 
@@ -191,26 +211,40 @@ The following attributes are exported:
 * `ssl_status` - Status of the SSL feature.
 * `key_ids` - (Available since v1.271.0) A list of instance keys.
 * `zone_infos` - (Available since v1.271.0) The information of nodes in the zone.
-  * `ins_name` - The ID of the node.
-  * `node_type` - The type of the node.
-  * `role_id` - The role ID.
-  * `role_type` - The role of the node.
-  * `zone_id` - The zone ID of the node.
 * `replica_sets` - Replica set instance information.
-  * `vpc_id` - The private network ID of the node.
-  * `vswitch_id` - The virtual switch ID to launch DB instances in one VPC.
-  * `network_type` - The network type of the node.
-  * `vpc_cloud_instance_id` - VPC instance ID.
-  * `replica_set_role` - The role of the node.
-  * `connection_domain` - The connection address of the node.
-  * `connection_port` - The connection port of the node.
-  * `role_id` - The id of the role.
+
+---
+
+### `zone_infos`
+
+The zone_infos supports the following attributes:
+
+* `ins_name` - The ID of the node.
+* `node_type` - The type of the node.
+* `role_id` - The role ID.
+* `role_type` - The role of the node.
+* `zone_id` - The zone ID of the node.
+
+---
+
+### `replica_sets`
+
+The replica_sets supports the following attributes:
+
+* `vpc_id` - The private network ID of the node.
+* `vswitch_id` - The virtual switch ID to launch DB instances in one VPC.
+* `network_type` - The network type of the node.
+* `vpc_cloud_instance_id` - VPC instance ID.
+* `replica_set_role` - The role of the node.
+* `connection_domain` - The connection address of the node.
+* `connection_port` - The connection port of the node.
+* `role_id` - The id of the role.
 
 ## Timeouts
 
 -> **NOTE:** Available since v1.53.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when creating the MongoDB instance (until it reaches the initial `Running` status).
 * `update` - (Defaults to 120 mins) Used when updating the MongoDB instance (until it reaches the initial `Running` status).

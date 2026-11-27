@@ -165,9 +165,7 @@ func setVolumeTags(client *connectivity.AliyunClient, resourceType TagResourceTy
 		var response *ecs.DescribeDisksResponse
 		wait := incrementalWait(1*time.Second, 1*time.Second)
 		err := retry.Retry(10*time.Minute, func() *retry.RetryError {
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DescribeDisks(request)
-			})
+			raw, err := client.EcsSdkRpc(request, ecs.CreateDescribeDisksResponse())
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

@@ -11,11 +11,11 @@ description: |-
 
 Provides a Cloudauth Face Config resource.
 
-For information about Cloudauth Face Config and how to use it, see [What is Face Config](https://help.aliyun.com/zh/id-verification/cloudauth/product-overview/end-of-integration-announcement-on-id-verification).
+For information about Cloudauth Face Config and how to use it, see [What is Face Config](https://www.alibabacloud.com/help/zh/id-verification/cloudauth/product-overview/end-of-integration-announcement-on-id-verification).
 
 -> **NOTE:** Available since v1.137.0.
 
--> **NOTE:** In order to provide you with more perfect product capabilities, the real person certification service has stopped access, it is recommended that you use the upgraded version of the [real person certification financial real person certification service](https://help.aliyun.com/zh/id-verification/product-overview/what-is-id-verification-for-financial-services). Users that have access to real person authentication are not affected.
+-> **NOTE:** In order to provide you with more perfect product capabilities, the real person certification service has stopped access, it is recommended that you use the upgraded version of the [real person certification financial real person certification service](https://www.alibabacloud.com/help/zh/id-verification/product-overview/what-is-id-verification-for-financial-services). Users that have access to real person authentication are not affected.
 
 ## Example Usage
 
@@ -51,7 +51,9 @@ resource "alicloud_cloudauth_face_config" "example" {
 The following arguments are supported:
 
 * `biz_name` - (Required) Scene name.
-* `biz_type` - (Required) Scene type. **NOTE:** The biz_type cannot exceed 32 characters and can only use English letters, numbers and dashes (-).
+* `biz_type` - (Required) Scene type.
+
+  -> **NOTE:** The biz_type cannot exceed 32 characters and can only use English letters, numbers and dashes (-).
 
 ## Attributes Reference
 

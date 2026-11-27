@@ -80,9 +80,11 @@ resource "alicloud_oss_bucket_object" "default" {
 
 ## Argument Reference
 
--> **Note:** If you specify `content_encoding` you are responsible for encoding the body appropriately (i.e. `source` and `content` both expect already encoded/compressed bytes)
+-> **NOTE:** If you specify `content_encoding` you are responsible for encoding the body appropriately (i.e. `source` and `content` both expect already encoded/compressed bytes)
 
 The following arguments are supported:
+
+-> **NOTE:** Either `source` or `content` must be provided to specify the bucket content. These two arguments are mutually-exclusive.
 
 * `bucket` - (Required, ForceNew) The name of the bucket to put the file in.
 * `key` - (Required, ForceNew) The name of the object once it is in the bucket.
@@ -99,8 +101,6 @@ The following arguments are supported:
 * `kms_key_id` - (Optional, Available in 1.62.1+) Specifies the primary key managed by KMS. This parameter is valid when the value of `server_side_encryption` is set to KMS.
 * `object_worm_mode` - (Optional, Available in 1.278.0+) The retention mode of the object worm policy. Valid value: `COMPLIANCE`. Must be set together with `object_worm_retain_until_date`. The bucket must have object worm enabled. **Note: The parameter is immutable after resource creation.** Updating `object_worm_retain_until_date` calls `PutObjectRetention` and does not re-upload the object.
 * `object_worm_retain_until_date` - (Optional, Available in 1.278.0+) The UTC time at which the object retention expires, in ISO8601 format with millisecond precision (for example `2026-09-30T00:00:00.000Z`). Must be set together with `object_worm_mode`.
-
--> **Note:** Either `source` or `content` must be provided to specify the bucket content. These two arguments are mutually-exclusive.
 
 ## Attributes Reference
 

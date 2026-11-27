@@ -91,20 +91,27 @@ The following attributes are exported:
 
 * `id` - The resource ID of Sharding Network Public Address. The value formats as `<db_instance_id>:<node_id>`.
 * `network_address` - An array that consists of the endpoints of ApsaraDB for MongoDB instances.
-  * `network_type` - The network type.
-  * `network_address` - The endpoint of the instance.
-  * `node_type` - The type of the node.
-  * `port` - The port number.
-  * `role` - The role of the node.
-  * `vpc_id` - The ID of the VPC.
-  * `expired_time` - The remaining duration of the classic network address. Unit: `seconds`.
-  * `ip_address` - The IP address of the instance.
-  * `vswitch_id` - The vSwitch ID of the VPC.
-  * `node_id` - The ID of the `mongos`, `shard`, or `Configserver` node in the sharded cluster instance.
+
+---
+
+### `network_address`
+
+The network_address supports the following attributes:
+
+* `network_type` - The network type.
+* `network_address` - The endpoint of the instance.
+* `node_type` - The type of the node.
+* `port` - The port number.
+* `role` - The role of the node.
+* `vpc_id` - The ID of the VPC.
+* `expired_time` - The remaining duration of the classic network address. Unit: `seconds`.
+* `ip_address` - The IP address of the instance.
+* `vswitch_id` - The vSwitch ID of the VPC.
+* `node_id` - The ID of the `mongos`, `shard`, or `Configserver` node in the sharded cluster instance.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when creating the MongoDB Sharding Network Public Address.
 * `delete` - (Defaults to 5 mins) Used when terminating the MongoDB Sharding Network Public Address.

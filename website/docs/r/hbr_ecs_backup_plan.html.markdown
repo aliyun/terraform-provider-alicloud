@@ -113,7 +113,9 @@ The following arguments are support:
   * `start` starting hour
   * `end` end hour
   * `bandwidth` limit rate, in KiB
-* `path` - (Optional) List of backup path. e.g. `["/home", "/var"]`. **Note** If `path` is empty, it means that all directories will be backed up.
+* `path` - (Optional) List of backup path. e.g. `["/home", "/var"]`.
+
+  -> **NOTE:** If `path` is empty, it means that all directories will be backed up.
 * `exclude` - (Optional) Exclude path. String of Json list, up to 255 characters. e.g. `"[\"/home/work\"]"`
 * `include` - (Optional) Include path. String of Json list, up to 255 characters. e.g. `"[\"/var\"]"`
 * `update_paths` - (Optional, Deprecated from v1.139.0+) Attribute update_paths has been deprecated in v1.139.0+, and you do not need to set it anymore.

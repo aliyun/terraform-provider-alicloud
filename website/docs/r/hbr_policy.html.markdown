@@ -68,6 +68,8 @@ The following arguments are supported:
 * `policy_type` - (Optional, ForceNew, Computed, Available since v1.243.0) The policy type. The UDM_ECS_ONLY and STANDARD types are supported. The policy with PolicyType = UDM_ECS_ONLY can only be used for ECS instances. The policy with PolicyType = STANDARD can only be used for data sources other than ECS instances.
 * `rules` - (Optional, List) A list of policy rules See [`rules`](#rules) below.
 
+---
+
 ### `rules`
 
 The rules supports the following:
@@ -87,11 +89,15 @@ The rules supports the following:
 * `tag_filters` - (Optional, List, Available since v1.268.0) This parameter is required only when the value of RuleType is TAG. Resource label filtering rules. See [`tag_filters`](#rules-tag_filters) below.
 * `vault_id` - (Optional) Vault ID
 
+---
+
 ### `rules-data_source_filters`
 
 The rules-data_source_filters supports the following:
 
 * `source_type` - (Optional, Available since v1.268.0) The data source type. Value range: UDM_ECS: indicates that the ECS machine is backed up. This data source type is supported only when PolicyType is set to UDM_ECS_ONLY. OSS: indicates an OSS backup. This data source type is supported only when the PolicyType value is STANDARD. NAS: indicates an Alibaba Cloud NAS backup. This data source type is supported only when the PolicyType value is STANDARD. ECS_FILE: indicates an ECS file backup. This data source type is supported only when the PolicyType value is STANDARD. OTS: indicates the Tablestore backup. This data source type is supported only when the PolicyType value is STANDARD.
+
+---
 
 ### `rules-retention_rules`
 
@@ -99,6 +105,8 @@ The rules-retention_rules supports the following:
 
 * `advanced_retention_type` - (Optional) Valid values: `annually`, `MONTHLY`, and `WEEKLY`:- `annually`: the first backup of each year. - `MONTHLY`: The first backup of the month. - `WEEKLY`: The first backup of the week. - `DAILY`: The first backup of the day.
 * `retention` - (Optional, Int) Retention time, in days
+
+---
 
 ### `rules-tag_filters`
 
@@ -115,11 +123,18 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - Policy creation time
 * `rules` - A list of policy rules
-  * `rule_id` - Rule ID
+
+---
+
+### `rules`
+
+The rules supports the following attributes:
+
+* `rule_id` - Rule ID
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Policy.

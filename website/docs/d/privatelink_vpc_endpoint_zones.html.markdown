@@ -31,20 +31,27 @@ output "first_privatelink_vpc_endpoint_zone_id" {
 
 The following arguments are supported:
 
-* `endpoint_id` - (Required, ForceNew) The ID of the Vpc Endpoint.
+* `endpoint_id` - (Required) The ID of the Vpc Endpoint.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The Status of Vpc Endpoint Zone. Valid Values: `Connected`, `Connecting`, `Creating`, `Deleted`, `Deleting`, `Disconnected`, `Disconnecting` and `Wait`.
+* `status` - (Optional) The Status of Vpc Endpoint Zone. Valid Values: `Connected`, `Connecting`, `Creating`, `Deleted`, `Deleting`, `Disconnected`, `Disconnecting` and `Wait`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Vpc Endpoint Zone IDs.
-* `zones` - A list of Privatelink Vpc Endpoint Zones. Each element contains the following attributes:
-  * `eni_id` - Terminal node network card.
-  * `eni_ip` - IP address of the terminal node network card.
-  * `id` - The ID of the Vpc Endpoint Zone.
-  * `status` - The Status of Vpc Endpoint Zone..
-  * `vswitch_id` - The vSwitch id.
-  * `zone_domain` - The Zone Domain.
-  * `zone_id` - The Zone Id.
+* `zones` - A list of Privatelink Vpc Endpoint Zones.
+
+---
+
+### `zones`
+
+The zones supports the following attributes:
+
+* `eni_id` - Terminal node network card.
+* `eni_ip` - IP address of the terminal node network card.
+* `id` - The ID of the Vpc Endpoint Zone.
+* `status` - The Status of Vpc Endpoint Zone..
+* `vswitch_id` - The vSwitch id.
+* `zone_domain` - The Zone Domain.
+* `zone_id` - The Zone Id.

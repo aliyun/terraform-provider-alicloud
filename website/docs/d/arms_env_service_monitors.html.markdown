@@ -137,9 +137,9 @@ output "arms_env_service_monitors_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of ARMS Env Service Monitor IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by ARMS Env Service Monitor name.
-* `environment_id` - (Required, ForceNew) The environment ID.
+* `ids` - (Optional, List) A list of ARMS Env Service Monitor IDs.
+* `name_regex` - (Optional) A regex string to filter results by ARMS Env Service Monitor name.
+* `environment_id` - (Required) The environment ID.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -147,11 +147,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of ARMS Env Service Monitor names.
-* `monitors` - A list of ARMS Env Service Monitors. Each element contains the following attributes:
-  * `id` - The ID of the ServiceMonitor. It formats as `<environment_id>:<namespace>:<env_service_monitor_name>`.
-  * `config_yaml` - The YAML configuration string.
-  * `env_service_monitor_name` - The name of the ServiceMonitor.
-  * `environment_id` - The environment ID.
-  * `namespace` - The namespace.
-  * `region_id` - The region ID.
-  * `status` - The status of the ServiceMonitor.
+* `monitors` - A list of ARMS Env Service Monitors.
+
+---
+
+### `monitors`
+
+The monitors supports the following attributes:
+
+* `id` - The ID of the ServiceMonitor. It formats as `<environment_id>:<namespace>:<env_service_monitor_name>`.
+* `config_yaml` - The YAML configuration string.
+* `env_service_monitor_name` - The name of the ServiceMonitor.
+* `environment_id` - The environment ID.
+* `namespace` - The namespace.
+* `region_id` - The region ID.
+* `status` - The status of the ServiceMonitor.

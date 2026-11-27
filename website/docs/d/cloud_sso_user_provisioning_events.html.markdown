@@ -54,34 +54,41 @@ output "alicloud_cloud_sso_user_provisioning_event_example_id" {
 
 The following arguments are supported:
 
-* `directory_id` - (Required, ForceNew) Directory ID
-* `user_provisioning_id` - (ForceNew, Optional) The ID of the User Provisioning.
-* `ids` - (Optional, ForceNew, Computed) A list of User Provisioning Event IDs. The value is formulated as `<directory_id>:<event_id>`.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `directory_id` - (Required) Directory ID
+* `user_provisioning_id` - (Optional) The ID of the User Provisioning.
+* `ids` - (Optional, Computed) A list of User Provisioning Event IDs. The value is formulated as `<directory_id>:<event_id>`.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of User Provisioning Event IDs.
-* `events` - A list of User Provisioning Event Entries. Each element contains the following attributes:
-  * `content` - Event content
-  * `create_time` - The creation time of the resource
-  * `deletion_strategy` - Processing policy when you delete a RAM user
-  * `directory_id` - Directory ID
-  * `duplication_strategy` - Conflict strategy
-  * `error_count` - Number of manual retry failures
-  * `error_info` - Error message for last failure
-  * `event_id` - Dead letter event ID
-  * `last_sync_time` - Last synchronization time
-  * `principal_id` - User Provisioning body ID
-  * `principal_name` - User Provisioning body name
-  * `principal_type` - User Provisioning body type
-  * `source_type` - The type of the source action that triggered the event.
-  * `target_id` - User Provisioning target ID
-  * `target_name` - User Provisioning target name
-  * `target_path` - RD path of User Provisioning target
-  * `target_type` - User Provisioning target type
-  * `update_time` - Event update time
-  * `user_provisioning_id` - The ID of the User Provisioning.
-  * `id` - The ID of the resource supplied above.
+* `events` - A list of User Provisioning Event Entries.
+
+---
+
+### `events`
+
+The events supports the following attributes:
+
+* `content` - Event content
+* `create_time` - The creation time of the resource
+* `deletion_strategy` - Processing policy when you delete a RAM user
+* `directory_id` - Directory ID
+* `duplication_strategy` - Conflict strategy
+* `error_count` - Number of manual retry failures
+* `error_info` - Error message for last failure
+* `event_id` - Dead letter event ID
+* `last_sync_time` - Last synchronization time
+* `principal_id` - User Provisioning body ID
+* `principal_name` - User Provisioning body name
+* `principal_type` - User Provisioning body type
+* `source_type` - The type of the source action that triggered the event.
+* `target_id` - User Provisioning target ID
+* `target_name` - User Provisioning target name
+* `target_path` - RD path of User Provisioning target
+* `target_type` - User Provisioning target type
+* `update_time` - Event update time
+* `user_provisioning_id` - The ID of the User Provisioning.
+* `id` - The ID of the resource supplied above.

@@ -179,6 +179,8 @@ The following arguments are supported:
 * `schedule_list` - (Optional, Set) schedule list See [`schedule_list`](#schedule_list) below.
 * `timezone` - (Required, ForceNew) Time zone, reference value: UTC +8
 
+---
+
 ### `schedule_list`
 
 The schedule_list supports the following:
@@ -188,6 +190,8 @@ The schedule_list supports the following:
 * `type` - (Required, ForceNew) The type of the quota plan. Valid values: daily
 
   -> **NOTE:** Currently, only daily is supported.
+
+---
 
 ### `schedule_list-condition`
 
@@ -205,7 +209,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Quota Schedule.
 * `update` - (Defaults to 5 mins) Used when update the Quota Schedule.

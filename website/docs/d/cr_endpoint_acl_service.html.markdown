@@ -32,10 +32,10 @@ data "alicloud_cr_endpoint_acl_service" "example" {
 
 The following arguments are supported:
 
-* `endpoint_type` - (Required, ForceNew)  The type of endpoint. Valid values: `internet`, `Internet`. The value is normalized to lowercase `internet` in the attributes.
+* `endpoint_type` - (Required)  The type of endpoint. Valid values: `internet`, `Internet`. The value is normalized to lowercase `internet` in the attributes.
 * `enable` - (Required) Whether to enable Acl Service, Setting the value to `true` to enable the acl service. Valid values: `true` and `false`.
-* `instance_id` - (Required, ForceNew) The ID of the CR Instance.
-* `module_name` - (Optional, ForceNew) The ModuleName. Valid values: `Registry`.
+* `instance_id` - (Required) The ID of the CR Instance.
+* `module_name` - (Optional) The ModuleName. Valid values: `Registry`.
 
   -> **NOTE:** After You enable access over the Internet, the Classless Inter-Domain Routing (CIDR) block `127.0.0.1/32` is automatically added to the whitelist.
 

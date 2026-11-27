@@ -75,6 +75,8 @@ The following arguments are supported:
 * `use_previous_parameters` - (Optional) Specifies whether to use the values that were passed last time for the parameters that you do not specify in the current request.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
+---
+
 ### `parameters`
 
 The parameters supports the following:
@@ -91,7 +93,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 11 mins) Used when create the Stack.
 * `delete` - (Defaults to 6 mins) Used when delete the Stack.

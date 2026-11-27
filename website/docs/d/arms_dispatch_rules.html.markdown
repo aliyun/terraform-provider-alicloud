@@ -77,9 +77,9 @@ output "arms_dispatch_rule_id_1" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `dispatch_rule_name` - (Optional, ForceNew) The name of the dispatch rule.
-* `ids` - (Optional, ForceNew, Computed)  A list of dispatch rule id.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Dispatch Rule name.
+* `dispatch_rule_name` - (Optional) The name of the dispatch rule.
+* `ids` - (Optional, Computed)  A list of dispatch rule id.
+* `name_regex` - (Optional) A regex string to filter results by Dispatch Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -87,40 +87,96 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Dispatch Rule names.
-* `rules` - A list of Arms Dispatch Rules. Each element contains the following attributes:
-  * `dispatch_rule_id` - Dispatch rule ID.
-  * `dispatch_rule_name` - The name of the dispatch rule.
-  * `id` - The ID of the Dispatch Rule.
-  * `status` - The resource status of Alert Dispatch Rule.
-  * `group_rules` - Sets the event group.
-    * `group_wait_time` - The duration for which the system waits after the first alert is sent. After the duration, all alerts are sent in a single notification to the handler.
-    * `group_interval` - The duration for which the system waits after the first alert is sent. After the duration, all alerts are sent in a single notification to the handler.
-    * `grouping_fields` - The fields that are used to group events. Events with the same field content are assigned to a group. Alerts with the same specified grouping field are sent to the handler in separate notifications.
-    * `repeat_interval` - The silence period of repeated alerts. All alerts are repeatedly sent at specified intervals until the alerts are cleared. The minimum value is 61. Default to 600.
+* `rules` - A list of Arms Dispatch Rules.
 
-  * `label_match_expression_grid` - Sets the dispatch rule.
-    * `label_match_expression_groups` - Sets the dispatch rule.
-      * `label_match_expressions` - Sets the dispatch rule.
-        * `key` - The key of the tag of the dispatch rule.
-        * `value` - The value of the tag.
-        * `operator` - The operator used in the dispatch rule.
-  
-  * `notify_rules` - Sets the notification rule.
-    * `notify_channels` - A list of notification methods.
-    * `notify_start_time` - (Available since v1.237.0) Start time of notification.
-    * `notify_end_time` - (Available since v1.237.0) End time of notification.
-    * `notify_objects` - Sets the notification object.
-      * `notify_object_id` - The ID of the contact or contact group.
-      * `name` - The name of the contact or contact group.
-      * `notify_type` - The type of the alert contact.
+---
 
-  * `notify_template` - (Available since v1.238.0) The notification method.
-    * `email_content` - The content of the email.
-    * `email_title` - The title of the email.
-    * `email_recover_title` - The title of the email.
-    * `email_recover_content` - The content of the email.
-    * `sms_content` - The content of the SMS.
-    * `sms_recover_content` - The content of the SMS.
-    * `tts_content` - The content of the TTS.
-    * `tts_recover_content` - The content of the TTS.
-    * `robot_content` - The content of the robot.
+### `rules`
+
+The rules supports the following attributes:
+
+* `dispatch_rule_id` - Dispatch rule ID.
+* `dispatch_rule_name` - The name of the dispatch rule.
+* `id` - The ID of the Dispatch Rule.
+* `status` - The resource status of Alert Dispatch Rule.
+* `group_rules` - Sets the event group.
+
+* `label_match_expression_grid` - Sets the dispatch rule.
+
+* `notify_rules` - Sets the notification rule.
+
+* `notify_template` - (Available since v1.238.0) The notification method.
+
+---
+
+### `rules.group_rules`
+
+The group_rules supports the following attributes:
+
+* `group_wait_time` - The duration for which the system waits after the first alert is sent. After the duration, all alerts are sent in a single notification to the handler.
+* `group_interval` - The duration for which the system waits after the first alert is sent. After the duration, all alerts are sent in a single notification to the handler.
+* `grouping_fields` - The fields that are used to group events. Events with the same field content are assigned to a group. Alerts with the same specified grouping field are sent to the handler in separate notifications.
+* `repeat_interval` - The silence period of repeated alerts. All alerts are repeatedly sent at specified intervals until the alerts are cleared. The minimum value is 61. Default to 600.
+
+---
+
+### `rules.label_match_expression_grid`
+
+The label_match_expression_grid supports the following attributes:
+
+* `label_match_expression_groups` - Sets the dispatch rule.
+
+---
+
+### `rules.label_match_expression_grid.label_match_expression_groups`
+
+The label_match_expression_groups supports the following attributes:
+
+* `label_match_expressions` - Sets the dispatch rule.
+
+---
+
+### `rules.label_match_expression_grid.label_match_expression_groups.label_match_expressions`
+
+The label_match_expressions supports the following attributes:
+
+* `key` - The key of the tag of the dispatch rule.
+* `value` - The value of the tag.
+* `operator` - The operator used in the dispatch rule.
+
+---
+
+### `rules.notify_rules`
+
+The notify_rules supports the following attributes:
+
+* `notify_channels` - A list of notification methods.
+* `notify_start_time` - (Available since v1.237.0) Start time of notification.
+* `notify_end_time` - (Available since v1.237.0) End time of notification.
+* `notify_objects` - Sets the notification object.
+
+---
+
+### `rules.notify_rules.notify_objects`
+
+The notify_objects supports the following attributes:
+
+* `notify_object_id` - The ID of the contact or contact group.
+* `name` - The name of the contact or contact group.
+* `notify_type` - The type of the alert contact.
+
+---
+
+### `rules.notify_template`
+
+The notify_template supports the following attributes:
+
+* `email_content` - The content of the email.
+* `email_title` - The title of the email.
+* `email_recover_title` - The title of the email.
+* `email_recover_content` - The content of the email.
+* `sms_content` - The content of the SMS.
+* `sms_recover_content` - The content of the SMS.
+* `tts_content` - The content of the TTS.
+* `tts_recover_content` - The content of the TTS.
+* `robot_content` - The content of the robot.

@@ -79,6 +79,8 @@ The following arguments are supported:
 * `machine_types` - (Required, ForceNew, Set) Generally refers to the type or instance type of a computing resource. See [`machine_types`](#machine_types) below.
 * `user_access_param` - (Required, Set) Used to define the access parameters for the user. See [`user_access_param`](#user_access_param) below.
 
+---
+
 ### `machine_types`
 
 The machine_types supports the following:
@@ -93,6 +95,8 @@ The machine_types supports the following:
 * `network_mode` - (Optional, ForceNew) Specifies the network mode, such as bridge mode, NAT mode, or direct connection mode. Different network modes affect the network configuration and data transmission performance of nodes, and affect the network access methods of computing instances.
 * `node_count` - (Optional, ForceNew, Int) Specifies the total number of compute nodes. This property is particularly important in distributed computing and cluster environments, because the number of nodes often directly affects the computing power and the ability to parallel processing.
 * `type` - (Optional, ForceNew) Usually refers to a specific resource type (such as virtual machine, physical server, container, etc.), which is used to distinguish different computing units or resource categories.
+
+---
 
 ### `user_access_param`
 
@@ -112,7 +116,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Resource.
 * `update` - (Defaults to 5 mins) Used when update the Resource.

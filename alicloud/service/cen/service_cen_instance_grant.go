@@ -35,9 +35,7 @@ func (s *CbnService) DescribeCenInstanceGrant(id string) (rule vpc.CbnGrantRule,
 
 	invoker := helper.NewInvoker()
 	err = invoker.Run(func() error {
-		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeGrantRulesToCen(request)
-		})
+		raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeGrantRulesToCenResponse())
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}

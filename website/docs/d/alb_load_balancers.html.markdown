@@ -108,19 +108,19 @@ output "alb_load_balancers_id_0" {
 
 The following arguments are supported:
 
-* `address_type` - (Optional, ForceNew) The type of IP address that the ALB instance uses to provide services. Valid values: `Intranet`, `Internet`.
+* `address_type` - (Optional) The type of IP address that the ALB instance uses to provide services. Valid values: `Intranet`, `Internet`.
 * `enable_details` - (Optional, Bool) Whether to query the detailed list of resource attributes. Default value: `false`.
-* `ids` - (Optional, ForceNew, List)  A list of Load Balancer IDs.
-* `load_balancer_business_status` - (Optional, ForceNew, Available since v1.142.0) Load Balancing of the Service Status. Valid Values: `Abnormal`and `Normal`.
-* `load_balancer_ids` - (Optional, ForceNew) The load balancer ids.
-* `load_balancer_name` - (Optional, ForceNew) The name of the resource.
-* `status` - (Optional, ForceNew) The load balancer status. Valid values: `Active`, `Configuring`, `CreateFailed`, `Inactive` and `Provisioning`.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Load Balancer name.
+* `ids` - (Optional, List)  A list of Load Balancer IDs.
+* `load_balancer_business_status` - (Optional, Available since v1.142.0) Load Balancing of the Service Status. Valid Values: `Abnormal`and `Normal`.
+* `load_balancer_ids` - (Optional) The load balancer ids.
+* `load_balancer_name` - (Optional) The name of the resource.
+* `status` - (Optional) The load balancer status. Valid values: `Active`, `Configuring`, `CreateFailed`, `Inactive` and `Provisioning`.
+* `name_regex` - (Optional) A regex string to filter results by Load Balancer name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
-* `vpc_id` - (Optional, ForceNew) The ID of the virtual private cloud (VPC) where the ALB instance is deployed.
-* `vpc_ids` - (Optional, ForceNew) The vpc ids.
-* `zone_id` - (Optional, ForceNew) The zone ID of the resource.
+* `resource_group_id` - (Optional) The ID of the resource group.
+* `vpc_id` - (Optional) The ID of the virtual private cloud (VPC) where the ALB instance is deployed.
+* `vpc_ids` - (Optional) The vpc ids.
+* `zone_id` - (Optional) The zone ID of the resource.
 * `load_balancer_bussiness_status` - (Deprecated since v1.142.0) Field `load_balancer_bussiness_status` has been deprecated from provider version 1.142.0. New field `load_balancer_business_status` instead.
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
 
@@ -129,48 +129,106 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Load Balancer names.
-* `balancers` - A list of Alb Load Balancers. Each element contains the following attributes:
-  * `access_log_config` - The Access Logging Configuration Structure.
-    * `log_project` -  The log service that access logs are shipped to.
-    * `log_store` - The logstore that access logs are shipped to.
-  * `address_allocated_mode` - The method in which IP addresses are assigned.
-  * `address_type` - The type of IP address that the ALB instance uses to provide services.
-  * `bandwidth_package_id` - The ID of the EIP bandwidth plan which is associated with an ALB instance that uses a
-    public IP address.
-  * `create_time` - The creation time of the resource.
-  * `deletion_protection_config` - Remove the Protection Configuration.
-    * `enabled` - Remove the Protection Status.
-    * `enabled_time` - Deletion Protection Turn-on Time Use Greenwich Mean Time, in the Format of Yyyy-MM-ddTHH: mm:SSZ.
-  * `dns_name` - DNS Domain Name.
-  * `id` - The ID of the Load Balancer.
-  * `load_balancer_billing_config` - The configuration of the billing method.
-    * `pay_type` - The billing method of the ALB instance.
-  * `load_balancer_bussiness_status` - (Deprecated since v1.142.0) Load Balancing of the Service Status. **NOTE:** Field `load_balancer_bussiness_status` has been deprecated from provider version 1.142.0. New field `load_balancer_business_status` instead.
-  * `load_balancer_business_status` - (Available since v1.142.0) Load Balancing of the Service Status.
-  * `load_balancer_edition` - The edition of the ALB instance.
-  * `load_balancer_id` - The first ID of the resource.
-  * `load_balancer_name` - The name of the resource.
-  * `load_balancer_operation_locks` - The Load Balancing Operations Lock Configuration.
-    * `lock_reason` - The Locking of the Reasons.
-    * `lock_type` - The Locking of the Type.
-  * `modification_protection_config` - Modify the Protection Configuration.
-    * `status` - Specifies whether to enable the configuration read-only mode for the ALB instance.
-    * `reason` - The reason for modification protection.
-  * `resource_group_id` - The ID of the resource group.
-  * `status` - The The load balancer status.
-  * `tags` - The tag of the resource.
-  * `vpc_id` - The ID of the virtual private cloud (VPC) where the ALB instance is deployed.
-  * `zone_mappings` - The zones and vSwitches.
-    * `vswitch_id` - The ID of the vSwitch that corresponds to the zone.
-    * `zone_id` - The ID of the zone to which the ALB instance belongs.
-    * `status` - (Available since v1.250.0) The zone status.
-    * `load_balancer_addresses` - (Available since v1.250.0) The address of the ALB instance.
-      * `allocation_id` - The elastic IP address (EIP).
-      * `eip_type` - The type of EIP.
-      * `address` - IPv4 address.
-      * `intranet_address` - The private IPv4 address.
-      * `intranet_address_hc_status` - The health status of the private IPv4 address of the ALB instance.
-      * `ipv6_address` - IPv6 address.
-      * `ipv6_address_hc_status` - The health status of the private IPv6 address of the ALB instance.
-      * `ipv4_local_addresses` - The IPv4 link-local addresses.
-      * `ipv6_local_addresses` - The IPv6 link-local addresses.
+* `balancers` - A list of Alb Load Balancers.
+
+---
+
+### `balancers`
+
+The balancers supports the following attributes:
+
+* `access_log_config` - The Access Logging Configuration Structure.
+* `address_allocated_mode` - The method in which IP addresses are assigned.
+* `address_type` - The type of IP address that the ALB instance uses to provide services.
+* `bandwidth_package_id` - The ID of the EIP bandwidth plan which is associated with an ALB instance that uses a
+  public IP address.
+* `create_time` - The creation time of the resource.
+* `deletion_protection_config` - Remove the Protection Configuration.
+* `dns_name` - DNS Domain Name.
+* `id` - The ID of the Load Balancer.
+* `load_balancer_billing_config` - The configuration of the billing method.
+* `load_balancer_bussiness_status` - (Deprecated since v1.142.0) Load Balancing of the Service Status.
+
+  -> **NOTE:** Field `load_balancer_bussiness_status` has been deprecated from provider version 1.142.0. New field `load_balancer_business_status` instead.
+* `load_balancer_business_status` - (Available since v1.142.0) Load Balancing of the Service Status.
+* `load_balancer_edition` - The edition of the ALB instance.
+* `load_balancer_id` - The first ID of the resource.
+* `load_balancer_name` - The name of the resource.
+* `load_balancer_operation_locks` - The Load Balancing Operations Lock Configuration.
+* `modification_protection_config` - Modify the Protection Configuration.
+* `resource_group_id` - The ID of the resource group.
+* `status` - The The load balancer status.
+* `tags` - The tag of the resource.
+* `vpc_id` - The ID of the virtual private cloud (VPC) where the ALB instance is deployed.
+* `zone_mappings` - The zones and vSwitches.
+
+---
+
+### `balancers.access_log_config`
+
+The access_log_config supports the following attributes:
+
+* `log_project` -  The log service that access logs are shipped to.
+* `log_store` - The logstore that access logs are shipped to.
+
+---
+
+### `balancers.deletion_protection_config`
+
+The deletion_protection_config supports the following attributes:
+
+* `enabled` - Remove the Protection Status.
+* `enabled_time` - Deletion Protection Turn-on Time Use Greenwich Mean Time, in the Format of Yyyy-MM-ddTHH: mm:SSZ.
+
+---
+
+### `balancers.load_balancer_billing_config`
+
+The load_balancer_billing_config supports the following attributes:
+
+* `pay_type` - The billing method of the ALB instance.
+
+---
+
+### `balancers.load_balancer_operation_locks`
+
+The load_balancer_operation_locks supports the following attributes:
+
+* `lock_reason` - The Locking of the Reasons.
+* `lock_type` - The Locking of the Type.
+
+---
+
+### `balancers.modification_protection_config`
+
+The modification_protection_config supports the following attributes:
+
+* `status` - Specifies whether to enable the configuration read-only mode for the ALB instance.
+* `reason` - The reason for modification protection.
+
+---
+
+### `balancers.zone_mappings`
+
+The zone_mappings supports the following attributes:
+
+* `vswitch_id` - The ID of the vSwitch that corresponds to the zone.
+* `zone_id` - The ID of the zone to which the ALB instance belongs.
+* `status` - (Available since v1.250.0) The zone status.
+* `load_balancer_addresses` - (Available since v1.250.0) The address of the ALB instance.
+
+---
+
+### `balancers.zone_mappings.load_balancer_addresses`
+
+The load_balancer_addresses supports the following attributes:
+
+* `allocation_id` - The elastic IP address (EIP).
+* `eip_type` - The type of EIP.
+* `address` - IPv4 address.
+* `intranet_address` - The private IPv4 address.
+* `intranet_address_hc_status` - The health status of the private IPv4 address of the ALB instance.
+* `ipv6_address` - IPv6 address.
+* `ipv6_address_hc_status` - The health status of the private IPv6 address of the ALB instance.
+* `ipv4_local_addresses` - The IPv4 link-local addresses.
+* `ipv6_local_addresses` - The IPv6 link-local addresses.

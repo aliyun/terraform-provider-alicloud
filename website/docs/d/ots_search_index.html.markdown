@@ -46,17 +46,24 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of search index IDs.
 * `names` - A list of search index  names.
-* `indexes` - A list of indexes. Each element contains the following attributes:
-  * `id` - The resource ID. The value is `<instance_name>:<table_name>:<indexName>:<indexType>`.
-  * `instance_name` - The OTS instance name.
-  * `table_name` - The table name of the OTS which could not be changed.
-  * `index_name` - The index name of the OTS Table which could not be changed.
-  * `create_time` - The creation time of the index.
-  * `time_to_live` - TTL of index.
-  * `sync_phase` - The synchronization state of the index.
-  * `current_sync_timestamp` - Timestamp for sync phase.
-  * `storage_size` - Storage space occupied by index.
-  * `row_count` - The number of rows of data for index.
-  * `reserved_read_cu` - Reserve related resources for the index.
-  * `metering_last_update_time` - Last update time for metering data..
-  * `schema` - JSON representation of the schema of index.
+* `indexes` - A list of indexes.
+
+---
+
+### `indexes`
+
+The indexes supports the following attributes:
+
+* `id` - The resource ID. The value is `<instance_name>:<table_name>:<indexName>:<indexType>`.
+* `instance_name` - The OTS instance name.
+* `table_name` - The table name of the OTS which could not be changed.
+* `index_name` - The index name of the OTS Table which could not be changed.
+* `create_time` - The creation time of the index.
+* `time_to_live` - TTL of index.
+* `sync_phase` - The synchronization state of the index.
+* `current_sync_timestamp` - Timestamp for sync phase.
+* `storage_size` - Storage space occupied by index.
+* `row_count` - The number of rows of data for index.
+* `reserved_read_cu` - Reserve related resources for the index.
+* `metering_last_update_time` - Last update time for metering data..
+* `schema` - JSON representation of the schema of index.

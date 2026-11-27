@@ -176,38 +176,52 @@ output "alicloud_cloud_firewall_vpc_cen_tr_firewall_example_id" {
 
 The following arguments are supported:
 
-* `cen_id` - (ForceNew, Optional) The ID of the CEN instance.
-* `current_page` - (ForceNew, Optional) The page number of the pagination query. The default value is 1.
-* `firewall_id` - (ForceNew, Optional) Firewall ID
-* `firewall_name` - (ForceNew, Optional) The name of Cloud Firewall.
-* `firewall_switch_status` - (ForceNew, Optional) The status of the VPC boundary firewall. Value:-**opened**: opened-**closed**: closed-**notconfigured**: indicates that the VPC boundary firewall has not been configured yet.-**configured**: indicates that the VPC boundary firewall has been configured.-**creating**: indicates that a VPC boundary firewall is being created.-**opening**: indicates that the VPC border firewall is being enabled.-**deleting**: indicates that the VPC boundary firewall is being deleted.> If this parameter is not set, the VPC boundary firewall in all states is queried.
-* `page_number` - (ForceNew, Optional) Current page number.
-* `page_size` - (ForceNew, Optional) The maximum number of pieces of data per page that are displayed during a paged query. The default value is 10.
-* `region_no` - (ForceNew, Optional) The region ID of the transit router instance.
-* `route_mode` - (ForceNew, Optional) The routing pattern. Value: managed: indicates automatic mode
-* `transit_router_id` - (ForceNew, Optional) The ID of the transit router instance.
-* `ids` - (Optional, ForceNew, Computed) A list of Vpc Cen Tr Firewall IDs.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `cen_id` - (Optional) The ID of the CEN instance.
+* `current_page` - (Optional) The page number of the pagination query. The default value is 1.
+* `firewall_id` - (Optional) Firewall ID
+* `firewall_name` - (Optional) The name of Cloud Firewall.
+* `firewall_switch_status` - (Optional) The status of the VPC boundary firewall. Value:-**opened**: opened-**closed**: closed-**notconfigured**: indicates that the VPC boundary firewall has not been configured yet.-**configured**: indicates that the VPC boundary firewall has been configured.-**creating**: indicates that a VPC boundary firewall is being created.-**opening**: indicates that the VPC border firewall is being enabled.-**deleting**: indicates that the VPC boundary firewall is being deleted.> If this parameter is not set, the VPC boundary firewall in all states is queried.
+* `page_number` - (Optional) Current page number.
+* `page_size` - (Optional) The maximum number of pieces of data per page that are displayed during a paged query. The default value is 10.
+* `region_no` - (Optional) The region ID of the transit router instance.
+* `route_mode` - (Optional) The routing pattern. Value: managed: indicates automatic mode
+* `transit_router_id` - (Optional) The ID of the transit router instance.
+* `ids` - (Optional, Computed) A list of Vpc Cen Tr Firewall IDs.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Vpc Cen Tr Firewall IDs.
-* `firewalls` - A list of Vpc Cen Tr Firewall Entries. Each element contains the following attributes:
-  * `cen_id` - The ID of the CEN instance.
-  * `cen_name` - The name of the CEN instance.
-  * `firewall_id` - Firewall ID
-  * `firewall_name` - The name of Cloud Firewall.
-  * `firewall_switch_status` - The status of the VPC boundary firewall. Value:-**opened**: opened-**closed**: closed-**notconfigured**: indicates that the VPC boundary firewall has not been configured yet.-**configured**: indicates that the VPC boundary firewall has been configured.-**creating**: indicates that a VPC boundary firewall is being created.-**opening**: indicates that the VPC border firewall is being enabled.-**deleting**: indicates that the VPC boundary firewall is being deleted.> If this parameter is not set, the VPC boundary firewall in all states is queried.
-  * `ips_config` - IPS configuration information.
-    * `basic_rules` - Basic rule switch. Value:-**1**: On-**0**: Closed state.
-    * `enable_all_patch` - Virtual patch switch. Value:-**1**: On-**0**: Closed state.
-    * `run_mode` - IPS defense mode. Value:-**1**: Intercept mode-**0**: Observation mode.
-  * `precheck_status` - Whether the wall can be opened automatically. Value:-**passed**: can automatically open the wall-**failed**: The wall cannot be opened automatically-**unknown**: unknown status
-  * `region_no` - The region ID of the transit router instance.
-  * `region_status` - Geographically open. Value:-**enable**: enabled, indicating that the VPC border firewall can be configured for the region.-**disable**: Not enabled, indicating that the VPC boundary firewall is not allowed for the region.
-  * `result_code` - The operation result code of creating the VPC boundary firewall. Value:-**RegionDisable**: indicates that the region where the network instance is located is not supported by the VPC border firewall. You cannot create a VPC border firewall.-**Empty string**, indicating that the network instance can create a VPC firewall.
-  * `route_mode` - The routing pattern. Value: managed: indicates automatic mode
-  * `transit_router_id` - The ID of the transit router instance.
-  * `id` - The ID of the resource supplied above.
+* `firewalls` - A list of Vpc Cen Tr Firewall Entries.
+
+---
+
+### `firewalls`
+
+The firewalls supports the following attributes:
+
+* `cen_id` - The ID of the CEN instance.
+* `cen_name` - The name of the CEN instance.
+* `firewall_id` - Firewall ID
+* `firewall_name` - The name of Cloud Firewall.
+* `firewall_switch_status` - The status of the VPC boundary firewall. Value:-**opened**: opened-**closed**: closed-**notconfigured**: indicates that the VPC boundary firewall has not been configured yet.-**configured**: indicates that the VPC boundary firewall has been configured.-**creating**: indicates that a VPC boundary firewall is being created.-**opening**: indicates that the VPC border firewall is being enabled.-**deleting**: indicates that the VPC boundary firewall is being deleted.> If this parameter is not set, the VPC boundary firewall in all states is queried.
+* `ips_config` - IPS configuration information.
+* `precheck_status` - Whether the wall can be opened automatically. Value:-**passed**: can automatically open the wall-**failed**: The wall cannot be opened automatically-**unknown**: unknown status
+* `region_no` - The region ID of the transit router instance.
+* `region_status` - Geographically open. Value:-**enable**: enabled, indicating that the VPC border firewall can be configured for the region.-**disable**: Not enabled, indicating that the VPC boundary firewall is not allowed for the region.
+* `result_code` - The operation result code of creating the VPC boundary firewall. Value:-**RegionDisable**: indicates that the region where the network instance is located is not supported by the VPC border firewall. You cannot create a VPC border firewall.-**Empty string**, indicating that the network instance can create a VPC firewall.
+* `route_mode` - The routing pattern. Value: managed: indicates automatic mode
+* `transit_router_id` - The ID of the transit router instance.
+* `id` - The ID of the resource supplied above.
+
+---
+
+### `firewalls.ips_config`
+
+The ips_config supports the following attributes:
+
+* `basic_rules` - Basic rule switch. Value:-**1**: On-**0**: Closed state.
+* `enable_all_patch` - Virtual patch switch. Value:-**1**: On-**0**: Closed state.
+* `run_mode` - IPS defense mode. Value:-**1**: Intercept mode-**0**: Observation mode.

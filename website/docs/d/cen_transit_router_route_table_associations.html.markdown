@@ -47,10 +47,17 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of CEN Transit Router Route Table Association IDs.
-* `associations` - A list of CEN Transit Router Route Table Associations. Each element contains the following attributes:
-  * `id` - The ID of the CEN Transit Router Route Table Association.
-  * `resource_id` - ID of the transit router route table association.
-  * `resource_type` - Type of the resource.
-  * `status` - The status of the route table.
-  * `transit_router_attachment_id` - ID of the transit router attachment.
-  * `transit_router_route_table_id` - ID of the transit router route table.
+* `associations` - A list of CEN Transit Router Route Table Associations.
+
+---
+
+### `associations`
+
+The associations supports the following attributes:
+
+* `id` - The ID of the CEN Transit Router Route Table Association.
+* `resource_id` - ID of the transit router route table association.
+* `resource_type` - Type of the resource.
+* `status` - The status of the route table.
+* `transit_router_attachment_id` - ID of the transit router attachment.
+* `transit_router_route_table_id` - ID of the transit router route table.

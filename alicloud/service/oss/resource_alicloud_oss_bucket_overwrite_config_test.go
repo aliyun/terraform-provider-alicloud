@@ -130,10 +130,13 @@ func TestAccAliCloudOssBucketOverwriteConfig_basic12526(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
+				ResourceName: resourceId,
+				ImportState:  true,
+				// The API requires rule.action and supports "forbid" only, so its
+				// value cannot change once the configuration exists and no test
+				// step can exercise a modification of it.
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"rule.action"},
 			},
 		},
 	})

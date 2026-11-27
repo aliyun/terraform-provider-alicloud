@@ -71,37 +71,51 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of image IDs.
-* `images` - A list of images. Each element contains the following attributes:
-  * `id` - The ID of the image.
-  * `image_id` - The ID of the image.
-  * `architecture` - The platform type of the image system: i386 or x86_64.
-  * `creation_time` - The creation time.
-  * `description` - The description of the image.
-  * `image_owner_alias` - The alias of the image owner.
-  * `os_type` - The type of the operating system.
-  * `os_name` - The display Chinese name of the OS.
-  * `os_name_en` - The english name of the OS.
-  * `name` - The name of the image.
-  * `platform` - The platform of the image.
-  * `status` - The status of the image. Possible values: `UnAvailable`, `Available`, `Creating` and `CreateFailed`.
-  * `state` - The state of the image.
-  * `size` - The size of the image.
-  * `disk_device_mappings` - A list of disk device mappings. Each element contains the following attributes:
-    * `device` - The device information of the created disk: such as /dev/xvdb.
-    * `size` - The size of the created disk.
-    * `snapshot_id` - The snapshot ID.
-  * `product_code` - The product code of the image on the image market.
-  * `is_self_shared` - Whether the image is shared by the current user.
-  * `is_subscribed` - Whether the user has subscribed to the terms of service for the image product corresponding to the ProductCode.
-  * `is_copied` - Whether the image is copied.
-  * `is_support_io_optimized` - Whether the image can be used on I/O optimized instances.
-  * `image_version` - Version of the image.
-  * `progress` - Progress of image creation, presented in percentages.
-  * `usage` - The usage of the image.
-  * `tags` - (Optional) A map of tags assigned to the image.
+* `images` - A list of images.
+
+---
+
+### `images`
+
+The images supports the following attributes:
+
+* `id` - The ID of the image.
+* `image_id` - The ID of the image.
+* `architecture` - The platform type of the image system: i386 or x86_64.
+* `creation_time` - The creation time.
+* `description` - The description of the image.
+* `image_owner_alias` - The alias of the image owner.
+* `os_type` - The type of the operating system.
+* `os_name` - The display Chinese name of the OS.
+* `os_name_en` - The english name of the OS.
+* `name` - The name of the image.
+* `platform` - The platform of the image.
+* `status` - The status of the image. Possible values: `UnAvailable`, `Available`, `Creating` and `CreateFailed`.
+* `state` - The state of the image.
+* `size` - The size of the image.
+* `disk_device_mappings` - A list of disk device mappings.
+* `product_code` - The product code of the image on the image market.
+* `is_self_shared` - Whether the image is shared by the current user.
+* `is_subscribed` - Whether the user has subscribed to the terms of service for the image product corresponding to the ProductCode.
+* `is_copied` - Whether the image is copied.
+* `is_support_io_optimized` - Whether the image can be used on I/O optimized instances.
+* `image_version` - Version of the image.
+* `progress` - Progress of image creation, presented in percentages.
+* `usage` - The usage of the image.
+* `tags` - (Optional) A map of tags assigned to the image.
+
+---
+
+### `images.disk_device_mappings`
+
+The disk_device_mappings supports the following attributes:
+
+* `device` - The device information of the created disk: such as /dev/xvdb.
+* `size` - The size of the created disk.
+* `snapshot_id` - The snapshot ID.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `read` - (Defaults to 5 mins) Used when read the images.

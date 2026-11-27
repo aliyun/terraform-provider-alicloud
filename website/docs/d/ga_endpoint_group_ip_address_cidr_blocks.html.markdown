@@ -31,15 +31,22 @@ output "ga_endpoint_group_ip_address_cidr_blocks_endpoint_group_region" {
 
 The following arguments are supported:
 
-* `endpoint_group_region` - (Required, ForceNew) The region ID of the endpoint group.
-* `accelerator_id` - (Optional, ForceNew, Available since v1.230.0) The ID of the Global Accelerator (GA) instance.
+* `endpoint_group_region` - (Required) The region ID of the endpoint group.
+* `accelerator_id` - (Optional, Available since v1.230.0) The ID of the Global Accelerator (GA) instance.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `endpoint_group_ip_address_cidr_blocks` - A list of Endpoint Group Ip Address Cidr Blocks. Each element contains the following attributes:
-  * `endpoint_group_region` - The region ID of the endpoint group.
-  * `ip_address_cidr_blocks` - The CIDR blocks.
-  * `status` - The status of the list of endpoint group ip address cidr blocks.
+* `endpoint_group_ip_address_cidr_blocks` - A list of Endpoint Group Ip Address Cidr Blocks.
+
+---
+
+### `endpoint_group_ip_address_cidr_blocks`
+
+The endpoint_group_ip_address_cidr_blocks supports the following attributes:
+
+* `endpoint_group_region` - The region ID of the endpoint group.
+* `ip_address_cidr_blocks` - The CIDR blocks.
+* `status` - The status of the list of endpoint group ip address cidr blocks.

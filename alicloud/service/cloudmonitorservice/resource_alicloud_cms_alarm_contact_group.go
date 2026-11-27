@@ -71,9 +71,7 @@ func resourceAlicloudCmsAlarmContactGroupCreate(d *schema.ResourceData, meta int
 	var response *cms.PutContactGroupResponse
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.PutContactGroup(request)
-		})
+		raw, err := client.LegacySdkRpc(request, "/", cms.CreatePutContactGroupResponse())
 		if err != nil {
 			if helper.NeedRetry(err) {
 				wait()
@@ -82,7 +80,10 @@ func resourceAlicloudCmsAlarmContactGroupCreate(d *schema.ResourceData, meta int
 			return retry.NonRetryableError(err)
 		}
 		logs.AddDebug(request.GetActionName(), raw)
-		response, _ = raw.(*cms.PutContactGroupResponse)
+		response = &cms.PutContactGroupResponse{}
+		if err := legacyCmsResponse(raw, response); err != nil {
+			return retry.NonRetryableError(errs.WrapError(err))
+		}
 		return nil
 	})
 	if err != nil {
@@ -138,9 +139,7 @@ func resourceAlicloudCmsAlarmContactGroupUpdate(d *schema.ResourceData, meta int
 		var response *cms.PutContactGroupResponse
 		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err := retry.Retry(5*time.Minute, func() *retry.RetryError {
-			raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-				return cmsClient.PutContactGroup(request)
-			})
+			raw, err := client.LegacySdkRpc(request, "/", cms.CreatePutContactGroupResponse())
 			if err != nil {
 				if helper.NeedRetry(err) {
 					wait()
@@ -149,15 +148,18 @@ func resourceAlicloudCmsAlarmContactGroupUpdate(d *schema.ResourceData, meta int
 				return retry.NonRetryableError(err)
 			}
 			logs.AddDebug(request.GetActionName(), raw)
-			response, _ = raw.(*cms.PutContactGroupResponse)
+			response = &cms.PutContactGroupResponse{}
+			if err := legacyCmsResponse(raw, response); err != nil {
+				return retry.NonRetryableError(errs.WrapError(err))
+			}
 			return nil
 		})
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+		}
 
 		if response.Code != "200" {
 			return errs.WrapError(errs.Error("PutContactGroup failed for %s", response.Message))
-		}
-		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	return resourceAlicloudCmsAlarmContactGroupRead(d, meta)
@@ -169,9 +171,7 @@ func resourceAlicloudCmsAlarmContactGroupDelete(d *schema.ResourceData, meta int
 	var response *cms.DeleteContactGroupResponse
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DeleteContactGroup(request)
-		})
+		raw, err := client.LegacySdkRpc(request, "/", cms.CreateDeleteContactGroupResponse())
 		if err != nil {
 			if helper.NeedRetry(err) {
 				wait()
@@ -180,18 +180,23 @@ func resourceAlicloudCmsAlarmContactGroupDelete(d *schema.ResourceData, meta int
 			return retry.NonRetryableError(err)
 		}
 		logs.AddDebug(request.GetActionName(), raw)
-		response, _ = raw.(*cms.DeleteContactGroupResponse)
+		response = &cms.DeleteContactGroupResponse{}
+		if err := legacyCmsResponse(raw, response); err != nil {
+			return retry.NonRetryableError(errs.WrapError(err))
+		}
 		return nil
 	})
-
-	if response.Code != "200" {
-		return errs.WrapError(errs.Error("DeleteContactGroup failed for %s", response.Message))
-	}
 	if err != nil {
-		if errs.IsExpectedErrors(err, []string{"400", "403", "404", "ContactNotExists"}) {
+		// DeleteContactGroup reports ContactNotExists for a missing group;
+		// ContactGroupNotExists is kept as a defensive alias.
+		if cmsContactAbsent(err, "ContactNotExists", "ContactGroupNotExists") {
 			return nil
 		}
 		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+	}
+
+	if response.Code != "200" {
+		return errs.WrapError(errs.Error("DeleteContactGroup failed for %s", response.Message))
 	}
 	return nil
 }

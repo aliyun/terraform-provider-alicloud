@@ -474,6 +474,17 @@ var AlicloudCrInstanceMap7970_modified = map[string]string{
 	"end_time":             acctest.CHECKSET,
 	"create_time":          acctest.CHECKSET,
 	"instance_endpoints.#": acctest.CHECKSET,
+	// The instance_endpoints status / acl_enable / acl_entries values are not
+	// deterministic on freshly created instances: ListInstanceEndpoint may omit
+	// Status, returns AclEnable only for the internet endpoint, and may
+	// auto-return the loopback default ACL entry once that endpoint is enabled
+	// (see data_source_alicloud_cr_internet_endpoint.go), while the endpoint
+	// order inside Endpoints is not guaranteed. The new computed lists are
+	// therefore asserted via their element counts only: the counts are always
+	// written by Read (0 for the fresh instances these configs create, as no
+	// VPC is linked and no ACL policy is configured).
+	"instance_endpoints.0.acl_entries.#": acctest.CHECKSET,
+	"instance_endpoints.0.linked_vpcs.#": acctest.CHECKSET,
 }
 
 func AlicloudCrInstanceBasicDependence7970_modified(name string) string {
@@ -751,6 +762,11 @@ var AlicloudCrInstanceMap8613 = map[string]string{
 	"create_time":          acctest.CHECKSET,
 	"instance_endpoints.#": acctest.CHECKSET,
 	"region_id":            acctest.CHECKSET,
+	// Deterministic presence assertions for the new instance_endpoints
+	// computed lists; see AlicloudCrInstanceMap7970_modified for why only the
+	// element counts are asserted.
+	"instance_endpoints.0.acl_entries.#": acctest.CHECKSET,
+	"instance_endpoints.0.linked_vpcs.#": acctest.CHECKSET,
 }
 
 func AlicloudCrInstanceBasicDependence8613(name string) string {
@@ -871,6 +887,11 @@ var AlicloudCrInstanceMapTags = map[string]string{
 	"create_time":          acctest.CHECKSET,
 	"instance_endpoints.#": acctest.CHECKSET,
 	"region_id":            acctest.CHECKSET,
+	// Deterministic presence assertions for the new instance_endpoints
+	// computed lists; see AlicloudCrInstanceMap7970_modified for why only the
+	// element counts are asserted.
+	"instance_endpoints.0.acl_entries.#": acctest.CHECKSET,
+	"instance_endpoints.0.linked_vpcs.#": acctest.CHECKSET,
 }
 
 func AlicloudCrInstanceBasicDependenceTags(name string) string {

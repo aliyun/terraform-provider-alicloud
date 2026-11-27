@@ -118,6 +118,8 @@ The following arguments are supported:
 * `max_text_len` - (Optional, Int) Maximum length of statistical field
 * `project_name` - (Required, ForceNew) Project name
 
+---
+
 ### `line`
 
 The line supports the following:
@@ -136,7 +138,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Index.
 * `delete` - (Defaults to 5 mins) Used when delete the Index.

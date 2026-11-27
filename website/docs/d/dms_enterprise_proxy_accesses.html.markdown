@@ -37,8 +37,9 @@ output "alicloud_dms_proxy_acceses_example_id" {
 
 The following arguments are supported:
 
-* `proxy_id` - (Required, ForceNew) The ID of the security agent.
-* `ids` - (Optional, ForceNew, Computed) A list of Proxy Access IDs.
+* `proxy_id` - (Required) The ID of the security agent.
+* `ids` - (Optional, Computed) A list of Proxy Access IDs.
+* `enable_details` - (Optional) Whether to retrieve the access details.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -46,15 +47,23 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Proxy Access IDs.
-* `accesses` - A list of Proxy Access Entries. Each element contains the following attributes:
-    * `id` - Security Protection authorization ID.
-    * `access_id` - The authorized account of the security agent.
-    * `create_time` - The authorization time of the security access agent permission.
-    * `indep_account` - Database account.
-    * `instance_id` - The ID of the instance.
-    * `origin_info` - The source information of the security access agent permission is enabled, and the return value is as follows:**Owner Authorization**: The UID of the owner in parentheses.**Work Order Authorization**: The ticket number in parentheses is the number of the user to apply for permission.
-    * `proxy_access_id` - Security Protection authorization ID. After the target user is authorized by the security protection agent, the system automatically generates a security protection authorization ID, which is globally unique.
-    * `proxy_id` - The ID of the security agent.
-    * `user_id` - The user ID.
-    * `user_name` - User nickname.
-    * `user_uid` - User UID.
+* `accesses` - A list of Proxy Access Entries.
+
+---
+
+### `accesses`
+
+The accesses supports the following attributes:
+
+* `id` - Security Protection authorization ID.
+* `access_id` - The authorized account of the security agent.
+* `access_secret` - The secret of the database access account.
+* `create_time` - The authorization time of the security access agent permission.
+* `indep_account` - Database account.
+* `instance_id` - The ID of the instance.
+* `origin_info` - The source information of the security access agent permission is enabled, and the return value is as follows:**Owner Authorization**: The UID of the owner in parentheses.**Work Order Authorization**: The ticket number in parentheses is the number of the user to apply for permission.
+* `proxy_access_id` - Security Protection authorization ID. After the target user is authorized by the security protection agent, the system automatically generates a security protection authorization ID, which is globally unique.
+* `proxy_id` - The ID of the security agent.
+* `user_id` - The user ID.
+* `user_name` - User nickname.
+* `user_uid` - User UID.

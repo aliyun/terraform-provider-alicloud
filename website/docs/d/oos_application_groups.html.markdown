@@ -40,10 +40,10 @@ output "oos_application_group_id_2" {
 
 The following arguments are supported:
 
-* `application_name` - (Required, ForceNew) The name of the Application.
-* `deploy_region_id` - (Optional, ForceNew) The region ID of the deployment.
-* `ids` - (Optional, ForceNew, Computed)  A list of Application Group IDs. Its element value is same as Application Group Name.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Application Group name.
+* `application_name` - (Required) The name of the Application.
+* `deploy_region_id` - (Optional) The region ID of the deployment.
+* `ids` - (Optional, Computed)  A list of Application Group IDs. Its element value is same as Application Group Name.
+* `name_regex` - (Optional) A regex string to filter results by Application Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -51,14 +51,21 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Application Group names.
-* `groups` - A list of Oos Application Groups. Each element contains the following attributes:
-  * `application_group_name` - The name of the Application group.
-  * `application_name` - The name of the Application.
-  * `cms_group_id` - The ID of the cloud monitor group.
-  * `create_time` - The Creation time of the resource.
-  * `update_time` - The Update time of the resource.
-  * `deploy_region_id` - The region ID of the deployment.
-  * `description` - Application group description information.
-  * `id` - The ID of the Application Group. Its value is same as Queue Name.
-  * `import_tag_key` - Label key.
-  * `import_tag_value` - Label value.
+* `groups` - A list of Oos Application Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `application_group_name` - The name of the Application group.
+* `application_name` - The name of the Application.
+* `cms_group_id` - The ID of the cloud monitor group.
+* `create_time` - The Creation time of the resource.
+* `update_time` - The Update time of the resource.
+* `deploy_region_id` - The region ID of the deployment.
+* `description` - Application group description information.
+* `id` - The ID of the Application Group. Its value is same as Queue Name.
+* `import_tag_key` - Label key.
+* `import_tag_value` - Label value.

@@ -144,6 +144,8 @@ The following arguments are supported:
 * `scaling_rule_timer` - (Optional) Configuration of Timing Resilient Policies. See [`scaling_rule_timer`](#scaling_rule_timer) below.
 * `scaling_rule_metric` - (Optional) Monitor the configuration of the indicator elasticity strategy. See [`scaling_rule_metric`](#scaling_rule_metric) below.
 
+---
+
 ### `scaling_rule_timer`
 
 The scaling_rule_timer supports the following:
@@ -153,14 +155,24 @@ The scaling_rule_timer supports the following:
 * `period` - (Optional) The period in which a timed elastic scaling strategy is executed.
 * `schedules` - (Optional) Resilient Scaling Strategy Trigger Timing. See [`schedules`](#scaling_rule_timer-schedules) below.
 
+---
+
 ### `scaling_rule_timer-schedules`
 
 The schedules supports the following:
 
 * `at_time` - (Optional) Trigger point in time. When supporting format: minutes, for example: `08:00`.
-* `target_replicas` - (Optional) This parameter can specify the number of instances to be applied or the minimum number of surviving instances per deployment. value range [1,50]. -> **NOTE:** The attribute is valid when the attribute `scaling_rule_type` is `timing`.
-* `max_replicas` - (Optional) Maximum number of instances applied. -> **NOTE:** The attribute is valid when the attribute `scaling_rule_type` is `mix`.
-* `min_replicas` - (Optional) Minimum number of instances applied. -> **NOTE:** The attribute is valid when the attribute `scaling_rule_type` is `mix`.
+* `target_replicas` - (Optional) This parameter can specify the number of instances to be applied or the minimum number of surviving instances per deployment. value range [1,50]. ->
+
+  -> **NOTE:** The attribute is valid when the attribute `scaling_rule_type` is `timing`.
+* `max_replicas` - (Optional) Maximum number of instances applied. ->
+
+  -> **NOTE:** The attribute is valid when the attribute `scaling_rule_type` is `mix`.
+* `min_replicas` - (Optional) Minimum number of instances applied. ->
+
+  -> **NOTE:** The attribute is valid when the attribute `scaling_rule_type` is `mix`.
+
+---
 
 ### `scaling_rule_metric`
 
@@ -172,6 +184,8 @@ The scaling_rule_metric supports the following:
 * `scale_up_rules` - (Optional) Apply expansion rules. See [`scale_up_rules`](#scaling_rule_metric-scale_up_rules) below.
 * `scale_down_rules` - (Optional) Apply shrink rules. See [`scale_down_rules`](#scaling_rule_metric-scale_down_rules) below.
 
+---
+
 ### `scaling_rule_metric-scale_up_rules`
 
 The scale_up_rules supports the following:
@@ -180,6 +194,8 @@ The scale_up_rules supports the following:
 * `stabilization_window_seconds` - (Optional) Cooling time for expansion or contraction. Valid values: `0` to `3600`. Unit: seconds. The default is `0` seconds.
 * `disabled` - (Optional) Whether shrinkage is prohibited.
 
+---
+
 ### `scaling_rule_metric-scale_down_rules`
 
 The scale_down_rules supports the following:
@@ -187,6 +203,8 @@ The scale_down_rules supports the following:
 * `step` - (Optional) Elastic expansion or contraction step size. the maximum number of instances to be scaled in per unit time.
 * `stabilization_window_seconds` - (Optional) Cooling time for expansion or contraction. Valid values: `0` to `3600`. Unit: seconds. The default is `0` seconds.
 * `disabled` - (Optional) Whether shrinkage is prohibited.
+
+---
 
 ### `scaling_rule_metric-metrics`
 
@@ -203,7 +221,8 @@ The metrics supports the following:
   - SLB_RT: The average response time of public network SLB within 15 seconds.
   - INTRANET_SLB_QPS: The average private network SLB QPS of a single instance within 15 seconds.
   - INTRANET_SLB_RT: The average response time of private network SLB within 15 seconds.
-**NOTE:** From version 1.206.0, `metric_type` can be set to `QPS`, `RT`, `INTRANET_SLB_QPS`, `INTRANET_SLB_RT`.
+
+  -> **NOTE:** From version 1.206.0, `metric_type` can be set to `QPS`, `RT`, `INTRANET_SLB_QPS`, `INTRANET_SLB_RT`.
 * `slb_id` - (Optional, Available in 1.206.0+) SLB ID.
 * `slb_project` - (Optional, Available in 1.206.0+) The project of the Log Service.
 * `slb_log_store` - (Optional, Available in 1.206.0+) The log store of the Log Service.

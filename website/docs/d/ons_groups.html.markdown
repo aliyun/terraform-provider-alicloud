@@ -64,12 +64,19 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of group names.
 * `names` - A list of group names.
-* `groups` - A list of groups. Each element contains the following attributes:
-  * `id` - The name of the group.
-  * `group_name` - The name of the group.
-  * `group_type` - Specify the protocol applicable to the created Group ID.
-  * `owner` - The ID of the group owner, which is the Alibaba Cloud UID.
-  * `independent_naming` - Indicates whether namespaces are available. Read [Fields in SubscribeInfoDo](https://www.alibabacloud.com/help/doc-detail/29619.html) for further details.
-  * `instance_id` - ID of the ONS Instance that owns the group.
-  * `remark` - Remark of the group.
-  * `tags` - A map of tags assigned to the Ons group.
+* `groups` - A list of groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `id` - The name of the group.
+* `group_name` - The name of the group.
+* `group_type` - Specify the protocol applicable to the created Group ID.
+* `owner` - The ID of the group owner, which is the Alibaba Cloud UID.
+* `independent_naming` - Indicates whether namespaces are available. Read [Fields in SubscribeInfoDo](https://www.alibabacloud.com/help/doc-detail/29619.html) for further details.
+* `instance_id` - ID of the ONS Instance that owns the group.
+* `remark` - Remark of the group.
+* `tags` - A map of tags assigned to the Ons group.

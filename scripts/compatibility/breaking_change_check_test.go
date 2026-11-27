@@ -848,6 +848,204 @@ func TestParseFrameworkSchemaFromAST(t *testing.T) {
 	}
 }
 
+func TestSDKSchemaCompatibilityUsesNestedFieldPaths(t *testing.T) {
+	const source = `package example
+
+var fields = map[string]*schema.Schema{
+	"datasource_config": {
+		Type: schema.TypeList, Optional: true,
+		Elem: &schema.Resource{Schema: map[string]*schema.Schema{
+			"product_category": {Type: schema.TypeString, Optional: true, %s},
+		}},
+	},
+	%s
+}
+`
+	const observeResource = `
+	"observe_resource_config": {
+		Type: schema.TypeList, Optional: true,
+		Elem: &schema.Resource{Schema: map[string]*schema.Schema{
+			"product_category": {Type: schema.TypeString, Optional: true, %s},
+		}},
+	},
+`
+	oldAttrs := ParseSchemaFromAST(fmt.Sprintf(source, "", ""))
+	tests := []struct {
+		name          string
+		datasource    string
+		observe       string
+		wantsBreaking bool
+	}{
+		{name: "same name on a new path", observe: "ForceNew: true"},
+		{name: "ForceNew added on an existing path", datasource: "ForceNew: true", wantsBreaking: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			newAttrs := ParseSchemaFromAST(fmt.Sprintf(source, tt.datasource, fmt.Sprintf(observeResource, tt.observe)))
+			if got := IsBreakingChange(oldAttrs, newAttrs); got != tt.wantsBreaking {
+				t.Errorf("IsBreakingChange = %v, want %v", got, tt.wantsBreaking)
+			}
+		})
+	}
+}
+
+func TestFrameworkSchemaUsesNestedAttributeAndBlockPaths(t *testing.T) {
+	const source = `package example
+
+var resourceSchema = fw.Schema{
+	Attributes: map[string]fw.Attribute{
+		"datasource_config": fw.SingleNestedAttribute{
+			Attributes: map[string]fw.Attribute{
+				"product_category": fw.StringAttribute{Optional: true},
+			},
+		},
+	},
+	Blocks: map[string]fw.Block{
+		"observe_resource_config": fw.ListNestedBlock{
+			NestedObject: fw.NestedBlockObject{
+				Attributes: map[string]fw.Attribute{
+					"product_category": fw.StringAttribute{Optional: true, PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
+				},
+			},
+		},
+	},
+}
+`
+	attrs := ParseFrameworkSchemaFromAST(source)
+	if attr, ok := attrs["datasource_config.product_category"]; !ok || attr["Type"] != "TypeString" || attr["ForceNew"] != nil {
+		t.Errorf("datasource_config.product_category = %v, want TypeString without ForceNew", attr)
+	}
+	if attr, ok := attrs["observe_resource_config.product_category"]; !ok || attr["Type"] != "TypeString" || attr["ForceNew"] != true {
+		t.Errorf("observe_resource_config.product_category = %v, want TypeString with ForceNew", attr)
+	}
+	if _, ok := attrs["product_category"]; ok {
+		t.Error("nested product_category stored without its path")
+	}
+}
+
+func TestFrameworkSchemaReadsObjectElementTypes(t *testing.T) {
+	// A computed list of objects is declared as a ListAttribute whose
+	// ElementType is an ObjectType. The object's field list is usually a named
+	// package-level variable, so the parser has to follow the reference before
+	// it can see any field at all.
+	const source = `package example
+
+var datapointAttrTypes = map[string]attr.Type{
+	"uuid":    types.StringType,
+	"average": types.Float64Type,
+}
+
+var datapointObjectType = types.ObjectType{AttrTypes: datapointAttrTypes}
+
+var dataSourceSchema = fw.Schema{
+	Attributes: map[string]fw.Attribute{
+		"datapoints": fw.ListAttribute{
+			Computed:    true,
+			ElementType: datapointObjectType,
+		},
+		"groups": fw.ListAttribute{
+			Computed:    true,
+			ElementType: types.ObjectType{AttrTypes: map[string]attr.Type{
+				"group_id": types.StringType,
+				"nested":   types.ObjectType{AttrTypes: map[string]attr.Type{"inner": types.Int64Type}},
+			}},
+		},
+	},
+}
+`
+	attrs := ParseFrameworkSchemaFromAST(source)
+
+	for path, wantType := range map[string]string{
+		"datapoints.uuid":     "TypeString",
+		"datapoints.average":  "TypeFloat",
+		"groups.group_id":     "TypeString",
+		"groups.nested.inner": "TypeInt",
+	} {
+		attr, ok := attrs[path]
+		if !ok {
+			t.Errorf("%s is missing from the parsed schema", path)
+			continue
+		}
+		if attr["Type"] != wantType {
+			t.Errorf("%s type = %v, want %s", path, attr["Type"], wantType)
+		}
+		// A field known only from an attr.Type list carries no schema
+		// modifier of its own.
+		if attr["Optional"] != nil || attr["Required"] != nil || attr["ForceNew"] != nil {
+			t.Errorf("%s = %v, want no modifier", path, attr)
+		}
+	}
+	if attr := attrs["datapoints"]; attr["Type"] != "TypeList" {
+		t.Errorf("datapoints = %v, want TypeList", attr)
+	}
+	if _, ok := attrs["uuid"]; ok {
+		t.Error("nested uuid stored without its path")
+	}
+}
+
+func TestFrameworkObjectFieldRemovalIsBreaking(t *testing.T) {
+	// A field declared in the object's AttrTypes list disappears while a
+	// sibling stays: the object still resolves, so the removal is real.
+	oldSrc := `package example
+
+var attrTypes = map[string]attr.Type{
+	"uuid":  types.StringType,
+	"value": types.Float64Type,
+}
+
+var dataSourceSchema = fw.Schema{
+	Attributes: map[string]fw.Attribute{
+		"datapoints": fw.ListAttribute{Computed: true, ElementType: types.ObjectType{AttrTypes: attrTypes}},
+	},
+}
+`
+	newSrc := `package example
+
+var attrTypes = map[string]attr.Type{
+	"uuid": types.StringType,
+}
+
+var dataSourceSchema = fw.Schema{
+	Attributes: map[string]fw.Attribute{
+		"datapoints": fw.ListAttribute{Computed: true, ElementType: types.ObjectType{AttrTypes: attrTypes}},
+	},
+}
+`
+	if !IsBreakingChange(ParseFrameworkSchemaFromAST(oldSrc), ParseFrameworkSchemaFromAST(newSrc)) {
+		t.Error("Expected the removal of datapoints.value to be detected as breaking")
+	}
+}
+
+func TestFrameworkObjectFieldUnresolvedParentIsNotBreaking(t *testing.T) {
+	// The field list moved to a sibling file, which this single-file
+	// comparison never reads. Every field under the parent then looks removed,
+	// but nothing was taken out of the schema, so the check must not fail.
+	oldSrc := `package example
+
+var attrTypes = map[string]attr.Type{
+	"uuid":  types.StringType,
+	"value": types.Float64Type,
+}
+
+var dataSourceSchema = fw.Schema{
+	Attributes: map[string]fw.Attribute{
+		"datapoints": fw.ListAttribute{Computed: true, ElementType: types.ObjectType{AttrTypes: attrTypes}},
+	},
+}
+`
+	newSrc := `package example
+
+var dataSourceSchema = fw.Schema{
+	Attributes: map[string]fw.Attribute{
+		"datapoints": fw.ListAttribute{Computed: true, ElementType: types.ObjectType{AttrTypes: sharedAttrTypes}},
+	},
+}
+`
+	if IsBreakingChange(ParseFrameworkSchemaFromAST(oldSrc), ParseFrameworkSchemaFromAST(newSrc)) {
+		t.Error("Expected an unresolvable object type not to be reported as a field removal")
+	}
+}
+
 func TestParseSchemasMergesSDKv2AndFramework(t *testing.T) {
 	src := `package mixed
 

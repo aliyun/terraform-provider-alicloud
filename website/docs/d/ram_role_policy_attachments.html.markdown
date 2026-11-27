@@ -94,18 +94,25 @@ output "alicloud_ram_role_policy_attachment_example_id" {
 
 The following arguments are supported:
 
-* `role_name` - (Required, ForceNew) The RAM role name.
-* `ids` - (Optional, ForceNew, Computed) A list of Role Policy Attachment IDs. The value is formulated as `role:<policy_name>:<policy_type>:<role_name>`.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `role_name` - (Required) The RAM role name.
+* `ids` - (Optional, Computed) A list of Role Policy Attachment IDs. The value is formulated as `role:<policy_name>:<policy_type>:<role_name>`.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Role Policy Attachment IDs.
-* `attachments` - A list of Role Policy Attachment Entries. Each element contains the following attributes:
-  * `attach_date` - The time when the role was attached to the policy.
-  * `description` - The policy description.
-  * `policy_name` - The name of the policy.
-  * `policy_type` - Policy type.- Custom: Custom policy.- System: System policy.
-  * `id` - The ID of the resource supplied above. The value is formulated as `role:<policy_name>:<policy_type>:<role_name>`.
+* `attachments` - A list of Role Policy Attachment Entries.
+
+---
+
+### `attachments`
+
+The attachments supports the following attributes:
+
+* `attach_date` - The time when the role was attached to the policy.
+* `description` - The policy description.
+* `policy_name` - The name of the policy.
+* `policy_type` - Policy type.- Custom: Custom policy.- System: System policy.
+* `id` - The ID of the resource supplied above. The value is formulated as `role:<policy_name>:<policy_type>:<role_name>`.

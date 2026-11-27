@@ -55,7 +55,6 @@ resource "alicloud_ecd_network_package" "default" {
 The following arguments are supported:
 
 * `bandwidth` - (Required) The bandwidth of package public network bandwidth peak. Valid values: 1~200. Unit:Mbps.
-* `internet_charge_type` - (Optional, ForceNew) The internet charge type  of  package.
 * `office_site_id` - (Required, ForceNew) The ID of office site.
 
 ## Attributes Reference
@@ -64,6 +63,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Network Package.
 * `status` - The status of network package. Valid values: `Creating`, `InUse`, `Releasing`,`Released`.
+* `internet_charge_type` - (Computed) The internet charge type  of  package.
 
 ## Import
 

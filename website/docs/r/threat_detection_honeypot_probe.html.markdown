@@ -63,22 +63,26 @@ The following arguments are supported:
 * `uuid` - (ForceNew, Optional) Machine uuid, **probe_type** is `host_probe`. This value cannot be empty.
 * `vpc_id` - (ForceNew, Optional) The ID of the VPC. **probe_type** is `vpc_black_hole_probe`. This value cannot be empty.
 
+---
+
 ### `honeypot_bind_list`
 
 The HoneypotBindList supports the following:
 
-* `bind_port_list` - (ForceNew, Optional) List of listening ports.See the following [`bind_port_list`](#honeypot_bind_list-bind_port_list) below.
-* `honeypot_id` - (ForceNew, Optional) Honeypot ID.
+* `bind_port_list` - (Optional) List of listening ports.See the following [`bind_port_list`](#honeypot_bind_list-bind_port_list) below.
+* `honeypot_id` - (Optional) Honeypot ID.
+
+---
 
 ### `honeypot_bind_list-bind_port_list`
 
 The BindPortList supports the following:
 
-* `bind_port` - (ForceNew, Optional) Whether to bind the port.
-* `end_port` - (ForceNew, Optional) End port.
-* `fixed` - (ForceNew, Optional) Whether the port is fixed.
-* `start_port` - (ForceNew, Optional) Start port.
-* `target_port` - (ForceNew, Optional) Destination port.
+* `bind_port` - (Optional) Whether to bind the port.
+* `end_port` - (Optional) End port.
+* `fixed` - (Optional) Whether the port is fixed.
+* `start_port` - (Optional) Start port.
+* `target_port` - (Optional) Destination port.
 
 ## Attributes Reference
 
@@ -90,7 +94,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Honeypot Probe.
 * `delete` - (Defaults to 5 mins) Used when delete the Honeypot Probe.

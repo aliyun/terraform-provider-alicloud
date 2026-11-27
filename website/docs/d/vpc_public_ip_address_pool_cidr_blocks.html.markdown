@@ -43,21 +43,28 @@ output "vpc_public_ip_address_pool_cidr_block_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Vpc Public Ip Address Pool Cidr Block IDs.
-* `public_ip_address_pool_id` - (Required, ForceNew) The ID of the Vpc Public IP address pool.
-* `cidr_block` - (Optional, ForceNew) The CIDR block.
-* `status` - (Optional, ForceNew) The status of the CIDR block in the Vpc Public IP address pool. Valid values: `Created`, `Modifying`, `Deleting`.
+* `ids` - (Optional, Computed)  A list of Vpc Public Ip Address Pool Cidr Block IDs.
+* `public_ip_address_pool_id` - (Required) The ID of the Vpc Public IP address pool.
+* `cidr_block` - (Optional) The CIDR block.
+* `status` - (Optional) The status of the CIDR block in the Vpc Public IP address pool. Valid values: `Created`, `Modifying`, `Deleting`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `blocks` - A list of Vpc Public Ip Address Pool Cidr Blocks. Each element contains the following attributes:
-  * `id` - The ID of the Public Ip Address Pool Cidr Block.
-  * `public_ip_address_pool_id` - The ID of the Vpc Public IP address pool.
-  * `cidr_block` - The CIDR block.
-  * `status` - The status of the CIDR block in the Vpc Public IP address pool.
-  * `used_ip_num` - The total number of available IP addresses in the CIDR block.
-  * `total_ip_num` - The number of occupied IP addresses in the CIDR block.
-  * `create_time` - The time when the CIDR block was created. The time is displayed in YYYY-MM-DDThh:mm:ssZ format.
+* `blocks` - A list of Vpc Public Ip Address Pool Cidr Blocks.
+
+---
+
+### `blocks`
+
+The blocks supports the following attributes:
+
+* `id` - The ID of the Public Ip Address Pool Cidr Block.
+* `public_ip_address_pool_id` - The ID of the Vpc Public IP address pool.
+* `cidr_block` - The CIDR block.
+* `status` - The status of the CIDR block in the Vpc Public IP address pool.
+* `used_ip_num` - The total number of available IP addresses in the CIDR block.
+* `total_ip_num` - The number of occupied IP addresses in the CIDR block.
+* `create_time` - The time when the CIDR block was created. The time is displayed in YYYY-MM-DDThh:mm:ssZ format.

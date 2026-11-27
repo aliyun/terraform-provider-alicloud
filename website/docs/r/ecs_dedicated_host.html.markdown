@@ -97,6 +97,8 @@ The following arguments are supported:
 * `dedicated_host_cluster_id` - (Optional, Available since v1.123.1) The dedicated host cluster ID to which the dedicated host belongs.
 * `min_quantity` - (Optional, Available since v1.123.1) Specify the minimum purchase quantity of a dedicated host.
 
+---
+
 ### `network_attributes`
 
 The network_attributes supports the following:
@@ -111,7 +113,7 @@ The network_attributes supports the following:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 11 mins) Used when create the dedicated host.
 * `delete` - (Defaults to 1 mins) Used when delete the dedicated host.

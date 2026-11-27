@@ -76,7 +76,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.98.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 4 mins) Used when Creating ONS instance.
 * `delete` - (Defaults to 4 mins) Used when terminating the ONS instance.

@@ -50,6 +50,8 @@ The following arguments are supported:
 * `description` - (Optional) The description of the prefix list. The description must be 2 to 256 characters in length and cannot start with `http://` or `https://`.
 * `entry` - (Required) The Entry. See [`entry`](#entry) below.
 
+---
+
 ### `entry`
 
 The entry supports the following:

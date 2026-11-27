@@ -30,8 +30,8 @@ output "security_center_groups" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Group IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group name.
+* `ids` - (Optional, Computed)  A list of Group IDs.
+* `name_regex` - (Optional) A regex string to filter results by Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -39,8 +39,15 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Group names.
-* `groups` - A list of Security Center Groups. Each element contains the following attributes:
-  * `id` - The ID of the Group(same as the group_id).
-  * `group_id` - The ID of Group.
-  * `group_name` - The name of Group.
-  * `group_flag` - GroupFlag, '0' mean default group(created by system), '1' means customer defined group.
+* `groups` - A list of Security Center Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `id` - The ID of the Group(same as the group_id).
+* `group_id` - The ID of Group.
+* `group_name` - The name of Group.
+* `group_flag` - GroupFlag, '0' mean default group(created by system), '1' means customer defined group.

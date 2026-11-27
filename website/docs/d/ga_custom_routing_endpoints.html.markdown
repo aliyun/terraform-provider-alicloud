@@ -32,22 +32,29 @@ output "ga_custom_routing_endpoints_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Custom Routing Endpoint IDs.
-* `accelerator_id` - (Required, ForceNew) The ID of the GA instance.
-* `listener_id` - (Optional, ForceNew) The ID of the custom routing listener.
-* `endpoint_group_id` - (Optional, ForceNew) The ID of the endpoint group.
+* `ids` - (Optional, Computed) A list of Custom Routing Endpoint IDs.
+* `accelerator_id` - (Required) The ID of the GA instance.
+* `listener_id` - (Optional) The ID of the custom routing listener.
+* `endpoint_group_id` - (Optional) The ID of the endpoint group.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `custom_routing_endpoints` - A list of Custom Routing Endpoints. Each element contains the following attributes:
-  * `id` - The id of the Global Accelerator Custom Routing Endpoint. It formats as `<endpoint_group_id>:<custom_routing_endpoint_id>`.
-  * `endpoint_group_id` - The ID of the Custom Routing Endpoint Group.
-  * `custom_routing_endpoint_id` - The ID of the Custom Routing Endpoint.
-  * `accelerator_id` - The ID of the GA instance with which the endpoint is associated.
-  * `listener_id` - The ID of the listener with which the endpoint is associated.
-  * `endpoint` - The ID of the endpoint (vSwitch).
-  * `type` - The backend service type of the endpoint.
-  * `traffic_to_endpoint_policy` - The access policy of traffic for the specified endpoint.
+* `custom_routing_endpoints` - A list of Custom Routing Endpoints.
+
+---
+
+### `custom_routing_endpoints`
+
+The custom_routing_endpoints supports the following attributes:
+
+* `id` - The id of the Global Accelerator Custom Routing Endpoint. It formats as `<endpoint_group_id>:<custom_routing_endpoint_id>`.
+* `endpoint_group_id` - The ID of the Custom Routing Endpoint Group.
+* `custom_routing_endpoint_id` - The ID of the Custom Routing Endpoint.
+* `accelerator_id` - The ID of the GA instance with which the endpoint is associated.
+* `listener_id` - The ID of the listener with which the endpoint is associated.
+* `endpoint` - The ID of the endpoint (vSwitch).
+* `type` - The backend service type of the endpoint.
+* `traffic_to_endpoint_policy` - The access policy of traffic for the specified endpoint.

@@ -109,6 +109,8 @@ The following arguments are supported:
 * `origins` - (Optional, Set) The Source station information added to the source address pool. Multiple Source stations use arrays to transfer values. See [`origins`](#origins) below.
 * `site_id` - (Required, ForceNew) The site ID.
 
+---
+
 ### `origins`
 
 The origins supports the following:
@@ -131,6 +133,8 @@ The origins supports the following:
   - `ipv6_first`: Prioritizes IPv6 origins.
   - `follow`: Uses the same IP protocol version as the client's request.
 
+---
+
 ### `origins-auth_conf`
 
 The origins-auth_conf supports the following:
@@ -152,11 +156,18 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<origin_pool_id>`.
 * `origin_pool_id` - OriginPool Id
 * `origins` - The Source station information added to the source address pool. Multiple Source stations use arrays to transfer values.
-  * `origin_id` - Origin ID.
+
+---
+
+### `origins`
+
+The origins supports the following attributes:
+
+* `origin_id` - Origin ID.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Origin Pool.
 * `delete` - (Defaults to 5 mins) Used when delete the Origin Pool.

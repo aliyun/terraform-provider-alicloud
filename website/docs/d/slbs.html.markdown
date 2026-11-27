@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_slbs
 
--> **DEPRECATED:** This datasource has been renamed to [alicloud_slb_load_balancers](https://www.terraform.io/docs/providers/alicloud/d/slb_load_balancers) from version 1.123.1.
+-> **DEPRECATED:** This datasource has been renamed to [alicloud_slb_load_balancers](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/slb_load_balancers) from version 1.123.1.
 
 This data source provides the server load balancers of the current Alibaba Cloud user.
 
@@ -60,62 +60,97 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of slb IDs.
 * `names` - A list of slb names.
-* `balancers` - A list of SLBs. Each element contains the following attributes:
-  * `id` - ID of the SLB.
-  * `address` - The IP address that the SLB instance uses to provide services.
-  * `address_ip_version` - The address ip version.
-  * `address_type` - The address type.
-  * `auto_release_time` - The auto release time.
-  * `backend_servers` - The backend servers of the SLB.
-    * `description` - The description of servers.
-    * `server_id` - The ID of the Elastic Compute Service (ECS) instance that is specified as a backend server of the CLB instance.
-    * `type` - The type of servers.
-    * `weight` - The weight of servers.
-  * `bandwidth` - The bandwidth of the SLB.
-  * `create_time` - The creation time of the SLB, mapped from the API `CreateTime` field.
-  * `create_time_stamp` - The create time stamp of the SLB.
-  * `delete_protection` - Whether the SLB should delete protection.
-  * `end_time` - The end time of the SLB.
-  * `end_time_stamp` - The end time stamp of the SLB.
-  * `internet_charge_type` - The billing method of the Internet-facing SLB instance.
-  * `listener_ports_and_protocal` - The listener ports and protocol of the SLB.
-    * `listener_port` - The listener port.
-    * `listener_protocal` - The listener protocol.
-  * `listener_ports_and_protocol` - The listener ports and protocol of the SLB.
-    * `description` - The description of protocol.
-    * `forward_port` - The forward port.
-    * `listener_forward` - The listener forward.
-    * `listener_port` - The listener port.
-    * `listener_protocol` - The listener protocol.
-  * `load_balancer_id` - Thd ID of the SLB.
-  * `load_balancer_name` - The name of the SLB.
-  * `master_zone_id` - Master availability zone of the SLBs.
-  * `modification_protection_reason` - The reason of modification protection.
-  * `modification_protection_status` - The status of modification protection.
-  * `network_type` -  Network type of the SLB. Possible values: `vpc` and `classic`.
-  * `payment_type` - The payment type of the SLB.
-  * `region_id_alias` - Region ID the SLB belongs to.
-  * `renewal_cyc_unit` - The renewal cyc unit of the SLB.
-  * `renewal_duration` - The renewal duration of the SLB.
-  * `renewal_status` - The renewal status of the SLB.
-  * `resource_group_id` - The ID of the resource group.
-  * `slave_zone_id` - Slave availability zone of the SLBs.
-  * `load_balancer_spec` - The specification of the SLB.
-  * `status` - SLB current status. Possible values: `inactive`, `active` and `locked`.
-  * `tags` - The tags of the SLB.
-  * `vswitch_id` - ID of the vSwitch the SLB belongs to.
-  * `vpc_id` - ID of the VPC the SLB belongs to.
-* `slbs` - **Deprecated** It has been deprecated from v1.123.1 and replaced by `balancers`. Each element contains the following attributes:
-  * `id` - ID of the SLB.
-  * `region_id` - Region ID the SLB belongs to.
-  * `master_availability_zone` - Master availability zone of the SLB.
-  * `slave_availability_zone` - Slave availability zone of the SLB.
-  * `status` - SLB current status. Possible values: `inactive`, `active` and `locked`.
-  * `name` - The name of the SLB.
-  * `network_type` - Network type of the SLB. Possible values: `vpc` and `classic`.
-  * `vpc_id` - ID of the VPC the SLB belongs to.
-  * `vswitch_id` - ID of the vSwitch the SLB belongs to.
-  * `address` - The IP address that the SLB instance uses to provide services.
-  * `internet` - Whether the SLB is internet-facing.
-  * `creation_time` - The creation time of the SLB.
-  * `tags` - The tags of the SLB.
+* `balancers` - A list of SLBs.
+* `slbs` - **Deprecated** It has been deprecated from v1.123.1 and replaced by `balancers`.
+
+---
+
+### `balancers`
+
+The balancers supports the following attributes:
+
+* `id` - ID of the SLB.
+* `address` - The IP address that the SLB instance uses to provide services.
+* `address_ip_version` - The address ip version.
+* `address_type` - The address type.
+* `auto_release_time` - The auto release time.
+* `backend_servers` - The backend servers of the SLB.
+* `bandwidth` - The bandwidth of the SLB.
+* `create_time` - The creation time of the SLB, mapped from the API `CreateTime` field.
+* `create_time_stamp` - The create time stamp of the SLB.
+* `delete_protection` - Whether the SLB should delete protection.
+* `end_time` - The end time of the SLB.
+* `end_time_stamp` - The end time stamp of the SLB.
+* `internet_charge_type` - The billing method of the Internet-facing SLB instance.
+* `listener_ports_and_protocal` - The listener ports and protocol of the SLB.
+* `listener_ports_and_protocol` - The listener ports and protocol of the SLB.
+* `load_balancer_id` - Thd ID of the SLB.
+* `load_balancer_name` - The name of the SLB.
+* `master_zone_id` - Master availability zone of the SLBs.
+* `modification_protection_reason` - The reason of modification protection.
+* `modification_protection_status` - The status of modification protection.
+* `network_type` -  Network type of the SLB. Possible values: `vpc` and `classic`.
+* `payment_type` - The payment type of the SLB.
+* `region_id_alias` - Region ID the SLB belongs to.
+* `renewal_cyc_unit` - The renewal cyc unit of the SLB.
+* `renewal_duration` - The renewal duration of the SLB.
+* `renewal_status` - The renewal status of the SLB.
+* `resource_group_id` - The ID of the resource group.
+* `slave_zone_id` - Slave availability zone of the SLBs.
+* `load_balancer_spec` - The specification of the SLB.
+* `status` - SLB current status. Possible values: `inactive`, `active` and `locked`.
+* `tags` - The tags of the SLB.
+* `vswitch_id` - ID of the vSwitch the SLB belongs to.
+* `vpc_id` - ID of the VPC the SLB belongs to.
+
+---
+
+### `balancers.backend_servers`
+
+The backend_servers supports the following attributes:
+
+* `description` - The description of servers.
+* `server_id` - The ID of the Elastic Compute Service (ECS) instance that is specified as a backend server of the CLB instance.
+* `type` - The type of servers.
+* `weight` - The weight of servers.
+
+---
+
+### `balancers.listener_ports_and_protocal`
+
+The listener_ports_and_protocal supports the following attributes:
+
+* `listener_port` - The listener port.
+* `listener_protocal` - The listener protocol.
+
+---
+
+### `balancers.listener_ports_and_protocol`
+
+The listener_ports_and_protocol supports the following attributes:
+
+* `description` - The description of protocol.
+* `forward_port` - The forward port.
+* `listener_forward` - The listener forward.
+* `listener_port` - The listener port.
+* `listener_protocol` - The listener protocol.
+
+---
+
+### `slbs`
+
+The slbs supports the following attributes:
+
+* `id` - ID of the SLB.
+* `region_id` - Region ID the SLB belongs to.
+* `master_availability_zone` - Master availability zone of the SLB.
+* `slave_availability_zone` - Slave availability zone of the SLB.
+* `status` - SLB current status. Possible values: `inactive`, `active` and `locked`.
+* `name` - The name of the SLB.
+* `network_type` - Network type of the SLB. Possible values: `vpc` and `classic`.
+* `vpc_id` - ID of the VPC the SLB belongs to.
+* `vswitch_id` - ID of the vSwitch the SLB belongs to.
+* `address` - The IP address that the SLB instance uses to provide services.
+* `internet` - Whether the SLB is internet-facing.
+* `creation_time` - The creation time of the SLB.
+* `tags` - The tags of the SLB.

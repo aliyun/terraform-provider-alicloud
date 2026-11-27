@@ -66,7 +66,7 @@ output "db_cluster" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of DBCluster IDs.
+* `ids` - (Optional, Computed)  A list of DBCluster IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -74,6 +74,8 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `clusters` - A list of SelectDB DBClusters. Each element contains the following attributes:
+
+---
 
 ### `clusters`
 
@@ -98,6 +100,8 @@ The clusters supports the following:
 * `params` - The details about each parameter in DBCluster returned.
 * `param_change_logs` - The configuration change logs of parameters.
 
+---
+
 ### `clusters.params`
 
 The params supports the following:
@@ -110,6 +114,8 @@ The params supports the following:
 * `default_value` - The default value of the parameter.
 * `is_dynamic` - Indicates whether the parameter immediately takes effect without requiring a restart.
 * `is_user_modifiable` - Indicates whether the parameter is modifiable.
+
+---
 
 ### `clusters.param_change_logs`
 

@@ -456,34 +456,6 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
     echo
   fi
 
-  # 2.3 Misspell check
-  if ! command -v misspell &> /dev/null; then
-    install_tool "misspell" "go install github.com/client9/misspell/cmd/misspell@latest"
-  fi
-
-  if command -v misspell &> /dev/null; then
-    if [ "$STRICT_MODE" = true ]; then
-      # CI mode: check all docs
-      run_check "Spell Check (misspell)" \
-        "misspell -error -locale=US ./website/docs" \
-        || true
-    else
-      # Smart mode: check only changed docs
-      CHANGED_DOCS=$(echo "$CHANGED_FILES" | grep "website/docs" || true)
-      if [[ -n "$CHANGED_DOCS" ]]; then
-        run_check "Spell Check (changed docs only)" \
-          "echo '$CHANGED_DOCS' | xargs misspell -error -locale=US" \
-          || true
-      else
-        echo -e "${BLUE}▶ Misspell Check: No changed doc files${NC}"
-        echo
-      fi
-    fi
-  else
-    echo -e "${YELLOW}⚠ Skipping Misspell check (installation failed)${NC}"
-    echo
-  fi
-
   # 2.4 Markdown lint
   if [ "$SKIP_MARKDOWN_LINT" = true ]; then
     echo -e "${YELLOW}⚠ Skipping Markdown lint (disabled locally, use --run-markdown-lint to enable)${NC}"
@@ -567,16 +539,23 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
   # 2.6 Documentation content check
   echo -e "${BLUE}▶ Running documentation content checks...${NC}"
   doc_content_failed=false
+  doc_check_targets=()
   for doc in $CHANGED_FILES; do
     if [[ "$doc" == website/docs/d/* ]] || [[ "$doc" == website/docs/r/* ]]; then
       if [ -f "$doc" ]; then
         echo -e "  Checking: $doc"
-        if ! go run "$SCRIPT_DIR/document/document_check.go" "$doc"; then
-          doc_content_failed=true
-        fi
+        doc_check_targets+=("$doc")
       fi
     fi
   done
+  # One go run compiles the checker and builds the alicloud/service
+  # registration index once for every changed page; a per-document go run
+  # would rebuild both for each page.
+  if [ ${#doc_check_targets[@]} -gt 0 ]; then
+    if ! go run "$SCRIPT_DIR/document/document_check.go" "${doc_check_targets[@]}"; then
+      doc_content_failed=true
+    fi
+  fi
   
   if [ "$doc_content_failed" = false ]; then
     echo -e "${GREEN}✓ PASSED: Documentation content check${NC}"
@@ -612,6 +591,67 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
     echo -e "${YELLOW}⚠ No changes to check${NC}"
   fi
   rm -f "$TEMP_DIFF"
+  echo
+fi
+
+# 2.3 Misspell check
+# Same rule as the formal document CI (scripts/ci/run-document-checks.py and
+# .aoneci/.github document-check workflows): misspell v0.3.4 with the shared
+# ignore list and no -locale, so legitimate API/Provider literal values such
+# as the enum "Cancelled" are not flagged as misspellings of "Canceled".
+# Keep this list identical to the misspell rule in run-document-checks.py;
+# scripts/ci/test_document_checks.py fails when the two drift apart.
+# This block lives outside the docs-change gate so the rule is proven on
+# every round, not only when website/docs files changed.
+MISSPELL_IGNORE_LIST="bussiness,protocal,attemps,alltime,transfering"
+MISSPELL_VERSION="v0.3.4"
+# A bare existence check keeps any misspell already on PATH, whatever rules
+# that binary was built with. go version -m reads the module a misspell
+# binary was built from, so misspell_is_pinned only accepts the pinned
+# version and install_tool reinstalls a wrong or non-Go misspell.
+misspell_is_pinned() {
+  command -v misspell &> /dev/null || return 1
+  go version -m "$(command -v misspell)" 2>/dev/null | awk -v module="github.com/client9/misspell" -v version="$MISSPELL_VERSION" '
+    $1 == "mod" && $2 == module && $3 == version { found = 1 }
+    END { exit(found ? 0 : 1) }
+  '
+}
+if ! misspell_is_pinned; then
+  install_tool "misspell" "go install github.com/client9/misspell/cmd/misspell@${MISSPELL_VERSION}"
+fi
+
+if command -v misspell &> /dev/null; then
+  # Executable regression for the shared misspell rule: an injected real
+  # misspelling must fail, while the enum literal "Cancelled" must pass
+  # without -locale (the original false positive). Runs on every round so
+  # the rule stays proven even when no docs changed.
+  MISSPELL_GUARDRAIL_DIR=$(mktemp -d)
+  printf 'The recieve word is a real misspelling.\n' > "$MISSPELL_GUARDRAIL_DIR/typo.md"
+  printf 'status = "Cancelled"\n' > "$MISSPELL_GUARDRAIL_DIR/enum.md"
+  run_check "Spell Check guardrail (real typo fails, enum literal passes)" \
+    "if misspell -error -i \"$MISSPELL_IGNORE_LIST\" \"$MISSPELL_GUARDRAIL_DIR/typo.md\"; then echo 'misspell failed to flag an injected misspelling'; exit 1; fi && misspell -error -i \"$MISSPELL_IGNORE_LIST\" \"$MISSPELL_GUARDRAIL_DIR/enum.md\"" \
+    || true
+  rm -rf "$MISSPELL_GUARDRAIL_DIR"
+
+  if [ "$STRICT_MODE" = true ]; then
+    # CI mode: check all docs
+    run_check "Spell Check (misspell)" \
+      "misspell -error -i \"$MISSPELL_IGNORE_LIST\" ./website/docs" \
+      || true
+  else
+    # Smart mode: check only changed docs
+    CHANGED_DOCS=$(echo "$CHANGED_FILES" | grep "website/docs" || true)
+    if [[ -n "$CHANGED_DOCS" ]]; then
+      run_check "Spell Check (changed docs only)" \
+        "echo '$CHANGED_DOCS' | xargs misspell -error -i \"$MISSPELL_IGNORE_LIST\"" \
+        || true
+    else
+      echo -e "${BLUE}▶ Misspell Check: No changed doc files${NC}"
+      echo
+    fi
+  fi
+else
+  echo -e "${YELLOW}⚠ Skipping Misspell check (installation failed)${NC}"
   echo
 fi
 

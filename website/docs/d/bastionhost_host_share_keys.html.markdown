@@ -40,9 +40,9 @@ output "bastionhost_host_share_key_id_2" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Host Share Key IDs.
-* `instance_id` - (Required, ForceNew) The ID of the Bastion instance.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Host Share Key name.
+* `ids` - (Optional, Computed)  A list of Host Share Key IDs.
+* `instance_id` - (Required) The ID of the Bastion instance.
+* `name_regex` - (Optional) A regex string to filter results by Host Share Key name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -50,9 +50,16 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Host Share Key names.
-* `keys` - A list of Bastionhost Host Share Keys. Each element contains the following attributes:
-  * `host_share_key_id` - The first ID of the resource.
-  * `host_share_key_name` - The name of the host shared key.
-  * `id` - The ID of the Host Share Key.
-  * `instance_id` - The ID of the Bastion instance.
-  * `private_key_finger_print` - The fingerprint of the private key.
+* `keys` - A list of Bastionhost Host Share Keys.
+
+---
+
+### `keys`
+
+The keys supports the following attributes:
+
+* `host_share_key_id` - The first ID of the resource.
+* `host_share_key_name` - The name of the host shared key.
+* `id` - The ID of the Host Share Key.
+* `instance_id` - The ID of the Bastion instance.
+* `private_key_finger_print` - The fingerprint of the private key.

@@ -74,39 +74,60 @@ output "alicloud_sls_etl_example_id" {
 
 The following arguments are supported:
 
-* `project` - (ForceNew, Required) Project Name
-* `logstore` - (ForceNew, Required) Source Logstore Name.
-* `offset` - (ForceNew, Optional) Query start row. The default value is 0.
-* `size` - (ForceNew, Optional) Specify the number of data processing tasks returned by the query
-* `ids` - (Optional, ForceNew, Computed) A list of Etl IDs. The value is formulated as `<project>:<job_name>`.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `project` - (Required) Project Name
+* `logstore` - (Required) Source Logstore Name.
+* `offset` - (Optional) Query start row. The default value is 0.
+* `size` - (Optional) Specify the number of data processing tasks returned by the query
+* `ids` - (Optional, Computed) A list of Etl IDs. The value is formulated as `<project>:<job_name>`.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Etl IDs.
-* `etls` - A list of Etl Entries. Each element contains the following attributes:
-  * `configuration` - Detailed configuration of data processing tasks
-    * `from_time` - Processing time start timestamp (accurate to the second). Enter 0 when the first log received from the source Logstore is consumed.
-    * `lang` - Data processing syntax type.
-    * `logstore` - Source Logstore Name.
-    * `parameters` - Advanced parameter configuration.
-    * `role_arn` - The ARN role that authorizes reading of the source Logstore.
-    * `script` - Processing script.
-    * `sink` - Processing result output target list.
-      * `datasets` - Write Result Set.
-      * `endpoint` - The endpoint of the region where the target Project is located.
-      * `logstore` - Destination Logstore Name.
-      * `name` - Output Destination Name.
-      * `project` - Target Project name.
-      * `role_arn` - The ARN role that authorizes writing to the target Logstore.
-    * `to_time` - Processing time end timestamp (accurate to seconds). When continuous consumption is stopped manually, fill in 0.
-  * `create_time` - Task creation time. Example value: 1718787534
-  * `description` - Data Processing Task Description
-  * `display_name` - Data processing task display name
-  * `job_name` - Unique identification of data processing task
-  * `last_modified_time` - The time when the task was last modified. Example value: 1718787681
-  * `schedule_id` - The task ID. Example values:
-  * `status` - Task Status
-  * `id` - The ID of the resource supplied above.
+* `etls` - A list of Etl Entries.
+
+---
+
+### `etls`
+
+The etls supports the following attributes:
+
+* `configuration` - Detailed configuration of data processing tasks
+* `create_time` - Task creation time. Example value: 1718787534
+* `description` - Data Processing Task Description
+* `display_name` - Data processing task display name
+* `job_name` - Unique identification of data processing task
+* `last_modified_time` - The time when the task was last modified. Example value: 1718787681
+* `schedule_id` - The task ID. Example values:
+* `status` - Task Status
+* `id` - The ID of the resource supplied above.
+
+---
+
+### `etls.configuration`
+
+The configuration supports the following attributes:
+
+* `from_time` - Processing time start timestamp (accurate to the second). Enter 0 when the first log received from the source Logstore is consumed.
+* `lang` - Data processing syntax type.
+* `logstore` - Source Logstore Name.
+* `parameters` - Advanced parameter configuration.
+* `role_arn` - The ARN role that authorizes reading of the source Logstore.
+* `script` - Processing script.
+* `sink` - Processing result output target list.
+* `to_time` - Processing time end timestamp (accurate to seconds). When continuous consumption is stopped manually, fill in 0.
+
+---
+
+### `etls.configuration.sink`
+
+The sink supports the following attributes:
+
+* `datasets` - Write Result Set.
+* `endpoint` - The endpoint of the region where the target Project is located.
+* `logstore` - Destination Logstore Name.
+* `name` - Output Destination Name.
+* `project` - Target Project name.
+* `role_arn` - The ARN role that authorizes writing to the target Logstore.

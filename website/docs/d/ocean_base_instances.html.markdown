@@ -35,13 +35,14 @@ output "ocean_base_instance_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Instance IDs.
-* `instance_id` - (ForceNew, Optional) OceanBase cluster ID.
-* `resource_group_id` - (ForceNew, Optional) The ID of the enterprise resource group to which the instance resides.
-* `search_key` - (ForceNew, Optional) The filter keyword for the query list.
-* `instance_name` - (Optional, ForceNew) OceanBase cluster name. The length is 1 to 20 English or Chinese characters. If this parameter is not specified, the default value is the InstanceId of the cluster.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Instance name.
-* `status` - (Optional, ForceNew) The status of the Instance. Value range: `PENDING_CREATE`, `ONLINE`, `TENANT_CREATING`, `TENANT_SPEC_MODIFYING`, `EXPANDING`, `REDUCING`, `SPEC_UPGRADING`, `DISK_UPGRADING`, `WHITE_LIST_MODIFYING`, `PARAMETER_MODIFYING`, `SSL_MODIFYING`, `PREPAID_EXPIRE_CLOSED`, `ARREARS_CLOSED`, `PENDING_DELETE`.
+* `ids` - (Optional, Computed)  A list of Instance IDs.
+* `instance_id` - (Optional) OceanBase cluster ID.
+* `resource_group_id` - (Optional) The ID of the enterprise resource group to which the instance resides.
+* `search_key` - (Optional) The filter keyword for the query list.
+* `instance_name` - (Optional) OceanBase cluster name. The length is 1 to 20 English or Chinese characters. If this parameter is not specified, the default value is the InstanceId of the cluster.
+* `name_regex` - (Optional) A regex string to filter results by Instance name.
+* `status` - (Optional) The status of the Instance. Value range: `PENDING_CREATE`, `ONLINE`, `TENANT_CREATING`, `TENANT_SPEC_MODIFYING`, `EXPANDING`, `REDUCING`, `SPEC_UPGRADING`, `DISK_UPGRADING`, `WHITE_LIST_MODIFYING`, `PARAMETER_MODIFYING`, `SSL_MODIFYING`, `PREPAID_EXPIRE_CLOSED`, `ARREARS_CLOSED`, `PENDING_DELETE`.
+* `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -49,18 +50,25 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Instance names.
-* `instances` - A list of Ocean Base Instances. Each element contains the following attributes:
-	* `commodity_code` - The product code of the OceanBase cluster.
-	* `cpu` - The number of CPU cores of the cluster.
-	* `node_num` - The number of nodes in the cluster.
-	* `create_time` - The creation time of the resource.
-	* `disk_size` - The size of the storage space, in GB.
-	* `id` - The ID of the Instance.
-	* `instance_class` - Cluster specification information.
-	* `instance_id` - OceanBase cluster ID.
-	* `instance_name` - OceanBase cluster name.
-	* `payment_type` - The payment method of the instance.
-	* `resource_group_id` - The ID of the enterprise resource group to which the instance resides.
-	* `series` - Series of OceanBase clusters.
-	* `status` - The status of the resource.
-	* `zones` - Information about the zone where the cluster is deployed.
+* `instances` - A list of Ocean Base Instances.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `commodity_code` - The product code of the OceanBase cluster.
+* `cpu` - The number of CPU cores of the cluster.
+* `node_num` - The number of nodes in the cluster.
+* `create_time` - The creation time of the resource.
+* `disk_size` - The size of the storage space, in GB.
+* `id` - The ID of the Instance.
+* `instance_class` - Cluster specification information.
+* `instance_id` - OceanBase cluster ID.
+* `instance_name` - OceanBase cluster name.
+* `payment_type` - The payment method of the instance.
+* `resource_group_id` - The ID of the enterprise resource group to which the instance resides.
+* `series` - Series of OceanBase clusters.
+* `status` - The status of the resource.
+* `zones` - Information about the zone where the cluster is deployed.

@@ -90,9 +90,16 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of SLB listener rules IDs.
 * `names` - A list of SLB listener rules names.
-* `slb_rules` - A list of SLB listener rules. Each element contains the following attributes:
-  * `id` - Rule ID.
-  * `name` - Rule name.
-  * `domain` - Domain name in the HTTP request where the rule applies (e.g. "*.aliyun.com").
-  * `url` - Path in the HTTP request where the rule applies (e.g. "/image").
-  * `server_group_id` - ID of the linked VServer group.
+* `slb_rules` - A list of SLB listener rules.
+
+---
+
+### `slb_rules`
+
+The slb_rules supports the following attributes:
+
+* `id` - Rule ID.
+* `name` - Rule name.
+* `domain` - Domain name in the HTTP request where the rule applies (e.g. "*.aliyun.com").
+* `url` - Path in the HTTP request where the rule applies (e.g. "/image").
+* `server_group_id` - ID of the linked VServer group.

@@ -32,11 +32,11 @@ output "arms_alert_contact_group_id" {
 
 The following arguments are supported:
 
-* `alert_contact_group_name` - (Optional, ForceNew) The name of the resource.
-* `contact_id` - (Optional, ForceNew) The contact id.
-* `contact_name` - (Optional, ForceNew) The contact name.
-* `ids` - (Optional, ForceNew, Computed)  A list of Alert Contact Group IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Alert Contact Group name.
+* `alert_contact_group_name` - (Optional) The name of the resource.
+* `contact_id` - (Optional) The contact id.
+* `contact_name` - (Optional) The contact name.
+* `ids` - (Optional, Computed)  A list of Alert Contact Group IDs.
+* `name_regex` - (Optional) A regex string to filter results by Alert Contact Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -44,9 +44,16 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Alert Contact Group names.
-* `groups` - A list of Arms Alert Contact Groups. Each element contains the following attributes:
-  * `alert_contact_group_id` - The first ID of the resource.
-  * `alert_contact_group_name` - The name of the resource.
-  * `contact_ids` - contact ids.
-  * `create_time` - The creation time of the resource.
-  * `id` - The ID of the Alert Contact Group.
+* `groups` - A list of Arms Alert Contact Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `alert_contact_group_id` - The first ID of the resource.
+* `alert_contact_group_name` - The name of the resource.
+* `contact_ids` - contact ids.
+* `create_time` - The creation time of the resource.
+* `id` - The ID of the Alert Contact Group.

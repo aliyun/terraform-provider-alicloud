@@ -49,14 +49,21 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Deployment Set names.
-* `sets` - A list of Ecs Deployment Sets. Each element contains the following attributes:
-  * `create_time` - The time when the deployment set was created.
-  * `deployment_set_id` - The ID of the Deployment Set.
-  * `deployment_set_name` - The name of the deployment set.
-  * `description` - The description of the deployment set.
-  * `domain` - The deployment domain.
-  * `granularity` - The deployment granularity.
-  * `id` - The ID of the Deployment Set.
-  * `instance_amount` - The number of instances in the deployment set.
-  * `instance_ids` - The IDs of the instances in the deployment set.
-  * `strategy` - The deployment strategy.
+* `sets` - A list of Ecs Deployment Sets.
+
+---
+
+### `sets`
+
+The sets supports the following attributes:
+
+* `create_time` - The time when the deployment set was created.
+* `deployment_set_id` - The ID of the Deployment Set.
+* `deployment_set_name` - The name of the deployment set.
+* `description` - The description of the deployment set.
+* `domain` - The deployment domain.
+* `granularity` - The deployment granularity.
+* `id` - The ID of the Deployment Set.
+* `instance_amount` - The number of instances in the deployment set.
+* `instance_ids` - The IDs of the instances in the deployment set.
+* `strategy` - The deployment strategy.

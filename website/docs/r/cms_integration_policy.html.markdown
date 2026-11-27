@@ -69,6 +69,8 @@ The following arguments are supported:
 * `policy_type` - (Required, ForceNew) The policy type.
 * `workspace` - (Required, ForceNew) The workspace.
 
+---
+
 ### `entity_group`
 
 The entity_group supports the following:
@@ -90,7 +92,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Integration Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Integration Policy.

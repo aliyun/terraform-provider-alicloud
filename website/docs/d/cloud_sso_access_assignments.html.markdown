@@ -33,27 +33,34 @@ output "cloud_sso_access_assignment_id_1" {
 
 The following arguments are supported:
 
-* `access_configuration_id` - (Optional, ForceNew) Access configuration ID.
-* `directory_id` - (Required, ForceNew) Directory ID.
-* `ids` - (Optional, ForceNew, Computed)  A list of Access Assignment IDs.
+* `access_configuration_id` - (Optional) Access configuration ID.
+* `directory_id` - (Required) Directory ID.
+* `ids` - (Optional, Computed)  A list of Access Assignment IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `principal_type` - (Optional, ForceNew) Create the identity type of the access assignment, which can be a user or a user group. Valid values: `Group`, `User`.
-* `target_id` - (Optional, ForceNew) The ID of the target to create the resource range.
-* `target_type` - (Optional, ForceNew) The type of the resource range target to be accessed. Only a single RD primary account or member account can be specified in the first phase. Valid values: `RD-Account`.
+* `principal_type` - (Optional) Create the identity type of the access assignment, which can be a user or a user group. Valid values: `Group`, `User`.
+* `target_id` - (Optional) The ID of the target to create the resource range.
+* `target_type` - (Optional) The type of the resource range target to be accessed. Only a single RD primary account or member account can be specified in the first phase. Valid values: `RD-Account`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `assignments` - A list of Cloud Sso Access Assignments. Each element contains the following attributes:
-  * `access_configuration_id` - Access configuration ID.
-  * `access_configuration_name` - The name of the access configuration.
-  * `directory_id` - Directory ID.
-  * `id` - The ID of the Access Assignment.
-  * `principal_id` - The ID of the access assignment.
-  * `principal_name` - Cloud SSO identity name.
-  * `principal_type` - Create the identity type of the access assignment, which can be a user or a user group.
-  * `target_id` - The ID of the target to create the resource range.
-  * `target_name` - Task target name.
-  * `target_path_name` - The path name of the task target in the resource directory.
-  * `target_type` - The type of the resource range target to be accessed. Only a single RD primary account or member account can be specified in the first phase.
+* `assignments` - A list of Cloud Sso Access Assignments.
+
+---
+
+### `assignments`
+
+The assignments supports the following attributes:
+
+* `access_configuration_id` - Access configuration ID.
+* `access_configuration_name` - The name of the access configuration.
+* `directory_id` - Directory ID.
+* `id` - The ID of the Access Assignment.
+* `principal_id` - The ID of the access assignment.
+* `principal_name` - Cloud SSO identity name.
+* `principal_type` - Create the identity type of the access assignment, which can be a user or a user group.
+* `target_id` - The ID of the target to create the resource range.
+* `target_name` - Task target name.
+* `target_path_name` - The path name of the task target in the resource directory.
+* `target_type` - The type of the resource range target to be accessed. Only a single RD primary account or member account can be specified in the first phase.

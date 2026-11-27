@@ -59,7 +59,9 @@ The following arguments are supported:
 * `description` - (Optional, ForceNew) Description of the version
 * `layer_name` - (Required, ForceNew) Name of the layer
 * `license` - (Optional, ForceNew) Layer License Agreement
-* `public` - (Optional, ForceNew, Available since v1.234.0) Whether to expose the layer. Enumeration values: true, false. (Deprecated, please use acl instead)
+* `public` - (Optional, ForceNew, Available since v1.234.0) Whether to expose the layer. Enumeration values: true, false.
+
+---
 
 ### `code`
 
@@ -82,7 +84,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Layer Version.
 * `delete` - (Defaults to 5 mins) Used when delete the Layer Version.

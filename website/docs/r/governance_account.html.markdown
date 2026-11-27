@@ -90,6 +90,8 @@ The following arguments are supported:
 
 * `default_domain_name` - (Optional, Available since v1.231.0) The domain name is used to qualify the login name of RAM users and RAM roles.
 
+---
+
 ### `account_tags`
 
 The account_tags supports the following:
@@ -106,7 +108,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Account.
 * `update` - (Defaults to 5 mins) Used when update the Account.

@@ -78,6 +78,8 @@ The following arguments are supported:
 * `time_zone` - (Optional) Time zone, reference: Asia/Shanghai
 In general, the system will automatically generate the time zone according to the region without configuration.
 
+---
+
 ### `quota_timer`
 
 The quota_timer supports the following:
@@ -85,6 +87,8 @@ The quota_timer supports the following:
 * `begin_time` - (Required) The time-sharing configuration start time. Reference value: 00:00
 * `end_time` - (Required) The end time of the timesharing configuration. Reference value: 24:00
 * `tunnel_quota_parameter` - (Optional, List) Time-sharing configuration parameters. See [`tunnel_quota_parameter`](#quota_timer-tunnel_quota_parameter) below.
+
+---
 
 ### `quota_timer-tunnel_quota_parameter`
 
@@ -103,7 +107,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Tunnel Quota Timer.
 * `update` - (Defaults to 5 mins) Used when update the Tunnel Quota Timer.

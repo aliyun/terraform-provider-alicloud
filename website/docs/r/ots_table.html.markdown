@@ -197,12 +197,16 @@ The following arguments are supported:
 * `sse_key_id` - (Optional, Available since v1.224.0) . The key ID of secret. `sse_key_id` is valid only when `sse_key_type` is set to `SSE_BYOK`. **Note: The parameter is immutable after resource creation.
 * `sse_role_arn` - (Optional, Available since v1.224.0) The arn of role that can access kms service. `sse_role_arn` is valid only when `sse_key_type` is set to `SSE_BYOK`. **Note: The parameter is immutable after resource creation.
 
+---
+
 ### `defined_column`
 
 The defined_column supports the following:
 
 * `name` - (Required, Available since v1.187.0) Name for defined column.
 * `type` - (Required, Available since v1.187.0) Type for defined column. `Integer`, `String`, `Binary`, `Double`, `Boolean` is allowed.
+
+---
 
 ### `primary_key`
 

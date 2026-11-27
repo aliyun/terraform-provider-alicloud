@@ -69,6 +69,7 @@ func ServicePackage() conns.ServicePackage {
 		},
 		DataSources: []conns.DataSource{
 			{TypeName: "alicloud_ecs_auto_provisioning_groups", Factory: NewAutoProvisioningGroupsDataSource},
+			{TypeName: "alicloud_ecs_image_pipeline_executions", Factory: NewImagePipelineExecutionsDataSource},
 			{TypeName: "alicloud_reserved_instances", Factory: NewReservedInstancesDataSource},
 		},
 		SDKDataSources: []conns.SDKDataSource{

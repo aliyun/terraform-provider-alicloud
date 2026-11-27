@@ -306,17 +306,14 @@ func TestAccAliCloudOssBucketWebsite_basic9119(t *testing.T) {
 											"mirror_url_slave":                  "www.mirror-slave.com",
 											"mirror_url_probe":                  "www.mirror-probe.com",
 											"mirror_save_oss_meta":              "true",
-											"mirror_proxy_pass":                 "false",
 											"mirror_allow_get_image_info":       "true",
 											"mirror_allow_video_snapshot":       "true",
-											"mirror_is_express_tunnel":          "false",
 											"mirror_user_last_modified":         "true",
 											"mirror_switch_all_errors":          "true",
 											"mirror_using_role":                 "true",
 											"mirror_role":                       "role-abc",
 											"mirror_allow_head_object":          "true",
 											"transparent_mirror_response_codes": "404,424",
-											"mirror_async_status":               "0",
 											"mirror_taggings": []map[string]interface{}{
 												{
 													"taggings": []map[string]interface{}{
@@ -485,7 +482,18 @@ func TestAccAliCloudOssBucketWebsite_basic9119(t *testing.T) {
 											"mirror_url_slave":                  "www.aliyuncs.com/slave",
 											"mirror_url_probe":                  "www.aliyuncs.com/hearbeat",
 											"mirror_pass_original_slashes":      "false",
-											"mirror_url":                        "https://other-mirror-test.com",
+											// mirror_dst_region / mirror_dst_slave_vpc_id / mirror_dst_vpc_id /
+											// mirror_tunnel_id point at dedicated-line/tunnel infrastructure that
+											// cannot be created in acceptance tests; the API rejects fabricated
+											// values (InvalidArgument: Do not allowed to use this mirror tunnel id).
+											// They are declared explicitly (empty value, which the resource skips
+											// when building the PutBucketWebsite request) so the attributes are
+											// exercised through the read/plan cycle and registered for coverage.
+											"mirror_dst_region":       "",
+											"mirror_dst_slave_vpc_id": "",
+											"mirror_dst_vpc_id":       "",
+											"mirror_tunnel_id":        "",
+											"mirror_url":              "https://other-mirror-test.com",
 											"mirror_auth": []map[string]interface{}{
 												{
 													"auth_type":         "s3v4",

@@ -68,14 +68,14 @@ output "cddc_dedicated_host_id_5" {
 
 The following arguments are supported:
 
-* `allocation_status` - (Optional, ForceNew) Specifies whether instances can be created on the host. Valid values: `Allocatable` or `Suspended`. `Allocatable`: Instances can be created on the host. `Suspended`: Instances cannot be created on the host.
-* `dedicated_host_group_id` - (Required, ForceNew) The ID of the dedicated cluster.
+* `allocation_status` - (Optional) Specifies whether instances can be created on the host. Valid values: `Allocatable` or `Suspended`. `Allocatable`: Instances can be created on the host. `Suspended`: Instances cannot be created on the host.
+* `dedicated_host_group_id` - (Required) The ID of the dedicated cluster.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `host_type` - (Optional, ForceNew) The storage type of the host. Valid values: `dhg_local_ssd` or `dhg_cloud_ssd`. `dhg_local_ssd`: specifies that the host uses local SSDs. `dhg_cloud_ssd`: specifies that the host uses enhanced SSDs (ESSDs).
-* `ids` - (Optional, ForceNew, Computed)  A list of Dedicated Host IDs.
-* `order_id` - (Optional, ForceNew) The ID of the order.
+* `host_type` - (Optional) The storage type of the host. Valid values: `dhg_local_ssd` or `dhg_cloud_ssd`. `dhg_local_ssd`: specifies that the host uses local SSDs. `dhg_cloud_ssd`: specifies that the host uses enhanced SSDs (ESSDs).
+* `ids` - (Optional, Computed)  A list of Dedicated Host IDs.
+* `order_id` - (Optional) The ID of the order.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The state of the host. Valid values:
+* `status` - (Optional) The state of the host. Valid values:
   * `0:` The host is being created.
   * `1`: The host is running.
   * `2`: The host is faulty.
@@ -84,41 +84,48 @@ The following arguments are supported:
   * `5`: The host is deactivated.
   * `6`: The host is restarting.
   * `7`: The host is locked.
-* `zone_id` - (Optional, ForceNew) The ID of the zone.
-* `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
+* `zone_id` - (Optional) The ID of the zone.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `hosts` - A list of Cddc Dedicated Hosts. Each element contains the following attributes:
-  * `bastion_instance_id` - The ID of the bastion host with which the host is associated.
-  * `cpu_allocation_ratio` - The numeric value of the CPU over commit ratio of the dedicated cluster.
-  * `cpu_used` - The number of CPU cores used by the host.
-  * `create_time` - The time when the host was created. The time follows the ISO 8601 standard in the `yyyy-MM-ddTHH:mm:ssZ` format. The time is displayed in UTC.
-  * `dedicated_host_group_id` - The ID of the dedicated cluster in which the host is created.
-  * `dedicated_host_id` - The ID of the host.
-  * `disk_allocation_ratio` - The disk usage in percentage.
-  * `ecs_class_code` - The Elastic Compute Service (ECS) instance type.
-  * `end_time` - The time when the host expires. The time follows the ISO 8601 standard in the `yyyy-MM-ddTHH:mm:ssZ` format. The time is displayed in UTC.
-  * `engine` - The type of the database engine that is used by the host.
-  * `expired_time` - The time when the host expires. The time follows the ISO 8601 standard in the `yyyy-MM-ddTHH:mm:ssZ` format. The time is displayed in UTC.
-  * `host_class` - The instance type of the host.
-  * `host_cpu` - The number of CPU cores specified for the host. Unit: `core`.
-  * `host_mem` - The memory of the host. Unit: `GB`.
-  * `host_name` - The name of the host.
-  * `host_storage` - The total storage capacity of the host. Unit: `GB`.
-  * `host_type` - The storage type of the host.
-  * `id` - The ID of the Dedicated Host. The value formats as `<dedicated_host_group_id>:<dedicated_host_id>`.
-  * `image_category` - The image type of the host.
-  * `ip_address` - The IP address of the host.
-  * `mem_allocation_ratio` - The memory usage in percentage.
-  * `memory_used` - The amount of memory used by the host. Unit: `GB`.
-  * `open_permission` - Indicates whether you have the OS permissions on the host. Valid values: `0`: You do not have the OS permissions on the host. `1`: You have the OS permissions on the host.
-  * `allocation_status` - Specifies whether instances can be created on the host. Valid values: `1` or `0`. `1`: Instances can be created on the host. `0`: Instances cannot be created on the host.
-  * `status` - The state of the host.
-  * `storage_used` - The storage usage of the host. Unit: `GB`.
-  * `tags` - The tag of the resource.
-  * `vpc_id` - The ID of the virtual private cloud (VPC) to which the host is connected.
-  * `vswitch_id` - The ID of the vSwitch.
-  * `zone_id` - The zone ID of the host.
+* `hosts` - A list of Cddc Dedicated Hosts.
+
+---
+
+### `hosts`
+
+The hosts supports the following attributes:
+
+* `bastion_instance_id` - The ID of the bastion host with which the host is associated.
+* `cpu_allocation_ratio` - The numeric value of the CPU over commit ratio of the dedicated cluster.
+* `cpu_used` - The number of CPU cores used by the host.
+* `create_time` - The time when the host was created. The time follows the ISO 8601 standard in the `yyyy-MM-ddTHH:mm:ssZ` format. The time is displayed in UTC.
+* `dedicated_host_group_id` - The ID of the dedicated cluster in which the host is created.
+* `dedicated_host_id` - The ID of the host.
+* `disk_allocation_ratio` - The disk usage in percentage.
+* `ecs_class_code` - The Elastic Compute Service (ECS) instance type.
+* `end_time` - The time when the host expires. The time follows the ISO 8601 standard in the `yyyy-MM-ddTHH:mm:ssZ` format. The time is displayed in UTC.
+* `engine` - The type of the database engine that is used by the host.
+* `expired_time` - The time when the host expires. The time follows the ISO 8601 standard in the `yyyy-MM-ddTHH:mm:ssZ` format. The time is displayed in UTC.
+* `host_class` - The instance type of the host.
+* `host_cpu` - The number of CPU cores specified for the host. Unit: `core`.
+* `host_mem` - The memory of the host. Unit: `GB`.
+* `host_name` - The name of the host.
+* `host_storage` - The total storage capacity of the host. Unit: `GB`.
+* `host_type` - The storage type of the host.
+* `id` - The ID of the Dedicated Host. The value formats as `<dedicated_host_group_id>:<dedicated_host_id>`.
+* `image_category` - The image type of the host.
+* `ip_address` - The IP address of the host.
+* `mem_allocation_ratio` - The memory usage in percentage.
+* `memory_used` - The amount of memory used by the host. Unit: `GB`.
+* `open_permission` - Indicates whether you have the OS permissions on the host. Valid values: `0`: You do not have the OS permissions on the host. `1`: You have the OS permissions on the host.
+* `allocation_status` - Specifies whether instances can be created on the host. Valid values: `1` or `0`. `1`: Instances can be created on the host. `0`: Instances cannot be created on the host.
+* `status` - The state of the host.
+* `storage_used` - The storage usage of the host. Unit: `GB`.
+* `tags` - The tag of the resource.
+* `vpc_id` - The ID of the virtual private cloud (VPC) to which the host is connected.
+* `vswitch_id` - The ID of the vSwitch.
+* `zone_id` - The zone ID of the host.

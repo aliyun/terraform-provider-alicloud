@@ -40,20 +40,27 @@ output "gpdb_account_id_2" {
 
 The following arguments are supported:
 
-* `db_instance_id` - (Required, ForceNew) The ID of the instance.
-* `ids` - (Optional, ForceNew, Computed)  A list of Account IDs. Its element value is same as Account Name.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Account name.
+* `db_instance_id` - (Required) The ID of the instance.
+* `ids` - (Optional, Computed)  A list of Account IDs. Its element value is same as Account Name.
+* `name_regex` - (Optional) A regex string to filter results by Account name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the account. Valid values: `Active`, `Creating` and `Deleting`.
+* `status` - (Optional) The status of the account. Valid values: `Active`, `Creating` and `Deleting`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Account names.
-* `accounts` - A list of Gpdb Accounts. Each element contains the following attributes:
-  * `account_description` - The description of the account.
-  * `account_name` - The name of the account.
-  * `db_instance_id` - The ID of the instance.
-  * `id` - The ID of the Account. Its value is same as Queue Name.
-  * `status` - The status of the account. Valid values: `Active`, `Creating` and `Deleting`.
+* `accounts` - A list of Gpdb Accounts.
+
+---
+
+### `accounts`
+
+The accounts supports the following attributes:
+
+* `account_description` - The description of the account.
+* `account_name` - The name of the account.
+* `db_instance_id` - The ID of the instance.
+* `id` - The ID of the Account. Its value is same as Queue Name.
+* `status` - The status of the account. Valid values: `Active`, `Creating` and `Deleting`.

@@ -68,7 +68,10 @@ The following arguments are supported:
 * `zone_id` - (Required from v1.91.0, ForceNew) The Zone to launch the DRDS instance.
 * `instance_charge_type` - (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
 * `vswitch_id` - (Required from v1.91.0, ForceNew) The VSwitch ID to launch in.
-* `instance_series` - (Required, ForceNew) The parameter of the instance series. **NOTE:**  `drds.sn1.4c8g`,`drds.sn1.8c16g`,`drds.sn1.16c32g`,`drds.sn1.32c64g` are no longer supported. Valid values:
+* `instance_series` - (Required, ForceNew) The parameter of the instance series.
+
+  -> **NOTE:** `drds.sn1.4c8g`,`drds.sn1.8c16g`,`drds.sn1.16c32g`,`drds.sn1.32c64g` are no longer supported. Valid values:
+
   - `drds.sn2.4c16g` Starter Edition.
   - `drds.sn2.8c32g` Standard Edition.
   - `drds.sn2.16c64g` Enterprise Edition.
@@ -96,7 +99,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.49.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when creating the drds instance (until it reaches running status).
 * `delete` - (Defaults to 10 mins) Used when terminating the drds instance.

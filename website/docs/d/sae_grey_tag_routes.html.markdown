@@ -31,9 +31,9 @@ output "sae_grey_tag_routes_id" {
 
 The following arguments are supported:
 
-* `app_id` - (Required, ForceNew) The ID  of the SAE Application.
-* `ids` - (Optional, ForceNew, Computed)  A list of GreyTagRoute IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by GreyTagRoute name.
+* `app_id` - (Required) The ID  of the SAE Application.
+* `ids` - (Optional, Computed)  A list of GreyTagRoute IDs.
+* `name_regex` - (Optional) A regex string to filter results by GreyTagRoute name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -43,6 +43,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `names` - A list of GreyTagRoute names.
 * `routes` - A list of Sae GreyTagRoutes. Each element contains the following attributes:
 
+---
+
 ### `routes`
 
 * `id` - The ID of the GreyTagRoute.
@@ -50,6 +52,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `description` - The description of GreyTagRoute.
 * `grey_tag_route_name` - The name of GreyTagRoute.
 * `sc_rules` - The grayscale rule created for SpringCloud Application.
+
+---
 
 ### `routes.dubbo_rules`
 
@@ -60,6 +64,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `group` - The service group.
 * `items` - A list of conditions items.
 
+---
+
 ### `routes.dubbo_rules.items`
 
 * `index` - The parameter number.
@@ -68,11 +74,15 @@ The following attributes are exported in addition to the arguments listed above:
 * `value` - The value of the parameter.
 * `operator` - The operator.
 
+---
+
 ### `routes.sc_rules`
 
 * `path` - The path corresponding to the grayscale rule.
 * `condition` - The Conditional Patterns for Grayscale Rules.
 * `items` - A list of conditions items.
+
+---
 
 ### `routes.sc_rules.items`
 

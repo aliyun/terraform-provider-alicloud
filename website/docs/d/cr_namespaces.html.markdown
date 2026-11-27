@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cr_namespaces
 
--> **DEPRECATION NOTICE:** This data source is deprecated and will be removed in a future release.
+-> **DEPRECATED:** This data source has been deprecated and will be removed in a future release.
 
 This data source provides a list Container Registry namespaces on Alibaba Cloud.
 
@@ -42,7 +42,14 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of matched Container Registry namespaces. Its element is a namespace name.
 * `names` - A list of namespace names.
-* `namespaces` - A list of matched Container Registry namespaces. Each element contains the following attributes:
-  * `name` - Name of Container Registry namespace.
-  * `auto_create` - Boolean, when it set to true, repositories are automatically created when pushing new images. If it set to false, you create repository for images before pushing.
-  * `default_visibility` - `PUBLIC` or `PRIVATE`, default repository visibility in this namespace.
+* `namespaces` - A list of matched Container Registry namespaces.
+
+---
+
+### `namespaces`
+
+The namespaces supports the following attributes:
+
+* `name` - Name of Container Registry namespace.
+* `auto_create` - Boolean, when it set to true, repositories are automatically created when pushing new images. If it set to false, you create repository for images before pushing.
+* `default_visibility` - `PUBLIC` or `PRIVATE`, default repository visibility in this namespace.

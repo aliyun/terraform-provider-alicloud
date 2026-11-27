@@ -293,9 +293,7 @@ func dataSourceInstancesRead(d *schema.ResourceData, meta interface{}) error {
 		var err error
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-			raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DescribeInstances(request)
-			})
+			raw, err = client.EcsSdkRpc(request, ecs.CreateDescribeInstancesResponse())
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -386,9 +384,7 @@ func dataSourceInstancesRead(d *schema.ResourceData, meta interface{}) error {
 			var err error
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-				raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-					return ecsClient.DescribeInstanceRamRole(request)
-				})
+				raw, err = client.EcsSdkRpc(request, ecs.CreateDescribeInstanceRamRoleResponse())
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -519,9 +515,7 @@ func getInstanceDisksMappings(instanceMap map[string]string, meta interface{}) (
 		var err error
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-			raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DescribeDisks(request)
-			})
+			raw, err = client.EcsSdkRpc(request, ecs.CreateDescribeDisksResponse())
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

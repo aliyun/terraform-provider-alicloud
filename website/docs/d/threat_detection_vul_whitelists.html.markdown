@@ -31,16 +31,23 @@ output "alicloud_threat_detection_vul_whitelist_example_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Threat Detection Vul Whitelist IDs.
+* `ids` - (Optional, Computed) A list of Threat Detection Vul Whitelist IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `whitelists` - A list of Vul Whitelist Entries. Each element contains the following attributes:
-  * `id` - The ID of the Vul Whitelist.
-  * `vul_whitelist_id` - The ID of the Vul Whitelist.
-  * `whitelist` - Information about the vulnerability to be added to the whitelist.
-  * `target_info` - Set the effective range of the whitelist.
-  * `reason` - Reason for adding whitelist.
+* `whitelists` - A list of Vul Whitelist Entries.
+
+---
+
+### `whitelists`
+
+The whitelists supports the following attributes:
+
+* `id` - The ID of the Vul Whitelist.
+* `vul_whitelist_id` - The ID of the Vul Whitelist.
+* `whitelist` - Information about the vulnerability to be added to the whitelist.
+* `target_info` - Set the effective range of the whitelist.
+* `reason` - Reason for adding whitelist.

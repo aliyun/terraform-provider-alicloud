@@ -46,14 +46,21 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Command names.
-* `commands` - A list of Ecs Commands. Each element contains the following attributes:
-  * `command_content` - The Base64-encoded content of the command.
-  * `command_id` - The ID of the Command.
-  * `description` - The description of command.
-  * `enable_parameter` - Specifies whether to use custom parameters in the command to be created.
-  * `id` - The ID of the Command.
-  * `name` - The name of the command
-  * `parameter_names` - A list of custom parameter names which are parsed from the command content specified when the command was being created.
-  * `timeout` - The timeout period that is specified for the command to be run on ECS instances.
-  * `type` - The command type.
-  * `working_dir` - The execution path of the command in the ECS instance.
+* `commands` - A list of Ecs Commands.
+
+---
+
+### `commands`
+
+The commands supports the following attributes:
+
+* `command_content` - The Base64-encoded content of the command.
+* `command_id` - The ID of the Command.
+* `description` - The description of command.
+* `enable_parameter` - Specifies whether to use custom parameters in the command to be created.
+* `id` - The ID of the Command.
+* `name` - The name of the command
+* `parameter_names` - A list of custom parameter names which are parsed from the command content specified when the command was being created.
+* `timeout` - The timeout period that is specified for the command to be run on ECS instances.
+* `type` - The command type.
+* `working_dir` - The execution path of the command in the ECS instance.

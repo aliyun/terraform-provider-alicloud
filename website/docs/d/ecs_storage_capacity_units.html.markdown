@@ -45,14 +45,21 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Storage Capacity Unit names.
-* `units` - A list of Ecs Storage Capacity Units. Each element contains the following attributes:
-  * `allocation_status` - When the AllocationType value is Shared, this parameter indicates the allocation status of Storage Capacity Unit. Valid values: `allocated`, `Ignored`.
-  * `capacity` - The capacity of the Storage Capacity Unit.
-  * `create_time` - The time when the Storage Capacity Unit was created.
-  * `description` - The description of the Storage Capacity Unit.
-  * `expired_time` - The time when the Storage Capacity Unit expires.
-  * `id` - The ID of the Storage Capacity Unit.
-  * `start_time` - The effective time of the Storage Capacity Unit.
-  * `status` - The status of Storage Capacity Unit.
-  * `storage_capacity_unit_id` - The ID of Storage Capacity Unit.
-  * `storage_capacity_unit_name` - The name of the Storage Capacity Unit.
+* `units` - A list of Ecs Storage Capacity Units.
+
+---
+
+### `units`
+
+The units supports the following attributes:
+
+* `allocation_status` - When the AllocationType value is Shared, this parameter indicates the allocation status of Storage Capacity Unit. Valid values: `allocated`, `Ignored`.
+* `capacity` - The capacity of the Storage Capacity Unit.
+* `create_time` - The time when the Storage Capacity Unit was created.
+* `description` - The description of the Storage Capacity Unit.
+* `expired_time` - The time when the Storage Capacity Unit expires.
+* `id` - The ID of the Storage Capacity Unit.
+* `start_time` - The effective time of the Storage Capacity Unit.
+* `status` - The status of Storage Capacity Unit.
+* `storage_capacity_unit_id` - The ID of Storage Capacity Unit.
+* `storage_capacity_unit_name` - The name of the Storage Capacity Unit.

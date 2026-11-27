@@ -78,16 +78,23 @@ The following attributes are exported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `associations` - A list of Vpc Associations. Each element contains the following attributes:
-  * `id` - The ID of the Vpc Association.
-  * `ecr_id` - The ID of the Express Connect Router instance.
-  * `association_id` - The ID of the association between the Express Connect Router and the VPC.
-  * `vpc_id` - The ID of the VPC instance.
-  * `association_node_type` - The type of the associated resource.
-  * `vpc_owner_id` - The ID of the Alibaba Cloud account that owns the VPC.
-  * `allowed_prefixes_mode` - The prefix-based routing mode.
-  * `description` - (String) The description of the association. Available since v2.3.0.
-  * `status` - The status of the association.
-  * `create_time` - The time when the association was created.
-  * `modify_time` - The time when the association was modified.
-  * `allowed_prefixes` - The prefix-based routing mode.
+* `associations` - A list of Vpc Associations.
+
+---
+
+### `associations`
+
+The associations supports the following attributes:
+
+* `id` - The ID of the Vpc Association.
+* `ecr_id` - The ID of the Express Connect Router instance.
+* `association_id` - The ID of the association between the Express Connect Router and the VPC.
+* `vpc_id` - The ID of the VPC instance.
+* `association_node_type` - The type of the associated resource.
+* `vpc_owner_id` - The ID of the Alibaba Cloud account that owns the VPC.
+* `allowed_prefixes_mode` - The prefix-based routing mode.
+* `description` - (String) The description of the association. Available since v2.3.0.
+* `status` - The status of the association.
+* `create_time` - The time when the association was created.
+* `modify_time` - The time when the association was modified.
+* `allowed_prefixes` - The prefix-based routing mode.

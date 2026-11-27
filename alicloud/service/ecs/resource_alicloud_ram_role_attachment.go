@@ -51,9 +51,7 @@ func resourceInstanceRoleAttachmentCreate(d *schema.ResourceData, meta interface
 	}
 
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.AttachInstanceRamRole(request)
-		})
+		raw, err := client.EcsSdkRpc(request, ecs.CreateAttachInstanceRamRoleResponse())
 		if err != nil {
 			if IsExpectedErrors(err, []string{"unexpected end of JSON input"}) || NeedRetry(err) {
 				return retry.RetryableError(WrapError(Error("Please trying again.")))
@@ -115,9 +113,7 @@ func resourceInstanceRoleAttachmentDelete(d *schema.ResourceData, meta interface
 	request.InstanceIds = instanceIds
 
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DetachInstanceRamRole(request)
-		})
+		raw, err := client.EcsSdkRpc(request, ecs.CreateDetachInstanceRamRoleResponse())
 		if err != nil {
 			if IsExpectedErrors(err, []string{"unexpected end of JSON input"}) || NeedRetry(err) {
 				return retry.RetryableError(err)

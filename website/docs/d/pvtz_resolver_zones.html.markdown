@@ -32,12 +32,19 @@ output "first_zones_id" {
 The following arguments are supported:
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the Zone. Valid values: `NORMAL`, `SOLD_OUT`.
+* `status` - (Optional) The status of the Zone. Valid values: `NORMAL`, `SOLD_OUT`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `zones` - A list of Private Zone Resolver zones. Each element contains the following attributes:
-  * `zone_id` - The zone ID.
-  * `status` - The status of the Zone.
+* `zones` - A list of Private Zone Resolver zones.
+
+---
+
+### `zones`
+
+The zones supports the following attributes:
+
+* `zone_id` - The zone ID.
+* `status` - The status of the Zone.

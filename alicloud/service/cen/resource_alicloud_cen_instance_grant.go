@@ -64,9 +64,7 @@ func resourceAlicloudCenInstanceGrantCreate(d *schema.ResourceData, meta interfa
 
 	var raw interface{}
 	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
-		raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.GrantInstanceToCen(request)
-		})
+		raw, err = client.VpcSdkRpc(request, vpc.CreateGrantInstanceToCenResponse())
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"Operation.Blocking", "UnknownError", "TaskConflict"}) {
 				return retry.RetryableError(err)
@@ -136,9 +134,7 @@ func resourceAlicloudCenInstanceGrantDelete(d *schema.ResourceData, meta interfa
 
 	var raw interface{}
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.RevokeInstanceFromCen(request)
-		})
+		raw, err = client.VpcSdkRpc(request, vpc.CreateRevokeInstanceFromCenResponse())
 
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {

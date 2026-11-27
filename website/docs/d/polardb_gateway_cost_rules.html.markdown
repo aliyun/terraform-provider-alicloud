@@ -30,12 +30,19 @@ data "alicloud_polardb_gateway_cost_rules" "example" {
 
 ## Attributes Reference
 
-* `rules` - A list of cost rules. Each item contains the following attributes:
-  * `id` - The cost rule ID.
-  * `model_name` - The model name.
-  * `model_service_id` - The model service ID.
-  * `input_cost_points_per_million` - The input cost points.
-  * `output_cost_points_per_million` - The output cost points.
-  * `cache_cost_points_per_million` - The cached-token cost points.
-  * `create_time` - The creation time.
-  * `modify_time` - The last modification time.
+* `rules` - A list of cost rules.
+
+---
+
+### `rules`
+
+The rules supports the following attributes:
+
+* `id` - The cost rule ID.
+* `model_name` - The model name.
+* `model_service_id` - The model service ID.
+* `input_cost_points_per_million` - The input cost points.
+* `output_cost_points_per_million` - The output cost points.
+* `cache_cost_points_per_million` - The cached-token cost points.
+* `create_time` - The creation time.
+* `modify_time` - The last modification time.

@@ -30,12 +30,12 @@ output "alicloud_service_catalog_portfolio_example_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Portfolio IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
-* `scope` - (Optional, ForceNew) The query scope. Valid values: `Local`(default), `Import`, `All`.
-* `sort_by` - (Optional, ForceNew) The field that is used to sort the queried data. The value is fixed as CreateTime, which specifies the creation time of product portfolios.
-* `sort_order` - (Optional, ForceNew) The order in which you want to sort the queried data. Valid values: `Asc`, `Desc`.
-* `product_id` - (Optional, ForceNew) The ID of the product.
+* `ids` - (Optional, Computed) A list of Portfolio IDs.
+* `name_regex` - (Optional) A regex string to filter results by Group Metric Rule name.
+* `scope` - (Optional) The query scope. Valid values: `Local`(default), `Import`, `All`.
+* `sort_by` - (Optional) The field that is used to sort the queried data. The value is fixed as CreateTime, which specifies the creation time of product portfolios.
+* `sort_order` - (Optional) The order in which you want to sort the queried data. Valid values: `Asc`, `Desc`.
+* `product_id` - (Optional) The ID of the product.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -44,11 +44,18 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Portfolio IDs.
 * `names` - A list of name of Portfolios.
-* `portfolios` - A list of Portfolio Entries. Each element contains the following attributes:
-  * `create_time` - The creation time of the portfolio
-  * `description` - The description of the portfolio
-  * `portfolio_arn` - The ARN of the portfolio
-  * `id` - The ID of the portfolio
-  * `portfolio_id` - The ID of the portfolio
-  * `portfolio_name` - The name of the portfolio
-  * `provider_name` - The provider name of the portfolio
+* `portfolios` - A list of Portfolio Entries.
+
+---
+
+### `portfolios`
+
+The portfolios supports the following attributes:
+
+* `create_time` - The creation time of the portfolio
+* `description` - The description of the portfolio
+* `portfolio_arn` - The ARN of the portfolio
+* `id` - The ID of the portfolio
+* `portfolio_id` - The ID of the portfolio
+* `portfolio_name` - The name of the portfolio
+* `provider_name` - The provider name of the portfolio

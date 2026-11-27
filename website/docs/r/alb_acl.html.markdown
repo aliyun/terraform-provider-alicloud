@@ -41,11 +41,14 @@ resource "alicloud_alb_acl" "default" {
 The following arguments are supported:
 
 * `acl_entries` - (Optional, Deprecated from v1.166.0+) The list of the ACL entries. You can add up to `20` entries in each call.  See [`acl_entries`](#acl_entries) below for details.
-**NOTE:** "Field 'acl_entries' has been deprecated from provider version 1.166.0 and it will be removed in the future version. Please use the new resource 'alicloud_alb_acl_entry_attachment'.",
+
+  -> **NOTE:** "Field 'acl_entries' has been deprecated from provider version 1.166.0 and it will be removed in the future version. Please use the new resource 'alicloud_alb_acl_entry_attachment'.",
 * `acl_name` - (Optional) The name of the ACL. The name must be `2` to `128` characters in length, and can contain letters, digits, hyphens (-) and underscores (_). It must start with a letter.
 * `dry_run` - (Optional) Specifies whether to precheck the API request.
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+
+---
 
 ### `acl_entries`
 
@@ -53,7 +56,7 @@ The acl_entries supports the following:
 
 * `description` - (Optional) The description of the ACL entry. The description must be `1` to `256` characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.),and underscores (_). It can also contain Chinese characters.
 * `entry` - (Optional) The IP address for the ACL entry.
-* `status` - (Optional) The status of the ACL entry. Valid values:
+* `status` - (Computed) The status of the ACL entry. Valid values:
   - `Adding`: The ACL entry is being added.
   - `Available`: The ACL entry is added and available.
   - `Removing`: The ACL entry is being removed.
@@ -67,7 +70,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 16 mins) Used when create the Acl.
 * `delete` - (Defaults to 16 mins) Used when delete the Acl.

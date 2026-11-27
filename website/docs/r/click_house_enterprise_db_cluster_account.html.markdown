@@ -103,6 +103,8 @@ The following arguments are supported:
   - Oh-! @#$%^& *()_+-= is a special character.
   - Length is 8~32 characters.
 
+---
+
 ### `dml_auth_setting`
 
 The dml_auth_setting supports the following:
@@ -125,7 +127,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Enterprise Db Cluster Account.
 * `delete` - (Defaults to 5 mins) Used when delete the Enterprise Db Cluster Account.

@@ -73,10 +73,10 @@ output "api_gateway_apis_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List, Available since v1.52.2) A list of API IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by API name.
-* `group_id` - (Optional, ForceNew) The ID of the API group.
-* `api_id` - (Optional, ForceNew) The ID of the API.
+* `ids` - (Optional, List, Available since v1.52.2) A list of API IDs.
+* `name_regex` - (Optional) A regex string to filter results by API name.
+* `group_id` - (Optional) The ID of the API group.
+* `api_id` - (Optional) The ID of the API.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -84,11 +84,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of API names.
-* `apis` - A list of APIs. Each element contains the following attributes:
-  * `id` - The resource ID in terraform of API. It formats as `<group_id>:<api_id>`.
-  * `group_id` - The ID of the API group.
-  * `api_id` - (Available since v1.224.0) The ID of the API.
-  * `name` - The name of the API.
-  * `description` - The description of the API.
-  * `group_name` - The name of the API group.
-  * `region_id` - The region ID of the API.
+* `apis` - A list of APIs.
+
+---
+
+### `apis`
+
+The apis supports the following attributes:
+
+* `id` - The resource ID in terraform of API. It formats as `<group_id>:<api_id>`.
+* `group_id` - The ID of the API group.
+* `api_id` - (Available since v1.224.0) The ID of the API.
+* `name` - The name of the API.
+* `description` - The description of the API.
+* `group_name` - The name of the API group.
+* `region_id` - The region ID of the API.

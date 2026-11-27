@@ -116,6 +116,8 @@ The following arguments are supported:
 * `max_async_retry_attempts` - (Optional, Int) Number of Asynchronous call retries
 * `qualifier` - (Optional) Function version or alias
 
+---
+
 ### `destination_config`
 
 The destination_config supports the following:
@@ -123,11 +125,15 @@ The destination_config supports the following:
 * `on_failure` - (Optional, List) Failed callback target structure See [`on_failure`](#destination_config-on_failure) below.
 * `on_success` - (Optional, List) Successful callback target structure See [`on_success`](#destination_config-on_success) below.
 
+---
+
 ### `destination_config-on_failure`
 
 The destination_config-on_failure supports the following:
 
 * `destination` - (Optional) Asynchronous call target Resource Descriptor
+
+---
 
 ### `destination_config-on_success`
 
@@ -146,7 +152,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Async Invoke Config.
 * `delete` - (Defaults to 5 mins) Used when delete the Async Invoke Config.

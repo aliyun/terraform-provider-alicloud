@@ -31,35 +31,42 @@ output "first_tsdb_instance_id" {
 
 The following arguments are supported:
 
-* `app_key` - (Optional, ForceNew) The app key.
+* `app_key` - (Optional) The app key.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `engine_type` - (Optional, ForceNew) The engine type of instance. Enumerative: `tsdb_tsdb` refers to TSDB, `tsdb_influxdb` refers to TSDB for InfluxDB️.
-* `ids` - (Optional, ForceNew, Computed)  A list of Instance IDs.
+* `engine_type` - (Optional) The engine type of instance. Enumerative: `tsdb_tsdb` refers to TSDB, `tsdb_influxdb` refers to TSDB for InfluxDB️.
+* `ids` - (Optional, Computed)  A list of Instance IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `query_str` - (Optional, ForceNew) The query str.
-* `status` - (Optional, ForceNew) Instance status, enumerative: `ACTIVATION`, `DELETED`, `CREATING`, `CLASS_CHANGING`, `LOCKED`.
-* `status_list` - (Optional, ForceNew) The status list.
+* `query_str` - (Optional) The query str.
+* `status` - (Optional) Instance status, enumerative: `ACTIVATION`, `DELETED`, `CREATING`, `CLASS_CHANGING`, `LOCKED`.
+* `status_list` - (Optional) The status list.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `instances` - A list of TSDB Instances. Each element contains the following attributes:
-  * `auto_renew` - Auto renew.
-  * `cpu_number` - The cpu core number of instance.
-  * `disk_category` - The disk type of instance. `cloud_ssd` refers to SSD disk, `cloud_efficiency` refers to efficiency disk,cloud_essd refers to ESSD PL1 disk.
-  * `engine_type` - The engine type of instance. Enumerative: `tsdb_tsdb` refers to TSDB, `tsdb_influxdb` refers to TSDB for InfluxDB️.
-  * `expired_time` - Instance expiration time.
-  * `id` - The ID of the Instance.
-  * `instance_alias` - The alias of the instance.
-  * `instance_class` - The specification of the instance.
-  * `instance_id` - The ID of the instance.
-  * `instance_storage` - The storage capacity of the instance. Unit: GB. For example, the value 50 indicates 50 GB.
-  * `memory_size` - The memory size of instance.
-  * `network_type` - Instance network type.
-  * `payment_type` - The billing method. Valid values: `PayAsYouGo` and `Subscription`. The `PayAsYouGo` value indicates the pay-as-you-go method, and the `Subscription` value indicates the subscription method.
-  * `status` - Instance status, enumerative: ACTIVATION,DELETED, CREATING,CLASS_CHANGING,LOCKED.
-  * `vpc_connection_address` - The vpc connection address of instance.
-  * `vpc_id` - The ID of the virtual private cloud (VPC) that is connected to the instance.
-  * `vswitch_id` - The vswitch id.
-  * `zone_id` - The zone ID of the instance.
+* `instances` - A list of TSDB Instances.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `auto_renew` - Auto renew.
+* `cpu_number` - The cpu core number of instance.
+* `disk_category` - The disk type of instance. `cloud_ssd` refers to SSD disk, `cloud_efficiency` refers to efficiency disk,cloud_essd refers to ESSD PL1 disk.
+* `engine_type` - The engine type of instance. Enumerative: `tsdb_tsdb` refers to TSDB, `tsdb_influxdb` refers to TSDB for InfluxDB️.
+* `expired_time` - Instance expiration time.
+* `id` - The ID of the Instance.
+* `instance_alias` - The alias of the instance.
+* `instance_class` - The specification of the instance.
+* `instance_id` - The ID of the instance.
+* `instance_storage` - The storage capacity of the instance. Unit: GB. For example, the value 50 indicates 50 GB.
+* `memory_size` - The memory size of instance.
+* `network_type` - Instance network type.
+* `payment_type` - The billing method. Valid values: `PayAsYouGo` and `Subscription`. The `PayAsYouGo` value indicates the pay-as-you-go method, and the `Subscription` value indicates the subscription method.
+* `status` - Instance status, enumerative: ACTIVATION,DELETED, CREATING,CLASS_CHANGING,LOCKED.
+* `vpc_connection_address` - The vpc connection address of instance.
+* `vpc_id` - The ID of the virtual private cloud (VPC) that is connected to the instance.
+* `vswitch_id` - The vswitch id.
+* `zone_id` - The zone ID of the instance.

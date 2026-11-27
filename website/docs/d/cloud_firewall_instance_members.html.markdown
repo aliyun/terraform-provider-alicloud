@@ -30,7 +30,7 @@ output "alicloud_cloud_firewall_instance_member_example_id" {
 The following arguments are supported:
 
 * `current_page` - (Optional) The current page number.
-* `ids` - (Optional, ForceNew, Computed) A list of Instance Member IDs.
+* `ids` - (Optional, Computed) A list of Instance Member IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -38,11 +38,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Instance Member IDs.
-* `members` - A list of Instance Member Entries. Each element contains the following attributes:
-  * `id` - The instance id.
-  * `create_time` - When the cloud firewall member account was added.> use second-level timestamp format.
-  * `member_desc` - Remarks of cloud firewall member accounts.
-  * `member_display_name` - The name of the cloud firewall member account.
-  * `member_uid` - The UID of the cloud firewall member account.
-  * `modify_time` - The last modification time of the cloud firewall member account.> use second-level timestamp format.
-  * `status` - The resource attribute field that represents the resource status.
+* `members` - A list of Instance Member Entries.
+
+---
+
+### `members`
+
+The members supports the following attributes:
+
+* `id` - The instance id.
+* `create_time` - When the cloud firewall member account was added.> use second-level timestamp format.
+* `member_desc` - Remarks of cloud firewall member accounts.
+* `member_display_name` - The name of the cloud firewall member account.
+* `member_uid` - The UID of the cloud firewall member account.
+* `modify_time` - The last modification time of the cloud firewall member account.> use second-level timestamp format.
+* `status` - The resource attribute field that represents the resource status.

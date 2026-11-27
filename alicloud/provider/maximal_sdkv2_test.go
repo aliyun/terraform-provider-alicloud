@@ -271,10 +271,10 @@ func maximalSDKv2Provider(log *hookLog, chain []intercept.Interceptor) *schema.P
 	}
 	if len(chain) > 0 {
 		for name, r := range resources {
-			resources[name] = sdkv2.WrapResource(name, r, chain)
+			resources[name] = sdkv2.WrapResource(name, r, chain, nil)
 		}
 		for name, ds := range dataSources {
-			dataSources[name] = sdkv2.WrapDataSource(name, ds, chain)
+			dataSources[name] = sdkv2.WrapDataSource(name, ds, chain, nil)
 		}
 	}
 	return &schema.Provider{ResourcesMap: resources, DataSourcesMap: dataSources}
@@ -330,7 +330,7 @@ func TestUnitProviderMaximalSDKv2WrapCopiesEveryNonCRUDField(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
 		build func(*hookLog) *schema.Resource
-		wrap  func(string, *schema.Resource, []intercept.Interceptor) *schema.Resource
+		wrap  func(string, *schema.Resource, []intercept.Interceptor, intercept.ContextBootstrap) *schema.Resource
 	}{
 		{maximalSDKv2Name, maximalSDKv2Resource, sdkv2.WrapResource},
 		{maximalSDKv2ContextName, maximalSDKv2ContextResource, sdkv2.WrapResource},
@@ -340,7 +340,7 @@ func TestUnitProviderMaximalSDKv2WrapCopiesEveryNonCRUDField(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			original := tc.build(log)
 			before := *original
-			wrapped := tc.wrap(tc.name, original, chain)
+			wrapped := tc.wrap(tc.name, original, chain, nil)
 
 			if wrapped == original {
 				t.Fatal("wrapping returned the input pointer: the shared map literal would be mutated")
@@ -378,7 +378,7 @@ func TestUnitProviderMaximalSDKv2WrapCopiesEveryNonCRUDField(t *testing.T) {
 func TestUnitProviderMaximalSDKv2WrapPreservesEveryHook(t *testing.T) {
 	ctx := context.Background()
 	log := &hookLog{}
-	wrapped := sdkv2.WrapResource(maximalSDKv2Name, maximalSDKv2Resource(log), []intercept.Interceptor{&chainRecorder{}})
+	wrapped := sdkv2.WrapResource(maximalSDKv2Name, maximalSDKv2Resource(log), []intercept.Interceptor{&chainRecorder{}}, nil)
 
 	t.Run("CustomizeDiff", func(t *testing.T) {
 		state := &terraform.InstanceState{
@@ -534,7 +534,7 @@ func TestUnitProviderMaximalSDKv2WrapRunsChainOnlyOnCRUD(t *testing.T) {
 	ctx := context.Background()
 	log := &hookLog{}
 	rec := &chainRecorder{}
-	wrapped := sdkv2.WrapResource(maximalSDKv2Name, maximalSDKv2Resource(log), []intercept.Interceptor{rec})
+	wrapped := sdkv2.WrapResource(maximalSDKv2Name, maximalSDKv2Resource(log), []intercept.Interceptor{rec}, nil)
 
 	d := wrapped.Data(&terraform.InstanceState{ID: "unit-test"})
 	if _, err := wrapped.Importer.StateContext(ctx, d, nil); err != nil {
@@ -599,7 +599,7 @@ func TestUnitProviderMaximalSDKv2WrapCoversEveryCRUDForm(t *testing.T) {
 	t.Run("context form", func(t *testing.T) {
 		log := &hookLog{}
 		rec := &chainRecorder{}
-		wrapped := sdkv2.WrapResource(maximalSDKv2ContextName, maximalSDKv2ContextResource(log), []intercept.Interceptor{rec})
+		wrapped := sdkv2.WrapResource(maximalSDKv2ContextName, maximalSDKv2ContextResource(log), []intercept.Interceptor{rec}, nil)
 
 		if wrapped.Create != nil || wrapped.CreateWithoutTimeout != nil {
 			t.Error("wrapping moved the create function to another declaration form")
@@ -625,7 +625,7 @@ func TestUnitProviderMaximalSDKv2WrapCoversEveryCRUDForm(t *testing.T) {
 	t.Run("without-timeout form", func(t *testing.T) {
 		log := &hookLog{}
 		rec := &chainRecorder{}
-		wrapped := sdkv2.WrapResource(maximalSDKv2NoTimeoutName, maximalSDKv2WithoutTimeoutResource(log), []intercept.Interceptor{rec})
+		wrapped := sdkv2.WrapResource(maximalSDKv2NoTimeoutName, maximalSDKv2WithoutTimeoutResource(log), []intercept.Interceptor{rec}, nil)
 
 		if wrapped.Create != nil || wrapped.CreateContext != nil {
 			t.Error("wrapping moved the create function to another declaration form")

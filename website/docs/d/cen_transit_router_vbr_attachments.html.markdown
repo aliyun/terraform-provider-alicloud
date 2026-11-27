@@ -40,13 +40,20 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of CEN Transit Router VBR attachment IDs.
-* `attachments` - A list of CEN Transit Router VBR Attachments. Each element contains the following attributes:
-  * `id` - The ID of the CEN Transit Router VBR Attachment.
-  * `transit_router_attachment_id` - ID of the transit router attachment.
-  * `transit_router_attachment_name` - Name of the transit router attachment.
-  * `transit_router_attachment_description` - The description of the transit router attachment.
-  * `resource_type` - Type of the resource.
-  * `status` - The status of the transit router attachment.
-  * `vbr_id` - ID of the VBR.
-  * `vbr_owner_id` - The Owner ID of the VBR.
-  * `auto_publish_route_enabled` - Auto publish route enabled.
+* `attachments` - A list of CEN Transit Router VBR Attachments.
+
+---
+
+### `attachments`
+
+The attachments supports the following attributes:
+
+* `id` - The ID of the CEN Transit Router VBR Attachment.
+* `transit_router_attachment_id` - ID of the transit router attachment.
+* `transit_router_attachment_name` - Name of the transit router attachment.
+* `transit_router_attachment_description` - The description of the transit router attachment.
+* `resource_type` - Type of the resource.
+* `status` - The status of the transit router attachment.
+* `vbr_id` - ID of the VBR.
+* `vbr_owner_id` - The Owner ID of the VBR.
+* `auto_publish_route_enabled` - Auto publish route enabled.

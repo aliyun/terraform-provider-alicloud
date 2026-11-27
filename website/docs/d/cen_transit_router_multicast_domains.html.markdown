@@ -41,11 +41,11 @@ output "cen_transit_router_multicast_domain_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Transit Router Multicast Domain IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Transit Router Multicast Domain name.
-* `transit_router_id` - (Required, ForceNew) The ID of the transit router.
-* `transit_router_multicast_domain_id` - (Optional, ForceNew) The ID of the multicast domain.
-* `status` - (Optional, ForceNew) The status of the multicast domain. Valid Value: `Active`.
+* `ids` - (Optional, Computed)  A list of Transit Router Multicast Domain IDs.
+* `name_regex` - (Optional) A regex string to filter results by Transit Router Multicast Domain name.
+* `transit_router_id` - (Required) The ID of the transit router.
+* `transit_router_multicast_domain_id` - (Optional) The ID of the multicast domain.
+* `status` - (Optional) The status of the multicast domain. Valid Value: `Active`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -53,10 +53,17 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Transit Router Multicast Domain names.
-* `domains` - A list of Cen Transit Router Multicast Domains. Each element contains the following attributes:
-  * `id` - The ID of the Transit Router Multicast Domain.
-  * `transit_router_id` - The ID of the transit router.
-  * `transit_router_multicast_domain_id` - The ID of the Transit Router Multicast Domain.
-  * `transit_router_multicast_domain_name` - The name of the Transit Router Multicast Domain.
-  * `transit_router_multicast_domain_description` - The description of the Transit Router Multicast Domain.
-  * `status` - The status of the Transit Router Multicast Domain.
+* `domains` - A list of Cen Transit Router Multicast Domains.
+
+---
+
+### `domains`
+
+The domains supports the following attributes:
+
+* `id` - The ID of the Transit Router Multicast Domain.
+* `transit_router_id` - The ID of the transit router.
+* `transit_router_multicast_domain_id` - The ID of the Transit Router Multicast Domain.
+* `transit_router_multicast_domain_name` - The name of the Transit Router Multicast Domain.
+* `transit_router_multicast_domain_description` - The description of the Transit Router Multicast Domain.
+* `status` - The status of the Transit Router Multicast Domain.

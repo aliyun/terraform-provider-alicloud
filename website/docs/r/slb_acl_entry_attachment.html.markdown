@@ -86,6 +86,8 @@ The following arguments are supported:
 * `comment` - (Optional, ForceNew) The comment of the entry. Only valid when `entry` is set.
 * `entries` - (Optional, Available since v2.1.0) One or more entry blocks. Exactly one of `entry` and `entries` must be specified. The order of the blocks is not significant. See [`entries`](#entries) below for details.
 
+---
+
 ### `entries`
 
 The entries supports the following:
@@ -101,7 +103,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the resource.
 * `update` - (Defaults to 5 mins, Available since v2.1.0) Used when update the resource.

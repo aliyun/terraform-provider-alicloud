@@ -47,13 +47,20 @@ resource "alicloud_polardb_polar_fs_endpoint" "example" {
 * `id` - (Available since v2.1.0) The resource ID in the format `<db_cluster_id>:<db_endpoint_id>`.
 * `db_endpoint_id` - (Available since v2.1.0) The endpoint ID.
 * `address_items` - (Available since v2.1.0) Endpoint addresses.
-  * `connection_string` - (Available since v2.1.0) The connection string.
-  * `private_zone_connection_string` - (Available since v2.1.0) The PrivateZone connection string.
-  * `ip_address` - (Available since v2.1.0) The IP address.
-  * `port` - (Available since v2.1.0) The port.
-  * `vpc_id` - (Available since v2.1.0) The VPC ID.
-  * `vswitch_id` - (Available since v2.1.0) The vSwitch ID.
-  * `net_type` - (Available since v2.1.0) The network type.
+
+---
+
+### `address_items`
+
+The address_items supports the following attributes:
+
+* `connection_string` - (Available since v2.1.0) The connection string.
+* `private_zone_connection_string` - (Available since v2.1.0) The PrivateZone connection string.
+* `ip_address` - (Available since v2.1.0) The IP address.
+* `port` - (Available since v2.1.0) The port.
+* `vpc_id` - (Available since v2.1.0) The VPC ID.
+* `vswitch_id` - (Available since v2.1.0) The vSwitch ID.
+* `net_type` - (Available since v2.1.0) The network type.
 
 ## Import
 

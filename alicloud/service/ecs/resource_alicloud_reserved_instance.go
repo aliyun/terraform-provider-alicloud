@@ -284,9 +284,7 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 
 	if update {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyReservedInstanceAttribute(request)
-		})
+		raw, err := client.EcsSdkRpc(request, ecs.CreateModifyReservedInstanceAttributeResponse())
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}

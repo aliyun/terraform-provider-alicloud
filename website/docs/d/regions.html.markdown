@@ -41,7 +41,16 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of region IDs.
-* `regions` - A list of regions. Each element contains the following attributes:
-  * `id` - ID of the region.
-  * `region_id` - ID of the region.
-  * `local_name` - Name of the region in the local language.
+* `regions` - A list of regions.
+
+---
+
+### `regions`
+
+The regions supports the following attributes:
+
+* `id` - ID of the region.
+* `region_id` - ID of the region.
+* `local_name` - Name of the region in the local language.
+
+  -> **NOTE:** The language depends on the request signature version: the legacy `v1` signing (the default) matches the old client and never sends `AcceptLanguage`, so `local_name` comes back in the local language; with `sign_version.default = "v4"` the shared EO gateway path sends `AcceptLanguage = en-US` and `local_name` comes back in English.

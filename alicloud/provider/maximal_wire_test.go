@@ -85,7 +85,7 @@ func (p *maximalFrameworkTestProvider) Configure(ctx context.Context, req fwprov
 func (p *maximalFrameworkTestProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		func() resource.Resource {
-			return fwadapt.WrapResource(maximalFrameworkName, newMaximalFrameworkResource(p.log), p.chain)
+			return fwadapt.WrapResource(maximalFrameworkName, newMaximalFrameworkResource(p.log), p.chain, nil)
 		},
 	}
 }
@@ -93,7 +93,7 @@ func (p *maximalFrameworkTestProvider) Resources(ctx context.Context) []func() r
 func (p *maximalFrameworkTestProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		func() datasource.DataSource {
-			return fwadapt.WrapDataSource(maximalFrameworkDataSourceName, newMaximalFrameworkDataSource(p.log), p.chain)
+			return fwadapt.WrapDataSource(maximalFrameworkDataSourceName, newMaximalFrameworkDataSource(p.log), p.chain, nil)
 		},
 	}
 }

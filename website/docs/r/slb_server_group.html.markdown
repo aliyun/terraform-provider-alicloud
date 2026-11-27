@@ -82,6 +82,8 @@ The following arguments are supported:
 
   -> **NOTE:** Field `servers` has been deprecated from provider version 1.163.0, and it will be removed in the future version. Please use the new resource `alicloud_slb_server_group_server_attachment`.
 
+---
+
 ### `servers`
 
 The servers mapping supports the following:

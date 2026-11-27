@@ -128,6 +128,8 @@ The following arguments are supported:
 * `solution_instance_name` - (Optional, Computed) Solution Instance Name.
 * `tags` - (Optional, Map) A mapping of tags to assign to the resource.
 
+---
+
 ### `parameters`
 
 The parameters supports the following:
@@ -145,7 +147,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Solution Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Solution Instance.

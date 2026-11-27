@@ -74,6 +74,8 @@ The following arguments are supported:
 * `source_sls_parameters` - (Optional, ForceNew, Set) The request parameter SourceSLSParameters. See [`source_sls_parameters`](#source_sls_parameters) below.
 * `source_scheduled_event_parameters` - (Optional, Set) Time event source parameter. See [`source_scheduled_event_parameters`](#source_scheduled_event_parameters) below.
 
+---
+
 ### `source_http_event_parameters`
 
 The source_http_event_parameters supports the following:
@@ -99,6 +101,8 @@ The source_http_event_parameters supports the following:
   - HTTPS
   - HTTP&HTTPS
 
+---
+
 ### `source_kafka_parameters`
 
 The source_kafka_parameters supports the following:
@@ -107,11 +111,13 @@ The source_kafka_parameters supports the following:
 * `instance_id` - (Optional) The instance ID.
 * `network` - (Optional) Network configuration: Default (Default network) and public network (self-built network).
 * `offset_reset` - (Optional) Consumption sites.
-* `region_id` - (Optional, ForceNew) The region ID.
+* `region_id` - (Optional) The region ID.
 * `security_group_id` - (Optional) The ID of the security group.
 * `topic` - (Optional) The topic name.
 * `vswitch_ids` - (Optional) The vSwitch ID.
 * `vpc_id` - (Optional) The VPC ID.
+
+---
 
 ### `source_mns_parameters`
 
@@ -121,13 +127,17 @@ The source_mns_parameters supports the following:
 * `queue_name` - (Optional) The name of the Queue of the lightweight message Queue (formerly MNS).
 * `region_id` - (Optional) The region of the lightweight message queue (formerly MNS).
 
+---
+
 ### `source_oss_event_parameters`
 
 The source_oss_event_parameters supports the following:
 
-* `event_types` - (Optional, ForceNew, List) OSS event type list.
-* `match_rules` - (Optional, ForceNew, List) Matching rules. The event source will deliver OSS events that meet the matching requirements to the bus.
+* `event_types` - (Optional, List) OSS event type list.
+* `match_rules` - (Optional, List) Matching rules. The event source will deliver OSS events that meet the matching requirements to the bus.
 * `sts_role_arn` - (Optional) The ARN of the role. EventBridge will use this role to create MNS resources and deliver events to the corresponding bus.
+
+---
 
 ### `source_rabbit_mq_parameters`
 
@@ -137,6 +147,8 @@ The source_rabbit_mq_parameters supports the following:
 * `queue_name` - (Optional) The name of the Queue of the RabbitMQ instance. For more information, see Usage Restrictions (~~ 163289 ~~).
 * `region_id` - (Optional) The region of the RabbitMQ instance.
 * `virtual_host_name` - (Optional) The name of the Vhost of the RabbitMQ instance. For more information, see Usage Restrictions (~~ 163289 ~~).
+
+---
 
 ### `source_rocketmq_parameters`
 
@@ -163,6 +175,8 @@ Default value: `CONSUME_FROM_LAST_OFFSET`.
 * `timestamp` - (Optional, Float) The timestamp. This parameter is valid only when the value of the Offset parameter is CONSUME_FROM_TIMESTAMP.
 * `topic` - (Optional) The Topic name of the RocketMQ instance. For more information, see Usage Restrictions (~~ 163289 ~~).
 
+---
+
 ### `source_sls_parameters`
 
 The source_sls_parameters supports the following:
@@ -171,6 +185,8 @@ The source_sls_parameters supports the following:
 * `log_store` - (Optional, ForceNew) The logstore of log service SLS.
 * `project` - (Optional, ForceNew) The log project of log service SLS.
 * `role_name` - (Optional, ForceNew) When authorizing event bus EventBridge to use this role to read SLS log content, the following conditions must be met: when creating the role used by the service in the RAM console, you need to select Alibaba Cloud Service and event bus for trusted service ". For the permissions policy of this role, see custom event source log service SLS.
+
+---
 
 ### `source_scheduled_event_parameters`
 
@@ -186,12 +202,19 @@ The following attributes are exported:
 
 * `id` - The ID of the resource supplied above.
 * `source_http_event_parameters` - The request parameter SourceHttpEventParameters.
-  * `public_web_hook_url` - The public network request URL.
-  * `vpc_web_hook_url` - The intranet request URL.
+
+---
+
+### `source_http_event_parameters`
+
+The source_http_event_parameters supports the following attributes:
+
+* `public_web_hook_url` - The public network request URL.
+* `vpc_web_hook_url` - The intranet request URL.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Event Source V2.
 * `delete` - (Defaults to 5 mins) Used when delete the Event Source V2.

@@ -43,22 +43,29 @@ output "ecd_network_package_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Network Package IDs.
+* `ids` - (Optional, Computed)  A list of Network Package IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of network package. Valid values: `Creating`, `InUse`, `Releasing`,`Released`.
+* `status` - (Optional) The status of network package. Valid values: `Creating`, `InUse`, `Releasing`,`Released`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `packages` - A list of Ecd Network Packages. Each element contains the following attributes:
-  * `bandwidth` - The bandwidth of package.
-  * `create_time` - The creation time of network package.
-  * `expired_time` - The expired time of package.
-  * `id` - The ID of the Network Package.
-  * `internet_charge_type` - The internet charge type  of  package.
-  * `network_package_id` - The ID of network package.
-  * `office_site_id` - The ID of office site.
-  * `office_site_name` - The name of office site.
-  * `status` - The status of network package. Valid values: `Creating`, `InUse`, `Releasing`,`Released`.
-  * `eip_addresses` - The public IP address list of the network packet.
+* `packages` - A list of Ecd Network Packages.
+
+---
+
+### `packages`
+
+The packages supports the following attributes:
+
+* `bandwidth` - The bandwidth of package.
+* `create_time` - The creation time of network package.
+* `expired_time` - The expired time of package.
+* `id` - The ID of the Network Package.
+* `internet_charge_type` - The internet charge type  of  package.
+* `network_package_id` - The ID of network package.
+* `office_site_id` - The ID of office site.
+* `office_site_name` - The name of office site.
+* `status` - The status of network package. Valid values: `Creating`, `InUse`, `Releasing`,`Released`.
+* `eip_addresses` - The public IP address list of the network packet.

@@ -273,9 +273,7 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 		request := vpc.CreateDescribeNatGatewaysRequest()
 		request.VpcId = ct.VpcId
 
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeNatGateways(request)
-		})
+		raw, err := client.VpcSdkRpc(request, vpc.CreateDescribeNatGatewaysResponse())
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, ct.VpcId, "DescribeNatGateways", errs.AlibabaCloudSdkGoERROR)
 		}

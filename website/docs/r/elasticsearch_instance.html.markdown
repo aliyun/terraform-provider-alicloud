@@ -173,6 +173,8 @@ The following arguments will be discarded. Please use new fields as soon as poss
   - `cloud_ssd`: An SSD disk, supports a maximum of 2048 GiB (2 TB).
   - `cloud_efficiency` An ultra disk, supports a maximum of 5120 GiB (5 TB). If the data to be stored is larger than 2048 GiB, an ultra disk can only support the following data sizes (GiB): [`2560`, `3072`, `3584`, `4096`, `4608`, `5120`].
 
+---
+
 ### `client_node_configuration`
 
 The client_node_configuration supports the following:
@@ -181,6 +183,8 @@ The client_node_configuration supports the following:
 * `disk` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) Node storage capacity, in GB.
 * `disk_type` - (Optional, ForceNew, Available since v1.267.0) Storage type of the node. Only ultra disk (cloud_efficiency) is supported.  
 * `spec` - (Optional) Node specification. You can view specification details in [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
+
+---
 
 ### `data_node_configuration`
 
@@ -197,6 +201,8 @@ The data_node_configuration supports the following:
 * `performance_level` - (Optional, Computed, Available since v1.267.0) Performance level of ESSD cloud disks. This parameter is required when diskType is set to cloud_essd. Supported values: PL1, PL2, PL3.
 * `spec` - (Required, Available since v1.267.0) Node specification. For more information about specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
 
+---
+
 ### `index_node_configuration`
 
 The index_node_configuration supports the following:
@@ -207,6 +213,8 @@ The index_node_configuration supports the following:
 * `performance_level` - (Optional, Computed, Available since v1.295.0) Performance level of ESSD cloud disks. This parameter is required when diskType is set to cloud_essd. Supported values: PL1, PL2, PL3.
 * `spec` - (Required, Available since v1.295.0) Node specification. **Note: The parameter is immutable after resource creation.** For more information about specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
 
+---
+
 ### `kibana_configuration`
 
 The kibana_configuration supports the following:
@@ -214,6 +222,8 @@ The kibana_configuration supports the following:
 * `amount` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) The number of nodes.
 * `disk` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) Storage capacity per node, in GB.
 * `spec` - (Required, Available since v1.267.0) Node specification. For specification details, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
+
+---
 
 ### `master_configuration`
 
@@ -224,6 +234,8 @@ The master_configuration supports the following:
 * `disk_type` - (Optional, ForceNew, Available since v1.267.0) Node storage type. Only cloud_ssd (SSD cloud disk) is supported.
 * `spec` - (Optional, Available since v1.267.0) Node specification. For specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
 
+---
+
 ### `search_node_configuration`
 
 The search_node_configuration supports the following:
@@ -233,6 +245,8 @@ The search_node_configuration supports the following:
 * `disk_type` - (Optional, ForceNew, Computed, Available since v1.295.0) Storage type of the node. ESSD (`cloud_essd`) is supported. Changing this forces recreation.
 * `performance_level` - (Optional, Computed, Available since v1.295.0) Performance level of ESSD cloud disks. This parameter is required when diskType is set to cloud_essd. Supported values: PL1, PL2, PL3.
 * `spec` - (Required, Available since v1.295.0) Node specification. **Note: The parameter is immutable after resource creation.** For more information about specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
+
+---
 
 ### `warm_node_configuration`
 
@@ -264,7 +278,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 61 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.

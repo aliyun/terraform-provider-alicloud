@@ -143,14 +143,15 @@ func dataSourceAlicloudCmsAlarmContactsRead(d *schema.ResourceData, meta interfa
 	}
 	var response *cms.DescribeContactListResponse
 	for {
-		raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DescribeContactList(request)
-		})
+		raw, err := client.LegacySdkRpc(request, "/", cms.CreateDescribeContactListResponse())
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cms_alarm_contacts", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 		logs.AddDebug(request.GetActionName(), raw)
-		response, _ = raw.(*cms.DescribeContactListResponse)
+		response = &cms.DescribeContactListResponse{}
+		if err := legacyCmsResponse(raw, response); err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cms_alarm_contacts", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+		}
 
 		for _, item := range response.Contacts.Contact {
 			if alarmContactNameRegex != nil {

@@ -131,9 +131,7 @@ func dataSourceSecurityGroupRulesRead(d *schema.ResourceData, meta interface{}) 
 	req.SecurityGroupId = d.Get("group_id").(string)
 	req.NicType = d.Get("nic_type").(string)
 	req.Direction = d.Get("direction").(string)
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeSecurityGroupAttribute(req)
-	})
+	raw, err := client.EcsSdkRpc(req, ecs.CreateDescribeSecurityGroupAttributeResponse())
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "security_group_rules", req.GetActionName(), AlibabaCloudSdkGoERROR)
 	}

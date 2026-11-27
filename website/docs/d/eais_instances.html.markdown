@@ -39,24 +39,31 @@ output "eais_instance_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Instance IDs.
-* `instance_type` - (Optional, ForceNew) EAIS instance type. Valid values: `eais.ei-a6.4xlarge`, `eais.ei-a6.2xlarge`, `eais.ei-a6.xlarge`, `eais.ei-a6.large`, `eais.ei-a6.medium`.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Instance name.
+* `ids` - (Optional, Computed)  A list of Instance IDs.
+* `instance_type` - (Optional) EAIS instance type. Valid values: `eais.ei-a6.4xlarge`, `eais.ei-a6.2xlarge`, `eais.ei-a6.xlarge`, `eais.ei-a6.large`, `eais.ei-a6.medium`.
+* `name_regex` - (Optional) A regex string to filter results by Instance name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid values: `Attaching`, `Available`, `Detaching`, `InUse`, `Starting`, `Unavailable`.
+* `status` - (Optional) The status of the resource. Valid values: `Attaching`, `Available`, `Detaching`, `InUse`, `Starting`, `Unavailable`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Instance names.
-* `instances` - A list of EAIS Instances. Each element contains the following attributes:
-  * `client_instance_id` - The ID of the ECS instance to be bound.
-  * `client_instance_name` - The name of the ECS instance bound to the EAIS instance.
-  * `client_instance_type` - The type of the ECS instance bound to the EAIS instance.
-  * `id` - The ID of the Instance.
-  * `instance_id` - The ID of the resource.
-  * `instance_name` - The name of the resource.
-  * `instance_type` - The type of the resource. Valid values: `eais.ei-a6.4xlarge`, `eais.ei-a6.2xlarge`, `eais.ei-a6.xlarge`, `eais.ei-a6.large`, `eais.ei-a6.medium`.
-  * `status` - The status of the resource. Valid values: `Attaching`, `Available`, `Detaching`, `InUse`, `Starting`, `Unavailable`.
-  * `zone_id` - The ID of the region to which the EAIS instance belongs.
+* `instances` - A list of EAIS Instances.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `client_instance_id` - The ID of the ECS instance to be bound.
+* `client_instance_name` - The name of the ECS instance bound to the EAIS instance.
+* `client_instance_type` - The type of the ECS instance bound to the EAIS instance.
+* `id` - The ID of the Instance.
+* `instance_id` - The ID of the resource.
+* `instance_name` - The name of the resource.
+* `instance_type` - The type of the resource. Valid values: `eais.ei-a6.4xlarge`, `eais.ei-a6.2xlarge`, `eais.ei-a6.xlarge`, `eais.ei-a6.large`, `eais.ei-a6.medium`.
+* `status` - The status of the resource. Valid values: `Attaching`, `Available`, `Detaching`, `InUse`, `Starting`, `Unavailable`.
+* `zone_id` - The ID of the region to which the EAIS instance belongs.

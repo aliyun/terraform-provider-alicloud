@@ -11,7 +11,7 @@ description: |-
 
 This data source provides available ECI scaling configuration resources.
 
--> **NOTE:** Available since v1.294.0
+-> **NOTE:** Available since v1.294.0.
 
 ## Example Usage
 
@@ -100,153 +100,265 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of scaling configuration IDs.
 * `names` - A list of scaling configuration names.
-* `configurations` - A list of ECI scaling configurations. Each element contains the following attributes:
-  * `id` - ID of the scaling configuration.
-  * `scaling_group_id` - ID of the scaling group.
-  * `scaling_configuration_name` - Name of the scaling configuration.
-  * `description` - Description of the scaling configuration.
-  * `security_group_id` - ID of the security group.
-  * `container_group_name` - Name of the container group.
-  * `restart_policy` - Restart policy for containers.
-  * `cpu` - CPU size of the container group.
-  * `memory` - Memory size of the container group.
-  * `resource_group_id` - ID of the resource group.
-  * `dns_policy` - DNS policy of the container group.
-  * `cost_optimization` - Whether cost optimization is enabled.
-  * `enable_sls` - Whether Simple Log Service is enabled.
-  * `instance_family_level` - Instance family level.
-  * `image_snapshot_id` - ID of the image cache.
-  * `ram_role_name` - Name of the RAM role.
-  * `termination_grace_period_seconds` - Grace period before container termination.
-  * `auto_match_image_cache` - Whether to automatically match image caches.
-  * `ipv6_address_count` - Number of IPv6 addresses.
-  * `cpu_options_core` - Number of CPU cores.
-  * `cpu_options_threads_per_core` - Number of threads per CPU core.
-  * `active_deadline_seconds` - Maximum running time of the container group.
-  * `spot_strategy` - Spot strategy.
-  * `spot_price_limit` - Maximum hourly spot price.
-  * `auto_create_eip` - Whether to automatically create an EIP.
-  * `eip_bandwidth` - EIP bandwidth.
-  * `host_name` - Hostname of the container group.
-  * `ingress_bandwidth` - Ingress bandwidth.
-  * `egress_bandwidth` - Egress bandwidth.
-  * `ephemeral_storage` - Ephemeral storage size.
-  * `load_balancer_weight` - Weight of the container group in a load balancer.
-  * `tags` - Tags of the scaling configuration.
-  * `instance_types` - Instance types.
-  * `creation_time` - Creation time of the scaling configuration.
-  * `lifecycle_state` - Lifecycle state of the scaling configuration.
-  * `acr_registry_infos` - ACR registry information.
-    * `domains` - Domains of the ACR registry.
-    * `instance_name` - Name of the ACR instance.
-    * `instance_id` - ID of the ACR instance.
-    * `region_id` - Region ID of the ACR instance.
-  * `image_registry_credentials` - Image registry credentials.
-    * `password` - Password of the image registry.
-    * `server` - Server address of the image registry.
-    * `username` - Username of the image registry.
-  * `dns_config_options` - DNS configuration options.
-    * `name` - Name of the option.
-    * `value` - Value of the option.
-  * `security_context_sysctls` - Security context sysctls.
-    * `name` - Name of the sysctl.
-    * `value` - Value of the sysctl.
-  * `containers` - Containers in the container group.
-    * `security_context_capability_adds` - Linux capabilities to add.
-    * `lifecycle_pre_stop_handler_execs` - Commands run before the container stops.
-    * `security_context_read_only_root_file_system` - Whether the root file system is read-only.
-    * `tty` - Whether to allocate a TTY.
-    * `stdin` - Whether to allocate stdin.
-    * `security_context_run_as_user` - UID to run the container as.
-    * `ports` - Ports exposed by the container.
-      * `port` - Port number.
-      * `protocol` - Protocol of the port.
-    * `environment_vars` - Environment variables.
-      * `key` - Name of the environment variable.
-      * `value` - Value of the environment variable.
-      * `field_ref_field_path` - Field reference path.
-    * `working_dir` - Working directory.
-    * `args` - Arguments passed to the container.
-    * `cpu` - CPU size.
-    * `gpu` - Number of GPUs.
-    * `memory` - Memory size.
-    * `name` - Name of the container.
-    * `image` - Container image.
-    * `image_pull_policy` - Image pull policy.
-    * `volume_mounts` - Volume mounts.
-      * `mount_path` - Path where the volume is mounted.
-      * `mount_propagation` - Mount propagation mode.
-      * `sub_path` - Subpath within the volume.
-      * `name` - Name of the volume.
-      * `read_only` - Whether the mount is read-only.
-    * `commands` - Commands run by the container.
-    * `liveness_probe_exec_commands` - Commands in the liveness probe.
-    * `liveness_probe_period_seconds` - Liveness probe period.
-    * `liveness_probe_http_get_path` - HTTP path in the liveness probe.
-    * `liveness_probe_failure_threshold` - Liveness probe failure threshold.
-    * `liveness_probe_initial_delay_seconds` - Liveness probe initial delay.
-    * `liveness_probe_http_get_port` - HTTP port in the liveness probe.
-    * `liveness_probe_http_get_scheme` - HTTP scheme in the liveness probe.
-    * `liveness_probe_tcp_socket_port` - TCP socket port in the liveness probe.
-    * `liveness_probe_success_threshold` - Liveness probe success threshold.
-    * `liveness_probe_timeout_seconds` - Liveness probe timeout.
-    * `readiness_probe_exec_commands` - Commands in the readiness probe.
-    * `readiness_probe_period_seconds` - Readiness probe period.
-    * `readiness_probe_http_get_path` - HTTP path in the readiness probe.
-    * `readiness_probe_failure_threshold` - Readiness probe failure threshold.
-    * `readiness_probe_initial_delay_seconds` - Readiness probe initial delay.
-    * `readiness_probe_http_get_port` - HTTP port in the readiness probe.
-    * `readiness_probe_http_get_scheme` - HTTP scheme in the readiness probe.
-    * `readiness_probe_tcp_socket_port` - TCP socket port in the readiness probe.
-    * `readiness_probe_success_threshold` - Readiness probe success threshold.
-    * `readiness_probe_timeout_seconds` - Readiness probe timeout.
-  * `init_containers` - Init containers in the container group.
-    * `security_context_capability_adds` - Linux capabilities to add.
-    * `security_context_read_only_root_file_system` - Whether the root file system is read-only.
-    * `security_context_run_as_user` - UID to run the container as.
-    * `ports` - Ports exposed by the init container.
-      * `port` - Port number.
-      * `protocol` - Protocol of the port.
-    * `environment_vars` - Environment variables.
-      * `key` - Name of the environment variable.
-      * `value` - Value of the environment variable.
-      * `field_ref_field_path` - Field reference path.
-    * `working_dir` - Working directory.
-    * `args` - Arguments passed to the init container.
-    * `cpu` - CPU size.
-    * `gpu` - Number of GPUs.
-    * `memory` - Memory size.
-    * `name` - Name of the init container.
-    * `image` - Init container image.
-    * `image_pull_policy` - Image pull policy.
-    * `volume_mounts` - Volume mounts.
-      * `mount_path` - Path where the volume is mounted.
-      * `mount_propagation` - Mount propagation mode.
-      * `sub_path` - Subpath within the volume.
-      * `name` - Name of the volume.
-      * `read_only` - Whether the mount is read-only.
-    * `commands` - Commands run by the init container.
-  * `volumes` - Volumes in the container group.
-    * `config_file_volume_config_file_to_paths` - Files mounted from a config file volume.
-      * `content` - File content.
-      * `path` - Destination path.
-      * `mode` - File mode.
-    * `disk_volume_disk_id` - ID of the disk volume.
-    * `host_path_volume_type` - Type of the host path volume.
-    * `host_path_volume_path` - Path of the host path volume.
-    * `config_file_volume_default_mode` - Default mode of config file volume files.
-    * `empty_dir_volume_medium` - Storage medium for the empty directory volume.
-    * `empty_dir_volume_size_limit` - Size limit of the empty directory volume.
-    * `disk_volume_fs_type` - File system type of the disk volume.
-    * `disk_volume_disk_size` - Size of the disk volume.
-    * `flex_volume_driver` - Driver of the FlexVolume.
-    * `flex_volume_fs_type` - File system type of the FlexVolume.
-    * `flex_volume_options` - Options of the FlexVolume.
-    * `nfs_volume_path` - Path of the NFS volume.
-    * `nfs_volume_read_only` - Whether the NFS volume is read-only.
-    * `nfs_volume_server` - Server of the NFS volume.
-    * `name` - Name of the volume.
-    * `type` - Type of the volume.
-  * `host_aliases` - Host aliases.
-    * `hostnames` - Hostnames for the alias.
-    * `ip` - IP address for the alias.
+* `configurations` - A list of ECI scaling configurations.
+
+---
+
+### `configurations`
+
+The configurations supports the following attributes:
+
+* `id` - ID of the scaling configuration.
+* `scaling_group_id` - ID of the scaling group.
+* `scaling_configuration_name` - Name of the scaling configuration.
+* `description` - Description of the scaling configuration.
+* `security_group_id` - ID of the security group.
+* `container_group_name` - Name of the container group.
+* `restart_policy` - Restart policy for containers.
+* `cpu` - CPU size of the container group.
+* `memory` - Memory size of the container group.
+* `resource_group_id` - ID of the resource group.
+* `dns_policy` - DNS policy of the container group.
+* `cost_optimization` - Whether cost optimization is enabled.
+* `enable_sls` - Whether Simple Log Service is enabled.
+* `instance_family_level` - Instance family level.
+* `image_snapshot_id` - ID of the image cache.
+* `ram_role_name` - Name of the RAM role.
+* `termination_grace_period_seconds` - Grace period before container termination.
+* `auto_match_image_cache` - Whether to automatically match image caches.
+* `ipv6_address_count` - Number of IPv6 addresses.
+* `cpu_options_core` - Number of CPU cores.
+* `cpu_options_threads_per_core` - Number of threads per CPU core.
+* `active_deadline_seconds` - Maximum running time of the container group.
+* `spot_strategy` - Spot strategy.
+* `spot_price_limit` - Maximum hourly spot price.
+* `auto_create_eip` - Whether to automatically create an EIP.
+* `eip_bandwidth` - EIP bandwidth.
+* `host_name` - Hostname of the container group.
+* `ingress_bandwidth` - Ingress bandwidth.
+* `egress_bandwidth` - Egress bandwidth.
+* `ephemeral_storage` - Ephemeral storage size.
+* `load_balancer_weight` - Weight of the container group in a load balancer.
+* `tags` - (Optional) Tags of the scaling configuration.
+* `instance_types` - Instance types.
+* `creation_time` - Creation time of the scaling configuration.
+* `lifecycle_state` - Lifecycle state of the scaling configuration.
+* `acr_registry_infos` - ACR registry information.
+* `image_registry_credentials` - Image registry credentials.
+* `dns_config_options` - DNS configuration options.
+* `security_context_sysctls` - Security context sysctls.
+* `containers` - Containers in the container group.
+* `init_containers` - Init containers in the container group.
+* `volumes` - Volumes in the container group.
+* `host_aliases` - Host aliases.
+
+---
+
+### `configurations.acr_registry_infos`
+
+The acr_registry_infos supports the following attributes:
+
+* `domains` - Domains of the ACR registry.
+* `instance_name` - Name of the ACR instance.
+* `instance_id` - ID of the ACR instance.
+* `region_id` - Region ID of the ACR instance.
+
+---
+
+### `configurations.image_registry_credentials`
+
+The image_registry_credentials supports the following attributes:
+
+* `password` - Password of the image registry.
+* `server` - Server address of the image registry.
+* `username` - Username of the image registry.
+
+---
+
+### `configurations.dns_config_options`
+
+The dns_config_options supports the following attributes:
+
+* `name` - Name of the option.
+* `value` - Value of the option.
+
+---
+
+### `configurations.security_context_sysctls`
+
+The security_context_sysctls supports the following attributes:
+
+* `name` - Name of the sysctl.
+* `value` - Value of the sysctl.
+
+---
+
+### `configurations.containers`
+
+The containers supports the following attributes:
+
+* `security_context_capability_adds` - Linux capabilities to add.
+* `lifecycle_pre_stop_handler_execs` - Commands run before the container stops.
+* `security_context_read_only_root_file_system` - Whether the root file system is read-only.
+* `tty` - Whether to allocate a TTY.
+* `stdin` - Whether to allocate stdin.
+* `security_context_run_as_user` - UID to run the container as.
+* `ports` - Ports exposed by the container.
+* `environment_vars` - Environment variables.
+* `working_dir` - Working directory.
+* `args` - Arguments passed to the container.
+* `cpu` - CPU size.
+* `gpu` - Number of GPUs.
+* `memory` - Memory size.
+* `name` - Name of the container.
+* `image` - Container image.
+* `image_pull_policy` - Image pull policy.
+* `volume_mounts` - Volume mounts.
+* `commands` - Commands run by the container.
+* `liveness_probe_exec_commands` - Commands in the liveness probe.
+* `liveness_probe_period_seconds` - Liveness probe period.
+* `liveness_probe_http_get_path` - HTTP path in the liveness probe.
+* `liveness_probe_failure_threshold` - Liveness probe failure threshold.
+* `liveness_probe_initial_delay_seconds` - Liveness probe initial delay.
+* `liveness_probe_http_get_port` - HTTP port in the liveness probe.
+* `liveness_probe_http_get_scheme` - HTTP scheme in the liveness probe.
+* `liveness_probe_tcp_socket_port` - TCP socket port in the liveness probe.
+* `liveness_probe_success_threshold` - Liveness probe success threshold.
+* `liveness_probe_timeout_seconds` - Liveness probe timeout.
+* `readiness_probe_exec_commands` - Commands in the readiness probe.
+* `readiness_probe_period_seconds` - Readiness probe period.
+* `readiness_probe_http_get_path` - HTTP path in the readiness probe.
+* `readiness_probe_failure_threshold` - Readiness probe failure threshold.
+* `readiness_probe_initial_delay_seconds` - Readiness probe initial delay.
+* `readiness_probe_http_get_port` - HTTP port in the readiness probe.
+* `readiness_probe_http_get_scheme` - HTTP scheme in the readiness probe.
+* `readiness_probe_tcp_socket_port` - TCP socket port in the readiness probe.
+* `readiness_probe_success_threshold` - Readiness probe success threshold.
+* `readiness_probe_timeout_seconds` - Readiness probe timeout.
+
+---
+
+### `configurations.containers.ports`
+
+The ports supports the following attributes:
+
+* `port` - Port number.
+* `protocol` - Protocol of the port.
+
+---
+
+### `configurations.containers.environment_vars`
+
+The environment_vars supports the following attributes:
+
+* `key` - Name of the environment variable.
+* `value` - Value of the environment variable.
+* `field_ref_field_path` - Field reference path.
+
+---
+
+### `configurations.containers.volume_mounts`
+
+The volume_mounts supports the following attributes:
+
+* `mount_path` - Path where the volume is mounted.
+* `mount_propagation` - Mount propagation mode.
+* `sub_path` - Subpath within the volume.
+* `name` - Name of the volume.
+* `read_only` - Whether the mount is read-only.
+
+---
+
+### `configurations.init_containers`
+
+The init_containers supports the following attributes:
+
+* `security_context_capability_adds` - Linux capabilities to add.
+* `security_context_read_only_root_file_system` - Whether the root file system is read-only.
+* `security_context_run_as_user` - UID to run the container as.
+* `ports` - Ports exposed by the init container.
+* `environment_vars` - Environment variables.
+* `working_dir` - Working directory.
+* `args` - Arguments passed to the init container.
+* `cpu` - CPU size.
+* `gpu` - Number of GPUs.
+* `memory` - Memory size.
+* `name` - Name of the init container.
+* `image` - Init container image.
+* `image_pull_policy` - Image pull policy.
+* `volume_mounts` - Volume mounts.
+* `commands` - Commands run by the init container.
+
+---
+
+### `configurations.init_containers.ports`
+
+The ports supports the following attributes:
+
+* `port` - Port number.
+* `protocol` - Protocol of the port.
+
+---
+
+### `configurations.init_containers.environment_vars`
+
+The environment_vars supports the following attributes:
+
+* `key` - Name of the environment variable.
+* `value` - Value of the environment variable.
+* `field_ref_field_path` - Field reference path.
+
+---
+
+### `configurations.init_containers.volume_mounts`
+
+The volume_mounts supports the following attributes:
+
+* `mount_path` - Path where the volume is mounted.
+* `mount_propagation` - Mount propagation mode.
+* `sub_path` - Subpath within the volume.
+* `name` - Name of the volume.
+* `read_only` - Whether the mount is read-only.
+
+---
+
+### `configurations.volumes`
+
+The volumes supports the following attributes:
+
+* `config_file_volume_config_file_to_paths` - Files mounted from a config file volume.
+* `disk_volume_disk_id` - ID of the disk volume.
+* `host_path_volume_type` - Type of the host path volume.
+* `host_path_volume_path` - Path of the host path volume.
+* `config_file_volume_default_mode` - Default mode of config file volume files.
+* `empty_dir_volume_medium` - Storage medium for the empty directory volume.
+* `empty_dir_volume_size_limit` - Size limit of the empty directory volume.
+* `disk_volume_fs_type` - File system type of the disk volume.
+* `disk_volume_disk_size` - Size of the disk volume.
+* `flex_volume_driver` - Driver of the FlexVolume.
+* `flex_volume_fs_type` - File system type of the FlexVolume.
+* `flex_volume_options` - Options of the FlexVolume.
+* `nfs_volume_path` - Path of the NFS volume.
+* `nfs_volume_read_only` - Whether the NFS volume is read-only.
+* `nfs_volume_server` - Server of the NFS volume.
+* `name` - Name of the volume.
+* `type` - Type of the volume.
+
+---
+
+### `configurations.volumes.config_file_volume_config_file_to_paths`
+
+The config_file_volume_config_file_to_paths supports the following attributes:
+
+* `content` - File content.
+* `path` - Destination path.
+* `mode` - File mode.
+
+---
+
+### `configurations.host_aliases`
+
+The host_aliases supports the following attributes:
+
+* `hostnames` - Hostnames for the alias.
+* `ip` - IP address for the alias.

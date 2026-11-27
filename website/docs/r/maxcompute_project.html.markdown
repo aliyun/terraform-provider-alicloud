@@ -60,6 +60,8 @@ If the calculation Quota is not specified, the default Quota resource will be co
   - `true`: supported.
 * `tags` - (Optional, Map) The tag of the resource
 
+---
+
 ### `ip_white_list`
 
 The ip_white_list supports the following:
@@ -72,6 +74,8 @@ The ip_white_list supports the following:
 
   -> **NOTE:** If you only configure a VPC network IP address whitelist, access to the VPC network is restricted and access to the classic network is prohibited.
 
+---
+
 ### `properties`
 
 The properties supports the following:
@@ -81,7 +85,7 @@ The properties supports the following:
 * `enable_decimal2` - (Optional, Bool) Whether to turn on Decimal2.0.
 * `encryption` - (Optional, List) Storage encryption. For details, see [Storage Encryption](https://www.alibabacloud.com/help/en/maxcompute/security-and-compliance/storage-encryption)
 
-  -> **NOTE :**:
+  -> **NOTE:**
   To enable storage encryption, you need to modify the parameters of the basic attributes of the MaxCompute project. This operation permission is authenticated by RAM, and you need to have the Super_Administrator role permission of the corresponding project.
 
 To configure the permissions and IP whitelist parameters of the MaxCompute project, you must have the management permissions (Admin) of the corresponding project, including Super_Administrator, Admin, or custom management permissions. For more information, see the project management permissions list.
@@ -101,6 +105,8 @@ Unit: scan volume (GB)* complexity.
 2: New type system introduced by MaxCompute 2.0.
 hive: the type system of the Hive compatibility mode introduced by MaxCompute 2.0.
 
+---
+
 ### `properties-encryption`
 
 The properties-encryption supports the following:
@@ -112,6 +118,8 @@ The properties-encryption supports the following:
 
 * `key` - (Optional) The encryption algorithm Key, the Key type used by the project, including the Default Key (MaxCompute Default Key) and the self-contained Key (BYOK). The MaxCompute Default Key is the Default Key created inside MaxCompute.
 
+---
+
 ### `properties-table_lifecycle`
 
 The properties-table_lifecycle supports the following:
@@ -120,6 +128,8 @@ The properties-table_lifecycle supports the following:
 mandatory: the Lifecycle clause is required. You must set the Lifecycle of the table.
 inherit: If you do not set the lifecycle of the table when creating a table, the lifecycle of the table is the value of ODPS. table.lifecycle.value, and the ODPS. table.lifecycle.value attribute sets the lifecycle of the table.
 * `value` - (Optional) The value of the life cycle, in days. The value range is 1~37231, and the default value is 37231.
+
+---
 
 ### `security_properties`
 
@@ -132,6 +142,8 @@ The security_properties supports the following:
 * `project_protection` - (Optional, List) Project protection See [`project_protection`](#security_properties-project_protection) below.
 * `using_acl` - (Optional, Bool) Set whether to use the [ACL permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/maxcompute-permissions), that is, set the CheckPermissionUsingACL attribute, which is in use by default.
 * `using_policy` - (Optional, Bool) Set whether to use the [Policy permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/policy-based-access-control-1), that is, set the CheckPermissionUsingACL attribute, which is in use by default.
+
+---
 
 ### `security_properties-project_protection`
 
@@ -152,7 +164,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Project.
 * `delete` - (Defaults to 5 mins) Used when delete the Project.

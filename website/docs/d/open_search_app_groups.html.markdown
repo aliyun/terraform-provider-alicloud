@@ -43,11 +43,11 @@ output "app_groups" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of App Group IDs. Its element value is same as App Group Name.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by App Group name.
-* `instance_id` - (Optional, ForceNew) Instance ID.
-* `resource_group_id` - (Optional, ForceNew) Resource Group Id.
-* `type` - (Optional, ForceNew) The Type of AppGroup. Valid values: `standard`,`enhanced`.
+* `ids` - (Optional, Computed)  A list of App Group IDs. Its element value is same as App Group Name.
+* `name_regex` - (Optional) A regex string to filter results by App Group name.
+* `instance_id` - (Optional) Instance ID.
+* `resource_group_id` - (Optional) Resource Group Id.
+* `type` - (Optional) The Type of AppGroup. Valid values: `standard`,`enhanced`.
 * `name` - (Optional) The name of AppGroup.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -57,33 +57,42 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of App Group names.
-* `groups` - A list of App Groups. Each element contains the following attributes:
-  * `app_group_id` - The ID of the App Group.
-  * `id` - The resource ID in terraform of App Group. It is the same as `app_group_name`.
-  * `app_group_name` - Application Group Name.
-  * `payment_type` - The billing method of the resource. Valid values: `Subscription` and `PayAsYouGo`.
-  * `charge_way` - Billing model. Valid values:`compute_resource` and `qps`.
-  * `commodity_code` - The commodity code.
-  * `create_time` - The time of creation.
-  * `current_version` - The version of Application Group Name.
-  * `description` - The description of the resource.
-  * `domain` - Domain name.
-  * `expire_on` - Expiration Time.
-  * `first_rank_algo_deployment_id` - Coarse deployment ID.
-  * `has_pending_quota_review_task` - Whether the quota status is under approval. Valid values: `0` (normal), `1` (Approving).
-  * `instance_id` - The Instance ID.
-  * `lock_mode` - Locked state. Valid status: `Unlock`,`LockByExpiration`,`ManualLock`.
-  * `locked_by_expiration` - Instance is automatically locked after expiration.
-  * `pending_second_rank_algo_deployment_id` - Refine deployment ID in deployment.
-  * `processing_order_id` - Unfinished order number.
-  * `produced` - Whether the production is completed. Valid values: `0` (producing), `1` (completed).
-  * `project_id` - The Project ID.
-  * `quota` - Quota information.
-  * `resource_group_id` - The Resource Group ID.
-  * `second_rank_algo_deployment_id` - Refine deployment ID.
-  * `status` - The status of the resource. Valid values: `producing`,`review_pending`,`config_pending`,`normal`,`frozen`.
-  * `switched_time` - The Switched time.
-  * `type` - Application type. Valid Values: `standard`, `enhanced`.
+* `groups` - A list of App Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `app_group_id` - The ID of the App Group.
+* `id` - The resource ID in terraform of App Group. It is the same as `app_group_name`.
+* `app_group_name` - Application Group Name.
+* `payment_type` - The billing method of the resource. Valid values: `Subscription` and `PayAsYouGo`.
+* `charge_way` - Billing model. Valid values:`compute_resource` and `qps`.
+* `commodity_code` - The commodity code.
+* `create_time` - The time of creation.
+* `current_version` - The version of Application Group Name.
+* `description` - The description of the resource.
+* `domain` - Domain name.
+* `expire_on` - Expiration Time.
+* `first_rank_algo_deployment_id` - Coarse deployment ID.
+* `has_pending_quota_review_task` - Whether the quota status is under approval. Valid values: `0` (normal), `1` (Approving).
+* `instance_id` - The Instance ID.
+* `lock_mode` - Locked state. Valid status: `Unlock`,`LockByExpiration`,`ManualLock`.
+* `locked_by_expiration` - Instance is automatically locked after expiration.
+* `pending_second_rank_algo_deployment_id` - Refine deployment ID in deployment.
+* `processing_order_id` - Unfinished order number.
+* `produced` - Whether the production is completed. Valid values: `0` (producing), `1` (completed).
+* `project_id` - The Project ID.
+* `quota` - Quota information.
+* `resource_group_id` - The Resource Group ID.
+* `second_rank_algo_deployment_id` - Refine deployment ID.
+* `status` - The status of the resource. Valid values: `producing`,`review_pending`,`config_pending`,`normal`,`frozen`.
+* `switched_time` - The Switched time.
+* `type` - Application type. Valid Values: `standard`, `enhanced`.
+
+---
 
 ### `groups.quota`
 

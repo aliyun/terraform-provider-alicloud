@@ -33,18 +33,18 @@ output "alicloud_cloud_firewall_vpc_firewall_cen_example_id" {
 
 The following arguments are supported:
 
-* `cen_id` - (ForceNew, Optional) The ID of the CEN instance.
-* `lang` - (ForceNew, Optional) The language type of the requested and received messages. Value:-**zh** (default): Chinese.-**en**: English.
-* `member_uid` - (ForceNew, Optional) The UID of the member account (other Alibaba Cloud account) of the current Alibaba cloud account.
-* `network_instance_id` - (ForceNew, Optional) The ID of the VPC instance that created the VPC firewall.
-* `status` - (ForceNew, Optional) Firewall switch status
+* `cen_id` - (Optional) The ID of the CEN instance.
+* `lang` - (Optional) The language type of the requested and received messages. Value:-**zh** (default): Chinese.-**en**: English.
+* `member_uid` - (Optional) The UID of the member account (other Alibaba Cloud account) of the current Alibaba cloud account.
+* `network_instance_id` - (Optional) The ID of the VPC instance that created the VPC firewall.
+* `status` - (Optional) Firewall switch status
   - `opened`: Enabled.
   - `closed`: closed.
   - `notconfigured`: indicates that the VPC boundary firewall is not configured.
   - `configured`: indicates that the VPC boundary firewall is configured but not enabled.
-* `vpc_firewall_id` - (ForceNew, Optional) VPC firewall ID
-* `vpc_firewall_name` - (ForceNew, Optional) The name of the VPC firewall instance.
-* `ids` - (Optional, ForceNew, Computed) A list of Vpc Firewall Cen IDs.
+* `vpc_firewall_id` - (Optional) VPC firewall ID
+* `vpc_firewall_name` - (Optional) The name of the VPC firewall instance.
+* `ids` - (Optional, Computed) A list of Vpc Firewall Cen IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -52,35 +52,70 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Vpc Firewall Cen IDs.
-* `cens` - A list of Vpc Firewall Cen Entries. Each element contains the following attributes:
-  * `id` - The ID of the CEN instance.
-  * `cen_id` - The ID of the CEN instance.
-  * `connect_type` - Intercommunication type, value: `expressconnect`: Express Channel `cen`: Cloud Enterprise Network
-  * `local_vpc` - The details of the VPC.
-    * `attachment_id` - The ID of the attachment.
-    * `attachment_name` - The name of the attachment.
-    * `defend_cidr_list` - The list of network segments protected by the VPC firewall.
-    * `eni_list` - The list of ENIs.
-      * `eni_id` - The ID of the ENI.
-      * `eni_private_ip_address` - The private IP address of the ENI.
-    * `manual_vswitch_id` - The ID of the vSwitch specified when the routing mode is manual mode.
-    * `network_instance_id` - The ID of the VPC instance that created the VPC firewall.
-    * `network_instance_name` - The name of the network instance.
-    * `network_instance_type` - The type of the network instance. Value: **VPC**.
-    * `owner_id` - The UID of the Alibaba Cloud account to which the VPC belongs.
-    * `region_no` - The region ID of the VPC.
-    * `route_mode` - Routing mode,. Value:-auto: indicates automatic mode.-manual: indicates manual mode.
-    * `support_manual_mode` - Whether routing mode supports manual mode. Value:-**1**: Supported.-**0**: Not supported.
-    * `transit_router_id` - The ID of the transit router.
-    * `transit_router_type` - The version of the cloud enterprise network forwarding router (CEN-TR). Value:-**Basic**: Basic Edition.-**Enterprise**: Enterprise Edition.
-    * `vpc_cidr_table_list` - The VPC network segment list.
-      * `route_entry_list` - The list of route entries in the VPC.
-        * `destination_cidr` - The target network segment of the VPC.
-        * `next_hop_instance_id` - The ID of the next hop instance in the VPC.
-      * `route_table_id` - The ID of the route table of the VPC.
-    * `vpc_id` - The ID of the VPC instance.
-    * `vpc_name` - The instance name of the VPC.
-  * `network_instance_id` - The ID of the network instance.
-  * `status` - Firewall switch status
-  * `vpc_firewall_id` - VPC firewall ID
-  * `vpc_firewall_name` - The name of the VPC firewall instance.
+* `cens` - A list of Vpc Firewall Cen Entries.
+
+---
+
+### `cens`
+
+The cens supports the following attributes:
+
+* `id` - The ID of the CEN instance.
+* `cen_id` - The ID of the CEN instance.
+* `connect_type` - Intercommunication type, value: `expressconnect`: Express Channel `cen`: Cloud Enterprise Network
+* `local_vpc` - The details of the VPC.
+* `network_instance_id` - The ID of the network instance.
+* `status` - Firewall switch status
+* `vpc_firewall_id` - VPC firewall ID
+* `vpc_firewall_name` - The name of the VPC firewall instance.
+
+---
+
+### `cens.local_vpc`
+
+The local_vpc supports the following attributes:
+
+* `attachment_id` - The ID of the attachment.
+* `attachment_name` - The name of the attachment.
+* `defend_cidr_list` - The list of network segments protected by the VPC firewall.
+* `eni_list` - The list of ENIs.
+* `manual_vswitch_id` - The ID of the vSwitch specified when the routing mode is manual mode.
+* `network_instance_id` - The ID of the VPC instance that created the VPC firewall.
+* `network_instance_name` - The name of the network instance.
+* `network_instance_type` - The type of the network instance. Value: **VPC**.
+* `owner_id` - The UID of the Alibaba Cloud account to which the VPC belongs.
+* `region_no` - The region ID of the VPC.
+* `route_mode` - Routing mode,. Value:-auto: indicates automatic mode.-manual: indicates manual mode.
+* `support_manual_mode` - Whether routing mode supports manual mode. Value:-**1**: Supported.-**0**: Not supported.
+* `transit_router_id` - The ID of the transit router.
+* `transit_router_type` - The version of the cloud enterprise network forwarding router (CEN-TR). Value:-**Basic**: Basic Edition.-**Enterprise**: Enterprise Edition.
+* `vpc_cidr_table_list` - The VPC network segment list.
+* `vpc_id` - The ID of the VPC instance.
+* `vpc_name` - The instance name of the VPC.
+
+---
+
+### `cens.local_vpc.eni_list`
+
+The eni_list supports the following attributes:
+
+* `eni_id` - The ID of the ENI.
+* `eni_private_ip_address` - The private IP address of the ENI.
+
+---
+
+### `cens.local_vpc.vpc_cidr_table_list`
+
+The vpc_cidr_table_list supports the following attributes:
+
+* `route_entry_list` - The list of route entries in the VPC.
+* `route_table_id` - The ID of the route table of the VPC.
+
+---
+
+### `cens.local_vpc.vpc_cidr_table_list.route_entry_list`
+
+The route_entry_list supports the following attributes:
+
+* `destination_cidr` - The target network segment of the VPC.
+* `next_hop_instance_id` - The ID of the next hop instance in the VPC.

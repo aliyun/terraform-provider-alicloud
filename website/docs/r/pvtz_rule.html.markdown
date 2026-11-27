@@ -101,6 +101,8 @@ The following arguments are supported:
 * `type` - (Optional, ForceNew) The type of the rule. Valid values: `OUTBOUND`.
 * `zone_name` - (Required, ForceNew) The name of the forwarding zone.
 
+---
+
 ### `forward_ips`
 
 The forward_ips supports the following:

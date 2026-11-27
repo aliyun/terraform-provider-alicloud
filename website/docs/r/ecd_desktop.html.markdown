@@ -108,6 +108,8 @@ The following arguments are supported:
 * `user_disk_size_gib` - (Optional) The user disk size gib of the Desktop.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
+---
+
 ### `desktop_timers`
 
 The desktop_timers supports the following:
@@ -130,7 +132,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mines) Used when create the Desktop.
 * `delete` - (Defaults to 10 mines) Used when delete the Desktop.

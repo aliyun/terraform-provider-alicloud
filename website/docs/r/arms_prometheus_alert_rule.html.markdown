@@ -68,12 +68,16 @@ The following arguments are supported:
 * `prometheus_alert_rule_name` - (Required, ForceNew) The name of the resource.
 * `type` - (Optional, ForceNew) The type of the alert rule.
 
+---
+
 ### `labels`
 
 The labels supports the following:
 
 * `name` - (Optional) The name of the label.
 * `value` - (Optional) The value of the label.
+
+---
 
 ### `annotations`
 

@@ -95,6 +95,8 @@ The following arguments are supported:
 * `job_name` - (Required, ForceNew) The unique identifier of the OSS data shipping job.
 * `project` - (Required, ForceNew) The name of the project.
 
+---
+
 ### `configuration`
 
 The configuration supports the following:
@@ -105,6 +107,8 @@ The configuration supports the following:
 
 * `sink` - (Required, List) The configurations of the Object Storage Service (OSS) data shipping job. See [`sink`](#configuration-sink) below.
 * `to_time` - (Required, Int) The end of the time range to ship data. The value 0 specifies that the data shipping job continuously ships data until the job is manually stopped. Example value: 1718380800
+
+---
 
 ### `configuration-sink`
 
@@ -167,7 +171,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Oss Export Sink.
 * `delete` - (Defaults to 5 mins) Used when delete the Oss Export Sink.

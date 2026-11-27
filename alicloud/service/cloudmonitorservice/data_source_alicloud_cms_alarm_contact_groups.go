@@ -96,14 +96,15 @@ func dataSourceAlicloudCmsAlarmContactGroupsRead(d *schema.ResourceData, meta in
 	}
 	var response *cms.DescribeContactGroupListResponse
 	for {
-		raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DescribeContactGroupList(request)
-		})
+		raw, err := client.LegacySdkRpc(request, "/", cms.CreateDescribeContactGroupListResponse())
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cms_alarm_contact_groups", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 		logs.AddDebug(request.GetActionName(), raw)
-		response, _ = raw.(*cms.DescribeContactGroupListResponse)
+		response = &cms.DescribeContactGroupListResponse{}
+		if err := legacyCmsResponse(raw, response); err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cms_alarm_contact_groups", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+		}
 
 		for _, item := range response.ContactGroupList.ContactGroup {
 			if alarmContactGroupNameRegex != nil {

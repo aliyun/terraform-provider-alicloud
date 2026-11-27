@@ -121,6 +121,8 @@ The following arguments will be discarded. Please use new fields as soon as poss
 
 * `connection_drain` - (Deprecated since v1.231.0). Field 'connection_drain' has been deprecated from provider version 1.231.0. New field 'connection_drain_enabled' instead.
 
+---
+
 ### `health_check`
 
 The health_check supports the following:
@@ -180,7 +182,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Server Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Server Group.

@@ -116,11 +116,17 @@ The following arguments are supported:
   - `false`: Does not force delete the snapshot.
 * `instant_access` - (Optional, Deprecated since v1.231.0) Field `instant_access` has been deprecated from provider version 1.231.0.
 * `instant_access_retention_days` - (Optional, Deprecated since v1.231.0) Field `instant_access_retention_days` has been deprecated from provider version 1.231.0.
-* `resource_group_id` - (Optional) The ID of the resource group. **NOTE:** From version 1.239.0, `resource_group_id` can be modified.
-* `retention_days` - (Optional, Int) The retention period of the snapshot. Valid values: `1` to `65536`. **NOTE:** From version 1.231.0, `retention_days` can be modified.
+* `resource_group_id` - (Optional) The ID of the resource group.
+
+  -> **NOTE:** From version 1.239.0, `resource_group_id` can be modified.
+* `retention_days` - (Optional, Int) The retention period of the snapshot. Valid values: `1` to `65536`.
+
+  -> **NOTE:** From version 1.231.0, `retention_days` can be modified.
 * `snapshot_name` - (Optional) The name of the snapshot.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `wait_until` - (Optional, Available since v1.293.0) Local waiting policy for creation only. Valid values: `accomplished`, which waits for `Status=accomplished`, and `available`, which waits for `Available=true`. When omitted, creation still waits for `Status=accomplished`, but no default waiting policy is inserted into state, avoiding a new `wait_until` default-value diff for existing configurations. This argument is not sent to ECS or read from ECS. Changing only `wait_until` neither recreates nor modifies the snapshot and is not a readiness barrier; it affects subsequent creation only. Metadata updates (`snapshot_name`, `name`, `description`) do not wait for background upload after ECS accepts the update; Read preserves the actual status. Resource-group and tag updates are also unaffected. **NOTE:** Independently of this policy, `retention_days` changes, including mixed attribute updates, must wait for `Status=accomplished` before sending the update, with no additional wait afterward.
+* `wait_until` - (Optional, Available since v1.293.0) Local waiting policy for creation only. Valid values: `accomplished`, which waits for `Status=accomplished`, and `available`, which waits for `Available=true`. When omitted, creation still waits for `Status=accomplished`, but no default waiting policy is inserted into state, avoiding a new `wait_until` default-value diff for existing configurations. This argument is not sent to ECS or read from ECS. Changing only `wait_until` neither recreates nor modifies the snapshot and is not a readiness barrier; it affects subsequent creation only. Metadata updates (`snapshot_name`, `name`, `description`) do not wait for background upload after ECS accepts the update; Read preserves the actual status. Resource-group and tag updates are also unaffected.
+
+  -> **NOTE:** Independently of this policy, `retention_days` changes, including mixed attribute updates, must wait for `Status=accomplished` before sending the update, with no additional wait afterward.
 * `name` - (Optional, Deprecated since v1.120.0) Field `name` has been deprecated from provider version 1.120.0. New field `snapshot_name` instead.
 
 ## Attributes Reference
@@ -137,7 +143,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.231.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Snapshot.
 * `delete` - (Defaults to 5 mins) Used when delete the Snapshot.

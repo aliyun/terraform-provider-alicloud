@@ -38,15 +38,26 @@ output "face_config" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Face Config IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by biz_name.
+* `ids` - (Optional, Computed)  A list of Face Config IDs.
+* `name_regex` - (Optional) A regex string to filter results by biz_name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `configs` - A list of Cloudauth Face Configs. Each element contains the following attributes:
-	* `biz_name` - Scene name.
-	* `biz_type` - Scene type. **NOTE:** The biz_type cannot exceed 32 characters and can only use English letters, numbers and dashes (-).
-	* `gmt_updated` - The Update Time.
+* `names` - A list of Face Config names.
+
+* `configs` - A list of Cloudauth Face Configs.
+
+---
+
+### `configs`
+
+The configs supports the following attributes:
+
+* `biz_name` - Scene name.
+* `biz_type` - Scene type.
+
+  -> **NOTE:** The biz_type cannot exceed 32 characters and can only use English letters, numbers and dashes (-).
+* `gmt_updated` - The Update Time.

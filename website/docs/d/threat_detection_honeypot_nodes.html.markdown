@@ -29,10 +29,10 @@ output "alicloud_threat_detection_honeypot_node_example_id" {
 
 The following arguments are supported:
 
-* `node_id` - (ForceNew, Optional) Honeypot management node id.
-* `name_regex` - (ForceNew, Optional)  A regex string to filter results by Honeypot Node name.
-* `node_name` - (ForceNew, Optional) The name of the management node.
-* `ids` - (Optional, ForceNew, Computed) A list of Honeypot Node IDs.
+* `node_id` - (Optional) Honeypot management node id.
+* `name_regex` - (Optional)  A regex string to filter results by Honeypot Node name.
+* `node_name` - (Optional) The name of the management node.
+* `ids` - (Optional, Computed) A list of Honeypot Node IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -41,12 +41,19 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Honeypot Node IDs.
 * `names` - A list of Honeypot Node names.
-* `nodes` - A list of Honeypot Node Entries. Each element contains the following attributes:
-  * `allow_honeypot_access_internet` - Whether to allow honeypot access to the external network. Value:-**true**: Allow-**false**: Disabled
-  * `available_probe_num` - Number of probes available.
-  * `node_id` - Honeypot management node id.
-  * `id` - The ID of the Honeypot management node.
-  * `node_name` - Management node name.
-  * `create_time` - The creation time of the honeypot management node.
-  * `security_group_probe_ip_list` - Release the collection of network segments.
-  * `status` - The status of the honeypot management node.
+* `nodes` - A list of Honeypot Node Entries.
+
+---
+
+### `nodes`
+
+The nodes supports the following attributes:
+
+* `allow_honeypot_access_internet` - Whether to allow honeypot access to the external network. Value:-**true**: Allow-**false**: Disabled
+* `available_probe_num` - Number of probes available.
+* `node_id` - Honeypot management node id.
+* `id` - The ID of the Honeypot management node.
+* `node_name` - Management node name.
+* `create_time` - The creation time of the honeypot management node.
+* `security_group_probe_ip_list` - Release the collection of network segments.
+* `status` - The status of the honeypot management node.

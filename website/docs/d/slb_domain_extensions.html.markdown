@@ -36,7 +36,14 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `extensions` - A list of SLB domain extension. Each element contains the following attributes:
-  * `id` - The ID of the domain extension.
-  * `domain` - The domain name.
-  * `server_certificate_id` - The ID of the certificate used by the domain name.
+* `extensions` - A list of SLB domain extension.
+
+---
+
+### `extensions`
+
+The extensions supports the following attributes:
+
+* `id` - The ID of the domain extension.
+* `domain` - The domain name.
+* `server_certificate_id` - The ID of the certificate used by the domain name.

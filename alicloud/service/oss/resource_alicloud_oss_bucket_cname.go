@@ -161,7 +161,7 @@ func resourceAliCloudOssBucketCnameCreate(d *schema.ResourceData, meta interface
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("POST", "2019-05-17", "PutCname", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"NeedVerifyDomainOwnership"}) {
+			if needOssBucketConfigRetry(err) || errs.IsExpectedErrors(err, []string{"NeedVerifyDomainOwnership"}) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -317,7 +317,7 @@ func resourceAliCloudOssBucketCnameUpdate(d *schema.ResourceData, meta interface
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.Do("Oss", helper.XmlParam("POST", "2019-05-17", "PutCname", action), query, body, nil, hostMap, false)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if needOssBucketConfigRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -364,7 +364,7 @@ func resourceAliCloudOssBucketCnameDelete(d *schema.ResourceData, meta interface
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("POST", "2019-05-17", "DeleteCname", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if needOssBucketConfigRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}

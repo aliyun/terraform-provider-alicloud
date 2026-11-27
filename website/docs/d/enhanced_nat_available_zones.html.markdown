@@ -35,6 +35,13 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of available zones IDs by the enhanced NAT gateway.
-* `zones` - A list of available zones. Each element contains the following attributes:
-  * `zone_id` - The ID of the available zone.
-  * `local_name` - Name of the available zone.
+* `zones` - A list of available zones.
+
+---
+
+### `zones`
+
+The zones supports the following attributes:
+
+* `zone_id` - The ID of the available zone.
+* `local_name` - Name of the available zone.

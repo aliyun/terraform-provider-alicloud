@@ -86,6 +86,8 @@ The following arguments are supported:
 * `zone_id` - (Optional, ForceNew) The zone id to cache image.
 * `image_registry_credential` - (Optional, ForceNew) The Image Registry parameters about the image to be cached. See [`image_registry_credential`](#image_registry_credential) below.
 
+---
+
 ### `image_registry_credential`
 
 * `server` - (Optional) The address of Image Registry without `http://` or `https://`.

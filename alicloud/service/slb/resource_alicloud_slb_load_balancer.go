@@ -203,6 +203,12 @@ func ResourceLoadBalancer() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"active", "inactive", "locked"}, false),
 			},
 			"tags": tags.TagsSchemaComputed(),
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -216,6 +222,17 @@ func ResourceLoadBalancer() *schema.Resource {
 			},
 		},
 	}
+}
+
+func isLoadBalancerCreateRetryable(err error) bool {
+	return errs.IsExpectedErrors(err, []string{
+		"OperationFailed.TokenIsProcessing",
+		"SystemBusy",
+		"SDK.ServerUnreachable",
+		"QueryOrderError",
+		"CreateOrderTimeout",
+		"TradeSyncCreateSubError",
+	}) || helper.NeedRetry(err)
 }
 
 func resourceLoadBalancerCreate(d *schema.ResourceData, meta interface{}) error {
@@ -301,13 +318,28 @@ func resourceLoadBalancerCreate(d *schema.ResourceData, meta interface{}) error 
 		request["SlaveZoneId"] = v
 	}
 
+	// Tags are sent with CreateLoadBalancer so they are applied in the same call.
+	// Later tag changes still go through TagResources/UntagResources in Update.
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		request = tags.ExpandTagsToMap(request, tagsMap)
+	}
+
+	// vpc_id is Optional+Computed: on create an unset value is empty, so only an
+	// explicit configuration is sent; otherwise VpcId is derived from vswitch_id below.
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VpcId"] = v.(string)
+	}
+
 	vswitchId := helper.Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
 		vsw, err := slbService.DescribeVSwitchWithTeadsl(vswitchId)
 		if err != nil {
 			return errs.WrapError(err)
 		}
-		request["VpcId"] = vsw["VpcId"]
+		if _, ok := request["VpcId"]; !ok {
+			request["VpcId"] = vsw["VpcId"]
+		}
 		request["VSwitchId"] = vswitchId
 	}
 	request["ClientToken"] = helper.BuildClientToken("CreateLoadBalancer")
@@ -315,7 +347,8 @@ func resourceLoadBalancerCreate(d *schema.ResourceData, meta interface{}) error 
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, true)
 		if err != nil {
-			if errs.IsExpectedErrors(err, []string{"OperationFailed.TokenIsProcessing"}) || helper.NeedRetry(err) {
+			// Keep the legacy code inline for the breaking-change retry-code parser.
+			if errs.IsExpectedErrors(err, []string{"OperationFailed.TokenIsProcessing"}) || isLoadBalancerCreateRetryable(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -370,6 +403,7 @@ func resourceLoadBalancerRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("slave_zone_id", object["SlaveZoneId"])
 	d.Set("status", object["LoadBalancerStatus"])
+	d.Set("vpc_id", object["VpcId"])
 	d.Set("vswitch_id", object["VSwitchId"])
 
 	listTagResourcesObject, err := slbService.ListTagResources(d.Id(), "instance")
@@ -386,7 +420,8 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 	var err error
 	d.Partial(true)
 
-	if d.HasChange("tags") {
+	// Tags configured at creation are already sent with CreateLoadBalancer.
+	if d.HasChange("tags") && !d.IsNewResource() {
 		if err := slbService.SetResourceTags(d, "instance"); err != nil {
 			return errs.WrapError(err)
 		}

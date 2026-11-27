@@ -51,14 +51,21 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as ``.
 * `create_time` - The service trace creation timestamp, in milliseconds.
 * `service_trail` - Service trace configuration information.
-  * `config` - Service tracking on status. The value is:
   - **on:** Open
   - **off:** off.
-  * `update_time` - The timestamp of the last service update. Unit: milliseconds.
+
+---
+
+### `service_trail`
+
+The service_trail supports the following attributes:
+
+* `config` - Service tracking on status. The value is:
+* `update_time` - The timestamp of the last service update. Unit: milliseconds.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Sas Trail.
 * `delete` - (Defaults to 5 mins) Used when delete the Sas Trail.

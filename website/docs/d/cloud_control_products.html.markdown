@@ -33,9 +33,9 @@ data "alicloud_cloud_control_products" "default" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Product IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `ids` - (Optional, Computed) A list of Product IDs.
+* `name_regex` - (Optional) A regex string to filter results by Group Metric Rule name.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
@@ -43,7 +43,14 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Product IDs.
 * `names` - A list of name of Products.
-* `products` - A list of Product Entries. Each element contains the following attributes:
-  * `product_code` - The first ID of the resource
-  * `product_name` - The name of the resource
-  * `id` - The ID of the resource supplied above.
+* `products` - A list of Product Entries.
+
+---
+
+### `products`
+
+The products supports the following attributes:
+
+* `product_code` - The first ID of the resource
+* `product_name` - The name of the resource
+* `id` - The ID of the resource supplied above.

@@ -75,6 +75,13 @@ You can specify up to 20 VPC IDs, separated by commas (,).
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Ipv6 Cidr Block IDs.
-* `blocks` - A list of Ipv6 Cidr Block Entries. Each element contains the following attributes:
-  * `ipv6_cidr_block` - The additional IPv6 CIDR block to be removed.
-  * `id` - The ID of the resource supplied above.
+* `blocks` - A list of Ipv6 Cidr Block Entries.
+
+---
+
+### `blocks`
+
+The blocks supports the following attributes:
+
+* `ipv6_cidr_block` - The additional IPv6 CIDR block to be removed.
+* `id` - The ID of the resource supplied above.

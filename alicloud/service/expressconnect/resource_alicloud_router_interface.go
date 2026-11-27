@@ -136,9 +136,7 @@ func resourceAlicloudRouterInterfaceCreate(d *schema.ResourceData, meta interfac
 		return errs.WrapError(err)
 	}
 
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.CreateRouterInterface(request)
-	})
+	raw, err := client.VpcSdkRpc(request, vpc.CreateCreateRouterInterfaceResponse())
 	if err != nil {
 		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_router_interface", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
@@ -164,9 +162,7 @@ func resourceAlicloudRouterInterfaceUpdate(d *schema.ResourceData, meta interfac
 	}
 	request.RegionId = client.RegionId
 	if attributeUpdate {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.ModifyRouterInterfaceAttribute(request)
-		})
+		raw, err := client.VpcSdkRpc(request, vpc.CreateModifyRouterInterfaceAttributeResponse())
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
@@ -178,9 +174,7 @@ func resourceAlicloudRouterInterfaceUpdate(d *schema.ResourceData, meta interfac
 		request.RegionId = string(client.Region)
 		request.RouterInterfaceId = d.Id()
 		request.Spec = d.Get("specification").(string)
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.ModifyRouterInterfaceSpec(request)
-		})
+		raw, err := client.VpcSdkRpc(request, vpc.CreateModifyRouterInterfaceSpecResponse())
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
@@ -252,9 +246,7 @@ func resourceAlicloudRouterInterfaceDelete(d *schema.ResourceData, meta interfac
 	request.ClientToken = helper.BuildClientToken(request.GetActionName())
 	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		args := *request
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteRouterInterface(&args)
-		})
+		raw, err := client.VpcSdkRpc(&args, vpc.CreateDeleteRouterInterfaceResponse())
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"IncorrectStatus", "DependencyViolation.RouterInterfaceReferedByRouteEntry", "OperationConflict"}) {
 				time.Sleep(5 * time.Second)
@@ -320,9 +312,7 @@ func buildAlicloudRouterInterfaceCreateArgs(d *schema.ResourceData, meta interfa
 			Value: &values,
 		}}
 		describeVirtualBorderRoutersRequest.Filter = &filters
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVirtualBorderRouters(describeVirtualBorderRoutersRequest)
-		})
+		raw, err := client.VpcSdkRpc(describeVirtualBorderRoutersRequest, vpc.CreateDescribeVirtualBorderRoutersResponse())
 		if err != nil {
 			return request, errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_router_interface", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}

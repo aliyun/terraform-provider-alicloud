@@ -43,9 +43,9 @@ output "db_cluster" {
 
 The following arguments are supported:
 
-* `db_cluster_description` - (Optional, ForceNew) The DBCluster description.
+* `db_cluster_description` - (Optional) The DBCluster description.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of DBCluster IDs.
+* `ids` - (Optional, Computed)  A list of DBCluster IDs.
 * `status` - (Optional, Computed) The status of the resource. Valid values: `Running`,`Creating`,`Deleting`,`Restarting`,`Preparing`,.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -54,6 +54,8 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `clusters` - A list of Click House DBClusters. Each element contains the following attributes:
+
+---
 
 ### `clusters`
 
@@ -97,10 +99,14 @@ The following attributes are exported in addition to the arguments listed above:
 * `status` - The status of the DBCluster. Valid values: `Running`,`Creating`,`Deleting`,`Restarting`,`Preparing`.
 * `db_cluster_access_white_list` - The db cluster access white list.
 
+---
+
 ### `clusters.scale_out_status`
 
 * `progress` - Process.
 * `ratio` - Efficiency.
+
+---
 
 ### `clusters.db_cluster_access_white_list`
 

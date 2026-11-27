@@ -36,7 +36,7 @@ output "alicloud_dms_enterprise_logic_database_example_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Logic Database IDs.
+* `ids` - (Optional, Computed) A list of Logic Database IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -44,15 +44,22 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Logic Database IDs.
-* `databases` - A list of Logic Database Entries. Each element contains the following attributes:
-  * `id` - Logic Database ID.
-  * `alias` - Logical Library alias.
-  * `database_ids` - Sub-Database ID.
-  * `db_type` - Database type.
-  * `env_type` - Environment type, return value is as follows:-product: production environment-dev: development environment-pre: Advance Environment-test: test environment-sit:SIT environment-uat:UAT environment-pet: Pressure measurement environment-stag:STAG environment
-  * `logic` - Whether it is a logical Library, the return value is true.
-  * `logic_database_id` - The ID of the logical Library.
-  * `owner_id_list` - The user ID list of the logical library Owner.
-  * `owner_name_list` - The nickname list of the logical library Owner.
-  * `schema_name` - Logical Library name.
-  * `search_name` - Logical library search name.
+* `databases` - A list of Logic Database Entries.
+
+---
+
+### `databases`
+
+The databases supports the following attributes:
+
+* `id` - Logic Database ID.
+* `alias` - Logical Library alias.
+* `database_ids` - Sub-Database ID.
+* `db_type` - Database type.
+* `env_type` - Environment type, return value is as follows:-product: production environment-dev: development environment-pre: Advance Environment-test: test environment-sit:SIT environment-uat:UAT environment-pet: Pressure measurement environment-stag:STAG environment
+* `logic` - Whether it is a logical Library, the return value is true.
+* `logic_database_id` - The ID of the logical Library.
+* `owner_id_list` - The user ID list of the logical library Owner.
+* `owner_name_list` - The nickname list of the logical library Owner.
+* `schema_name` - Logical Library name.
+* `search_name` - Logical library search name.

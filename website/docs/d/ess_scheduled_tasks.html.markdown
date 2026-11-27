@@ -43,17 +43,24 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of scheduled task ids.
 * `names` - A list of scheduled task names.
-* `tasks` - A list of scheduled tasks. Each element contains the following attributes:
-  * `id` - ID of the scheduled task id.
-  * `scaling_group_id` - The id of the scaling group to which the scheduled task belongs.
-  * `name` - Name of the scheduled task name.
-  * `scheduled_action` - The operation to be performed when a scheduled task is triggered.
-  * `description` - Description of the scheduled task.
-  * `launch_expiration_time` - The time period during which a failed scheduled task is retried.
-  * `launch_time` - The time at which the scheduled task is triggered.
-  * `max_value` - The maximum number of instances in a scaling group when the scaling method of the scheduled task is to specify the number of instances in a scaling group.
-  * `min_value` - The minimum number of instances in a scaling group when the scaling method of the scheduled task is to specify the number of instances in a scaling group.
-  * `task_enabled` - Whether to start the scheduled task.
-  * `recurrence_type` - Specifies the recurrence type of the scheduled task.
-  * `recurrence_value` - Specifies how often a scheduled task recurs.
-  * `recurrence_end_time` - Specifies the end time after which the scheduled task is no longer repeated.
+* `tasks` - A list of scheduled tasks.
+
+---
+
+### `tasks`
+
+The tasks supports the following attributes:
+
+* `id` - ID of the scheduled task id.
+* `scaling_group_id` - The id of the scaling group to which the scheduled task belongs.
+* `name` - Name of the scheduled task name.
+* `scheduled_action` - The operation to be performed when a scheduled task is triggered.
+* `description` - Description of the scheduled task.
+* `launch_expiration_time` - The time period during which a failed scheduled task is retried.
+* `launch_time` - The time at which the scheduled task is triggered.
+* `max_value` - The maximum number of instances in a scaling group when the scaling method of the scheduled task is to specify the number of instances in a scaling group.
+* `min_value` - The minimum number of instances in a scaling group when the scaling method of the scheduled task is to specify the number of instances in a scaling group.
+* `task_enabled` - Whether to start the scheduled task.
+* `recurrence_type` - Specifies the recurrence type of the scheduled task.
+* `recurrence_value` - Specifies how often a scheduled task recurs.
+* `recurrence_end_time` - Specifies the end time after which the scheduled task is no longer repeated.

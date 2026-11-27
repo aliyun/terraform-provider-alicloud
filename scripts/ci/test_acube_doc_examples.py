@@ -88,6 +88,17 @@ class DocumentExamplesTest(unittest.TestCase):
             self.assertEqual(result['blocked'], [])
             self.assertEqual(result['proseReview'][0]['status'], 'NOT_VERIFIED')
 
+    def test_a_page_that_already_carried_unlabelled_hcl_can_still_be_repaired(self):
+        fence = chr(96) * 3
+        before = {DOC: '# Example Usage\n' + fence + 'text\n' + RESOURCE + fence + '\n'}
+        with self.assertRaisesRegex(ValueError, 'Label the HCL fence'):
+            docs.extract(DOC, before[DOC])
+        after = {DOC: before[DOC].replace(RESOURCE, 'name = "one"\n')}
+        self.assertEqual(docs.extract(DOC, after[DOC]), [])
+        outcome = Repository(before, after).plan()
+        self.assertEqual(outcome['blocked'], [])
+        self.assertEqual(outcome['examples'], [])
+
     def test_changed_scene_only_and_shared_fragment_selects_all_consumers(self):
         before = {DOC: page(PROVIDER, RESOURCE, RESOURCE.replace('"test"', '"second"'))}
         contract(before, [('basic', [1, 2]), ('complete', [1, 3])])
@@ -126,6 +137,11 @@ class DocumentExamplesTest(unittest.TestCase):
         direct = Repository(before, after).plan([DOC])
         self.assertIn('Reference is outside this HCL fence: var.other', direct['blocked'][0])
         self.assertEqual([case['id'] for case in direct['examples']], ['example-2'])
+
+    def test_document_plan_keeps_shared_blockers(self):
+        scope = dict(blocked=['deleted test', 'unknown registration'], accOnlyBlockers=['deleted test'])
+        self.assertEqual(integration.scope_blockers(scope, 'examples'), ['unknown registration'])
+        self.assertEqual(integration.scope_blockers(scope, 'acctest'), scope['blocked'])
 
     def test_missing_acc_coverage_only_blocks_acc_job(self):
         issue = 'No AccTest cases for affected resource'

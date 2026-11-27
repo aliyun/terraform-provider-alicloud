@@ -31,23 +31,30 @@ output "alicloud_cen_transit_router_multicast_domain_peer_member_example_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew) A list of Cen Transit Router Multicast Domain Peer Member IDs.
-* `transit_router_multicast_domain_id` - (Required, ForceNew) The ID of the multicast domain to which the multicast member belongs.
-* `peer_transit_router_multicast_domains` - (Optional, ForceNew) The IDs of the inter-region multicast domains.
-* `resource_id` - (Optional, ForceNew) The ID of the resource associated with the multicast resource.
-* `resource_type` - (Optional, ForceNew) The type of the multicast resource. Valid values:
+* `ids` - (Optional) A list of Cen Transit Router Multicast Domain Peer Member IDs.
+* `transit_router_multicast_domain_id` - (Required) The ID of the multicast domain to which the multicast member belongs.
+* `peer_transit_router_multicast_domains` - (Optional) The IDs of the inter-region multicast domains.
+* `resource_id` - (Optional) The ID of the resource associated with the multicast resource.
+* `resource_type` - (Optional) The type of the multicast resource. Valid values:
   * VPC: queries multicast resources by VPC.
   * TR: queries multicast resources that are also deployed in a different region.
-* `transit_router_attachment_id` - (Optional, ForceNew) The ID of the network instance connection.
+* `transit_router_attachment_id` - (Optional) The ID of the network instance connection.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `members` - A list of Transit Router Multicast Domain Peer Member Entries. Each element contains the following attributes:
-  * `id` - The `key` of the resource supplied above.The value is formulated as `<transit_router_multicast_domain_id>:<group_ip_address>:<peer_transit_router_multicast_domain_id>`.
-  * `group_ip_address` - The IP address of the multicast group to which the multicast member belongs. Value range: **224.0.0.1** to **239.255.255.254**.If the multicast group you specified does not exist in the current multicast domain, the system will automatically create a new multicast group for you in the current multicast domain.
-  * `peer_transit_router_multicast_domain_id` - The multicast domain ID of the peer transit router.
-  * `status` - The status of the resource
-  * `transit_router_multicast_domain_id` - The ID of the multicast domain to which the multicast member belongs.
+* `members` - A list of Transit Router Multicast Domain Peer Member Entries.
+
+---
+
+### `members`
+
+The members supports the following attributes:
+
+* `id` - The `key` of the resource supplied above.The value is formulated as `<transit_router_multicast_domain_id>:<group_ip_address>:<peer_transit_router_multicast_domain_id>`.
+* `group_ip_address` - The IP address of the multicast group to which the multicast member belongs. Value range: **224.0.0.1** to **239.255.255.254**.If the multicast group you specified does not exist in the current multicast domain, the system will automatically create a new multicast group for you in the current multicast domain.
+* `peer_transit_router_multicast_domain_id` - The multicast domain ID of the peer transit router.
+* `status` - The status of the resource
+* `transit_router_multicast_domain_id` - The ID of the multicast domain to which the multicast member belongs.

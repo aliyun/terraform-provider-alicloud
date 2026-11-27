@@ -113,6 +113,8 @@ The following arguments are supported:
 * `security_ip_array_name` - (Optional) The name of the IP whitelist group.
 * `modify_mode` - (Optional) The method for modifying the IP whitelist. Valid values are `Cover`, `Append`, `Delete`.
 
+---
+
 ### `components`
 
 The `components` block supports the following:
@@ -120,6 +122,8 @@ The `components` block supports the following:
 * `component_type` - (Optional, ForceNew) The type of the component.
 * `component_class` - (Optional, ForceNew) The class/specification of the component.
 * `component_replica` - (Optional, ForceNew) The number of replicas for the component.
+
+---
 
 ### `parameters`
 
@@ -137,7 +141,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 50 mins) Used when creating the polardb application.
 * `update` - (Defaults to 50 mins) Used when updating the polardb application.

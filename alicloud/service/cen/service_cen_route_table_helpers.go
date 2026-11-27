@@ -24,9 +24,7 @@ func (s *CenService) queryRouteTableById(routeTableId string) (rt vpc.RouteTable
 	request.RouteTableId = routeTableId
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeRouteTables(request)
-		})
+		raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeRouteTablesResponse())
 		if err != nil {
 			if helper.NeedRetry(err) {
 				wait()

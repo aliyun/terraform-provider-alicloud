@@ -42,7 +42,7 @@ resource "alicloud_arms_alert_contact" "example" {
 The following arguments are supported:
 
 * `alert_contact_name` - (Optional) The name of the alert contact.
-* `ding_robot_webhook_url` - (Optional) The webhook URL of the DingTalk chatbot. For more information about how to obtain the URL, see Configure a DingTalk chatbot to send alert notifications: https://www.alibabacloud.com/help/en/doc-detail/106247.htm. You must specify at least one of the following parameters: PhoneNum, Email, and DingRobotWebhookUrl.
+* `ding_robot_webhook_url` - (Optional) The webhook URL of the DingTalk chatbot. For more information about how to obtain the URL, see Configure a DingTalk chatbot to send alert notifications: <https://www.alibabacloud.com/help/en/doc-detail/106247.htm>. You must specify at least one of the following parameters: PhoneNum, Email, and DingRobotWebhookUrl.
 * `email` - (Optional) The email address of the alert contact. You must specify at least one of the following parameters: PhoneNum, Email, and DingRobotWebhookUrl.
 * `phone_num` - (Optional) The mobile number of the alert contact. You must specify at least one of the following parameters: PhoneNum, Email, and DingRobotWebhookUrl.
 * `system_noc` - (Optional) Specifies whether the alert contact receives system notifications. Valid values:  true: receives system notifications. false: does not receive system notifications.

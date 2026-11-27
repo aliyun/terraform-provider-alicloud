@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Data Security Center Instance resource.
 ---
 
-# alicloud\_sddp\_instance
+# alicloud_sddp_instance
 
 Provides a Data Security Center Instance resource.
 
-For information about Data Security Center Instance and how to use it, see [What is Instance](https://help.aliyun.com/product/88674.html).
+For information about Data Security Center Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/product/88674.html).
 
--> **NOTE:** Available in v1.136.0+.
+-> **NOTE:** Available since v1.136.0.
 
 -> **NOTE:** The Data Security Center Instance is not support in the international site.
 
@@ -50,7 +50,9 @@ The following arguments are supported:
 * `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `Subscription`.
 * `period` - (Required) The Prepaid period. Valid values: `1`, `2`, `3`, `6`,`12`,`24`.
 * `renewal_status` - (Optional) Automatic renewal status. Valid values: `AutoRenewal`,`ManualRenewal`. Default Value: `ManualRenewal`.
-* `renew_period` - (Optional) Automatic renewal period. **NOTE:** The `renew_period` is required under the condition that renewal_status is `AutoRenewal`,
+* `renew_period` - (Optional) Automatic renewal period.
+
+  -> **NOTE:** The `renew_period` is required under the condition that renewal_status is `AutoRenewal`,
 * `logistics` - (Optional) The logistics.
 * `dataphin` - (Optional) The dataphin. Valid values: `yes`,`no`.
 * `dataphin_count` - (Optional) The dataphin count. Valid values: 1 to 20.
@@ -59,9 +61,10 @@ The following arguments are supported:
 * `ud_cbool` - (Required) Whether to use OSS. Valid values: `yes`,`no`.
 * `sd_cbool` - (Required) Whether to use the database. Valid values:`yes`,`no`.
 * `udc` - (Required) OSS Size.
-* `modify_type` - (Optional) The modify type. Valid values: `Upgrade`, `Downgrade`.  **NOTE:** The `modify_type` is required when you execute a update operation.
-* `oss_size` - (Optional) The OSS storage capacity.
+* `modify_type` - (Optional) The modify type. Valid values: `Upgrade`, `Downgrade`.
 
+  -> **NOTE:** The `modify_type` is required when you execute a update operation.
+* `oss_size` - (Optional) The OSS storage capacity.
 
 ## Attributes Reference
 

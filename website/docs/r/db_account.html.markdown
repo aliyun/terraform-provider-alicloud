@@ -11,7 +11,7 @@ description: |-
 
 Provides an RDS account resource and used to manage databases.
 
--> **DEPRECATED:**  This resource  has been deprecated from version `1.120.0`. Please use new resource [alicloud_rds_account](https://www.terraform.io/docs/providers/alicloud/r/rds_account).
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.120.0`. Please use new resource [alicloud_rds_account](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/rds_account).
 
 ## Example Usage
 

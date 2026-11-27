@@ -80,7 +80,9 @@ Default value: `false`.
 Default value: Year
 
 * `description` - (Optional) Description of flexible guarantee service.
-* `instance_amount` - (Required, Int) The total number of instances for which to reserve the capacity of an instance type. Valid values: 1 to 1000. **NOTE:** From version 1.261.0, `instance_amount` can be modified.
+* `instance_amount` - (Required, Int) The total number of instances for which to reserve the capacity of an instance type. Valid values: 1 to 1000.
+
+  -> **NOTE:** From version 1.261.0, `instance_amount` can be modified.
 * `instance_type` - (Required, ForceNew) Instance type. Currently, only one instance type is supported.
 * `period` - (Optional) Length of purchase. The unit of duration is determined by the 'period_unit' parameter. Default value: 1.
   - When the `period_unit` parameter is set to Month, the valid values are 1, 2, 3, 4, 5, 6, 7, 8, and 9.
@@ -108,7 +110,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Elasticity Assurance.
 * `delete` - (Defaults to 5 mins) Used when delete the Elasticity Assurance.

@@ -113,6 +113,8 @@ The following arguments are supported:
   - `true`: Enables deletion protection.
   - `false`: Disables deletion protection.
 
+---
+
 ### `access_log_config`
 
 The access_log_config supports the following:
@@ -120,11 +122,15 @@ The access_log_config supports the following:
 * `log_project` - (Optional) The project to which the access log is shipped.
 * `log_store` - (Optional) The Logstore to which the access log is shipped.
 
+---
+
 ### `deletion_protection_config`
 
 The deletion_protection_config supports the following:
 
 * `enabled` - (Optional) Remove the Protection Status
+
+---
 
 ### `load_balancer_billing_config`
 
@@ -132,12 +138,16 @@ The load_balancer_billing_config supports the following:
 
 * `pay_type` - (Required, ForceNew) Pay Type
 
+---
+
 ### `modification_protection_config`
 
 The modification_protection_config supports the following:
 
 * `reason` - (Optional) Managed Instance
 * `status` - (Optional) Load Balancing Modify the Protection Status
+
+---
 
 ### `zone_mappings`
 
@@ -156,27 +166,48 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `deletion_protection_config` - Remove the Protection Configuration
-  * `enabled_time` - Deletion Protection Turn-on Time Use Greenwich Mean Time, in the Format of Yyyy-MM-ddTHH: mm: SSZ
 * `dns_name` - DNS Domain Name
 * `region_id` - The region ID of the resource
 * `status` - Server Load Balancer Instance Status:, indicating that the instance listener will no longer forward traffic.(default).
 * `zone_mappings` - The zones and vSwitches. You must specify at least two zones.
-  * `address` - IP Address. The Public IP Address, and Private IP Address from the Address Type
-  * `ipv6_address` - Ipv6 address
-  * `load_balancer_addresses` - The instance address.
-    * `address` - An IP address of the IPv4 type.
-    * `allocation_id` - The elastic IP identifier.
-    * `eip_type` - The type of the public EIP. Value:
-    * `intranet_address` - IPv4 private network address.
-    * `intranet_address_hc_status` - The private network IPv4 address detection status of the application-oriented load balancing instance.
-    * `ipv4_local_addresses` - IPv4 Local address list. The list of addresses used by ALB to interact with the backend service.
-    * `ipv6_address` - An IP address of the IPv6 type.
-    * `ipv6_address_hc_status` - The IPv6 address detection status of the application-based load balancing instance.
-    * `ipv6_local_addresses` - IPv6 Local address list. The list of addresses used by ALB to interact with the backend service.
+
+---
+
+### `deletion_protection_config`
+
+The deletion_protection_config supports the following attributes:
+
+* `enabled_time` - Deletion Protection Turn-on Time Use Greenwich Mean Time, in the Format of Yyyy-MM-ddTHH: mm: SSZ
+
+---
+
+### `zone_mappings`
+
+The zone_mappings supports the following attributes:
+
+* `address` - IP Address. The Public IP Address, and Private IP Address from the Address Type
+* `ipv6_address` - Ipv6 address
+* `load_balancer_addresses` - The instance address.
+
+---
+
+### `zone_mappings.load_balancer_addresses`
+
+The load_balancer_addresses supports the following attributes:
+
+* `address` - An IP address of the IPv4 type.
+* `allocation_id` - The elastic IP identifier.
+* `eip_type` - The type of the public EIP. Value:
+* `intranet_address` - IPv4 private network address.
+* `intranet_address_hc_status` - The private network IPv4 address detection status of the application-oriented load balancing instance.
+* `ipv4_local_addresses` - IPv4 Local address list. The list of addresses used by ALB to interact with the backend service.
+* `ipv6_address` - An IP address of the IPv6 type.
+* `ipv6_address_hc_status` - The IPv6 address detection status of the application-based load balancing instance.
+* `ipv6_local_addresses` - IPv6 Local address list. The list of addresses used by ALB to interact with the backend service.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Load Balancer.
 * `delete` - (Defaults to 5 mins) Used when delete the Load Balancer.

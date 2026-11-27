@@ -33,8 +33,8 @@ output "first_log_store_id" {
 The following arguments are supported:
 
 * `project` - (Required) The name of the log project.
-* `ids` - (Optional, ForceNew, Computed) A list of store IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by store name.
+* `ids` - (Optional, Computed) A list of store IDs.
+* `name_regex` - (Optional) A regex string to filter results by store name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -42,6 +42,13 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of store names.
-* `stores` - A list of Log Stores. Each element contains the following attributes:
-  * `id` - The ID of the store.
-  * `store_name` - The name of the store.
+* `stores` - A list of Log Stores.
+
+---
+
+### `stores`
+
+The stores supports the following attributes:
+
+* `id` - The ID of the store.
+* `store_name` - The name of the store.

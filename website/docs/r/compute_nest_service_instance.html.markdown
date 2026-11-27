@@ -128,6 +128,8 @@ The following arguments are supported:
 * `commodity` - (Optional) The order information of cloud market. See [`commodity`](#commodity) below.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
+---
+
 ### `operation_metadata`
 
 The operation_metadata supports the following:
@@ -136,6 +138,8 @@ The operation_metadata supports the following:
 * `operation_end_time` - (Optional, ForceNew) The end time of O&M.
 * `resources` - (Optional, ForceNew) The list of imported resources.
 * `operated_service_instance_id` - (Optional, ForceNew) The ID of the imported service instance.
+
+---
 
 ### `commodity`
 
@@ -153,7 +157,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Service Instance.
 * `update` - (Defaults to 5 mins) Used when update the Service Instance.

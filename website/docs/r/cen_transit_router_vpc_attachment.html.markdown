@@ -130,8 +130,14 @@ The name must be 2 to 128 characters in length, and can contain letters, digits,
 The following arguments will be discarded. Please use new fields as soon as possible:
 
 * `transit_router_attachment_name` - (Deprecated since v1.230.1) Field 'transit_router_attachment_name' has been deprecated from provider version 1.230.1. New field 'transit_router_vpc_attachment_name' instead.
-* `route_table_association_enabled` - (Optional, Bool, Deprecated since v1.192.0) Whether to enabled route table association. **NOTE:** "Field `route_table_association_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_association` instead, [how to use alicloud_cen_transit_router_route_table_association](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_association)."
-* `route_table_propagation_enabled` - (Optional, Bool, Deprecated since v1.192.0) Whether to enabled route table propagation. **NOTE:** "Field `route_table_propagation_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_propagation` instead, [how to use alicloud_cen_transit_router_route_table_propagation](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_propagation)."
+* `route_table_association_enabled` - (Optional, Bool, Deprecated since v1.192.0) Whether to enabled route table association.
+
+  -> **NOTE:** "Field `route_table_association_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_association` instead, [how to use alicloud_cen_transit_router_route_table_association](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_association)."
+* `route_table_propagation_enabled` - (Optional, Bool, Deprecated since v1.192.0) Whether to enabled route table propagation.
+
+  -> **NOTE:** "Field `route_table_propagation_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_propagation` instead, [how to use alicloud_cen_transit_router_route_table_propagation](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_propagation)."
+
+---
 
 ### `options`
 
@@ -139,6 +145,8 @@ The options supports the following:
 
 * `appliance_mode_support` - (Optional, Computed, Available since v1.279.0) Indicates whether appliance mode is enabled.
 * `ipv6_support` - (Optional, Computed, Available since v1.279.0) Indicates whether IPv6 is supported.
+
+---
 
 ### `zone_mappings`
 
@@ -167,7 +175,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 42 mins) Used when create the Transit Router Vpc Attachment.
 * `delete` - (Defaults to 20 mins) Used when delete the Transit Router Vpc Attachment.

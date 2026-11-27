@@ -79,9 +79,9 @@ output "alikafka_sasl_users_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of Sasl User IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Sasl User name.
-* `instance_id` - (Required, ForceNew) The ID of the instance.
+* `ids` - (Optional, List) A list of Sasl User IDs.
+* `name_regex` - (Optional) A regex string to filter results by Sasl User name.
+* `instance_id` - (Required) The ID of the instance.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -89,8 +89,15 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Sasl User names.
-* `users` - A list of Sasl Users. Each element contains the following attributes:
-  * `id` - (Available since v1.260.0) The resource ID in terraform of Sasl User. It formats as `<instance_id>:<username>`.
-  * `username` - The username of the user.
-  * `password` - The password of the user.
-  * `type` - (Available since v1.260.0) The type of the user.
+* `users` - A list of Sasl Users.
+
+---
+
+### `users`
+
+The users supports the following attributes:
+
+* `id` - (Available since v1.260.0) The resource ID in terraform of Sasl User. It formats as `<instance_id>:<username>`.
+* `username` - The username of the user.
+* `password` - The password of the user.
+* `type` - (Available since v1.260.0) The type of the user.

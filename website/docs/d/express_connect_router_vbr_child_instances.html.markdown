@@ -79,14 +79,21 @@ The following attributes are exported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `instances` - A list of Vbr Child Instances. Each element contains the following attributes:
-  * `id` - The ID of the Vbr Child Instance.
-  * `ecr_id` - The ID of the Express Connect Router instance.
-  * `child_instance_id` - The ID of the virtual border router instance.
-  * `child_instance_type` - The type of the child instance.
-  * `child_instance_owner_id` - The Alibaba Cloud account ID of the child instance owner.
-  * `child_instance_region_id` - The region of the child instance.
-  * `description` - The description of the child instance.
-  * `status` - The deployment status of the associated instance.
-  * `create_time` - The time when the association was created.
-  * `modify_time` - The time when the association was modified.
+* `instances` - A list of Vbr Child Instances.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `id` - The ID of the Vbr Child Instance.
+* `ecr_id` - The ID of the Express Connect Router instance.
+* `child_instance_id` - The ID of the virtual border router instance.
+* `child_instance_type` - The type of the child instance.
+* `child_instance_owner_id` - The Alibaba Cloud account ID of the child instance owner.
+* `child_instance_region_id` - The region of the child instance.
+* `description` - The description of the child instance.
+* `status` - The deployment status of the associated instance.
+* `create_time` - The time when the association was created.
+* `modify_time` - The time when the association was modified.

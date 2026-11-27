@@ -5,12 +5,12 @@ A terraform example to launching a kubernetes cluster in alibaba cloud.
 
 These types of the module resource are supported:
 
-- [VPC](https://www.terraform.io/docs/providers/alicloud/r/vpc.html)
-- [Subnet](https://www.terraform.io/docs/providers/alicloud/r/vswitch.html)
-- [ECS Instance](https://www.terraform.io/docs/providers/alicloud/r/instance.html)
-- [Security Group](https://www.terraform.io/docs/providers/alicloud/r/security_group.html)
-- [Nat Gateway](https://www.terraform.io/docs/providers/alicloud/r/nat_gateway.html)
-- [Kubernetes](https://www.terraform.io/docs/providers/alicloud/r/cs_kubernetes.html)
+- [VPC](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/vpc)
+- [Subnet](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/vswitch)
+- [ECS Instance](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/instance)
+- [Security Group](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/security_group)
+- [Nat Gateway](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/nat_gateway)
+- [Kubernetes](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes)
 
 
 Usage
@@ -64,6 +64,6 @@ Reference
 ---------
 * [Terraform-Provider-Alicloud Github](https://github.com/aliyun/terraform-provider-alicloud)
 * [Terraform-Provider-Alicloud Release](https://releases.hashicorp.com/terraform-provider-alicloud/)
-* [Terraform-Provider-Alicloud Docs](https://www.terraform.io/docs/providers/alicloud/)
+* [Terraform-Provider-Alicloud Docs](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs)
 
 

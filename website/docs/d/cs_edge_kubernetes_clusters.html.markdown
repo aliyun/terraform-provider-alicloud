@@ -46,6 +46,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `names` - A list of matched Kubernetes clusters' names.
 * `clusters` - A list of matched Kubernetes clusters.
 
+---
+
 ### `clusters`
 
 The clusters supports the following:
@@ -59,6 +61,8 @@ The clusters supports the following:
 * `worker_nodes` - List of cluster worker nodes.
 * `connections` - A list of kubernetes cluster connection information.
 
+---
+
 ### `clusters.worker_nodes`
 
 The worker_nodes supports the following:
@@ -66,6 +70,8 @@ The worker_nodes supports the following:
 * `id` - ID of the node.
 * `name` - Node name.
 * `private_ip` - The private IP address of node.
+
+---
 
 ### `clusters.connections`
 

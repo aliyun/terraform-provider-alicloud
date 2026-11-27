@@ -140,12 +140,19 @@ The following attributes are exported:
 * `id` - The ID of the data source. It is the hash of the returned policy IDs.
 * `ids` - A list of auto repair policy IDs.
 * `names` - A list of auto repair policy names.
-* `policies` - A list of auto repair policies. Each element contains the following attributes:
-  * `id` - The ID of the auto repair policy, in the format of `<cluster_id>:<policy_id>`.
-  * `policy_id` - The ID of the auto repair policy.
-  * `name` - The name of the auto repair policy.
-  * `type` - The type of the auto repair policy. Valid values: `custom`, `builtin`.
-  * `resource_type` - The type of the resource that the policy applies to.
-  * `resource_sub_type` - The subtype of the node pool that the policy applies to. Multiple values are separated by `|`.
-  * `resource_ids` - The IDs of the node pools that the policy is bound to.
-  * `rules` - The repair rules of the policy, in JSON format.
+* `policies` - A list of auto repair policies.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `id` - The ID of the auto repair policy, in the format of `<cluster_id>:<policy_id>`.
+* `policy_id` - The ID of the auto repair policy.
+* `name` - The name of the auto repair policy.
+* `type` - The type of the auto repair policy. Valid values: `custom`, `builtin`.
+* `resource_type` - The type of the resource that the policy applies to.
+* `resource_sub_type` - The subtype of the node pool that the policy applies to. Multiple values are separated by `|`.
+* `resource_ids` - The IDs of the node pools that the policy is bound to.
+* `rules` - The repair rules of the policy, in JSON format.

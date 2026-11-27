@@ -9,11 +9,11 @@ description: |-
 
 # alicloud_cr_repos
 
--> **DEPRECATION NOTICE:** This data source is deprecated and will be removed in a future release.
+-> **DEPRECATED:** This data source has been deprecated and will be removed in a future release.
 
 This data source provides a list Container Registry repositories on Alibaba Cloud.
 
--> **NOTE:** Available since v1.35.0+
+-> **NOTE:** Available since v1.35.0.
 
 ## Example Usage
 
@@ -44,18 +44,36 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of matched Container Registry Repositories. Its element is set to `names`.
 * `names` - A list of repository names.
-* `repos` - A list of matched Container Registry Namespaces. Each element contains the following attributes:
-  * `namespace` - Name of container registry namespace where repo is located.
-  * `name` - Name of container registry namespace.
-  * `summary` - The repository general information.
-  * `repo_type` - `PUBLIC` or `PRIVATE`, repository's visibility.
-  * `domain_list` - A list of repository domain:
-    * `public` - Domain of public endpoint.
-    * `internal` - Domain of internal endpoint, only in some regions.
-    * `vpc` - Domain of vpc endpoint.
-  * `tags` - A list of image tags belong to this repository. Each contains several attributes, see `Block Tag`.
+* `repos` - A list of matched Container Registry Namespaces.
 
-### Block Tag
+---
+
+### `repos`
+
+The repos supports the following attributes:
+
+* `namespace` - Name of container registry namespace where repo is located.
+* `name` - Name of container registry namespace.
+* `summary` - The repository general information.
+* `repo_type` - `PUBLIC` or `PRIVATE`, repository's visibility.
+* `domain_list` - A list of repository domain.
+* `tags` - A list of image tags belong to this repository. Each contains several attributes.
+
+---
+
+### `repos.domain_list`
+
+The domain_list supports the following attributes:
+
+* `public` - Domain of public endpoint.
+* `internal` - Domain of internal endpoint, only in some regions.
+* `vpc` - Domain of vpc endpoint.
+
+---
+
+### `repos.tags`
+
+The tags supports the following attributes:
 
 * `tag` - Tag of this image.
 * `image_id` - Id of this image.

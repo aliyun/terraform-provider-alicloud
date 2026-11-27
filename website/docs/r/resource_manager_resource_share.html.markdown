@@ -66,12 +66,16 @@ The following arguments are supported:
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
+---
+
 ### `resource_properties`
 
 The resource_properties supports the following:
 
 * `property` - (Optional, Available since v1.274.0) The resource property.
 * `resource_arn` - (Optional, Available since v1.274.0) The ARN of the resource.
+
+---
 
 ### `resources`
 
@@ -102,7 +106,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Resource Share.
 * `delete` - (Defaults to 10 mins) Used when delete the Resource Share.

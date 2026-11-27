@@ -203,6 +203,8 @@ The following arguments are supported:
 * `schedule` - (Required) Check the frequency-dependent configuration. See [`schedule`](#schedule) below.
 * `status` - (Optional, Computed) Resource attribute field representing alarm status.
 
+---
+
 ### `configuration`
 
 The configuration supports the following:
@@ -230,12 +232,16 @@ The configuration supports the following:
 * `type` - (Optional, Computed) Fixed as default.
 * `version` - (Optional) Fixed as 2.0.
 
+---
+
 ### `configuration-annotations`
 
 The configuration-annotations supports the following:
 
 * `key` - (Optional) Field name.
 * `value` - (Optional) Field value.
+
+---
 
 ### `configuration-condition_configuration`
 
@@ -244,12 +250,16 @@ The configuration-condition_configuration supports the following:
 * `condition` - (Optional) Data matching expression.
 * `count_condition` - (Optional) The number of data items to determine the expression, indicating the number of data items that meet the conditions. Indicates that if there is data that is satisfied, it can be set to an empty string. In other cases, you need to set it to an expression, for example, **count** > 3.
 
+---
+
 ### `configuration-group_configuration`
 
 The configuration-group_configuration supports the following:
 
 * `fields` - (Optional) The field used for grouping evaluation. When type is set to custom, fields must be set.
 * `type` - (Optional) Group evaluation type. The values are as follows: no_group: not grouped. custom: custom. labels_auto: label automatic. Only applicable to time series data.
+
+---
 
 ### `configuration-join_configurations`
 
@@ -258,12 +268,16 @@ The configuration-join_configurations supports the following:
 * `condition` - (Optional) When type is set to inner_join, left_join, right_join, full_join, left_exclude, or right_exclude, condition must be set, for example, set to $0.host = = $1.ip.
 * `type` - (Optional) Collection operation type. The values are as follows: cross_join: Cartesian product. inner_join: inline. left_join: left joint. right_join: right link. full_join: full union. left_exclude: left repulsion. right_exclude: right repulsion. concat: stitching, traversing each dataset sequentially. no_join: not merged, only the first dataset is taken.
 
+---
+
 ### `configuration-labels`
 
 The configuration-labels supports the following:
 
 * `key` - (Optional) Field name.
 * `value` - (Optional) Field value.
+
+---
 
 ### `configuration-policy_configuration`
 
@@ -272,6 +286,8 @@ The configuration-policy_configuration supports the following:
 * `action_policy_id` - (Optional) The ID of the action policy used. If the alert policy is in advanced mode and the selected alert policy is not configured with a dynamic action policy, set the actionPolicyId to an empty string.
 * `alert_policy_id` - (Optional) Alarm policy ID. If it is in simple mode or normal mode, set it to sls.builtin.dynamic (dynamic alarm policy built into the system). For advanced mode, set it to the specified alarm policy ID.
 * `repeat_interval` - (Optional) Repeat the waiting time. For example, 5m, 1H, etc.
+
+---
 
 ### `configuration-query_list`
 
@@ -291,6 +307,8 @@ The configuration-query_list supports the following:
 * `time_span_type` - (Optional) Time Type.
 * `ui` - (Optional) Use of specific scene alarm front end.
 
+---
+
 ### `configuration-severity_configurations`
 
 The configuration-severity_configurations supports the following:
@@ -298,17 +316,23 @@ The configuration-severity_configurations supports the following:
 * `eval_condition` - (Optional) Trigger condition. See [`eval_condition`](#configuration-severity_configurations-eval_condition) below.
 * `severity` - (Optional) Alarm severity.
 
+---
+
 ### `configuration-sink_alerthub`
 
 The configuration-sink_alerthub supports the following:
 
 * `enabled` - (Optional) Open.
 
+---
+
 ### `configuration-sink_cms`
 
 The configuration-sink_cms supports the following:
 
 * `enabled` - (Optional) Open.
+
+---
 
 ### `configuration-sink_event_store`
 
@@ -319,6 +343,8 @@ The configuration-sink_event_store supports the following:
 * `event_store` - (Optional) Event Library Name.
 * `project` - (Optional) Project Name.
 * `role_arn` - (Optional) Roles used to write alarm data to the event Library.
+
+---
 
 ### `configuration-template_configuration`
 
@@ -331,12 +357,16 @@ The configuration-template_configuration supports the following:
 * `type` - (Optional) Template Type.
 * `version` - (Optional) Template Version.
 
+---
+
 ### `configuration-severity_configurations-eval_condition`
 
 The configuration-severity_configurations-eval_condition supports the following:
 
 * `condition` - (Optional) Data matching expression. When the data content does not need to be determined, set it to an empty string. In other cases, it needs to be set as an expression, for example, errCnt> 10.
 * `count_condition` - (Optional) The number of pieces of data to determine the number of pieces of data to indicate how many pieces of data meet the conditions. If data exists, it is satisfied. Set it to an empty string. In other cases, it needs to be set as an expression, such as__count__> 3.
+
+---
 
 ### `schedule`
 
@@ -358,7 +388,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Alert.
 * `delete` - (Defaults to 5 mins) Used when delete the Alert.

@@ -241,6 +241,8 @@ The following arguments are supported:
 * `pop_locations` - (Optional) The access point information of the associated access area when the cloud resource instance is bound.If you are binding for the first time, this parameter does not need to be configured, and the system automatically associates all access areas. See [`pop_locations`](#pop_locations) below.
 * `private_ip_address` - (Optional, ForceNew) The secondary private IP address of the elastic network card to be bound.This parameter takes effect only when **BindInstanceType** is set to **NetworkInterface. When you do not enter, this parameter is the primary private IP of the ENI by default.
 
+---
+
 ### `pop_locations`
 
 The pop_locations supports the following:
@@ -257,7 +259,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Anycast Eip Address Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Anycast Eip Address Attachment.

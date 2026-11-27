@@ -245,6 +245,8 @@ Health check configuration information. See [`health_check_config`](#health_chec
   - When creating a vpn attachment in dual-tunnel mode, you must add both tunnels for the vpn attachment to ensure that the vpn attachment has link redundancy. Only two tunnels can be added to a vpn attachment. See [`tunnel_options_specification`](#tunnel_options_specification) below.
 * `vpn_attachment_name` - (Optional) vpn attachment name
 
+---
+
 ### `bgp_config`
 
 The bgp_config supports the following:
@@ -255,6 +257,8 @@ The bgp_config supports the following:
   - Before adding the BGP configuration, we recommend that you understand the working mechanism and usage restrictions of the BGP dynamic routing function. For more information, see BGP Dynamic Routing Bulletin.
   - We recommend that you use the private number of the autonomous system number to establish a BGP connection with Alibaba Cloud. Please refer to the documentation for the private number range of the autonomous system number.
 * `tunnel_cidr` - (Optional, Computed) IPsec tunnel network segment. This network segment must be a network segment with a mask length of 30 within 169.254.0.0/16
+
+---
 
 ### `health_check_config`
 
@@ -268,6 +272,8 @@ The health_check_config supports the following:
   - `reserve_route`: does not withdraw published routes.
 * `retry` - (Optional, Computed, Int) Number of retries for health check.
 * `sip` - (Optional, Computed) SOURCE IP.
+
+---
 
 ### `ike_config`
 
@@ -285,6 +291,8 @@ The ike_config supports the following:
   - The pre-shared key of the IPsec-VPN connection must be the same as the authentication key of the on-premises data center. Otherwise, connections between the on-premises data center and the VPN gateway cannot be established.
 * `remote_id` - (Optional, Computed) The identifier of the IPsec connection to the local data center. The length is limited to 100 characters. The default value is the IP address of the user gateway.
 
+---
+
 ### `ipsec_config`
 
 The ipsec_config supports the following:
@@ -293,6 +301,8 @@ The ipsec_config supports the following:
 * `ipsec_enc_alg` - (Optional, Computed) The encryption algorithm negotiated in the second stage. Valid values: aes, aes192, aes256, des, or 3des. Default value: aes.
 * `ipsec_lifetime` - (Optional, Computed, Int) The life cycle of SA negotiated in the second stage. Unit: seconds. Value range: 0~86400. Default value: 86400.
 * `ipsec_pfs` - (Optional, Computed) Diffie-Hellman Key Exchange Algorithm Used in Second Stage Negotiation
+
+---
 
 ### `tunnel_options_specification`
 
@@ -325,6 +335,8 @@ The tunnel_options_specification supports the following:
   - `2`: The second tunnel.
 * `tunnel_ipsec_config` - (Optional, Computed, List, Available since v1.246.0) Configuration information for the second-stage negotiation. See [`tunnel_ipsec_config`](#tunnel_options_specification-tunnel_ipsec_config) below.
 
+---
+
 ### `tunnel_options_specification-tunnel_bgp_config`
 
 The tunnel_options_specification-tunnel_bgp_config supports the following:
@@ -337,6 +349,8 @@ The tunnel_options_specification-tunnel_bgp_config supports the following:
 * `tunnel_cidr` - (Optional, Computed, Available since v1.246.0) The BGP network segment of the tunnel. The network segment must be a network segment with a mask length of 30 in 169.254.0.0/16, and cannot be 169.254.0.0/30, 169.254.1.0/30, 169.254.2.0/30, 169.254.3.0/30, 169.254.4.0/30, 169.254.5.0/30, 169.254.6.0/30, and 169.254.169.252/30.
 
   -> **NOTE:**  the network segments of two tunnels under an IPsec connection cannot be the same.
+
+---
 
 ### `tunnel_options_specification-tunnel_ike_config`
 
@@ -365,6 +379,8 @@ Compared with IKEv1, IKEv2 simplifies the SA negotiation process and provides be
 * `remote_id` - (Optional, Computed, Available since v1.246.0) Identifier of the tunnel peer, which is used for the first-stage negotiation. The length is limited to 100 characters and cannot contain spaces. The default value is the IP address of the user gateway associated with the tunnel.
   - `RemoteId` supports the FQDN format. If you use the FQDN format, we recommend that you select `aggressive` (barbaric mode) as the negotiation mode.
 
+---
+
 ### `tunnel_options_specification-tunnel_ipsec_config`
 
 The tunnel_options_specification-tunnel_ipsec_config supports the following:
@@ -383,25 +399,53 @@ The following attributes are exported:
 
 * `id` - The ID of the resource supplied above.
 * `bgp_config` - Bgp configuration information.
-  * `status` - The negotiation status of Bgp.
 * `create_time` - The creation time of the resource
 * `health_check_config` - This parameter is supported if you create an vpn attachment in single-tunnel mode.
-  * `status` - health check status
 * `status` - The status of the resource
 * `tunnel_options_specification` - Configure the tunnel. When creating a vpn attachment in dual-tunnel mode, you must add both tunnels for the vpn attachment to ensure that the vpn attachment has link redundancy. Only two tunnels can be added to a vpn attachment.
-  * `internet_ip` - The local internet IP in Tunnel.
-  * `state` - The state of Tunnel.
-  * `status` - The negotiation status of Tunnel.
-  * `tunnel_bgp_config` - Add the BGP configuration for the tunnel.
-    * `bgp_status` - BGP status.
-    * `peer_asn` - Peer asn.
-    * `peer_bgp_ip` - Peer bgp ip.
-  * `tunnel_id` - The tunnel ID of IPsec-VPN connection.
-  * `zone_no` - The zoneNo of tunnel.
+
+---
+
+### `bgp_config`
+
+The bgp_config supports the following attributes:
+
+* `status` - The negotiation status of Bgp.
+
+---
+
+### `health_check_config`
+
+The health_check_config supports the following attributes:
+
+* `status` - health check status
+
+---
+
+### `tunnel_options_specification`
+
+The tunnel_options_specification supports the following attributes:
+
+* `internet_ip` - The local internet IP in Tunnel.
+* `state` - The state of Tunnel.
+* `status` - The negotiation status of Tunnel.
+* `tunnel_bgp_config` - Add the BGP configuration for the tunnel.
+* `tunnel_id` - The tunnel ID of IPsec-VPN connection.
+* `zone_no` - The zoneNo of tunnel.
+
+---
+
+### `tunnel_options_specification.tunnel_bgp_config`
+
+The tunnel_bgp_config supports the following attributes:
+
+* `bgp_status` - BGP status.
+* `peer_asn` - Peer asn.
+* `peer_bgp_ip` - Peer bgp ip.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Vpn Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Vpn Attachment.

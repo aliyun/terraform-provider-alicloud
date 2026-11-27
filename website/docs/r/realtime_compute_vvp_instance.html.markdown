@@ -109,6 +109,8 @@ The following arguments are supported:
 * `tags` - (Optional) The tags of the resource.
 * `zone_id` - (Optional, ForceNew, Deprecated since v2.3.0) The zone ID of the resource. Field `zone_id` has been deprecated from version 2.3.0.
 
+---
+
 ### `resource_spec`
 
 The resource_spec supports the following:
@@ -116,17 +118,23 @@ The resource_spec supports the following:
 * `cpu` - (Optional) CPU number.
 * `memory_gb` - (Optional) Memory size.
 
+---
+
 ### `storage`
 
 The storage supports the following:
 
 * `oss` - (Required, ForceNew) OSS stores information. See [`oss`](#storage-oss) below.
 
+---
+
 ### `storage-oss`
 
 The oss supports the following:
 
 * `bucket` - (Required, ForceNew) OSS Bucket name.
+
+---
 
 ### `default_namespace_resource_spec`
 
@@ -146,7 +154,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Vvp Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Vvp Instance.

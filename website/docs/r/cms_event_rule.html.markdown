@@ -69,6 +69,8 @@ The following arguments are supported:
 * `sls_parameters` - (Optional, Set, Available since v1.211.1) The information about the recipients in Simple Log Service. See [`sls_parameters`](#sls_parameters) below.
 * `open_api_parameters` - (Optional, Set, Available since v1.211.1) The parameters of API callback notification. See [`open_api_parameters`](#open_api_parameters) below.
 
+---
+
 ### `event_pattern`
 
 The event_pattern supports the following:
@@ -87,6 +89,8 @@ The event_pattern supports the following:
   - `Maintenance`: O&M.
   - `*`: all types.
 
+---
+
 ### `contact_parameters`
 
 The contact_parameters supports the following:
@@ -94,6 +98,8 @@ The contact_parameters supports the following:
 * `contact_parameters_id` - (Optional) The ID of the recipient that receives alert notifications.
 * `contact_group_name` - (Optional) The name of the alert contact group.
 * `level` - (Optional) The alert level and the corresponding notification methods.
+
+---
 
 ### `webhook_parameters`
 
@@ -104,6 +110,8 @@ The webhook_parameters supports the following:
 * `method` - (Optional) The HTTP request method.
 * `url` - (Optional) The callback URL.
 
+---
+
 ### `fc_parameters`
 
 The fc_parameters supports the following:
@@ -112,6 +120,8 @@ The fc_parameters supports the following:
 * `service_name` - (Optional) The name of the Function Compute service.
 * `function_name` - (Optional) The name of the function.
 * `region` - (Optional) The region where Function Compute is deployed.
+
+---
 
 ### `sls_parameters`
 
@@ -122,6 +132,8 @@ The sls_parameters supports the following:
 * `log_store` - (Optional) The name of the Simple Log Service Logstore.
 * `region` - (Optional) The region where Simple Log Service is deployed.
 
+---
+
 ### `mns_parameters`
 
 The mns_parameters supports the following:
@@ -130,6 +142,8 @@ The mns_parameters supports the following:
 * `queue` - (Optional) The name of the MNS queue.
 * `topic` - (Optional) The MNS topic.
 * `region` - (Optional) The region where Message Service (MNS) is deployed.
+
+---
 
 ### `open_api_parameters`
 
@@ -148,17 +162,45 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Event Rule. Its value is same as `rule_name`.
 * `fc_parameters` - The information about the recipients in Function Compute.
-  * `arn` - (Available since v1.211.1) The Alibaba Cloud Resource Name (ARN) of the function.
 * `sls_parameters` - The information about the recipients in Log Service.
-  * `arn` - (Available since v1.211.1) The ARN of the Log Service Logstore.
 * `mns_parameters` - The information about the recipients in Message Service (MNS).
-  * `arn` - (Available since v1.211.1) The ARN of the MNS queue.
 * `open_api_parameters` - The information about the recipients in OpenAPI Explorer.
-  * `arn` - (Available since v1.211.1) The ARN of the API operation.
+
+---
+
+### `fc_parameters`
+
+The fc_parameters supports the following attributes:
+
+* `arn` - (Available since v1.211.1) The Alibaba Cloud Resource Name (ARN) of the function.
+
+---
+
+### `sls_parameters`
+
+The sls_parameters supports the following attributes:
+
+* `arn` - (Available since v1.211.1) The ARN of the Log Service Logstore.
+
+---
+
+### `mns_parameters`
+
+The mns_parameters supports the following attributes:
+
+* `arn` - (Available since v1.211.1) The ARN of the MNS queue.
+
+---
+
+### `open_api_parameters`
+
+The open_api_parameters supports the following attributes:
+
+* `arn` - (Available since v1.211.1) The ARN of the API operation.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 3 mins) Used when create the Cms Event Rule.
 * `update` - (Defaults to 3 mins) Used when update the Cms Event Rule.

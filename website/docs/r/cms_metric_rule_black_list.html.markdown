@@ -100,6 +100,8 @@ The following arguments are supported:
 * `scope_type` - (Optional) The effective range of the alert blacklist policy. Value:-USER: The alert blacklist policy only takes effect in the current Alibaba cloud account.-GROUP: The alert blacklist policy takes effect in the specified application GROUP.
 * `scope_value` - (Optional) Application Group ID list. The format is JSON Array.> This parameter is displayed only when 'ScopeType' is 'GROUP.
 
+---
+
 ### `metrics`
 
 The metrics supports the following:
@@ -118,7 +120,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Metric Rule Black List.
 * `delete` - (Defaults to 1 mins) Used when delete the Metric Rule Black List.

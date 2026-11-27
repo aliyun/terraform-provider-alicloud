@@ -59,19 +59,26 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` -  A list of OOS Template ids. Each element in the list is same as template_name.
 * `names` -  (Available in v1.114.0+) A list of OOS Template names.
-* `templates` - A list of OOS Templates. Each element contains the following attributes:
-  * `id` - ID of the OOS Template. The value is same as template_name.
-  * `template_name` - Name of the OOS Template.
-  * `description` - Description of the OOS Template.
-  * `template_id` - ID of the OOS Template resource.
-  * `template_version` - Version of the OOS Template.
-  * `updated_by` - The user who updated the template.
-  * `updated_date` - The time when the template was updated.
-  * `category` - The category of the template.
-  * `created_by` - The user who created the template.
-  * `created_date` - The time when the template was created.
-  * `has_trigger` - Whether the template has a trigger.
-  * `share_type` - The sharing type of the template.
-  * `tags` - The tag of the resource.
-  * `template_format` - The format of the template.
-  * `template_type` - The type of the OOS Template.
+* `templates` - A list of OOS Templates.
+
+---
+
+### `templates`
+
+The templates supports the following attributes:
+
+* `id` - ID of the OOS Template. The value is same as template_name.
+* `template_name` - Name of the OOS Template.
+* `description` - Description of the OOS Template.
+* `template_id` - ID of the OOS Template resource.
+* `template_version` - Version of the OOS Template.
+* `updated_by` - The user who updated the template.
+* `updated_date` - The time when the template was updated.
+* `category` - The category of the template.
+* `created_by` - The user who created the template.
+* `created_date` - The time when the template was created.
+* `has_trigger` - Whether the template has a trigger.
+* `share_type` - The sharing type of the template.
+* `tags` - The tag of the resource.
+* `template_format` - The format of the template.
+* `template_type` - The type of the OOS Template.

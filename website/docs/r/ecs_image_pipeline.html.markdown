@@ -88,7 +88,9 @@ The following arguments are supported:
   - IMAGE_FAMILY: image family.
 * `build_content` - (Optional, ForceNew) The content of the image template. The content cannot be greater than 16 KB in size, and can contain up to 127 commands.
 * `delete_instance_on_failure` - (Optional, ForceNew) Specifies whether to release the intermediate instance if the image cannot be created.
-* `description` - (Optional, ForceNew) The description of the image template. The description must be `2` to `256` characters in length and cannot start with `http://` or `https://`. **Note:** If the intermediate instance cannot be started, the instance is released by default.
+* `description` - (Optional, ForceNew) The description of the image template. The description must be `2` to `256` characters in length and cannot start with `http://` or `https://`.
+
+  -> **NOTE:** If the intermediate instance cannot be started, the instance is released by default.
 * `image_name` - (Optional, ForceNew) The name prefix of the image to be created. The prefix must be `2` to `64` characters in length. It must start with a letter and cannot start with `http://` or `https://`. It can contain letters, digits, colons (:), underscores (_), periods (.),and hyphens (-).
 * `instance_type` - (Optional, ForceNew) The instance type of the instance. You can call the DescribeInstanceTypes operation to query instance types. If you do not specify this parameter, an instance type that provides the fewest vCPUs and memory resources is automatically selected. This configuration is subject to resource availability of instance types. For example, the `ecs.g6.large` instance type is selected by default. If available `ecs.g6.large` resources are insufficient, the `ecs.g6.xlarge` instance type is selected.
 * `internet_max_bandwidth_out` - (Optional, ForceNew) The size of the outbound public bandwidth for the intermediate instance. Unit: `Mbit/s`. Valid values: `0` to `100`. Default value: `0`.

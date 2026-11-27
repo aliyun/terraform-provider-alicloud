@@ -69,6 +69,8 @@ The following arguments are supported:
 * `status` - (Optional, Computed) The status of the resource, valid values: `online`, `offline`.
 * `tags` - (Optional, Map, Available since v1.55.2) The tag of the resource
 
+---
+
 ### `certificate_config`
 
 The certificate_config supports the following:
@@ -86,6 +88,8 @@ The certificate_config supports the following:
 * `server_certificate_status` - (Optional) Whether the HTTPS certificate is enabled. Value:
   - **on**(default): enabled.
   - **off** : not enabled.
+
+---
 
 ### `sources`
 
@@ -106,7 +110,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 15 mins) Used when create the Domain.
 * `delete` - (Defaults to 15 mins) Used when delete the Domain.

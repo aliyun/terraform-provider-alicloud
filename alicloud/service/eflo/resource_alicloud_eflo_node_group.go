@@ -49,6 +49,10 @@ func ResourceNodeGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"file_system_mount_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"ignore_failed_node_tasks": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -219,6 +223,28 @@ func ResourceNodeGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"system_disk": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"category": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"size": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"performance_level": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"vswitch_zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -281,6 +307,28 @@ func resourceNodeGroupCreate(d *schema.ResourceData, meta interface{}) error {
 		objectDataLocalMap["NodeGroupName"] = v
 	}
 
+	if v, ok := d.GetOkExists("file_system_mount_enabled"); ok {
+		objectDataLocalMap["FileSystemMountEnabled"] = v
+	}
+
+	if systemDiskRaw, ok := d.GetOk("system_disk"); ok {
+		systemDiskList := systemDiskRaw.([]interface{})
+		if len(systemDiskList) > 0 && systemDiskList[0] != nil {
+			systemDiskTmp := systemDiskList[0].(map[string]interface{})
+			systemDiskMap := make(map[string]interface{})
+			if v, ok := systemDiskTmp["category"]; ok && v.(string) != "" {
+				systemDiskMap["Category"] = v
+			}
+			if v, ok := systemDiskTmp["size"]; ok && v.(int) != 0 {
+				systemDiskMap["Size"] = v
+			}
+			if v, ok := systemDiskTmp["performance_level"]; ok && v.(string) != "" {
+				systemDiskMap["PerformanceLevel"] = v
+			}
+			objectDataLocalMap["SystemDisk"] = systemDiskMap
+		}
+	}
+
 	objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
 	if err != nil {
 		return errs.WrapError(err)
@@ -332,6 +380,21 @@ func resourceNodeGroupRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("node_group_name", objectRaw["GroupName"])
 	d.Set("cluster_id", objectRaw["ClusterId"])
 	d.Set("node_group_id", objectRaw["GroupId"])
+	d.Set("file_system_mount_enabled", objectRaw["FileSystemMountEnabled"])
+
+	systemDiskRaw, err := efloServiceV2.DescribeEfloNodeGroupSystemDisk(d.Id())
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
+	}
+	if systemDiskRaw != nil {
+		systemDiskMap := make(map[string]interface{})
+		systemDiskMap["category"] = systemDiskRaw["Category"]
+		systemDiskMap["size"] = systemDiskRaw["Size"]
+		systemDiskMap["performance_level"] = systemDiskRaw["PerformanceLevel"]
+		if err := d.Set("system_disk", []interface{}{systemDiskMap}); err != nil {
+			return errs.WrapError(err)
+		}
+	}
 
 	objectRaw, err = efloServiceV2.DescribeNodeGroupListClusterNodes(d.Id())
 	if err != nil && !errs.NotFoundError(err) {
@@ -409,6 +472,38 @@ func resourceNodeGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 		request["LoginPassword"] = d.Get("login_password")
 	}
 
+	if !d.IsNewResource() && d.HasChange("file_system_mount_enabled") {
+		update = true
+		request["FileSystemMountEnabled"] = d.Get("file_system_mount_enabled")
+	}
+
+	if !d.IsNewResource() && d.HasChange("system_disk") {
+		update = true
+		systemDiskMap := make(map[string]interface{})
+		if systemDiskRaw, ok := d.GetOk("system_disk"); ok {
+			systemDiskList := systemDiskRaw.([]interface{})
+			if len(systemDiskList) > 0 && systemDiskList[0] != nil {
+				systemDiskTmp := systemDiskList[0].(map[string]interface{})
+				// Category is ForceNew and the backend rejects any SystemDisk.Category
+				// change on UpdateNodeGroup ("not modifiable"), so it is deliberately not
+				// sent here; only the in-place mutable fields go in the update payload.
+				if v, ok := systemDiskTmp["size"]; ok && v.(int) != 0 {
+					systemDiskMap["Size"] = v
+				}
+				if v, ok := systemDiskTmp["performance_level"]; ok && v.(string) != "" {
+					systemDiskMap["PerformanceLevel"] = v
+				}
+			}
+		}
+		if len(systemDiskMap) > 0 {
+			systemDiskJson, err := json.Marshal(systemDiskMap)
+			if err != nil {
+				return errs.WrapError(err)
+			}
+			request["SystemDisk"] = string(systemDiskJson)
+		}
+	}
+
 	if !d.IsNewResource() && d.HasChange("node_group_name") {
 		update = true
 	}
@@ -429,6 +524,17 @@ func resourceNodeGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 		logs.AddDebug(action, response, request)
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		// UpdateNodeGroup is asynchronous when it returns a TaskId; wait for the task to
+		// reach its terminal state before reading back, so a disk/mount change is not
+		// reported as applied while still in progress (and so a following ExtendCluster
+		// in the same run is not rejected by an in-flight task).
+		if taskId, _ := jsonpath.Get("$.TaskId", response); taskId != nil && fmt.Sprint(taskId) != "" {
+			efloServiceV2 := EfloServiceV2{client}
+			stateConf := helper.BuildStateConf([]string{}, []string{"execution_success"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, efloServiceV2.DescribeAsyncEfloNodeGroupStateRefreshFunc(d, response, "$.TaskState", []string{}))
+			if jobDetail, err := stateConf.WaitForState(); err != nil {
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
+			}
 		}
 	}
 

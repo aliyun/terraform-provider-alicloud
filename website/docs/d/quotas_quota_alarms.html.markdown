@@ -41,6 +41,8 @@ The following arguments are supported:
 * `quota_alarm_name` - (Optional) The name of Quota Alarm.
 * `quota_dimensions` - (Optional) The Quota Dimensions. See [`quota_dimensions`](#quota_dimensions) below.
 
+---
+
 ### `quota_dimensions`
 
 The quota_dimensions supports the following:
@@ -55,6 +57,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `names` - A list of Quota Alarm names.
 * `alarms` - A list of Quotas Quota Alarms. Each element contains the following attributes:
 
+---
+
 ### `alarms`
 
 The alarms supports the following attributes:
@@ -68,6 +72,8 @@ The alarms supports the following attributes:
 * `threshold` - The threshold of Quota Alarm.
 * `threshold_percent` - The threshold percent of Quota Alarm.
 * `web_hook` - The WebHook of Quota Alarm.
+
+---
 
 ### `alarms.quota_dimensions`
 

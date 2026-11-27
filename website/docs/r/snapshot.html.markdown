@@ -15,7 +15,7 @@ For information about snapshot and how to use it, see [Snapshot](https://www.ali
 
 -> **DEPRECATED:** This resource has been deprecated from v1.120.0.
 
--> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_snapshot](https://www.terraform.io/docs/providers/alicloud/r/ecs_snapshot) from version 1.120.0.
+-> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_snapshot](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_snapshot) from version 1.120.0.
 
 ## Example Usage
 
@@ -37,10 +37,10 @@ resource "alicloud_snapshot" "snapshot" {
 The following arguments are supported:
 
 * `disk_id` - (Required, ForceNew) The source disk ID.
-* `name` - (Optional, ForceNew, Deprecated) The name of the snapshot to be created. Deprecated, use `snapshot_name` instead. The name must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-).
+* `name` - (Optional, Deprecated) The name of the snapshot to be created. Deprecated, use `snapshot_name` instead. The name must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-).
 It cannot start with auto, because snapshot names starting with auto are recognized as automatic snapshots.
-* `resource_group_id` - (Optional, ForceNew, Available since v1.94.0) The ID of the resource group.
-* `description` - (Optional, ForceNew) Description of the snapshot. This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
+* `resource_group_id` - (Optional, Available since v1.94.0) The ID of the resource group.
+* `description` - (Optional) Description of the snapshot. This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `category` - (Optional, ForceNew) The category of the snapshot. Valid values: `standard`, `flash`.
 * `force` - (Optional) Whether to force delete the snapshot.
@@ -64,7 +64,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.51.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when creating the snapshot (until it reaches the initial `SnapshotCreatingAccomplished` status).
 * `delete` - (Defaults to 2 mins) Used when terminating the snapshot.

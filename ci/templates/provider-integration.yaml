@@ -1,0 +1,225 @@
+name: Terraform Integration Checks
+strategy:
+  fast-fail: false
+triggers:
+  merge_request:
+    types: [accepted]
+  push:
+    branches: [master]
+    paths:
+      - 'ci/templates/provider-integration.yaml'
+      - 'scripts/title/**'
+      - 'scripts/ci/**'
+      - 'scripts/release/**'
+      - 'scripts/internal/**'
+      - '.aoneci/**'
+      - 'go.mod'
+      - 'go.sum'
+      - 'website/docs/**'
+      - 'ci/assets/document-examples/**'
+      - 'ci/assets/open-service/**'
+      - 'examples/**'
+      - '**/*.tf'
+      - '**/*.hcl'
+      - 'alicloud/*.go'
+      - 'alicloud/**'
+
+envs:
+  VERIFIED_RELEASE_RETURN: >-
+    ${{ pipeline.inst.triggerMode == 'MR' && git.merge_request.id != null &&
+    git.repo == 'opensource-tools/terraform-provider-alicloud' &&
+    git.merge_request.sourceProjectId != null && git.merge_request.sourceProjectId == git.merge_request.targetProjectId &&
+    git.defaultBranch == 'master' && git.merge_request.targetBranch == git.defaultBranch &&
+    secrets.PROVIDER_RELEASE_RETURN == 'v1:' + #string(git.merge_request.id) + ':' +
+    git.merge_request.sourceBranch + ':' + git.merge_request.title + ':' + git.commitId ? 'yes' : 'no' }}
+  CODE_CI_SHALLOW_RANGE: '1'
+  CODE_HEAD: '${{git.commitId}}'
+  CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
+  CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
+  CODE_PUSH_BEFORE: '${{git.push.beforeSha256 ?: ""}}'
+  CODE_TARGET: '${{git.merge_request.targetBranch ?: ""}}'
+  CODE_DEFAULT_BRANCH: '${{git.defaultBranch}}'
+  CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
+
+jobs:
+  CheckScope:
+    outputs:
+      checker_changed: ${{ steps.scope.outputs.checker_changed }}
+      checker: ${{ steps.pin.outputs.sha }}
+      acctest: ${{ steps.scope.outputs.acctest }}
+      examples: ${{ steps.scope.outputs.examples }}
+    steps:
+      - name: Record release return exemption
+        when: ${{ envs.VERIFIED_RELEASE_RETURN == 'yes' }}
+        run: echo "Verified release return MR $CODE_MR_ID at $CODE_HEAD. Skipped IntegrationTest, DocsExampleTest by policy."
+      - uses: checkout
+        when: ${{ envs.VERIFIED_RELEASE_RETURN == 'no' }}
+        inputs:
+          fetch-depth: '32'
+      - uses: checkout
+        name: Check out Provider target branch
+        when: ${{ envs.VERIFIED_RELEASE_RETURN == 'no' }}
+        inputs:
+          repository-url: https://gitlab.alibaba-inc.com/opensource-tools/terraform-provider-alicloud.git
+          ref: "${{ 'refs/heads/' + (git.merge_request.targetBranch ?: git.defaultBranch) }}"
+          commit: "${{ git.merge_request.targetBranch ?: git.defaultBranch }}"
+          path: .git/provider-checker
+          fetch-depth: '1'
+      - id: pin
+        name: Pin the Provider checker revision
+        when: ${{ envs.VERIFIED_RELEASE_RETURN == 'no' }}
+        run: |
+          set -euo pipefail
+          target=${CODE_TARGET:-$CODE_DEFAULT_BRANCH}
+          git check-ref-format "refs/heads/$target"
+          sha=$(git -C .git/provider-checker rev-parse --verify HEAD)
+          git fetch --no-tags --depth=1 .git/provider-checker "$sha"
+          echo "Provider checker=$sha target=$target candidate=$CODE_HEAD"
+          printf '%s' "$sha" > "$AONE_CI_OUTPUTS/sha"
+      - id: scope
+        name: Determine whether integration tests apply
+        envs:
+          CHECKER_SHA: ${{ steps.pin.outputs.sha }}
+        run: |
+          set -euo pipefail
+          checker_changed=no
+          acctest=no
+          examples=no
+          if [[ "$VERIFIED_RELEASE_RETURN" != yes ]]; then
+            range_script=$(mktemp)
+            trap 'rm -f "$range_script"' EXIT
+            git show "$CHECKER_SHA:scripts/ci/aone-range.py" > "$range_script"
+            range=$(python3 -I "$range_script")
+            eval "$range"
+            changed() {
+              local status=0
+              git diff --quiet --no-renames --no-ext-diff "$DIFF_BASE" "$DIFF_HEAD" -- "$@" || status=$?
+              case "$status" in
+                0) echo no ;;
+                1) echo yes ;;
+                *) return "$status" ;;
+              esac
+            }
+            checker_changed=$(changed scripts/ci scripts/release scripts/internal scripts/title .aoneci ci/templates/provider-integration.yaml)
+            acctest=$(changed alicloud go.mod go.sum)
+            examples=$acctest
+            if [[ "$examples" == no ]]; then
+              examples=$(changed website/docs ci/assets/document-examples ci/assets/open-service examples ':(glob)**/*.tf' ':(glob)**/*.hcl')
+            fi
+          fi
+          echo "Integration scope: checker_changed=$checker_changed acctest=$acctest examples=$examples"
+          printf '%s' "$checker_changed" > "$AONE_CI_OUTPUTS/checker_changed"
+          printf '%s' "$acctest" > "$AONE_CI_OUTPUTS/acctest"
+          printf '%s' "$examples" > "$AONE_CI_OUTPUTS/examples"
+  CandidateCheckerRegression:
+    needs: CheckScope
+    when: ${{ jobs.CheckScope.outputs.checker_changed == 'yes' }}
+    steps:
+      - uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - uses: checkout
+        inputs:
+          fetch-depth: '32'
+      - uses: checkout
+        name: Check out pinned Provider checker
+        inputs:
+          repository-url: https://gitlab.alibaba-inc.com/opensource-tools/terraform-provider-alicloud.git
+          ref: "${{ 'refs/heads/' + (git.merge_request.targetBranch ?: git.defaultBranch) }}"
+          commit: ${{ jobs.CheckScope.outputs.checker }}
+          path: .git/provider-checker
+          fetch-depth: '1'
+      - name: Test candidate integration checkers
+        envs:
+          CHECKER_SHA: ${{ jobs.CheckScope.outputs.checker }}
+        run: |
+          set -euo pipefail
+          env -u AONE_CI_SUMMARY_MD -u AONE_CI_SUMMARY python3 -m unittest discover -s scripts/ci -p 'test_acube_*.py'
+          GO111MODULE=off GOWORK=off go test ./scripts/ci/accscope
+          test "$(git -C .git/provider-checker rev-parse HEAD)" = "$CHECKER_SHA"
+          git fetch --no-tags --depth=1 .git/provider-checker "$CHECKER_SHA"
+          runner=$(mktemp)
+          git show "$CHECKER_SHA:scripts/ci/run-integration-checker.sh" > "$runner"
+          plans=$(mktemp -d)
+          for revision in "$CHECKER_SHA" "$CODE_HEAD"; do
+            CHECKER_SHA="$revision" CHECK_KIND=examples bash "$runner" --plan-only > "$plans/$revision.json"
+            python3 -c 'import json,sys; p=json.load(open(sys.argv[1])); print(json.dumps({k:p[k] for k in ("packages","examples","scope")},sort_keys=True,indent=2))' "$plans/$revision.json" > "$plans/$revision.txt"
+          done
+          status=0
+          diff -u "$plans/$CHECKER_SHA.txt" "$plans/$CODE_HEAD.txt" || status=$?
+          test "$status" -le 1
+  IntegrationTest:
+    needs: CheckScope
+    when: ${{ envs.VERIFIED_RELEASE_RETURN != 'yes' && jobs.CheckScope.outputs.acctest == 'yes' }}
+    timeout: 9h
+    steps:
+      - name: Setup Go
+        uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - uses: checkout
+        inputs:
+          fetch-depth: '32'
+      - uses: checkout
+        name: Check out pinned Provider checker
+        inputs:
+          repository-url: https://gitlab.alibaba-inc.com/opensource-tools/terraform-provider-alicloud.git
+          ref: "${{ 'refs/heads/' + (git.merge_request.targetBranch ?: git.defaultBranch) }}"
+          commit: ${{ jobs.CheckScope.outputs.checker }}
+          path: .git/provider-checker
+          fetch-depth: '1'
+      - name: Integration Test Check
+        envs:
+          CHECK_KIND: acctest
+          CHECKER_SHA: ${{ jobs.CheckScope.outputs.checker }}
+          ACUBE_PROVIDER_RUN_TOKEN: '${{secrets.ACUBE_PROVIDER_RUN_TOKEN}}'
+          ACUBE_CI_RUN_ID: '${{pipeline.inst.id}}'
+        run: &run_provider_checker |
+          set -euo pipefail
+          [[ "$CHECKER_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git -C .git/provider-checker rev-parse HEAD)" = "$CHECKER_SHA"
+          git fetch --no-tags --depth=1 .git/provider-checker "$CHECKER_SHA"
+          runner=$(mktemp)
+          git show "$CHECKER_SHA:scripts/ci/run-integration-checker.sh" > "$runner"
+          bash "$runner"
+      - name: Publish AccTest Diagnostics
+        when: ${{always()}}
+        uses: upload-artifact
+        inputs:
+          name: acube-acctest-diagnostics
+          path: .acube-ci/diagnostics/*
+          if-no-files-found: error
+  DocsExampleTest:
+    needs: CheckScope
+    when: ${{ envs.VERIFIED_RELEASE_RETURN != 'yes' && jobs.CheckScope.outputs.examples == 'yes' }}
+    timeout: 9h
+    steps:
+      - name: Setup Go
+        uses: setup-env
+        inputs:
+          go-version: '1.25.8'
+      - uses: checkout
+        inputs:
+          fetch-depth: '32'
+      - uses: checkout
+        name: Check out pinned Provider checker
+        inputs:
+          repository-url: https://gitlab.alibaba-inc.com/opensource-tools/terraform-provider-alicloud.git
+          ref: "${{ 'refs/heads/' + (git.merge_request.targetBranch ?: git.defaultBranch) }}"
+          commit: ${{ jobs.CheckScope.outputs.checker }}
+          path: .git/provider-checker
+          fetch-depth: '1'
+      - name: Docs Example Test Check
+        envs:
+          CHECK_KIND: examples
+          CHECKER_SHA: ${{ jobs.CheckScope.outputs.checker }}
+          ACUBE_PROVIDER_RUN_TOKEN: '${{secrets.ACUBE_PROVIDER_RUN_TOKEN}}'
+          ACUBE_CI_RUN_ID: '${{pipeline.inst.id}}'
+        run: *run_provider_checker
+      - name: Publish Example Diagnostics
+        when: ${{always()}}
+        uses: upload-artifact
+        inputs:
+          name: acube-example-diagnostics
+          path: .acube-ci/diagnostics/*
+          if-no-files-found: error

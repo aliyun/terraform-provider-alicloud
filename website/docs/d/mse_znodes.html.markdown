@@ -41,22 +41,29 @@ output "mse_znode_id_2" {
 
 The following arguments are supported:
 
-* `accept_language` - (Optional, ForceNew) The language type of the returned information. Valid values: `zh` or `en`.
-* `ids` - (Optional, ForceNew, Computed)  A list of Znode IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Znode name.
+* `accept_language` - (Optional) The language type of the returned information. Valid values: `zh` or `en`.
+* `ids` - (Optional, Computed)  A list of Znode IDs.
+* `name_regex` - (Optional) A regex string to filter results by Znode name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `cluster_id` - (Required, ForceNew) The ID of the Cluster.
-* `path` - (Required, ForceNew) The Node path.
+* `cluster_id` - (Required) The ID of the Cluster.
+* `path` - (Required) The Node path.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Znode names.
-* `znodes` - A list of Mse Znodes. Each element contains the following attributes:
-  * `cluster_id` - The ID of the Cluster.
-  * `data` - The Node data.
-  * `dir` - Node list information, the value is as follows:
-  * `id` - The ID of the Znode. The value formats as `<cluster_id>:<path>`.
-  * `path` - The Node path.
-  * `znode_name` - The Node name.
+* `znodes` - A list of Mse Znodes.
+
+---
+
+### `znodes`
+
+The znodes supports the following attributes:
+
+* `cluster_id` - The ID of the Cluster.
+* `data` - The Node data.
+* `dir` - Node list information, the value is as follows:
+* `id` - The ID of the Znode. The value formats as `<cluster_id>:<path>`.
+* `path` - The Node path.
+* `znode_name` - The Node name.

@@ -55,6 +55,8 @@ The following arguments are supported:
 * `quota_category` - (Optional) The quota category. Valid values: `CommonQuota`, `FlowControl`, `WhiteListLabel`.
 * `status` - (Optional) The status of the quota application. Valid Values: `Agree`, `Disagree` and `Process`.
 
+---
+
 ### `dimensions`
 
 The dimensions supports the following:
@@ -67,6 +69,8 @@ The dimensions supports the following:
 The following attributes are exported in addition to the arguments listed above:
 
 * `applications` - A list of Quotas Quota Applications. Each element contains the following attributes:
+
+---
 
 ### `applications`
 
@@ -88,6 +92,8 @@ The applications supports the following attributes:
 * `quota_unit` - The quota unit.
 * `reason` - The reason of the quota application.
 * `status` - The status of the quota application.
+
+---
 
 ### `applications.dimensions`
 

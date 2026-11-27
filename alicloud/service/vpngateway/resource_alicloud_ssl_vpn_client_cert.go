@@ -78,9 +78,7 @@ func resourceAliyunSslVpnClientCertCreate(d *schema.ResourceData, meta interface
 	var response *vpc.CreateSslVpnClientCertResponse
 	err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 		args := *request
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.CreateSslVpnClientCert(&args)
-		})
+		raw, err := client.VpcSdkRpc(&args, vpc.CreateCreateSslVpnClientCertResponse())
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
 				return retry.RetryableError(err)
@@ -139,9 +137,7 @@ func resourceAliyunSslVpnClientCertUpdate(d *schema.ResourceData, meta interface
 	request.SslVpnClientCertId = d.Id()
 
 	request.Name = d.Get("name").(string)
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.ModifySslVpnClientCert(request)
-	})
+	raw, err := client.VpcSdkRpc(request, vpc.CreateModifySslVpnClientCertResponse())
 	if err != nil {
 		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
@@ -158,9 +154,7 @@ func resourceAliyunSslVpnClientCertDelete(d *schema.ResourceData, meta interface
 	request.SslVpnClientCertId = d.Id()
 
 	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteSslVpnClientCert(request)
-		})
+		raw, err := client.VpcSdkRpc(request, vpc.CreateDeleteSslVpnClientCertResponse())
 
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {

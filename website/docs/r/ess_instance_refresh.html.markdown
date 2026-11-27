@@ -143,11 +143,15 @@ The following arguments are supported:
 * `checkpoints` - (Optional, ForceNew) The checkpoints for the refresh task. The task automatically pauses for the duration specified by CheckpointPauseTime when the percentage of new instances reaches a specified value. See [`checkpoints`](#checkpoints) below for details.
 * `checkpoint_pause_time` - (Optional, ForceNew) The duration of the pause when the task reaches a checkpoint. Unit: minutes.
 
+---
+
 ### `desired_configuration_launch_template_overrides`
 
 The desired_configuration_launch_template_overrides supports the following:
 
 * `instance_type` - (Optional) The specified instance type, which overwrites the instance type in the launch template.
+
+---
 
 ### `desired_configuration_containers`
 
@@ -159,11 +163,15 @@ The desired_configuration_containers supports the following:
 * `args` - (Optional, ForceNew) The arguments for the container startup command.
 * `environment_vars` - (Optional, ForceNew) Information about the environment variables. See [`environment_vars`](#desired_configuration_containers-environment_vars) below for details.
 
+---
+
 ### `checkpoints`
 
 The checkpoints supports the following:
 
 * `percentage` - (Optional) The percentage of new instances out of the total instances in the scaling group. The task automatically pauses when this percentage is reached.
+
+---
 
 ### `desired_configuration_containers-environment_vars`
 

@@ -9,11 +9,11 @@ description: |-
 
 # alicloud_dbfs_snapshot
 
-~> **NOTE:** This resource has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://help.aliyun.com/en/dbfs/).
+-> **DEPRECATED:** This resource has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://www.alibabacloud.com/help/en/dbfs/).
 
 Provides a Database File System (DBFS) Snapshot resource.
 
-For information about Database File System (DBFS) Snapshot and how to use it, see [What is Snapshot](https://help.aliyun.com/zh/dbfs/developer-reference/api-dbfs-2020-04-18-createsnapshot).
+For information about Database File System (DBFS) Snapshot and how to use it, see [What is Snapshot](https://www.alibabacloud.com/help/en/dbfs/developer-reference/api-dbfs-2020-04-18-createsnapshot).
 
 -> **NOTE:** Available since v1.156.0.
 
@@ -55,8 +55,12 @@ The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) The ID of the Database File System.
 * `retention_days` - (Optional, ForceNew, Int) The retention period of the snapshot. Valid values: `1` to `65536`.
-* `snapshot_name` - (Optional) The name of the snapshot. The `snapshot_name` must be `2` to `128` characters in length. It must start with a large or small letter or Chinese, and cannot start with `http://`, `https://`, `auto` or `dbfs-auto`. It can contain numbers, colons (:), underscores (_), or hyphens (-). **NOTE:** From version 1.233.1, `snapshot_name` can be modified.
-* `description` - (Optional) The description of the snapshot. The `description` must be `2` to `256` characters in length. It cannot start with `http://` or `https://`. **NOTE:** From version 1.233.1, `description` can be modified.
+* `snapshot_name` - (Optional) The name of the snapshot. The `snapshot_name` must be `2` to `128` characters in length. It must start with a large or small letter or Chinese, and cannot start with `http://`, `https://`, `auto` or `dbfs-auto`. It can contain numbers, colons (:), underscores (_), or hyphens (-).
+
+  -> **NOTE:** From version 1.233.1, `snapshot_name` can be modified.
+* `description` - (Optional) The description of the snapshot. The `description` must be `2` to `256` characters in length. It cannot start with `http://` or `https://`.
+
+  -> **NOTE:** From version 1.233.1, `description` can be modified.
 * `force` - (Optional, Bool) Specifies whether to force delete the snapshot. Valid values:
   - `true`: Enable.
   - `false`: Disable.
@@ -70,7 +74,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Snapshot.
 * `update` - (Defaults to 5 mins) Used when update the Snapshot.

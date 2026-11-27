@@ -69,9 +69,7 @@ func describeVSwitch(client *connectivity.AliyunClient, id string) (v vpc.Descri
 
 	invoker := helper.NewInvoker()
 	err = invoker.Run(func() error {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVSwitchAttributes(request)
-		})
+		raw, err := client.VpcSdkRpc(request, vpc.CreateDescribeVSwitchAttributesResponse())
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"InvalidVswitchID.NotFound"}) {
 				return errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)

@@ -87,17 +87,17 @@ The following arguments are supported:
 
 * `name` - (Optional) The name of the client certificate.
 * `ssl_vpn_server_id` - (Required, ForceNew) The ID of the SSL-VPN server.
-* `status` - (Optional) The status of the client certificate.
-* `ca_cert` - (Optional) The client ca cert.
-* `client_cert` - (Optional) The client cert.
-* `client_key` - (Optional) The client key.
-* `client_config` - (Optional) The vpn client config.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The ID of the SSL-VPN client certificate.
+* `status` - (Computed) The status of the client certificate.
+* `ca_cert` - (Computed) The client ca cert.
+* `client_cert` - (Computed) The client cert.
+* `client_key` - (Computed) The client key.
+* `client_config` - (Computed) The vpn client config.
 
 ## Import
 

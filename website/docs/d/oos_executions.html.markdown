@@ -56,26 +56,33 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` -  A list of OOS Execution ids.
-* `executions` - A list of OOS Executions. Each element contains the following attributes:
-  * `id` - ID of the OOS Executions.
-  * `category` - The category of OOS Execution.
-  * `counters` - The counters of OOS Execution.
-  * `create_date` - The time when the execution was created.
-  * `end_date` - The time when the execution was ended.
-  * `executed_by` - The user who execute the template.
-  * `execution_id` - ID of the OOS Executions.
-  * `is_parent` - Whether to include subtasks.
-  * `mode` - The mode of OOS Execution.
-  * `outputs` - The outputs of OOS Executions.
-  * `parameters` - The parameters required by the template.
-  * `parent_execution_id` - The id of parent OOS Execution.
-  * `ram_role` - The role that executes the current template.
-  * `start_date` - The time when the template was started.
-  * `status` - The status of OOS Execution.
-  * `status_message` - The message of status.
-  * `status_reason` - The reason of status.
-  * `template_id` - The id of execution template.
-  * `template_name` - The name of execution template.
-  * `template_version` - The version of execution template.
-  * `tags` - (Available since v1.284.0) A mapping of tags assigned to the OOS Execution.
-  * `update_date` - The time when the template was updated.
+* `executions` - A list of OOS Executions.
+
+---
+
+### `executions`
+
+The executions supports the following attributes:
+
+* `id` - ID of the OOS Executions.
+* `category` - The category of OOS Execution.
+* `counters` - The counters of OOS Execution.
+* `create_date` - The time when the execution was created.
+* `end_date` - The time when the execution was ended.
+* `executed_by` - The user who execute the template.
+* `execution_id` - ID of the OOS Executions.
+* `is_parent` - Whether to include subtasks.
+* `mode` - The mode of OOS Execution.
+* `outputs` - The outputs of OOS Executions.
+* `parameters` - The parameters required by the template.
+* `parent_execution_id` - The id of parent OOS Execution.
+* `ram_role` - The role that executes the current template.
+* `start_date` - The time when the template was started.
+* `status` - The status of OOS Execution.
+* `status_message` - The message of status.
+* `status_reason` - The reason of status.
+* `template_id` - The id of execution template.
+* `template_name` - The name of execution template.
+* `template_version` - The version of execution template.
+* `tags` - (Available since v1.284.0) A mapping of tags assigned to the OOS Execution.
+* `update_date` - The time when the template was updated.

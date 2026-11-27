@@ -33,21 +33,28 @@ output "cloud_sso_scim_server_credential_id_1" {
 
 The following arguments are supported:
 
-* `directory_id` - (Required, ForceNew) The ID of the Directory.
-* `ids` - (Optional, ForceNew, Computed)  A list of SCIM Server Credential IDs.
+* `directory_id` - (Required) The ID of the Directory.
+* `ids` - (Optional, Computed)  A list of SCIM Server Credential IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The Status of the resource. Valid values: `Disabled`, `Enabled`.
+* `status` - (Optional) The Status of the resource. Valid values: `Disabled`, `Enabled`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `credentials` - A list of Cloud Sso Scim Server Credentials. Each element contains the following attributes:
-  * `create_time` - The CreateTime of the resource.
-  * `credential_id` - The CredentialId of the resource.
-  * `credential_secret` - The CredentialSecret of the resource.
-  * `credential_type` - The CredentialType of the resource.
-  * `directory_id` - The ID of the Directory.
-  * `expire_time` - The ExpireTime of the resource.
-  * `id` - The ID of the SCIM Server Credential.
-  * `status` - The Status of the resource. Valid values: `Disabled`, `Enabled`.
+* `credentials` - A list of Cloud Sso Scim Server Credentials.
+
+---
+
+### `credentials`
+
+The credentials supports the following attributes:
+
+* `create_time` - The CreateTime of the resource.
+* `credential_id` - The CredentialId of the resource.
+* `credential_secret` - The CredentialSecret of the resource.
+* `credential_type` - The CredentialType of the resource.
+* `directory_id` - The ID of the Directory.
+* `expire_time` - The ExpireTime of the resource.
+* `id` - The ID of the SCIM Server Credential.
+* `status` - The Status of the resource. Valid values: `Disabled`, `Enabled`.

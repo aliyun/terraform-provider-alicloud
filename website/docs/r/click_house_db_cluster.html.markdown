@@ -81,13 +81,15 @@ resource "alicloud_click_house_db_cluster" "default" {
 The following arguments are supported:
 
 * `category` - (Required, ForceNew) The Category of DBCluster. Valid values: `Basic`,`HighAvailability`.
-* `db_cluster_class` - (Required, ForceNew) The DBCluster class. According to the category, db_cluster_class has two value ranges:
+* `db_cluster_class` - (Required) The DBCluster class. According to the category, db_cluster_class has two value ranges:
   * Under the condition that the category is the `Basic`, Valid values: `LS20`, `LS40`, `LS80`,`S8`, `S16`, `S32`, `S64`,`S80`, `S104`.
   * Under the condition that the category is the `HighAvailability`, Valid values: `LC20`, `LC40`, `LC80`,`C8`, `C16`, `C32`, `C64`, `C80`, `C104`.
 * `db_cluster_network_type` - (Required, ForceNew) The DBCluster network type. Valid values: `vpc`.
-* `db_cluster_version` - (Required, ForceNew) The DBCluster version. Valid values: `20.3.10.75`, `20.8.7.15`, `21.8.10.19`, `22.8.5.29`, `23.8`, `25.3`. **NOTE:** `19.15.2.2` is no longer supported. From version 1.191.0, `db_cluster_version` can be set to `22.8.5.29`.
+* `db_cluster_version` - (Required, ForceNew) The DBCluster version. Valid values: `20.3.10.75`, `20.8.7.15`, `21.8.10.19`, `22.8.5.29`, `23.8`, `25.3`.
+
+  -> **NOTE:** `19.15.2.2` is no longer supported. From version 1.191.0, `db_cluster_version` can be set to `22.8.5.29`.
 * `db_node_storage` - (Required) The db node storage.
-* `db_node_group_count` - (Required, ForceNew) The db node group count. The number should between 1 and 48.
+* `db_node_group_count` - (Required) The db node group count. The number should between 1 and 48.
 * `encryption_key` - (Optional, ForceNew) Key management service KMS key ID. It is valid and required when encryption_type is `CloudDisk`.
 * `encryption_type` - (Optional, ForceNew) Currently only supports ECS disk encryption, with a value of CloudDisk, not encrypted when empty.
 * `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `PayAsYouGo`,`Subscription`.
@@ -108,12 +110,16 @@ corresponding vswitch IDs and zone IDs of multi-zone setup. if set, a multi-zone
 * `allocate_public_connection` - (Optional, Available since v1.245.0) Whether to enable public connection. Value options: `true`, `false`.
 * `cold_storage` - (Optional, Available since v1.245.0) Whether to use cold storage. Valid values: `ENABLE`, `DISABLE`, default to `DISABLE`. When it's set to `ENABLE`, cold storage will be used, and `cold_storage` cannot be set to `DISABLE` again.
 
+---
+
 ### `db_cluster_access_white_list`
 
 The db_cluster_access_white_list supports the following:
 
 * `db_cluster_ip_array_name` - (Optional) Whitelist group name.
 * `security_ip_list` - (Optional) The IP address list under the whitelist group.
+
+---
 
 ### `multi_zone_vswitch_list`
 
@@ -133,7 +139,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when creating the Click House DBCluster (until it reaches the initial `Running` status).
 * `update` - (Defaults to 60 mins) Used when update the Click House DBCluster.

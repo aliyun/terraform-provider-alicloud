@@ -330,9 +330,7 @@ func (e *EdasService) CheckEcsStatus(instanceIds string, count int) error {
 	request.PageSize = requests.NewInteger(100)
 	request.InstanceIds = instanceIds
 
-	raw, err := e.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeInstances(request)
-	})
+	raw, err := e.client.EcsSdkRpc(request, ecs.CreateDescribeInstancesResponse())
 
 	if err != nil {
 		if errs.IsExpectedErrors(err, []string{"OperationDenied.InvalidDBClusterIdNotFound", "OperationDenied.InvalidDBClusterNameNotFound"}) {

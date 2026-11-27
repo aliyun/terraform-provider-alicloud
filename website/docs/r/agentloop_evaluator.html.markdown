@@ -72,9 +72,15 @@ The following arguments are supported:
 * `metric_name` - (Required, ForceNew) The metric name of the Evaluator.
 * `name` - (Required, ForceNew) The name of the Evaluator. It can be up to 128 characters in length and cannot start with a system-reserved prefix.
 * `properties` - (Optional, Map) The extended properties of the Evaluator. All values are strings.
-* `type` - (Required, ForceNew) The type of the Evaluator. Valid values: `AGENT`, `CODE`. **NOTE:** The `LLM` type is retired. Use `AGENT` with `config.agentEvaluatorMode` set to `raw_prompt` for prompt-based evaluation.
-* `version` - (Required) The version of the Evaluator. **NOTE:** The Get API does not echo `version` back directly; the Read restores it from the API's `current_version`, so an imported Evaluator converges on the first plan. Changing `version` creates a new evaluator version, which the backend makes the current version immediately. `terraform destroy` deletes the whole evaluator including all of its versions.
-* `version_description` - (Optional, Computed) The description of the version. It can be updated in place, together with a `version` change or on its own. **NOTE:** The Read restores it from the current version's entry in the API's `versions` list; when the configuration omits it, the backend value is kept.
+* `type` - (Required, ForceNew) The type of the Evaluator. Valid values: `AGENT`, `CODE`.
+
+  -> **NOTE:** The `LLM` type is retired. Use `AGENT` with `config.agentEvaluatorMode` set to `raw_prompt` for prompt-based evaluation.
+* `version` - (Required) The version of the Evaluator.
+
+  -> **NOTE:** The Get API does not echo `version` back directly; the Read restores it from the API's `current_version`, so an imported Evaluator converges on the first plan. Changing `version` creates a new evaluator version, which the backend makes the current version immediately. `terraform destroy` deletes the whole evaluator including all of its versions.
+* `version_description` - (Optional, Computed) The description of the version. It can be updated in place, together with a `version` change or on its own.
+
+  -> **NOTE:** The Read restores it from the current version's entry in the API's `versions` list; when the configuration omits it, the backend value is kept.
 
 ## Attributes Reference
 
@@ -87,7 +93,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Evaluator.
 * `delete` - (Defaults to 5 mins) Used when delete the Evaluator.

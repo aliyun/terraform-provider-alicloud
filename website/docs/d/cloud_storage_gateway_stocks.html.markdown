@@ -30,13 +30,20 @@ output "zone_id" {
 
 The following arguments are supported:
 
-* `gateway_class` - (Optional, ForceNew) The gateway class. Valid values: `Basic`, `Standard`,`Enhanced`,`Advanced`.
+* `gateway_class` - (Optional) The gateway class. Valid values: `Basic`, `Standard`,`Enhanced`,`Advanced`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `stocks` - A list of Cloud Storage Gateway Stocks. Each element contains the following attributes:
-  * `zone_id` - The Zone ID.
-  * `available_gateway_classes` - A list of available gateway class in this Zone ID.
+* `stocks` - A list of Cloud Storage Gateway Stocks.
+
+---
+
+### `stocks`
+
+The stocks supports the following attributes:
+
+* `zone_id` - The Zone ID.
+* `available_gateway_classes` - A list of available gateway class in this Zone ID.

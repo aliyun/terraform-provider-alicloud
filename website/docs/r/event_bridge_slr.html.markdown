@@ -49,7 +49,7 @@ The following arguments are supported:
 
 -> **NOTE:** Available since v1.252.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Service Linked Role.
 * `delete` - (Defaults to 1 mins) Used when delete the Service Linked Role.

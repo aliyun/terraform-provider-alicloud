@@ -97,6 +97,8 @@ The following arguments are supported:
   - If you do not pass this parameter or if you leave its value empty, Domain is used by default.
 * `ttl` - (Optional, Int) The TTL of the record. Unit: seconds. If the value is 1, the TTL of the record is determined by the system.
 
+---
+
 ### `auth_conf`
 
 The auth_conf supports the following:
@@ -113,6 +115,8 @@ The auth_conf supports the following:
   - `v2`
   - `v4`
   - If you leave this parameter empty, the default value v4 is used.
+
+---
 
 ### `data`
 
@@ -153,7 +157,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Record.
 * `delete` - (Defaults to 5 mins) Used when delete the Record.

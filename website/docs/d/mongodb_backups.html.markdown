@@ -90,17 +90,26 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Backup IDs.
-* `backups` - A list of Backup Entries. Each element contains the following attributes:
-  * `backup_db_names` - Backup DB Names.
-  * `backup_download_url` - Backup Download URL.
-  * `backup_id` - Backup Id.
-  * `backup_intranet_download_url` - Backup Intranet DownloadURL.
-  * `backup_job_id` - **NOTE:** This field is only available when `enable_details` is `true`. The backup task ID.
-  * `backup_method` - Backup Method.
-  * `backup_mode` - Backup Mode.
-  * `backup_size` - Backup Size.
-  * `backup_start_time` - The start time of this backup, in the format of `yyyy-MM-ddTHH:mm:ssZ` (UTC time).
-  * `backup_end_time` - The end time of this backup, in the format of `yyyy-MM-ddTHH:mm:ssZ` (UTC time).
-  * `backup_type` - Backup Type.
-  * `status` - The status of the resource.
-  * `id` - The ID of the resource supplied above.
+* `backups` - A list of Backup Entries.
+
+---
+
+### `backups`
+
+The backups supports the following attributes:
+
+* `backup_db_names` - Backup DB Names.
+* `backup_download_url` - Backup Download URL.
+* `backup_id` - Backup Id.
+* `backup_intranet_download_url` - Backup Intranet DownloadURL.
+* `backup_job_id` - The backup task ID.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `backup_method` - Backup Method.
+* `backup_mode` - Backup Mode.
+* `backup_size` - Backup Size.
+* `backup_start_time` - The start time of this backup, in the format of `yyyy-MM-ddTHH:mm:ssZ` (UTC time).
+* `backup_end_time` - The end time of this backup, in the format of `yyyy-MM-ddTHH:mm:ssZ` (UTC time).
+* `backup_type` - Backup Type.
+* `status` - The status of the resource.
+* `id` - The ID of the resource supplied above.

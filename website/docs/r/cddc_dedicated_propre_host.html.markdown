@@ -200,6 +200,8 @@ Must be consistent with the parent resource cluster engine attributes.
 * `vswitch_id` - (Required, ForceNew) The ID of the virtual switch.
 * `vpc_id` - (Required, ForceNew) VPCID of the VPC.
 
+---
+
 ### `ecs_class_list`
 
 The ecs_class_list supports the following:
@@ -230,7 +232,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Dedicated Propre Host.
 

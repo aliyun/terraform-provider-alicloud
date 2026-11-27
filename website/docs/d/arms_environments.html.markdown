@@ -59,11 +59,11 @@ output "arms_environments_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of ARMS Environment IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by ARMS Environment name.
-* `environment_type` - (Optional, ForceNew) The environment type. Valid values: `CS`, `ECS`, `Cloud`.
-* `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
-* `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
+* `ids` - (Optional, List) A list of ARMS Environment IDs.
+* `name_regex` - (Optional) A regex string to filter results by ARMS Environment name.
+* `environment_type` - (Optional) The environment type. Valid values: `CS`, `ECS`, `Cloud`.
+* `resource_group_id` - (Optional) The ID of the resource group.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -71,19 +71,26 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of ARMS Environment names.
-* `environments` - A list of ARMS Environments. Each element contains the following attributes:
-  * `id` - The ID of the environment instance.
-  * `bind_resource_id` - The ID of the resource bound to the environment instance.
-  * `bind_resource_type` - The resource type.
-  * `bind_vpc_cidr` - The CIDR block that is bound to the VPC.
-  * `environment_id` - The ID of the environment instance.
-  * `environment_name` - The name of the environment instance.
-  * `environment_type` - The type of the environment instance.
-  * `grafana_datasource_uid` - The unique ID of the Grafana data source.
-  * `grafana_folder_uid` - The unique ID of the Grafana directory.
-  * `managed_type` - Indicates whether agents or exporters are managed.
-  * `prometheus_instance_id` - The ID of the Prometheus instance.
-  * `region_id` - The region ID.
-  * `resource_group_id` - The ID of the resource group.
-  * `tags` - The tags of the environment resource.
-  * `user_id` - The user ID.
+* `environments` - A list of ARMS Environments.
+
+---
+
+### `environments`
+
+The environments supports the following attributes:
+
+* `id` - The ID of the environment instance.
+* `bind_resource_id` - The ID of the resource bound to the environment instance.
+* `bind_resource_type` - The resource type.
+* `bind_vpc_cidr` - The CIDR block that is bound to the VPC.
+* `environment_id` - The ID of the environment instance.
+* `environment_name` - The name of the environment instance.
+* `environment_type` - The type of the environment instance.
+* `grafana_datasource_uid` - The unique ID of the Grafana data source.
+* `grafana_folder_uid` - The unique ID of the Grafana directory.
+* `managed_type` - Indicates whether agents or exporters are managed.
+* `prometheus_instance_id` - The ID of the Prometheus instance.
+* `region_id` - The region ID.
+* `resource_group_id` - The ID of the resource group.
+* `tags` - The tags of the environment resource.
+* `user_id` - The user ID.

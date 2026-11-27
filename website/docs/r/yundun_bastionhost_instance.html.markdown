@@ -153,7 +153,7 @@ The following arguments are supported:
   - `cloudbastion_ha`: HA Edition.
 * `storage` - (Required, Available since 1.193.0) The storage of Cloud Bastionhost instance. Valid values: `0` to `500`. Unit: TB.
 
-  ->**NOTE:** From version 1.251.0, `storage` can be modified.
+  -> **NOTE:** From version 1.251.0, `storage` can be modified.
 
 * `bandwidth` - (Required, Available since 1.193.0) The bandwidth of Cloud Bastionhost instance.
 
@@ -167,18 +167,24 @@ The following arguments are supported:
   -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `vswitch_id` - (Required, ForceNew) VSwitch ID configured to Bastionhost.
 * `security_group_ids` - (Required, List) security group IDs configured to Bastionhost.
-  **NOTE:** There is a potential diff error because of the order of `security_group_ids` values indefinite.
+
+  -> **NOTE:** There is a potential diff error because of the order of `security_group_ids` values indefinite.
   So, from version 1.160.0, `security_group_ids` type has been updated as `set` from `list`,
-  and you can use [tolist](https://www.terraform.io/language/functions/tolist) to convert it to a list.
+  and you can use [tolist](https://developer.hashicorp.com/terraform/language/functions/tolist) to convert it to a list.
 * `slave_vswitch_id` - (Optional, ForceNew, Available since v1.263.0) Slave VSwitch ID configured to Bastionhost.
 * `tags` - (Optional, Available since v1.67.0) A mapping of tags to assign to the resource.
 * `resource_group_id` - (Optional, Available since v1.87.0) The Id of resource group which the Bastionhost Instance belongs. If not set, the resource is created in the default resource group.
 * `enable_public_access` - (Optional, Available since v1.143.0)  Whether to Enable the public internet access to a specified Bastionhost instance. The valid values: `true`, `false`.
 * `ad_auth_server` - (Optional, Available since 1.169.0) The AD auth server of the Instance. See [`ad_auth_server`](#ad_auth_server) below.
 * `ldap_auth_server` - (Optional, Available since 1.169.0) The LDAP auth server of the Instance. See [`ldap_auth_server`](#ldap_auth_server) below.
-* `renew_period` - (Optional, Available since 1.187.0) Automatic renewal period. Valid values: `1` to `9`, `12`, `24`, `36`. **NOTE:** The `renew_period` is required under the condition that `renewal_status` is `AutoRenewal`. From version 1.193.0, `renew_period` can be modified.
+* `renew_period` - (Optional, Available since 1.187.0) Automatic renewal period. Valid values: `1` to `9`, `12`, `24`, `36`.
+
+  -> **NOTE:** The `renew_period` is required under the condition that `renewal_status` is `AutoRenewal`. From version 1.193.0, `renew_period` can be modified.
 * `renewal_status` - (Optional, Computed, Available since 1.187.0) Automatic renewal status. Valid values: `AutoRenewal`, `ManualRenewal`, `NotRenewal`. From version 1.193.0, `renewal_status` can be modified.
-* `renewal_period_unit` - (Optional, Computed, Available since 1.193.0) The unit of the auto-renewal period. Valid values:  **NOTE:** The `renewal_period_unit` is required under the condition that `renewal_status` is `AutoRenewal`.
+* `renewal_period_unit` - (Optional, Computed, Available since 1.193.0) The unit of the auto-renewal period. Valid values:
+
+  -> **NOTE:** The `renewal_period_unit` is required under the condition that `renewal_status` is `AutoRenewal`.
+
   - `M`: months.
   - `Y`: years.
 * `public_white_list` - (Optional, Available since 1.199.0) The public IP address that you want to add to the whitelist.
@@ -198,6 +204,8 @@ lifecycle {
 }
 ```
 
+---
+
 ### `ad_auth_server`
 
 The ad_auth_server supports the following:
@@ -214,6 +222,8 @@ The ad_auth_server supports the following:
 * `port` - (Required) The port that is used to access the AD server.
 * `server` - (Required) The address of the AD server.
 * `standby_server` - (Optional) The address of the secondary AD server.
+
+---
 
 ### `ldap_auth_server`
 
@@ -240,7 +250,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 40 min) Used when create the Instance.
 * `update` - (Defaults to 20 min) Used when create the Instance.

@@ -54,15 +54,15 @@ output "alicloud_vpc_ipam_ipam_scope_example_id" {
 
 The following arguments are supported:
 
-* `ipam_id` - (ForceNew, Optional) The id of the Ipam instance.
-* `ipam_scope_id` - (ForceNew, Optional) The first ID of the resource.
-* `ipam_scope_name` - (ForceNew, Optional) The name of the resource.
-* `ipam_scope_type` - (ForceNew, Optional) IPAM scope of action type:**private**.> Currently, only the role scope of the private network is supported.
-* `resource_group_id` - (ForceNew, Optional) The ID of the resource group.
-* `tags` - (ForceNew, Optional) The tag of the resource.
-* `ids` - (Optional, ForceNew, Computed) A list of Ipam Scope IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `ipam_id` - (Optional) The id of the Ipam instance.
+* `ipam_scope_id` - (Optional) The first ID of the resource.
+* `ipam_scope_name` - (Optional) The name of the resource.
+* `ipam_scope_type` - (Optional) IPAM scope of action type:**private**.> Currently, only the role scope of the private network is supported.
+* `resource_group_id` - (Optional) The ID of the resource group.
+* `tags` - (Optional) The tag of the resource.
+* `ids` - (Optional, Computed) A list of Ipam Scope IDs.
+* `name_regex` - (Optional) A regex string to filter results by Group Metric Rule name.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
@@ -70,15 +70,22 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Ipam Scope IDs.
 * `names` - A list of name of Ipam Scopes.
-* `scopes` - A list of Ipam Scope Entries. Each element contains the following attributes:
-  * `create_time` - The creation time of the resource.
-  * `ipam_id` - The id of the Ipam instance.
-  * `ipam_scope_description` - The description of the IPAM's scope of action.It must be 2 to 256 characters in length and must start with a lowercase letter, but cannot start with 'http:// 'or 'https. If it is not filled in, it is empty. The default value is empty.
-  * `ipam_scope_id` - The first ID of the resource.
-  * `ipam_scope_name` - The name of the resource.
-  * `ipam_scope_type` - IPAM scope of action type:**private**.> Currently, only the role scope of the private network is supported.
-  * `resource_group_id` - The ID of the resource group.
-  * `status` - The status of the resource.
-  * `tags` - The tag of the resource.
-  * `id` - The ID of the resource supplied above.
-  * `region_id` - The region ID of the resource.
+* `scopes` - A list of Ipam Scope Entries.
+
+---
+
+### `scopes`
+
+The scopes supports the following attributes:
+
+* `create_time` - The creation time of the resource.
+* `ipam_id` - The id of the Ipam instance.
+* `ipam_scope_description` - The description of the IPAM's scope of action.It must be 2 to 256 characters in length and must start with a lowercase letter, but cannot start with 'http:// 'or 'https. If it is not filled in, it is empty. The default value is empty.
+* `ipam_scope_id` - The first ID of the resource.
+* `ipam_scope_name` - The name of the resource.
+* `ipam_scope_type` - IPAM scope of action type:**private**.> Currently, only the role scope of the private network is supported.
+* `resource_group_id` - The ID of the resource group.
+* `status` - The status of the resource.
+* `tags` - The tag of the resource.
+* `id` - The ID of the resource supplied above.
+* `region_id` - The region ID of the resource.

@@ -128,12 +128,16 @@ The following arguments are supported:
 
   -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
+---
+
 ### `local_variables`
 
 The local_variables supports the following:
 
 * `name` - (Optional, ForceNew) Local variables name
 * `value` - (Optional, ForceNew) Local variables value
+
+---
 
 ### `restore_strategy`
 
@@ -143,6 +147,8 @@ The restore_strategy supports the following:
 * `job_start_time_in_ms` - (Optional, ForceNew, Int) Stateless start time. When stateless start is selected, you can set this parameter to enable all source tables that support startTime to read data from this time.
 * `kind` - (Optional, ForceNew) Restore type
 * `savepoint_id` - (Optional, ForceNew) SavepointId
+
+---
 
 ### `status`
 
@@ -157,19 +163,40 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<resource_id>:<namespace>:<job_id>`.
 * `job_id` - The first ID of the resource
 * `status` - job status
-  * `failure` - Job failure information
-    * `failed_at` - Job failure time
-    * `message` - Failure Information Details
-    * `reason` - Failure Reason
-  * `health_score` - Job Run Health Score
-  * `risk_level` - Risk level, which indicates the risk level of the operation status of the job.
-  * `running` - job running status, which has value when the job is Running.
-    * `observed_flink_job_restarts` - Number of job restarts
-    * `observed_flink_job_status` - Flink job status
+
+---
+
+### `status`
+
+The status supports the following attributes:
+
+* `failure` - Job failure information
+* `health_score` - Job Run Health Score
+* `risk_level` - Risk level, which indicates the risk level of the operation status of the job.
+* `running` - job running status, which has value when the job is Running.
+
+---
+
+### `status.failure`
+
+The failure supports the following attributes:
+
+* `failed_at` - Job failure time
+* `message` - Failure Information Details
+* `reason` - Failure Reason
+
+---
+
+### `status.running`
+
+The running supports the following attributes:
+
+* `observed_flink_job_restarts` - Number of job restarts
+* `observed_flink_job_status` - Flink job status
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Job.
 * `delete` - (Defaults to 5 mins) Used when delete the Job.

@@ -153,6 +153,8 @@ The following arguments are supported:
 * `backend_id` - (Optional, Available since v1.279.0) The ID of the API Gateway Backend. When specified, the API references an existing backend created by `alicloud_api_gateway_backend`.
 * `backend_enabled` - (Optional, Available since v1.279.0) Specifies whether to enable the backend service. When set to `true`, the `backend_id` will be sent to the API.
 
+---
+
 ### `request_config`
 
 The request_config mapping supports the following:
@@ -162,6 +164,8 @@ The request_config mapping supports the following:
 * `path` - (Required) The request path of the api.
 * `mode` - (Required) The mode of the parameters between request parameters and service parameters, which support the values of 'MAPPING' and 'PASSTHROUGH'.
 * `body_format` - (Optional) The body format of the api, which support the values of 'STREAM' and 'FORM'.
+
+---
 
 ### `http_service_config`
 
@@ -175,6 +179,8 @@ The http_service_config mapping supports the following:
 * `content_type_category` - (Optional, Available since v1.228.0) The content type category of backend service which supports values of 'DEFAULT','CUSTOM' and 'CLIENT'.
 * `content_type_value` - (Optional, Available since v1.228.0) The content type value of backend service.
 
+---
+
 ### `http_vpc_service_config`
 
 The http_vpc_service_config mapping supports the following:
@@ -187,6 +193,8 @@ The http_vpc_service_config mapping supports the following:
 * `vpc_scheme` - (Optional, Available since v1.228.0) The vpc scheme of backend service which supports values of `HTTP` and `HTTPS`.
 * `content_type_category` - (Optional, Available since v1.228.0) The content type category of backend service which supports values of 'DEFAULT','CUSTOM' and 'CLIENT'.
 * `content_type_value` - (Optional, Available since v1.228.0) The content type value of backend service.
+
+---
 
 ### `fc_service_config`
 
@@ -210,12 +218,16 @@ The fc_service_config mapping supports the following:
   * `CLIENT`: Use the Content-Type header from the client request.
 * `content_type_value` - (Optional, Computed, Available since v1.281.0) The value of the Content-Type header when `content_type_category` is `DEFAULT` or `CUSTOM`. This field is ignored when `content_type_category` is set to `CLIENT`.
 
+---
+
 ### `mock_service_config`
 
 The mock_service_config mapping supports the following:
 
 * `result` - (Required) The result of the mock service.
 * `aone_name` - (Optional) The name of aone.
+
+---
 
 ### `request_parameters`
 
@@ -230,6 +242,8 @@ The request_parameters mapping supports the following:
 * `description` - (Optional) The description of parameter.
 * `default_value` - (Optional) The default value of the parameter.
 
+---
+
 ### `constant_parameters`
 
 The constant_parameters mapping supports the following:
@@ -238,6 +252,8 @@ The constant_parameters mapping supports the following:
 * `in` - (Required) Constant parameter location; values: 'HEAD' and 'QUERY'.
 * `value` - (Required) Constant parameter value.
 * `description` - (Optional) The description of Constant parameter.
+
+---
 
 ### `system_parameters`
 

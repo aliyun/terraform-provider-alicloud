@@ -16,7 +16,7 @@ For information about Cloud Firewall Vpc Firewall Control Policy and how to use 
 
 -> **NOTE:** Available since v1.194.0.
 
-~> **NOTE** Since v1.276.0. Set `new_order = -1` or omit the argument to let the Cloud Backend manage policy ordering automatically. You can also use `alicloud_cloud_firewall_vpc_firewall_control_policy_order` to manage the policy ordering.<br>
+~> **NOTE:** Since v1.276.0. Set `new_order = -1` or omit the argument to let the Cloud Backend manage policy ordering automatically. You can also use `alicloud_cloud_firewall_vpc_firewall_control_policy_order` to manage the policy ordering.<br>
   If you want manged the policy order in parallel **do not** set the `new_order`, instead use `alicloud_cloud_firewall_vpc_firewall_control_policy_order` manage the policy order.
 
 ## Example Usage
@@ -92,11 +92,11 @@ The following arguments are supported:
 * `order` - (Optional, Computed, Int) The priority of the access control policy. The priority value starts from 1. A smaller priority value indicates a higher priority.
 * `dest_port` - (Optional) The destination port in the access control policy.
 
-  ->**Note:** If `dest_port_type` is set to `port`, `dest_port` is mandatory.
+  -> **NOTE:** If `dest_port_type` is set to `port`, `dest_port` is mandatory.
 
 * `dest_port_group` - (Optional) Access control policy in the access traffic of the destination port address book name.
 
-  ->**Note:** If `dest_port_type` is set to `group`, `dest_port_group` is mandatory.
+  -> **NOTE:** If `dest_port_type` is set to `group`, `dest_port_group` is mandatory.
 
 * `dest_port_type` - (Optional) The type of the destination port in the access control policy. Valid values: `port`, `group`.
 * `release` - (Optional) The enabled status of the access control policy. The policy is enabled by default after it is created.. Valid values:
@@ -131,7 +131,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Vpc Firewall Control Policy.
 * `update` - (Defaults to 5 mins) Used when update the Vpc Firewall Control Policy.

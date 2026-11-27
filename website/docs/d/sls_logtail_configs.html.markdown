@@ -96,14 +96,14 @@ output "alicloud_sls_logtail_config_example_id" {
 
 The following arguments are supported:
 
-* `logstore_name` - (Required, ForceNew) Logstore name.
-* `logtail_config_name` - (ForceNew, Optional) The name of the resource
-* `offset` - (Required, ForceNew) Query start row. The default value is 0.
-* `project_name` - (Required, ForceNew) Project name
-* `size` - (Required, ForceNew) The number of rows per page set for a pagination query. The maximum value is 500.
-* `ids` - (Optional, ForceNew, Computed) A list of Logtail Config IDs. The value is formulated as `<project_name>:<logtail_config_name>`.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `logstore_name` - (Required) Logstore name.
+* `logtail_config_name` - (Optional) The name of the resource
+* `offset` - (Required) Query start row. The default value is 0.
+* `project_name` - (Required) Project name
+* `size` - (Required) The number of rows per page set for a pagination query. The maximum value is 500.
+* `ids` - (Optional, Computed) A list of Logtail Config IDs. The value is formulated as `<project_name>:<logtail_config_name>`.
+* `name_regex` - (Optional) A regex string to filter results by Group Metric Rule name.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
@@ -111,6 +111,13 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Logtail Config IDs.
 * `names` - A list of name of Logtail Configs.
-* `configs` - A list of Logtail Config Entries. Each element contains the following attributes:
-  * `logtail_config_name` - The name of the resource
-  * `id` - The ID of the resource supplied above.
+* `configs` - A list of Logtail Config Entries.
+
+---
+
+### `configs`
+
+The configs supports the following attributes:
+
+* `logtail_config_name` - The name of the resource
+* `id` - The ID of the resource supplied above.

@@ -95,6 +95,8 @@ The following arguments are supported:
 * `cross_account_user_id` - (Optional, ForceNew, Available since v1.199.0) The original account ID of the cross account backup managed by the current account.
 * `cross_account_role_name` - (Optional, ForceNew, Available since v1.199.0) The role name created in the original account RAM backup by the cross account managed by the current account.
 
+---
+
 ### `detail`
 
 The `detail` supports the following:
@@ -107,8 +109,12 @@ The `detail` supports the following:
 * `timeout_in_seconds` - (Optional) Only the Linux system is valid, and the IO freeze timeout period. The default is 30 seconds.
 * `disk_id_list` - (Optional) The list of cloud disks to be backed up in the ECS instance. When not specified, a snapshot is executed for all the disks on the ECS instance.
 * `do_copy` - (Optional) Whether replicate to another region. Valid values: `true`, `false`.
-* `destination_region_id` - (Optional) Only vaild when DoCopy is true. The destination region ID when replicating to another region. **Note:** Once you set a value of this property, you cannot set it to an empty string anymore.
-* `destination_retention` - (Optional) Only vaild when DoCopy is true. The retention days of the destination backup. When not specified, the destination backup will be saved permanently. **Note:** Once you set a value of this property, you cannot set it to an empty string anymore.
+* `destination_region_id` - (Optional) Only vaild when DoCopy is true. The destination region ID when replicating to another region.
+
+  -> **NOTE:** Once you set a value of this property, you cannot set it to an empty string anymore.
+* `destination_retention` - (Optional) Only vaild when DoCopy is true. The retention days of the destination backup. When not specified, the destination backup will be saved permanently.
+
+  -> **NOTE:** Once you set a value of this property, you cannot set it to an empty string anymore.
 
 ## Attributes Reference
 

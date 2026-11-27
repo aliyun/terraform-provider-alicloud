@@ -56,16 +56,23 @@ The following attributes are exported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Express Connect Router names.
-* `routers` - A list of Express Connect Routers. Each element contains the following attributes:
-  * `id` - The ID of the Express Connect Router.
-  * `ecr_id` - The ID of ECR.
-  * `ecr_name` - The name of ECR.
-  * `description` - The description of the ECR instance.
-  * `owner_id` - The ID of the Alibaba Cloud account to which the ECR belongs.
-  * `resource_group_id` - The ID of the resource group to which the ECR instance belongs.
-  * `alibaba_side_asn` - The ASN of the ECR instance.
-  * `biz_status` - The business status of the service instance.
-  * `status` - The deployment status of the service instance.
-  * `create_time` - The time when the ECR was created.
-  * `modify_time` - The time when the ECR was modified.
-  * `tags` - A mapping of tags to assign to the resource.
+* `routers` - A list of Express Connect Routers.
+
+---
+
+### `routers`
+
+The routers supports the following attributes:
+
+* `id` - The ID of the Express Connect Router.
+* `ecr_id` - The ID of ECR.
+* `ecr_name` - The name of ECR.
+* `description` - The description of the ECR instance.
+* `owner_id` - The ID of the Alibaba Cloud account to which the ECR belongs.
+* `resource_group_id` - The ID of the resource group to which the ECR instance belongs.
+* `alibaba_side_asn` - The ASN of the ECR instance.
+* `biz_status` - The business status of the service instance.
+* `status` - The deployment status of the service instance.
+* `create_time` - The time when the ECR was created.
+* `modify_time` - The time when the ECR was modified.
+* `tags` - A mapping of tags to assign to the resource.

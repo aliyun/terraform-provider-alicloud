@@ -97,14 +97,18 @@ func TestUnitIsExpectedErrors(t *testing.T) {
 		codes []string
 		want  bool
 	}{
-		"nil":              {err: nil, codes: []string{"NotFound"}, want: false},
-		"teaExact":         {err: teaSDKError(400, "NotFound", "", ""), codes: []string{"NotFound"}, want: true},
-		"teaPrefix":        {err: teaSDKError(400, "NotFound", "", ""), codes: []string{"NotFound.Instance"}, want: true},
-		"teaDataContains":  {err: teaSDKError(400, "Error", "", "ResourceNotFound in data"), codes: []string{"ResourceNotFound"}, want: true},
-		"teaNoMatch":       {err: teaSDKError(400, "InvalidParameter", "", ""), codes: []string{"NotFound"}, want: false},
-		"plainContains":    {err: fmt.Errorf("Error: NotFound - Resource not found"), codes: []string{"NotFound"}, want: true},
-		"plainNoMatch":     {err: fmt.Errorf("Some error occurred"), codes: []string{"NotFound"}, want: false},
-		"multipleExpected": {err: teaSDKError(400, "Throttling", "", ""), codes: []string{"NotFound", "Throttling", "InvalidParameter"}, want: true},
+		"nil":             {err: nil, codes: []string{"NotFound"}, want: false},
+		"teaExact":        {err: teaSDKError(400, "NotFound", "", ""), codes: []string{"NotFound"}, want: true},
+		"teaPrefix":       {err: teaSDKError(400, "NotFound", "", ""), codes: []string{"NotFound.Instance"}, want: true},
+		"teaDataContains": {err: teaSDKError(400, "Error", "", "ResourceNotFound in data"), codes: []string{"ResourceNotFound"}, want: true},
+		"teaNoMatch":      {err: teaSDKError(400, "InvalidParameter", "", ""), codes: []string{"NotFound"}, want: false},
+		// A 4xx/5xx body without a business code decodes as an empty code; it
+		// must not satisfy the prefix rule and match every expected code.
+		"teaEmptyCodeNoMatch":      {err: teaSDKError(400, "", "request rejected", ""), codes: []string{"NotFound"}, want: false},
+		"teaEmptyCodeRetryNoMatch": {err: teaSDKError(503, "", "", ""), codes: []string{"Throttling", "ExceedingQuota"}, want: false},
+		"plainContains":            {err: fmt.Errorf("Error: NotFound - Resource not found"), codes: []string{"NotFound"}, want: true},
+		"plainNoMatch":             {err: fmt.Errorf("Some error occurred"), codes: []string{"NotFound"}, want: false},
+		"multipleExpected":         {err: teaSDKError(400, "Throttling", "", ""), codes: []string{"NotFound", "Throttling", "InvalidParameter"}, want: true},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {

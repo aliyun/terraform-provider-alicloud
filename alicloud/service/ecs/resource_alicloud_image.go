@@ -573,9 +573,7 @@ func resourceAliCloudEcsImageDelete(d *schema.ResourceData, meta interface{}) er
 			request.RegionId = ecsService.client.RegionId
 			request.SnapshotId = item.SnapshotId
 			request.Force = requests.NewBoolean(true)
-			raw, err := ecsService.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DeleteSnapshot(request)
-			})
+			raw, err := ecsService.client.EcsSdkRpc(request, ecs.CreateDeleteSnapshotResponse())
 			if err != nil {
 				errs[item.SnapshotId] = err
 			}

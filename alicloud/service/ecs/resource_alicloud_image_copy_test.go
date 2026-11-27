@@ -41,11 +41,15 @@ func TestAccAliCloudECSImageCopyBasic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"provider":         "alicloud.sh",
-					"source_image_id":  "${alicloud_image.default.id}",
-					"source_region_id": os.Getenv("ALICLOUD_REGION"),
-					"description":      fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
-					"image_name":       name,
+					"provider":             "alicloud.sh",
+					"source_image_id":      "${alicloud_image.default.id}",
+					"source_region_id":     os.Getenv("ALICLOUD_REGION"),
+					"description":          fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
+					"image_name":           name,
+					"encrypted":            "false",
+					"kms_key_id":           "",
+					"force":                "false",
+					"delete_auto_snapshot": "false",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test123",
@@ -63,8 +67,14 @@ func TestAccAliCloudECSImageCopyBasic(t *testing.T) {
 				),
 			},
 			{
+				// force and delete_auto_snapshot only take effect at delete
+				// time (updateImage acts on description/name/image_name only),
+				// so flipping them to true here covers their update semantics
+				// without any image-mutating API call.
 				Config: testAccConfig(map[string]interface{}{
-					"description": fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescriptionChange", rand),
+					"description":          fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescriptionChange", rand),
+					"force":                "true",
+					"delete_auto_snapshot": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckECSImageCopyExistsWithProviders(resourceId, &v, &providers),

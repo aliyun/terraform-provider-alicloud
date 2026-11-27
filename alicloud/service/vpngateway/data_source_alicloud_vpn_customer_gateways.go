@@ -91,9 +91,7 @@ func dataSourceAlicloudVpnCgwsRead(d *schema.ResourceData, meta interface{}) err
 	var allCgws []vpc.CustomerGateway
 
 	for {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeCustomerGateways(request)
-		})
+		raw, err := client.VpcSdkRpc(request, vpc.CreateDescribeCustomerGatewaysResponse())
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "aliclioud_vpn_customer_gateways", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}

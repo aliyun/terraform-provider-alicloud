@@ -154,6 +154,8 @@ The following arguments are supported:
 * `notification_settings` - (Required, List) Alarm notification settings See [`notification_settings`](#notification_settings) below.
 * `trigger_conditions` - (Required, List) Alarm trigger condition list, supporting multiple conditions See [`trigger_conditions`](#trigger_conditions) below.
 
+---
+
 ### `notification_settings`
 
 The notification_settings supports the following:
@@ -161,6 +163,8 @@ The notification_settings supports the following:
 * `inhibition_interval` - (Optional, Int) Alarm suppression interval, in minutes
 * `notification_channels` - (Optional, List) Alarm notification Channel See [`notification_channels`](#notification_settings-notification_channels) below.
 * `notification_receivers` - (Optional, List) List of alert notification recipients See [`notification_receivers`](#notification_settings-notification_receivers) below.
+
+---
 
 ### `notification_settings-notification_channels`
 
@@ -181,12 +185,16 @@ The notification_settings-notification_channels supports the following:
 
   Critical
 
+---
+
 ### `notification_settings-notification_receivers`
 
 The notification_settings-notification_receivers supports the following:
 
 * `receiver_type` - (Optional) The type of the receiver. Valid values: AliyunUid/DingToken/FeishuToken/WebHookUrl.
 * `receiver_values` - (Optional, List) Receiver Value List
+
+---
 
 ### `trigger_conditions`
 
@@ -216,7 +224,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Di Alarm Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Di Alarm Rule.

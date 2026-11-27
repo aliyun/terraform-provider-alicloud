@@ -33,26 +33,40 @@ output "first_event_bridge_rule_id" {
 
 The following arguments are supported:
 
-* `event_bus_name` - (Required, ForceNew) The name of event bus.
-* `ids` - (Optional, ForceNew, Computed)  A list of Rule IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Rule name.
+* `event_bus_name` - (Required) The name of event bus.
+* `ids` - (Optional, Computed)  A list of Rule IDs.
+* `name_regex` - (Optional) A regex string to filter results by Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `rule_name_prefix` - (Optional, ForceNew) The rule name prefix.
-* `status` - (Optional, ForceNew) Rule status, either Enable or Disable. Valid values: `DISABLE`, `ENABLE`.
+* `rule_name_prefix` - (Optional) The rule name prefix.
+* `status` - (Optional) Rule status, either Enable or Disable. Valid values: `DISABLE`, `ENABLE`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Rule names.
-* `rules` - A list of Event Bridge Rules. Each element contains the following attributes:
-  * `description` - The description of rule.
-  * `event_bus_name` - The name of event bus.
-  * `filter_pattern` - The pattern to match interested events.
-  * `id` - The ID of the Rule.
-  * `rule_name` - The name of rule.
-  * `status` - Rule status, either Enable or Disable.
-  * `targets` - The target for rule.
-    * `endpoint` - The endpoint.
-    * `target_id` - The id of target.
-    * `type` - The type of target.
+* `rules` - A list of Event Bridge Rules.
+
+---
+
+### `rules`
+
+The rules supports the following attributes:
+
+* `description` - The description of rule.
+* `event_bus_name` - The name of event bus.
+* `filter_pattern` - The pattern to match interested events.
+* `id` - The ID of the Rule.
+* `rule_name` - The name of rule.
+* `status` - Rule status, either Enable or Disable.
+* `targets` - The target for rule.
+
+---
+
+### `rules.targets`
+
+The targets supports the following attributes:
+
+* `endpoint` - The endpoint.
+* `target_id` - The id of target.
+* `type` - The type of target.

@@ -39,31 +39,45 @@ output "dcdn_ipa_domain_id_2" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `domain_name` - (Optional, ForceNew) The name of the Domain.
-* `ids` - (Optional, ForceNew, Computed)  A list of Ipa Domain IDs.
+* `domain_name` - (Optional) The name of the Domain.
+* `ids` - (Optional, Computed)  A list of Ipa Domain IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the accelerated domain name. Valid values: `check_failed`, `checking`, `configure_failed`, `configuring`, `offline`, `online`.
+* `status` - (Optional) The status of the accelerated domain name. Valid values: `check_failed`, `checking`, `configure_failed`, `configuring`, `offline`, `online`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Dcdn Ipa Domain names.
-* `domains` - A list of Dcdn Ipa Domains. Each element contains the following attributes:
-  * `cert_name` - CertName.
-  * `cname` - The CNAME assigned to the domain name.
-  * `create_time` - The time when the accelerated domain name was created.
-  * `description` - The description.
-  * `domain_name` - The accelerated domain names.
-  * `id` - The ID of the Ipa Domain.
-  * `resource_group_id` - The ID of the resource group.
-  * `scope` - The accelerated region.
-  * `sources` - The information about the origin server.
-    * `priority` - The priority of the origin server if multiple origin servers are specified.
-    * `type` - The type of the origin server.
-    * `weight` - The weight of the origin server if multiple origin servers are specified.
-    * `content` - The address of the origin server.
-    * `port` - The custom port.
-  * `ssl_protocol` - Indicates whether the Security Socket Layer (SSL) certificate is enabled.
-  * `ssl_pub` - Indicates the public key of the certificate if the HTTPS protocol is enabled.
-  * `status` - The status of the accelerated domain name.
+* `domains` - A list of Dcdn Ipa Domains.
+
+---
+
+### `domains`
+
+The domains supports the following attributes:
+
+* `cert_name` - CertName.
+* `cname` - The CNAME assigned to the domain name.
+* `create_time` - The time when the accelerated domain name was created.
+* `description` - The description.
+* `domain_name` - The accelerated domain names.
+* `id` - The ID of the Ipa Domain.
+* `resource_group_id` - The ID of the resource group.
+* `scope` - The accelerated region.
+* `sources` - The information about the origin server.
+* `ssl_protocol` - Indicates whether the Security Socket Layer (SSL) certificate is enabled.
+* `ssl_pub` - Indicates the public key of the certificate if the HTTPS protocol is enabled.
+* `status` - The status of the accelerated domain name.
+
+---
+
+### `domains.sources`
+
+The sources supports the following attributes:
+
+* `priority` - The priority of the origin server if multiple origin servers are specified.
+* `type` - The type of the origin server.
+* `weight` - The weight of the origin server if multiple origin servers are specified.
+* `content` - The address of the origin server.
+* `port` - The custom port.

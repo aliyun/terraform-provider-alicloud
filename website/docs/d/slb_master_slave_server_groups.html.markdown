@@ -16,20 +16,30 @@ This data source provides the master slave server groups related to a server loa
 ## Example Usage
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_zones" "default" {
-  available_disk_category     = "cloud_efficiency"
+  available_disk_category     = "cloud_essd"
   available_resource_creation = "VSwitch"
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones[0].id
-  eni_amount        = 2
+  availability_zone    = data.alicloud_zones.default.zones[0].id
+  eni_amount           = 2
+  system_disk_category = "cloud_essd"
 }
 
 data "alicloud_images" "image" {
-  name_regex  = "^ubuntu_18.*64"
-  most_recent = true
-  owners      = "system"
+  instance_type = data.alicloud_instance_types.default.instance_types[0].id
+  name_regex    = "^ubuntu_18.*64"
+  most_recent   = true
+  owners        = "system"
 }
 
 variable "name" {
@@ -67,7 +77,7 @@ resource "alicloud_instance" "instance" {
   internet_max_bandwidth_out = "10"
   availability_zone          = data.alicloud_zones.default.zones[0].id
   instance_charge_type       = "PostPaid"
-  system_disk_category       = "cloud_efficiency"
+  system_disk_category       = "cloud_essd"
   vswitch_id                 = alicloud_vswitch.main.id
 }
 
@@ -98,6 +108,7 @@ resource "alicloud_slb_master_slave_server_group" "group" {
 
 data "alicloud_slb_master_slave_server_groups" "sample_ds" {
   load_balancer_id = alicloud_slb_load_balancer.instance.id
+  ids              = [alicloud_slb_master_slave_server_group.group.id]
 }
 
 output "first_slb_server_group_id" {
@@ -120,11 +131,26 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of SLB master slave server groups IDs.
 * `names` - A list of SLB master slave server groups names.
-* `groups` - A list of SLB master slave server groups. Each element contains the following attributes:
-  * `id` - master slave server group ID.
-  * `name` - master slave server group name.
-  * `servers` - ECS instances associated to the group. Each element contains the following attributes:
-    * `instance_id` - ID of the attached ECS instance.
-    * `weight` - Weight associated to the ECS instance.
-    * `port` - The port used by the master slave server group.
-    * `server_type` - The server type of the attached ECS instance.
+* `groups` - A list of SLB master slave server groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `id` - master slave server group ID.
+* `name` - master slave server group name.
+* `servers` - ECS instances associated to the group.
+
+---
+
+### `groups.servers`
+
+The servers supports the following attributes:
+
+* `instance_id` - ID of the attached ECS instance.
+* `weight` - Weight associated to the ECS instance.
+* `port` - The port used by the master slave server group.
+* `server_type` - The server type of the attached ECS instance.
+* `description` - (String) The description of the backend server. Available since v2.4.0.

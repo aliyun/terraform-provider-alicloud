@@ -61,6 +61,8 @@ The following arguments are supported:
 * `labels` - (Optional, Set, Available since v2.1.0) Labels are tags of the experiment. See [`labels`](#labels) below.
 * `workspace_id` - (Required, ForceNew) WorkspaceId is the workspace id which contains the experiment
 
+---
+
 ### `labels`
 
 The labels supports the following:
@@ -77,7 +79,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Experiment.
 * `delete` - (Defaults to 5 mins) Used when delete the Experiment.

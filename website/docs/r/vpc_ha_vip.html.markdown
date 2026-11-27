@@ -74,14 +74,9 @@ resource "alicloud_vpc_ha_vip" "default" {
 
 The following arguments are supported:
 
-* `associated_instance_type` - (Optional, Computed) The type of the instance that is bound to the HaVip. Value:
-  - `EcsInstance`: ECS instance.
-  - `NetworkInterface`: ENI instance.
-* `associated_instances` - (Optional, Computed, List) The ID of the ECS instance to be associated with the HAVIP.
 * `description` - (Optional) The description of the HAVIP. The description must be 1 to 255 characters in length and cannot start with `http://` or `https://`.
 * `ha_vip_name` - (Optional, Computed) The name of the HAVIP. The name must be 1 to 128 characters in length, and cannot start with `http://` or `https://`.
 * `ip_address` - (Optional, ForceNew, Computed) The IP address of the HAVIP. The specified IP address must be an idle IP address that falls within the CIDR block of the vSwitch. If this parameter is not set, an idle IP address from the CIDR block of the vSwitch is randomly assigned to the HAVIP.
-* `master_instance_id` - (Optional, Computed) The primary instance ID bound to HaVip
 * `resource_group_id` - (Optional, Computed) The ID of the resource group to which the HAVIP belongs.
 * `tags` - (Optional, Map) The tags of HaVip.
 * `vswitch_id` - (Required, ForceNew) The switch ID to which the HaVip instance belongs
@@ -100,10 +95,15 @@ The following attributes are exported:
 * `ha_vip_id` - The ID of the HaVip instance.
 * `status` - The status of this resource instance.
 * `vpc_id` - The VPC ID to which the HaVip instance belongs
+* `associated_instance_type` - (Computed) The type of the instance that is bound to the HaVip. Value:
+  - `EcsInstance`: ECS instance.
+  - `NetworkInterface`: ENI instance.
+* `associated_instances` - (Computed, List) The ID of the ECS instance to be associated with the HAVIP.
+* `master_instance_id` - (Computed) The primary instance ID bound to HaVip
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Ha Vip.
 * `delete` - (Defaults to 5 mins) Used when delete the Ha Vip.

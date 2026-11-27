@@ -121,7 +121,9 @@ The following arguments are supported:
 * `audit_status` - (Optional)  Whether to enable the log auditing feature. Valid values: `0`, `1`.
 * `engine_type` - (Optional, ForceNew) The type of the database. Valid values: `MySQL`, `SQLServer`.
 * `lang` - (Optional) The lang.
-* `log_store_day` - (Optional, ForceNew) The retention period of raw logs after you enable the log auditing feature. Unit: day. Valid values: `180`, `30`, `365`, `90`. **NOTE:** The`log_store_day` is valid when the `audit_status` is `1`.
+* `log_store_day` - (Optional, ForceNew) The retention period of raw logs after you enable the log auditing feature. Unit: day. Valid values: `180`, `30`, `365`, `90`.
+
+  -> **NOTE:** The`log_store_day` is valid when the `audit_status` is `1`.
 * `parent_id` - (Optional, ForceNew) The ID of the data asset.
 * `password` - (Optional, ForceNew) The password that is used to connect to the database.
 * `port` - (Optional, ForceNew) The port that is used to connect to the database.

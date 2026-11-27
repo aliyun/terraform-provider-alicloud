@@ -26,7 +26,7 @@ after creating cluster successfully, and you can put them into the specified loc
 
 -> **NOTE:** From version 1.20.0, the provider supports disabling internet load balancer for API Server by setting `false` to `slb_internet_enabled`.
 
--> **NOTE:** If you want to manage Kubernetes, you can use [Kubernetes Provider](https://www.terraform.io/docs/providers/kubernetes/index.html).
+-> **NOTE:** If you want to manage Kubernetes, you can use [Kubernetes Provider](https://registry.terraform.io/providers/hashicorp/kubernetes/latest).
 
 -> **NOTE:** You need to activate several other products and confirm Authorization Policy used by Container Service before using this resource.
 Please refer to the `Authorization management` and `Cluster management` sections in the [Document Center](https://www.alibabacloud.com/help/doc-detail/86488.htm).
@@ -461,7 +461,7 @@ Global params
   * If block rules are configured in the security group, ensure the security group rules allow traffic for protocols and ports required by the cluster. For recommended security group rules, see [Configure and manage security groups for an ACK cluster](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/user-guide/configure-security-group-rules-to-enforce-access-control-on-ack-clusters).
   * During security group updates, the cluster control plane and managed components (e.g., terway-controlplane) will restart briefly. Perform this operation during off-peak hours.
   * After updating the control plane security group, the Elastic Network Interfaces (ENIs) used by the control plane and managed components will automatically join the new security group.
-* `is_enterprise_security_group` - (Optional, ForceNew, Available since v1.91.0) Enable to create advanced security group. default: false. Only works for **Create** Operation. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
+* `is_enterprise_security_group` - (Optional, Available since v1.91.0) Enable to create advanced security group. default: false. Only works for **Create** Operation. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
 * `proxy_mode` - (Optional, ForceNew) kube-proxy proxy mode. Default: `ipvs`. Options: `iptables`, `ipvs`, `nftables`.
   * `iptables`: A mature and stable kube-proxy mode. Kubernetes Service discovery and load balancing use iptables rules. Performance is moderate and scales poorly with large numbers of Services. Suitable for clusters with few Services.
   * `ipvs`: A high-performance kube-proxy mode. Kubernetes Service discovery and load balancing use the Linux IPVS module. Suitable for clusters with many Services requiring high-performance load balancing.
@@ -493,10 +493,10 @@ Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes com
   * `Acs`: ACS cluster.
 * `encryption_provider_key` - (Optional, Available since v1.103.2) The ID of the Key Management Service (KMS) key that is used to encrypt Kubernetes Secrets.
 
-  -> **Note:** To enable encryption, you must specify both `encryption_provider_key` and `disable_encryption = false`. When `disable_encryption` is set to `true`, changes to `encryption_provider_key` will be ignored.
+  -> **NOTE:** To enable encryption, you must specify both `encryption_provider_key` and `disable_encryption = false`. When `disable_encryption` is set to `true`, changes to `encryption_provider_key` will be ignored.
 * `disable_encryption` - (Optional, Computed, Available since v1.275.0) Whether to disable encryption for Kubernetes Secrets. Default value is `false`. Set to `true` to disable encryption.
 
-  -> **Note:** When enabling encryption, you must explicitly set `disable_encryption = false` along with `encryption_provider_key`. When disabling encryption, you only need to set `disable_encryption = true`, and the `encryption_provider_key` will be ignored.
+  -> **NOTE:** When enabling encryption, you must explicitly set `disable_encryption = false` along with `encryption_provider_key`. When disabling encryption, you only need to set `disable_encryption = true`, and the `encryption_provider_key` will be ignored.
 * `maintenance_window` - (Optional, Available since v1.109.1) The cluster maintenance window. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
 * `operation_policy` - (Optional, Available since v1.232.0) The cluster automatic operation policy, only works when `maintenance_window` is enabled. See [`operation_policy`](#operation_policy) below.
 * `load_balancer_spec` - (Optional, Deprecated since v1.232.0) The cluster api server load balancer instance specification. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html). Only works for **Create** Operation. The spec will not take effect because the charge of the load balancer has been changed to PayByCLCU.
@@ -535,6 +535,8 @@ Computed params
 * `client_key` - (Optional, Deprecated  from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.client_key](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#client_key) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/client-key.pem) for replace it.
 * `cluster_ca_cert` - (Optional, Deprecated  from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.cluster_cert](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#cluster_cert) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.
 
+---
+
 ### `maintenance_window`
 
 The following arguments are supported in the `maintenance_window` configuration block:
@@ -555,9 +557,13 @@ for example:
   }
 ```
 
+---
+
 ### `operation_policy`
 
 * `cluster_auto_upgrade` - (Optional) Automatic cluster upgrade policy. See [`cluster_auto_upgrade`](#operation_policy-cluster_auto_upgrade) below.
+
+---
 
 ### `operation_policy-cluster_auto_upgrade`
 
@@ -577,6 +583,8 @@ for example:
   }
 ```
 
+---
+
 ### `audit_log_config`
 
 Audit log config. If `enabled` is set to `true`, a Logstore is created in the specified Simple Log Service project(SLS) to store cluster audit logs.  
@@ -584,11 +592,15 @@ Audit log config. If `enabled` is set to `true`, a Logstore is created in the sp
 * `enabled` - (Optional) Whether to enable audit logging. Valid values: `true`, `false`.
 * `sls_project_name` - (Optional) The SLS project to which the Logstore storing the cluster audit logs belongs.
 
+---
+
 ### `auto_mode`
 
 Auto mode cluster config.
 
 * `enabled` - (Optional, ForceNew) Whether to enable auto mode. Valid values: `true`, `false`. Only ACK managed Pro clusters support Auto Mode.
+
+---
 
 ### `control_plane_endpoints_config`
 
@@ -596,6 +608,8 @@ The cluster access configuration.
 
 * `load_balancers_config` - (Optional, Computed) The load balancing configuration for cluster access. See [`load_balancers_config`](#control_plane_endpoints_config-load_balancers_config) below.
 * `internal_dns_config` - (Optional, Computed) The cluster internal domain name configuration, applicable to ACK managed clusters. See [`internal_dns_config`](#control_plane_endpoints_config-internal_dns_config) below.
+
+---
 
 ### `control_plane_endpoints_config-load_balancers_config`
 
@@ -605,10 +619,14 @@ The cluster access configuration.
 * `endpoint_type` - (Optional, Computed) The endpoint type. Valid values: `private`, `public`.
 * `endpoint` - (Computed) The access address.
 
+---
+
 ### `control_plane_endpoints_config-internal_dns_config`
 
 * `bind_vpcs` - (Optional, Computed) The list of VPCs where the API Server access domain name takes effect. By default, the VPC of the cluster is included.
 * `enabled` - (Optional, Computed) Whether to enable the cluster internal domain name access. When enabled, node-side components (kubelet, kube-proxy) access the API Server through the cluster internal domain name. This field can only be set on update, not on create.
+
+---
 
 ### `upgrade_policy`
 
@@ -629,6 +647,8 @@ for example:
 
 -> **NOTE:** After the upgrade completes, you may remove the `upgrade_policy` block from your configuration to prevent unintended re-upgrades on subsequent applies.
 
+---
+
 ### `addons`
 
 The following arguments are supported in the `addons` configuration block:
@@ -646,12 +666,9 @@ You can get more information about addons on ACK web console. When you create a 
 
 `nginx-ingress-controller` - You can specific `IngressSlbNetworkType` in config. Options: internet|intranet.
 
-The `main.tf`:
+Add the following `dynamic` block to the `alicloud_cs_managed_kubernetes` resource in your `main.tf`:
 
 ```text
-resource "alicloud_cs_managed_kubernetes" "k8s" {
-  # ... other configuration ...
-
   dynamic "addons" {
     for_each = var.cluster_addons
     content {
@@ -661,164 +678,72 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
       disabled = lookup(addons.value, "disabled", var.cluster_addons)
     }
   }
-}
 ```
 
-The `varibales.tf`:
+The `cluster_addons` variable is declared in `variables.tf` as a `list(object({ name = string, config = string }))`. It needs one network plugin and one storage plugin, plus the optional components you use:
 
 ```text
-# Network-flannel is required, Conflicts With Network-terway
-variable "cluster_addons" {
-  description = "Addon components in kubernetes cluster"
-
-  type = list(object({
-    name      = string
-    config    = string
-  }))
-
-  default = [
+  cluster_addons = [
     {
-      "name"     = "flannel",
-      "config"   = "",
-    }
-  ]
-}
-
-# Network-terway is required, Conflicts With Network-flannel
-variable "cluster_addons" {
-  type = list(object({
-    name      = string
-    config    = string
-  }))
-
-  default = [
-    {
-      "name"     = "terway-eniip",
-      "config"   = "",
-    }
-  ]
-}
-
-# Storage-csi is required, Conflicts With Storage-flexvolume
-variable "cluster_addons" {
-  type = list(object({
-    name      = string
-    config    = string
-  }))
-
-  default = [
-    {
-      "name"     = "csi-plugin",
-      "config"   = "",
+      name   = "flannel"
+      config = ""
     },
     {
-      "name"     = "csi-provisioner",
-      "config"   = "",
-    }
-  ]
-}
-
-# Storage-flexvolume is required, Conflicts With Storage-csi
-variable "cluster_addons" {
-  type = list(object({
-    name      = string
-    config    = string
-  }))
-  default = [
+      name   = "csi-plugin"
+      config = ""
+    },
     {
-      "name"     = "flexvolume",
-      "config"   = "",
-    }
+      name   = "csi-provisioner"
+      config = ""
+    },
   ]
-}
-
-# Log, Optional
-variable "cluster_addons" {
-  type = list(object({
-    name      = string
-    config    = string
-  }))
-  default = [
-    {
-      "name"     = "logtail-ds",
-      "config"   = "{\"IngressDashboardEnabled\":\"true\",\"sls_project_name\":\"your-sls-project-name\"}",
-    }
-  ]
-}
-
-# Ingress,Optional
-variable "cluster_addons" {
-  type = list(object({
-    name      = string
-    config    = string
-  }))
-
-  default = [
-    {
-      "name"     = "nginx-ingress-controller",
-      "config"   = "{\"IngressSlbNetworkType\":\"internet\"}",
-    }
-  ]
-}
-
-# Ingress-Disable, Optional
-variable "cluster_addons" {
-  type = list(object({
-      name      = string
-      config    = string
-      disabled  = bool
-  }))
-
-  default = [
-    {
-      "name"     = "nginx-ingress-controller",
-      "config"   = "",
-      "disabled": true,
-    }
-  ]
-
-# Prometheus, Optional.
-variable "cluster_addons" {
-  type = list(object({
-      name      = string
-      config    = string
-  }))
-
-  default = [
-    {
-      "name"     = "arms-prometheus",
-      "config"   = "",
-    }
-  ]
-}
-
-# Event Center, Optional.
-variable "cluster_addons" {
-  type = list(object({
-      name      = string
-      config    = string
-  }))
-  default = [
-    {
-      "name"     = "ack-node-problem-detector",
-      "config"   = "{\"sls_project_name\":\"\"}",
-    }
-  ]
-}
-# ACK default alert, Optional.
-variable "cluster_addons" {
-  type = list(object({
-      name      = string
-      config    = string
-  }))
-  default = [
-    {
-      "name"     = "alicloud-monitor-controller",
-      "config"   = "{\"group_contact_ids\":\"[159]\"}",
-    }
-  ]
-}
 ```
+
+`flannel` and `terway-eniip` conflict with each other, and so do the `csi-plugin`/`csi-provisioner` pair and `flexvolume`. Replace the network or storage entries above when your cluster uses the other plugin.
+
+Append the optional components to the same list:
+
+```text
+    # Logs.
+    {
+      name   = "logtail-ds"
+      config = "{\"IngressDashboardEnabled\":\"true\",\"sls_project_name\":\"your-sls-project-name\"}"
+    },
+    # Ingress. IngressSlbNetworkType is internet or intranet.
+    {
+      name   = "nginx-ingress-controller"
+      config = "{\"IngressSlbNetworkType\":\"internet\"}"
+    },
+    # Prometheus monitoring.
+    {
+      name   = "arms-prometheus"
+      config = ""
+    },
+    # Event center.
+    {
+      name   = "ack-node-problem-detector"
+      config = "{\"sls_project_name\":\"\"}"
+    },
+    # ACK default alert.
+    {
+      name   = "alicloud-monitor-controller"
+      config = "{\"group_contact_ids\":\"[159]\"}"
+    },
+```
+
+To disable the automatic installation of an addon, declare the object type with an extra `disabled = bool` and set it on that entry:
+
+```text
+  cluster_addons = [
+    {
+      name     = "nginx-ingress-controller"
+      config   = ""
+      disabled = true
+    },
+  ]
+```
+
+---
 
 ### tags
 
@@ -833,6 +758,8 @@ The following example is the definition of tags block. The type of this field is
     "name" = "tf"
   }
 ```
+
+---
 
 ### `delete_options`
 
@@ -883,25 +810,46 @@ The following attributes are exported:
 * `slb_id` - The ID of APIServer load balancer.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
 * `connections` - A list of kubernetes cluster connection information.
-  * `api_server_internet` - API Server Internet endpoint.
-  * `api_server_intranet` - API Server Intranet endpoint.
-  * `master_public_ip` - Master node SSH IP address.
-  * `service_domain` - Service Access Domain.
 * `worker_ram_role_name` - The RamRole Name attached to worker node.
 * `certificate_authority` - (List, Deprecated from v1.248.0) Nested attribute containing certificate authority data for your cluster. Please use the attribute [certificate_authority](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#certificate_authority) of new DataSource `alicloud_cs_cluster_credential` to replace it.
-  * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
-  * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
-  * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
 * `rrsa_metadata` - (Optional, Available since v1.185.0) Nested attribute containing RRSA related data for your cluster.
-  * `enabled` - Whether the RRSA feature has been enabled.
-  * `rrsa_oidc_issuer_url` - The issuer URL of RRSA OIDC Token.
-  * `ram_oidc_provider_name` - The name of OIDC Provider that was registered in RAM.
-  * `ram_oidc_provider_arn` -  The arn of OIDC provider that was registered in RAM.
+
+---
+
+### `connections`
+
+The connections supports the following attributes:
+
+* `api_server_internet` - API Server Internet endpoint.
+* `api_server_intranet` - API Server Intranet endpoint.
+* `master_public_ip` - Master node SSH IP address.
+* `service_domain` - Service Access Domain.
+
+---
+
+### `certificate_authority`
+
+The certificate_authority supports the following attributes:
+
+* `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
+* `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
+* `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
+
+---
+
+### `rrsa_metadata`
+
+The rrsa_metadata supports the following attributes:
+
+* `enabled` - Whether the RRSA feature has been enabled.
+* `rrsa_oidc_issuer_url` - The issuer URL of RRSA OIDC Token.
+* `ram_oidc_provider_name` - The name of OIDC Provider that was registered in RAM.
+* `ram_oidc_provider_arn` -  The arn of OIDC provider that was registered in RAM.
 
 ## Timeouts
 
 -> **NOTE:** Available since v1.58.0.
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 90 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status).
 * `update` - (Defaults to 60 mins) Used when activating the kubernetes cluster when necessary during update.

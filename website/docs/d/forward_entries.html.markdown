@@ -71,17 +71,17 @@ data "alicloud_forward_entries" "default" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew) A list of Forward Entries IDs.
-* `name_regex` - (Optional, ForceNew, Available since 1.44.0+) A regex string to filter results by forward entry name.
-* `external_ip` - (Optional, ForceNew) The public IP address.
-* `external_port` - (Optional, ForceNew) The public port.
-* `internal_ip` - (Optional, ForceNew) The private IP address.
-* `forward_table_id` - (Required, ForceNew) The ID of the Forward table.
+* `ids` - (Optional) A list of Forward Entries IDs.
+* `name_regex` - (Optional, Available since 1.44.0+) A regex string to filter results by forward entry name.
+* `external_ip` - (Optional) The public IP address.
+* `external_port` - (Optional) The public port.
+* `internal_ip` - (Optional) The private IP address.
+* `forward_table_id` - (Required) The ID of the Forward table.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `forward_entry_name` - (Optional, ForceNew, Available since 1.119.1+) The name of forward entry.
-* `internal_port` - (Optional, ForceNew, Available since 1.119.1+) The internal port.
-* `ip_protocol` - (Optional, ForceNew, Available since 1.119.1+) The ip protocol. Valid values: `any`,`tcp` and `udp`.
-* `status` - (Optional, ForceNew, Available since 1.119.1+) The status of forward entry. Valid values: `Available`, `Deleting` and `Pending`.
+* `forward_entry_name` - (Optional, Available since 1.119.1+) The name of forward entry.
+* `internal_port` - (Optional, Available since 1.119.1+) The internal port.
+* `ip_protocol` - (Optional, Available since 1.119.1+) The ip protocol. Valid values: `any`,`tcp` and `udp`.
+* `status` - (Optional, Available since 1.119.1+) The status of forward entry. Valid values: `Available`, `Deleting` and `Pending`.
 
 ## Attributes Reference
 
@@ -89,14 +89,21 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Forward Entries IDs.
 * `names` - A list of Forward Entries names.
-* `entries` - A list of Forward Entries. Each element contains the following attributes:
-  * `id` - The ID of the Forward Entry.
-  * `external_ip` - The public IP address.
-  * `external_port` - The public port.
-  * `ip_protocol` - The protocol type.
-  * `internal_ip` - The private IP address.
-  * `internal_port` - The private port.
-  * `name` - The forward entry name.
-  * `status` - The status of the Forward Entry.
-  * `forward_entry_id` - The forward entry ID.
-  * `forward_entry_name` - The name of forward entry.
+* `entries` - A list of Forward Entries.
+
+---
+
+### `entries`
+
+The entries supports the following attributes:
+
+* `id` - The ID of the Forward Entry.
+* `external_ip` - The public IP address.
+* `external_port` - The public port.
+* `ip_protocol` - The protocol type.
+* `internal_ip` - The private IP address.
+* `internal_port` - The private port.
+* `name` - The forward entry name.
+* `status` - The status of the Forward Entry.
+* `forward_entry_id` - The forward entry ID.
+* `forward_entry_name` - The name of forward entry.

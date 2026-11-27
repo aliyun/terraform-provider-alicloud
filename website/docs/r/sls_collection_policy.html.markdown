@@ -188,6 +188,8 @@ The following arguments are supported:
 
   -> **NOTE:** The SLS API does not support removing `resource_directory` from an existing policy. Removing the block from the configuration fails with an error, and subsequent plans keep showing the difference between the remote policy and the configuration until the block is added back or the policy is deleted and recreated.
 
+---
+
 ### `centralize_config`
 
 The centralize_config supports the following:
@@ -197,11 +199,15 @@ The centralize_config supports the following:
 * `dest_region` - (Optional) Destination region for centralized forwarding.
 * `dest_ttl` - (Optional, Int) Retention period (in days) for the destination Logstore in centralized forwarding. This setting takes effect only when the destination Logstore is created for the first time.
 
+---
+
 ### `data_config`
 
 The data_config supports the following:
 
 * `data_region` - (Optional, ForceNew) This parameter can be configured only when the log type is a global log type—for example, when productCode is sls. It indicates that global logs will be collected to the specified region upon initial configuration.
+
+---
 
 ### `policy_config`
 
@@ -213,6 +219,8 @@ The policy_config supports the following:
 * `resource_tags` - (Optional, Map) Resource tags. This parameter is valid only when resourceMode is set to attributeMode.  
 If the resource tag filter is empty, no filtering by resource tags is applied, and all instances satisfy the resource tag condition. Otherwise, only instances whose resource tag attributes fully match the specified resource tag configuration are collected.  
 Resource tags and the region set of the instance work together. An instance is collected only if it satisfies both conditions.
+
+---
 
 ### `resource_directory`
 
@@ -227,11 +235,18 @@ The following attributes are exported:
 
 * `id` - The ID of the resource supplied above.
 * `data_config` - This parameter can be configured only when the log type is a global log type—for example, when productCode is sls.
-  * `data_project` - This setting is valid only when the log type is a global log type—for example, when productCode is sls.
+
+---
+
+### `data_config`
+
+The data_config supports the following attributes:
+
+* `data_project` - This setting is valid only when the log type is a global log type—for example, when productCode is sls.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Collection Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Collection Policy.

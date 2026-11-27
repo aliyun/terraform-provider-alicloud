@@ -172,11 +172,13 @@ The following arguments are supported:
 * `http_endpoint` - (Optional) Whether to enable access to instance metadata. Valid values:
   - enabled: Enabled.
   - disabled: Disabled.
-**NOTE:** From version 1.260.0, `http_endpoint` can be modified.
+
+  -> **NOTE:** From version 1.260.0, `http_endpoint` can be modified.
 * `http_tokens` - (Optional) Whether to use the hardened mode (IMDSv2) when accessing instance metadata. Valid values:
   - optional: Not mandatory.
   - required: Mandatory. After this value is set, the normal mode cannot access instance metadata.
-**NOTE:** From version 1.260.0, `http_tokens` can be modified.
+
+  -> **NOTE:** From version 1.260.0, `http_tokens` can be modified.
 * `http_put_response_hop_limit` - (Optional) The HTTP PUT response hop limit required for instance metadata requests. Valid values: `1` to `64`.
 
   -> **NOTE:** From version 1.260.0, `http_put_response_hop_limit` can be modified.
@@ -194,6 +196,8 @@ The following arguments are supported:
 * `system_disk_size` - (Optional, Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
 * `system_disk_description` - (Optional, Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
 
+---
+
 ### `system_disk`
 
 The system_disk supports the following:
@@ -208,6 +212,8 @@ The system_disk supports the following:
 * `encrypted` - (Optional) Specifies whether the system disk is encrypted.
 * `kms_key_id` - (Optional, Available since v1.252.0) The ID of the KMS key to use for the system disk.
 
+---
+
 ### `network_interfaces`
 
 The network_interfaces supports the following:
@@ -218,6 +224,8 @@ The network_interfaces supports the following:
 * `security_group_id` - (Optional) The security group ID must be one in the same VPC.
 * `vswitch_id` - (Optional) The VSwitch ID for ENI. The instance must be in the same zone of the same VPC network as the ENI, but they may belong to different VSwitches.
 * `delete_on_release` - (Optional, Bool, Available since v1.245.0) Specifies whether to release ENI N when the instance is released. Valid values: `true`, `false`.
+
+---
 
 ### `data_disks`
 
@@ -233,6 +241,8 @@ The data_disks supports the following:
 * `snapshot_id` - (Optional) The snapshot ID used to initialize the data disk. If the size specified by snapshot is greater that the size of the disk, use the size specified by snapshot as the size of the data disk.
 * `device` - (Optional, Available since v1.230.1) The mount point of the data disk.
 * `kms_key_id` - (Optional, Available since v1.252.0) The ID of the KMS key used for the data disk.
+
+---
 
 ### `image_options`
 

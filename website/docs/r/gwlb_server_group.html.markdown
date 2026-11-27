@@ -161,6 +161,8 @@ The following arguments are supported:
 
   -> **NOTE:**  If `server_group_type` is set to `Instance`, only servers in the specified VPC can be added to the server group.
 
+---
+
 ### `connection_drain_config`
 
 The connection_drain_config supports the following:
@@ -176,6 +178,8 @@ The connection_drain_config supports the following:
   Valid values: `1` to `3600`.
 
   Default value: `300`.
+
+---
 
 ### `health_check_config`
 
@@ -236,6 +240,8 @@ The health_check_config supports the following:
 
   Default value: `2`.
 
+---
+
 ### `servers`
 
 The servers supports the following:
@@ -251,7 +257,7 @@ The servers supports the following:
   - `Eni`: elastic network interface (ENI)
   - `Eci`: elastic container instance
   - `Ip`: IP address
-* `port` - (Optional, Computed, Int) The port that is used by the backend server.
+* `port` - (Computed, Int) The port that is used by the backend server.
 * `server_group_id` - (Computed) The server group ID.
 * `status` - (Computed) Indicates the status of the backend server. Valid values:
 
@@ -268,15 +274,22 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the resource was created. The time follows the ISO 8601 standard in the **yyyy-MM-ddTHH:mm:ssZ** format. The time is displayed in UTC.
 * `draining_servers` - (Set, Available since v1.290.0) The backend servers that are being removed (in the `Draining` or `Removing` status).
-  * `server_id` - The backend server ID.
-  * `server_ip` - The IP address of the backend server.
-  * `server_type` - The type of the backend server. Valid values: `Ecs`, `Eni`, `Eci`, `Ip`.
-  * `status` - The status of the backend server. Valid values: `Draining`, `Removing`.
 * `status` - Indicates the status of the backend server.
+
+---
+
+### `draining_servers`
+
+The draining_servers supports the following attributes:
+
+* `server_id` - The backend server ID.
+* `server_ip` - The IP address of the backend server.
+* `server_type` - The type of the backend server. Valid values: `Ecs`, `Eni`, `Eci`, `Ip`.
+* `status` - The status of the backend server. Valid values: `Draining`, `Removing`.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Server Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Server Group.

@@ -5,6 +5,7 @@
   "MD012": true,
   "MD013": false,
   "MD014": false,
+  "MD024": { "siblings_only": true },
   "MD030": true,
   "MD032": false,
   "MD033": false,

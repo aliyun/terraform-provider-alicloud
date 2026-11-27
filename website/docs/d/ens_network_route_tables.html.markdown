@@ -61,14 +61,21 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of routing table names.
 * `ids` - A list of routing table IDs.
-* `tables` - A list of routing tables. Each element contains the following attributes:
-  * `id` - The ID of the routing table. Same as `route_table_id`.
-  * `route_table_id` - The ID of the routing table.
-  * `route_table_name` - The name of the routing table.
-  * `description` - The description of the routing table.
-  * `associate_type` - The binding type of the routing table.
-  * `network_id` - The network ID.
-  * `route_table_type` - The type of the routing table.
-  * `status` - The status of the routing table.
-  * `is_default_gateway_route_table` - Whether it is the default gateway route table.
-  * `create_time` - The creation time of the routing table.
+* `tables` - A list of routing tables.
+
+---
+
+### `tables`
+
+The tables supports the following attributes:
+
+* `id` - The ID of the routing table. Same as `route_table_id`.
+* `route_table_id` - The ID of the routing table.
+* `route_table_name` - The name of the routing table.
+* `description` - The description of the routing table.
+* `associate_type` - The binding type of the routing table.
+* `network_id` - The network ID.
+* `route_table_type` - The type of the routing table.
+* `status` - The status of the routing table.
+* `is_default_gateway_route_table` - Whether it is the default gateway route table.
+* `create_time` - The creation time of the routing table.

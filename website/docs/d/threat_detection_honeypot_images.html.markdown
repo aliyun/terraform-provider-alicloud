@@ -31,8 +31,8 @@ output "alicloud_threat_detection_honeypot_image_example_id" {
 The following arguments are supported:
 
 * `node_id` - (Optional) The id of the honeypot management node.
-* `ids` - (Optional, ForceNew, Computed) A list of Honeypot Image IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Honeypot mirror nam.
+* `ids` - (Optional, Computed) A list of Honeypot Image IDs.
+* `name_regex` - (Optional) A regex string to filter results by Honeypot mirror nam.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -41,14 +41,21 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Honeypot Image IDs.
 * `names` - A list of name of Honeypot Images.
-* `images` - A list of Honeypot Image Entries. Each element contains the following attributes:
-  * `id` - The image ID of the honeypot.The value is the same as `honeypot_image_id`.
-  * `honeypot_image_display_name` - The name of the honeypot image display.
-  * `honeypot_image_id` - The image ID of the honeypot.
-  * `honeypot_image_name` - Honeypot mirror name.
-  * `honeypot_image_type` - Honeypot mirror type.
-  * `honeypot_image_version` - Honeypot Mirror version.
-  * `multiports` - Ports supported by honeypots. In JSON format. Contains the following fields:-**log_type**: log type-**proto**: Support Protocol-**description**: description-**ports**: supports Port collection-**port_str**: supports port strings-**type**: type
-  * `proto` - Honeypot-supported protocols.
-  * `service_port` - Honeypot service port.
-  * `template` - Honeypot configuration parameter template.
+* `images` - A list of Honeypot Image Entries.
+
+---
+
+### `images`
+
+The images supports the following attributes:
+
+* `id` - The image ID of the honeypot.The value is the same as `honeypot_image_id`.
+* `honeypot_image_display_name` - The name of the honeypot image display.
+* `honeypot_image_id` - The image ID of the honeypot.
+* `honeypot_image_name` - Honeypot mirror name.
+* `honeypot_image_type` - Honeypot mirror type.
+* `honeypot_image_version` - Honeypot Mirror version.
+* `multiports` - Ports supported by honeypots. In JSON format. Contains the following fields:-**log_type**: log type-**proto**: Support Protocol-**description**: description-**ports**: supports Port collection-**port_str**: supports port strings-**type**: type
+* `proto` - Honeypot-supported protocols.
+* `service_port` - Honeypot service port.
+* `template` - Honeypot configuration parameter template.

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
@@ -132,6 +133,41 @@ func testSweepSLBs(region string) error {
 	return nil
 }
 
+func TestUnitLoadBalancerCreateRetryable(t *testing.T) {
+	for _, code := range []string{
+		"OperationFailed.TokenIsProcessing",
+		"SystemBusy",
+		"SDK.ServerUnreachable",
+		"QueryOrderError",
+		"CreateOrderTimeout",
+		"TradeSyncCreateSubError",
+	} {
+		t.Run(code, func(t *testing.T) {
+			err := &tea.SDKError{
+				Code:    tea.String(code),
+				Message: tea.String("please try again later"),
+				Data:    tea.String(""),
+			}
+			if !slb.LoadBalancerCreateRetryableForTest(err) {
+				t.Fatalf("CreateLoadBalancer error %s was not classified as retryable", code)
+			}
+		})
+	}
+
+	throttling := &tea.SDKError{Code: tea.String("Throttling"), Message: tea.String("rate limit"), Data: tea.String("")}
+	if !slb.LoadBalancerCreateRetryableForTest(throttling) {
+		t.Fatal("the existing NeedRetry classification was not preserved")
+	}
+
+	terminal := &tea.SDKError{Code: tea.String("InvalidParameter"), Message: tea.String("invalid input"), Data: tea.String("")}
+	if slb.LoadBalancerCreateRetryableForTest(terminal) {
+		t.Fatal("InvalidParameter must keep failing fast")
+	}
+	if slb.LoadBalancerCreateRetryableForTest(nil) {
+		t.Fatal("nil must not be classified as retryable")
+	}
+}
+
 func TestAccAliCloudSLBLoadBalancer_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_load_balancer.default"
@@ -175,10 +211,9 @@ func TestAccAliCloudSLBLoadBalancer_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"internet_charge_type": "PayByTraffic",
-					"payment_type":         "PayAsYouGo",
-					"period":               "2",
-					"bandwidth":            `5`,
+					"payment_type": "PayAsYouGo",
+					"period":       "2",
+					"bandwidth":    `5`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -282,6 +317,11 @@ func TestAccAliCloudSLBLoadBalancer_basic0(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_name":             "${var.name}",
 					"modification_protection_status": "ConsoleProtection",
@@ -301,6 +341,62 @@ func TestAccAliCloudSLBLoadBalancer_basic0(t *testing.T) {
 						"tags.%":                         "2",
 						"tags.Created":                   "TF-update",
 						"tags.For":                       "Test-update",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "1",
+						"tags.Created": "TF-update",
+						"tags.For":     NOSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": CLEARMAP,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": NOSET,
+						"tags.For":     NOSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// ModifyLoadBalancerInternetSpec: changing the public billing mode takes effect at
+				// 00:00 the next day, so the readback keeps PayByBandwidth during this test and the
+				// pending switch is expected in the plan. Under PayByTraffic the Bandwidth value is
+				// not applied either (CreateLoadBalancer), so no exact value is asserted.
+				ExpectNonEmptyPlan: true,
+				Config: testAccConfig(map[string]interface{}{
+					"internet_charge_type": "PayByTraffic",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth": CHECKSET,
 					}),
 				),
 			},
@@ -326,6 +422,7 @@ var AliCloudSlbLoadBalancerMap0 = map[string]string{
 	"instance_charge_type":           "PayBySpec",
 	"status":                         "active",
 	"tags.#":                         "0",
+	"vpc_id":                         "",
 	"vswitch_id":                     "",
 }
 
@@ -497,6 +594,7 @@ var AliCloudSlbLoadBalancerMap1 = map[string]string{
 	"load_balancer_spec":             "slb.s1.small",
 	"status":                         "active",
 	"tags.#":                         "0",
+	"vpc_id":                         CHECKSET,
 	"vswitch_id":                     CHECKSET,
 }
 
@@ -523,6 +621,127 @@ func AliCloudSlbLoadBalancerBasicDependence1(name string) string {
   		zone_id      = data.alicloud_slb_zones.default.zones.0.id
 	}
 `, name)
+}
+
+func AliCloudSlbLoadBalancerVpcDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_slb_zones" "default" {
+  available_slb_address_type = "vpc"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.192.0/24"
+  zone_id      = data.alicloud_slb_zones.default.zones.0.id
+}
+
+resource "alicloud_vpc" "default2" {
+  vpc_name   = "${var.name}-2"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default2" {
+  vswitch_name = "${var.name}-2"
+  vpc_id       = alicloud_vpc.default2.id
+  cidr_block   = "172.16.192.0/24"
+  zone_id      = data.alicloud_slb_zones.default.zones.0.id
+}
+`, name)
+}
+
+func TestAccAliCloudSLBLoadBalancer_vpcId(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_slb_load_balancer.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudSlbLoadBalancerMap1)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return slb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSlbLoadBalancer")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sslbloadbalancervpc%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudSlbLoadBalancerVpcDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"address_type":       "intranet",
+					"load_balancer_name": "${var.name}",
+					"load_balancer_spec": "slb.s1.small",
+					"vpc_id":             "${alicloud_vpc.default.id}",
+					"vswitch_id":         "${alicloud_vswitch.default.id}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"address_type":       "intranet",
+						"load_balancer_name": name,
+						"load_balancer_spec": "slb.s1.small",
+						"vpc_id":             CHECKSET,
+						"vswitch_id":         CHECKSET,
+						"tags.%":             "2",
+						"tags.Created":       "TF",
+						"tags.For":           "Test",
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "vpc_id", "alicloud_vpc.default", "id"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Switch to a vswitch of another VPC without configuring vpc_id again:
+				// the replacement must derive the VPC from the new vswitch.
+				Config: testAccConfig(map[string]interface{}{
+					"address_type":       "intranet",
+					"load_balancer_name": "${var.name}",
+					"load_balancer_spec": "slb.s1.small",
+					"vpc_id":             REMOVEKEY,
+					"vswitch_id":         "${alicloud_vswitch.default2.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"address_type":       "intranet",
+						"load_balancer_name": name,
+						"load_balancer_spec": "slb.s1.small",
+						"vpc_id":             CHECKSET,
+						"vswitch_id":         CHECKSET,
+						"tags.%":             "2",
+						"tags.Created":       "TF",
+						"tags.For":           "Test",
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "vpc_id", "alicloud_vpc.default2", "id"),
+					resource.TestCheckResourceAttrPair(resourceId, "vswitch_id", "alicloud_vswitch.default2", "id"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
 }
 
 func TestAccAliCloudSLBLoadBalancer_basic2(t *testing.T) {
@@ -552,12 +771,12 @@ func TestAccAliCloudSLBLoadBalancer_basic2(t *testing.T) {
 					"specification":                  "slb.s1.small",
 					"vswitch_id":                     "${alicloud_vswitch.default.id}",
 					"address":                        "${cidrhost(alicloud_vswitch.default.cidr_block, 1)}",
-					"master_zone_id":                 "${data.alicloud_slb_zones.default.zones.0.master_zone_id}",
+					"master_zone_id":                 "${local.slb_master_zone}",
 					"modification_protection_status": "ConsoleProtection",
 					"modification_protection_reason": name,
 					"payment_type":                   "PayAsYouGo",
 					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"slave_zone_id":                  "${data.alicloud_slb_zones.default.zones.0.slave_zone_id}",
+					"slave_zone_id":                  "${local.slb_slave_zone}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -664,9 +883,9 @@ func TestAccAliCloudSLBLoadBalancer_basic4(t *testing.T) {
 					"load_balancer_name":   name,
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
 					"address":              "${cidrhost(alicloud_vswitch.default.cidr_block, 1)}",
-					"master_zone_id":       "${data.alicloud_slb_zones.default.zones.0.master_zone_id}",
+					"master_zone_id":       "${local.slb_master_zone}",
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"slave_zone_id":        "${data.alicloud_slb_zones.default.zones.0.slave_zone_id}",
+					"slave_zone_id":        "${local.slb_slave_zone}",
 					"instance_charge_type": "PayByCLCU",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -819,13 +1038,14 @@ func AliCloudSlbLoadBalancerBasicDependence2(name string) string {
 	data "alicloud_resource_manager_resource_groups" "default" {
 	}
 
-	data "alicloud_zones" "default" {
-  		available_resource_creation = "VSwitch"
-	}
- 
 	data "alicloud_slb_zones" "default" {
 		available_slb_address_type = "vpc"
-		slave_zone_id = data.alicloud_zones.default.ids.0
+	}
+
+	locals {
+		slb_zone_pairs  = sort([for z in data.alicloud_slb_zones.default.zones : "${z.master_zone_id}|${z.slave_zone_id}" if z.slave_zone_id != ""])
+		slb_master_zone = split("|", local.slb_zone_pairs[0])[0]
+		slb_slave_zone  = split("|", local.slb_zone_pairs[0])[1]
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -837,7 +1057,7 @@ func AliCloudSlbLoadBalancerBasicDependence2(name string) string {
   		vswitch_name = var.name
   		vpc_id       = alicloud_vpc.default.id
   		cidr_block   = "192.168.192.0/24"
-  		zone_id      = data.alicloud_slb_zones.default.zones.0.id
+		zone_id      = local.slb_master_zone
 	}
 `, name)
 }

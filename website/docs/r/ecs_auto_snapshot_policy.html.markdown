@@ -70,12 +70,16 @@ The following arguments will be discarded. Please use new fields as soon as poss
 
 * `name` - (Deprecated since v1.236.0). Field `name` has been deprecated from provider version 1.236.0. New field `auto_snapshot_policy_name` instead.
 
+---
+
 ### `copy_encryption_configuration`
 
 The copy_encryption_configuration supports the following:
 
 * `encrypted` - (Optional, Bool) Whether to enable encryption for cross-region snapshot replication. Default value: `false`. Valid values: `true`, `false`.
 * `kms_key_id` - (Optional) The ID of the Key Management Service (KMS) key used to encrypt snapshots in cross-region snapshot replication.
+
+---
 
 ### `target_tags`
 
@@ -95,7 +99,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Auto Snapshot Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Auto Snapshot Policy.

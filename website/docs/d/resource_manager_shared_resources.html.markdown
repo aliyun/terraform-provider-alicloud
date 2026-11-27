@@ -66,18 +66,25 @@ output "second_resource_manager_shared_resource_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of shared resource IDs.
-* `resource_share_id` - (Optional, ForceNew) The resource share ID of resource manager.
-* `status` - (Optional, ForceNew) The status of share resource. Valid values: `Associated`, `Associating`, `Disassociated`, `Disassociating` and `Failed`.
+* `ids` - (Optional, List) A list of shared resource IDs.
+* `resource_share_id` - (Optional) The resource share ID of resource manager.
+* `status` - (Optional) The status of share resource. Valid values: `Associated`, `Associating`, `Disassociated`, `Disassociating` and `Failed`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `resources` - A list of Resource Manager Shared Resources. Each element contains the following attributes:
-  * `id` - The ID of the Shared Resource. It formats as `<resource_id>:<resource_type>`.
-  * `resource_id` - The ID of the shared resource.
-  * `resource_type` - The type of shared resource.
-  * `resource_share_id` - The resource share ID of resource manager.
-  * `status` - The status of shared resource.
+* `resources` - A list of Resource Manager Shared Resources.
+
+---
+
+### `resources`
+
+The resources supports the following attributes:
+
+* `id` - The ID of the Shared Resource. It formats as `<resource_id>:<resource_type>`.
+* `resource_id` - The ID of the shared resource.
+* `resource_type` - The type of shared resource.
+* `resource_share_id` - The resource share ID of resource manager.
+* `status` - The status of shared resource.

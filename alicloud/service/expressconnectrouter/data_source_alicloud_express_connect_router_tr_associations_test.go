@@ -114,6 +114,7 @@ func TestAccAliCloudExpressConnectRouterTrAssociationsDataSource_basic0(t *testi
 			"associations.0.transit_router_owner_id": acctest.CHECKSET,
 			"associations.0.cen_id":                  acctest.CHECKSET,
 			"associations.0.allowed_prefixes_mode":   acctest.CHECKSET,
+			"associations.0.description":             "tf-testacc-description",
 			"associations.0.status":                  acctest.CHECKSET,
 			"associations.0.create_time":             acctest.CHECKSET,
 			"associations.0.modify_time":             acctest.CHECKSET,
@@ -173,6 +174,7 @@ resource "alicloud_express_connect_router_tr_association" "default" {
   transit_router_owner_id = data.alicloud_account.default.id
   association_region_id   = data.alicloud_regions.default.regions.0.id
   allowed_prefixes        = ["10.0.0.0/24", "10.0.1.0/24", "10.0.2.0/24"]
+  description             = "tf-testacc-description"
 }
 `, name)
 }

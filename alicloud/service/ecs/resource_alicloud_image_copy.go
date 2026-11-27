@@ -99,9 +99,7 @@ func resourceAliCloudImageCopyCreate(d *schema.ResourceData, meta interface{}) e
 		request.Tag = &imageTags
 	}
 
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.CopyImage(request)
-	})
+	raw, err := client.EcsSdkRpc(request, ecs.CreateCopyImageResponse())
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_image_copy", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
