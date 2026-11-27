@@ -228,6 +228,10 @@ func resourceAliCloudSaeApplication() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"oidc_role_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"programming_language": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -972,6 +976,10 @@ func resourceAliCloudSaeApplicationCreate(d *schema.ResourceData, meta interface
 		request["ImagePullSecrets"] = helper.StringPointer(v.(string))
 	}
 
+	if v, ok := d.GetOk("oidc_role_name"); ok {
+		request["OidcRoleName"] = helper.StringPointer(v.(string))
+	}
+
 	if v, ok := d.GetOk("programming_language"); ok {
 		request["ProgrammingLanguage"] = helper.StringPointer(v.(string))
 	}
@@ -1550,6 +1558,7 @@ func resourceAliCloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 	d.Set("micro_registration", object["MicroRegistration"])
 	d.Set("php", object["Php"])
 	d.Set("image_pull_secrets", object["ImagePullSecrets"])
+	d.Set("oidc_role_name", object["OidcRoleName"])
 	d.Set("programming_language", object["ProgrammingLanguage"])
 	d.Set("command_args", object["CommandArgs"])
 	d.Set("envs", object["Envs"])
@@ -2467,6 +2476,20 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 	}
 	if v, ok := d.GetOk("image_pull_secrets"); ok {
 		deployApplicationReq["ImagePullSecrets"] = helper.StringPointer(v.(string))
+	}
+
+	if !d.IsNewResource() && d.HasChange("oidc_role_name") {
+		update = true
+	}
+	if v, ok := d.GetOk("oidc_role_name"); ok {
+		deployApplicationReq["OidcRoleName"] = helper.StringPointer(v.(string))
+	} else if !d.IsNewResource() && d.HasChange("oidc_role_name") {
+		// DeployApplication keeps the current OidcRoleName when the parameter
+		// is omitted (partial-update semantics, verified by the removal
+		// TestAcc: an update without OidcRoleName left the role set and the
+		// plan never converged). Removing the field therefore sends an
+		// explicit empty value to clear the server-side role association.
+		deployApplicationReq["OidcRoleName"] = helper.StringPointer("")
 	}
 
 	if !d.IsNewResource() && d.HasChange("command_args_v2") {

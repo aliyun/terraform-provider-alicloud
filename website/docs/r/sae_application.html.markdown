@@ -163,6 +163,7 @@ The following arguments are supported:
   -> **NOTE:** Projects that are automatically created with applications will be deleted along with the application deletion. Therefore, when selecting existing projects, you cannot choose projects automatically created by SAE.
 * `php` - (Optional, Available since v1.211.0) The Php environment.
 * `image_pull_secrets` - (Optional, Available since v1.211.0) The ID of the corresponding Secret.
+* `oidc_role_name` - (Optional, String, Available since v2.4.0) The RAM role for the identity authentication service. You must create an OpenID Connect (OIDC) identity provider and an identity provider role in the same region in advance. For more information, see [Create an OIDC identity provider](https://www.alibabacloud.com/help/en/ram/developer-reference/api-ims-2019-08-15-createoidcprovider) and [Create a role-based SSO identity provider](https://www.alibabacloud.com/help/en/ram/developer-reference/api-ims-2019-08-15-createsamlprovider).
 * `programming_language` - (Optional, ForceNew, Available since v1.211.0) The programming language that is used to create the application. Valid values: `java`, `php`, `other`.
 * `command_args_v2` - (Optional, List, Available since v1.211.0) The parameters of the image startup command.
 * `custom_host_alias_v2` - (Optional, Set, Available since v1.211.0) The custom mapping between the hostname and IP address in the container. See [`custom_host_alias_v2`](#custom_host_alias_v2) below.
