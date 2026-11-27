@@ -44,7 +44,7 @@ jobs:
     steps:
       - name: Select runner
         id: select
-        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@cc0a874ce1783a88cc1bacfb961e4dd7c909cbb6
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@48752dafbf6b8c41e8a5d325c07a0f845458a6b8
 
   # Isolated CLI Verify Import steps preserve the prior apply for reorder checks.
   TypeListOrderCoverage:
