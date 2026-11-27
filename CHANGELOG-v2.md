@@ -15,6 +15,7 @@ ENHANCEMENTS:
 
 - Provider: extend V4 request signing support for legacy ECS, NAS, CMS, SLS, OTS, MNS, FC and VPC calls.
 - resource/alicloud_eflo_node_group: support `system_disk.file_system_mount_enabled`.
+- resource/alicloud_sae_application: support `oidc_role_name`. ([#11615](https://github.com/aliyun/terraform-provider-alicloud/pull/11615))
 
 BUG FIXES:
 
