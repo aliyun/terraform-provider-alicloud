@@ -864,6 +864,8 @@ The following arguments are supported:
   - `true` : install cloud monitoring on the ECS node.
   - `false` : does not install cloud monitoring on the ECS node.
 * `instance_charge_type` - (Optional, Computed) Node payment type. Valid values: `PostPaid`, `PrePaid`, default is `PostPaid`. If value is `PrePaid`, the arguments `period`, `period_unit`, `auto_renew` and `auto_renew_period` are required.
+
+  -> **NOTE:** Deleting a node pool, scaling in a node pool, or removing nodes in a node pool does not automatically release the subscription (`PrePaid`) nodes. To release the subscription nodes, first convert them to pay-as-you-go nodes by following the instructions in [Switch from subscription to pay-as-you-go](https://help.aliyun.com/en/ecs/change-the-billing-method-of-an-instance-from-subscription-to-pay-as-you-go-1), and then release the instances in the ECS console.
 * `instance_metadata_options` - (Optional, ForceNew, Computed, Set, Available since v1.266.0) ECS instance metadata access configuration. See [`instance_metadata_options`](#instance_metadata_options) below.
 * `instance_patterns` - (Optional, List, Available since v1.266.0) Instance property configuration. See [`instance_patterns`](#instance_patterns) below.
 * `instance_types` - (Optional, List) In the node instance specification list, you can select multiple instance specifications as alternatives. When each node is created, it will try to purchase from the first specification until it is created successfully. The final purchased instance specifications may vary with inventory changes.
